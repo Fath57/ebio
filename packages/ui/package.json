@@ -1,0 +1,45 @@
+{
+  "name": "@boilerstone/ui",
+  "type": "module",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    "./globals.css": "./src/styles/globals.css",
+    "./lib/*": "./src/lib/*.ts",
+    "./components/*": "./src/components/*.tsx",
+    "./hooks/*": "./src/hooks/*.ts",
+    "./icons": "./src/icons/index.ts"
+  },
+  "scripts": {
+    "registry": "pnpm dlx shadcn@latest"
+  },
+  "dependencies": {
+    "@boilerstone/openapi-generator": "workspace:*",
+    "@hookform/resolvers": "catalog:frontend",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@radix-ui/react-dropdown-menu": "^2.1.16",
+    "@radix-ui/react-label": "^2.1.8",
+    "@radix-ui/react-select": "^2.2.6",
+    "@radix-ui/react-separator": "^1.1.8",
+    "@radix-ui/react-slot": "^1.2.4",
+    "@radix-ui/react-switch": "^1.2.6",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "cmdk": "1.1.1",
+    "lucide-react": "^0.563.0",
+    "next-themes": "^0.4.6",
+    "react": "catalog:frontend",
+    "react-dom": "catalog:frontend",
+    "react-hook-form": "catalog:frontend",
+    "react-intersection-observer": "^10.0.2",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "catalog:frontend",
+    "tailwindcss": "catalog:frontend",
+    "tailwindcss-animate": "catalog:frontend",
+    "zod": "catalog:validation"
+  },
+  "devDependencies": {
+    "@tailwindcss/typography": "catalog:frontend",
+    "typescript": "catalog:build"
+  }
+}
