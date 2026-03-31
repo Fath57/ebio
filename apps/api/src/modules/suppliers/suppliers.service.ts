@@ -82,11 +82,16 @@ export class SuppliersService {
     return supplier
   }
 
-  async findNearby(latitude: number, longitude: number, radiusKm: number) {
-    const radiusMeters = radiusKm * 1000
+  async findNearby(latitude?: number, longitude?: number, radiusKm?: number) {
+    const hasLocation = latitude !== undefined && longitude !== undefined && !Number.isNaN(latitude) && !Number.isNaN(longitude)
+    const hasRadius = hasLocation && radiusKm !== undefined && radiusKm > 0
 
-    const rows = await this.em.getConnection().execute(
-      `SELECT
+    let query: string
+    let params: unknown[]
+
+    if (hasLocation && hasRadius) {
+      const radiusMeters = radiusKm! * 1000
+      query = `SELECT
         s.id,
         s.shop_name AS "shopName",
         ST_Y(s.location::geometry) AS latitude,
@@ -101,9 +106,46 @@ export class SuppliersService {
       WHERE s.location IS NOT NULL
         AND s.validation_status = 'VALIDATED'
         AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)
-      ORDER BY distance ASC`,
-      [longitude, latitude, longitude, latitude, radiusMeters],
-    )
+      ORDER BY distance ASC`
+      params = [longitude, latitude, longitude, latitude, radiusMeters]
+    }
+    else if (hasLocation) {
+      query = `SELECT
+        s.id,
+        s.shop_name AS "shopName",
+        ST_Y(s.location::geometry) AS latitude,
+        ST_X(s.location::geometry) AS longitude,
+        s.global_rating AS "rating",
+        s.mode,
+        s.validation_status AS "validationStatus",
+        s.opening_hours AS "openingHours",
+        ROUND(ST_Distance(s.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2) AS distance,
+        (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
+      FROM suppliers s
+      WHERE s.location IS NOT NULL
+        AND s.validation_status = 'VALIDATED'
+      ORDER BY distance ASC`
+      params = [longitude, latitude]
+    }
+    else {
+      query = `SELECT
+        s.id,
+        s.shop_name AS "shopName",
+        ST_Y(s.location::geometry) AS latitude,
+        ST_X(s.location::geometry) AS longitude,
+        s.global_rating AS "rating",
+        s.mode,
+        s.validation_status AS "validationStatus",
+        s.opening_hours AS "openingHours",
+        NULL AS distance,
+        (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
+      FROM suppliers s
+      WHERE s.validation_status = 'VALIDATED'
+      ORDER BY s.global_rating DESC NULLS LAST`
+      params = []
+    }
+
+    const rows = await this.em.getConnection().execute(query, params)
 
     const now = new Date()
     const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()]

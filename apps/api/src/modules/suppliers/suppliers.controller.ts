@@ -45,13 +45,13 @@ export class SuppliersController {
   @Get('nearby')
   @Public()
   async findNearby(
-    @Query('latitude') latitude: string,
-    @Query('longitude') longitude: string,
+    @Query('latitude') latitude?: string,
+    @Query('longitude') longitude?: string,
     @Query('radius') radiusParam?: string,
   ) {
-    const lat = Number(latitude)
-    const lng = Number(longitude)
-    const radiusKm = Number(radiusParam) || 15
+    const lat = latitude ? Number(latitude) : undefined
+    const lng = longitude ? Number(longitude) : undefined
+    const radiusKm = radiusParam ? Number(radiusParam) : undefined
 
     return this.suppliersService.findNearby(lat, lng, radiusKm)
   }
