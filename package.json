@@ -4,7 +4,7 @@
   "version": "1.0.0",
   "private": true,
   "packageManager": "pnpm@10.28.2",
-  "description": "Monorepo for Lonestone project",
+  "description": "Monorepo for eBio marketplace",
   "author": "",
   "license": "ISC",
   "keywords": [],
@@ -29,6 +29,7 @@
     "prepare": "husky"
   },
   "dependencies": {
+    "expo-linear-gradient": "^55.0.10-canary-20260328-bdc6273",
     "typescript": "^5.9.3"
   },
   "devDependencies": {
