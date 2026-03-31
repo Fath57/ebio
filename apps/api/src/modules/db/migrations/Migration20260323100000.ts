@@ -5,13 +5,13 @@ export class Migration20260323100000 extends Migration {
     // PostGIS: run manually if needed: CREATE EXTENSION IF NOT EXISTS postgis;
 
     // Add eBio fields to users table
-    this.addSql(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "phone" varchar(20) NULL;`)
-    this.addSql(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "role" varchar(20) NOT NULL DEFAULT 'BUYER';`)
-    this.addSql(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "device_id" varchar(255) NULL;`)
-    this.addSql(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "biometric_enabled" boolean NOT NULL DEFAULT false;`)
-    this.addSql(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "biometric_key" varchar(255) NULL;`)
-    this.addSql(`ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "last_login_at" timestamptz NULL;`)
-    this.addSql(`CREATE UNIQUE INDEX IF NOT EXISTS "users_phone_unique" ON "users" ("phone") WHERE "phone" IS NOT NULL;`)
+    this.addSql(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "phone" varchar(20) NULL;`)
+    this.addSql(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "role" varchar(20) NOT NULL DEFAULT 'BUYER';`)
+    this.addSql(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "device_id" varchar(255) NULL;`)
+    this.addSql(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "biometric_enabled" boolean NOT NULL DEFAULT false;`)
+    this.addSql(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "biometric_key" varchar(255) NULL;`)
+    this.addSql(`ALTER TABLE "user" ADD COLUMN IF NOT EXISTS "last_login_at" timestamptz NULL;`)
+    this.addSql(`CREATE UNIQUE INDEX IF NOT EXISTS "user_phone_unique" ON "user" ("phone") WHERE "phone" IS NOT NULL;`)
   }
 
   override async down(): Promise<void> {
