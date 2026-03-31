@@ -26,7 +26,7 @@ export class FcmService implements OnModuleInit {
       this.logger.log('Firebase Admin SDK initialized')
     }
     catch (error) {
-      this.logger.error('Failed to initialize Firebase Admin SDK', error)
+      this.logger.error(`Failed to initialize Firebase Admin SDK: ${(error as Error).message ?? error}`)
     }
   }
 
