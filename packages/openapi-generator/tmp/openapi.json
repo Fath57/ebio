@@ -831,22 +831,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -962,22 +983,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1195,22 +1237,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1329,22 +1392,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1453,22 +1537,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1679,22 +1784,43 @@
                       "telemetry": {
                         "type": "object",
                         "properties": {
-                          "langfuseTraceName": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                             "type": "string",
-                            "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
                           },
                           "langfuseOriginalPrompt": {
                             "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                             "type": "string"
-                          },
-                          "functionId": {
-                            "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                            "type": "string"
                           }
                         },
-                        "required": [
-                          "langfuseTraceName"
-                        ],
                         "additionalProperties": false
                       },
                       "metadata": {
@@ -1726,10 +1852,3928 @@
           }
         }
       }
+    },
+    "/api/ai/examples/use-case-1-single-generation": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase1SingleGeneration",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Single generation; trace is finalized with name/output so Langfuse shows them",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  },
+                  "options": {
+                    "type": "object",
+                    "properties": {
+                      "temperature": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 2
+                      },
+                      "maxTokens": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "topP": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "frequencyPenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "presencePenalty": {
+                        "type": "number",
+                        "minimum": -2,
+                        "maximum": 2
+                      },
+                      "maxSteps": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "stopWhen": {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      "telemetry": {
+                        "type": "object",
+                        "properties": {
+                          "traceMode": {
+                            "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
+                            "type": "string",
+                            "enum": [
+                              "inherit",
+                              "split"
+                            ]
+                          },
+                          "traceId": {
+                            "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                            "type": "string"
+                          },
+                          "traceName": {
+                            "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                            "type": "string"
+                          },
+                          "spanName": {
+                            "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                            "type": "string"
+                          },
+                          "sessionId": {
+                            "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                            "type": "string"
+                          },
+                          "metadata": {
+                            "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                            "type": "object",
+                            "propertyNames": {
+                              "type": "string"
+                            },
+                            "additionalProperties": {}
+                          },
+                          "langfuseOriginalPrompt": {
+                            "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
+                            "type": "string"
+                          }
+                        },
+                        "additionalProperties": false
+                      },
+                      "metadata": {
+                        "type": "object",
+                        "propertyNames": {
+                          "type": "string"
+                        },
+                        "additionalProperties": {}
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "AiGenerateOptions",
+                    "description": "Options for an AI generation"
+                  }
+                },
+                "required": [
+                  "prompt"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase1SingleGenerationRequest",
+                "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from text generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTextResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-2-grouped-calls": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase2GroupedCalls",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompts": {
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "Prompts for each step (same trace)"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "prompts"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase2GroupedCallsRequest",
+                "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Combined results from grouped LLM calls",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCase2GroupedCallsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-3-logical-units": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase3LogicalUnits",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "workflowPrompts": {
+                    "minItems": 1,
+                    "maxItems": 5,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    },
+                    "description": "One prompt per logical workflow; each gets its own trace"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "workflowPrompts"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase3LogicalUnitsRequest",
+                "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "One result per workflow (each in its own trace)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UseCase3LogicalUnitsResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-4-chat-session": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase4ChatSession",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Simple generateText with sessionId for grouping traces across requests",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "sessionId"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase4ChatSessionRequest",
+                "description": "Simple generateText with sessionId for grouping traces across requests"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from text generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTextResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/ai/examples/use-case-5-chat-session-with-turns-merged": {
+      "post": {
+        "operationId": "AiExampleUseCasesController_useCase5ChatSessionWithTurnsMerged",
+        "tags": [
+          "AiExampleUseCases"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Simple generateText with sessionId for grouping traces across requests",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "prompt": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
+                  },
+                  "model": {
+                    "type": "string",
+                    "enum": [
+                      "OPENAI_GPT_5_NANO",
+                      "GOOGLE_GEMINI_3_FLASH",
+                      "CLAUDE_HAIKU_3_5",
+                      "CLAUDE_OPUS_4_5",
+                      "MISTRAL_SMALL"
+                    ]
+                  }
+                },
+                "required": [
+                  "prompt",
+                  "sessionId"
+                ],
+                "additionalProperties": false,
+                "title": "UseCase4ChatSessionRequest",
+                "description": "Simple generateText with sessionId for grouping traces across requests"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Response from text generation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GenerateTextResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search/products": {
+      "get": {
+        "operationId": "SearchController_searchProducts",
+        "tags": [
+          "Search"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            }
+          },
+          {
+            "name": "radius",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 10000,
+              "type": "number"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "inStockOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "true",
+              "description": "Filter in-stock only",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "minRating",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 5
+            }
+          },
+          {
+            "name": "mode",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "CONTACT",
+                "ORDER"
+              ]
+            }
+          },
+          {
+            "name": "validatedOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "description": "Filter validated suppliers only",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "distance",
+              "type": "string",
+              "enum": [
+                "distance",
+                "rating",
+                "price"
+              ]
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "number",
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search/autocomplete": {
+      "get": {
+        "operationId": "SearchController_autocomplete",
+        "tags": [
+          "Search"
+        ],
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            }
+          },
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AutocompleteResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/search/categories": {
+      "get": {
+        "operationId": "SearchController_getCategories",
+        "tags": [
+          "Search"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriesResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/suppliers/register": {
+      "post": {
+        "operationId": "SuppliersController_register",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Data required to register as a supplier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shopName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "INPUTS",
+                      "TRANSFORMER"
+                    ],
+                    "title": "SupplierType",
+                    "description": "Type of supplier activity"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "neighborhood": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "mobileMoneyNumber": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "CONTACT",
+                      "ORDER"
+                    ],
+                    "title": "SupplierMode",
+                    "description": "How buyers interact with this supplier"
+                  },
+                  "openingHours": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "open": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "close": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "open",
+                        "close"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "required": [
+                      "monday",
+                      "tuesday",
+                      "wednesday",
+                      "thursday",
+                      "friday",
+                      "saturday",
+                      "sunday"
+                    ],
+                    "title": "OpeningHours",
+                    "description": "Weekly opening hours with days as keys"
+                  }
+                },
+                "required": [
+                  "shopName",
+                  "type",
+                  "latitude",
+                  "longitude",
+                  "address",
+                  "neighborhood",
+                  "mobileMoneyNumber",
+                  "mode"
+                ],
+                "additionalProperties": false,
+                "title": "RegisterSupplier",
+                "description": "Data required to register as a supplier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{id}": {
+      "get": {
+        "operationId": "SuppliersController_findById",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me": {
+      "put": {
+        "operationId": "SuppliersController_updateMe",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Update supplier profile — all fields optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "shopName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "INPUTS",
+                      "TRANSFORMER"
+                    ],
+                    "title": "SupplierType",
+                    "description": "Type of supplier activity"
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "neighborhood": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "mobileMoneyNumber": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "CONTACT",
+                      "ORDER"
+                    ],
+                    "title": "SupplierMode",
+                    "description": "How buyers interact with this supplier"
+                  },
+                  "openingHours": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "open": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "close": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "open",
+                        "close"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "required": [
+                      "monday",
+                      "tuesday",
+                      "wednesday",
+                      "thursday",
+                      "friday",
+                      "saturday",
+                      "sunday"
+                    ],
+                    "title": "OpeningHours",
+                    "description": "Weekly opening hours with days as keys"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateSupplier",
+                "description": "Update supplier profile — all fields optional"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/dashboard": {
+      "get": {
+        "operationId": "SuppliersController_getDashboard",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/delivery-zones": {
+      "post": {
+        "operationId": "SuppliersController_createDeliveryZone",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Delivery zone defined by a polygon with fee and estimated time",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "polygon": {
+                    "minItems": 3,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "latitude": {
+                          "type": "number",
+                          "minimum": -90,
+                          "maximum": 90
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "minimum": -180,
+                          "maximum": 180
+                        }
+                      },
+                      "required": [
+                        "latitude",
+                        "longitude"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "deliveryFee": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "estimatedMinutes": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "polygon",
+                  "deliveryFee",
+                  "estimatedMinutes"
+                ],
+                "additionalProperties": false,
+                "title": "DeliveryZone",
+                "description": "Delivery zone defined by a polygon with fee and estimated time"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "operationId": "UsersController_getMe",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "UsersController_updateMe",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Update user profile",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "image": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "deviceId": {
+                    "type": "string"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateUser",
+                "description": "Update user profile"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/files/upload-url": {
+      "post": {
+        "operationId": "FilesController_getUploadUrl",
+        "tags": [
+          "Files"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{supplierId}/products": {
+      "get": {
+        "operationId": "ProductsController_findBySupplier",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "categoryId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/products": {
+      "post": {
+        "operationId": "ProductsController_create",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Data required to create a new product",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "pricePerUnit": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "KG",
+                      "LITER",
+                      "SACHET",
+                      "PIECE",
+                      "LOT"
+                    ],
+                    "title": "ProductUnit",
+                    "description": "Unit of measurement for products"
+                  },
+                  "stock": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "stockAlertThreshold": {
+                    "default": 5,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "status": {
+                    "default": "ACTIVE",
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "OUT_OF_STOCK",
+                      "HIDDEN"
+                    ],
+                    "title": "ProductStatus",
+                    "description": "Product visibility and availability status"
+                  },
+                  "variants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "pricePerUnit": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "stock": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "pricePerUnit"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "categoryId",
+                  "pricePerUnit",
+                  "unit",
+                  "stock",
+                  "stockAlertThreshold",
+                  "status"
+                ],
+                "additionalProperties": false,
+                "title": "CreateProduct",
+                "description": "Data required to create a new product"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/products/{id}": {
+      "put": {
+        "operationId": "ProductsController_update",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update product — all fields optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 200
+                  },
+                  "categoryId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 2000
+                  },
+                  "pricePerUnit": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "unit": {
+                    "type": "string",
+                    "enum": [
+                      "KG",
+                      "LITER",
+                      "SACHET",
+                      "PIECE",
+                      "LOT"
+                    ],
+                    "title": "ProductUnit",
+                    "description": "Unit of measurement for products"
+                  },
+                  "stock": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "stockAlertThreshold": {
+                    "default": 5,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "status": {
+                    "default": "ACTIVE",
+                    "type": "string",
+                    "enum": [
+                      "ACTIVE",
+                      "OUT_OF_STOCK",
+                      "HIDDEN"
+                    ],
+                    "title": "ProductStatus",
+                    "description": "Product visibility and availability status"
+                  },
+                  "variants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string",
+                          "minLength": 1,
+                          "maxLength": 100
+                        },
+                        "pricePerUnit": {
+                          "type": "number",
+                          "minimum": 0
+                        },
+                        "stock": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "label",
+                        "pricePerUnit"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateProduct",
+                "description": "Update product — all fields optional"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "ProductsController_softDelete",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/products/{id}/stock": {
+      "patch": {
+        "operationId": "ProductsController_updateStock",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update product stock level",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "stock": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "stock"
+                ],
+                "additionalProperties": false,
+                "title": "StockUpdate",
+                "description": "Update product stock level"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/products/{id}/promotion": {
+      "post": {
+        "operationId": "ProductsController_setPromotion",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Set a promotional price on a product",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "promotionalPrice": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "expiresAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  }
+                },
+                "required": [
+                  "promotionalPrice",
+                  "expiresAt"
+                ],
+                "additionalProperties": false,
+                "title": "Promotion",
+                "description": "Set a promotional price on a product"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/products/{id}/stock-alert": {
+      "post": {
+        "operationId": "ProductsController_subscribeToStockAlert",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders": {
+      "post": {
+        "operationId": "OrdersController_create",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Data required to place a new order",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "supplierId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "pickupMode": {
+                    "type": "string",
+                    "enum": [
+                      "ON_SITE",
+                      "DELIVERY"
+                    ],
+                    "title": "PickupMode",
+                    "description": "How the buyer will receive the order"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "FEDAPAY",
+                      "CASH_ON_DELIVERY"
+                    ],
+                    "title": "PaymentMethod",
+                    "description": "Payment method for the order"
+                  },
+                  "deliveryAddress": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "deliverySlot": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  },
+                  "items": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "OrderItemInput",
+                      "description": "A single item in the order"
+                    }
+                  }
+                },
+                "required": [
+                  "supplierId",
+                  "pickupMode",
+                  "paymentMethod",
+                  "items"
+                ],
+                "additionalProperties": false,
+                "title": "CreateOrder",
+                "description": "Data required to place a new order",
+                "examples": [
+                  {
+                    "supplierId": "550e8400-e29b-41d4-a716-446655440000",
+                    "pickupMode": "DELIVERY",
+                    "paymentMethod": "FEDAPAY",
+                    "deliveryAddress": "123 Rue de Cotonou",
+                    "items": [
+                      {
+                        "productId": "550e8400-e29b-41d4-a716-446655440001",
+                        "quantity": 2
+                      }
+                    ]
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      },
+      "get": {
+        "operationId": "OrdersController_findAll",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{id}": {
+      "get": {
+        "operationId": "OrdersController_findById",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/accept": {
+      "patch": {
+        "operationId": "OrdersController_accept",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/reject": {
+      "patch": {
+        "operationId": "OrdersController_reject",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Reason for rejecting an order",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "RejectOrder",
+                "description": "Reason for rejecting an order"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/status": {
+      "patch": {
+        "operationId": "OrdersController_updateStatus",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update order status (supplier only)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PREPARING",
+                      "READY",
+                      "IN_DELIVERY"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ],
+                "additionalProperties": false,
+                "title": "UpdateOrderStatus",
+                "description": "Update order status (supplier only)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/confirm-delivery": {
+      "patch": {
+        "operationId": "OrdersController_confirmDelivery",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/dispute": {
+      "post": {
+        "operationId": "OrdersController_createDispute",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Open a dispute on an order",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "CreateDispute",
+                "description": "Open a dispute on an order"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/payments/initiate": {
+      "post": {
+        "operationId": "PaymentsController_initiate",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Data required to initiate a mobile money payment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "operator": {
+                    "type": "string",
+                    "enum": [
+                      "MTN",
+                      "MOOV",
+                      "ORANGE"
+                    ],
+                    "title": "MobileOperator",
+                    "description": "Mobile money operator"
+                  },
+                  "phoneNumber": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  }
+                },
+                "required": [
+                  "orderId",
+                  "operator",
+                  "phoneNumber"
+                ],
+                "additionalProperties": false,
+                "title": "InitiatePayment",
+                "description": "Data required to initiate a mobile money payment",
+                "examples": [
+                  {
+                    "orderId": "550e8400-e29b-41d4-a716-446655440000",
+                    "operator": "MTN",
+                    "phoneNumber": "+22990123456"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/payments/webhook/fedapay": {
+      "post": {
+        "operationId": "PaymentsController_handleWebhook",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "name": "x-fedapay-signature",
+            "required": true,
+            "in": "header",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "FedaPay webhook event payload",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "string"
+                  },
+                  "data": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "number"
+                      },
+                      "reference": {
+                        "type": "string"
+                      },
+                      "amount": {
+                        "type": "number"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "customer": {
+                        "type": "object",
+                        "properties": {
+                          "phone_number": {
+                            "type": "object",
+                            "properties": {
+                              "number": {
+                                "type": "string"
+                              },
+                              "country": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "number",
+                              "country"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "additionalProperties": false
+                      }
+                    },
+                    "required": [
+                      "id",
+                      "status"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "id",
+                  "type",
+                  "data"
+                ],
+                "additionalProperties": false,
+                "title": "WebhookEvent",
+                "description": "FedaPay webhook event payload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/chat/conversations": {
+      "post": {
+        "operationId": "ChatController_createConversation",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Create or retrieve an existing conversation with a supplier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "supplierId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "productId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "supplierId"
+                ],
+                "additionalProperties": false,
+                "title": "CreateConversation",
+                "description": "Create or retrieve an existing conversation with a supplier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      },
+      "get": {
+        "operationId": "ChatController_getConversations",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/chat/conversations/{id}/messages": {
+      "get": {
+        "operationId": "ChatController_getMessages",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "before",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/chat/conversations/{id}/share-whatsapp": {
+      "post": {
+        "operationId": "ChatController_shareWhatsApp",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "message",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/chat/suppliers/{id}/quick-replies": {
+      "get": {
+        "operationId": "ChatController_getQuickReplies",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/reviews": {
+      "post": {
+        "operationId": "RatingsController_createReview",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Submit a review for a supplier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "supplierId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "orderId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "transactionType": {
+                    "type": "string",
+                    "enum": [
+                      "ORDER",
+                      "CONTACT"
+                    ]
+                  },
+                  "qualityRating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "delayRating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "communicationRating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "conformityRating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "supplierId",
+                  "transactionType",
+                  "qualityRating",
+                  "delayRating",
+                  "communicationRating",
+                  "conformityRating"
+                ],
+                "additionalProperties": false,
+                "title": "CreateReview",
+                "description": "Submit a review for a supplier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{id}/reviews": {
+      "get": {
+        "operationId": "RatingsController_getSupplierReviews",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{id}/badges": {
+      "get": {
+        "operationId": "RatingsController_getSupplierBadges",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/reviews/{id}/report": {
+      "post": {
+        "operationId": "RatingsController_reportReview",
+        "tags": [
+          "Ratings"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/groups": {
+      "get": {
+        "operationId": "CommunityController_getGroups",
+        "tags": [
+          "Community"
+        ],
+        "parameters": [
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sector",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "region",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/groups/{id}/join": {
+      "post": {
+        "operationId": "CommunityController_joinGroup",
+        "tags": [
+          "Community"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/groups/{id}/leave": {
+      "delete": {
+        "operationId": "CommunityController_leaveGroup",
+        "tags": [
+          "Community"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/groups/{id}/publications": {
+      "get": {
+        "operationId": "CommunityController_getPublications",
+        "tags": [
+          "Community"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "CommunityController_createPublication",
+        "tags": [
+          "Community"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PRODUCT_ANNOUNCEMENT",
+                      "TECHNICAL_QUESTION",
+                      "MARKET_ALERT",
+                      "TRAINING_SHARE"
+                    ]
+                  },
+                  "content": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 2000
+                  },
+                  "mediaUrls": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  }
+                },
+                "required": [
+                  "type",
+                  "content"
+                ],
+                "additionalProperties": false,
+                "title": "CreatePublication"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/groups/publications/{id}/report": {
+      "post": {
+        "operationId": "CommunityController_reportPublication",
+        "tags": [
+          "Community"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/groups/publications/{id}/share-url": {
+      "get": {
+        "operationId": "CommunityController_getShareUrl",
+        "tags": [
+          "Community"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/training/modules": {
+      "get": {
+        "operationId": "TrainingController_getModules",
+        "tags": [
+          "Training"
+        ],
+        "parameters": [
+          {
+            "name": "theme",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/training/modules/{id}": {
+      "get": {
+        "operationId": "TrainingController_getModuleById",
+        "tags": [
+          "Training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/training/modules/{id}/download": {
+      "get": {
+        "operationId": "TrainingController_getDownloadUrl",
+        "tags": [
+          "Training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/training/modules/{id}/complete": {
+      "post": {
+        "operationId": "TrainingController_completeModule",
+        "tags": [
+          "Training"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Answers submitted to complete a training module quiz",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "answers": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "propertyNames": {
+                        "type": "string"
+                      },
+                      "additionalProperties": {}
+                    }
+                  }
+                },
+                "required": [
+                  "answers"
+                ],
+                "additionalProperties": false,
+                "title": "CompleteModule",
+                "description": "Answers submitted to complete a training module quiz"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/training/my-progress": {
+      "get": {
+        "operationId": "TrainingController_getMyProgress",
+        "tags": [
+          "Training"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/subscriptions/plans": {
+      "get": {
+        "operationId": "SubscriptionsController_getPlans",
+        "tags": [
+          "Subscriptions"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/subscriptions": {
+      "post": {
+        "operationId": "SubscriptionsController_subscribe",
+        "tags": [
+          "Subscriptions"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Data to subscribe to a plan",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "planId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "paymentReference": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "planId",
+                  "paymentMethod"
+                ],
+                "additionalProperties": false,
+                "title": "CreateSubscription",
+                "description": "Data to subscribe to a plan"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/subscriptions/me": {
+      "get": {
+        "operationId": "SubscriptionsController_getCurrentSubscription",
+        "tags": [
+          "Subscriptions"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/subscriptions/me/cancel": {
+      "patch": {
+        "operationId": "SubscriptionsController_cancelSubscription",
+        "tags": [
+          "Subscriptions"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/subscriptions/me/upgrade": {
+      "post": {
+        "operationId": "SubscriptionsController_upgradeSubscription",
+        "tags": [
+          "Subscriptions"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Upgrade to a new plan",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "newPlanId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "newPlanId"
+                ],
+                "additionalProperties": false,
+                "title": "UpgradeSubscription",
+                "description": "Upgrade to a new plan"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/dashboard": {
+      "get": {
+        "operationId": "AdminController_getDashboard",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/validations": {
+      "get": {
+        "operationId": "AdminController_getValidations",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/validations/{supplierId}": {
+      "patch": {
+        "operationId": "AdminController_validateSupplier",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Action to perform on a supplier validation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "VALIDATE",
+                      "REJECT",
+                      "REQUEST_COMPLEMENT"
+                    ],
+                    "title": "ValidationAction",
+                    "description": "Action to take on a supplier validation request"
+                  },
+                  "message": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false,
+                "title": "ValidationActionInput",
+                "description": "Action to perform on a supplier validation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/reports": {
+      "get": {
+        "operationId": "AdminController_getReports",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "targetType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/reports/{id}": {
+      "patch": {
+        "operationId": "AdminController_resolveReport",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Action to resolve a content report",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "DELETE_CONTENT",
+                      "WARN_AUTHOR",
+                      "DISMISS"
+                    ],
+                    "title": "ReportResolveAction",
+                    "description": "Action to take when resolving a content report"
+                  },
+                  "adminNote": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false,
+                "title": "ResolveReportInput",
+                "description": "Action to resolve a content report"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/disputes": {
+      "get": {
+        "operationId": "AdminController_getDisputes",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/disputes/{id}": {
+      "patch": {
+        "operationId": "AdminController_resolveDispute",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Data to resolve a dispute",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "resolution": {
+                    "type": "string",
+                    "enum": [
+                      "REFUND_BUYER",
+                      "PAY_SUPPLIER",
+                      "PARTIAL_REFUND"
+                    ],
+                    "title": "DisputeResolution",
+                    "description": "Resolution outcome for a dispute"
+                  },
+                  "partialAmount": {
+                    "type": "number"
+                  },
+                  "adminNote": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "resolution"
+                ],
+                "additionalProperties": false,
+                "title": "DisputeResolutionInput",
+                "description": "Data to resolve a dispute"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/suppliers/{id}/suspend": {
+      "patch": {
+        "operationId": "AdminController_suspendSupplier",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Reason for suspending a supplier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "SuspendSupplier",
+                "description": "Reason for suspending a supplier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/transactions": {
+      "get": {
+        "operationId": "AdminController_getTransactions",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/settings/commissions": {
+      "put": {
+        "operationId": "AdminController_updateCommissions",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Commission rates per product category",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rates": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "category": {
+                          "type": "string"
+                        },
+                        "rate": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "category",
+                        "rate"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "rates"
+                ],
+                "additionalProperties": false,
+                "title": "CommissionRates",
+                "description": "Commission rates per product category"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/notifications/broadcast": {
+      "post": {
+        "operationId": "AdminController_broadcastNotification",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Send a notification to a group of users",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 200
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "targetRole": {
+                    "type": "string",
+                    "enum": [
+                      "BUYER",
+                      "SUPPLIER",
+                      "ALL"
+                    ]
+                  },
+                  "targetZone": {
+                    "type": "string"
+                  },
+                  "channel": {
+                    "type": "string",
+                    "enum": [
+                      "PUSH",
+                      "SMS",
+                      "IN_APP"
+                    ]
+                  }
+                },
+                "required": [
+                  "title",
+                  "body",
+                  "targetRole",
+                  "channel"
+                ],
+                "additionalProperties": false,
+                "title": "BroadcastNotification",
+                "description": "Send a notification to a group of users"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/roles": {
+      "get": {
+        "operationId": "RolesController_findAll",
+        "tags": [
+          "Roles"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "RolesController_create",
+        "tags": [
+          "Roles"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 50
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "permissionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "title": "CreateRole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/roles/permissions": {
+      "get": {
+        "operationId": "RolesController_getAllPermissions",
+        "tags": [
+          "Roles"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/roles/{id}": {
+      "put": {
+        "operationId": "RolesController_update",
+        "tags": [
+          "Roles"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 50
+                  },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "permissionIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateRole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "RolesController_delete",
+        "tags": [
+          "Roles"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/roles/assign": {
+      "post": {
+        "operationId": "RolesController_assignRole",
+        "tags": [
+          "Roles"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "roleId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "userId",
+                  "roleId"
+                ],
+                "additionalProperties": false,
+                "title": "AssignRole"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
     }
   },
   "components": {
     "schemas": {
+      "ValidationActionInput": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ValidationAction"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "title": "ValidationActionInput",
+        "description": "Action to perform on a supplier validation"
+      },
+      "ResolveReportInput": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "$ref": "#/components/schemas/ReportResolveAction"
+          },
+          "adminNote": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "title": "ResolveReportInput",
+        "description": "Action to resolve a content report"
+      },
+      "DisputeResolutionInput": {
+        "type": "object",
+        "properties": {
+          "resolution": {
+            "$ref": "#/components/schemas/DisputeResolution"
+          },
+          "partialAmount": {
+            "type": "number"
+          },
+          "adminNote": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "resolution"
+        ],
+        "additionalProperties": false,
+        "title": "DisputeResolutionInput",
+        "description": "Data to resolve a dispute"
+      },
+      "SuspendSupplier": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "SuspendSupplier",
+        "description": "Reason for suspending a supplier"
+      },
+      "CommissionRates": {
+        "type": "object",
+        "properties": {
+          "rates": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "category": {
+                  "type": "string"
+                },
+                "rate": {
+                  "type": "number",
+                  "minimum": 0,
+                  "maximum": 100
+                }
+              },
+              "required": [
+                "category",
+                "rate"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "rates"
+        ],
+        "additionalProperties": false,
+        "title": "CommissionRates",
+        "description": "Commission rates per product category"
+      },
+      "BroadcastNotification": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "targetRole": {
+            "type": "string",
+            "enum": [
+              "BUYER",
+              "SUPPLIER",
+              "ALL"
+            ]
+          },
+          "targetZone": {
+            "type": "string"
+          },
+          "channel": {
+            "type": "string",
+            "enum": [
+              "PUSH",
+              "SMS",
+              "IN_APP"
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "targetRole",
+          "channel"
+        ],
+        "additionalProperties": false,
+        "title": "BroadcastNotification",
+        "description": "Send a notification to a group of users"
+      },
+      "CreateRole": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "permissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "title": "CreateRole"
+      },
+      "UpdateRole": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 50
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "permissionIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateRole"
+      },
+      "AssignRole": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "roleId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "userId",
+          "roleId"
+        ],
+        "additionalProperties": false,
+        "title": "AssignRole"
+      },
+      "CreateConversation": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "supplierId"
+        ],
+        "additionalProperties": false,
+        "title": "CreateConversation",
+        "description": "Create or retrieve an existing conversation with a supplier"
+      },
+      "CreatePublication": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "PRODUCT_ANNOUNCEMENT",
+              "TECHNICAL_QUESTION",
+              "MARKET_ALERT",
+              "TRAINING_SHARE"
+            ]
+          },
+          "content": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          },
+          "mediaUrls": {
+            "maxItems": 4,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "CreatePublication"
+      },
+      "UseCase1SingleGenerationRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          },
+          "options": {
+            "$ref": "#/components/schemas/AiGenerateOptions"
+          }
+        },
+        "required": [
+          "prompt"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase1SingleGenerationRequest",
+        "description": "Single generation; trace is finalized with name/output so Langfuse shows them"
+      },
+      "UseCase2GroupedCallsRequest": {
+        "type": "object",
+        "properties": {
+          "prompts": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "Prompts for each step (same trace)"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": [
+          "prompts"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase2GroupedCallsRequest",
+        "description": "Multiple LLM calls in one request; one trace in Langfuse, finalized at end"
+      },
+      "UseCase3LogicalUnitsRequest": {
+        "type": "object",
+        "properties": {
+          "workflowPrompts": {
+            "minItems": 1,
+            "maxItems": 5,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            },
+            "description": "One prompt per logical workflow; each gets its own trace"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": [
+          "workflowPrompts"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase3LogicalUnitsRequest",
+        "description": "Multiple workflows; each workflow gets its own Langfuse trace (split per unit)"
+      },
+      "UseCase4ChatSessionRequest": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          },
+          "sessionId": {
+            "type": "string",
+            "minLength": 1,
+            "description": "Session ID to group traces in Langfuse (e.g. conversation or thread)"
+          },
+          "model": {
+            "type": "string",
+            "enum": [
+              "OPENAI_GPT_5_NANO",
+              "GOOGLE_GEMINI_3_FLASH",
+              "CLAUDE_HAIKU_3_5",
+              "CLAUDE_OPUS_4_5",
+              "MISTRAL_SMALL"
+            ]
+          }
+        },
+        "required": [
+          "prompt",
+          "sessionId"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase4ChatSessionRequest",
+        "description": "Simple generateText with sessionId for grouping traces across requests"
+      },
       "GenerateTextRequest": {
         "type": "object",
         "properties": {
@@ -1988,6 +6032,685 @@
         "title": "UpdatePostSchema",
         "description": "Schema for updating a post"
       },
+      "InitiatePayment": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "operator": {
+            "$ref": "#/components/schemas/MobileOperator"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          }
+        },
+        "required": [
+          "orderId",
+          "operator",
+          "phoneNumber"
+        ],
+        "additionalProperties": false,
+        "title": "InitiatePayment",
+        "description": "Data required to initiate a mobile money payment",
+        "examples": [
+          {
+            "orderId": "550e8400-e29b-41d4-a716-446655440000",
+            "operator": "MTN",
+            "phoneNumber": "+22990123456"
+          }
+        ]
+      },
+      "WebhookEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "data": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "number"
+              },
+              "reference": {
+                "type": "string"
+              },
+              "amount": {
+                "type": "number"
+              },
+              "status": {
+                "type": "string"
+              },
+              "customer": {
+                "type": "object",
+                "properties": {
+                  "phone_number": {
+                    "type": "object",
+                    "properties": {
+                      "number": {
+                        "type": "string"
+                      },
+                      "country": {
+                        "type": "string"
+                      }
+                    },
+                    "required": [
+                      "number",
+                      "country"
+                    ],
+                    "additionalProperties": false
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "id",
+              "status"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "data"
+        ],
+        "additionalProperties": false,
+        "title": "WebhookEvent",
+        "description": "FedaPay webhook event payload"
+      },
+      "UpdateUser": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "image": {
+            "type": "string",
+            "format": "uri"
+          },
+          "deviceId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateUser",
+        "description": "Update user profile"
+      },
+      "RegisterSupplier": {
+        "type": "object",
+        "properties": {
+          "shopName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "type": {
+            "$ref": "#/components/schemas/SupplierType"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "neighborhood": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "mobileMoneyNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SupplierMode"
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          }
+        },
+        "required": [
+          "shopName",
+          "type",
+          "latitude",
+          "longitude",
+          "address",
+          "neighborhood",
+          "mobileMoneyNumber",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "title": "RegisterSupplier",
+        "description": "Data required to register as a supplier"
+      },
+      "UpdateSupplier": {
+        "type": "object",
+        "properties": {
+          "shopName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "type": {
+            "$ref": "#/components/schemas/SupplierType"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "neighborhood": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "mobileMoneyNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SupplierMode"
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateSupplier",
+        "description": "Update supplier profile — all fields optional"
+      },
+      "DeliveryZone": {
+        "type": "object",
+        "properties": {
+          "polygon": {
+            "minItems": 3,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "latitude": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                }
+              },
+              "required": [
+                "latitude",
+                "longitude"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "deliveryFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "estimatedMinutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "polygon",
+          "deliveryFee",
+          "estimatedMinutes"
+        ],
+        "additionalProperties": false,
+        "title": "DeliveryZone",
+        "description": "Delivery zone defined by a polygon with fee and estimated time"
+      },
+      "CreateOrder": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "pickupMode": {
+            "$ref": "#/components/schemas/PickupMode"
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "deliveryAddress": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          },
+          "deliverySlot": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            }
+          }
+        },
+        "required": [
+          "supplierId",
+          "pickupMode",
+          "paymentMethod",
+          "items"
+        ],
+        "additionalProperties": false,
+        "title": "CreateOrder",
+        "description": "Data required to place a new order",
+        "examples": [
+          {
+            "supplierId": "550e8400-e29b-41d4-a716-446655440000",
+            "pickupMode": "DELIVERY",
+            "paymentMethod": "FEDAPAY",
+            "deliveryAddress": "123 Rue de Cotonou",
+            "items": [
+              {
+                "productId": "550e8400-e29b-41d4-a716-446655440001",
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      "RejectOrder": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "RejectOrder",
+        "description": "Reason for rejecting an order"
+      },
+      "UpdateOrderStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PREPARING",
+              "READY",
+              "IN_DELIVERY"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateOrderStatus",
+        "description": "Update order status (supplier only)"
+      },
+      "CreateDispute": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "CreateDispute",
+        "description": "Open a dispute on an order"
+      },
+      "CreateProduct": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "$ref": "#/components/schemas/ProductUnit"
+          },
+          "stock": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stockAlertThreshold": {
+            "default": 5,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProductStatus"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "pricePerUnit": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "stock": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "label",
+                "pricePerUnit"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "name",
+          "categoryId",
+          "pricePerUnit",
+          "unit",
+          "stock",
+          "stockAlertThreshold",
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "CreateProduct",
+        "description": "Data required to create a new product"
+      },
+      "UpdateProduct": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "$ref": "#/components/schemas/ProductUnit"
+          },
+          "stock": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stockAlertThreshold": {
+            "default": 5,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProductStatus"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "pricePerUnit": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "stock": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "label",
+                "pricePerUnit"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateProduct",
+        "description": "Update product — all fields optional"
+      },
+      "StockUpdate": {
+        "type": "object",
+        "properties": {
+          "stock": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "stock"
+        ],
+        "additionalProperties": false,
+        "title": "StockUpdate",
+        "description": "Update product stock level"
+      },
+      "Promotion": {
+        "type": "object",
+        "properties": {
+          "promotionalPrice": {
+            "type": "number",
+            "minimum": 0
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "promotionalPrice",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "title": "Promotion",
+        "description": "Set a promotional price on a product"
+      },
+      "CreateReview": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "transactionType": {
+            "type": "string",
+            "enum": [
+              "ORDER",
+              "CONTACT"
+            ]
+          },
+          "qualityRating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "delayRating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "communicationRating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "conformityRating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "supplierId",
+          "transactionType",
+          "qualityRating",
+          "delayRating",
+          "communicationRating",
+          "conformityRating"
+        ],
+        "additionalProperties": false,
+        "title": "CreateReview",
+        "description": "Submit a review for a supplier"
+      },
+      "CreateSubscription": {
+        "type": "object",
+        "properties": {
+          "planId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "minLength": 1
+          },
+          "paymentReference": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "planId",
+          "paymentMethod"
+        ],
+        "additionalProperties": false,
+        "title": "CreateSubscription",
+        "description": "Data to subscribe to a plan"
+      },
+      "UpgradeSubscription": {
+        "type": "object",
+        "properties": {
+          "newPlanId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "newPlanId"
+        ],
+        "additionalProperties": false,
+        "title": "UpgradeSubscription",
+        "description": "Upgrade to a new plan"
+      },
+      "CompleteModule": {
+        "type": "object",
+        "properties": {
+          "answers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "propertyNames": {
+                "type": "string"
+              },
+              "additionalProperties": {}
+            }
+          }
+        },
+        "required": [
+          "answers"
+        ],
+        "additionalProperties": false,
+        "title": "CompleteModule",
+        "description": "Answers submitted to complete a training module quiz"
+      },
       "GenerateTextResponse": {
         "type": "object",
         "properties": {
@@ -1996,6 +6719,18 @@
           },
           "finishReason": {
             "type": "string"
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
           },
           "result": {
             "type": "string"
@@ -2030,6 +6765,109 @@
         "title": "TokenUsage",
         "description": "Token usage information for an AI generation"
       },
+      "ToolCall": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "args": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string"
+            },
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "args"
+        ],
+        "additionalProperties": false,
+        "title": "ToolCall",
+        "description": "A tool call made by the AI"
+      },
+      "ToolResult": {
+        "type": "object",
+        "properties": {
+          "toolCallId": {
+            "type": "string"
+          },
+          "toolName": {
+            "type": "string"
+          },
+          "result": {}
+        },
+        "required": [
+          "toolCallId",
+          "toolName",
+          "result"
+        ],
+        "additionalProperties": false,
+        "title": "ToolResult",
+        "description": "The result of a tool call"
+      },
+      "UseCase2GroupedCallsResponse": {
+        "type": "object",
+        "properties": {
+          "traceName": {
+            "type": "string"
+          },
+          "results": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "usage": {
+            "$ref": "#/components/schemas/TokenUsage"
+          }
+        },
+        "required": [
+          "traceName",
+          "results"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase2GroupedCallsResponse",
+        "description": "Combined results from grouped LLM calls"
+      },
+      "UseCase3LogicalUnitsResponse": {
+        "type": "object",
+        "properties": {
+          "workflows": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "index": {
+                  "type": "number"
+                },
+                "result": {
+                  "type": "string"
+                },
+                "usage": {
+                  "$ref": "#/components/schemas/TokenUsage"
+                }
+              },
+              "required": [
+                "index",
+                "result"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "workflows"
+        ],
+        "additionalProperties": false,
+        "title": "UseCase3LogicalUnitsResponse",
+        "description": "One result per workflow (each in its own trace)"
+      },
       "GenerateObjectResponse": {
         "type": "object",
         "properties": {
@@ -2038,6 +6876,18 @@
           },
           "finishReason": {
             "type": "string"
+          },
+          "toolCalls": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolCall"
+            }
+          },
+          "toolResults": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ToolResult"
+            }
           },
           "result": {}
         },
@@ -2057,15 +6907,6 @@
           "finishReason": {
             "type": "string"
           },
-          "result": {
-            "type": "string"
-          },
-          "messages": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
-            }
-          },
           "toolCalls": {
             "type": "array",
             "items": {
@@ -2076,6 +6917,15 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/ToolResult"
+            }
+          },
+          "result": {
+            "type": "string"
+          },
+          "messages": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ChatMessageWithSchemaType"
             }
           }
         },
@@ -2197,32 +7047,6 @@
         "title": "ChatMessageWithSchemaType",
         "description": "A message with optional schemaType metadata for identifying structured output"
       },
-      "ToolCall": {
-        "type": "object",
-        "properties": {
-          "toolCallId": {
-            "type": "string"
-          },
-          "toolName": {
-            "type": "string"
-          },
-          "args": {
-            "type": "object",
-            "propertyNames": {
-              "type": "string"
-            },
-            "additionalProperties": {}
-          }
-        },
-        "required": [
-          "toolCallId",
-          "toolName",
-          "args"
-        ],
-        "additionalProperties": false,
-        "title": "ToolCall",
-        "description": "A tool call made by the AI"
-      },
       "ChatSchemaType": {
         "type": "string",
         "enum": [
@@ -2234,26 +7058,6 @@
         ],
         "title": "ChatSchemaType",
         "description": "Predefined schema types for testing structured output"
-      },
-      "ToolResult": {
-        "type": "object",
-        "properties": {
-          "toolCallId": {
-            "type": "string"
-          },
-          "toolName": {
-            "type": "string"
-          },
-          "result": {}
-        },
-        "required": [
-          "toolCallId",
-          "toolName",
-          "result"
-        ],
-        "additionalProperties": false,
-        "title": "ToolResult",
-        "description": "The result of a tool call"
       },
       "CommentSchema": {
         "type": "object",
@@ -2750,6 +7554,270 @@
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
       },
+      "SearchResponse": {
+        "type": "object",
+        "properties": {
+          "results": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            }
+          },
+          "total": {
+            "type": "number"
+          },
+          "page": {
+            "type": "number"
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "results",
+          "total",
+          "page",
+          "hasMore"
+        ],
+        "additionalProperties": false,
+        "title": "SearchResponse"
+      },
+      "SearchResult": {
+        "type": "object",
+        "properties": {
+          "supplier": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "shopName": {
+                "type": "string"
+              },
+              "distance": {
+                "type": "number"
+              },
+              "rating": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reviewCount": {
+                "type": "number"
+              },
+              "mode": {
+                "type": "string",
+                "enum": [
+                  "CONTACT",
+                  "ORDER"
+                ]
+              },
+              "badges": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "enum": [
+                    "VALIDATED",
+                    "TOP_SELLER",
+                    "CERTIFIED_BIO"
+                  ]
+                }
+              },
+              "isOpen": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "shopName",
+              "distance",
+              "rating",
+              "reviewCount",
+              "mode",
+              "badges",
+              "isOpen"
+            ],
+            "additionalProperties": false
+          },
+          "product": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "name": {
+                "type": "string"
+              },
+              "photo": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "pricePerUnit": {
+                "type": "number"
+              },
+              "unit": {
+                "type": "string"
+              },
+              "inStock": {
+                "type": "boolean"
+              },
+              "promotionalPrice": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "id",
+              "name",
+              "photo",
+              "pricePerUnit",
+              "unit",
+              "inStock",
+              "promotionalPrice"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "supplier",
+          "product"
+        ],
+        "additionalProperties": false,
+        "title": "SearchResult"
+      },
+      "AutocompleteResponse": {
+        "type": "object",
+        "properties": {
+          "suggestions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "text": {
+                  "type": "string"
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "product",
+                    "category",
+                    "supplier"
+                  ]
+                },
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              },
+              "required": [
+                "text",
+                "type"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "suggestions"
+        ],
+        "additionalProperties": false,
+        "title": "AutocompleteResponse"
+      },
+      "CategoriesResponse": {
+        "type": "object",
+        "properties": {
+          "categories": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "id": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "name": {
+                  "type": "string"
+                },
+                "slug": {
+                  "type": "string"
+                },
+                "icon": {
+                  "type": "string"
+                },
+                "productCount": {
+                  "type": "number"
+                }
+              },
+              "required": [
+                "id",
+                "name",
+                "slug",
+                "icon",
+                "productCount"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "categories"
+        ],
+        "additionalProperties": false,
+        "title": "CategoriesResponse"
+      },
+      "ValidationAction": {
+        "type": "string",
+        "enum": [
+          "VALIDATE",
+          "REJECT",
+          "REQUEST_COMPLEMENT"
+        ],
+        "title": "ValidationAction",
+        "description": "Action to take on a supplier validation request"
+      },
+      "ReportResolveAction": {
+        "type": "string",
+        "enum": [
+          "DELETE_CONTENT",
+          "WARN_AUTHOR",
+          "DISMISS"
+        ],
+        "title": "ReportResolveAction",
+        "description": "Action to take when resolving a content report"
+      },
+      "DisputeResolution": {
+        "type": "string",
+        "enum": [
+          "REFUND_BUYER",
+          "PAY_SUPPLIER",
+          "PARTIAL_REFUND"
+        ],
+        "title": "DisputeResolution",
+        "description": "Resolution outcome for a dispute"
+      },
       "AiCoreMessage": {
         "type": "object",
         "properties": {
@@ -3166,22 +8234,43 @@
           "telemetry": {
             "type": "object",
             "properties": {
-              "langfuseTraceName": {
+              "traceMode": {
+                "description": "Trace strategy. Use \"inherit\" to keep the active OTEL trace, or \"split\" to create a new (Langfuse) trace for this LLM call.",
                 "type": "string",
-                "description": "This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI."
+                "enum": [
+                  "inherit",
+                  "split"
+                ]
+              },
+              "traceId": {
+                "description": "Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.",
+                "type": "string"
+              },
+              "traceName": {
+                "description": "Display name used as root span name for the Langfuse trace. This does not control grouping.",
+                "type": "string"
+              },
+              "spanName": {
+                "description": "Name for the LLM span. This is forwarded to Vercel telemetry as functionId.",
+                "type": "string"
+              },
+              "sessionId": {
+                "description": "Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).",
+                "type": "string"
+              },
+              "metadata": {
+                "description": "Telemetry metadata attached to (Langfuse) trace/span.",
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {}
               },
               "langfuseOriginalPrompt": {
                 "description": "The original prompt that was used to generate the response. (Use prompt.toJSON())",
                 "type": "string"
-              },
-              "functionId": {
-                "description": "This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.",
-                "type": "string"
               }
             },
-            "required": [
-              "langfuseTraceName"
-            ],
             "additionalProperties": false
           },
           "metadata": {
@@ -3309,6 +8398,260 @@
       },
       "CommentsController_postSlug": {
         "type": "string"
+      },
+      "MobileOperator": {
+        "type": "string",
+        "enum": [
+          "MTN",
+          "MOOV",
+          "ORANGE"
+        ],
+        "title": "MobileOperator",
+        "description": "Mobile money operator"
+      },
+      "SupplierType": {
+        "type": "string",
+        "enum": [
+          "INPUTS",
+          "TRANSFORMER"
+        ],
+        "title": "SupplierType",
+        "description": "Type of supplier activity"
+      },
+      "SupplierMode": {
+        "type": "string",
+        "enum": [
+          "CONTACT",
+          "ORDER"
+        ],
+        "title": "SupplierMode",
+        "description": "How buyers interact with this supplier"
+      },
+      "OpeningHours": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "enum": [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+          ]
+        },
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "open": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$"
+            },
+            "close": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$"
+            },
+            "closed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "open",
+            "close"
+          ],
+          "additionalProperties": false
+        },
+        "required": [
+          "monday",
+          "tuesday",
+          "wednesday",
+          "thursday",
+          "friday",
+          "saturday",
+          "sunday"
+        ],
+        "title": "OpeningHours",
+        "description": "Weekly opening hours with days as keys"
+      },
+      "PickupMode": {
+        "type": "string",
+        "enum": [
+          "ON_SITE",
+          "DELIVERY"
+        ],
+        "title": "PickupMode",
+        "description": "How the buyer will receive the order"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "FEDAPAY",
+          "CASH_ON_DELIVERY"
+        ],
+        "title": "PaymentMethod",
+        "description": "Payment method for the order"
+      },
+      "OrderItemInput": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "productId",
+          "quantity"
+        ],
+        "additionalProperties": false,
+        "title": "OrderItemInput",
+        "description": "A single item in the order"
+      },
+      "ProductUnit": {
+        "type": "string",
+        "enum": [
+          "KG",
+          "LITER",
+          "SACHET",
+          "PIECE",
+          "LOT"
+        ],
+        "title": "ProductUnit",
+        "description": "Unit of measurement for products"
+      },
+      "ProductStatus": {
+        "default": "ACTIVE",
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "OUT_OF_STOCK",
+          "HIDDEN"
+        ],
+        "title": "ProductStatus",
+        "description": "Product visibility and availability status"
+      },
+      "SearchProductsQuery": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "radius": {
+            "default": 10000,
+            "type": "number"
+          },
+          "category": {
+            "type": "string"
+          },
+          "maxPrice": {
+            "type": "number"
+          },
+          "inStockOnly": {
+            "default": "true",
+            "description": "Filter in-stock only",
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ]
+          },
+          "minRating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "CONTACT",
+              "ORDER"
+            ]
+          },
+          "validatedOnly": {
+            "default": "false",
+            "description": "Filter validated suppliers only",
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ]
+          },
+          "sortBy": {
+            "default": "distance",
+            "type": "string",
+            "enum": [
+              "distance",
+              "rating",
+              "price"
+            ]
+          },
+          "page": {
+            "default": 1,
+            "type": "number"
+          },
+          "limit": {
+            "default": 20,
+            "type": "number",
+            "maximum": 50
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude",
+          "radius",
+          "inStockOnly",
+          "validatedOnly",
+          "sortBy",
+          "page",
+          "limit"
+        ],
+        "additionalProperties": false,
+        "title": "SearchProductsQuery",
+        "description": "Geolocation-based product search"
+      },
+      "AutocompleteQuery": {
+        "type": "object",
+        "properties": {
+          "q": {
+            "type": "string",
+            "minLength": 2
+          },
+          "latitude": {
+            "type": "number"
+          },
+          "longitude": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "q",
+          "latitude",
+          "longitude"
+        ],
+        "additionalProperties": false,
+        "title": "AutocompleteQuery"
       },
       "CommentsController_getComments_filterItem": {
         "type": "object",

@@ -1,0 +1,67 @@
+// eslint-disable-next-line ts/ban-ts-comment
+// @ts-nocheck
+import {
+  DMSerifDisplay_400Regular,
+} from '@expo-google-fonts/dm-serif-display'
+import {
+  JetBrainsMono_500Medium,
+} from '@expo-google-fonts/jetbrains-mono'
+import {
+  PlusJakartaSans_400Regular,
+  PlusJakartaSans_500Medium,
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+} from '@expo-google-fonts/plus-jakarta-sans'
+import { useFonts } from 'expo-font'
+import * as SplashScreen from 'expo-splash-screen'
+import { StatusBar } from 'expo-status-bar'
+import { useCallback, useState } from 'react'
+import { ActivityIndicator, View } from 'react-native'
+import { SafeAreaProvider } from 'react-native-safe-area-context'
+import { AppNavigation } from './src/app/navigation'
+import { CartProvider } from './src/features/cart/cart-context'
+import { AnimatedSplash } from './src/features/common/components/animated-splash'
+import { ThemeProvider } from './src/theme/theme-context'
+import { colors } from './src/theme/theme'
+
+SplashScreen.preventAutoHideAsync()
+
+export default function App(): React.JSX.Element | null {
+  const [showSplash, setShowSplash] = useState(true)
+  const [fontsLoaded] = useFonts({
+    DMSerifDisplay_400Regular,
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    JetBrainsMono_500Medium,
+  })
+
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsLoaded) {
+      await SplashScreen.hideAsync()
+    }
+  }, [fontsLoaded])
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.neutral[0] }}>
+        <ActivityIndicator size="large" color={colors.green[400]} />
+      </View>
+    )
+  }
+
+  return (
+    <ThemeProvider>
+      <CartProvider>
+        <SafeAreaProvider onLayout={onLayoutRootView}>
+          <AppNavigation />
+          <StatusBar style="auto" />
+          {showSplash && (
+            <AnimatedSplash onFinish={() => setShowSplash(false)} />
+          )}
+        </SafeAreaProvider>
+      </CartProvider>
+    </ThemeProvider>
+  )
+}

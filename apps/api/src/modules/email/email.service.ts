@@ -1,12 +1,20 @@
 import { Injectable, Logger } from '@nestjs/common'
 import { createTransport, Transporter } from 'nodemailer'
 import { config } from '../../config/env.config'
+import { EmailTemplateService, TemplateName } from './email-template.service'
 
 export interface EmailOptions {
   to: string
   subject: string
   content: string
   html?: string
+}
+
+export interface TemplatedEmailOptions {
+  to: string
+  subject: string
+  template: TemplateName
+  data: Record<string, unknown>
 }
 
 interface SmtpConfig {
@@ -24,7 +32,9 @@ export class EmailService {
   private readonly logger = new Logger(EmailService.name)
   private transporter: Transporter
 
-  constructor() {
+  constructor(
+    private readonly templateService: EmailTemplateService,
+  ) {
     const transportConfig: SmtpConfig = {
       host: config.email.host,
       port: config.email.port,
@@ -65,6 +75,22 @@ export class EmailService {
       this.logger.error(`Failed to send email to ${to}:`, error)
       throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
+  }
+
+  async sendTemplatedEmail({
+    to,
+    subject,
+    template,
+    data,
+  }: TemplatedEmailOptions): Promise<void> {
+    const html = await this.templateService.render(template, data, subject)
+
+    return this.sendEmail({
+      to,
+      subject,
+      content: subject,
+      html,
+    })
   }
 
   async verifyConnection(): Promise<boolean> {

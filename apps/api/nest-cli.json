@@ -5,6 +5,12 @@
   "compilerOptions": {
     "deleteOutDir": true,
     "webpack": false,
-    "builder": "swc"
+    "builder": "swc",
+    "assets": [
+      {
+        "include": "modules/email/templates/**/*.ejs",
+        "watchAssets": true
+      }
+    ]
   }
 }

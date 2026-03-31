@@ -16,6 +16,8 @@ import {
 } from '@nestjs/core'
 import { toNodeHandler } from 'better-auth/node'
 import { createAuthMiddleware } from 'better-auth/plugins'
+import { OtpService } from '../../common/otp.service'
+import { SmsService } from '../../common/sms.service'
 import { createBetterAuth } from '../../config/better-auth.config'
 import { config } from '../../config/env.config'
 import { EmailModule } from '../email/email.module'
@@ -25,15 +27,23 @@ import { AuthModuleOptions, ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from
 import { Account, Session, User, Verification } from './auth.entity'
 import { AuthGuard } from './auth.guard'
 import { AuthService } from './auth.service'
+import { Permission } from './entities/permission.entity'
+import { Role } from './entities/role.entity'
+import { OtpAuthController } from './otp-auth.controller'
+import { OtpAuthService } from './otp-auth.service'
 
 @Global()
 @Module({
   imports: [
     DiscoveryModule,
     EmailModule,
-    MikroOrmModule.forFeature([User, Session, Account, Verification]),
+    MikroOrmModule.forFeature([User, Session, Account, Verification, Role, Permission]),
   ],
+  controllers: [OtpAuthController],
   providers: [
+    SmsService,
+    OtpService,
+    OtpAuthService,
     {
       provide: MODULE_OPTIONS_TOKEN,
       useFactory: (emailService: EmailService): AuthModuleOptions => {
@@ -43,19 +53,21 @@ import { AuthService } from './auth.service'
           trustedOrigins: config.betterAuth.trustedOrigins,
           connectionStringUrl: config.database.connectionStringUrl,
           sendResetPassword: async (data) => {
-            const webUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`
-            return emailService.sendEmail({
+            const resetUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`
+            return emailService.sendTemplatedEmail({
               to: data.user.email,
-              subject: 'Reset your password',
-              content: `Hello ${data.user.name}, please reset your password with the link below:<br/>Web app: <a href="${webUrl}">${webUrl}</a>`,
+              subject: 'Réinitialisation de votre mot de passe',
+              template: 'reset-password',
+              data: { userName: data.user.name, resetUrl },
             })
           },
           sendVerificationEmail: async (data) => {
-            const url = `${config.clients.webApp.url}/verify-email?token=${data.token}`
-            return emailService.sendEmail({
+            const verifyUrl = `${config.clients.webApp.url}/verify-email?token=${data.token}`
+            return emailService.sendTemplatedEmail({
               to: data.user.email,
-              subject: 'Verify your email',
-              content: `Hello ${data.user.name}, please verify your email by clicking on the link below: <a href="${url}">${url}</a>`,
+              subject: 'Vérifiez votre adresse e-mail',
+              template: 'verify-email',
+              data: { userName: data.user.name, verifyUrl },
             })
           },
         })

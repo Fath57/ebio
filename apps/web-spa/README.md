@@ -80,7 +80,7 @@ In a SPA, environment variables must be defined at build time as they are integr
 
 ```bash
 # At the project root
-docker build -t lonestone/web-spa \
+docker build -t ebio/web-spa \
   --build-arg VITE_API_URL=https://api.example.com \
   -f apps/web-spa/Dockerfile .
 ```
@@ -88,7 +88,7 @@ docker build -t lonestone/web-spa \
 ### Running the Container
 
 ```bash
-docker run -p 80:80 lonestone/web-spa
+docker run -p 80:80 ebio/web-spa
 ```
 
 ### Runtime Variable Replacement
@@ -98,7 +98,7 @@ If you need to replace certain environment variables without rebuilding the imag
 ```bash
 docker run -p 80:80 \
   -e VITE_API_URL=https://api-staging.example.com \
-  lonestone/web-spa
+  ebio/web-spa
 ```
 
 > **Important**: This mechanism works by searching for placeholders like `%VITE_API_URL%` in JavaScript files and replacing them with the provided values. For this to work, your code must use these placeholders.

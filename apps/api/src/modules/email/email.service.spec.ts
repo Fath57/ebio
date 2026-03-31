@@ -1,5 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing'
 import { Transporter } from 'nodemailer'
+import { EmailTemplateService } from './email-template.service'
 import { EmailService } from './email.service'
 
 describe('emailService', () => {
@@ -8,7 +9,10 @@ describe('emailService', () => {
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
-      providers: [EmailService],
+      providers: [
+        EmailTemplateService,
+        EmailService,
+      ],
     }).compile()
 
     service = module.get<EmailService>(EmailService)

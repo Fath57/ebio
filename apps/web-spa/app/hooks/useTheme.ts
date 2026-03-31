@@ -1,29 +1,69 @@
-import { useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
-type Theme = 'light' | 'dark'
+export type Theme = 'light' | 'dark' | 'system'
+export type ResolvedTheme = 'light' | 'dark'
 
 const THEME_STORAGE_KEY = 'app-theme'
 
-function getThemeFromLocalStorage(): Theme {
-  return (localStorage.getItem(THEME_STORAGE_KEY) as Theme) || 'dark'
-};
+function getStoredTheme(): Theme {
+  if (typeof window === 'undefined') return 'system'
+  return (localStorage.getItem(THEME_STORAGE_KEY) as Theme) || 'system'
+}
 
-function subscribe(callback: () => void): (() => void) {
-  window.addEventListener('storage', callback)
+function getSystemTheme(): ResolvedTheme {
+  if (typeof window === 'undefined') return 'light'
+  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+}
+
+export function resolveTheme(theme: Theme): ResolvedTheme {
+  return theme === 'system' ? getSystemTheme() : theme
+}
+
+const listeners = new Set<() => void>()
+
+function emitChange() {
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+function subscribe(callback: () => void): () => void {
+  listeners.add(callback)
+
+  // Also listen to system theme changes for 'system' mode
+  const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)')
+  const handleMediaChange = () => emitChange()
+  mediaQuery.addEventListener('change', handleMediaChange)
+
+  // Listen to storage events (cross-tab)
+  const handleStorage = (e: StorageEvent) => {
+    if (e.key === THEME_STORAGE_KEY) emitChange()
+  }
+  window.addEventListener('storage', handleStorage)
+
   return () => {
-    window.removeEventListener('storage', callback)
+    listeners.delete(callback)
+    mediaQuery.removeEventListener('change', handleMediaChange)
+    window.removeEventListener('storage', handleStorage)
   }
-};
+}
 
-function useTheme(): [Theme, (newTheme: Theme) => void] {
-  const theme = useSyncExternalStore(subscribe, getThemeFromLocalStorage, () => 'dark' as Theme)
+function getSnapshot(): Theme {
+  return getStoredTheme()
+}
 
-  const setTheme = (newTheme: Theme) => {
+function getServerSnapshot(): Theme {
+  return 'system'
+}
+
+export default function useTheme(): [Theme, ResolvedTheme, (newTheme: Theme) => void] {
+  const theme = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
+  const resolved = resolveTheme(theme)
+
+  const setTheme = useCallback((newTheme: Theme) => {
     localStorage.setItem(THEME_STORAGE_KEY, newTheme)
-    window.dispatchEvent(new Event('storage'))
-  }
+    emitChange()
+  }, [])
 
-  return [theme, setTheme]
-};
-
-export default useTheme
+  return [theme, resolved, setTheme]
+}

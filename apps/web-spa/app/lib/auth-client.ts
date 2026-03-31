@@ -1,7 +1,7 @@
 // eslint-disable-next-line ts/ban-ts-comment -- ignore
 // @ts-ignore
 import type { BetterAuthType } from '../../../api/src/config/better-auth.config'
-import { customSessionClient, inferAdditionalFields } from 'better-auth/client/plugins'
+import { customSessionClient, inferAdditionalFields, phoneNumberClient, twoFactorClient } from 'better-auth/client/plugins'
 import { createAuthClient } from 'better-auth/react' // make sure to import from better-auth/react
 
 const authClient = createAuthClient({
@@ -11,6 +11,8 @@ const authClient = createAuthClient({
     customSessionClient<BetterAuthType>(),
     // If additional fields have been added to BetterAuth, we infer them
     inferAdditionalFields<BetterAuthType>(),
+    twoFactorClient(),
+    phoneNumberClient(),
   ],
 })
 

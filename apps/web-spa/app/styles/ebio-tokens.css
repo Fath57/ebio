@@ -1,0 +1,122 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+:root {
+  --ebio-green-50: #EDFAF2;
+  --ebio-green-100: #C6F0D8;
+  --ebio-green-200: #8EE0B2;
+  --ebio-green-400: #2CB878;
+  --ebio-green-600: #1A8757;
+  --ebio-green-800: #0E5435;
+  --ebio-green-900: #072B1B;
+
+  --ebio-earth-50: #FAF5ED;
+  --ebio-earth-400: #C07B2A;
+  --ebio-earth-600: #8A5518;
+  --ebio-earth-800: #543310;
+
+  --ebio-sky-400: #4AA8F5;
+  --ebio-sky-600: #1A7DD4;
+  --ebio-sky-800: #0A4A8A;
+
+  --ebio-coral-400: #F06040;
+  --ebio-coral-600: #B83820;
+
+  --ebio-neutral-0: #FFFFFF;
+  --ebio-neutral-50: #F7F6F2;
+  --ebio-neutral-100: #EDECEA;
+  --ebio-neutral-200: #D5D3CE;
+  --ebio-neutral-400: #9B9890;
+  --ebio-neutral-600: #5A5852;
+  --ebio-neutral-800: #2A2924;
+  --ebio-neutral-900: #141410;
+
+  --bg-page: #FFFFFF;
+  --bg-surface: #F7F6F2;
+  --bg-card: #FFFFFF;
+  --text-primary: #2A2924;
+  --text-secondary: #5A5852;
+  --text-tertiary: #9B9890;
+  --border-light: #D5D3CE;
+  --border-normal: #D5D3CE;
+  --color-primary: #2CB878;
+  --text-primary-color: #1A8757;
+  --bg-primary-light: #EDFAF2;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-page: #141410;
+    --bg-surface: #2A2924;
+    --bg-card: #2A2924;
+    --text-primary: #F7F6F2;
+    --text-secondary: #D5D3CE;
+    --text-tertiary: #9B9890;
+    --border-light: #2A2924;
+    --border-normal: #5A5852;
+    --color-primary: #2CB878;
+    --text-primary-color: #8EE0B2;
+    --bg-primary-light: #072B1B;
+  }
+}
+
+/* eBio Tailwind v4 theme tokens */
+@theme inline {
+  /* Colors — eBio Green */
+  --color-ebio-green-50: #EDFAF2;
+  --color-ebio-green-100: #C6F0D8;
+  --color-ebio-green-200: #8EE0B2;
+  --color-ebio-green-400: #2CB878;
+  --color-ebio-green-600: #1A8757;
+  --color-ebio-green-800: #0E5435;
+  --color-ebio-green-900: #072B1B;
+
+  /* Colors — eBio Earth */
+  --color-ebio-earth-50: #FAF5ED;
+  --color-ebio-earth-100: #F0E0C2;
+  --color-ebio-earth-200: #DFB97A;
+  --color-ebio-earth-400: #C07B2A;
+  --color-ebio-earth-600: #8A5518;
+  --color-ebio-earth-800: #543310;
+  --color-ebio-earth-900: #2C1A07;
+
+  /* Colors — eBio Sky */
+  --color-ebio-sky-50: #EDF6FF;
+  --color-ebio-sky-100: #C5E3FF;
+  --color-ebio-sky-200: #88C5F8;
+  --color-ebio-sky-400: #4AA8F5;
+  --color-ebio-sky-600: #1A7DD4;
+  --color-ebio-sky-800: #0A4A8A;
+  --color-ebio-sky-900: #062B55;
+
+  /* Colors — eBio Coral */
+  --color-ebio-coral-50: #FFF0EC;
+  --color-ebio-coral-100: #FFD8CC;
+  --color-ebio-coral-200: #FFAD94;
+  --color-ebio-coral-400: #F06040;
+  --color-ebio-coral-600: #B83820;
+  --color-ebio-coral-800: #6F2010;
+  --color-ebio-coral-900: #3A100A;
+
+  /* Colors — eBio Neutral */
+  --color-ebio-neutral-0: #FFFFFF;
+  --color-ebio-neutral-50: #F7F6F2;
+  --color-ebio-neutral-100: #EDECEA;
+  --color-ebio-neutral-200: #D5D3CE;
+  --color-ebio-neutral-400: #9B9890;
+  --color-ebio-neutral-600: #5A5852;
+  --color-ebio-neutral-800: #2A2924;
+  --color-ebio-neutral-900: #141410;
+
+  /* Font families */
+  --font-display: 'DM Serif Display', Georgia, serif;
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  /* Border radius */
+  --radius-xs: 4px;
+  --radius-ebio-sm: 8px;
+  --radius-ebio-md: 10px;
+  --radius-ebio-lg: 12px;
+  --radius-ebio-xl: 16px;
+  --radius-pill: 99px;
+}

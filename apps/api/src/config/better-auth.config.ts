@@ -64,7 +64,22 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     databaseHooks: options.databaseHooks,
     advanced: {
       database: {
-        generateId: false, // Fix pour Better Auth 1.2.7 - nouvelle syntaxe
+        generateId: false,
+      },
+    },
+    user: {
+      modelName: 'users',
+      additionalFields: {
+        role: {
+          type: 'string',
+          defaultValue: 'BUYER',
+          input: false,
+        },
+        phone: {
+          type: 'string',
+          required: false,
+          input: false,
+        },
       },
     },
     rateLimit: {

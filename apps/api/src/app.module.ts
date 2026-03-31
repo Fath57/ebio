@@ -6,11 +6,26 @@ import { APP_FILTER } from '@nestjs/core'
 import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
+import { AdminModule } from './modules/admin/admin.module'
 import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
+import { RolesModule } from './modules/auth/roles/roles.module'
+import { ChatModule } from './modules/chat/chat.module'
+import { CommunityModule } from './modules/community/community.module'
 import { DbModule } from './modules/db/db.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
+import { MediaModule } from './modules/media/media.module'
+import { NotificationsModule } from './modules/notifications/notifications.module'
+import { OrdersModule } from './modules/orders/orders.module'
+import { PaymentsModule } from './modules/payments/payments.module'
+import { ProductsModule } from './modules/products/products.module'
+import { RatingsModule } from './modules/ratings/ratings.module'
+import { SearchModule } from './modules/search/search.module'
+import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module'
+import { SuppliersModule } from './modules/suppliers/suppliers.module'
+import { TrainingModule } from './modules/training/training.module'
+import { UsersModule } from './modules/users/users.module'
 
 // Interface étendue pour les requêtes Express
 interface ExpressRequest extends IncomingMessage {
@@ -96,6 +111,21 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     AiModule,
     NestConfigModule,
     ExampleModule,
+    SearchModule,
+    SuppliersModule,
+    ProductsModule,
+    OrdersModule,
+    PaymentsModule,
+    ChatModule,
+    RatingsModule,
+    CommunityModule,
+    TrainingModule,
+    SubscriptionsModule,
+    AdminModule,
+    RolesModule,
+    UsersModule,
+    MediaModule,
+    NotificationsModule,
   ],
   controllers: [AppController],
   providers: [{

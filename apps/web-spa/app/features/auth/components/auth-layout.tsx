@@ -12,7 +12,7 @@ export default function AuthLayout() {
             <div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
               <AnvilIcon className="size-4" />
             </div>
-            Lonestone
+            eBio
           </a>
         </div>
         <div className="flex flex-1 items-center justify-center">

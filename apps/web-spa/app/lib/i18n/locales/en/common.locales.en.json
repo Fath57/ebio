@@ -11,10 +11,10 @@
   "auth": {
     "login": {
       "title": "Sign in",
-      "description": "Enter your email and password to sign in.",
+      "description": "Sign in to your account",
       "email": "Email",
       "password": "Password",
-      "forgotPassword": "Forgot your password?",
+      "forgotPassword": "Forgot password?",
       "signIn": "Sign in",
       "noAccount": "Don't have an account?",
       "signUp": "Sign up",
@@ -24,8 +24,8 @@
     },
     "register": {
       "title": "Register",
-      "description": "Create an account to get started.",
-      "name": "Name",
+      "description": "Create your eBio account",
+      "name": "Full name",
       "email": "Email",
       "password": "Password",
       "confirmPassword": "Confirm password",
@@ -34,7 +34,7 @@
       "login": "Sign in",
       "success": {
         "title": "Registration successful",
-        "description": "Check your email for the activation link."
+        "description": "Check your email to activate your account."
       },
       "backToLogin": "Back to sign in",
       "registrationSuccessful": "Registration successful",
@@ -50,9 +50,9 @@
     },
     "resetPassword": {
       "title": "Reset password",
-      "description": "Enter your new password.",
+      "description": "Choose a new password.",
       "password": "New password",
-      "confirmPassword": "Confirm new password",
+      "confirmPassword": "Confirm password",
       "reset": "Reset",
       "backToLogin": "Back to sign in"
     },
@@ -61,14 +61,37 @@
       "description": "Check your email to activate your account.",
       "verifying": "Verifying email",
       "verified": "Email verified",
-      "redirecting": "Redirecting to sign in...",
+      "redirecting": "Redirecting...",
       "pleaseWait": "Please wait...",
       "redirectNow": "Redirect now"
+    },
+    "supplierLogin": {
+      "title": "Supplier Portal",
+      "description": "Sign in to your supplier portal",
+      "phone": "Phone number",
+      "sendOtp": "Send code",
+      "otpCode": "Verification code",
+      "otpSent": "Code sent by SMS",
+      "verify": "Verify",
+      "error": "Login error",
+      "loggedInSuccess": "Successfully signed in"
+    },
+    "adminLogin": {
+      "title": "eBio Administration",
+      "description": "Sign in to the administration panel",
+      "email": "Email",
+      "password": "Password",
+      "continue": "Continue",
+      "otpCode": "OTP code",
+      "otpSent": "Code sent by email",
+      "verify": "Verify",
+      "error": "Login error",
+      "loggedInSuccess": "Successfully signed in"
     }
   },
   "dashboard": {
     "title": "Dashboard",
-    "brand": "Lonestone - Dashboard",
+    "brand": "eBio",
     "newPost": "New post",
     "ai": "AI",
     "userMenu": "User menu",
@@ -97,5 +120,575 @@
       "created": "Created!",
       "error": "An error occurred while creating the post"
     }
+  },
+  "common": {
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "edit": "Edit",
+    "save": "Save",
+    "saving": "Saving...",
+    "view": "View",
+    "delete": "Delete",
+    "back": "Back",
+    "error": "An error occurred",
+    "retry": "Retry",
+    "unauthorized": {
+      "title": "Unauthorized",
+      "description": "You do not have permission to access this page.",
+      "backHome": "Back to home"
+    }
+  },
+  "userRoles": {
+    "BUYER": "Buyer",
+    "SUPPLIER": "Supplier",
+    "ADMIN": "Administrator",
+    "SUPER_ADMIN": "Super Administrator"
+  },
+  "nav": {
+    "account": "My account",
+    "analytics": "Analytics",
+    "catalogue": "Catalogue",
+    "categories": "Categories",
+    "dashboard": "Dashboard",
+    "logout": "Log out",
+    "moderation": "Moderation",
+    "notifications": "Notifications",
+    "orders": "Orders",
+    "roles": "Roles",
+    "settings": "Settings",
+    "subscription": "Subscription",
+    "themeLight": "Light mode",
+    "themeDark": "Dark mode",
+    "themeSystem": "System theme",
+    "transactions": "Transactions",
+    "validations": "Validations"
+  },
+  "catalog": {
+    "title": "My Catalogue",
+    "description": "Manage your products and inventory",
+    "addProduct": "Add product",
+    "addFirstProduct": "Add your first product",
+    "addProductDescription": "Fill in your product details to make it visible to buyers.",
+    "editProduct": "Edit product",
+    "editProductDescription": "Update your product information.",
+    "products": "products",
+    "promo": "Promo",
+    "deleteConfirm": "Delete this product?",
+    "deleteWarning": "The product will be hidden and no longer visible in your catalogue. This action is reversible.",
+    "deleteSuccess": "Product deleted",
+    "deleteError": "Failed to delete product",
+    "currency": "FCFA",
+    "empty": {
+      "title": "No products",
+      "description": "Start by adding your first product to your catalogue."
+    },
+    "categories": {
+      "fruits": "Fruits",
+      "vegetables": "Vegetables",
+      "dairy": "Dairy",
+      "meat": "Meat",
+      "bakery": "Bakery",
+      "other": "Other"
+    },
+    "columns": {
+      "photo": "Photo",
+      "name": "Name",
+      "category": "Category",
+      "price": "Price",
+      "stock": "Stock",
+      "status": "Status",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "form": {
+      "name": "Product name",
+      "namePlaceholder": "E.g. Organic palm oil",
+      "category": "Category",
+      "categoryPlaceholder": "Choose a category",
+      "pricePerUnit": "Price per unit (FCFA)",
+      "unit": "Unit",
+      "stock": "Stock",
+      "stockAlertThreshold": "Stock alert threshold",
+      "stockAlertDescription": "You will be notified when stock falls below this threshold",
+      "status": "Status",
+      "description": "Description",
+      "descriptionPlaceholder": "Describe your product...",
+      "photos": "Product photos",
+      "photosDescription": "Add up to 3 photos (JPEG, PNG, WebP)",
+      "addPhoto": "Add",
+      "stepInfo": "Information",
+      "stepPricing": "Price & Stock",
+      "stepExtras": "Variants & Promo",
+      "processing": "Processing...",
+      "variants": "Variants",
+      "variantsDescription": "Offer different packaging options (e.g. 0.5L, 1L, 5L)",
+      "addVariant": "Add variant",
+      "variantLabel": "Label",
+      "variantPrice": "Price (FCFA)",
+      "variantStock": "Stock",
+      "promotion": "Promotion",
+      "promotionDescription": "Apply a temporary promotional price",
+      "promotionalPrice": "Promo price (FCFA)",
+      "promotionExpiry": "Expiry date",
+      "create": "Create product",
+      "createSuccess": "Product created successfully",
+      "createError": "Failed to create product",
+      "update": "Update",
+      "updateSuccess": "Product updated successfully",
+      "updateError": "Failed to update product"
+    },
+    "units": {
+      "kg": "Kilogram",
+      "liter": "Liter",
+      "sachet": "Sachet",
+      "piece": "Piece",
+      "lot": "Lot"
+    },
+    "status": {
+      "inStock": "In stock",
+      "outOfStock": "Out of stock",
+      "lowStock": "Low stock",
+      "active": "Active",
+      "hidden": "Hidden"
+    },
+    "detail": {
+      "notFound": "Product not found",
+      "created": "Created",
+      "updated": "Updated",
+      "inStock": "In stock",
+      "until": "until",
+      "standard": "Standard",
+      "editProduct": "Edit this product",
+      "orders": "Orders",
+      "sold": "Sold",
+      "revenue": "Revenue"
+    }
+  },
+  "orders": {
+    "title": "Orders",
+    "description": "Manage your current orders",
+    "currency": "FCFA",
+    "filterByStatus": "Filter by status",
+    "empty": {
+      "title": "No orders",
+      "description": "Your customer orders will appear here."
+    },
+    "columns": {
+      "reference": "Reference",
+      "buyer": "Buyer",
+      "total": "Total",
+      "status": "Status",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "all": "All",
+      "PLACED": "Placed",
+      "ACCEPTED": "Accepted",
+      "PREPARING": "Preparing",
+      "READY": "Ready",
+      "IN_DELIVERY": "In delivery",
+      "DELIVERED": "Delivered",
+      "CANCELLED": "Cancelled",
+      "DISPUTED": "Disputed"
+    },
+    "actions": {
+      "accept": "Accept",
+      "reject": "Reject",
+      "startPreparing": "Start preparing",
+      "markReady": "Ready",
+      "markInDelivery": "Send for delivery",
+      "markDelivered": "Delivered"
+    },
+    "detail": {
+      "title": "Order detail",
+      "order": "Order",
+      "buyerInfo": "Buyer information",
+      "buyerName": "Name",
+      "buyerEmail": "Email",
+      "buyerPhone": "Phone",
+      "items": "Items",
+      "total": "Total",
+      "timeline": "Timeline",
+      "pickupMode": "Pickup mode",
+      "onSite": "On site",
+      "delivery": "Delivery",
+      "deliveryAddress": "Delivery address",
+      "deliverySlot": "Delivery slot",
+      "paymentMethod": "Payment method",
+      "fedapay": "FedaPay",
+      "cashOnDelivery": "Cash on delivery",
+      "financialSummary": "Financial summary",
+      "subtotal": "Subtotal",
+      "commission": "Commission",
+      "confirmAccept": "Confirm acceptance",
+      "confirmAcceptDesc": "Do you want to accept this order?",
+      "confirmReject": "Confirm rejection",
+      "confirmRejectDesc": "Please provide a reason for rejection.",
+      "rejectReason": "Rejection reason",
+      "rejectReasonPlaceholder": "Describe the reason for rejection...",
+      "acceptSuccess": "Order accepted",
+      "rejectSuccess": "Order rejected",
+      "statusUpdateSuccess": "Status updated",
+      "actionError": "An error occurred",
+      "orderPlaced": "Order placed",
+      "orderAccepted": "Order accepted",
+      "orderDelivered": "Order delivered",
+      "escrowReleased": "Payment released",
+      "statusTimeline": "Order tracking",
+      "product": "Product",
+      "quantity": "Quantity",
+      "unitPrice": "Unit price",
+      "createdAt": "Created on"
+    }
+  },
+  "analytics": {
+    "title": "Analytics",
+    "description": "Track your shop performance",
+    "revenue": "Revenue",
+    "ordersCount": "Orders count",
+    "averageOrder": "Average order",
+    "currency": "FCFA",
+    "topProducts": "Top selling products",
+    "ratingsOverview": "Ratings overview",
+    "reviews": "Reviews",
+    "columns": {
+      "product": "Product",
+      "quantitySold": "Quantity sold",
+      "revenue": "Revenue"
+    }
+  },
+  "subscriptions": {
+    "title": "My Subscription",
+    "description": "Manage your eBio subscription plan",
+    "currentPlan": "Current plan",
+    "current": "Current",
+    "renewalDate": "Renewal date",
+    "availablePlans": "Available plans",
+    "upgrade": "Upgrade",
+    "cancelPlan": "Cancel plan",
+    "confirmUpgrade": "Confirm upgrade",
+    "confirmUpgradeDescription": "You are about to upgrade to the selected plan.",
+    "confirmCancel": "Confirm cancellation",
+    "confirmCancelDescription": "Your subscription will be cancelled at the end of the current period.",
+    "price": "Price",
+    "currency": "FCFA",
+    "month": "/month"
+  },
+  "profile": {
+    "title": "My Profile",
+    "description": "Manage your personal information",
+    "personalInfo": "Personal information",
+    "coverPhoto": "Cover photo",
+    "changeCover": "Change",
+    "roles": {
+      "BUYER": "Buyer",
+      "SUPPLIER": "Supplier",
+      "ADMIN": "Administrator"
+    },
+    "form": {
+      "name": "Full name",
+      "namePlaceholder": "Your name",
+      "email": "Email address",
+      "emailPlaceholder": "name@example.com",
+      "phone": "Phone",
+      "phonePlaceholder": "+229 XX XX XX XX XX"
+    },
+    "toast": {
+      "updated": "Profile updated",
+      "error": "Failed to update profile",
+      "photoUpdated": "Photo updated",
+      "coverUpdated": "Cover photo updated",
+      "photoError": "Failed to upload photo"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Manage your profile and shop settings",
+    "tabs": {
+      "profile": "Profile",
+      "shop": "Shop"
+    },
+    "shopInfo": {
+      "title": "Shop information",
+      "description": "This information is visible to buyers",
+      "shopName": "Shop name",
+      "shopNamePlaceholder": "My Organic Shop",
+      "address": "Address",
+      "addressPlaceholder": "Street, City",
+      "neighborhood": "Neighborhood",
+      "neighborhoodPlaceholder": "E.g. Downtown",
+      "mobileMoneyNumber": "Mobile Money number",
+      "mobileMoneyPlaceholder": "+229 XX XX XX XX XX"
+    },
+    "openingHours": {
+      "title": "Opening hours",
+      "description": "Set your hours for each day of the week",
+      "closed": "Closed",
+      "open": "Open",
+      "to": "to",
+      "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
+      }
+    },
+    "deliveryZones": {
+      "title": "Delivery zones",
+      "description": "Configure your delivery areas and fees",
+      "add": "Add",
+      "noZones": "No delivery zones configured",
+      "fee": "Fee (FCFA)",
+      "estimatedMinutes": "Duration (min)",
+      "minutes": "min",
+      "currency": "FCFA"
+    },
+    "mode": {
+      "title": "Operating mode",
+      "description": "Choose how buyers interact with your shop",
+      "contact": "Contact mode",
+      "contactDescription": "Buyers contact you directly by phone or message",
+      "order": "Online ordering",
+      "orderDescription": "Buyers place orders and pay directly online",
+      "active": "Active"
+    },
+    "toast": {
+      "shopInfoUpdated": "Shop information updated",
+      "shopInfoError": "Failed to update shop information",
+      "openingHoursUpdated": "Opening hours updated",
+      "openingHoursError": "Failed to update opening hours",
+      "zoneAdded": "Delivery zone added",
+      "zoneDeleted": "Delivery zone deleted",
+      "zoneError": "Operation failed",
+      "modeUpdated": "Operating mode updated",
+      "modeError": "Failed to change mode"
+    }
+  },
+  "notifications": {
+    "title": "Notifications",
+    "empty": "No notifications yet",
+    "markAllAsRead": "Mark all as read",
+    "toast": {
+      "allRead": "All notifications marked as read"
+    },
+    "time": {
+      "now": "Just now",
+      "minutesAgo": "{{count}} min ago",
+      "hoursAgo": "{{count}} h ago",
+      "daysAgo": "{{count}} d ago"
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "description": "eBio platform overview",
+      "currency": "FCFA",
+      "kpis": {
+        "suppliers": "Suppliers",
+        "activeUsers": "Active buyers",
+        "transactions": "Transactions",
+        "revenue": "Revenue",
+        "pendingValidations": "Pending validations",
+        "disputes": "Disputes",
+        "searchesPerDay": "Searches/day"
+      }
+    },
+    "validation": {
+      "title": "Supplier Validations",
+      "description": "Review supplier registration dossiers",
+      "status": {
+        "pending": "Pending"
+      },
+      "columns": {
+        "name": "Name",
+        "email": "Email",
+        "shopName": "Shop name",
+        "status": "Status",
+        "submittedAt": "Submitted at",
+        "actions": "Actions"
+      },
+      "actions": {
+        "validate": "Validate eBio",
+        "reject": "Reject",
+        "requestComplement": "Request complement"
+      },
+      "rejectDialog": {
+        "title": "Rejection reason",
+        "reasonPlaceholder": "Enter the rejection reason..."
+      },
+      "complementDialog": {
+        "title": "Request complement",
+        "messagePlaceholder": "Indicate the missing documents..."
+      },
+      "dossier": {
+        "title": "Supplier Dossier",
+        "identity": "Identity",
+        "fullName": "Full name",
+        "email": "Email",
+        "phone": "Phone",
+        "shopInfo": "Shop Profile",
+        "shopName": "Shop name",
+        "address": "Address",
+        "businessNumber": "Business number",
+        "businessProof": "Business proof",
+        "identityDocument": "Identity document",
+        "businessDocument": "Business document",
+        "viewDocument": "View document"
+      }
+    },
+    "moderation": {
+      "title": "Moderation",
+      "description": "Manage reported content on the platform",
+      "filterByType": "Filter by type",
+      "columns": {
+        "type": "Type",
+        "content": "Content",
+        "author": "Author",
+        "reportedBy": "Reported by",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "actions": {
+        "deleteContent": "Delete content",
+        "warnAuthor": "Warn author",
+        "ignore": "Ignore"
+      }
+    },
+    "transactions": {
+      "title": "Transactions",
+      "description": "Platform financial overview",
+      "currency": "FCFA",
+      "exportCsv": "Export CSV",
+      "from": "From",
+      "to": "To",
+      "columns": {
+        "reference": "Reference",
+        "buyer": "Buyer",
+        "supplier": "Supplier",
+        "amount": "Amount",
+        "commission": "Commission",
+        "date": "Date",
+        "status": "Status"
+      },
+      "status": {
+        "completed": "Completed",
+        "pending": "Pending",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "disputes": {
+        "title": "Disputes",
+        "dispute": "Dispute",
+        "amount": "Amount",
+        "noDisputes": "No ongoing disputes",
+        "status": {
+          "open": "Open",
+          "resolved": "Resolved",
+          "closed": "Closed"
+        }
+      }
+    },
+    "settings": {
+      "title": "Platform Settings",
+      "description": "General eBio platform configuration",
+      "currency": "FCFA",
+      "month": "/month",
+      "commission": {
+        "title": "Commission rates",
+        "rate": "Rate (%)",
+        "miseEnRelation": "Contact mode",
+        "commande": "Order mode",
+        "plan": "Plan",
+        "premium": "Premium"
+      },
+      "plans": {
+        "title": "Subscription plans",
+        "name": "Plan name",
+        "price": "Price",
+        "features": "Features"
+      }
+    },
+    "roles": {
+      "title": "Roles management",
+      "description": "Configure user roles and permissions",
+      "addRole": "Add role",
+      "addRoleDescription": "Define a new role with its permissions",
+      "editRole": "Edit role",
+      "editRoleDescription": "Modify this role's permissions",
+      "permissionsCount": "permissions",
+      "columns": {
+        "name": "Name",
+        "description": "Description",
+        "permissions": "Permissions",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Role name",
+        "namePlaceholder": "E.g. Moderator",
+        "description": "Description",
+        "descriptionPlaceholder": "Describe the role...",
+        "permissions": "Permissions",
+        "create": "Create role",
+        "update": "Update"
+      },
+      "permissions": {
+        "subject": "Subject",
+        "all": "All",
+        "actions": {
+          "create": "Create",
+          "read": "Read",
+          "update": "Update",
+          "delete": "Delete",
+          "manage": "Manage"
+        },
+        "subjects": {
+          "product": "Product",
+          "order": "Order",
+          "user": "User",
+          "supplier": "Supplier",
+          "rating": "Rating",
+          "report": "Report",
+          "subscription": "Subscription",
+          "settings": "Settings"
+        }
+      }
+    },
+    "categories": {
+      "title": "Categories management",
+      "description": "Manage product categories on the platform",
+      "addCategory": "Add category",
+      "addCategoryDescription": "Create a new product category",
+      "editCategory": "Edit category",
+      "editCategoryDescription": "Update category information",
+      "deleteConfirm": "Are you sure you want to delete this category?",
+      "deleteWarning": "This action is irreversible. Associated products will no longer be categorized.",
+      "columns": {
+        "name": "Name",
+        "slug": "Slug",
+        "icon": "Icon",
+        "sortOrder": "Order",
+        "productCount": "Products",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Category name",
+        "namePlaceholder": "E.g. Oils",
+        "slug": "Slug",
+        "slugPlaceholder": "oils",
+        "slugDescription": "Unique identifier used in URLs",
+        "sortOrder": "Display order",
+        "image": "Category image",
+        "addImage": "Add",
+        "create": "Create category",
+        "update": "Update"
+      }
+    }
+  },
+  "errorCodes": {
+    "PASSWORDS_DO_NOT_MATCH": "Passwords do not match"
   }
 }

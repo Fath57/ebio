@@ -1,0 +1,22 @@
+<!--
+  Button partial
+  Variables: href, label, variant? ('primary' | 'secondary' | 'earth' | 'danger')
+-->
+<% const variants = {
+  primary: { bg: '#1A8757', text: '#FFFFFF', border: '#1A8757' },
+  secondary: { bg: '#FFFFFF', text: '#1A8757', border: '#1A8757' },
+  earth: { bg: '#8A5518', text: '#FFFFFF', border: '#8A5518' },
+  danger: { bg: '#B83820', text: '#FFFFFF', border: '#B83820' },
+} %>
+<% const style = variants[variant || 'primary'] %>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 24px 0;">
+  <tr>
+    <td align="center" style="border-radius: 10px; background-color: <%= style.bg %>;">
+      <a href="<%= href %>"
+         target="_blank"
+         style="display: inline-block; padding: 12px 32px; font-family: 'Plus Jakarta Sans', Arial, sans-serif; font-size: 16px; font-weight: 600; color: <%= style.text %>; text-decoration: none; border-radius: 10px; border: 2px solid <%= style.border %>;">
+        <%= label %>
+      </a>
+    </td>
+  </tr>
+</table>

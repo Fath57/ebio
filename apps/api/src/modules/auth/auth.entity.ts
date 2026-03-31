@@ -1,13 +1,26 @@
+import type { Rel } from '@mikro-orm/core'
 import {
   Entity,
+  Enum,
   ManyToOne,
+  OptionalProps,
   PrimaryKey,
   Property,
+
   Unique,
 } from '@mikro-orm/core'
+import { Role } from './entities/role.entity'
 
-@Entity({ tableName: 'user' })
+export enum UserRole {
+  BUYER = 'BUYER',
+  SUPPLIER = 'SUPPLIER',
+  ADMIN = 'ADMIN',
+}
+
+@Entity({ tableName: 'users' })
 export class User {
+  [OptionalProps]?: 'id' | 'emailVerified' | 'role' | 'biometricEnabled' | 'createdAt' | 'updatedAt'
+
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
@@ -24,6 +37,28 @@ export class User {
   @Property({ nullable: true })
   image?: string
 
+  @Property({ nullable: true })
+  @Unique()
+  phone?: string
+
+  @Enum({ items: () => UserRole, default: UserRole.BUYER })
+  role: UserRole = UserRole.BUYER
+
+  @ManyToOne(() => Role, { fieldName: 'role_id', nullable: true })
+  userRole?: Rel<Role>
+
+  @Property({ fieldName: 'deviceId', nullable: true })
+  deviceId?: string
+
+  @Property({ fieldName: 'biometricEnabled', default: false })
+  biometricEnabled: boolean = false
+
+  @Property({ fieldName: 'biometricKey', nullable: true })
+  biometricKey?: string
+
+  @Property({ fieldName: 'lastLoginAt', nullable: true })
+  lastLoginAt?: Date
+
   @Property({ fieldName: 'createdAt' })
   createdAt: Date = new Date()
 
@@ -33,6 +68,8 @@ export class User {
 
 @Entity({ tableName: 'session' })
 export class Session {
+  [OptionalProps]?: 'id' | 'createdAt' | 'updatedAt'
+
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
@@ -61,6 +98,8 @@ export class Session {
 
 @Entity({ tableName: 'account' })
 export class Account {
+  [OptionalProps]?: 'id' | 'createdAt' | 'updatedAt'
+
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
@@ -103,6 +142,8 @@ export class Account {
 
 @Entity({ tableName: 'verification' })
 export class Verification {
+  [OptionalProps]?: 'id' | 'createdAt' | 'updatedAt'
+
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 

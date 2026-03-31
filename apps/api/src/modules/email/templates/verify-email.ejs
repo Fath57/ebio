@@ -1,0 +1,14 @@
+<%- include('partials/heading', { text: 'Vérifiez votre adresse e-mail', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<p>
+  Merci de vous être inscrit sur <strong>eBio</strong> !
+  Pour activer votre compte, veuillez vérifier votre adresse e-mail en cliquant sur le bouton ci-dessous :
+</p>
+
+<%- include('partials/button', { href: verifyUrl, label: 'Vérifier mon e-mail', variant: 'primary' }) %>
+
+<p style="font-size: 13px; color: #9B9890;">
+  Si vous n'avez pas créé de compte sur eBio, ignorez cet e-mail.
+</p>

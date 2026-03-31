@@ -1,7 +1,7 @@
 services:
-  # Base de données
+  # Base de données avec PostGIS
   db:
-    image: postgres:16-alpine
+    image: postgis/postgis:16-3.4-alpine
     environment:
       POSTGRES_USER: ${DATABASE_USER}
       POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
@@ -16,12 +16,40 @@ services:
       timeout: 5s
       retries: 5
 
+  # Redis pour cache, sessions, WebSocket adapter, rate limiting
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '${REDIS_PORT:-6379}:6379'
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: [CMD, redis-cli, ping]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   maildev:
-    container_name: lonestone-maildev
+    container_name: ebio-maildev
     image: netoun/mail-server-dev
     ports:
       - '${SMTP_PORT_WEB}:1080'
       - '${SMTP_PORT}:1025'
 
+  # MinIO pour stockage S3-compatible (dev only)
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_KEY:-minioadmin}
+    ports:
+      - '${MINIO_PORT:-9000}:9000'
+      - '${MINIO_CONSOLE_PORT:-9001}:9001'
+    volumes:
+      - minio_data:/data
+
 volumes:
   postgres_data:
+  redis_data:
+  minio_data:

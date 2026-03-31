@@ -42,7 +42,7 @@ async function bootstrap() {
         return next()
       }
       // If is stripe webhook, we need the raw body
-      if (req.originalUrl.startsWith(`${PREFIX}/stripe/webhook`)) {
+      if (req.originalUrl.startsWith(`${PREFIX}/payments/webhook/stripe`)) {
         return express.raw({ type: 'application/json' })(req, res, next)
       }
       // Else, apply the express json middleware
@@ -60,10 +60,10 @@ async function bootstrap() {
   if (config.env === 'development') {
     const swaggerConfig = new DocumentBuilder()
       .setOpenAPIVersion('3.1.0')
-      .setTitle('Lonestone API')
-      .setDescription('The Lonestone API description')
+      .setTitle('eBio API')
+      .setDescription('API du marketplace eBio')
       .setVersion('1.0')
-      .addTag('@lonestone')
+      .addTag('ebio')
       .build()
 
     const document = createOpenApiDocument(app, swaggerConfig)

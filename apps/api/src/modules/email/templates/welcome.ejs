@@ -1,0 +1,12 @@
+<%- include('partials/heading', { text: 'Bienvenue sur eBio !', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<p>
+  Nous sommes ravis de vous accueillir sur <strong>eBio</strong>, la marketplace de produits biologiques géolocalisés.
+  Trouvez des produits bio près de chez vous et soutenez les fournisseurs locaux.
+</p>
+
+<%- include('partials/button', { href: dashboardUrl, label: 'Accéder à mon espace', variant: 'primary' }) %>
+
+<p>À bientôt sur eBio !</p>

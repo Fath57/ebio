@@ -15,7 +15,7 @@ export default function DashboardPage() {
   const navigate = useNavigate()
   const { language, setLanguage } = useI18nStore()
 
-  const [theme, setTheme] = useTheme()
+  const [_theme, resolvedTheme, setTheme] = useTheme()
 
   useEffect(() => {
     if (!isPending && !sessionData) {
@@ -91,9 +91,9 @@ export default function DashboardPage() {
                 { to: '/dashboard/settings', label: t('dashboard.settings'), icon: <Settings className="h-4 w-4" /> },
                 {
                   to: '#',
-                  label: theme === 'dark' ? t('dashboard.lightMode') : t('dashboard.darkMode'),
-                  icon: theme === 'dark' ? <Sun className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />,
-                  onClick: () => handleThemeChange(!(theme === 'dark')),
+                  label: resolvedTheme === 'dark' ? t('dashboard.lightMode') : t('dashboard.darkMode'),
+                  icon: resolvedTheme === 'dark' ? <Sun className="h-4 w-4" /> : <MoonStar className="h-4 w-4" />,
+                  onClick: () => handleThemeChange(!(resolvedTheme === 'dark')),
                 },
                 {
                   to: '#',

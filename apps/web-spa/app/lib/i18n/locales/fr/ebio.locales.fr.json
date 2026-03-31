@@ -1,0 +1,562 @@
+{
+  "common": {
+    "cancel": "Annuler",
+    "confirm": "Confirmer",
+    "edit": "Modifier",
+    "save": "Enregistrer",
+    "saving": "Enregistrement...",
+    "view": "Voir",
+    "delete": "Supprimer",
+    "back": "Retour",
+    "unauthorized": {
+      "title": "Accès non autorisé",
+      "description": "Vous n'avez pas les droits nécessaires pour accéder à cette page.",
+      "backHome": "Retour à l'accueil"
+    }
+  },
+  "nav": {
+    "account": "Mon compte",
+    "analytics": "Statistiques",
+    "catalogue": "Catalogue",
+    "categories": "Catégories",
+    "dashboard": "Tableau de bord",
+    "logout": "Déconnexion",
+    "moderation": "Modération",
+    "orders": "Commandes",
+    "roles": "Rôles",
+    "settings": "Paramètres",
+    "subscription": "Abonnement",
+    "transactions": "Transactions",
+    "validations": "Validations"
+  },
+  "auth": {
+    "login": {
+      "description": "Connectez-vous à votre compte",
+      "email": "Email",
+      "password": "Mot de passe",
+      "forgotPassword": "Mot de passe oublié ?",
+      "signIn": "Se connecter",
+      "noAccount": "Pas encore de compte ?",
+      "signUp": "S'inscrire",
+      "loggedInSuccess": "Connexion réussie",
+      "badCredentials": "Identifiants incorrects"
+    },
+    "register": {
+      "description": "Créez votre compte eBio",
+      "name": "Nom complet",
+      "email": "Email",
+      "password": "Mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "signUp": "S'inscrire",
+      "hasAccount": "Vous avez déjà un compte ?",
+      "login": "Se connecter",
+      "backToLogin": "Retour à la connexion",
+      "registrationSuccessful": "Inscription réussie",
+      "failedToRegister": "Échec de l'inscription",
+      "success": {
+        "description": "Vérifiez votre email pour activer votre compte."
+      }
+    },
+    "forgotPassword": {
+      "description": "Entrez votre email pour recevoir un lien de réinitialisation.",
+      "email": "Email",
+      "sendResetLink": "Envoyer le lien",
+      "backToLogin": "Retour à la connexion",
+      "failedToSend": "Échec de l'envoi du lien"
+    },
+    "resetPassword": {
+      "description": "Choisissez un nouveau mot de passe.",
+      "password": "Nouveau mot de passe",
+      "confirmPassword": "Confirmer le mot de passe",
+      "reset": "Réinitialiser"
+    },
+    "verifyEmail": {
+      "title": "Vérification de l'email",
+      "pleaseWait": "Veuillez patienter...",
+      "redirecting": "Redirection en cours...",
+      "redirectNow": "Rediriger maintenant"
+    },
+    "supplierLogin": {
+      "title": "Espace Fournisseur",
+      "description": "Connectez-vous à votre espace fournisseur eBio",
+      "phone": "Numéro de téléphone",
+      "sendOtp": "Recevoir le code",
+      "otpCode": "Code de vérification",
+      "otpSent": "Code envoyé par SMS",
+      "verify": "Vérifier",
+      "error": "Erreur de connexion",
+      "loggedInSuccess": "Connexion réussie"
+    },
+    "adminLogin": {
+      "title": "Administration eBio",
+      "description": "Connectez-vous à l'espace d'administration",
+      "email": "Email",
+      "password": "Mot de passe",
+      "continue": "Continuer",
+      "otpCode": "Code OTP",
+      "otpSent": "Code envoyé par email",
+      "verify": "Vérifier",
+      "error": "Erreur de connexion",
+      "loggedInSuccess": "Connexion réussie"
+    }
+  },
+  "catalog": {
+    "title": "Mon Catalogue",
+    "description": "Gérez vos produits et votre inventaire",
+    "addProduct": "Ajouter un produit",
+    "addFirstProduct": "Ajouter votre premier produit",
+    "addProductDescription": "Remplissez les informations de votre produit pour le rendre visible aux acheteurs.",
+    "editProduct": "Modifier le produit",
+    "editProductDescription": "Mettez à jour les informations de votre produit.",
+    "products": "produits",
+    "promo": "Promo",
+    "currency": "FCFA",
+    "empty": {
+      "title": "Aucun produit",
+      "description": "Commencez par ajouter votre premier produit à votre catalogue."
+    },
+    "categories": {
+      "fruits": "Fruits",
+      "vegetables": "Légumes",
+      "dairy": "Produits laitiers",
+      "meat": "Viande",
+      "bakery": "Boulangerie",
+      "other": "Autres"
+    },
+    "columns": {
+      "photo": "Photo",
+      "name": "Nom",
+      "category": "Catégorie",
+      "price": "Prix",
+      "stock": "Stock",
+      "status": "Statut",
+      "actions": "Actions"
+    },
+    "form": {
+      "name": "Nom du produit",
+      "namePlaceholder": "Ex: Huile de palme bio",
+      "category": "Catégorie",
+      "categoryPlaceholder": "Choisir une catégorie",
+      "pricePerUnit": "Prix unitaire (FCFA)",
+      "unit": "Unité",
+      "stock": "Stock",
+      "stockAlertThreshold": "Seuil d'alerte stock",
+      "stockAlertDescription": "Vous serez notifié quand le stock descend sous ce seuil",
+      "status": "Statut",
+      "description": "Description",
+      "descriptionPlaceholder": "Décrivez votre produit...",
+      "photos": "Photos du produit",
+      "photosDescription": "Ajoutez jusqu'à 3 photos (JPEG, PNG, WebP)",
+      "addPhoto": "Ajouter",
+      "processing": "Traitement...",
+      "variants": "Variantes",
+      "variantsDescription": "Proposez différents conditionnements (ex: 0,5L, 1L, 5L)",
+      "addVariant": "Ajouter une variante",
+      "variantLabel": "Libellé",
+      "variantPrice": "Prix (FCFA)",
+      "variantStock": "Stock",
+      "promotion": "Promotion",
+      "promotionDescription": "Appliquer un prix promotionnel temporaire",
+      "promotionalPrice": "Prix promo (FCFA)",
+      "promotionExpiry": "Date d'expiration",
+      "create": "Créer le produit",
+      "createSuccess": "Produit créé avec succès",
+      "createError": "Erreur lors de la création du produit",
+      "update": "Mettre à jour",
+      "updateSuccess": "Produit mis à jour avec succès",
+      "updateError": "Erreur lors de la mise à jour du produit"
+    },
+    "units": {
+      "kg": "Kilogramme",
+      "liter": "Litre",
+      "sachet": "Sachet",
+      "piece": "Pièce",
+      "lot": "Lot"
+    },
+    "status": {
+      "inStock": "En stock",
+      "outOfStock": "Rupture",
+      "lowStock": "Stock faible",
+      "active": "Actif",
+      "hidden": "Masqué"
+    }
+  },
+  "orders": {
+    "title": "Commandes",
+    "description": "Gérez vos commandes en cours",
+    "currency": "FCFA",
+    "filterByStatus": "Filtrer par statut",
+    "columns": {
+      "reference": "Référence",
+      "buyer": "Acheteur",
+      "total": "Total",
+      "status": "Statut",
+      "date": "Date",
+      "actions": "Actions"
+    },
+    "status": {
+      "all": "Toutes",
+      "PLACED": "Passée",
+      "ACCEPTED": "Acceptée",
+      "PREPARING": "En préparation",
+      "READY": "Prête",
+      "IN_DELIVERY": "En livraison",
+      "DELIVERED": "Livrée",
+      "CANCELLED": "Annulée",
+      "DISPUTED": "En litige"
+    },
+    "actions": {
+      "accept": "Accepter",
+      "reject": "Refuser",
+      "startPreparing": "Préparer",
+      "markReady": "Prête",
+      "markInDelivery": "Envoyer en livraison",
+      "markDelivered": "Livrée"
+    },
+    "detail": {
+      "title": "Détail de la commande",
+      "order": "Commande",
+      "buyerInfo": "Informations acheteur",
+      "buyerName": "Nom",
+      "buyerEmail": "Email",
+      "buyerPhone": "Téléphone",
+      "items": "Articles",
+      "total": "Total",
+      "timeline": "Historique"
+    }
+  },
+  "analytics": {
+    "title": "Statistiques",
+    "description": "Suivez les performances de votre boutique",
+    "revenue": "Chiffre d'affaires",
+    "ordersCount": "Nombre de commandes",
+    "averageOrder": "Panier moyen",
+    "currency": "FCFA",
+    "topProducts": "Produits les plus vendus",
+    "ratingsOverview": "Aperçu des notes",
+    "reviews": "Avis",
+    "columns": {
+      "product": "Produit",
+      "quantitySold": "Quantité vendue",
+      "revenue": "Revenu"
+    }
+  },
+  "subscriptions": {
+    "title": "Mon Abonnement",
+    "description": "Gérez votre plan d'abonnement eBio",
+    "currentPlan": "Plan actuel",
+    "current": "Actuel",
+    "renewalDate": "Date de renouvellement",
+    "availablePlans": "Plans disponibles",
+    "upgrade": "Passer à ce plan",
+    "cancelPlan": "Résilier",
+    "confirmUpgrade": "Confirmer la mise à niveau",
+    "confirmUpgradeDescription": "Vous allez passer au plan sélectionné.",
+    "confirmCancel": "Confirmer la résiliation",
+    "confirmCancelDescription": "Votre abonnement sera annulé à la fin de la période en cours.",
+    "price": "Prix",
+    "currency": "FCFA",
+    "month": "/mois"
+  },
+  "profile": {
+    "title": "Mon profil",
+    "description": "Gérez vos informations personnelles",
+    "personalInfo": "Informations personnelles",
+    "roles": {
+      "BUYER": "Acheteur",
+      "SUPPLIER": "Fournisseur",
+      "ADMIN": "Administrateur"
+    },
+    "form": {
+      "name": "Nom complet",
+      "namePlaceholder": "Votre nom",
+      "email": "Adresse e-mail",
+      "emailPlaceholder": "nom@exemple.com",
+      "phone": "Téléphone",
+      "phonePlaceholder": "+229 XX XX XX XX XX"
+    },
+    "coverPhoto": "Photo de couverture",
+    "changeCover": "Modifier",
+    "toast": {
+      "updated": "Profil mis à jour",
+      "error": "Erreur lors de la mise à jour",
+      "photoUpdated": "Photo mise à jour",
+      "coverUpdated": "Photo de couverture mise à jour",
+      "photoError": "Erreur lors du téléchargement"
+    }
+  },
+  "settings": {
+    "title": "Paramètres",
+    "description": "Gérez votre profil et votre fiche boutique",
+    "tabs": {
+      "profile": "Profil",
+      "shop": "Boutique"
+    },
+    "shopInfo": {
+      "title": "Informations de la boutique",
+      "description": "Ces informations sont visibles par les acheteurs",
+      "shopName": "Nom de la boutique",
+      "shopNamePlaceholder": "Ma Boutique Bio",
+      "address": "Adresse",
+      "addressPlaceholder": "Rue, Ville",
+      "neighborhood": "Quartier",
+      "neighborhoodPlaceholder": "Ex: Cocody, Plateau",
+      "mobileMoneyNumber": "Numéro Mobile Money",
+      "mobileMoneyPlaceholder": "+229 XX XX XX XX XX"
+    },
+    "openingHours": {
+      "title": "Horaires d'ouverture",
+      "description": "Définissez vos horaires pour chaque jour de la semaine",
+      "closed": "Fermé",
+      "open": "Ouvert",
+      "to": "à",
+      "days": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
+      }
+    },
+    "deliveryZones": {
+      "title": "Zones de livraison",
+      "description": "Configurez vos zones et frais de livraison",
+      "add": "Ajouter",
+      "noZones": "Aucune zone de livraison configurée",
+      "fee": "Frais (FCFA)",
+      "estimatedMinutes": "Durée (min)",
+      "minutes": "min",
+      "currency": "FCFA"
+    },
+    "mode": {
+      "title": "Mode de fonctionnement",
+      "description": "Choisissez comment les acheteurs interagissent avec votre boutique",
+      "contact": "Mise en relation",
+      "contactDescription": "Les acheteurs vous contactent directement par téléphone ou message",
+      "order": "Commande en ligne",
+      "orderDescription": "Les acheteurs passent commande et paient directement en ligne",
+      "active": "Actif"
+    },
+    "toast": {
+      "shopInfoUpdated": "Informations de la boutique mises à jour",
+      "shopInfoError": "Erreur lors de la mise à jour",
+      "openingHoursUpdated": "Horaires mis à jour",
+      "openingHoursError": "Erreur lors de la mise à jour des horaires",
+      "zoneAdded": "Zone de livraison ajoutée",
+      "zoneDeleted": "Zone de livraison supprimée",
+      "zoneError": "Erreur lors de l'opération",
+      "modeUpdated": "Mode de fonctionnement mis à jour",
+      "modeError": "Erreur lors du changement de mode"
+    }
+  },
+  "admin": {
+    "dashboard": {
+      "title": "Tableau de bord Admin",
+      "description": "Vue d'ensemble de la plateforme eBio",
+      "currency": "FCFA",
+      "kpis": {
+        "suppliers": "Fournisseurs",
+        "activeUsers": "Acheteurs actifs",
+        "transactions": "Transactions",
+        "revenue": "Chiffre d'affaires",
+        "pendingValidations": "Validations en attente",
+        "disputes": "Litiges",
+        "searchesPerDay": "Recherches/jour"
+      }
+    },
+    "validation": {
+      "title": "Validations Fournisseurs",
+      "description": "Validez les dossiers d'inscription des fournisseurs",
+      "status": {
+        "pending": "En attente"
+      },
+      "columns": {
+        "name": "Nom",
+        "email": "Email",
+        "shopName": "Nom de la boutique",
+        "status": "Statut",
+        "submittedAt": "Date de soumission",
+        "actions": "Actions"
+      },
+      "actions": {
+        "validate": "Valider eBio",
+        "reject": "Refuser",
+        "requestComplement": "Demander un complément"
+      },
+      "rejectDialog": {
+        "title": "Motif du refus",
+        "reasonPlaceholder": "Indiquez la raison du refus..."
+      },
+      "complementDialog": {
+        "title": "Demande de complément",
+        "messagePlaceholder": "Indiquez les documents manquants..."
+      },
+      "dossier": {
+        "title": "Dossier Fournisseur",
+        "identity": "Identité",
+        "fullName": "Nom complet",
+        "email": "Email",
+        "phone": "Téléphone",
+        "shopInfo": "Fiche Boutique",
+        "shopName": "Nom de la boutique",
+        "address": "Adresse",
+        "businessNumber": "Numéro RCCM",
+        "businessProof": "Justificatif d'activité",
+        "identityDocument": "Pièce d'identité",
+        "businessDocument": "Document professionnel",
+        "viewDocument": "Voir le document"
+      }
+    },
+    "moderation": {
+      "title": "Modération",
+      "description": "Gérez les contenus signalés sur la plateforme",
+      "filterByType": "Filtrer par type",
+      "columns": {
+        "type": "Type",
+        "content": "Contenu",
+        "author": "Auteur",
+        "reportedBy": "Signalé par",
+        "date": "Date",
+        "actions": "Actions"
+      },
+      "actions": {
+        "deleteContent": "Supprimer le contenu",
+        "warnAuthor": "Avertir l'auteur",
+        "ignore": "Ignorer"
+      }
+    },
+    "transactions": {
+      "title": "Transactions",
+      "description": "Suivi financier de la plateforme",
+      "currency": "FCFA",
+      "exportCsv": "Exporter CSV",
+      "from": "Du",
+      "to": "Au",
+      "columns": {
+        "reference": "Référence",
+        "buyer": "Acheteur",
+        "supplier": "Fournisseur",
+        "amount": "Montant",
+        "commission": "Commission",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "status": {
+        "completed": "Terminé",
+        "pending": "En attente",
+        "failed": "Échoué",
+        "refunded": "Remboursé"
+      },
+      "disputes": {
+        "title": "Litiges",
+        "dispute": "Litige",
+        "amount": "Montant",
+        "noDisputes": "Aucun litige en cours",
+        "status": {
+          "open": "Ouvert",
+          "resolved": "Résolu",
+          "closed": "Fermé"
+        }
+      }
+    },
+    "settings": {
+      "title": "Paramètres Plateforme",
+      "description": "Configuration générale de la plateforme eBio",
+      "currency": "FCFA",
+      "month": "/mois",
+      "commission": {
+        "title": "Taux de commission",
+        "rate": "Taux (%)",
+        "miseEnRelation": "Mise en relation",
+        "commande": "Commander",
+        "plan": "Plan",
+        "premium": "Premium"
+      },
+      "plans": {
+        "title": "Plans d'abonnement",
+        "name": "Nom du plan",
+        "price": "Prix",
+        "features": "Fonctionnalités"
+      }
+    },
+    "roles": {
+      "title": "Gestion des rôles",
+      "description": "Configurez les rôles et permissions des utilisateurs",
+      "addRole": "Ajouter un rôle",
+      "addRoleDescription": "Définissez un nouveau rôle avec ses permissions",
+      "editRole": "Modifier le rôle",
+      "editRoleDescription": "Modifiez les permissions de ce rôle",
+      "permissionsCount": "permissions",
+      "columns": {
+        "name": "Nom",
+        "description": "Description",
+        "permissions": "Permissions",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Nom du rôle",
+        "namePlaceholder": "Ex: Modérateur",
+        "description": "Description",
+        "descriptionPlaceholder": "Décrivez le rôle...",
+        "permissions": "Permissions",
+        "create": "Créer le rôle",
+        "update": "Mettre à jour"
+      },
+      "permissions": {
+        "subject": "Sujet",
+        "all": "Tout",
+        "actions": {
+          "create": "Créer",
+          "read": "Lire",
+          "update": "Modifier",
+          "delete": "Supprimer",
+          "manage": "Gérer"
+        },
+        "subjects": {
+          "product": "Produit",
+          "order": "Commande",
+          "user": "Utilisateur",
+          "supplier": "Fournisseur",
+          "rating": "Évaluation",
+          "report": "Signalement",
+          "subscription": "Abonnement",
+          "settings": "Paramètres"
+        }
+      }
+    },
+    "categories": {
+      "title": "Gestion des catégories",
+      "description": "Gérez les catégories de produits de la plateforme",
+      "addCategory": "Ajouter une catégorie",
+      "addCategoryDescription": "Créez une nouvelle catégorie de produits",
+      "editCategory": "Modifier la catégorie",
+      "editCategoryDescription": "Mettez à jour les informations de la catégorie",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette catégorie ?",
+      "deleteWarning": "Cette action est irréversible. Les produits associés ne seront plus catégorisés.",
+      "columns": {
+        "name": "Nom",
+        "slug": "Slug",
+        "icon": "Icône",
+        "sortOrder": "Ordre",
+        "productCount": "Produits",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Nom de la catégorie",
+        "namePlaceholder": "Ex: Huiles",
+        "slug": "Slug",
+        "slugPlaceholder": "huiles",
+        "icon": "Icône",
+        "iconPlaceholder": "Ex: Droplets",
+        "sortOrder": "Ordre d'affichage",
+        "create": "Créer la catégorie",
+        "update": "Mettre à jour"
+      }
+    }
+  },
+  "errorCodes": {
+    "PASSWORDS_DO_NOT_MATCH": "Les mots de passe ne correspondent pas"
+  }
+}

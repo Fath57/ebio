@@ -5,6 +5,191 @@ export type ClientOptions = {
 };
 
 /**
+ * ValidationActionInput
+ *
+ * Action to perform on a supplier validation
+ */
+export type ValidationActionInput = {
+  action: ValidationAction;
+  message?: string;
+};
+
+/**
+ * ResolveReportInput
+ *
+ * Action to resolve a content report
+ */
+export type ResolveReportInput = {
+  action: ReportResolveAction;
+  adminNote?: string;
+};
+
+/**
+ * DisputeResolutionInput
+ *
+ * Data to resolve a dispute
+ */
+export type DisputeResolutionInput = {
+  resolution: DisputeResolution;
+  partialAmount?: number;
+  adminNote?: string;
+};
+
+/**
+ * SuspendSupplier
+ *
+ * Reason for suspending a supplier
+ */
+export type SuspendSupplier = {
+  reason: string;
+};
+
+/**
+ * CommissionRates
+ *
+ * Commission rates per product category
+ */
+export type CommissionRates = {
+  rates: Array<{
+    category: string;
+    rate: number;
+  }>;
+};
+
+/**
+ * BroadcastNotification
+ *
+ * Send a notification to a group of users
+ */
+export type BroadcastNotification = {
+  title: string;
+  body: string;
+  targetRole: "BUYER" | "SUPPLIER" | "ALL";
+  targetZone?: string;
+  channel: "PUSH" | "SMS" | "IN_APP";
+};
+
+/**
+ * CreateRole
+ */
+export type CreateRole = {
+  name: string;
+  description?: string;
+  permissionIds?: Array<string>;
+};
+
+/**
+ * UpdateRole
+ */
+export type UpdateRole = {
+  name?: string;
+  description?: string;
+  permissionIds?: Array<string>;
+};
+
+/**
+ * AssignRole
+ */
+export type AssignRole = {
+  userId: string;
+  roleId: string;
+};
+
+/**
+ * CreateConversation
+ *
+ * Create or retrieve an existing conversation with a supplier
+ */
+export type CreateConversation = {
+  supplierId: string;
+  productId?: string;
+};
+
+/**
+ * CreatePublication
+ */
+export type CreatePublication = {
+  type:
+    | "PRODUCT_ANNOUNCEMENT"
+    | "TECHNICAL_QUESTION"
+    | "MARKET_ALERT"
+    | "TRAINING_SHARE";
+  content: string;
+  mediaUrls?: Array<string>;
+};
+
+/**
+ * UseCase1SingleGenerationRequest
+ *
+ * Single generation; trace is finalized with name/output so Langfuse shows them
+ */
+export type UseCase1SingleGenerationRequest = {
+  prompt: string;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+  options?: AiGenerateOptions;
+};
+
+/**
+ * UseCase2GroupedCallsRequest
+ *
+ * Multiple LLM calls in one request; one trace in Langfuse, finalized at end
+ */
+export type UseCase2GroupedCallsRequest = {
+  /**
+   * Prompts for each step (same trace)
+   */
+  prompts: Array<string>;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+};
+
+/**
+ * UseCase3LogicalUnitsRequest
+ *
+ * Multiple workflows; each workflow gets its own Langfuse trace (split per unit)
+ */
+export type UseCase3LogicalUnitsRequest = {
+  /**
+   * One prompt per logical workflow; each gets its own trace
+   */
+  workflowPrompts: Array<string>;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+};
+
+/**
+ * UseCase4ChatSessionRequest
+ *
+ * Simple generateText with sessionId for grouping traces across requests
+ */
+export type UseCase4ChatSessionRequest = {
+  prompt: string;
+  /**
+   * Session ID to group traces in Langfuse (e.g. conversation or thread)
+   */
+  sessionId: string;
+  model?:
+    | "OPENAI_GPT_5_NANO"
+    | "GOOGLE_GEMINI_3_FLASH"
+    | "CLAUDE_HAIKU_3_5"
+    | "CLAUDE_OPUS_4_5"
+    | "MISTRAL_SMALL";
+};
+
+/**
  * GenerateTextRequest
  *
  * Request for simple text generation with a single prompt
@@ -134,6 +319,247 @@ export type UpdatePostSchema = {
 };
 
 /**
+ * InitiatePayment
+ *
+ * Data required to initiate a mobile money payment
+ */
+export type InitiatePayment = {
+  orderId: string;
+  operator: MobileOperator;
+  phoneNumber: string;
+};
+
+/**
+ * WebhookEvent
+ *
+ * FedaPay webhook event payload
+ */
+export type WebhookEvent = {
+  id: string;
+  type: string;
+  data: {
+    id: number;
+    reference?: string;
+    amount?: number;
+    status: string;
+    customer?: {
+      phone_number?: {
+        number: string;
+        country: string;
+      };
+    };
+  };
+};
+
+/**
+ * UpdateUser
+ *
+ * Update user profile
+ */
+export type UpdateUser = {
+  name?: string;
+  image?: string;
+  deviceId?: string;
+};
+
+/**
+ * RegisterSupplier
+ *
+ * Data required to register as a supplier
+ */
+export type RegisterSupplier = {
+  shopName: string;
+  type: SupplierType;
+  latitude: number;
+  longitude: number;
+  address: string;
+  neighborhood: string;
+  mobileMoneyNumber: string;
+  mode: SupplierMode;
+  openingHours?: OpeningHours;
+};
+
+/**
+ * UpdateSupplier
+ *
+ * Update supplier profile — all fields optional
+ */
+export type UpdateSupplier = {
+  shopName?: string;
+  type?: SupplierType;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  neighborhood?: string;
+  mobileMoneyNumber?: string;
+  mode?: SupplierMode;
+  openingHours?: OpeningHours;
+};
+
+/**
+ * DeliveryZone
+ *
+ * Delivery zone defined by a polygon with fee and estimated time
+ */
+export type DeliveryZone = {
+  polygon: Array<{
+    latitude: number;
+    longitude: number;
+  }>;
+  deliveryFee: number;
+  estimatedMinutes: number;
+};
+
+/**
+ * CreateOrder
+ *
+ * Data required to place a new order
+ */
+export type CreateOrder = {
+  supplierId: string;
+  pickupMode: PickupMode;
+  paymentMethod: PaymentMethod;
+  deliveryAddress?: string;
+  deliverySlot?: Date;
+  items: Array<OrderItemInput>;
+};
+
+/**
+ * RejectOrder
+ *
+ * Reason for rejecting an order
+ */
+export type RejectOrder = {
+  reason: string;
+};
+
+/**
+ * UpdateOrderStatus
+ *
+ * Update order status (supplier only)
+ */
+export type UpdateOrderStatus = {
+  status: "PREPARING" | "READY" | "IN_DELIVERY";
+};
+
+/**
+ * CreateDispute
+ *
+ * Open a dispute on an order
+ */
+export type CreateDispute = {
+  reason: string;
+};
+
+/**
+ * CreateProduct
+ *
+ * Data required to create a new product
+ */
+export type CreateProduct = {
+  name: string;
+  categoryId: string;
+  description?: string;
+  pricePerUnit: number;
+  unit: ProductUnit;
+  stock: number;
+  stockAlertThreshold: number;
+  status: ProductStatus;
+  variants?: Array<{
+    label: string;
+    pricePerUnit: number;
+    stock?: number;
+  }>;
+};
+
+/**
+ * UpdateProduct
+ *
+ * Update product — all fields optional
+ */
+export type UpdateProduct = {
+  name?: string;
+  categoryId?: string;
+  description?: string;
+  pricePerUnit?: number;
+  unit?: ProductUnit;
+  stock?: number;
+  stockAlertThreshold?: number;
+  status?: ProductStatus;
+  variants?: Array<{
+    label: string;
+    pricePerUnit: number;
+    stock?: number;
+  }>;
+};
+
+/**
+ * StockUpdate
+ *
+ * Update product stock level
+ */
+export type StockUpdate = {
+  stock: number;
+};
+
+/**
+ * Promotion
+ *
+ * Set a promotional price on a product
+ */
+export type Promotion = {
+  promotionalPrice: number;
+  expiresAt: Date;
+};
+
+/**
+ * CreateReview
+ *
+ * Submit a review for a supplier
+ */
+export type CreateReview = {
+  supplierId: string;
+  orderId?: string;
+  transactionType: "ORDER" | "CONTACT";
+  qualityRating: number;
+  delayRating: number;
+  communicationRating: number;
+  conformityRating: number;
+  comment?: string;
+};
+
+/**
+ * CreateSubscription
+ *
+ * Data to subscribe to a plan
+ */
+export type CreateSubscription = {
+  planId: string;
+  paymentMethod: string;
+  paymentReference?: string;
+};
+
+/**
+ * UpgradeSubscription
+ *
+ * Upgrade to a new plan
+ */
+export type UpgradeSubscription = {
+  newPlanId: string;
+};
+
+/**
+ * CompleteModule
+ *
+ * Answers submitted to complete a training module quiz
+ */
+export type CompleteModule = {
+  answers: Array<{
+    [key: string]: unknown;
+  }>;
+};
+
+/**
  * GenerateTextResponse
  *
  * Response from text generation
@@ -141,6 +567,8 @@ export type UpdatePostSchema = {
 export type GenerateTextResponse = {
   usage?: TokenUsage;
   finishReason?: string;
+  toolCalls?: Array<ToolCall>;
+  toolResults?: Array<ToolResult>;
   result: string;
 };
 
@@ -156,6 +584,54 @@ export type TokenUsage = {
 };
 
 /**
+ * ToolCall
+ *
+ * A tool call made by the AI
+ */
+export type ToolCall = {
+  toolCallId: string;
+  toolName: string;
+  args: {
+    [key: string]: unknown;
+  };
+};
+
+/**
+ * ToolResult
+ *
+ * The result of a tool call
+ */
+export type ToolResult = {
+  toolCallId: string;
+  toolName: string;
+  result: unknown;
+};
+
+/**
+ * UseCase2GroupedCallsResponse
+ *
+ * Combined results from grouped LLM calls
+ */
+export type UseCase2GroupedCallsResponse = {
+  traceName: string;
+  results: Array<string>;
+  usage?: TokenUsage;
+};
+
+/**
+ * UseCase3LogicalUnitsResponse
+ *
+ * One result per workflow (each in its own trace)
+ */
+export type UseCase3LogicalUnitsResponse = {
+  workflows: Array<{
+    index: number;
+    result: string;
+    usage?: TokenUsage;
+  }>;
+};
+
+/**
  * GenerateObjectResponse
  *
  * Response from structured object generation
@@ -163,6 +639,8 @@ export type TokenUsage = {
 export type GenerateObjectResponse = {
   usage?: TokenUsage;
   finishReason?: string;
+  toolCalls?: Array<ToolCall>;
+  toolResults?: Array<ToolResult>;
   result: unknown;
 };
 
@@ -174,10 +652,10 @@ export type GenerateObjectResponse = {
 export type ChatResponse = {
   usage?: TokenUsage;
   finishReason?: string;
-  result: string;
-  messages: Array<ChatMessageWithSchemaType>;
   toolCalls?: Array<ToolCall>;
   toolResults?: Array<ToolResult>;
+  result: string;
+  messages: Array<ChatMessageWithSchemaType>;
 };
 
 /**
@@ -229,19 +707,6 @@ export type ChatMessageWithSchemaType = {
 };
 
 /**
- * ToolCall
- *
- * A tool call made by the AI
- */
-export type ToolCall = {
-  toolCallId: string;
-  toolName: string;
-  args: {
-    [key: string]: unknown;
-  };
-};
-
-/**
  * ChatSchemaType
  *
  * Predefined schema types for testing structured output
@@ -261,17 +726,6 @@ export const ChatSchemaType = {
  */
 export type ChatSchemaType =
   (typeof ChatSchemaType)[keyof typeof ChatSchemaType];
-
-/**
- * ToolResult
- *
- * The result of a tool call
- */
-export type ToolResult = {
-  toolCallId: string;
-  toolName: string;
-  result: unknown;
-};
 
 /**
  * CommentSchema
@@ -416,6 +870,122 @@ export type PublicPostsSchema = {
     hasMore: boolean;
   };
 };
+
+/**
+ * SearchResponse
+ */
+export type SearchResponse = {
+  results: Array<SearchResult>;
+  total: number;
+  page: number;
+  hasMore: boolean;
+};
+
+/**
+ * SearchResult
+ */
+export type SearchResult = {
+  supplier: {
+    id: string;
+    shopName: string;
+    distance: number;
+    rating: number | null;
+    reviewCount: number;
+    mode: "CONTACT" | "ORDER";
+    badges: Array<"VALIDATED" | "TOP_SELLER" | "CERTIFIED_BIO">;
+    isOpen: boolean;
+  };
+  product: {
+    id: string;
+    name: string;
+    photo: string | null;
+    pricePerUnit: number;
+    unit: string;
+    inStock: boolean;
+    promotionalPrice: number | null;
+  };
+};
+
+/**
+ * AutocompleteResponse
+ */
+export type AutocompleteResponse = {
+  suggestions: Array<{
+    text: string;
+    type: "product" | "category" | "supplier";
+    id?: string;
+  }>;
+};
+
+/**
+ * CategoriesResponse
+ */
+export type CategoriesResponse = {
+  categories: Array<{
+    id: string;
+    name: string;
+    slug: string;
+    icon: string;
+    productCount: number;
+  }>;
+};
+
+/**
+ * ValidationAction
+ *
+ * Action to take on a supplier validation request
+ */
+export const ValidationAction = {
+  VALIDATE: "VALIDATE",
+  REJECT: "REJECT",
+  REQUEST_COMPLEMENT: "REQUEST_COMPLEMENT",
+} as const;
+
+/**
+ * ValidationAction
+ *
+ * Action to take on a supplier validation request
+ */
+export type ValidationAction =
+  (typeof ValidationAction)[keyof typeof ValidationAction];
+
+/**
+ * ReportResolveAction
+ *
+ * Action to take when resolving a content report
+ */
+export const ReportResolveAction = {
+  DELETE_CONTENT: "DELETE_CONTENT",
+  WARN_AUTHOR: "WARN_AUTHOR",
+  DISMISS: "DISMISS",
+} as const;
+
+/**
+ * ReportResolveAction
+ *
+ * Action to take when resolving a content report
+ */
+export type ReportResolveAction =
+  (typeof ReportResolveAction)[keyof typeof ReportResolveAction];
+
+/**
+ * DisputeResolution
+ *
+ * Resolution outcome for a dispute
+ */
+export const DisputeResolution = {
+  REFUND_BUYER: "REFUND_BUYER",
+  PAY_SUPPLIER: "PAY_SUPPLIER",
+  PARTIAL_REFUND: "PARTIAL_REFUND",
+} as const;
+
+/**
+ * DisputeResolution
+ *
+ * Resolution outcome for a dispute
+ */
+export type DisputeResolution =
+  (typeof DisputeResolution)[keyof typeof DisputeResolution];
 
 /**
  * AiCoreMessage
@@ -563,17 +1133,35 @@ export type AiGenerateOptions = {
   stopWhen?: number;
   telemetry?: {
     /**
-     * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+     * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
      */
-    langfuseTraceName: string;
+    traceMode?: "inherit" | "split";
+    /**
+     * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+     */
+    traceId?: string;
+    /**
+     * Display name used as root span name for the Langfuse trace. This does not control grouping.
+     */
+    traceName?: string;
+    /**
+     * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+     */
+    spanName?: string;
+    /**
+     * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+     */
+    sessionId?: string;
+    /**
+     * Telemetry metadata attached to (Langfuse) trace/span.
+     */
+    metadata?: {
+      [key: string]: unknown;
+    };
     /**
      * The original prompt that was used to generate the response. (Use prompt.toJSON())
      */
     langfuseOriginalPrompt?: string;
-    /**
-     * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
-     */
-    functionId?: string;
   };
   metadata?: {
     [key: string]: unknown;
@@ -613,6 +1201,185 @@ export type SortingQueryStringSchema = string;
 export type FilterQueryStringSchema = string;
 
 export type CommentsControllerPostSlug = string;
+
+/**
+ * MobileOperator
+ *
+ * Mobile money operator
+ */
+export const MobileOperator = {
+  MTN: "MTN",
+  MOOV: "MOOV",
+  ORANGE: "ORANGE",
+} as const;
+
+/**
+ * MobileOperator
+ *
+ * Mobile money operator
+ */
+export type MobileOperator =
+  (typeof MobileOperator)[keyof typeof MobileOperator];
+
+/**
+ * SupplierType
+ *
+ * Type of supplier activity
+ */
+export const SupplierType = {
+  INPUTS: "INPUTS",
+  TRANSFORMER: "TRANSFORMER",
+} as const;
+
+/**
+ * SupplierType
+ *
+ * Type of supplier activity
+ */
+export type SupplierType = (typeof SupplierType)[keyof typeof SupplierType];
+
+/**
+ * SupplierMode
+ *
+ * How buyers interact with this supplier
+ */
+export const SupplierMode = { CONTACT: "CONTACT", ORDER: "ORDER" } as const;
+
+/**
+ * SupplierMode
+ *
+ * How buyers interact with this supplier
+ */
+export type SupplierMode = (typeof SupplierMode)[keyof typeof SupplierMode];
+
+/**
+ * OpeningHours
+ *
+ * Weekly opening hours with days as keys
+ */
+export type OpeningHours = {
+  [key: string]: {
+    open: string;
+    close: string;
+    closed?: boolean;
+  };
+};
+
+/**
+ * PickupMode
+ *
+ * How the buyer will receive the order
+ */
+export const PickupMode = { ON_SITE: "ON_SITE", DELIVERY: "DELIVERY" } as const;
+
+/**
+ * PickupMode
+ *
+ * How the buyer will receive the order
+ */
+export type PickupMode = (typeof PickupMode)[keyof typeof PickupMode];
+
+/**
+ * PaymentMethod
+ *
+ * Payment method for the order
+ */
+export const PaymentMethod = {
+  FEDAPAY: "FEDAPAY",
+  CASH_ON_DELIVERY: "CASH_ON_DELIVERY",
+} as const;
+
+/**
+ * PaymentMethod
+ *
+ * Payment method for the order
+ */
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
+
+/**
+ * OrderItemInput
+ *
+ * A single item in the order
+ */
+export type OrderItemInput = {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+};
+
+/**
+ * ProductUnit
+ *
+ * Unit of measurement for products
+ */
+export const ProductUnit = {
+  KG: "KG",
+  LITER: "LITER",
+  SACHET: "SACHET",
+  PIECE: "PIECE",
+  LOT: "LOT",
+} as const;
+
+/**
+ * ProductUnit
+ *
+ * Unit of measurement for products
+ */
+export type ProductUnit = (typeof ProductUnit)[keyof typeof ProductUnit];
+
+/**
+ * ProductStatus
+ *
+ * Product visibility and availability status
+ */
+export const ProductStatus = {
+  ACTIVE: "ACTIVE",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  HIDDEN: "HIDDEN",
+} as const;
+
+/**
+ * ProductStatus
+ *
+ * Product visibility and availability status
+ */
+export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus];
+
+/**
+ * SearchProductsQuery
+ *
+ * Geolocation-based product search
+ */
+export type SearchProductsQuery = {
+  q?: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  category?: string;
+  maxPrice?: number;
+  /**
+   * Filter in-stock only
+   */
+  inStockOnly: "true" | "false";
+  minRating?: number;
+  mode?: "CONTACT" | "ORDER";
+  /**
+   * Filter validated suppliers only
+   */
+  validatedOnly: "true" | "false";
+  sortBy: "distance" | "rating" | "price";
+  page: number;
+  limit: number;
+};
+
+/**
+ * AutocompleteQuery
+ */
+export type AutocompleteQuery = {
+  q: string;
+  latitude: number;
+  longitude: number;
+};
 
 export type CommentsControllerGetCommentsFilterItem = {
   property: "content";
@@ -1115,17 +1882,35 @@ export type AiExampleControllerGenerateTextData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
          */
-        langfuseTraceName: string;
+        traceMode?: "inherit" | "split";
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+          [key: string]: unknown;
+        };
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
-        /**
-         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
-         */
-        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -1177,17 +1962,35 @@ export type AiExampleControllerGenerateObjectData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
          */
-        langfuseTraceName: string;
+        traceMode?: "inherit" | "split";
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+          [key: string]: unknown;
+        };
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
-        /**
-         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
-         */
-        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -1279,17 +2082,35 @@ export type AiExampleControllerChatData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
          */
-        langfuseTraceName: string;
+        traceMode?: "inherit" | "split";
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+          [key: string]: unknown;
+        };
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
-        /**
-         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
-         */
-        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -1346,17 +2167,35 @@ export type AiExampleControllerStreamTextData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
          */
-        langfuseTraceName: string;
+        traceMode?: "inherit" | "split";
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+          [key: string]: unknown;
+        };
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
-        /**
-         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
-         */
-        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -1402,17 +2241,35 @@ export type AiExampleControllerStreamObjectData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
          */
-        langfuseTraceName: string;
+        traceMode?: "inherit" | "split";
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+          [key: string]: unknown;
+        };
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
-        /**
-         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
-         */
-        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -1498,17 +2355,35 @@ export type AiExampleControllerStreamChatData = {
       stopWhen?: number;
       telemetry?: {
         /**
-         * This enables Langfuse telemetry. Several LLM call can use the same traceName and will be merged into the same trace in Langfuse UI.
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
          */
-        langfuseTraceName: string;
+        traceMode?: "inherit" | "split";
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+          [key: string]: unknown;
+        };
         /**
          * The original prompt that was used to generate the response. (Use prompt.toJSON())
          */
         langfuseOriginalPrompt?: string;
-        /**
-         * This is the function ID that will be used to identify the LLM call in Langfuse UI. The Langfuse Span will be named after this function ID.
-         */
-        functionId?: string;
       };
       metadata?: {
         [key: string]: unknown;
@@ -1521,5 +2396,1551 @@ export type AiExampleControllerStreamChatData = {
 };
 
 export type AiExampleControllerStreamChatResponses = {
+  201: unknown;
+};
+
+export type AiExampleUseCasesControllerUseCase1SingleGenerationData = {
+  /**
+   * UseCase1SingleGenerationRequest
+   *
+   * Single generation; trace is finalized with name/output so Langfuse shows them
+   */
+  body: {
+    prompt: string;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+    /**
+     * AiGenerateOptions
+     *
+     * Options for an AI generation
+     */
+    options?: {
+      temperature?: number;
+      maxTokens?: number;
+      topP?: number;
+      frequencyPenalty?: number;
+      presencePenalty?: number;
+      maxSteps?: number;
+      stopWhen?: number;
+      telemetry?: {
+        /**
+         * Trace strategy. Use "inherit" to keep the active OTEL trace, or "split" to create a new (Langfuse) trace for this LLM call.
+         */
+        traceMode?: "inherit" | "split";
+        /**
+         * Optional explicit (Langfuse) trace ID for split mode. Reuse the same value to group multiple LLM calls in one (Langfuse) trace.
+         */
+        traceId?: string;
+        /**
+         * Display name used as root span name for the Langfuse trace. This does not control grouping.
+         */
+        traceName?: string;
+        /**
+         * Name for the LLM span. This is forwarded to Vercel telemetry as functionId.
+         */
+        spanName?: string;
+        /**
+         * Optional Langfuse session identifier to group related (Langfuse) traces (e.g. chat thread or job run).
+         */
+        sessionId?: string;
+        /**
+         * Telemetry metadata attached to (Langfuse) trace/span.
+         */
+        metadata?: {
+          [key: string]: unknown;
+        };
+        /**
+         * The original prompt that was used to generate the response. (Use prompt.toJSON())
+         */
+        langfuseOriginalPrompt?: string;
+      };
+      metadata?: {
+        [key: string]: unknown;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/examples/use-case-1-single-generation";
+};
+
+export type AiExampleUseCasesControllerUseCase1SingleGenerationResponses = {
+  /**
+   * Response from text generation
+   */
+  200: GenerateTextResponse;
+};
+
+export type AiExampleUseCasesControllerUseCase1SingleGenerationResponse =
+  AiExampleUseCasesControllerUseCase1SingleGenerationResponses[keyof AiExampleUseCasesControllerUseCase1SingleGenerationResponses];
+
+export type AiExampleUseCasesControllerUseCase2GroupedCallsData = {
+  /**
+   * UseCase2GroupedCallsRequest
+   *
+   * Multiple LLM calls in one request; one trace in Langfuse, finalized at end
+   */
+  body: {
+    /**
+     * Prompts for each step (same trace)
+     */
+    prompts: Array<string>;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/examples/use-case-2-grouped-calls";
+};
+
+export type AiExampleUseCasesControllerUseCase2GroupedCallsResponses = {
+  /**
+   * Combined results from grouped LLM calls
+   */
+  200: UseCase2GroupedCallsResponse;
+};
+
+export type AiExampleUseCasesControllerUseCase2GroupedCallsResponse =
+  AiExampleUseCasesControllerUseCase2GroupedCallsResponses[keyof AiExampleUseCasesControllerUseCase2GroupedCallsResponses];
+
+export type AiExampleUseCasesControllerUseCase3LogicalUnitsData = {
+  /**
+   * UseCase3LogicalUnitsRequest
+   *
+   * Multiple workflows; each workflow gets its own Langfuse trace (split per unit)
+   */
+  body: {
+    /**
+     * One prompt per logical workflow; each gets its own trace
+     */
+    workflowPrompts: Array<string>;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/examples/use-case-3-logical-units";
+};
+
+export type AiExampleUseCasesControllerUseCase3LogicalUnitsResponses = {
+  /**
+   * One result per workflow (each in its own trace)
+   */
+  200: UseCase3LogicalUnitsResponse;
+};
+
+export type AiExampleUseCasesControllerUseCase3LogicalUnitsResponse =
+  AiExampleUseCasesControllerUseCase3LogicalUnitsResponses[keyof AiExampleUseCasesControllerUseCase3LogicalUnitsResponses];
+
+export type AiExampleUseCasesControllerUseCase4ChatSessionData = {
+  /**
+   * UseCase4ChatSessionRequest
+   *
+   * Simple generateText with sessionId for grouping traces across requests
+   */
+  body: {
+    prompt: string;
+    /**
+     * Session ID to group traces in Langfuse (e.g. conversation or thread)
+     */
+    sessionId: string;
+    model?:
+      | "OPENAI_GPT_5_NANO"
+      | "GOOGLE_GEMINI_3_FLASH"
+      | "CLAUDE_HAIKU_3_5"
+      | "CLAUDE_OPUS_4_5"
+      | "MISTRAL_SMALL";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/ai/examples/use-case-4-chat-session";
+};
+
+export type AiExampleUseCasesControllerUseCase4ChatSessionResponses = {
+  /**
+   * Response from text generation
+   */
+  200: GenerateTextResponse;
+};
+
+export type AiExampleUseCasesControllerUseCase4ChatSessionResponse =
+  AiExampleUseCasesControllerUseCase4ChatSessionResponses[keyof AiExampleUseCasesControllerUseCase4ChatSessionResponses];
+
+export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData =
+  {
+    /**
+     * UseCase4ChatSessionRequest
+     *
+     * Simple generateText with sessionId for grouping traces across requests
+     */
+    body: {
+      prompt: string;
+      /**
+       * Session ID to group traces in Langfuse (e.g. conversation or thread)
+       */
+      sessionId: string;
+      model?:
+        | "OPENAI_GPT_5_NANO"
+        | "GOOGLE_GEMINI_3_FLASH"
+        | "CLAUDE_HAIKU_3_5"
+        | "CLAUDE_OPUS_4_5"
+        | "MISTRAL_SMALL";
+    };
+    path?: never;
+    query?: never;
+    url: "/api/ai/examples/use-case-5-chat-session-with-turns-merged";
+  };
+
+export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses =
+  {
+    /**
+     * Response from text generation
+     */
+    200: GenerateTextResponse;
+  };
+
+export type AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponse =
+  AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses[keyof AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses];
+
+export type SearchControllerSearchProductsData = {
+  body?: never;
+  path?: never;
+  query: {
+    q?: string;
+    latitude: number;
+    longitude: number;
+    radius: number;
+    category?: string;
+    maxPrice?: number;
+    /**
+     * Filter in-stock only
+     */
+    inStockOnly: "true" | "false";
+    minRating?: number;
+    mode?: "CONTACT" | "ORDER";
+    /**
+     * Filter validated suppliers only
+     */
+    validatedOnly: "true" | "false";
+    sortBy: "distance" | "rating" | "price";
+    page: number;
+    limit: number;
+  };
+  url: "/api/search/products";
+};
+
+export type SearchControllerSearchProductsResponses = {
+  /**
+   * Successful response
+   */
+  200: SearchResponse;
+};
+
+export type SearchControllerSearchProductsResponse =
+  SearchControllerSearchProductsResponses[keyof SearchControllerSearchProductsResponses];
+
+export type SearchControllerAutocompleteData = {
+  body?: never;
+  path?: never;
+  query: {
+    q: string;
+    latitude: number;
+    longitude: number;
+  };
+  url: "/api/search/autocomplete";
+};
+
+export type SearchControllerAutocompleteResponses = {
+  /**
+   * Successful response
+   */
+  200: AutocompleteResponse;
+};
+
+export type SearchControllerAutocompleteResponse =
+  SearchControllerAutocompleteResponses[keyof SearchControllerAutocompleteResponses];
+
+export type SearchControllerGetCategoriesData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/search/categories";
+};
+
+export type SearchControllerGetCategoriesResponses = {
+  /**
+   * Successful response
+   */
+  200: CategoriesResponse;
+};
+
+export type SearchControllerGetCategoriesResponse =
+  SearchControllerGetCategoriesResponses[keyof SearchControllerGetCategoriesResponses];
+
+export type SuppliersControllerRegisterData = {
+  /**
+   * RegisterSupplier
+   *
+   * Data required to register as a supplier
+   */
+  body: {
+    shopName: string;
+    /**
+     * SupplierType
+     *
+     * Type of supplier activity
+     */
+    type: "INPUTS" | "TRANSFORMER";
+    latitude: number;
+    longitude: number;
+    address: string;
+    neighborhood: string;
+    mobileMoneyNumber: string;
+    /**
+     * SupplierMode
+     *
+     * How buyers interact with this supplier
+     */
+    mode: "CONTACT" | "ORDER";
+    /**
+     * OpeningHours
+     *
+     * Weekly opening hours with days as keys
+     */
+    openingHours?: {
+      [key: string]: {
+        open: string;
+        close: string;
+        closed?: boolean;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/register";
+};
+
+export type SuppliersControllerRegisterResponses = {
+  201: unknown;
+};
+
+export type SuppliersControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{id}";
+};
+
+export type SuppliersControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerUpdateMeData = {
+  /**
+   * UpdateSupplier
+   *
+   * Update supplier profile — all fields optional
+   */
+  body: {
+    shopName?: string;
+    /**
+     * SupplierType
+     *
+     * Type of supplier activity
+     */
+    type?: "INPUTS" | "TRANSFORMER";
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+    neighborhood?: string;
+    mobileMoneyNumber?: string;
+    /**
+     * SupplierMode
+     *
+     * How buyers interact with this supplier
+     */
+    mode?: "CONTACT" | "ORDER";
+    /**
+     * OpeningHours
+     *
+     * Weekly opening hours with days as keys
+     */
+    openingHours?: {
+      [key: string]: {
+        open: string;
+        close: string;
+        closed?: boolean;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me";
+};
+
+export type SuppliersControllerUpdateMeResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerGetDashboardData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/dashboard";
+};
+
+export type SuppliersControllerGetDashboardResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerCreateDeliveryZoneData = {
+  /**
+   * DeliveryZone
+   *
+   * Delivery zone defined by a polygon with fee and estimated time
+   */
+  body: {
+    polygon: Array<{
+      latitude: number;
+      longitude: number;
+    }>;
+    deliveryFee: number;
+    estimatedMinutes: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/delivery-zones";
+};
+
+export type SuppliersControllerCreateDeliveryZoneResponses = {
+  201: unknown;
+};
+
+export type UsersControllerGetMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/users/me";
+};
+
+export type UsersControllerGetMeResponses = {
+  200: unknown;
+};
+
+export type UsersControllerUpdateMeData = {
+  /**
+   * UpdateUser
+   *
+   * Update user profile
+   */
+  body: {
+    name?: string;
+    image?: string;
+    deviceId?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/users/me";
+};
+
+export type UsersControllerUpdateMeResponses = {
+  200: unknown;
+};
+
+export type FilesControllerGetUploadUrlData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/files/upload-url";
+};
+
+export type FilesControllerGetUploadUrlResponses = {
+  201: unknown;
+};
+
+export type ProductsControllerFindBySupplierData = {
+  body?: never;
+  path: {
+    supplierId: string;
+  };
+  query: {
+    status: string;
+    categoryId: string;
+  };
+  url: "/api/suppliers/{supplierId}/products";
+};
+
+export type ProductsControllerFindBySupplierResponses = {
+  200: unknown;
+};
+
+export type ProductsControllerCreateData = {
+  /**
+   * CreateProduct
+   *
+   * Data required to create a new product
+   */
+  body: {
+    name: string;
+    categoryId: string;
+    description?: string;
+    pricePerUnit: number;
+    /**
+     * ProductUnit
+     *
+     * Unit of measurement for products
+     */
+    unit: "KG" | "LITER" | "SACHET" | "PIECE" | "LOT";
+    stock: number;
+    stockAlertThreshold: number;
+    /**
+     * ProductStatus
+     *
+     * Product visibility and availability status
+     */
+    status: "ACTIVE" | "OUT_OF_STOCK" | "HIDDEN";
+    variants?: Array<{
+      label: string;
+      pricePerUnit: number;
+      stock?: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/products";
+};
+
+export type ProductsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type ProductsControllerSoftDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}";
+};
+
+export type ProductsControllerSoftDeleteResponses = {
+  200: unknown;
+};
+
+export type ProductsControllerUpdateData = {
+  /**
+   * UpdateProduct
+   *
+   * Update product — all fields optional
+   */
+  body: {
+    name?: string;
+    categoryId?: string;
+    description?: string;
+    pricePerUnit?: number;
+    /**
+     * ProductUnit
+     *
+     * Unit of measurement for products
+     */
+    unit?: "KG" | "LITER" | "SACHET" | "PIECE" | "LOT";
+    stock?: number;
+    stockAlertThreshold?: number;
+    /**
+     * ProductStatus
+     *
+     * Product visibility and availability status
+     */
+    status?: "ACTIVE" | "OUT_OF_STOCK" | "HIDDEN";
+    variants?: Array<{
+      label: string;
+      pricePerUnit: number;
+      stock?: number;
+    }>;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}";
+};
+
+export type ProductsControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type ProductsControllerUpdateStockData = {
+  /**
+   * StockUpdate
+   *
+   * Update product stock level
+   */
+  body: {
+    stock: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}/stock";
+};
+
+export type ProductsControllerUpdateStockResponses = {
+  200: unknown;
+};
+
+export type ProductsControllerSetPromotionData = {
+  /**
+   * Promotion
+   *
+   * Set a promotional price on a product
+   */
+  body: {
+    promotionalPrice: number;
+    expiresAt: Date;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}/promotion";
+};
+
+export type ProductsControllerSetPromotionResponses = {
+  201: unknown;
+};
+
+export type ProductsControllerSubscribeToStockAlertData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/products/{id}/stock-alert";
+};
+
+export type ProductsControllerSubscribeToStockAlertResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerFindAllData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/orders";
+};
+
+export type OrdersControllerFindAllResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerCreateData = {
+  /**
+   * CreateOrder
+   *
+   * Data required to place a new order
+   */
+  body: {
+    supplierId: string;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    /**
+     * PaymentMethod
+     *
+     * Payment method for the order
+     */
+    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY";
+    deliveryAddress?: string;
+    deliverySlot?: Date;
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders";
+};
+
+export type OrdersControllerCreateResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}";
+};
+
+export type OrdersControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerAcceptData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/accept";
+};
+
+export type OrdersControllerAcceptResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerRejectData = {
+  /**
+   * RejectOrder
+   *
+   * Reason for rejecting an order
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/reject";
+};
+
+export type OrdersControllerRejectResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerUpdateStatusData = {
+  /**
+   * UpdateOrderStatus
+   *
+   * Update order status (supplier only)
+   */
+  body: {
+    status: "PREPARING" | "READY" | "IN_DELIVERY";
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/status";
+};
+
+export type OrdersControllerUpdateStatusResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerConfirmDeliveryData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/confirm-delivery";
+};
+
+export type OrdersControllerConfirmDeliveryResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerCreateDisputeData = {
+  /**
+   * CreateDispute
+   *
+   * Open a dispute on an order
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/dispute";
+};
+
+export type OrdersControllerCreateDisputeResponses = {
+  201: unknown;
+};
+
+export type PaymentsControllerInitiateData = {
+  /**
+   * InitiatePayment
+   *
+   * Data required to initiate a mobile money payment
+   */
+  body: {
+    orderId: string;
+    /**
+     * MobileOperator
+     *
+     * Mobile money operator
+     */
+    operator: "MTN" | "MOOV" | "ORANGE";
+    phoneNumber: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/initiate";
+};
+
+export type PaymentsControllerInitiateResponses = {
+  201: unknown;
+};
+
+export type PaymentsControllerHandleWebhookData = {
+  /**
+   * WebhookEvent
+   *
+   * FedaPay webhook event payload
+   */
+  body: {
+    id: string;
+    type: string;
+    data: {
+      id: number;
+      reference?: string;
+      amount?: number;
+      status: string;
+      customer?: {
+        phone_number?: {
+          number: string;
+          country: string;
+        };
+      };
+    };
+  };
+  headers: {
+    "x-fedapay-signature": string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/fedapay";
+};
+
+export type PaymentsControllerHandleWebhookResponses = {
+  201: unknown;
+};
+
+export type ChatControllerGetConversationsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/chat/conversations";
+};
+
+export type ChatControllerGetConversationsResponses = {
+  200: unknown;
+};
+
+export type ChatControllerCreateConversationData = {
+  /**
+   * CreateConversation
+   *
+   * Create or retrieve an existing conversation with a supplier
+   */
+  body: {
+    supplierId: string;
+    productId?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/chat/conversations";
+};
+
+export type ChatControllerCreateConversationResponses = {
+  201: unknown;
+};
+
+export type ChatControllerGetMessagesData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    before: string;
+    limit: string;
+  };
+  url: "/api/chat/conversations/{id}/messages";
+};
+
+export type ChatControllerGetMessagesResponses = {
+  200: unknown;
+};
+
+export type ChatControllerShareWhatsAppData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    message: string;
+  };
+  url: "/api/chat/conversations/{id}/share-whatsapp";
+};
+
+export type ChatControllerShareWhatsAppResponses = {
+  201: unknown;
+};
+
+export type ChatControllerGetQuickRepliesData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/chat/suppliers/{id}/quick-replies";
+};
+
+export type ChatControllerGetQuickRepliesResponses = {
+  200: unknown;
+};
+
+export type RatingsControllerCreateReviewData = {
+  /**
+   * CreateReview
+   *
+   * Submit a review for a supplier
+   */
+  body: {
+    supplierId: string;
+    orderId?: string;
+    transactionType: "ORDER" | "CONTACT";
+    qualityRating: number;
+    delayRating: number;
+    communicationRating: number;
+    conformityRating: number;
+    comment?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/reviews";
+};
+
+export type RatingsControllerCreateReviewResponses = {
+  201: unknown;
+};
+
+export type RatingsControllerGetSupplierReviewsData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{id}/reviews";
+};
+
+export type RatingsControllerGetSupplierReviewsResponses = {
+  200: unknown;
+};
+
+export type RatingsControllerGetSupplierBadgesData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{id}/badges";
+};
+
+export type RatingsControllerGetSupplierBadgesResponses = {
+  200: unknown;
+};
+
+export type RatingsControllerReportReviewData = {
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/reviews/{id}/report";
+};
+
+export type RatingsControllerReportReviewResponses = {
+  201: unknown;
+};
+
+export type CommunityControllerGetGroupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    type: string;
+    sector: string;
+    region: string;
+  };
+  url: "/api/groups";
+};
+
+export type CommunityControllerGetGroupsResponses = {
+  200: unknown;
+};
+
+export type CommunityControllerJoinGroupData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/groups/{id}/join";
+};
+
+export type CommunityControllerJoinGroupResponses = {
+  201: unknown;
+};
+
+export type CommunityControllerLeaveGroupData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/groups/{id}/leave";
+};
+
+export type CommunityControllerLeaveGroupResponses = {
+  200: unknown;
+};
+
+export type CommunityControllerGetPublicationsData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    type: string;
+  };
+  url: "/api/groups/{id}/publications";
+};
+
+export type CommunityControllerGetPublicationsResponses = {
+  200: unknown;
+};
+
+export type CommunityControllerCreatePublicationData = {
+  /**
+   * CreatePublication
+   */
+  body: {
+    type:
+      | "PRODUCT_ANNOUNCEMENT"
+      | "TECHNICAL_QUESTION"
+      | "MARKET_ALERT"
+      | "TRAINING_SHARE";
+    content: string;
+    mediaUrls?: Array<string>;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/groups/{id}/publications";
+};
+
+export type CommunityControllerCreatePublicationResponses = {
+  201: unknown;
+};
+
+export type CommunityControllerReportPublicationData = {
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/groups/publications/{id}/report";
+};
+
+export type CommunityControllerReportPublicationResponses = {
+  201: unknown;
+};
+
+export type CommunityControllerGetShareUrlData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/groups/publications/{id}/share-url";
+};
+
+export type CommunityControllerGetShareUrlResponses = {
+  200: unknown;
+};
+
+export type TrainingControllerGetModulesData = {
+  body?: never;
+  path?: never;
+  query: {
+    theme: string;
+    format: string;
+  };
+  url: "/api/training/modules";
+};
+
+export type TrainingControllerGetModulesResponses = {
+  200: unknown;
+};
+
+export type TrainingControllerGetModuleByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/training/modules/{id}";
+};
+
+export type TrainingControllerGetModuleByIdResponses = {
+  200: unknown;
+};
+
+export type TrainingControllerGetDownloadUrlData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/training/modules/{id}/download";
+};
+
+export type TrainingControllerGetDownloadUrlResponses = {
+  200: unknown;
+};
+
+export type TrainingControllerCompleteModuleData = {
+  /**
+   * CompleteModule
+   *
+   * Answers submitted to complete a training module quiz
+   */
+  body: {
+    answers: Array<{
+      [key: string]: unknown;
+    }>;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/training/modules/{id}/complete";
+};
+
+export type TrainingControllerCompleteModuleResponses = {
+  201: unknown;
+};
+
+export type TrainingControllerGetMyProgressData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/training/my-progress";
+};
+
+export type TrainingControllerGetMyProgressResponses = {
+  200: unknown;
+};
+
+export type SubscriptionsControllerGetPlansData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/subscriptions/plans";
+};
+
+export type SubscriptionsControllerGetPlansResponses = {
+  200: unknown;
+};
+
+export type SubscriptionsControllerSubscribeData = {
+  /**
+   * CreateSubscription
+   *
+   * Data to subscribe to a plan
+   */
+  body: {
+    planId: string;
+    paymentMethod: string;
+    paymentReference?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/subscriptions";
+};
+
+export type SubscriptionsControllerSubscribeResponses = {
+  201: unknown;
+};
+
+export type SubscriptionsControllerGetCurrentSubscriptionData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/subscriptions/me";
+};
+
+export type SubscriptionsControllerGetCurrentSubscriptionResponses = {
+  200: unknown;
+};
+
+export type SubscriptionsControllerCancelSubscriptionData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/subscriptions/me/cancel";
+};
+
+export type SubscriptionsControllerCancelSubscriptionResponses = {
+  200: unknown;
+};
+
+export type SubscriptionsControllerUpgradeSubscriptionData = {
+  /**
+   * UpgradeSubscription
+   *
+   * Upgrade to a new plan
+   */
+  body: {
+    newPlanId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/subscriptions/me/upgrade";
+};
+
+export type SubscriptionsControllerUpgradeSubscriptionResponses = {
+  201: unknown;
+};
+
+export type AdminControllerGetDashboardData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/dashboard";
+};
+
+export type AdminControllerGetDashboardResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetValidationsData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/validations";
+};
+
+export type AdminControllerGetValidationsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerValidateSupplierData = {
+  /**
+   * ValidationActionInput
+   *
+   * Action to perform on a supplier validation
+   */
+  body: {
+    /**
+     * ValidationAction
+     *
+     * Action to take on a supplier validation request
+     */
+    action: "VALIDATE" | "REJECT" | "REQUEST_COMPLEMENT";
+    message?: string;
+  };
+  path: {
+    supplierId: string;
+  };
+  query?: never;
+  url: "/api/admin/validations/{supplierId}";
+};
+
+export type AdminControllerValidateSupplierResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetReportsData = {
+  body?: never;
+  path?: never;
+  query: {
+    targetType: string;
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/reports";
+};
+
+export type AdminControllerGetReportsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerResolveReportData = {
+  /**
+   * ResolveReportInput
+   *
+   * Action to resolve a content report
+   */
+  body: {
+    /**
+     * ReportResolveAction
+     *
+     * Action to take when resolving a content report
+     */
+    action: "DELETE_CONTENT" | "WARN_AUTHOR" | "DISMISS";
+    adminNote?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/reports/{id}";
+};
+
+export type AdminControllerResolveReportResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetDisputesData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/disputes";
+};
+
+export type AdminControllerGetDisputesResponses = {
+  200: unknown;
+};
+
+export type AdminControllerResolveDisputeData = {
+  /**
+   * DisputeResolutionInput
+   *
+   * Data to resolve a dispute
+   */
+  body: {
+    /**
+     * DisputeResolution
+     *
+     * Resolution outcome for a dispute
+     */
+    resolution: "REFUND_BUYER" | "PAY_SUPPLIER" | "PARTIAL_REFUND";
+    partialAmount?: number;
+    adminNote?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/disputes/{id}";
+};
+
+export type AdminControllerResolveDisputeResponses = {
+  200: unknown;
+};
+
+export type AdminControllerSuspendSupplierData = {
+  /**
+   * SuspendSupplier
+   *
+   * Reason for suspending a supplier
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/suppliers/{id}/suspend";
+};
+
+export type AdminControllerSuspendSupplierResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetTransactionsData = {
+  body?: never;
+  path?: never;
+  query: {
+    from: string;
+    to: string;
+    format: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/transactions";
+};
+
+export type AdminControllerGetTransactionsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateCommissionsData = {
+  /**
+   * CommissionRates
+   *
+   * Commission rates per product category
+   */
+  body: {
+    rates: Array<{
+      category: string;
+      rate: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings/commissions";
+};
+
+export type AdminControllerUpdateCommissionsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerBroadcastNotificationData = {
+  /**
+   * BroadcastNotification
+   *
+   * Send a notification to a group of users
+   */
+  body: {
+    title: string;
+    body: string;
+    targetRole: "BUYER" | "SUPPLIER" | "ALL";
+    targetZone?: string;
+    channel: "PUSH" | "SMS" | "IN_APP";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/notifications/broadcast";
+};
+
+export type AdminControllerBroadcastNotificationResponses = {
+  201: unknown;
+};
+
+export type RolesControllerFindAllData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles";
+};
+
+export type RolesControllerFindAllResponses = {
+  200: unknown;
+};
+
+export type RolesControllerCreateData = {
+  /**
+   * CreateRole
+   */
+  body: {
+    name: string;
+    description?: string;
+    permissionIds?: Array<string>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles";
+};
+
+export type RolesControllerCreateResponses = {
+  201: unknown;
+};
+
+export type RolesControllerGetAllPermissionsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles/permissions";
+};
+
+export type RolesControllerGetAllPermissionsResponses = {
+  200: unknown;
+};
+
+export type RolesControllerDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/roles/{id}";
+};
+
+export type RolesControllerDeleteResponses = {
+  200: unknown;
+};
+
+export type RolesControllerUpdateData = {
+  /**
+   * UpdateRole
+   */
+  body: {
+    name?: string;
+    description?: string;
+    permissionIds?: Array<string>;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/roles/{id}";
+};
+
+export type RolesControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type RolesControllerAssignRoleData = {
+  /**
+   * AssignRole
+   */
+  body: {
+    userId: string;
+    roleId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles/assign";
+};
+
+export type RolesControllerAssignRoleResponses = {
   201: unknown;
 };

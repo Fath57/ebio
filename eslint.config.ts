@@ -19,6 +19,7 @@ export default antfu(
       'AGENTS.md',
       '**/README.md',
       'pnpm-workspace.yaml',
+      'specs/**',
     ],
     rules: {
       'ts/no-explicit-any': 'error',
@@ -40,6 +41,23 @@ export default antfu(
       'eslintreact-hooks-extra/no-unnecessary-use-prefix': 'off',
       'react-hooks-extra/no-unnecessary-use-prefix': 'off',
       'react/no-unnecessary-use-prefix': 'off',
+    },
+  },
+
+  // React Native: StyleSheet.create at bottom of file is standard pattern
+  {
+    files: ['apps/mobile/**/*.tsx', 'apps/mobile/**/*.ts'],
+    rules: {
+      'ts/no-use-before-define': 'off',
+      'node/prefer-global/process': 'off',
+    },
+  },
+
+  // Spec/doc markdown files — skip linting code blocks
+  {
+    files: ['specs/**/*.md', '**/*.md'],
+    rules: {
+      'ts/no-explicit-any': 'off',
     },
   },
 )

@@ -13,3 +13,10 @@ Read all the documentation cited in the README.md file that could be useful to u
 - Read backend guidelines when working on backend code
 
 You must always follow these guidelines.
+
+## Active Technologies
+- TypeScript (strict mode) on Node.js 24.13.0 (001-ebio-marketplace-v1)
+- PostgreSQL + PostGIS (geospatial queries), Redis (cache, sessions, rate limiting, WebSocket adapter), Cloudflare R2 (S3-compatible file storage) (001-ebio-marketplace-v1)
+
+## Recent Changes
+- 001-ebio-marketplace-v1: Added TypeScript (strict mode) on Node.js 24.13.0

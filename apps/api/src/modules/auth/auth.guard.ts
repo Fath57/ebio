@@ -19,12 +19,26 @@ export class AuthGuard implements CanActivate {
   async canActivate(context: ExecutionContext): Promise<boolean> {
     try {
       const request = context.switchToHttp().getRequest()
-      const session = await this.authService.api.getSession({
+
+      // Try cookie-based session first (web clients)
+      let session = await this.authService.api.getSession({
         headers: fromNodeHeaders(request.headers),
       })
 
+      // Fallback: Bearer token (mobile clients)
+      if (!session) {
+        const authHeader = request.headers.authorization ?? request.headers.Authorization
+        if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+          const token = authHeader.slice(7)
+          // Create a fake cookie header so better-auth can resolve the session
+          const fakeHeaders = new Headers()
+          fakeHeaders.set('cookie', `better-auth.session_token=${token}`)
+          session = await this.authService.api.getSession({ headers: fakeHeaders })
+        }
+      }
+
       request.session = session
-      request.user = session?.user ?? null // useful for observability tools like Sentry
+      request.user = session?.user ?? null
 
       const isPublic = this.reflector.get('PUBLIC', context.getHandler())
 

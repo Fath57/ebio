@@ -116,7 +116,7 @@ pnpm db:migrate:down
 
 ```bash
 # At the project root
-docker build -t lonestone/api -f apps/api/Dockerfile .
+docker build -t ebio/api -f apps/api/Dockerfile .
 ```
 
 ### Running the Container
@@ -130,7 +130,7 @@ docker run -p 3000:3000 \
   -e DATABASE_PORT=5432 \
   -e BETTER_AUTH_SECRET=secret \
   -e API_PORT=3000 \
-  lonestone/api
+  ebio/api
 ```
 
 ### Running with Migrations (if applicable)
@@ -146,5 +146,5 @@ docker run -p 3000:3000 \
   -e DATABASE_PORT=5432 \
   -e BETTER_AUTH_SECRET=secret \
   -e API_PORT=3000 \
-  lonestone/api sh -c "pnpm db:migrate:up && node dist/main.js"
+  ebio/api sh -c "pnpm db:migrate:up && node dist/main.js"
 ```

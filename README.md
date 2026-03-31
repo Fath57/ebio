@@ -1,19 +1,12 @@
 <p align="center">
-  <img src="./assets/logo-preview.webp" alt="Lonestone Logo" width="200">
+  <strong>eBio</strong> — Trouvez des produits bio près de chez vous
 </p>
 
-# Boilerplate project
+# eBio Marketplace
 
-This repository represents the typical project structure at Lonestone, consisting of an API and one to several frontends.
+Marketplace géolocalisé de produits biologiques pour l'Afrique de l'Ouest.
 
-To start a new project using this boilerplate, simply create a project on Github and select the boilerplate from the template list.
-
-For more details, see the [documentation](https://lonestone.github.io/lonestone-boilerplate/) or check out the local documentation in the `apps/documentation` folder.
-
-[![CI ✨](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/ci.yml/badge.svg)](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/ci.yml)
-[![Deploy documentation to GitHub Pages](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/deploy-docs.yml/badge.svg)](https://github.com/lonestone/lonestone-boilerplate/actions/workflows/deploy-docs.yml)
-
-## 📋 Table of Contents
+## Table of Contents
 
 - [Overview](#-overview)
 - [Tech Stack](#️-tech-stack)
@@ -23,11 +16,10 @@ For more details, see the [documentation](https://lonestone.github.io/lonestone-
 - [Docker Services](#-docker-services)
 - [Useful Commands](#️-useful-commands)
 - [Development](#-development)
-- [Continuous Integration (CI)](#-continuous-integration-ci)
 - [Documentation](#-documentation)
 - [Deployment](#-deployment)
 
-## 🔍 Overview
+## Overview
 
 This project uses a "monorepo" architecture. The advantages are numerous, but primarily:
 
@@ -36,32 +28,30 @@ This project uses a "monorepo" architecture. The advantages are numerous, but pr
 - Strong end-to-end typing, easier refactoring;
 - Simplified and unified tooling (linter, build, etc.)
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 See the [Architecture](apps/documentation/src/content/docs/explanations/1_architecture.mdx) page for more details.
 
-## 📁 Project Structure
+## Project Structure
 
-See the [Project Structure](apps/documentation/src/content/docs/explanations/1_architecture.mdx) page for more details.
+See the [Architecture](apps/documentation/src/content/docs/explanations/1_architecture.mdx) page for more details.
 
-## 📋 Prerequisites
+## Prerequisites
 
 - [Node.js](https://nodejs.org/) (version 24.13.0)
 - [PNPM](https://pnpm.io/) (version 10.28.2)
 - [Docker](https://www.docker.com/) and [Docker Compose](https://docs.docker.com/compose/)
 
-## 🚀 Installation
+## Installation
 
-1. Once your project is created with this template, clone the repository
+1. Clone the repository
 
 ```bash
-git clone https://github.com/lonestone/yourproject.git
-cd yourproject
+git clone <your-repo-url>
+cd ebio
 ```
 
 2. Ensure you have the correct node and pnpm versions (see root `package.json` file's `engines` property).
-
-You can use [fnm](https://github.com/Schniz/fnm) for managing your node version
 
 ```bash
 fnm use 24.13.0
@@ -76,25 +66,9 @@ pnpm install
 
 4. Run the setup script
 
-The project includes an automated setup script that will:
-- Detect available applications (API, Web SPA, Web SSR, OpenAPI Generator)
-- Prompt you for database configuration (user, password, name, host, port)
-- Prompt you for application ports
-- Configure SMTP settings (MailDev)
-- Copy and configure all `.env` files automatically
-- Optionally start Docker services (database, MailDev)
-- Optionally run database migrations
-
 ```bash
 pnpm rock
 ```
-
-The script will guide you through the configuration process interactively. It will:
-- Ask for your project name
-- Update package.json files for detected applications with the project name
-- Check for existing `.env` files and only prompt for missing variables
-- Automatically update all `.env` files with your configuration
-- Set up proper API URLs and trusted origins across all applications
 
 5. Start applications in development mode:
 
@@ -104,19 +78,14 @@ pnpm dev
 
 ### Manual Setup (Alternative)
 
-If you prefer to configure everything manually:
-
 1. Copy environment files:
 
 ```bash
 cp .env.example .env
 cp apps/api/.env.example apps/api/.env
 cp apps/web-spa/.env.example apps/web-spa/.env
-cp apps/web-ssr/.env.example apps/web-ssr/.env
 cp packages/openapi-generator/.env.example packages/openapi-generator/.env
 ```
-
-⚠️ In most of those `.env` files, the API url and port are used. Remember to update all the files to match your API url and port.
 
 2. Start Docker services:
 
@@ -126,15 +95,16 @@ pnpm docker:up
 
 3. Run migrations or set up your schema by following the instructions in the [API README](apps/api/README.md).
 
-## 🐳 Docker Services
+## Docker Services
 
 The project uses Docker Compose to provide the following services:
 
-- PostgreSQL - Database server
-- MailDev - SMTP server for development (not to be used in production!)
-- MinIO - S3 compatible storage solution (not to be used in production!)
+- PostgreSQL + PostGIS - Database server with geospatial support
+- Redis - Cache, sessions, rate limiting, WebSocket adapter
+- MailDev - SMTP server for development
+- MinIO - S3-compatible storage (dev only)
 
-## ⌨️ Useful Commands
+## Useful Commands
 
 ### Docker
 
@@ -160,58 +130,23 @@ The project uses Docker Compose to provide the following services:
 
 - **Run tests**: `pnpm test`
 
-## 💻 Development
+## Development
 
 ### Applications
 
-- The API is built with NestJS and provides a REST API. See the [API README](apps/api/README.md) for more information.
-- The web-spa is built with React and provides a single-page application. See the [Web SPA README](apps/web-spa/README.md) for more information.
-- The web-ssr is built with React and provides a server-side rendered application. See the [Web SSR README](apps/web-ssr/README.md) for more information.
-
-You can start each application in development mode with the following commands:
-
-```bash
-# Start API in development mode from root folder
-pnpm --filter=api dev
-```
-
-```bash
-# Start API from its own folder
-cd apps/api && pnpm dev
-```
+- The API is built with NestJS and provides a REST API. See the [API README](apps/api/README.md).
+- The web-spa is the fournisseur/admin SPA built with React. See the [Web SPA README](apps/web-spa/README.md).
+- The mobile app is built with React Native/Expo for acheteurs.
 
 ### Shared Packages
 
-- UI -> Reusable UI components built with shadcn/ui.
-- OpenAPI Generator -> contains the generator plus the generated types, validators and sdk for frontend-backend communication. Imported by the frontend apps.
+- **UI** — Reusable UI components built with shadcn/ui.
+- **OpenAPI Generator** — Generated types, validators and SDK for frontend-backend communication.
+- **i18n** — Internationalization (FR/EN).
 
-## 🔄 Continuous Integration (CI)
+## Documentation
 
-The project uses GitHub Actions for continuous integration. Workflows are defined in the `.github/workflows/` folder.
-
-### CI Workflow
-
-The CI workflow (`ci.yml`) runs on every push to the `main` and `master` branches, as well as on pull requests to these branches.
-
-It includes the following jobs:
-
-- **Lint**: Checks code with ESLint
-- **Type Check**: Checks TypeScript types for all packages and applications
-- **Build**: Builds all packages and applications
-
-For more information, see the [GitHub Actions documentation](.github/ACTIONS.md).
-
-### AI Agents good practice
-When working with an AI Agent (such as Copilot, Cursor or Claude), please follow these guidelines:
-
-- Do not add rules to the repo. You are encouraged to create your own so that it benefits several projects.
-- If the agent needs markdown documents (like specifications or TODO task), write them in a dedicated folder in docs/features
-
-## 📚 Documentation
-
-Project documentation is available in the `docs/` folder and in app `README`s. It contains information about architecture, coding conventions, and development guides.
-
-This documentation is also used by our custom cursor rules.
+Project documentation is available in the `docs/` folder and in app `README`s.
 
 - [General Guidelines](apps/documentation/src/content/docs/references/general.mdx)
 - [Frontend Guidelines](apps/documentation/src/content/docs/references/frontend.mdx)
@@ -219,36 +154,12 @@ This documentation is also used by our custom cursor rules.
 - [API Readme](apps/api/README.md)
 - [Frontend Readme](apps/web-spa/README.md)
 
-The `docs/features` directory should contain a list of folder for each new features. In those you can write specification document and TODO tasks for a feature you are implementing. Feature specefications can can also point toward README.md files inside the packages' features, that should provide more details about the implementation within the scope of the package.
+## Deployment
 
-## 🔍 Tracing Architecture
+Options:
 
-The project uses a unified OpenTelemetry tracing architecture that integrates both Sentry and Langfuse:
+- Use a PaaS cloud service like Render or Dokploy
+- Build via Docker and publish images to a registry
+- Use docker-compose (not recommended for production)
 
-- **Shared TracerProvider**: A single OpenTelemetry TracerProvider manages traces for both Sentry (application monitoring) and Langfuse (AI/LLM tracing)
-- **Distributed Tracing**: Traces are automatically propagated across services, allowing you to see the full request flow
-- **AI Tracing**: All AI/LLM calls are automatically traced in Langfuse with full prompt visibility, token usage, and latency metrics
-- **Application Tracing**: All application spans (controllers, services, database queries) are traced in Sentry for performance monitoring and error tracking
-
-The tracing system is initialized in `apps/api/src/instrument.ts` and automatically started when the API server boots. See the [AI module documentation](apps/api/src/modules/ai/README.md) and [tracing documentation](apps/documentation/src/content/docs/core-features/2_monitoring.mdx) for more details.
-
-## 🚀 Deployment
-
-It's your choice to decide how you want to deploy the applications, your main options being:
-
-- Use a PaaS cloud service like Render or Dokploy which will build and host your services
-- Build the applications, via Docker, and publish their image on a registry to be used by Render or other PaaS
-- Use docker-compose (not recommended).
-
-### Building with Docker
-
-#### Prerequisites
-
-- Docker installed on your machine
-- Node.js and pnpm for local development
-
-See the dedicated README files for more details on how to build and run Docker images.
-
-### Deployment with Docker Compose
-
-An example Docker Compose configuration is available in the `docker-compose.yml` file at the project root.
+See dedicated README files for Docker build instructions.

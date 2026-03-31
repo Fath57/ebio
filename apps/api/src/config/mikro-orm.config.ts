@@ -8,7 +8,7 @@ import { SeedManager } from '@mikro-orm/seeder'
 import { config } from './env.config'
 
 // Add openapi method to ZodType prototype to avoid errors while running migrations
-// https://github.com/lonestone/lonestone-boilerplate/issues/33
+// PostGIS columns require type override to avoid schema drift
 
 type CreateMikroOrmOptions = {
   isTest?: boolean
@@ -40,7 +40,7 @@ export function createMikroOrmOptions(options?: CreateMikroOrmOptions) {
     migrations: {
       path: './dist/modules/db/migrations',
       pathTs: './src/modules/db/migrations',
-      allOrNothing: true,
+      allOrNothing: false,
       disableForeignKeys: false,
     },
     ...restOptions,

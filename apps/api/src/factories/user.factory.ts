@@ -11,7 +11,7 @@ import { Account, User } from '../modules/auth/auth.entity'
 export async function createUserData(em: EntityManager, overrides?: Partial<User>, password?: string): Promise<User> {
   const user = em.create(User, {
     name: overrides?.name ?? 'Test User',
-    email: overrides?.email ?? `test-${Math.random().toString(36).substring(2, 8)}@lonestone.com`,
+    email: overrides?.email ?? `test-${Math.random().toString(36).substring(2, 8)}@ebio.app`,
     emailVerified: overrides?.emailVerified ?? true,
     createdAt: new Date(),
     updatedAt: new Date(),

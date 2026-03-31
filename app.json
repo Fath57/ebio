@@ -1,8 +1,8 @@
 {
   "android": {
-    "package": "com.lonestone.app"
+    "package": "com.ebio.app"
   },
   "ios": {
-    "bundleIdentifier": "com.lonestone.app"
+    "bundleIdentifier": "com.ebio.app"
   }
 }

@@ -3,6 +3,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@boilerstone/ui/components/primitives/dropdown-menu'
@@ -31,6 +32,7 @@ export interface NavigationSection {
   dropdown?: {
     icon: React.ReactNode
     label?: string
+    header?: React.ReactNode
   }
 }
 
@@ -148,6 +150,14 @@ function NavigationDropdown({ section }: NavigationDropdownProps) {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-56">
+        {section.dropdown.header && (
+          <>
+            <DropdownMenuLabel className="font-normal">
+              {section.dropdown.header}
+            </DropdownMenuLabel>
+            <DropdownMenuSeparator />
+          </>
+        )}
         {visibleItems.map((item, index) => (
           <React.Fragment key={item.to}>
             {item.separator && index > 0 && <DropdownMenuSeparator />}
@@ -288,6 +298,11 @@ function NavigationMobile({ brand, sections }: NavigationMobileProps) {
               <React.Fragment key={sectionKey}>
                 {section.separator && sectionIndex > 0 && (
                   <Separator className="my-2" />
+                )}
+                {section.dropdown?.header && (
+                  <div className="px-3 py-2 text-sm">
+                    {section.dropdown.header}
+                  </div>
                 )}
                 <NavigationSectionComponent
                   section={section}

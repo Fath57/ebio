@@ -3,15 +3,20 @@ import { initReactI18next } from 'react-i18next'
 
 // Supported locales configuration
 export const SUPPORTED_LOCALES = {
-  en: {
+  'en': {
     name: 'English',
     defaultLocale: 'en-GB',
     flag: '🇬🇧',
   },
-  fr: {
+  'fr': {
     name: 'Français',
     defaultLocale: 'fr-FR',
     flag: '🇫🇷',
+  },
+  'fr-BJ': {
+    name: 'Français (Bénin)',
+    defaultLocale: 'fr-BJ',
+    flag: '🇧🇯',
   },
 } as const
 
@@ -40,6 +45,7 @@ export async function initializeI18n(i18n: i18n, resources: Resource): Promise<v
         resources,
         lng: DEFAULT_LOCALE,
         fallbackLng: FALLBACK_LOCALE,
+        load: 'languageOnly',
         interpolation: {
           escapeValue: false,
         },

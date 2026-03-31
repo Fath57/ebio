@@ -1,0 +1,191 @@
+import type { BetterAuthSession, LoggedInBetterAuthSession } from '../../config/better-auth.config'
+import { PaginationParams, TypedBody } from '@lonestone/nzoth/server'
+import {
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common'
+import { z } from 'zod'
+import { CanCreate, CanDelete, CanUpdate } from '../../common/decorators/check-permissions.decorator'
+import { Roles } from '../../common/decorators/roles.decorator'
+import { CaslGuard } from '../../common/guards/casl.guard'
+import { RolesGuard } from '../../common/guards/roles.guard'
+import { Public, Session } from '../auth/auth.decorator'
+import { AuthGuard } from '../auth/auth.guard'
+import { ValidationStatus } from '../suppliers/supplier.entity'
+import { SuppliersService } from '../suppliers/suppliers.service'
+import type { ProductPagination } from './contracts/product.contract'
+import {
+  createProductSchema,
+  productPaginationSchema,
+  promotionSchema,
+  stockUpdateSchema,
+  updateProductSchema,
+} from './contracts/product.contract'
+import { ProductMapper } from './products.mapper'
+import { ProductsService } from './products.service'
+import { StockAlertService } from './stock-alert.service'
+
+@Controller()
+@UseGuards(AuthGuard)
+export class ProductsController {
+  constructor(
+    private readonly productsService: ProductsService,
+    private readonly stockAlertService: StockAlertService,
+    private readonly suppliersService: SuppliersService,
+  ) {}
+
+  @Get('suppliers/:supplierId/products')
+  @Public()
+  async findBySupplier(
+    @Session() session: BetterAuthSession,
+    @Param('supplierId') supplierId: string,
+    @PaginationParams(productPaginationSchema) pagination: ProductPagination,
+    @Query('status') status?: string,
+    @Query('categoryId') categoryId?: string,
+  ) {
+    const emptyResult = { data: [], meta: { itemCount: 0, pageSize: pagination.pageSize, offset: pagination.offset, hasMore: false } }
+
+    // Resolve 'me' to the authenticated supplier's ID
+    let resolvedId = supplierId
+    if (supplierId === 'me') {
+      if (!session?.user?.id) {
+        return emptyResult
+      }
+      const supplier = await this.suppliersService.findByUserId(session.user.id)
+      resolvedId = supplier.id
+    }
+
+    const supplier = await this.suppliersService.findById(resolvedId)
+    if (supplier.validationStatus !== ValidationStatus.VALIDATED && supplierId !== 'me') {
+      return emptyResult
+    }
+
+    const result = await this.productsService.findBySupplierId(
+      resolvedId,
+      pagination,
+      { status, categoryId },
+    )
+
+    return {
+      data: result.products.map(p => ProductMapper.toSummary(p)),
+      meta: {
+        itemCount: result.total,
+        pageSize: pagination.pageSize,
+        offset: pagination.offset,
+        hasMore: pagination.offset + pagination.pageSize < result.total,
+      },
+    }
+  }
+
+  @Get('products/:id')
+  @Public()
+  async findById(@Param('id') id: string) {
+    const product = await this.productsService.findById(id)
+    const [variants, stats] = await Promise.all([
+      this.productsService.getVariantsByProductId(product.id),
+      this.productsService.getProductStats(product.id),
+    ])
+    return { ...ProductMapper.toResponse(product, variants), stats }
+  }
+
+  @Post('suppliers/me/products')
+  @Roles('SUPPLIER')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanCreate('Product')
+  async create(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedBody(createProductSchema) body: z.infer<typeof createProductSchema>,
+  ) {
+    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    const product = await this.productsService.create(supplier.id, body)
+    const variants = await this.productsService.getVariantsByProductId(product.id)
+    return ProductMapper.toResponse(product, variants)
+  }
+
+  @Put('suppliers/me/products/:id')
+  @Roles('SUPPLIER')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanUpdate('Product')
+  async update(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(updateProductSchema) body: z.infer<typeof updateProductSchema>,
+  ) {
+    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    const product = await this.productsService.update(id, supplier.id, body)
+    const variants = await this.productsService.getVariantsByProductId(product.id)
+    return ProductMapper.toResponse(product, variants)
+  }
+
+  @Patch('suppliers/me/products/:id/stock')
+  @Roles('SUPPLIER')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanUpdate('Product')
+  async updateStock(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(stockUpdateSchema) body: z.infer<typeof stockUpdateSchema>,
+  ) {
+    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    const previousProduct = await this.productsService.findById(id)
+    const previousStock = previousProduct.stock
+
+    const product = await this.productsService.updateStock(id, supplier.id, body.stock)
+
+    if (previousStock === 0 && body.stock > 0) {
+      await this.stockAlertService.notifyOnRestock(id)
+    }
+
+    const variants = await this.productsService.getVariantsByProductId(product.id)
+    return ProductMapper.toResponse(product, variants)
+  }
+
+  @Delete('suppliers/me/products/:id')
+  @Roles('SUPPLIER')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanDelete('Product')
+  async softDelete(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+  ) {
+    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    await this.productsService.softDelete(id, supplier.id)
+    return { success: true }
+  }
+
+  @Post('suppliers/me/products/:id/promotion')
+  @Roles('SUPPLIER')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanUpdate('Product')
+  async setPromotion(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(promotionSchema) body: z.infer<typeof promotionSchema>,
+  ) {
+    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    const product = await this.productsService.setPromotion(
+      id,
+      supplier.id,
+      body.promotionalPrice,
+      body.expiresAt,
+    )
+    const variants = await this.productsService.getVariantsByProductId(product.id)
+    return ProductMapper.toResponse(product, variants)
+  }
+
+  @Post('products/:id/stock-alert')
+  async subscribeToStockAlert(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+  ) {
+    const alert = await this.stockAlertService.subscribe(session.user.id, id)
+    return { id: alert.id, productId: id, subscribed: true }
+  }
+}

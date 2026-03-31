@@ -1,6 +1,6 @@
 # GitHub Workflows
 
-Ce dossier contient les workflows GitHub Actions pour le projet Lonestone.
+Ce dossier contient les workflows GitHub Actions pour le projet eBio.
 
 ## Workflows disponibles
 
