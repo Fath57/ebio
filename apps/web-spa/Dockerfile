@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Stage 2: Installing deps, building and deploying
 FROM base AS builder
+ENV CI=true
 
 # Define build arguments
 ARG VITE_API_URL

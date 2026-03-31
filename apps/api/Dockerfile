@@ -8,6 +8,7 @@ WORKDIR /app
 
 # Stage 2: Installing deps, building and deploying
 FROM base AS builder
+ENV CI=true
 # pnpm fetch does require only lockfile
 COPY pnpm-lock.yaml pnpm-workspace.yaml .npmrc ./
 RUN pnpm fetch
