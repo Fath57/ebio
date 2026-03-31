@@ -60,13 +60,19 @@ export class SearchService {
     } = query
 
     const offset = (page - 1) * limit
-    const baseParams: unknown[] = [longitude, latitude, radius]
+    const hasLocation = latitude !== undefined && longitude !== undefined
+    const hasRadius = hasLocation && radius !== undefined && radius > 0
+    const baseParams: unknown[] = []
 
     let whereClause = `
       WHERE p.status = 'ACTIVE'
-        AND s.location IS NOT NULL
-        AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)
     `
+
+    if (hasRadius) {
+      whereClause += `  AND s.location IS NOT NULL\n`
+      whereClause += `  AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)\n`
+      baseParams.push(longitude, latitude, radius)
+    }
 
     if (validatedOnly === 'true') {
       whereClause += `  AND s.validation_status = 'VALIDATED'\n`
@@ -101,7 +107,7 @@ export class SearchService {
       baseParams.push(mode)
     }
 
-    const orderClause = this.buildOrderClause(sortBy)
+    const orderClause = hasLocation ? this.buildOrderClause(sortBy) : this.buildOrderClause(sortBy === 'distance' ? 'rating' : sortBy)
 
     const countSql = `
       SELECT COUNT(*) as count
@@ -110,6 +116,10 @@ export class SearchService {
       JOIN categories c ON p.category_id = c.id
       ${whereClause}
     `
+
+    const distanceSelect = hasLocation
+      ? `ST_Distance(s.location, ST_MakePoint(?, ?)::geography) as distance`
+      : `0 as distance`
 
     const dataSql = `
       SELECT
@@ -127,7 +137,7 @@ export class SearchService {
         s.total_reviews,
         s.validation_status,
         s.opening_hours,
-        ST_Distance(s.location, ST_MakePoint(?, ?)::geography) as distance
+        ${distanceSelect}
       FROM products p
       JOIN suppliers s ON p.supplier_id = s.id
       JOIN categories c ON p.category_id = c.id
@@ -137,12 +147,8 @@ export class SearchService {
     `
 
     const countParams = [...baseParams]
-    // Data query has ST_MakePoint(?,?) in SELECT + ST_MakePoint(?,?) in WHERE
-    // SELECT params: longitude, latitude
-    // WHERE params: longitude, latitude, radius, ...dynamic filters
-    // LIMIT/OFFSET params: limit, offset
-    const dynamicParams = baseParams.slice(3) // everything after lng, lat, radius
-    const dataParams = [longitude, latitude, longitude, latitude, radius, ...dynamicParams, limit, offset]
+    const selectParams = hasLocation ? [longitude, latitude] : []
+    const dataParams = [...selectParams, ...baseParams, limit, offset]
 
     const connection = this.em.getConnection()
     const [countResult, dataResult] = await Promise.all([

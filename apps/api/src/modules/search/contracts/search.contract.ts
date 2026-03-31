@@ -2,9 +2,9 @@ import { z } from 'zod'
 
 export const searchProductsQuerySchema = z.object({
   q: z.string().optional(),
-  latitude: z.coerce.number().min(-90).max(90),
-  longitude: z.coerce.number().min(-180).max(180),
-  radius: z.coerce.number().default(10000),
+  latitude: z.coerce.number().min(-90).max(90).optional(),
+  longitude: z.coerce.number().min(-180).max(180).optional(),
+  radius: z.coerce.number().optional(),
   category: z.string().optional(),
   maxPrice: z.coerce.number().optional(),
   inStockOnly: z.enum(['true', 'false']).default('true').meta({ description: 'Filter in-stock only' }),
