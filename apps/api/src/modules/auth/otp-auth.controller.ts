@@ -187,9 +187,10 @@ export class OtpAuthController {
       return { message: 'Si un compte existe, un code a été envoyé' }
     }
 
-    const target = body.identifier.startsWith('+') ? body.identifier : user.phone
+    const isEmail = body.identifier.includes('@')
+    const target = isEmail ? body.identifier : (body.identifier.startsWith('+') ? body.identifier : user.phone)
     if (!target) {
-      throw new BadRequestException('Aucun numéro de téléphone associé au compte')
+      throw new BadRequestException('Aucun identifiant de contact associé au compte')
     }
 
     const result = await this.otpService.sendPasswordResetOtp(target)

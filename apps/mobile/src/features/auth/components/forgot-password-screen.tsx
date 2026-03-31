@@ -13,6 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
+import Mail from 'lucide-react-native/dist/esm/icons/mail'
 import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import Eye from 'lucide-react-native/dist/esm/icons/eye'
 import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
@@ -27,6 +28,7 @@ import {
 import { OtpInput, ResendTimer } from './otp-input'
 
 type Step = 'identifier' | 'otp' | 'new-password' | 'success'
+type Method = 'phone' | 'email'
 
 interface ForgotPasswordScreenProps {
   onGoBack: () => void
@@ -37,6 +39,7 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
 
+  const [method, setMethod] = useState<Method>('phone')
   const [step, setStep] = useState<Step>('identifier')
   const [identifier, setIdentifier] = useState('+229')
   const [newPassword, setNewPassword] = useState('')
@@ -124,6 +127,8 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
   }
 
   const isPhoneValid = /^\+229\d{10}$/.test(identifier)
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(identifier)
+  const isIdentifierValid = method === 'phone' ? isPhoneValid : isEmailValid
 
   return (
     <KeyboardAvoidingView
@@ -153,8 +158,10 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
           {step === 'success' && 'Mot de passe réinitialisé'}
         </Text>
         <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
-          {step === 'identifier' && 'Entrez votre numéro de téléphone pour recevoir un code'}
-          {step === 'otp' && `Code envoyé au ${identifier}`}
+          {step === 'identifier' && (method === 'phone'
+            ? 'Entrez votre numéro de téléphone pour recevoir un code'
+            : 'Entrez votre adresse email pour recevoir un code')}
+          {step === 'otp' && `Code envoyé ${method === 'phone' ? 'au' : 'à'} ${identifier}`}
           {step === 'new-password' && 'Choisissez un nouveau mot de passe sécurisé'}
           {step === 'success' && 'Vous pouvez maintenant vous connecter avec votre nouveau mot de passe'}
         </Text>
@@ -170,28 +177,62 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
           {/* ─── Identifier step ─── */}
           {step === 'identifier' && (
             <>
-              <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
-                <Phone size={20} color={iconColor} strokeWidth={1.8} />
-                <TextInput
-                  style={[styles.input, { color: semantic.textPrimary, fontFamily: fonts.sans }]}
-                  placeholder="+229 XX XX XX XX"
-                  placeholderTextColor={placeholderColor}
-                  value={identifier}
-                  onChangeText={setIdentifier}
-                  keyboardType="phone-pad"
-                  autoComplete="tel"
-                  maxLength={14}
-                />
+              {/* Method toggle */}
+              <View style={styles.methodToggle}>
+                <Pressable
+                  style={[styles.methodTab, method === 'phone' && { backgroundColor: colors.green[400] }]}
+                  onPress={() => { setMethod('phone'); setIdentifier('+229'); setError(null) }}
+                >
+                  <Phone size={16} color={method === 'phone' ? colors.neutral[0] : semantic.textSecondary} strokeWidth={1.8} />
+                  <Text style={[styles.methodTabText, method === 'phone' && { color: colors.neutral[0] }]}>Téléphone</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.methodTab, method === 'email' && { backgroundColor: colors.green[400] }]}
+                  onPress={() => { setMethod('email'); setIdentifier(''); setError(null) }}
+                >
+                  <Mail size={16} color={method === 'email' ? colors.neutral[0] : semantic.textSecondary} strokeWidth={1.8} />
+                  <Text style={[styles.methodTabText, method === 'email' && { color: colors.neutral[0] }]}>Email</Text>
+                </Pressable>
               </View>
+
+              {method === 'phone' ? (
+                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <Phone size={20} color={iconColor} strokeWidth={1.8} />
+                  <TextInput
+                    style={[styles.input, { color: semantic.textPrimary, fontFamily: fonts.sans }]}
+                    placeholder="+229 XX XX XX XX"
+                    placeholderTextColor={placeholderColor}
+                    value={identifier}
+                    onChangeText={setIdentifier}
+                    keyboardType="phone-pad"
+                    autoComplete="tel"
+                    maxLength={14}
+                  />
+                </View>
+              ) : (
+                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <Mail size={20} color={iconColor} strokeWidth={1.8} />
+                  <TextInput
+                    style={[styles.input, { color: semantic.textPrimary, fontFamily: fonts.sans }]}
+                    placeholder="votre@email.com"
+                    placeholderTextColor={placeholderColor}
+                    value={identifier}
+                    onChangeText={setIdentifier}
+                    keyboardType="email-address"
+                    autoComplete="email"
+                    autoCapitalize="none"
+                  />
+                </View>
+              )}
 
               <Pressable
                 style={({ pressed }) => [
                   styles.submitButton,
                   { backgroundColor: colors.green[400], opacity: pressed ? 0.85 : 1 },
-                  (!isPhoneValid || loading) && styles.submitButtonDisabled,
+                  (!isIdentifierValid || loading) && styles.submitButtonDisabled,
                 ]}
                 onPress={handleRequestOtp}
-                disabled={!isPhoneValid || loading}
+                disabled={!isIdentifierValid || loading}
               >
                 {loading ? (
                   <ActivityIndicator color={colors.neutral[0]} size="small" />
@@ -315,6 +356,16 @@ const styles = StyleSheet.create({
     marginBottom: spacing[5],
   },
   errorText: { ...typography.bodyS, color: colors.coral[600] },
+
+  methodToggle: {
+    flexDirection: 'row', gap: spacing[2], marginBottom: spacing[2],
+  },
+  methodTab: {
+    flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+    gap: spacing[2], height: 44, borderRadius: radius.lg,
+    backgroundColor: 'transparent', borderWidth: 1, borderColor: colors.neutral[200],
+  },
+  methodTabText: { ...typography.bodyS, fontFamily: fonts.medium },
 
   form: { gap: spacing[4] },
   inputContainer: {

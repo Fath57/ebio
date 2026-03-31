@@ -146,9 +146,16 @@ export class OtpService {
 
     await fork.flush()
 
-    // If identifier looks like a phone, send SMS. Otherwise it's logged (email flow handled separately).
     if (identifier.startsWith('+')) {
       await this.smsService.send(identifier, `eBio: votre code de réinitialisation est ${code}`)
+    }
+    else if (identifier.includes('@')) {
+      await this.emailService.sendTemplatedEmail({
+        to: identifier,
+        subject: 'eBio — Code de réinitialisation',
+        template: 'otp-code',
+        data: { code, title: 'Réinitialisation de mot de passe', expiresInMinutes: OTP_TTL_MINUTES },
+      })
     }
 
     this.logger.debug(`[RESET-OTP] ${identifier} → ${code}`)

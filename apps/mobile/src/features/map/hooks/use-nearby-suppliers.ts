@@ -25,7 +25,7 @@ interface UseNearbyResult {
 
 const DEFAULT_LOCATION = { latitude: 14.6928, longitude: -17.4467 } // Dakar
 
-export function useNearbySuppliers(radiusKm = 15): UseNearbyResult {
+export function useNearbySuppliers(radiusKm?: number): UseNearbyResult {
   const [suppliers, setSuppliers] = useState<NearbySupplier[]>([])
   const [userLocation, setUserLocation] = useState<{ latitude: number, longitude: number } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -35,9 +35,9 @@ export function useNearbySuppliers(radiusKm = 15): UseNearbyResult {
     setLoading(true)
     setError(null)
     try {
-      const res = await apiFetch(
-        `/api/suppliers/nearby?latitude=${lat}&longitude=${lng}&radius=${radiusKm}`,
-      )
+      const params = new URLSearchParams({ latitude: String(lat), longitude: String(lng) })
+      if (radiusKm) params.set('radius', String(radiusKm))
+      const res = await apiFetch(`/api/suppliers/nearby?${params}`)
       if (res.ok) {
         const data = (await res.json()) as NearbySupplier[]
         setSuppliers(data)
