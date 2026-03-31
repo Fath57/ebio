@@ -1,9 +1,9 @@
 # Stage 1: base
-FROM node:22.14-alpine AS base
+FROM node:24-alpine AS base
 ENV PNPM_HOME="/pnpm"
 ENV PATH="$PNPM_HOME:$PATH"
 # Use pnpm version according to our package.json, if not the pnpm store will not be in synced later on, resulting in errors
-RUN corepack enable && corepack prepare pnpm@10.5.0 --activate
+RUN corepack enable && corepack prepare pnpm@10.28.2 --activate
 WORKDIR /app
 
 # Stage 2: Installing deps, building and deploying

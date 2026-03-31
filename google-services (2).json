@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "395894726844",
+    "project_id": "ebio-1711e",
+    "storage_bucket": "ebio-1711e.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:395894726844:android:7c9b63740f388964ff70b9",
+        "android_client_info": {
+          "package_name": "com.ebio.mobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBoXpEKVpxVhb9REezwMtPWxH7UFzPNI88"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
