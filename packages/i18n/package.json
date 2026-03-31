@@ -8,7 +8,8 @@
     "./config": "./src/i18n-config.ts",
     "./utils": "./src/i18n-utils.ts",
     "./instance": "./src/i18n-instance.ts",
-    "./cookies": "./src/i18n-cookies.ts"
+    "./cookies": "./src/i18n-cookies.ts",
+    "./locales/fr-BJ": "./src/locales/fr-BJ.ts"
   },
   "main": "./src/index.ts",
   "types": "./src/index.ts",

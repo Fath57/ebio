@@ -11,6 +11,8 @@
     "@boilerstone/i18n": "workspace:*",
     "@boilerstone/openapi-generator": "workspace:*",
     "@boilerstone/ui": "workspace:*",
+    "@casl/ability": "^6.8.0",
+    "@casl/react": "^5.0.1",
     "@fontsource/source-sans-pro": "^5.2.5",
     "@hookform/resolvers": "catalog:frontend",
     "@react-router/node": "catalog:frontend",
