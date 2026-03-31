@@ -154,7 +154,7 @@ export class OtpService {
         to: identifier,
         subject: 'eBio — Code de réinitialisation',
         template: 'otp-code',
-        data: { code, title: 'Réinitialisation de mot de passe', expiresInMinutes: OTP_TTL_MINUTES },
+        data: { code, userName: null, title: 'Réinitialisation de mot de passe', expiresInMinutes: OTP_TTL_MINUTES },
       })
     }
 
