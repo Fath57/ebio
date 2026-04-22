@@ -56,7 +56,7 @@ async function bootstrap() {
 
   const LAN_IP_PATTERN = /^https?:\/\/(?:10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)(?::\d+)?$/
   app.enableCors({
-    origin: (origin, cb) => {
+    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
       if (!origin)
         return cb(null, true)
       if (config.betterAuth.trustedOrigins.includes(origin))

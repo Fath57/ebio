@@ -176,7 +176,7 @@ export class PaymentsService {
     const payment = this.em.create(Payment, {
       order,
       amount: order.totalAmount,
-      provider: 'fedapay',
+      provider: PaymentProvider.FEDAPAY,
       paymentMethod: 'fedapay_checkout',
       status: PaymentStatus.PENDING,
     })

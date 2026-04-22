@@ -14,6 +14,7 @@ export interface SupplierValidationItem {
   submittedAt: string
   validationStatus: string
   productCount: number
+  businessNumber: string | null
   identityDocumentUrl: string | null
   businessProofUrl: string | null
   profilePhoto: string | null
@@ -45,7 +46,7 @@ export function fetchSupplierByIdQueryOptions(supplierId: string) {
     queryKey: ['admin', 'validation', supplierId],
     queryFn: async () => {
       const response = await adminControllerGetValidations({
-        query: { page: '1', limit: '50' },
+        query: { status: 'pending', page: '1', limit: '50' },
       })
       if (response.error)
         throw new Error('Failed to fetch suppliers')

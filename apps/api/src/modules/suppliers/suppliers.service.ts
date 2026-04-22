@@ -31,7 +31,9 @@ export class SuppliersService {
     user.role = UserRole.SUPPLIER
     await this.em.flush()
 
-    await this.updateLocation(supplier.id, data.latitude, data.longitude)
+    if (data.latitude !== undefined && data.longitude !== undefined) {
+      await this.updateLocation(supplier.id, data.latitude, data.longitude)
+    }
 
     return supplier
   }

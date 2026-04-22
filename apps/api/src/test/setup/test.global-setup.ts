@@ -31,7 +31,7 @@ declare module 'vitest' {
 export default async function setup(project: TestProject) {
   const { provide } = project
   // Start a new container for this test
-  const container = await new PostgreSqlContainer('postgres:16-alpine').start()
+  const container = await new PostgreSqlContainer('postgis/postgis:16-3.4').start()
 
   const host = container.getHost()
   const port = container.getPort()

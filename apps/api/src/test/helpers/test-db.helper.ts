@@ -45,7 +45,17 @@ export async function createTestOrm(dbConfig: {
   })
 
   const orm = await MikroORM.init(mikroOrmOptions)
-  await orm.schema.refreshDatabase()
+  try {
+    await orm.schema.dropDatabase()
+  }
+  catch {
+    // Database might not exist on first run — ignore
+  }
+  await orm.schema.createDatabase()
+  // PostGIS extension is required for the Supplier.location geography column.
+  // Install it in the freshly-created test database before any schema creation.
+  await orm.em.getConnection().execute('CREATE EXTENSION IF NOT EXISTS postgis')
+  await orm.schema.createSchema()
 
   return {
     orm,
