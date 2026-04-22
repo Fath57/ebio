@@ -316,7 +316,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 22,
-    backgroundColor: colors.sky[50],
+    backgroundColor: colors.blue[50],
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -326,7 +326,7 @@ const styles = StyleSheet.create({
   formatBadgeText: {
     fontFamily: fonts.sansBd,
     fontSize: 18,
-    color: colors.sky[600],
+    color: colors.blue[600],
   },
   formatBadgeTextCompleted: {
     color: colors.green[600],

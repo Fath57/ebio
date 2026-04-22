@@ -12,7 +12,6 @@ import Pen from 'lucide-react-native/dist/esm/icons/pen'
 import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Sun from 'lucide-react-native/dist/esm/icons/sun'
-import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import LogOutIcon from 'lucide-react-native/dist/esm/icons/log-out'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
@@ -32,7 +31,6 @@ import { useTheme } from '../../../theme/theme-context'
 import { signOut, notifyAuthChange, useSession } from '../../../lib/auth-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { apiFetch } from '../../../utils/api-client'
-import { FadeInView } from '../../../utils/animations'
 
 interface UserProfile {
   id: string
@@ -151,12 +149,13 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
   if (!profile) {
     return (
       <View style={[styles.center, { backgroundColor: semantic.bgPage }]}>
-        <View style={[styles.guestIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
-          <Leaf size={40} color={colors.green[400]} strokeWidth={2} />
-        </View>
+        <Image
+          source={require('../../../../assets/logo-transparent.png')}
+          style={styles.guestLogo}
+          resizeMode="contain"
+        />
         <Text style={[styles.guestTitle, { color: semantic.textPrimary }]}>
-          Bienvenue sur eBio
-        </Text>
+          Bienvenue</Text>
         <Text style={[styles.guestSubtitle, { color: semantic.textTertiary }]}>
           Connectez-vous pour accéder à vos commandes,{'\n'}votre panier et vos favoris.
         </Text>
@@ -206,7 +205,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
       showsVerticalScrollIndicator={false}
     >
       {/* Profile header */}
-      <FadeInView delay={0 * 80}>
+      <View>
         <View style={[styles.header, { backgroundColor: semantic.bgCard }]}>
           <View style={styles.avatarContainer}>
             {profile?.image
@@ -250,27 +249,27 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
             </Text>
           </View>
         </View>
-      </FadeInView>
+      </View>
 
       {/* Edit profile */}
-      <FadeInView delay={1 * 80}>
+      <View>
         <View style={styles.section}>
           <MenuItem
             icon={Pen}
-            iconBg={colors.sky[50]}
-            iconColor={colors.sky[600]}
+            iconBg={colors.blue[50]}
+            iconColor={colors.blue[600]}
             label="Modifier le profil"
             sublabel="Nom, e-mail, téléphone"
             onPress={() => onNavigateToEditProfile?.()}
             semantic={semantic}
           />
         </View>
-      </FadeInView>
+      </View>
 
       {/* Quick actions */}
       {/* Become supplier (only for buyers who haven't applied) */}
       {profile?.role === 'BUYER' && !supplierStatus.isSupplier && (
-        <FadeInView delay={2 * 80}>
+        <View>
           <View style={styles.section}>
             <MenuItem
               icon={Store}
@@ -280,12 +279,12 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
               semantic={semantic}
             />
           </View>
-        </FadeInView>
+        </View>
       )}
 
       {/* Pending validation banner */}
       {supplierStatus.isSupplier && supplierStatus.validationStatus === 'PENDING' && (
-        <FadeInView delay={2 * 80}>
+        <View>
           <View style={styles.section}>
             <View style={[styles.pendingBanner, { backgroundColor: semantic.bgCard }]}>
               <Hourglass size={24} color={colors.earth[400]} />
@@ -299,12 +298,12 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
               </View>
             </View>
           </View>
-        </FadeInView>
+        </View>
       )}
 
       {/* Complement requested banner */}
       {supplierStatus.isSupplier && supplierStatus.validationStatus === 'COMPLEMENT_REQUESTED' && (
-        <FadeInView delay={2 * 80}>
+        <View>
           <View style={styles.section}>
             <View style={[styles.pendingBanner, { backgroundColor: colors.coral[50], borderColor: colors.coral[200], borderWidth: 1 }]}>
               <Store size={24} color={colors.coral[400]} />
@@ -318,12 +317,12 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
               </View>
             </View>
           </View>
-        </FadeInView>
+        </View>
       )}
 
       {/* Supplier dashboard (only when validated) */}
       {supplierStatus.isSupplier && supplierStatus.validationStatus === 'VALIDATED' && (
-        <FadeInView delay={2 * 80}>
+        <View>
           <View style={styles.section}>
             <MenuItem
               icon={LayoutDashboard}
@@ -333,11 +332,11 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
               semantic={semantic}
             />
           </View>
-        </FadeInView>
+        </View>
       )}
 
       {/* Theme */}
-      <FadeInView delay={3 * 80}>
+      <View>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
             APPARENCE
@@ -373,10 +372,10 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
             })}
           </View>
         </View>
-      </FadeInView>
+      </View>
 
       {/* Orders */}
-      <FadeInView delay={4 * 80}>
+      <View>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
             COMMANDES
@@ -394,10 +393,10 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
             />
           </View>
         </View>
-      </FadeInView>
+      </View>
 
       {/* Settings */}
-      <FadeInView delay={5 * 80}>
+      <View>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
             PARAMÈTRES
@@ -424,8 +423,8 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
 
             <MenuItem
               icon={Bell}
-              iconBg={colors.sky[50]}
-              iconColor={colors.sky[600]}
+              iconBg={colors.blue[50]}
+              iconColor={colors.blue[600]}
               label="Notifications"
               onPress={() => onNavigateToNotifications?.()}
               semantic={semantic}
@@ -434,10 +433,10 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
 
           </View>
         </View>
-      </FadeInView>
+      </View>
 
       {/* Support */}
-      <FadeInView delay={6 * 80}>
+      <View>
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
             SUPPORT
@@ -466,10 +465,10 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
             />
           </View>
         </View>
-      </FadeInView>
+      </View>
 
       {/* Logout */}
-      <FadeInView delay={7 * 80}>
+      <View>
         <TouchableOpacity style={styles.logoutButton} onPress={() => setShowLogoutModal(true)}>
           <LogOutIcon size={18} color={colors.coral[600]} />
           <Text style={styles.logoutText}>Se deconnecter</Text>
@@ -478,7 +477,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
         <Text style={[styles.version, { color: semantic.textTertiary }]}>
           eBio v1.0.0
         </Text>
-      </FadeInView>
+      </View>
 
       <ConfirmModal
         visible={showLogoutModal}
@@ -551,7 +550,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: spacing[10],
+    paddingBottom: 80,
   },
   center: {
     flex: 1,
@@ -559,12 +558,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing[6],
   },
-  guestIconCircle: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
+  guestLogo: {
+    width: 160,
+    height: 100,
     marginBottom: spacing[4],
   },
   guestTitle: {
@@ -586,7 +582,7 @@ const styles = StyleSheet.create({
     height: 52,
     paddingHorizontal: spacing[8],
     backgroundColor: colors.green[400],
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
   },
   guestLoginText: {
     fontFamily: fonts.sansBd,
@@ -598,21 +594,20 @@ const styles = StyleSheet.create({
     paddingTop: spacing[6],
     paddingBottom: spacing[5],
     paddingHorizontal: spacing[4],
-    ...shadows.sm,
   },
   avatarContainer: {
     position: 'relative',
     marginBottom: spacing[3],
   },
   avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
   },
   avatarFallback: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
+    width: 88,
+    height: 88,
+    borderRadius: 44,
     backgroundColor: colors.green[400],
     justifyContent: 'center',
     alignItems: 'center',

@@ -445,7 +445,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: spacing[4],
     paddingHorizontal: spacing[4],
-    paddingBottom: spacing[10],
+    paddingBottom: 80,
   },
 
   /* Header */
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[6],
     marginTop: spacing[4],
     backgroundColor: colors.green[400],
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     ...shadows.md,
   },
   emptyCtaText: {
@@ -636,7 +636,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing[1],
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     borderWidth: 1,
   },
   deliveryOptionActive: {
@@ -678,7 +678,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     minHeight: 48,
     backgroundColor: colors.green[400],
-    borderRadius: radius.md,
+    borderRadius: radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing[2],
@@ -698,6 +698,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[3],
     paddingBottom: Platform.OS === 'ios' ? spacing[6] : spacing[4],
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
     ...shadows.lg,
   },
   grandTotalLabel: {

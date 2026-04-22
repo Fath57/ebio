@@ -40,7 +40,7 @@ import { ContactActionSheet } from './contact-action-sheet'
 import { NavigateButton } from './navigate-button'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const COVER_HEIGHT = 220
+const COVER_HEIGHT = 260
 const PROFILE_SIZE = 80
 const PROFILE_BORDER = 3
 const MAX_VISIBLE_PRODUCTS = 6
@@ -88,7 +88,6 @@ interface SupplierProfileScreenProps {
   supplierId: string
   onNavigateToChat: (supplierId: string) => void
   onNavigateToProduct: (productId: string, product: Product, supplierInfo: { id: string, shopName: string, rating: number | null, distance: number, mode: 'CONTACT' | 'ORDER', isValidated: boolean }) => void
-  onNavigateToOrder: (supplierId: string) => void
   onGoBack?: () => void
 }
 
@@ -297,7 +296,6 @@ export function SupplierProfileScreen({
   supplierId,
   onNavigateToChat,
   onNavigateToProduct,
-  onNavigateToOrder,
   onGoBack,
 }: SupplierProfileScreenProps) {
   const { semantic } = useTheme()
@@ -504,7 +502,7 @@ export function SupplierProfileScreen({
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: spacing[12] + 80 }}
+        contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] }}
         showsVerticalScrollIndicator={false}
         bounces
       >
@@ -761,6 +759,8 @@ export function SupplierProfileScreen({
                     promotionalPrice={product.promotionalPrice}
                     unit={product.unit}
                     isInStock={product.isInStock}
+                    supplierId={supplier.id}
+                    supplierName={supplier.shopName}
                     onPress={handleProductPress}
                   />
                 </View>
@@ -769,46 +769,6 @@ export function SupplierProfileScreen({
           )}
         </View>
       </ScrollView>
-
-      {/* ================================================================= */}
-      {/* STICKY BOTTOM BAR                                                    */}
-      {/* ================================================================= */}
-      <View
-        style={[
-          styles.bottomBar,
-          {
-            backgroundColor: semantic.bgPage,
-            borderTopColor: semantic.borderLight,
-            paddingBottom: Math.max(insets.bottom, spacing[4]),
-          },
-        ]}
-      >
-        {supplier.mode === 'ORDER' ? (
-          <TouchableOpacity
-            style={styles.bottomButtonPrimary}
-            onPress={() => onNavigateToOrder(supplierId)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Commander"
-          >
-            <ShoppingBag size={20} color={colors.neutral[0]} strokeWidth={2} />
-            <Text style={styles.bottomButtonPrimaryText}>Commander</Text>
-          </TouchableOpacity>
-        ) : (
-          <TouchableOpacity
-            style={[styles.bottomButtonSecondary, { borderColor: semantic.colorPrimary }]}
-            onPress={() => setIsContactSheetVisible(true)}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Contacter"
-          >
-            <MessageCircle size={20} color={semantic.colorPrimary} strokeWidth={2} />
-            <Text style={[styles.bottomButtonSecondaryText, { color: semantic.colorPrimary }]}>
-              Contacter
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
 
       {/* Contact Action Sheet */}
       <ContactActionSheet
@@ -863,9 +823,9 @@ const styles = StyleSheet.create({
   backButton: {
     position: 'absolute',
     left: spacing[4],
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -1018,55 +978,5 @@ const styles = StyleSheet.create({
   },
   emptyProductsText: {
     ...typography.bodyS,
-  },
-
-  // -- Bottom bar --
-  bottomBar: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    borderTopWidth: StyleSheet.hairlineWidth,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -3 },
-        shadowOpacity: 0.08,
-        shadowRadius: 6,
-      },
-      android: {
-        elevation: 8,
-      },
-    }),
-  },
-  bottomButtonPrimary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    height: 52,
-    backgroundColor: colors.green[400],
-    borderRadius: radius.lg,
-  },
-  bottomButtonPrimaryText: {
-    fontFamily: fonts.sansBd,
-    fontSize: 16,
-    color: colors.neutral[0],
-  },
-  bottomButtonSecondary: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    height: 52,
-    borderWidth: 1.5,
-    borderRadius: radius.lg,
-    backgroundColor: 'transparent',
-  },
-  bottomButtonSecondaryText: {
-    fontFamily: fonts.sansBd,
-    fontSize: 16,
   },
 })

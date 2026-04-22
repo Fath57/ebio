@@ -4,9 +4,7 @@ import {
   Animated,
   Dimensions,
   Image,
-  Platform,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -27,13 +25,12 @@ import Share2 from 'lucide-react-native/dist/esm/icons/share-2'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
-import Weight from 'lucide-react-native/dist/esm/icons/weight'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const HERO_HEIGHT = 340
+const HERO_HEIGHT = 380
 
 interface ProductDetailScreenProps {
   product: {
@@ -109,17 +106,50 @@ export function ProductDetailScreen({
     }
   }, [product.id, product.isInStock, quantity, onAddToCart])
 
-  // Header opacity based on scroll
+  // Scroll-driven animations
   const headerBg = scrollY.interpolate({
-    inputRange: [0, HERO_HEIGHT - 100],
+    inputRange: [HERO_HEIGHT - 160, HERO_HEIGHT - 80],
     outputRange: ['rgba(0,0,0,0)', semantic.bgPage],
+    extrapolate: 'clamp',
+  })
+  const headerTitleOpacity = scrollY.interpolate({
+    inputRange: [HERO_HEIGHT - 140, HERO_HEIGHT - 80],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  })
+  const headerButtonTint = scrollY.interpolate({
+    inputRange: [HERO_HEIGHT - 140, HERO_HEIGHT - 80],
+    outputRange: [0, 1],
+    extrapolate: 'clamp',
+  })
+  const heroTranslateY = scrollY.interpolate({
+    inputRange: [0, HERO_HEIGHT],
+    outputRange: [0, HERO_HEIGHT * 0.35],
+    extrapolate: 'clamp',
+  })
+  const heroScale = scrollY.interpolate({
+    inputRange: [-HERO_HEIGHT, 0],
+    outputRange: [1.8, 1],
     extrapolate: 'clamp',
   })
 
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       {/* Floating header */}
-      <Animated.View style={[styles.floatingHeader, { backgroundColor: headerBg, paddingTop: insets.top }]}>
+      <Animated.View
+        style={[
+          styles.floatingHeader,
+          {
+            backgroundColor: headerBg,
+            paddingTop: insets.top,
+            borderBottomColor: semantic.borderLight,
+          },
+        ]}
+      >
+        <Animated.View
+          style={[styles.headerBorderOverlay, { opacity: headerButtonTint, borderBottomColor: semantic.borderLight }]}
+          pointerEvents="none"
+        />
         <Pressable
           style={styles.headerButton}
           onPress={onGoBack}
@@ -127,8 +157,19 @@ export function ProductDetailScreen({
           accessibilityLabel="Retour"
           hitSlop={8}
         >
-          <ArrowLeft size={22} color={colors.neutral[0]} strokeWidth={2.5} />
+          <HeaderIcon Icon={ArrowLeft} tintProgress={headerButtonTint} />
         </Pressable>
+
+        <Animated.Text
+          numberOfLines={1}
+          style={[
+            styles.headerTitle,
+            { color: semantic.textPrimary, opacity: headerTitleOpacity },
+          ]}
+        >
+          {product.name}
+        </Animated.Text>
+
         <View style={styles.headerRight}>
           <Pressable
             style={styles.headerButton}
@@ -137,10 +178,10 @@ export function ProductDetailScreen({
             accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
           >
             <Heart
-              size={22}
+              size={20}
               color={isFavorite ? colors.coral[400] : colors.neutral[0]}
               fill={isFavorite ? colors.coral[400] : 'none'}
-              strokeWidth={2}
+              strokeWidth={2.2}
             />
           </Pressable>
           <Pressable
@@ -149,14 +190,14 @@ export function ProductDetailScreen({
             accessibilityRole="button"
             accessibilityLabel="Partager"
           >
-            <Share2 size={20} color={colors.neutral[0]} strokeWidth={2} />
+            <HeaderIcon Icon={Share2} tintProgress={headerButtonTint} />
           </Pressable>
         </View>
       </Animated.View>
 
       <Animated.ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: 100 + insets.bottom }}
+        contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] }}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],
@@ -165,24 +206,33 @@ export function ProductDetailScreen({
         scrollEventThrottle={16}
       >
         {/* ============================================================== */}
-        {/* HERO IMAGE                                                      */}
+        {/* HERO IMAGE — parallax                                           */}
         {/* ============================================================== */}
         <View style={styles.heroContainer}>
-          {product.imageUrl
-            ? (
-                <Image
-                  source={{ uri: product.imageUrl }}
-                  style={styles.heroImage}
-                  resizeMode="cover"
-                />
-              )
-            : (
-                <View style={[styles.heroImage, styles.heroPlaceholder, { backgroundColor: semantic.bgSurface }]}>
-                  <Text style={[styles.heroPlaceholderLetter, { color: semantic.textTertiary }]}>
-                    {product.name.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+          <Animated.View
+            style={[
+              StyleSheet.absoluteFill,
+              {
+                transform: [{ translateY: heroTranslateY }, { scale: heroScale }],
+              },
+            ]}
+          >
+            {product.imageUrl
+              ? (
+                  <Image
+                    source={{ uri: product.imageUrl }}
+                    style={styles.heroImage}
+                    resizeMode="cover"
+                  />
+                )
+              : (
+                  <View style={[styles.heroImage, styles.heroPlaceholder, { backgroundColor: semantic.bgSurface }]}>
+                    <Text style={[styles.heroPlaceholderLetter, { color: semantic.textTertiary }]}>
+                      {product.name.charAt(0).toUpperCase()}
+                    </Text>
+                  </View>
+                )}
+          </Animated.View>
 
           {/* Gradient overlay bottom */}
           <View style={styles.heroGradient} />
@@ -190,7 +240,7 @@ export function ProductDetailScreen({
           {/* Promo badge */}
           {hasPromo && (
             <View style={styles.heroPromoBadge}>
-              <Text style={styles.heroPromoBadgeText}>-{discount}%</Text>
+              <Text style={styles.heroPromoBadgeText}>−{discount}%</Text>
             </View>
           )}
 
@@ -202,88 +252,66 @@ export function ProductDetailScreen({
               <Text style={styles.heroOutOfStockSub}>Ce produit est temporairement en rupture</Text>
             </View>
           )}
-
-          {/* Image counter dot indicators (placeholder for future multi-photo) */}
-          <View style={styles.heroDotsRow}>
-            <View style={[styles.heroDot, styles.heroDotActive]} />
-            <View style={styles.heroDot} />
-            <View style={styles.heroDot} />
-          </View>
         </View>
+
+        {/* Sheet that overlaps the hero for depth */}
+        <View style={[styles.sheet, { backgroundColor: semantic.bgPage }]} />
 
         {/* ============================================================== */}
         {/* PRODUCT INFO                                                    */}
         {/* ============================================================== */}
         <View style={styles.infoSection}>
-          {/* Category + Bio badge */}
-          <View style={styles.tagRow}>
-            {product.categoryName && (
-              <View style={[styles.categoryPill, { backgroundColor: semantic.bgPrimaryLight }]}>
-                <Text style={[styles.categoryPillText, { color: semantic.textPrimaryColor }]}>
-                  {product.categoryName}
-                </Text>
-              </View>
-            )}
-            <View style={styles.bioPill}>
-              <Leaf size={10} color={colors.green[600]} strokeWidth={2.5} />
-              <Text style={styles.bioPillText}>Bio</Text>
-            </View>
-          </View>
+          {/* Category overline */}
+          {product.categoryName && (
+            <Text style={[styles.categoryOverline, { color: semantic.textTertiary }]}>
+              {product.categoryName.toUpperCase()}
+            </Text>
+          )}
 
           {/* Product name */}
           <Text style={[styles.productName, { color: semantic.textPrimary }]}>
             {product.name}
           </Text>
 
-          {/* Price block */}
-          <View style={styles.priceBlock}>
-            <View style={styles.priceMainRow}>
-              {hasPromo
-                ? (
-                    <>
-                      <Text style={styles.pricePromo}>
-                        {formatPrice(product.promotionalPrice!)}
-                      </Text>
-                      <Text style={styles.priceCurrency}> FCFA</Text>
-                      <View style={styles.discountPill}>
-                        <Text style={styles.discountPillText}>-{discount}%</Text>
-                      </View>
-                    </>
-                  )
-                : (
-                    <>
-                      <Text style={styles.priceCurrent}>
-                        {formatPrice(product.pricePerUnit)}
-                      </Text>
-                      <Text style={styles.priceCurrency}> FCFA</Text>
-                    </>
-                  )}
+          {/* Bio pill + stock chip inline */}
+          <View style={styles.tagRow}>
+            <View style={styles.bioPill}>
+              <Leaf size={10} color={colors.green[600]} strokeWidth={2.5} />
+              <Text style={styles.bioPillText}>Bio certifié</Text>
             </View>
-            {hasPromo && (
-              <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
-                {formatPrice(product.pricePerUnit)} FCFA
+            <View style={[styles.stockChip, { backgroundColor: product.isInStock ? colors.green[50] : colors.coral[50] }]}>
+              <View style={[styles.stockChipDot, { backgroundColor: product.isInStock ? colors.green[400] : colors.coral[400] }]} />
+              <Text style={[styles.stockChipText, { color: product.isInStock ? colors.green[800] : colors.coral[600] }]}>
+                {product.isInStock
+                  ? product.stock !== undefined ? `${product.stock} disponibles` : 'En stock'
+                  : 'Indisponible'}
               </Text>
-            )}
-            <Text style={[styles.unitLabel, { color: semantic.textTertiary }]}>
-              {unitLabel}
-            </Text>
+            </View>
           </View>
 
-          {/* Stock + unit info row */}
-          <View style={styles.infoChipsRow}>
-            <View style={[styles.infoChip, { backgroundColor: product.isInStock ? colors.green[50] : colors.coral[50] }]}>
-              <View style={[styles.infoChipDot, { backgroundColor: product.isInStock ? colors.green[400] : colors.coral[400] }]} />
-              <Text style={[styles.infoChipText, { color: product.isInStock ? colors.green[800] : colors.coral[600] }]}>
-                {product.isInStock
-                  ? product.stock !== undefined ? `${product.stock} en stock` : 'En stock'
-                  : 'Rupture de stock'}
+          {/* Price block — editorial treatment */}
+          <View style={styles.priceBlock}>
+            <View style={styles.priceMainRow}>
+              <Text style={[styles.priceAmount, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>
+                {formatPrice(displayPrice)}
               </Text>
+              <Text style={[styles.priceCurrency, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>FCFA</Text>
             </View>
-            <View style={[styles.infoChip, { backgroundColor: semantic.bgSurface }]}>
-              <Weight size={12} color={semantic.textSecondary} strokeWidth={2} />
-              <Text style={[styles.infoChipText, { color: semantic.textSecondary }]}>
-                {product.unit}
+            <View style={styles.priceMetaRow}>
+              <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
+                / {unitLabel}
               </Text>
+              {hasPromo && (
+                <>
+                  <View style={[styles.priceDot, { backgroundColor: semantic.textTertiary }]} />
+                  <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
+                    {formatPrice(product.pricePerUnit)} FCFA
+                  </Text>
+                  <View style={styles.discountPill}>
+                    <Text style={styles.discountPillText}>−{discount}%</Text>
+                  </View>
+                </>
+              )}
             </View>
           </View>
         </View>
@@ -302,40 +330,6 @@ export function ProductDetailScreen({
             </View>
           </>
         )}
-
-        {/* ============================================================== */}
-        {/* DÉTAILS PRODUIT                                                 */}
-        {/* ============================================================== */}
-        <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Détails</Text>
-          <View style={[styles.detailsCard, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}>
-            <DetailRow
-              label="Catégorie"
-              value={product.categoryName ?? '—'}
-              semantic={semantic}
-            />
-            <View style={[styles.detailDivider, { backgroundColor: semantic.borderLight }]} />
-            <DetailRow
-              label="Unité de vente"
-              value={product.unit}
-              semantic={semantic}
-            />
-            <View style={[styles.detailDivider, { backgroundColor: semantic.borderLight }]} />
-            <DetailRow
-              label="Type"
-              value="Biologique"
-              semantic={semantic}
-              icon={<Leaf size={14} color={colors.green[400]} strokeWidth={2} />}
-            />
-            <View style={[styles.detailDivider, { backgroundColor: semantic.borderLight }]} />
-            <DetailRow
-              label="Origine"
-              value="Production locale"
-              semantic={semantic}
-            />
-          </View>
-        </View>
 
         {/* ============================================================== */}
         {/* FOURNISSEUR                                                     */}
@@ -417,204 +411,146 @@ export function ProductDetailScreen({
         </View>
 
         {/* ============================================================== */}
-        {/* INFORMATIONS                                                    */}
+        {/* INFO NOTICE — discrète                                          */}
         {/* ============================================================== */}
-        <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-        <View style={styles.section}>
-          <View style={[styles.infoNotice, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}>
-            <Info size={16} color={semantic.textTertiary} strokeWidth={2} />
-            <Text style={[styles.infoNoticeText, { color: semantic.textSecondary }]}>
-              Les prix et la disponibilité peuvent varier. Les photos sont indicatives. Contactez le fournisseur pour plus de détails.
-            </Text>
-          </View>
+        <View style={styles.noticeRow}>
+          <Info size={12} color={semantic.textTertiary} strokeWidth={2} />
+          <Text style={[styles.noticeText, { color: semantic.textTertiary }]}>
+            Prix et disponibilité indicatifs. Contactez le fournisseur pour tout détail.
+          </Text>
         </View>
 
         {/* ============================================================== */}
-        {/* QUANTITÉ                                                        */}
+        {/* QUANTITÉ + CTA — card premium                                   */}
         {/* ============================================================== */}
         {product.isInStock && (
-          <>
-            <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-            <View style={styles.quantitySection}>
-              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Quantité</Text>
-              <View style={styles.quantityControls}>
-                <QtyButton
-                  onPress={handleDecrement}
-                  disabled={quantity <= 1}
-                  semantic={semantic}
-                >
-                  <Minus
-                    size={22}
-                    color={quantity <= 1 ? semantic.textTertiary : colors.green[600]}
-                    strokeWidth={2.5}
-                  />
-                </QtyButton>
-
-                <View style={styles.quantityDisplay}>
-                  <Text style={[styles.quantityValue, { color: semantic.textPrimary }]}>
-                    {quantity}
-                  </Text>
-                  <Text style={[styles.quantityUnit, { color: semantic.textTertiary }]}>
-                    {product.unit}
-                  </Text>
+          <View style={styles.ctaSection}>
+            <View style={[styles.ctaCard, { backgroundColor: semantic.bgPage, borderColor: semantic.borderLight }]}>
+              {/* Stepper row with price recap */}
+              <View style={styles.stepperRow}>
+                <View style={styles.stepper}>
+                  <StepperButton
+                    onPress={handleDecrement}
+                    disabled={quantity <= 1}
+                  >
+                    <Minus
+                      size={16}
+                      color={quantity <= 1 ? semantic.textTertiary : colors.green[800]}
+                      strokeWidth={2.5}
+                    />
+                  </StepperButton>
+                  <View style={styles.stepperValueWrap}>
+                    <Text style={styles.stepperValue}>
+                      {quantity}
+                    </Text>
+                    <Text style={styles.stepperUnit}>
+                      {product.unit}
+                    </Text>
+                  </View>
+                  <StepperButton
+                    onPress={handleIncrement}
+                    disabled={quantity >= 99}
+                  >
+                    <Plus
+                      size={16}
+                      color={quantity >= 99 ? semantic.textTertiary : colors.green[800]}
+                      strokeWidth={2.5}
+                    />
+                  </StepperButton>
                 </View>
 
-                <QtyButton
-                  onPress={handleIncrement}
-                  disabled={quantity >= 99}
-                  semantic={semantic}
-                >
-                  <Plus
-                    size={22}
-                    color={quantity >= 99 ? semantic.textTertiary : colors.green[600]}
-                    strokeWidth={2.5}
-                  />
-                </QtyButton>
+                <View style={styles.subtotalBlock}>
+                  <Text style={[styles.subtotalLabel, { color: semantic.textTertiary }]}>
+                    Sous-total
+                  </Text>
+                  <Text style={[styles.subtotalValue, { color: semantic.textPrimary }]}>
+                    {formatPrice(totalPrice)}
+                    <Text style={[styles.subtotalCurrency, { color: semantic.textSecondary }]}> FCFA</Text>
+                  </Text>
+                </View>
               </View>
 
-              {/* Subtotal preview */}
-              <Text style={[styles.subtotalText, { color: semantic.textSecondary }]}>
-                Sous-total : {formatPrice(totalPrice)} FCFA
+              {/* Primary CTA */}
+              <Pressable
+                style={({ pressed }) => [
+                  styles.primaryCta,
+                  { backgroundColor: colors.green[600], transform: [{ scale: pressed ? 0.985 : 1 }] },
+                ]}
+                onPress={handleAddToCart}
+                accessibilityRole="button"
+                accessibilityLabel={`Ajouter ${quantity} au panier, total ${formatPrice(totalPrice)} FCFA`}
+              >
+                <ShoppingBag size={18} color={colors.neutral[0]} strokeWidth={2.5} />
+                <Text style={styles.primaryCtaText}>Ajouter au panier</Text>
+                <ChevronRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />
+              </Pressable>
+            </View>
+          </View>
+        )}
+
+        {/* Out of stock CTA */}
+        {!product.isInStock && (
+          <View style={styles.ctaSection}>
+            <View style={[styles.ctaCard, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight, alignItems: 'center' }]}>
+              <Package size={28} color={semantic.textTertiary} strokeWidth={1.5} />
+              <Text style={[styles.outOfStockTitle, { color: semantic.textPrimary }]}>
+                Produit indisponible
+              </Text>
+              <Text style={[styles.outOfStockSub, { color: semantic.textTertiary }]}>
+                Revenez plus tard ou contactez le fournisseur.
               </Text>
             </View>
-          </>
+          </View>
         )}
       </Animated.ScrollView>
-
-      {/* ============================================================== */}
-      {/* STICKY BOTTOM BAR                                                */}
-      {/* ============================================================== */}
-      <View
-        style={[
-          styles.bottomBar,
-          {
-            backgroundColor: semantic.bgPage,
-            borderTopColor: semantic.borderLight,
-            paddingBottom: Math.max(insets.bottom, spacing[4]),
-          },
-        ]}
-      >
-        {/* Price summary */}
-        <View style={styles.bottomPriceCol}>
-          <Text style={[styles.bottomPriceLabel, { color: semantic.textTertiary }]}>Total</Text>
-          <Text style={[styles.bottomPriceValue, { color: semantic.textPrimary }]}>
-            {formatPrice(totalPrice)} FCFA
-          </Text>
-        </View>
-
-        {/* Add to cart button */}
-        <Pressable
-          style={[
-            styles.addToCartButton,
-            { backgroundColor: product.isInStock ? colors.green[400] : colors.neutral[300] },
-          ]}
-          onPress={handleAddToCart}
-          disabled={!product.isInStock}
-          accessibilityRole="button"
-          accessibilityLabel={
-            product.isInStock
-              ? `Ajouter ${quantity} au panier`
-              : 'Produit indisponible'
-          }
-        >
-          <ShoppingBag
-            size={20}
-            color={product.isInStock ? colors.neutral[0] : colors.neutral[500]}
-            strokeWidth={2.5}
-          />
-          <Text
-            style={[
-              styles.addToCartText,
-              { color: product.isInStock ? colors.neutral[0] : colors.neutral[500] },
-            ]}
-          >
-            {product.isInStock ? 'Ajouter au panier' : 'Indisponible'}
-          </Text>
-        </Pressable>
-      </View>
     </View>
   )
 }
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-function DetailRow({
-  label,
-  value,
-  icon,
-  semantic,
+function HeaderIcon({
+  Icon,
+  tintProgress,
 }: {
-  label: string
-  value: string
-  icon?: React.ReactNode
-  semantic: ReturnType<typeof useTheme>['semantic']
+  Icon: React.ComponentType<{ size: number, color: string, strokeWidth?: number }>
+  tintProgress: Animated.AnimatedInterpolation<number>
 }) {
   return (
-    <View style={detailStyles.row}>
-      <Text style={[detailStyles.label, { color: semantic.textTertiary }]}>{label}</Text>
-      <View style={detailStyles.valueRow}>
-        {icon}
-        <Text style={[detailStyles.value, { color: semantic.textPrimary }]}>{value}</Text>
-      </View>
+    <View style={{ width: 20, height: 20 }}>
+      <Animated.View style={{ position: 'absolute', opacity: Animated.subtract(1, tintProgress) }}>
+        <Icon size={20} color={colors.neutral[0]} strokeWidth={2.2} />
+      </Animated.View>
+      <Animated.View style={{ position: 'absolute', opacity: tintProgress }}>
+        <Icon size={20} color={colors.neutral[800]} strokeWidth={2.2} />
+      </Animated.View>
     </View>
   )
 }
 
-const detailStyles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-  },
-  label: {
-    fontFamily: fonts.sans,
-    fontSize: 13,
-  },
-  valueRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  value: {
-    fontFamily: fonts.sansSb,
-    fontSize: 13,
-  },
-})
-
-function QtyButton({
+function StepperButton({
   onPress,
   disabled,
   children,
-  semantic,
 }: {
   onPress: () => void
   disabled: boolean
   children: React.ReactNode
-  semantic: ReturnType<typeof useTheme>['semantic']
 }) {
-  const scale = useRef(new Animated.Value(1)).current
-
   return (
     <Pressable
       onPress={onPress}
-      onPressIn={() => Animated.spring(scale, { toValue: 0.85, useNativeDriver: true }).start()}
-      onPressOut={() => Animated.spring(scale, { toValue: 1, friction: 3, tension: 200, useNativeDriver: true }).start()}
       disabled={disabled}
+      hitSlop={6}
+      style={({ pressed }) => [
+        styles.stepperButton,
+        {
+          backgroundColor: disabled ? 'transparent' : colors.neutral[0],
+          opacity: pressed ? 0.7 : 1,
+        },
+      ]}
     >
-      <Animated.View
-        style={[
-          styles.qtyButton,
-          {
-            backgroundColor: disabled ? semantic.bgSurface : colors.green[50],
-            borderColor: disabled ? semantic.borderLight : colors.green[200],
-            transform: [{ scale }],
-          },
-        ]}
-      >
-        {children}
-      </Animated.View>
+      {children}
     </Pressable>
   )
 }
@@ -633,10 +569,20 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 10,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[2],
+    gap: spacing[3],
+  },
+  headerBorderOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  headerTitle: {
+    flex: 1,
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
+    textAlign: 'center',
   },
   headerRight: {
     flexDirection: 'row',
@@ -646,16 +592,17 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)',
+    backgroundColor: 'rgba(20,20,16,0.35)',
     justifyContent: 'center',
     alignItems: 'center',
   },
 
-  // Hero
+  // Hero — parallax container
   heroContainer: {
     position: 'relative',
     width: SCREEN_WIDTH,
     height: HERO_HEIGHT,
+    overflow: 'hidden',
   },
   heroImage: {
     width: '100%',
@@ -674,27 +621,32 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: 80,
+    height: 100,
     backgroundColor: 'transparent',
   },
   heroPromoBadge: {
     position: 'absolute',
-    bottom: spacing[3],
-    left: spacing[4],
+    bottom: spacing[5] + spacing[3],
+    left: spacing[5],
     backgroundColor: colors.coral[400],
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[1],
-    borderRadius: radius.md,
+    paddingVertical: 5,
+    borderRadius: radius.sm,
+    shadowColor: colors.coral[600],
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    elevation: 4,
   },
   heroPromoBadgeText: {
     fontFamily: fonts.sansBd,
-    fontSize: 14,
+    fontSize: 13,
     color: colors.neutral[0],
-    letterSpacing: 0.3,
+    letterSpacing: 0.4,
   },
   heroOutOfStock: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(0,0,0,0.55)',
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing[2],
@@ -707,137 +659,129 @@ const styles = StyleSheet.create({
   heroOutOfStockSub: {
     fontFamily: fonts.sans,
     fontSize: 13,
-    color: 'rgba(255,255,255,0.7)',
-  },
-  heroDotsRow: {
-    position: 'absolute',
-    bottom: spacing[3],
-    right: spacing[4],
-    flexDirection: 'row',
-    gap: 6,
-  },
-  heroDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'rgba(255,255,255,0.4)',
-  },
-  heroDotActive: {
-    backgroundColor: colors.neutral[0],
-    width: 18,
+    color: 'rgba(255,255,255,0.75)',
   },
 
-  // Info section
+  // Sheet that overlaps the hero to create depth
+  sheet: {
+    marginTop: -spacing[6],
+    height: spacing[6],
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+  },
+
+  // Info section — editorial layout
   infoSection: {
     paddingHorizontal: spacing[5],
     paddingTop: spacing[5],
     gap: spacing[3],
   },
+  categoryOverline: {
+    fontFamily: fonts.sansSb,
+    fontSize: 11,
+    letterSpacing: 1.4,
+  },
+  productName: {
+    fontFamily: fonts.display,
+    fontSize: 32,
+    lineHeight: 32 * 1.1,
+    letterSpacing: -0.5,
+    marginTop: -spacing[1],
+  },
   tagRow: {
     flexDirection: 'row',
     gap: spacing[2],
-  },
-  categoryPill: {
-    paddingHorizontal: spacing[3],
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  categoryPillText: {
-    fontFamily: fonts.sansSb,
-    fontSize: 11,
-    letterSpacing: 0.2,
+    flexWrap: 'wrap',
+    marginTop: spacing[1],
   },
   bioPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: 5,
     backgroundColor: colors.green[50],
-    paddingHorizontal: spacing[2],
-    paddingVertical: 4,
+    paddingHorizontal: spacing[3],
+    paddingVertical: 5,
     borderRadius: radius.pill,
     borderWidth: 1,
     borderColor: colors.green[200],
   },
   bioPillText: {
     fontFamily: fonts.sansSb,
-    fontSize: 10,
-    color: colors.green[600],
+    fontSize: 11,
+    color: colors.green[800],
+    letterSpacing: 0.2,
   },
-  productName: {
-    fontFamily: fonts.display,
-    fontSize: 28,
-    lineHeight: 28 * 1.15,
+  stockChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing[3],
+    paddingVertical: 5,
+    borderRadius: radius.pill,
+  },
+  stockChipDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+  },
+  stockChipText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 11,
+    letterSpacing: 0.2,
   },
 
-  // Price
+  // Price — editorial
   priceBlock: {
-    gap: 4,
+    marginTop: spacing[3],
+    gap: spacing[1],
   },
   priceMainRow: {
     flexDirection: 'row',
     alignItems: 'baseline',
+    gap: 6,
   },
-  priceCurrent: {
+  priceAmount: {
     fontFamily: fonts.mono,
-    fontSize: 30,
-    color: colors.green[600],
-    lineHeight: 30 * 1.1,
-  },
-  pricePromo: {
-    fontFamily: fonts.mono,
-    fontSize: 30,
-    color: colors.coral[400],
-    lineHeight: 30 * 1.1,
+    fontSize: 36,
+    lineHeight: 36 * 1.05,
+    letterSpacing: -0.8,
   },
   priceCurrency: {
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
+    letterSpacing: 0.5,
+  },
+  priceMetaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    flexWrap: 'wrap',
+  },
+  priceUnit: {
     fontFamily: fonts.sansMd,
-    fontSize: 16,
-    color: colors.green[600],
+    fontSize: 13,
+  },
+  priceDot: {
+    width: 3,
+    height: 3,
+    borderRadius: 1.5,
   },
   priceOld: {
     fontFamily: fonts.mono,
-    fontSize: 16,
+    fontSize: 13,
     textDecorationLine: 'line-through',
   },
   discountPill: {
     backgroundColor: colors.coral[400],
     paddingHorizontal: spacing[2],
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: radius.sm,
-    marginLeft: spacing[2],
   },
   discountPillText: {
     fontFamily: fonts.sansBd,
-    fontSize: 11,
+    fontSize: 10,
     color: colors.neutral[0],
-  },
-  unitLabel: {
-    fontFamily: fonts.sans,
-    fontSize: 13,
-    marginTop: 2,
-  },
-
-  // Info chips
-  infoChipsRow: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
-  infoChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing[3],
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-  },
-  infoChipDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-  },
-  infoChipText: {
-    fontFamily: fonts.sansSb,
-    fontSize: 11,
+    letterSpacing: 0.3,
   },
 
   // Sections
@@ -858,17 +802,6 @@ const styles = StyleSheet.create({
   descriptionText: {
     ...typography.bodyL,
     lineHeight: 15 * 1.8,
-  },
-
-  // Details card
-  detailsCard: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    overflow: 'hidden',
-  },
-  detailDivider: {
-    height: 1,
-    marginHorizontal: spacing[4],
   },
 
   // Supplier card
@@ -955,107 +888,125 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
-  // Info notice
-  infoNotice: {
+  // Info notice — inline discrète
+  noticeRow: {
     flexDirection: 'row',
-    gap: spacing[3],
-    padding: spacing[4],
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: spacing[5],
+    paddingTop: spacing[5],
   },
-  infoNoticeText: {
+  noticeText: {
     flex: 1,
     fontFamily: fonts.sans,
-    fontSize: 12,
-    lineHeight: 12 * 1.6,
+    fontSize: 11,
+    lineHeight: 11 * 1.5,
   },
 
-  // Quantity
-  quantitySection: {
-    alignItems: 'center',
-    gap: spacing[3],
+  // CTA section — premium
+  ctaSection: {
     paddingHorizontal: spacing[5],
-    paddingVertical: spacing[2],
+    paddingTop: spacing[6],
   },
-  quantityControls: {
+  ctaCard: {
+    borderRadius: 24,
+    borderWidth: 1,
+    padding: spacing[4],
+    gap: spacing[4],
+    shadowColor: colors.green[800],
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.06,
+    shadowRadius: 24,
+    elevation: 4,
+  },
+  stepperRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[6],
+    justifyContent: 'space-between',
+    gap: spacing[3],
   },
-  qtyButton: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    borderWidth: 1.5,
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.green[50],
+    borderRadius: radius.pill,
+    padding: 4,
+    gap: 4,
+    borderWidth: 1,
+    borderColor: colors.green[100],
+  },
+  stepperButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  quantityDisplay: {
+  stepperValueWrap: {
+    minWidth: 52,
     alignItems: 'center',
-    minWidth: 56,
   },
-  quantityValue: {
-    fontFamily: fonts.mono,
-    fontSize: 32,
-    lineHeight: 32 * 1.1,
+  stepperValue: {
+    fontFamily: fonts.sansBd,
+    fontSize: 17,
+    lineHeight: 17 * 1.1,
+    color: colors.green[900],
   },
-  quantityUnit: {
+  stepperUnit: {
     fontFamily: fonts.sans,
-    fontSize: 11,
-    marginTop: 2,
+    fontSize: 10,
+    letterSpacing: 0.3,
+    marginTop: -2,
+    color: colors.green[600],
   },
-  subtotalText: {
-    fontFamily: fonts.sansMd,
-    fontSize: 14,
-    marginTop: spacing[1],
-  },
-
-  // Bottom bar
-  bottomBar: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[3],
-    borderTopWidth: 1,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.06,
-        shadowRadius: 8,
-      },
-      android: { elevation: 8 },
-    }),
-  },
-  bottomPriceCol: {
+  subtotalBlock: {
+    alignItems: 'flex-end',
     gap: 2,
   },
-  bottomPriceLabel: {
-    fontFamily: fonts.sans,
-    fontSize: 11,
+  subtotalLabel: {
+    fontFamily: fonts.sansMd,
+    fontSize: 10,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
   },
-  bottomPriceValue: {
+  subtotalValue: {
     fontFamily: fonts.mono,
-    fontSize: 18,
-    lineHeight: 18 * 1.2,
+    fontSize: 20,
+    lineHeight: 20 * 1.1,
+    letterSpacing: -0.3,
   },
-  addToCartButton: {
-    flex: 1,
+  subtotalCurrency: {
+    fontFamily: fonts.sansSb,
+    fontSize: 12,
+  },
+  primaryCta: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
-    height: 52,
-    borderRadius: radius.xl,
+    height: 56,
+    borderRadius: radius.pill,
+    shadowColor: colors.green[900],
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.25,
+    shadowRadius: 14,
+    elevation: 6,
   },
-  addToCartText: {
+  primaryCtaText: {
     fontFamily: fonts.sansBd,
-    fontSize: 16,
-    letterSpacing: 0.2,
+    fontSize: 15,
+    color: colors.neutral[0],
+    letterSpacing: 0.3,
+  },
+  outOfStockTitle: {
+    fontFamily: fonts.sansBd,
+    fontSize: 15,
+    marginTop: spacing[2],
+  },
+  outOfStockSub: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    textAlign: 'center',
+    marginTop: spacing[1],
   },
 })

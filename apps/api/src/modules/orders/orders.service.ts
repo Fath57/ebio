@@ -122,26 +122,37 @@ export class OrdersService {
 
     await this.em.flush()
 
+    // For online payments (FedaPay), notifications are sent after payment confirmation.
+    // For cash on delivery, notify immediately since there's no payment step.
+    if (order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
+      await this.sendOrderPlacedNotifications(order)
+    }
+
+    return order
+  }
+
+  private async sendOrderPlacedNotifications(order: Order): Promise<void> {
+    const populated = await this.em.findOneOrFail(Order, { id: order.id }, {
+      populate: ['buyer', 'supplier', 'supplier.user'],
+    })
     await Promise.all([
       this.notificationsService.send({
-        user: supplier.user,
+        user: populated.supplier.user,
         type: NotificationType.ORDER_PLACED,
         title: 'Nouvelle commande',
-        body: `Commande ${orderNumber} reçue pour ${totalAmount} FCFA`,
-        data: { orderId: order.id, orderNumber },
+        body: `Commande ${populated.orderNumber} reçue pour ${populated.totalAmount} FCFA`,
+        data: { orderId: populated.id, orderNumber: populated.orderNumber },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       }),
       this.notificationsService.send({
-        user: buyer,
+        user: populated.buyer,
         type: NotificationType.ORDER_PLACED,
         title: 'Commande confirmée',
-        body: `Votre commande ${orderNumber} a été envoyée au fournisseur`,
-        data: { orderId: order.id, orderNumber },
+        body: `Votre commande ${populated.orderNumber} a été envoyée au fournisseur`,
+        data: { orderId: populated.id, orderNumber: populated.orderNumber },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       }),
     ])
-
-    return order
   }
 
   async findById(id: string): Promise<Order> {

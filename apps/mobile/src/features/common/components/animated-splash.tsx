@@ -80,7 +80,7 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
         ]}
       >
         <Image
-          source={require('../../../../assets/icon.png')}
+          source={require('../../../../assets/logo-transparent.png')}
           style={styles.logo}
           resizeMode="contain"
         />
@@ -100,7 +100,7 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
       <Animated.Text
         style={[styles.tagline, { opacity: taglineOpacity }]}
       >
-        La nature, près de chez vous
+        Produits bio, près de chez vous
       </Animated.Text>
 
       {/* Version */}
@@ -109,7 +109,7 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
   )
 }
 
-const LOGO_SIZE = width * 0.35
+const LOGO_SIZE = width * 0.30
 
 const styles = StyleSheet.create({
   container: {

@@ -24,6 +24,7 @@ import {
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, Navigate, Outlet, useNavigate } from 'react-router'
+import logoImg from '@/assets/images/logo.png'
 import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useAbility } from '@/lib/casl/ability-context'
@@ -103,16 +104,15 @@ export default function AppLayout() {
   const navItems = isAdmin ? adminNavItems : supplierNavItems
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="flex min-h-screen flex-col bg-white dark:bg-[#141410]">
       <Header>
         <Navigation
           brand={(
             <Link
               to={isAdmin ? '/admin' : '/catalogue'}
-              className="flex items-center gap-2 font-bold text-primary hover:text-primary/80"
+              className="flex items-center gap-2 shrink-0"
             >
-              <Package className="h-5 w-5" />
-              <span className="font-display">eBio</span>
+              <img src={logoImg} alt="eBio" className="h-8 w-auto" />
             </Link>
           )}
           sections={[
@@ -159,7 +159,7 @@ export default function AppLayout() {
           ]}
         />
       </Header>
-      <main className="flex-1 w-full px-4 py-8 sm:px-6 lg:px-8">
+      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 sm:px-6 lg:px-8">
         <Outlet />
       </main>
     </div>

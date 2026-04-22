@@ -235,10 +235,36 @@ export class PaymentsService {
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })
 
+    await this.sendOrderPlacedNotifications(order.id)
+
     return {
       paymentId: payment.id,
       status: 'completed' as const,
     }
+  }
+
+  private async sendOrderPlacedNotifications(orderId: string): Promise<void> {
+    const order = await this.em.findOneOrFail(Order, { id: orderId }, {
+      populate: ['buyer', 'supplier', 'supplier.user'],
+    })
+    await Promise.all([
+      this.notificationsService.send({
+        user: order.supplier.user,
+        type: NotificationType.ORDER_PLACED,
+        title: 'Nouvelle commande',
+        body: `Commande ${order.orderNumber} reçue pour ${order.totalAmount} FCFA`,
+        data: { orderId: order.id, orderNumber: order.orderNumber },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      }),
+      this.notificationsService.send({
+        user: order.buyer,
+        type: NotificationType.ORDER_PLACED,
+        title: 'Commande confirmée',
+        body: `Votre commande ${order.orderNumber} a été envoyée au fournisseur`,
+        data: { orderId: order.id, orderNumber: order.orderNumber },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      }),
+    ])
   }
 
   /**
@@ -284,6 +310,8 @@ export class PaymentsService {
         data: { orderId: payment.order.id, paymentId: payment.id },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
+
+      await this.sendOrderPlacedNotifications(payment.order.id)
     }
     else if (webhookResult.status === 'failed') {
       payment.status = PaymentStatus.FAILED

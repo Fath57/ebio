@@ -1,7 +1,7 @@
 // eslint-disable-next-line ts/ban-ts-comment
 // @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { NavigationContainer } from '@react-navigation/native'
+import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Home from 'lucide-react-native/dist/esm/icons/house'
@@ -80,7 +80,6 @@ function SupplierProfileWrapper({ route, navigation }: any) {
       onNavigateToProduct={(productId, product, supplierInfo) => {
         navigation.navigate('ProductDetail', { product, supplier: supplierInfo })
       }}
-      onNavigateToOrder={(id) => console.log('order', id)}
       onGoBack={() => navigation.goBack()}
     />
   )
@@ -585,9 +584,9 @@ const tabIconStyles = StyleSheet.create({
     justifyContent: 'center',
   },
   dot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
     backgroundColor: colors.green[400],
     marginTop: 3,
   },
@@ -598,9 +597,9 @@ const badgeStyles = StyleSheet.create({
     position: 'absolute',
     top: -6,
     right: -10,
-    minWidth: 18,
-    height: 18,
-    borderRadius: 9,
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
     backgroundColor: colors.coral[400],
     justifyContent: 'center',
     alignItems: 'center',
@@ -623,37 +622,61 @@ const TAB_ICONS: Record<string, typeof Search> = {
 
 const Tab = createBottomTabNavigator()
 
+const HIDE_TAB_BAR_ROUTES = new Set([
+  'Checkout',
+  'OrderSuccess',
+  'Login',
+  'Register',
+  'ForgotPassword',
+  'SupplierRegistration',
+  'EditProfile',
+])
+
 export function AppNavigation() {
   const { semantic } = useTheme()
   useNotifications()
 
+  const baseTabBarStyle = {
+    height: 64,
+    paddingBottom: 10,
+    paddingTop: 4,
+    backgroundColor: semantic.bgCard,
+    borderTopWidth: 0,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    position: 'absolute' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 10,
+  }
+
   return (
     <NavigationContainer ref={navigationRef}>
       <Tab.Navigator
-        screenOptions={({ route }) => ({
-          headerShown: false,
-          tabBarActiveTintColor: colors.green[400],
-          tabBarInactiveTintColor: colors.neutral[400],
-          tabBarHideOnKeyboard: true,
-          tabBarStyle: {
-            height: 60,
-            paddingBottom: 8,
-            paddingTop: 4,
-            backgroundColor: semantic.bgCard,
-            borderTopColor: semantic.borderLight,
-          },
-          tabBarIcon: ({ color, size, focused }) => {
-            if (route.name === 'Panier') {
-              return <CartTabIcon size={size ?? 22} color={color} focused={focused} />
-            }
-            const Icon = TAB_ICONS[route.name]
-            return <AnimatedTabIcon Icon={Icon} size={size ?? 22} color={color} focused={focused} />
-          },
-          tabBarLabelStyle: {
-            fontFamily: fonts.sansMd,
-            fontSize: 11,
-          },
-        })}
+        screenOptions={({ route }) => {
+          const focused = getFocusedRouteNameFromRoute(route)
+          const shouldHide = focused ? HIDE_TAB_BAR_ROUTES.has(focused) : false
+          return {
+            headerShown: false,
+            tabBarActiveTintColor: colors.green[400],
+            tabBarInactiveTintColor: colors.neutral[400],
+            tabBarHideOnKeyboard: true,
+            tabBarStyle: shouldHide ? { display: 'none' } : baseTabBarStyle,
+            tabBarIcon: ({ color, size, focused: isFocused }) => {
+              if (route.name === 'Panier') {
+                return <CartTabIcon size={size ?? 22} color={color} focused={isFocused} />
+              }
+              const Icon = TAB_ICONS[route.name]
+              return <AnimatedTabIcon Icon={Icon} size={size ?? 22} color={color} focused={isFocused} />
+            },
+            tabBarLabelStyle: {
+              fontFamily: fonts.sansMd,
+              fontSize: 11,
+            },
+          }
+        }}
       >
         <Tab.Screen name="Accueil" component={SearchStackScreen} />
         <Tab.Screen name="Chat" component={ChatStackScreen} />

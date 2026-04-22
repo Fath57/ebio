@@ -107,9 +107,9 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
     performSearch()
   }
 
-  function handleSelectCategory(categoryId: string) {
+  function handleSelectCategory(slug: string) {
     const newCategory
-      = selectedCategory === categoryId ? undefined : categoryId
+      = selectedCategory === slug ? undefined : slug
     setSelectedCategory(newCategory)
     performSearch({ category: newCategory })
   }
@@ -141,10 +141,23 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
     validatedOnly: boolean
   }) {
     setAppliedFilters(filters)
+    const category = filters.categories.length > 0 ? filters.categories[0] : selectedCategory
     if (filters.categories.length > 0) {
       setSelectedCategory(filters.categories[0])
     }
-    performSearch()
+    // Pass filters directly to avoid stale closure
+    search({
+      q: query || undefined,
+      latitude,
+      longitude,
+      radius: filters.radius !== undefined ? filters.radius * 1000 : undefined,
+      category,
+      maxPrice: filters.maxPrice,
+      inStockOnly: filters.inStockOnly,
+      minRating: filters.minRating > 0 ? filters.minRating : undefined,
+      mode: filters.mode !== 'ALL' ? filters.mode : undefined,
+      validatedOnly: filters.validatedOnly || undefined,
+    })
   }
 
   function handleQueryChange(text: string) {
@@ -165,7 +178,12 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
       return null
     return (
       <View style={styles.emptyContainer}>
-        <SearchX size={48} color={semantic.textTertiary} />
+        <View style={[styles.emptyIconCircle, { backgroundColor: colors.green[50] }]}>
+          <SearchX size={48} color={colors.green[400]} />
+        </View>
+        <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
+          Aucun résultat
+        </Text>
         <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
           Aucun fournisseur trouvé à proximité. Essayez d&apos;élargir votre
           rayon de recherche.
@@ -185,10 +203,13 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
           style={styles.catGridScroll}
         >
           <View style={styles.catGrid}>
-            {/* "All" item */}
+            {/* "All" chip */}
             <SlideIn from="left" delay={0}>
               <TouchableOpacity
-                style={styles.catItem}
+                style={[
+                  styles.catItem,
+                  selectedCategory === undefined && styles.catItemActive,
+                ]}
                 onPress={() => {
                   setSelectedCategory(undefined)
                   performSearch({ category: undefined })
@@ -197,16 +218,9 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
                 accessibilityState={{ selected: selectedCategory === undefined }}
                 accessibilityLabel="Toutes les catégories"
               >
-                <View style={[
-                  styles.catCircle,
-                  { backgroundColor: semantic.bgCard },
-                  selectedCategory === undefined && styles.catCircleActive,
-                ]}>
-                  <Package size={22} color={selectedCategory === undefined ? colors.green[600] : semantic.textTertiary} />
-                </View>
+                <Package size={16} color={selectedCategory === undefined ? colors.green[600] : colors.neutral[400]} />
                 <Text style={[
                   styles.catLabel,
-                  { color: semantic.textSecondary },
                   selectedCategory === undefined && styles.catLabelActive,
                 ]} numberOfLines={1}>
                   Tout
@@ -215,28 +229,24 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
             </SlideIn>
 
             {categories.map((cat, index) => {
-              const isActive = selectedCategory === cat.id
+              const isActive = selectedCategory === cat.slug
               return (
                 <SlideIn key={cat.id} from="left" delay={(index + 1) * 60}>
                   <TouchableOpacity
-                    style={styles.catItem}
-                    onPress={() => handleSelectCategory(cat.id)}
+                    style={[
+                      styles.catItem,
+                      isActive && styles.catItemActive,
+                    ]}
+                    onPress={() => handleSelectCategory(cat.slug)}
                     accessibilityRole="button"
                     accessibilityState={{ selected: isActive }}
                     accessibilityLabel={cat.label}
                   >
-                    <View style={[
-                      styles.catCircle,
-                      { backgroundColor: semantic.bgCard },
-                      isActive && styles.catCircleActive,
-                    ]}>
-                      {cat.imageUrl
-                        ? <Image source={{ uri: cat.imageUrl }} style={styles.catImage} />
-                        : <cat.fallbackIcon size={22} color={isActive ? colors.green[600] : semantic.textTertiary} />}
-                    </View>
+                    {cat.imageUrl
+                      ? <Image source={{ uri: cat.imageUrl }} style={styles.catImage} />
+                      : <cat.fallbackIcon size={16} color={isActive ? colors.green[600] : colors.neutral[400]} />}
                     <Text style={[
                       styles.catLabel,
-                      { color: semantic.textSecondary },
                       isActive && styles.catLabelActive,
                     ]} numberOfLines={1}>
                       {cat.label}
@@ -264,7 +274,7 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgSurface }]}>
       {/* Search bar */}
-      <View style={[styles.searchHeader, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderLight }]}>
+      <View style={[styles.searchHeader, { backgroundColor: semantic.bgCard }]}>
         {/* Greeting */}
         <View style={styles.greetingSection}>
           <View>
@@ -431,8 +441,6 @@ const styles = StyleSheet.create({
     paddingTop: spacing[4],
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[3],
-    borderBottomWidth: 1,
-    borderBottomColor: colors.neutral[200],
   },
   greetingSection: {
     paddingHorizontal: spacing[4],
@@ -446,8 +454,8 @@ const styles = StyleSheet.create({
   },
   greetingTitle: {
     fontFamily: fonts.sansBd,
-    fontSize: 22,
-    lineHeight: 28,
+    fontSize: 24,
+    lineHeight: 30,
     marginTop: 2,
   },
   searchRow: {
@@ -460,11 +468,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.neutral[50],
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.neutral[200],
-    paddingHorizontal: spacing[3],
-    minHeight: 44,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[4],
+    minHeight: 48,
   },
   searchIcon: {
     marginRight: spacing[2],
@@ -504,38 +510,37 @@ const styles = StyleSheet.create({
   },
   catGrid: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[1],
-    maxHeight: 180,
+    gap: spacing[2],
   },
   catItem: {
+    flexDirection: 'row',
     alignItems: 'center',
-    width: 72,
-    paddingVertical: spacing[1],
+    gap: spacing[1],
+    height: 36,
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.pill,
+    backgroundColor: colors.neutral[50],
   },
   catCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
+    // Icon wrapper — no visible circle in chip mode
   },
   catCircleActive: {
-    borderColor: colors.green[400],
+    // Handled by catItemActive
+  },
+  catItemActive: {
     backgroundColor: colors.green[50],
+    borderWidth: 1.5,
+    borderColor: colors.green[400],
   },
   catImage: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
   },
   catLabel: {
     fontFamily: fonts.sansMd,
-    fontSize: 11,
-    marginTop: spacing[1],
-    textAlign: 'center',
+    fontSize: 13,
+    color: colors.neutral[600],
   },
   catLabelActive: {
     color: colors.green[800],
@@ -550,14 +555,27 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: spacing[2],
     paddingHorizontal: spacing[4],
-    paddingBottom: spacing[10],
+    paddingBottom: 80, // Extra padding for floating tab bar
   },
   emptyContainer: {
     alignItems: 'center',
     paddingHorizontal: spacing[8],
-    paddingTop: spacing[12],
+    paddingTop: spacing[10],
+    gap: spacing[3],
   },
-  // emptyIcon removed — now using Lucide SearchX icon directly
+  emptyIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[2],
+  },
+  emptyTitle: {
+    fontFamily: fonts.sansSb,
+    fontSize: 18,
+    lineHeight: 24,
+  },
   emptyText: {
     ...typography.bodyL,
     color: colors.neutral[600],

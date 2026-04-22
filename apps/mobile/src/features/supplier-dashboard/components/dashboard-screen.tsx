@@ -90,7 +90,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         </View>
 
         <View style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}>
-          <ShoppingCart size={20} color={colors.sky[400]} />
+          <ShoppingCart size={20} color={colors.blue[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
             {data?.pendingOrders ?? 0}
           </Text>
@@ -145,8 +145,8 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         <View style={styles.actionDivider} />
 
         <TouchableOpacity style={styles.actionItem} onPress={onNavigateToOrders} activeOpacity={0.6}>
-          <View style={[styles.actionIcon, { backgroundColor: colors.sky[50] }]}>
-            <ShoppingCart size={18} color={colors.sky[600]} />
+          <View style={[styles.actionIcon, { backgroundColor: colors.blue[50] }]}>
+            <ShoppingCart size={18} color={colors.blue[600]} />
           </View>
           <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Commandes</Text>
         </TouchableOpacity>

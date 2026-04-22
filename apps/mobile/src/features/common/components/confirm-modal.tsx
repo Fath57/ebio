@@ -2,6 +2,7 @@ import * as React from 'react'
 import { useRef, useEffect } from 'react'
 import {
   Animated,
+  Modal,
   Pressable,
   StyleSheet,
   Text,
@@ -58,19 +59,24 @@ export function ConfirmModal({
     }
   }, [visible, fadeAnim, scaleAnim])
 
-  if (!visible) return null
-
   const isDestructive = confirmStyle === 'destructive'
 
   return (
-    <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
-      <Pressable style={styles.backdrop} onPress={onCancel} />
-      <Animated.View
-        style={[
-          styles.modal,
-          { backgroundColor: semantic.bgCard, transform: [{ scale: scaleAnim }] },
-        ]}
-      >
+    <Modal
+      visible={visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={onCancel}
+    >
+      <Animated.View style={[styles.overlay, { opacity: fadeAnim }]}>
+        <Pressable style={styles.backdrop} onPress={onCancel} />
+        <Animated.View
+          style={[
+            styles.modal,
+            { backgroundColor: semantic.bgCard, transform: [{ scale: scaleAnim }] },
+          ]}
+        >
         {Icon && (
           <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
             <Icon size={28} color={iconColor} strokeWidth={2} />
@@ -100,8 +106,9 @@ export function ConfirmModal({
             <Text style={styles.confirmButtonText}>{confirmLabel}</Text>
           </TouchableOpacity>
         </View>
+        </Animated.View>
       </Animated.View>
-    </Animated.View>
+    </Modal>
   )
 }
 

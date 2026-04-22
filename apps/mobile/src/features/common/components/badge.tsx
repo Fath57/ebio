@@ -28,9 +28,9 @@ const BADGE_CONFIG: Record<BadgeVariant, {
     defaultLabel: 'Top Vendeur',
   },
   CERTIFIED_BIO: {
-    backgroundColor: colors.sky[50],
-    textColor: colors.sky[800],
-    borderColor: colors.sky[100],
+    backgroundColor: colors.blue[50],
+    textColor: colors.blue[800],
+    borderColor: colors.blue[100],
     defaultLabel: 'Certifié Bio',
   },
 }
@@ -59,11 +59,10 @@ export function Badge({ variant, label }: BadgeProps) {
 
 const styles = StyleSheet.create({
   container: {
-    height: 22,
-    paddingHorizontal: 10,
+    height: 24,
+    paddingHorizontal: 12,
     paddingVertical: 4,
     borderRadius: radius.pill,
-    borderWidth: 1,
     alignSelf: 'flex-start',
     justifyContent: 'center',
   },

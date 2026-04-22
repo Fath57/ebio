@@ -95,6 +95,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
           </Text>
           {supplier.rating !== null && (
             <View style={styles.ratingPill}>
+              <Star size={10} color={colors.earth[400]} fill={colors.earth[400]} strokeWidth={0} />
               <Text style={styles.ratingText}>{supplier.rating.toFixed(1)}</Text>
             </View>
           )}
@@ -176,7 +177,7 @@ const styles = StyleSheet.create({
   imageContainer: {
     position: 'relative',
     width: '100%',
-    aspectRatio: 16 / 10,
+    aspectRatio: 16 / 9,
   },
   image: {
     width: '100%',
@@ -238,10 +239,10 @@ const styles = StyleSheet.create({
 
   // Body
   body: {
-    paddingHorizontal: spacing[3],
-    paddingTop: spacing[2],
-    paddingBottom: spacing[3],
-    gap: 3,
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[4],
+    gap: spacing[1],
   },
 
   // Title row
@@ -253,12 +254,15 @@ const styles = StyleSheet.create({
   },
   shopName: {
     fontFamily: fonts.sansBd,
-    fontSize: 16,
-    lineHeight: 16 * 1.3,
+    fontSize: 17,
+    lineHeight: 17 * 1.3,
     flex: 1,
   },
   ratingPill: {
-    backgroundColor: colors.neutral[100],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: colors.earth[50],
     borderRadius: radius.pill,
     paddingHorizontal: 8,
     paddingVertical: 3,

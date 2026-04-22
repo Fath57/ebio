@@ -46,11 +46,13 @@ interface NavigationItemProps {
 function NavigationItemComponent({ item, className, isMobile = false, onItemClick }: NavigationItemProps) {
   const baseClassName = cn(
     className,
-    'flex items-center gap-2 px-3 py-2 rounded-md transition-colors',
-    isMobile && 'w-full text-left',
-    !isMobile && 'text-sm',
-    item.variant === 'destructive' && 'text-destructive hover:bg-destructive hover:text-destructive-foreground',
-    item.variant !== 'destructive' && 'hover:bg-accent hover:text-accent-foreground',
+    'flex items-center gap-2 transition-colors',
+    isMobile && 'w-full text-left px-3 py-2.5 rounded-lg',
+    !isMobile && 'relative text-sm font-medium px-1 py-1 text-muted-foreground',
+    isMobile && item.variant === 'destructive' && 'text-destructive hover:bg-destructive/10',
+    isMobile && item.variant !== 'destructive' && 'hover:bg-accent',
+    !isMobile && item.variant === 'destructive' && 'text-destructive hover:text-destructive',
+    !isMobile && item.variant !== 'destructive' && 'hover:text-foreground',
   )
 
   if (item.onClick) {
@@ -87,7 +89,7 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
       to={item.to}
       className={({ isActive }) => cn(
         baseClassName,
-        isActive && 'text-primary font-medium bg-primary/10',
+        isActive && 'text-foreground after:absolute after:bottom-[-13px] after:left-0 after:right-0 after:h-[2px] after:bg-primary after:rounded-full',
       )}
     >
       {item.icon}
@@ -144,8 +146,10 @@ function NavigationDropdown({ section }: NavigationDropdownProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline" size="icon" className="relative h-8 w-8 rounded-md">
-          {section.dropdown.icon}
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full bg-primary/10 text-primary hover:bg-primary/20 p-0">
+          {section.dropdown.label
+            ? <span className="text-xs font-semibold">{section.dropdown.label.slice(0, 2).toUpperCase()}</span>
+            : section.dropdown.icon}
           {section.dropdown.label && <span className="sr-only">{section.dropdown.label}</span>}
         </Button>
       </DropdownMenuTrigger>
@@ -222,7 +226,7 @@ function NavigationDesktopSection({ section }: { section: NavigationSection }) {
 
   return (
     <nav key={sectionKey}>
-      <ul className="flex gap-2 text-sm">
+      <ul className="flex gap-6 text-sm">
         {visibleItems.map(item => (
           <li key={item.to}>
             <NavigationItemComponent item={item} />
@@ -329,7 +333,7 @@ const defaultSections: NavigationSection[] = []
 
 export function Navigation({ brand, sections = defaultSections, className }: NavigationProps) {
   return (
-    <div className={cn('container mx-auto flex h-14 items-center justify-between gap-8 px-4', className)}>
+    <div className={cn('container mx-auto flex h-full items-center justify-between gap-8 px-4 lg:px-8', className)}>
       <NavigationBrand>{brand}</NavigationBrand>
       <NavigationDesktop sections={sections} />
       <NavigationMobile brand={brand} sections={sections} />

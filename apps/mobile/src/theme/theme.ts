@@ -1,13 +1,13 @@
 // theme.ts — Source unique de vérité pour les tokens eBio (React Native)
 export const colors = {
   green: {
-    50: '#EDFAF2',
-    100: '#C6F0D8',
-    200: '#8EE0B2',
-    400: '#2CB878',
-    600: '#1A8757',
-    800: '#0E5435',
-    900: '#072B1B',
+    50: '#e8f5ec',
+    100: '#c5e6cf',
+    200: '#7cc896',
+    400: '#2a9d4e',
+    600: '#1e7a37',
+    800: '#134e23',
+    900: '#0a2912',
   },
   earth: {
     50: '#FAF5ED',
@@ -18,14 +18,14 @@ export const colors = {
     800: '#543310',
     900: '#2C1A07',
   },
-  sky: {
-    50: '#EDF6FF',
-    100: '#C5E3FF',
-    200: '#88C5F8',
-    400: '#4AA8F5',
-    600: '#1A7DD4',
-    800: '#0A4A8A',
-    900: '#062B55',
+  blue: {
+    50: '#eaeff6',
+    100: '#c4d1e6',
+    200: '#8aa4cc',
+    400: '#4a6da6',
+    600: '#335289',
+    800: '#213559',
+    900: '#121d30',
   },
   coral: {
     50: '#FFF0EC',
@@ -61,8 +61,9 @@ export const radius = {
   xs: 4,
   sm: 8,
   md: 10,
-  lg: 12,
-  xl: 16,
+  lg: 16,
+  xl: 20,
+  xxl: 24,
   pill: 99,
 } as const
 
@@ -93,12 +94,12 @@ export const typography = {
 // Semantic colors for light/dark mode
 export const lightTheme = {
   bgPage: colors.neutral[0],
-  bgSurface: colors.neutral[50],
+  bgSurface: colors.neutral[0],
   bgCard: colors.neutral[0],
   textPrimary: colors.neutral[800],
   textSecondary: colors.neutral[600],
   textTertiary: colors.neutral[400],
-  borderLight: colors.neutral[200],
+  borderLight: colors.neutral[100],
   borderNormal: colors.neutral[200],
   colorPrimary: colors.green[400],
   textPrimaryColor: colors.green[600],
@@ -107,23 +108,23 @@ export const lightTheme = {
 
 export const shadows = {
   sm: {
-    shadowColor: '#0E5435',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.04,
     shadowRadius: 4,
     elevation: 2,
   },
   md: {
-    shadowColor: '#0E5435',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.06,
     shadowRadius: 12,
     elevation: 4,
   },
   lg: {
-    shadowColor: '#0E5435',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
+    shadowOpacity: 0.10,
     shadowRadius: 24,
     elevation: 8,
   },

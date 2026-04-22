@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -11,7 +12,6 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import Mail from 'lucide-react-native/dist/esm/icons/mail'
 import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import Eye from 'lucide-react-native/dist/esm/icons/eye'
@@ -234,10 +234,11 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
       >
         {/* Brand */}
         <View style={styles.brandContainer}>
-          <View style={styles.logoRow}>
-            <Leaf size={32} color={colors.green[400]} strokeWidth={2.5} />
-          </View>
-          <Text style={[styles.brandName, { color: colors.green[400] }]}>eBio</Text>
+          <Image
+            source={require('../../../../assets/logo-transparent.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Title */}
@@ -492,12 +493,7 @@ const styles = StyleSheet.create({
   scrollContent: { flexGrow: 1, paddingHorizontal: spacing[6] },
 
   brandContainer: { alignItems: 'center', marginBottom: spacing[8] },
-  logoRow: {
-    width: 64, height: 64, borderRadius: radius.xl,
-    backgroundColor: colors.green[50],
-    alignItems: 'center', justifyContent: 'center', marginBottom: spacing[3],
-  },
-  brandName: { ...typography.display, fontSize: 42, lineHeight: 48 },
+  logo: { width: 120, height: 78 },
 
   title: { ...typography.h1, marginBottom: spacing[1] },
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },

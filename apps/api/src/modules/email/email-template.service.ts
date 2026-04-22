@@ -1,6 +1,7 @@
 import { join } from 'node:path'
 import { Injectable, Logger } from '@nestjs/common'
 import * as ejs from 'ejs'
+import { config } from '../../config/env.config'
 
 export type TemplateName
   = 'reset-password'
@@ -25,7 +26,7 @@ export class EmailTemplateService {
 
     return this.renderFile(
       join(this.templatesDir, 'layout.ejs'),
-      { subject, body: bodyHtml },
+      { subject, body: bodyHtml, apiBaseUrl: config.api.baseUrl },
     )
   }
 
@@ -35,7 +36,6 @@ export class EmailTemplateService {
   ): Promise<string> {
     try {
       return await ejs.renderFile(filePath, data, {
-        async: true,
         root: this.templatesDir,
       })
     }

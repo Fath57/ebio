@@ -8,6 +8,7 @@ import { useCallback, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
+  Modal,
   PanResponder,
   Pressable,
   ScrollView,
@@ -264,14 +265,14 @@ export function FilterSheet({
     close()
   }
 
-  function handleToggleCategory(categoryId: string) {
+  function handleToggleCategory(slug: string) {
     setFilters((prev) => {
-      const isSelected = prev.categories.includes(categoryId)
+      const isSelected = prev.categories.includes(slug)
       return {
         ...prev,
         categories: isSelected
-          ? prev.categories.filter(c => c !== categoryId)
-          : [...prev.categories, categoryId],
+          ? prev.categories.filter(c => c !== slug)
+          : [...prev.categories, slug],
       }
     })
   }
@@ -283,10 +284,14 @@ export function FilterSheet({
     }))
   }
 
-  if (!isRendered && !visible) return null
-
   return (
-    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+    <Modal
+      visible={isRendered || visible}
+      transparent
+      animationType="none"
+      statusBarTranslucent
+      onRequestClose={close}
+    >
       {/* Backdrop */}
       <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
         <Pressable style={StyleSheet.absoluteFill} onPress={close} />
@@ -399,7 +404,7 @@ export function FilterSheet({
               contentContainerStyle={styles.chipsRow}
             >
               {categoryOptions.map((cat) => {
-                const isSelected = filters.categories.includes(cat.id)
+                const isSelected = filters.categories.includes(cat.slug)
                 return (
                   <TouchableOpacity
                     key={cat.id}
@@ -408,7 +413,7 @@ export function FilterSheet({
                       { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal },
                       isSelected && styles.categoryChipActive,
                     ]}
-                    onPress={() => handleToggleCategory(cat.id)}
+                    onPress={() => handleToggleCategory(cat.slug)}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: isSelected }}
                     accessibilityLabel={cat.label}
@@ -567,7 +572,7 @@ export function FilterSheet({
           </TouchableOpacity>
         </View>
       </Animated.View>
-    </View>
+    </Modal>
   )
 }
 

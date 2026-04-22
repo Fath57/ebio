@@ -93,10 +93,11 @@ export class OtpService {
 
     await fork.flush()
 
-    await this.emailService.sendEmail({
+    await this.emailService.sendTemplatedEmail({
       to: email,
       subject: 'eBio — Code de vérification',
-      content: `Votre code de vérification eBio est : ${code}. Il expire dans ${OTP_TTL_MINUTES} minutes.`,
+      template: 'otp-code',
+      data: { otpCode: code, userName: null, expiresInMinutes: OTP_TTL_MINUTES },
     })
 
     this.logger.debug(`[EMAIL-OTP] ${email} → ${code}`)
@@ -154,7 +155,7 @@ export class OtpService {
         to: identifier,
         subject: 'eBio — Code de réinitialisation',
         template: 'otp-code',
-        data: { code, userName: null, title: 'Réinitialisation de mot de passe', expiresInMinutes: OTP_TTL_MINUTES },
+        data: { otpCode: code, userName: null, expiresInMinutes: OTP_TTL_MINUTES },
       })
     }
 

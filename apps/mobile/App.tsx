@@ -19,6 +19,7 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AppNavigation } from './src/app/navigation'
+import { useNotifications } from './src/features/notifications/hooks/use-notifications'
 import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
 import { ThemeProvider } from './src/theme/theme-context'
@@ -28,6 +29,7 @@ SplashScreen.preventAutoHideAsync()
 
 export default function App(): React.JSX.Element | null {
   const [showSplash, setShowSplash] = useState(true)
+  useNotifications()
   const [fontsLoaded] = useFonts({
     DMSerifDisplay_400Regular,
     PlusJakartaSans_400Regular,

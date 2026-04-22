@@ -1,10 +1,8 @@
-import { randomBytes, randomUUID, scrypt } from 'node:crypto'
-import { promisify } from 'node:util'
+import { randomUUID } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
+import { hashPassword, verifyPassword } from 'better-auth/crypto'
 import { Account, Session, User, UserRole } from './auth.entity'
-
-const scryptAsync = promisify(scrypt)
 
 @Injectable()
 export class OtpAuthService {
@@ -38,7 +36,7 @@ export class OtpAuthService {
       const account = await fork.findOne(Account, { user, providerId: 'credential' })
       if (!account?.password) return 'wrong_password'
 
-      const valid = await this.verifyPassword(password, account.password)
+      const valid = await this.verifyPwd(password, account.password)
       if (!valid) return 'wrong_password'
     }
 
@@ -74,7 +72,7 @@ export class OtpAuthService {
       accountId: user.id,
       providerId: 'credential',
       user,
-      password: await this.hashPassword(password),
+      password: await this.hashPwd(password),
     })
 
     const session = await this.createSession(fork, user)
@@ -109,7 +107,7 @@ export class OtpAuthService {
       accountId: user.id,
       providerId: 'credential',
       user,
-      password: await this.hashPassword(password),
+      password: await this.hashPwd(password),
     })
 
     const session = await this.createSession(fork, user)
@@ -142,7 +140,7 @@ export class OtpAuthService {
     // Find the credential account and update password
     const account = await fork.findOne(Account, { user, providerId: 'credential' })
     if (account) {
-      account.password = await this.hashPassword(newPassword)
+      account.password = await this.hashPwd(newPassword)
       await fork.flush()
     }
     else {
@@ -151,7 +149,7 @@ export class OtpAuthService {
         accountId: user.id,
         providerId: 'credential',
         user,
-        password: await this.hashPassword(newPassword),
+        password: await this.hashPwd(newPassword),
       })
       await fork.flush()
     }
@@ -159,17 +157,12 @@ export class OtpAuthService {
     this.logger.debug(`Password reset for user ${user.id}`)
   }
 
-  private async hashPassword(password: string): Promise<string> {
-    const salt = randomBytes(16).toString('hex')
-    const derived = (await scryptAsync(password, salt, 64)) as Buffer
-    return `${salt}:${derived.toString('hex')}`
+  private hashPwd(password: string): Promise<string> {
+    return hashPassword(password)
   }
 
-  private async verifyPassword(password: string, stored: string): Promise<boolean> {
-    const [salt, hash] = stored.split(':')
-    if (!salt || !hash) return false
-    const derived = (await scryptAsync(password, salt, 64)) as Buffer
-    return derived.toString('hex') === hash
+  private verifyPwd(password: string, stored: string): Promise<boolean> {
+    return verifyPassword({ password, hash: stored })
   }
 
   private async createSession(fork: EntityManager, user: User): Promise<Session> {

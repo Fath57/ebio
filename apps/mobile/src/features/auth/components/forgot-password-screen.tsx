@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -149,6 +150,15 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
             <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
           </Pressable>
         )}
+
+        {/* Brand */}
+        <View style={styles.brandContainer}>
+          <Image
+            source={require('../../../../assets/logo-transparent.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
+        </View>
 
         {/* Title */}
         <Text style={[styles.title, { color: semantic.textPrimary }]}>
@@ -345,7 +355,10 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: spacing[6] },
 
-  backButton: { marginBottom: spacing[6] },
+  backButton: { marginBottom: spacing[4] },
+
+  brandContainer: { alignItems: 'center', marginBottom: spacing[6] },
+  logo: { width: 120, height: 78 },
 
   title: { ...typography.h1, marginBottom: spacing[1] },
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },

@@ -61,8 +61,8 @@ export function SupplierSettingsScreen({
         <View style={styles.menuDivider} />
 
         <TouchableOpacity style={styles.menuItem} onPress={onNavigateToDeliveryZones} activeOpacity={0.6}>
-          <View style={[styles.menuIcon, { backgroundColor: colors.sky[50] }]}>
-            <MapPin size={18} color={colors.sky[600]} />
+          <View style={[styles.menuIcon, { backgroundColor: colors.blue[50] }]}>
+            <MapPin size={18} color={colors.blue[600]} />
           </View>
           <View style={styles.menuTextContainer}>
             <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Zones de livraison</Text>

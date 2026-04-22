@@ -54,10 +54,10 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string, text: string, dot: string }> = {
   PLACED: { bg: colors.neutral[100], text: colors.neutral[600], dot: colors.neutral[400] },
-  ACCEPTED: { bg: colors.sky[50], text: colors.sky[800], dot: colors.sky[400] },
+  ACCEPTED: { bg: colors.blue[50], text: colors.blue[800], dot: colors.blue[400] },
   PREPARING: { bg: colors.earth[50], text: colors.earth[800], dot: colors.earth[400] },
   READY: { bg: colors.green[50], text: colors.green[800], dot: colors.green[400] },
-  IN_DELIVERY: { bg: colors.sky[50], text: colors.sky[600], dot: colors.sky[600] },
+  IN_DELIVERY: { bg: colors.blue[50], text: colors.blue[600], dot: colors.blue[600] },
   DELIVERED: { bg: colors.green[100], text: colors.green[600], dot: colors.green[400] },
   CANCELLED: { bg: colors.coral[50], text: colors.coral[600], dot: colors.coral[400] },
 }

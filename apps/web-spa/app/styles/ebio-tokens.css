@@ -1,22 +1,22 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
 :root {
-  --ebio-green-50: #EDFAF2;
-  --ebio-green-100: #C6F0D8;
-  --ebio-green-200: #8EE0B2;
-  --ebio-green-400: #2CB878;
-  --ebio-green-600: #1A8757;
-  --ebio-green-800: #0E5435;
-  --ebio-green-900: #072B1B;
+  --ebio-green-50: #e8f5ec;
+  --ebio-green-100: #c5e6cf;
+  --ebio-green-200: #7cc896;
+  --ebio-green-400: #2a9d4e;
+  --ebio-green-600: #1e7a37;
+  --ebio-green-800: #134e23;
+  --ebio-green-900: #0a2912;
 
   --ebio-earth-50: #FAF5ED;
   --ebio-earth-400: #C07B2A;
   --ebio-earth-600: #8A5518;
   --ebio-earth-800: #543310;
 
-  --ebio-sky-400: #4AA8F5;
-  --ebio-sky-600: #1A7DD4;
-  --ebio-sky-800: #0A4A8A;
+  --ebio-blue-400: #4a6da6;
+  --ebio-blue-600: #335289;
+  --ebio-blue-800: #213559;
 
   --ebio-coral-400: #F06040;
   --ebio-coral-600: #B83820;
@@ -38,9 +38,9 @@
   --text-tertiary: #9B9890;
   --border-light: #D5D3CE;
   --border-normal: #D5D3CE;
-  --color-primary: #2CB878;
-  --text-primary-color: #1A8757;
-  --bg-primary-light: #EDFAF2;
+  --color-primary: #2a9d4e;
+  --text-primary-color: #1e7a37;
+  --bg-primary-light: #e8f5ec;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -53,22 +53,22 @@
     --text-tertiary: #9B9890;
     --border-light: #2A2924;
     --border-normal: #5A5852;
-    --color-primary: #2CB878;
-    --text-primary-color: #8EE0B2;
-    --bg-primary-light: #072B1B;
+    --color-primary: #2a9d4e;
+    --text-primary-color: #7cc896;
+    --bg-primary-light: #0a2912;
   }
 }
 
 /* eBio Tailwind v4 theme tokens */
 @theme inline {
   /* Colors — eBio Green */
-  --color-ebio-green-50: #EDFAF2;
-  --color-ebio-green-100: #C6F0D8;
-  --color-ebio-green-200: #8EE0B2;
-  --color-ebio-green-400: #2CB878;
-  --color-ebio-green-600: #1A8757;
-  --color-ebio-green-800: #0E5435;
-  --color-ebio-green-900: #072B1B;
+  --color-ebio-green-50: #e8f5ec;
+  --color-ebio-green-100: #c5e6cf;
+  --color-ebio-green-200: #7cc896;
+  --color-ebio-green-400: #2a9d4e;
+  --color-ebio-green-600: #1e7a37;
+  --color-ebio-green-800: #134e23;
+  --color-ebio-green-900: #0a2912;
 
   /* Colors — eBio Earth */
   --color-ebio-earth-50: #FAF5ED;
@@ -79,14 +79,14 @@
   --color-ebio-earth-800: #543310;
   --color-ebio-earth-900: #2C1A07;
 
-  /* Colors — eBio Sky */
-  --color-ebio-sky-50: #EDF6FF;
-  --color-ebio-sky-100: #C5E3FF;
-  --color-ebio-sky-200: #88C5F8;
-  --color-ebio-sky-400: #4AA8F5;
-  --color-ebio-sky-600: #1A7DD4;
-  --color-ebio-sky-800: #0A4A8A;
-  --color-ebio-sky-900: #062B55;
+  /* Colors — eBio Blue */
+  --color-ebio-blue-50: #eaeff6;
+  --color-ebio-blue-100: #c4d1e6;
+  --color-ebio-blue-200: #8aa4cc;
+  --color-ebio-blue-400: #4a6da6;
+  --color-ebio-blue-600: #335289;
+  --color-ebio-blue-800: #213559;
+  --color-ebio-blue-900: #121d30;
 
   /* Colors — eBio Coral */
   --color-ebio-coral-50: #FFF0EC;

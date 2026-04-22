@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -16,7 +17,6 @@ import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import Eye from 'lucide-react-native/dist/esm/icons/eye'
 import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
 import PhoneIcon from 'lucide-react-native/dist/esm/icons/phone'
-import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import { useTheme } from '../../../theme/theme-context'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { signInWithEmail, notifyAuthChange } from '../../../lib/auth-client'
@@ -124,10 +124,11 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
       >
         {/* Brand */}
         <View style={styles.brandContainer}>
-          <View style={styles.logoRow}>
-            <Leaf size={32} color={colors.green[400]} strokeWidth={2.5} />
-          </View>
-          <Text style={[styles.brandName, { color: colors.green[400] }]}>eBio</Text>
+          <Image
+            source={require('../../../../assets/logo-transparent.png')}
+            style={styles.logo}
+            resizeMode="contain"
+          />
           <Text style={[styles.brandSubtitle, { color: semantic.textSecondary }]}>
             Produits bio, près de chez vous
           </Text>
@@ -315,13 +316,8 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: spacing[6] },
 
-  brandContainer: { alignItems: 'center', marginBottom: spacing[10] },
-  logoRow: {
-    width: 64, height: 64, borderRadius: radius.xl,
-    backgroundColor: colors.green[50],
-    alignItems: 'center', justifyContent: 'center', marginBottom: spacing[3],
-  },
-  brandName: { ...typography.display, fontSize: 42, lineHeight: 48 },
+  brandContainer: { alignItems: 'center', marginBottom: spacing[12] },
+  logo: { width: 140, height: 90, marginBottom: spacing[2] },
   brandSubtitle: { ...typography.bodyS, marginTop: spacing[1] },
 
   title: { ...typography.h1, marginBottom: spacing[1] },
@@ -337,7 +333,7 @@ const styles = StyleSheet.create({
   form: { gap: spacing[4] },
   inputContainer: {
     flexDirection: 'row', alignItems: 'center', borderWidth: 1,
-    borderRadius: radius.lg, paddingHorizontal: spacing[4], height: 52, gap: spacing[3],
+    borderRadius: radius.xl, paddingHorizontal: spacing[4], height: 56, gap: spacing[3],
   },
   input: { flex: 1, fontSize: 15, height: '100%' },
   eyeButton: { padding: spacing[1] },
@@ -346,7 +342,7 @@ const styles = StyleSheet.create({
   forgotText: { ...typography.bodyS, fontFamily: fonts.sansMd },
 
   submitButton: {
-    height: 52, borderRadius: radius.lg,
+    height: 56, borderRadius: radius.pill,
     alignItems: 'center', justifyContent: 'center', marginTop: spacing[2],
     ...shadows.md,
   },

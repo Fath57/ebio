@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -125,6 +126,7 @@ export function OrderTracking({
   const [isConfirming, setIsConfirming] = useState(false)
   const [detailsExpanded, setDetailsExpanded] = useState(true)
   const { semantic } = useTheme()
+  const insets = useSafeAreaInsets()
 
   useEffect(() => {
     async function fetchOrder(): Promise<void> {
@@ -243,7 +245,7 @@ export function OrderTracking({
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom + spacing[6] }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Cancelled banner */}
@@ -552,7 +554,6 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing[4],
     paddingTop: spacing[3],
-    paddingBottom: spacing[10],
     gap: spacing[3],
   },
   loadingContainer: {
