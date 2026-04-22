@@ -1,5 +1,5 @@
-import type { ProductFormData } from '../forms/product-form'
 import type { CreateProduct } from '@boilerstone/openapi-generator/client/types.gen'
+import type { ProductFormData } from '../forms/product-form'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card } from '@boilerstone/ui/components/primitives/card'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'

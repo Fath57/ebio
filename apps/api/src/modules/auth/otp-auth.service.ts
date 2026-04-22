@@ -29,15 +29,18 @@ export class OtpAuthService {
   async loginWithPhone(phone: string, password?: string): Promise<{ accessToken: string, user: { id: string, name: string, phone: string | null, role: string } } | 'wrong_password' | null> {
     const fork = this.em.fork()
     const user = await fork.findOne(User, { phone })
-    if (!user) return null
+    if (!user)
+      return null
 
     // Verify password if provided
     if (password) {
       const account = await fork.findOne(Account, { user, providerId: 'credential' })
-      if (!account?.password) return 'wrong_password'
+      if (!account?.password)
+        return 'wrong_password'
 
       const valid = await this.verifyPwd(password, account.password)
-      if (!valid) return 'wrong_password'
+      if (!valid)
+        return 'wrong_password'
     }
 
     const session = await this.createSession(fork, user)

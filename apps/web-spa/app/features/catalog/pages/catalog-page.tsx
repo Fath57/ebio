@@ -13,6 +13,7 @@ import {
 } from '@boilerstone/ui/components/primitives/dialog'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
+import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import {
   Table,
   TableBody,
@@ -21,7 +22,6 @@ import {
   TableHeader,
   TableRow,
 } from '@boilerstone/ui/components/primitives/table'
-import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Check, Pencil, PlusCircle, Trash2 } from 'lucide-react'
 import { useState } from 'react'

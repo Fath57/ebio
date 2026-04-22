@@ -246,7 +246,9 @@ export default function ProductDetailPage() {
                     </span>
                     {v.stock === 0 && (
                       <span className="ml-1 text-xs text-destructive">
-                        ({t('catalog.status.outOfStock')})
+                        (
+                        {t('catalog.status.outOfStock')}
+                        )
                       </span>
                     )}
                   </button>

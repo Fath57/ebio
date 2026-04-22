@@ -1,5 +1,6 @@
+import type { LucideIcon } from 'lucide-react-native'
 import * as React from 'react'
-import { useRef, useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import {
   Animated,
   Modal,
@@ -9,7 +10,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import type { LucideIcon } from 'lucide-react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 
@@ -77,35 +77,35 @@ export function ConfirmModal({
             { backgroundColor: semantic.bgCard, transform: [{ scale: scaleAnim }] },
           ]}
         >
-        {Icon && (
-          <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
-            <Icon size={28} color={iconColor} strokeWidth={2} />
+          {Icon && (
+            <View style={[styles.iconCircle, { backgroundColor: iconBg }]}>
+              <Icon size={28} color={iconColor} strokeWidth={2} />
+            </View>
+          )}
+          <Text style={[styles.title, { color: semantic.textPrimary }]}>{title}</Text>
+          <Text style={[styles.message, { color: semantic.textSecondary }]}>{message}</Text>
+          <View style={styles.buttonRow}>
+            <TouchableOpacity
+              style={[styles.button, styles.cancelButton, { borderColor: semantic.borderNormal }]}
+              onPress={onCancel}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.cancelButtonText, { color: semantic.textSecondary }]}>
+                {cancelLabel}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.button,
+                styles.confirmButton,
+                { backgroundColor: isDestructive ? colors.coral[400] : colors.green[400] },
+              ]}
+              onPress={onConfirm}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.confirmButtonText}>{confirmLabel}</Text>
+            </TouchableOpacity>
           </View>
-        )}
-        <Text style={[styles.title, { color: semantic.textPrimary }]}>{title}</Text>
-        <Text style={[styles.message, { color: semantic.textSecondary }]}>{message}</Text>
-        <View style={styles.buttonRow}>
-          <TouchableOpacity
-            style={[styles.button, styles.cancelButton, { borderColor: semantic.borderNormal }]}
-            onPress={onCancel}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.cancelButtonText, { color: semantic.textSecondary }]}>
-              {cancelLabel}
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[
-              styles.button,
-              styles.confirmButton,
-              { backgroundColor: isDestructive ? colors.coral[400] : colors.green[400] },
-            ]}
-            onPress={onConfirm}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.confirmButtonText}>{confirmLabel}</Text>
-          </TouchableOpacity>
-        </View>
         </Animated.View>
       </Animated.View>
     </Modal>

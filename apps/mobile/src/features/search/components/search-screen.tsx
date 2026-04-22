@@ -1,35 +1,33 @@
 import type { SearchResult } from '../hooks/use-search'
-import * as React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
-import {
-  ActivityIndicator,
-  Dimensions,
-  FlatList,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  Image,
-  View,
-} from 'react-native'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import Package from 'lucide-react-native/dist/esm/icons/package'
-import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Search from 'lucide-react-native/dist/esm/icons/search'
 import SearchX from 'lucide-react-native/dist/esm/icons/search-x'
 import SlidersHorizontal from 'lucide-react-native/dist/esm/icons/sliders-horizontal'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import X from 'lucide-react-native/dist/esm/icons/x'
+import * as React from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  ActivityIndicator,
+  FlatList,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { SlideIn, StaggerItem } from '../../../utils/animations'
+import { MapScreen } from '../../map/components/map-screen'
 import { useOfflineSearch } from '../hooks/use-offline-search'
 import { useAutocomplete, useCategories, useSearchProducts } from '../hooks/use-search'
 import { FilterSheet } from './filter-sheet'
-import { SlideIn, StaggerItem } from '../../../utils/animations'
 import { SearchResultCard } from './search-result-card'
-import { useSession } from '../../../lib/auth-client'
-import { MapScreen } from '../../map/components/map-screen'
 import { ViewToggle } from './view-toggle'
 
 type ViewMode = 'list' | 'map'
@@ -219,10 +217,13 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
                 accessibilityLabel="Toutes les catégories"
               >
                 <Package size={16} color={selectedCategory === undefined ? colors.green[600] : colors.neutral[400]} />
-                <Text style={[
-                  styles.catLabel,
-                  selectedCategory === undefined && styles.catLabelActive,
-                ]} numberOfLines={1}>
+                <Text
+                  style={[
+                    styles.catLabel,
+                    selectedCategory === undefined && styles.catLabelActive,
+                  ]}
+                  numberOfLines={1}
+                >
                   Tout
                 </Text>
               </TouchableOpacity>
@@ -245,10 +246,13 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
                     {cat.imageUrl
                       ? <Image source={{ uri: cat.imageUrl }} style={styles.catImage} />
                       : <cat.fallbackIcon size={16} color={isActive ? colors.green[600] : colors.neutral[400]} />}
-                    <Text style={[
-                      styles.catLabel,
-                      isActive && styles.catLabelActive,
-                    ]} numberOfLines={1}>
+                    <Text
+                      style={[
+                        styles.catLabel,
+                        isActive && styles.catLabelActive,
+                      ]}
+                      numberOfLines={1}
+                    >
                       {cat.label}
                     </Text>
                   </TouchableOpacity>

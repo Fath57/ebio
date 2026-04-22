@@ -12,10 +12,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { ConfirmModal } from '../../common/components/confirm-modal'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ConfirmModal } from '../../common/components/confirm-modal'
 
 const DAYS_OF_WEEK: Array<{ key: string, label: string }> = [
   { key: 'monday', label: 'Lundi' },
@@ -83,8 +83,13 @@ export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
         // Map API format { lundi: { open: '08:00', close: '18:00' } } to our format
         const mapped: WeekSchedule = { ...DEFAULT_SCHEDULE }
         const dayMapping: Record<string, string> = {
-          lundi: 'lundi', mardi: 'mardi', mercredi: 'mercredi',
-          jeudi: 'jeudi', vendredi: 'vendredi', samedi: 'samedi', dimanche: 'dimanche',
+          lundi: 'lundi',
+          mardi: 'mardi',
+          mercredi: 'mercredi',
+          jeudi: 'jeudi',
+          vendredi: 'vendredi',
+          samedi: 'samedi',
+          dimanche: 'dimanche',
         }
         for (const [key, value] of Object.entries(raw)) {
           const dayKey = dayMapping[key] ?? key
@@ -157,7 +162,8 @@ export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
       for (const [dayKey, day] of Object.entries(schedule)) {
         if (day.isOpen) {
           apiFormat[dayKey] = { open: `${day.openHour}:${day.openMinute}`, close: `${day.closeHour}:${day.closeMinute}` }
-        } else {
+        }
+        else {
           apiFormat[dayKey] = null
         }
       }

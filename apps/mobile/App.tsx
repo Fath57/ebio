@@ -19,11 +19,11 @@ import { useCallback, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AppNavigation } from './src/app/navigation'
-import { useNotifications } from './src/features/notifications/hooks/use-notifications'
 import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
-import { ThemeProvider } from './src/theme/theme-context'
+import { useNotifications } from './src/features/notifications/hooks/use-notifications'
 import { colors } from './src/theme/theme'
+import { ThemeProvider } from './src/theme/theme-context'
 
 SplashScreen.preventAutoHideAsync()
 

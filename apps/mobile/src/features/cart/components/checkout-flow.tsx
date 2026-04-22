@@ -1,5 +1,11 @@
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
+import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import Store from 'lucide-react-native/dist/esm/icons/store'
+import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   Alert,
@@ -11,15 +17,8 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { WebView } from 'react-native-webview'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
-import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
-import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
-import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
-import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
-import Store from 'lucide-react-native/dist/esm/icons/store'
-import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { WebView } from 'react-native-webview'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -70,9 +69,9 @@ function buildFedaPayCheckoutHtml(
   const lastname = nameParts.slice(1).join(' ') || firstname
 
   const customerBlock = [
-    `firstname: '${firstname.replace(/'/g, "\\'")}'`,
-    `lastname: '${lastname.replace(/'/g, "\\'")}'`,
-    customer.email ? `email: '${customer.email.replace(/'/g, "\\'")}'` : null,
+    `firstname: '${firstname.replace(/'/g, '\\\'')}'`,
+    `lastname: '${lastname.replace(/'/g, '\\\'')}'`,
+    customer.email ? `email: '${customer.email.replace(/'/g, '\\\'')}'` : null,
     customer.phone ? `phone_number: { number: '${customer.phone}', country: 'BJ' }` : null,
   ].filter(Boolean).join(',\n          ')
 
@@ -101,7 +100,7 @@ function buildFedaPayCheckoutHtml(
     public_key: '${publicKey}',
     transaction: {
       amount: ${amount},
-      description: '${description.replace(/'/g, "\\'")}',
+      description: '${description.replace(/'/g, '\\\'')}',
       custom_metadata: { payment_id: '${paymentId}' }
     },
     customer: {
@@ -230,7 +229,7 @@ export function CheckoutFlow({
     }
   }, [orderSummary, deliveryAddress, deliverySlot, fedapayPublicKey, orderNumber, onComplete])
 
-  const handleWebViewMessage = useCallback(async (event: any) => {
+  const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
       const data = JSON.parse(event.nativeEvent.data)
 
@@ -358,21 +357,32 @@ export function CheckoutFlow({
               >
                 <View style={styles.itemInfo}>
                   <Text style={[styles.itemName, { color: semantic.textPrimary }]} numberOfLines={1}>
-                    {item.quantity}x {item.name}
+                    {item.quantity}
+                    x
+                    {item.name}
                   </Text>
                   <Text style={[styles.itemUnit, { color: semantic.textTertiary }]}>
-                    {formatPrice(item.pricePerUnit)} FCFA / {item.unit}
+                    {formatPrice(item.pricePerUnit)}
+                    {' '}
+                    FCFA /
+                    {item.unit}
                   </Text>
                 </View>
                 <Text style={[styles.itemTotal, { color: semantic.textPrimary }]}>
-                  {formatPrice(item.quantity * item.pricePerUnit)} FCFA
+                  {formatPrice(item.quantity * item.pricePerUnit)}
+                  {' '}
+                  FCFA
                 </Text>
               </View>
             ))}
 
             <View style={[styles.totalRow, { borderTopColor: semantic.borderNormal }]}>
               <Text style={[styles.totalLabel, { color: semantic.textPrimary }]}>Total</Text>
-              <Text style={styles.totalValue}>{formatPrice(orderSummary.total)} FCFA</Text>
+              <Text style={styles.totalValue}>
+                {formatPrice(orderSummary.total)}
+                {' '}
+                FCFA
+              </Text>
             </View>
           </View>
 
@@ -390,7 +400,9 @@ export function CheckoutFlow({
           <View style={styles.bottomPriceCol}>
             <Text style={[styles.bottomPriceLabel, { color: semantic.textTertiary }]}>Total</Text>
             <Text style={[styles.bottomPriceValue, { color: semantic.textPrimary }]}>
-              {formatPrice(orderSummary.total)} FCFA
+              {formatPrice(orderSummary.total)}
+              {' '}
+              FCFA
             </Text>
           </View>
           <TouchableOpacity

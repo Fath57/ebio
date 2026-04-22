@@ -35,10 +35,11 @@ export type BetterAuthType = ReturnType<typeof createBetterAuth>
  */
 export type BetterAuthContext = ReturnType<typeof createBetterAuth>['$context']
 
-const LAN_IP_PATTERN = /^https?:\/\/(10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(1[6-9]|2\d|3[0-1])\.\d+\.\d+)(:\d+)?$/
+const LAN_IP_PATTERN = /^https?:\/\/(?:10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)(?::\d+)?$/
 
 function buildTrustedOrigins(staticOrigins: string[]) {
-  if (process.env.NODE_ENV === 'production') return staticOrigins
+  if (process.env.NODE_ENV === 'production')
+    return staticOrigins
   return (request?: Request): string[] => {
     const origin = request?.headers?.get?.('origin') ?? null
     if (origin && LAN_IP_PATTERN.test(origin) && !staticOrigins.includes(origin)) {

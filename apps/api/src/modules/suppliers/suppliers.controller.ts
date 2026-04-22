@@ -12,7 +12,7 @@ import {
   UseGuards,
 } from '@nestjs/common'
 import { z } from 'zod'
-import { CanCreate, CanRead, CanUpdate } from '../../common/decorators/check-permissions.decorator'
+import { CanRead, CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'

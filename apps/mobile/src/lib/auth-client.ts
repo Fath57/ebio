@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
-import { getSessionToken, setSessionToken, clearTokens, apiFetch } from '../utils/api-client'
+import { useEffect, useState } from 'react'
+import { apiFetch, clearTokens, setSessionToken } from '../utils/api-client'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
 
@@ -308,7 +308,7 @@ function notifyListeners() {
 
 export function notifyAuthChange() {
   hasChecked = false
-  getSession().then(session => {
+  getSession().then((session) => {
     cachedUser = session.user
     hasChecked = true
     notifyListeners()
@@ -328,7 +328,7 @@ export function useSession(): { data: { user: AuthUser } | null, isPending: bool
     globalListeners.push(listener)
 
     if (!hasChecked) {
-      getSession().then(session => {
+      getSession().then((session) => {
         cachedUser = session.user
         hasChecked = true
         setState({ user: session.user, isLoading: false })

@@ -1,3 +1,7 @@
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
+import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
+import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
+import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
@@ -9,15 +13,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
-import Store from 'lucide-react-native/dist/esm/icons/store'
-import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
-import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw'
-import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { apiFetch } from '../../../utils/api-client'
 import { ScalePressable, StaggerItem } from '../../../utils/animations'
+import { apiFetch } from '../../../utils/api-client'
 
 type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type FilterTab = 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
@@ -84,15 +83,17 @@ function formatDate(iso: string): string {
 }
 
 function buildItemsSummary(items: OrderItem[]): string {
-  if (!items || items.length === 0) return ''
+  if (!items || items.length === 0)
+    return ''
   return items
-    .map((item) => `${item.quantity}x ${item.productName}`)
+    .map(item => `${item.quantity}x ${item.productName}`)
     .join(', ')
 }
 
 function getFirstPhoto(items: OrderItem[]): string | null {
-  if (!items || items.length === 0) return null
-  return items.find((i) => i.productPhoto)?.productPhoto ?? null
+  if (!items || items.length === 0)
+    return null
+  return items.find(i => i.productPhoto)?.productPhoto ?? null
 }
 
 export function OrderList({ onOpenOrder }: OrderListProps) {
@@ -108,17 +109,17 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
       if (res.ok) {
         const json = await res.json()
         const raw = Array.isArray(json) ? json : (json.orders ?? json.data ?? [])
-        const data: OrderListItem[] = raw.map((o: any) => ({
-          id: o.id,
-          orderNumber: o.orderNumber,
-          supplierName: o.supplierName,
-          total: o.totalAmount ?? o.total,
-          status: o.status,
-          createdAt: o.createdAt,
-          items: (o.items ?? []).map((item: any) => ({
-            productName: item.productName,
-            productPhoto: item.productPhoto ?? null,
-            quantity: item.quantity,
+        const data: OrderListItem[] = raw.map((o: Record<string, unknown>) => ({
+          id: o.id as string,
+          orderNumber: o.orderNumber as string,
+          supplierName: o.supplierName as string,
+          total: (o.totalAmount ?? o.total) as number,
+          status: o.status as OrderListItem['status'],
+          createdAt: o.createdAt as string,
+          items: ((o.items ?? []) as Array<Record<string, unknown>>).map(item => ({
+            productName: item.productName as string,
+            productPhoto: (item.productPhoto ?? null) as string | null,
+            quantity: item.quantity as number,
           })),
         }))
         setOrders(data)
@@ -143,9 +144,12 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
   }, [fetchOrders])
 
   const filteredOrders = useMemo(() => orders.filter((order) => {
-    if (activeFilter === 'ACTIVE') return ACTIVE_STATUSES.includes(order.status)
-    if (activeFilter === 'COMPLETED') return order.status === 'DELIVERED'
-    if (activeFilter === 'CANCELLED') return order.status === 'CANCELLED'
+    if (activeFilter === 'ACTIVE')
+      return ACTIVE_STATUSES.includes(order.status)
+    if (activeFilter === 'COMPLETED')
+      return order.status === 'DELIVERED'
+    if (activeFilter === 'CANCELLED')
+      return order.status === 'CANCELLED'
     return true
   }), [orders, activeFilter])
 
@@ -165,69 +169,75 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
           accessibilityLabel={`Commande ${item.orderNumber}`}
         >
           <StaggerItem index={index}>
-          <View style={styles.cardRow}>
-            {/* Thumbnail */}
-            <View style={[styles.thumbnail, { backgroundColor: semantic.bgSurface }]}>
-              {photo ? (
-                <Image source={{ uri: photo }} style={styles.thumbnailImage} />
-              ) : (
-                <ImageIcon size={24} color={semantic.textTertiary} />
-              )}
-            </View>
+            <View style={styles.cardRow}>
+              {/* Thumbnail */}
+              <View style={[styles.thumbnail, { backgroundColor: semantic.bgSurface }]}>
+                {photo
+                  ? (
+                      <Image source={{ uri: photo }} style={styles.thumbnailImage} />
+                    )
+                  : (
+                      <ImageIcon size={24} color={semantic.textTertiary} />
+                    )}
+              </View>
 
-            {/* Content */}
-            <View style={styles.cardContent}>
-              {/* Top line: order number + status */}
-              <View style={styles.cardTopRow}>
-                <Text
-                  style={[styles.orderNumber, { color: semantic.textPrimary }]}
-                  numberOfLines={1}
-                >
-                  {item.orderNumber}
-                </Text>
-                <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
-                  <View style={[styles.statusDot, { backgroundColor: statusColor.dot }]} />
-                  <Text style={[styles.statusText, { color: statusColor.text }]}>
-                    {STATUS_LABELS[item.status]}
+              {/* Content */}
+              <View style={styles.cardContent}>
+                {/* Top line: order number + status */}
+                <View style={styles.cardTopRow}>
+                  <Text
+                    style={[styles.orderNumber, { color: semantic.textPrimary }]}
+                    numberOfLines={1}
+                  >
+                    {item.orderNumber}
+                  </Text>
+                  <View style={[styles.statusBadge, { backgroundColor: statusColor.bg }]}>
+                    <View style={[styles.statusDot, { backgroundColor: statusColor.dot }]} />
+                    <Text style={[styles.statusText, { color: statusColor.text }]}>
+                      {STATUS_LABELS[item.status]}
+                    </Text>
+                  </View>
+                </View>
+
+                {/* Supplier */}
+                <View style={styles.supplierRow}>
+                  <Store size={13} color={semantic.textSecondary} />
+                  <Text
+                    style={[styles.supplierName, { color: semantic.textSecondary }]}
+                    numberOfLines={1}
+                  >
+                    {item.supplierName}
                   </Text>
                 </View>
-              </View>
 
-              {/* Supplier */}
-              <View style={styles.supplierRow}>
-                <Store size={13} color={semantic.textSecondary} />
-                <Text
-                  style={[styles.supplierName, { color: semantic.textSecondary }]}
-                  numberOfLines={1}
-                >
-                  {item.supplierName}
-                </Text>
-              </View>
+                {/* Items summary */}
+                {summary
+                  ? (
+                      <Text
+                        style={[styles.itemsSummary, { color: semantic.textTertiary }]}
+                        numberOfLines={1}
+                      >
+                        {summary}
+                      </Text>
+                    )
+                  : null}
 
-              {/* Items summary */}
-              {summary ? (
-                <Text
-                  style={[styles.itemsSummary, { color: semantic.textTertiary }]}
-                  numberOfLines={1}
-                >
-                  {summary}
-                </Text>
-              ) : null}
-
-              {/* Bottom: price + date + chevron */}
-              <View style={styles.cardBottomRow}>
-                <Text style={[styles.totalPrice, { color: semantic.textPrimaryColor }]}>
-                  {formatPrice(item.total)} FCFA
-                </Text>
-                <View style={styles.dateChevron}>
-                  <Text style={[styles.date, { color: semantic.textTertiary }]}>
-                    {formatDate(item.createdAt)}
+                {/* Bottom: price + date + chevron */}
+                <View style={styles.cardBottomRow}>
+                  <Text style={[styles.totalPrice, { color: semantic.textPrimaryColor }]}>
+                    {formatPrice(item.total)}
+                    {' '}
+                    FCFA
                   </Text>
-                  <ChevronRight size={16} color={semantic.textTertiary} />
+                  <View style={styles.dateChevron}>
+                    <Text style={[styles.date, { color: semantic.textTertiary }]}>
+                      {formatDate(item.createdAt)}
+                    </Text>
+                    <ChevronRight size={16} color={semantic.textTertiary} />
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
           </StaggerItem>
         </ScalePressable>
       )
@@ -248,7 +258,10 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
           {!isLoading && orderCount > 0 && (
             <View style={[styles.countBadge, { backgroundColor: semantic.bgPrimaryLight }]}>
               <Text style={[styles.countBadgeText, { color: semantic.textPrimaryColor }]}>
-                {orderCount} commande{orderCount > 1 ? 's' : ''}
+                {orderCount}
+                {' '}
+                commande
+                {orderCount > 1 ? 's' : ''}
               </Text>
             </View>
           )}
@@ -286,33 +299,37 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
       </View>
 
       {/* Content */}
-      {isLoading ? (
-        <View style={styles.centeredContainer}>
-          <ActivityIndicator size="large" color={colors.green[400]} />
-        </View>
-      ) : filteredOrders.length === 0 ? (
-        <View style={styles.centeredContainer}>
-          <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
-            <ShoppingBag size={32} color={colors.green[400]} />
-          </View>
-          <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
-            Aucune commande
-          </Text>
-          <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
-            Vos commandes apparaîtront ici
-          </Text>
-        </View>
-      ) : (
-        <FlatList
-          data={filteredOrders}
-          renderItem={renderItem}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={styles.listContent}
-          refreshing={isRefreshing}
-          onRefresh={handleRefresh}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      {isLoading
+        ? (
+            <View style={styles.centeredContainer}>
+              <ActivityIndicator size="large" color={colors.green[400]} />
+            </View>
+          )
+        : filteredOrders.length === 0
+          ? (
+              <View style={styles.centeredContainer}>
+                <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
+                  <ShoppingBag size={32} color={colors.green[400]} />
+                </View>
+                <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
+                  Aucune commande
+                </Text>
+                <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
+                  Vos commandes apparaîtront ici
+                </Text>
+              </View>
+            )
+          : (
+              <FlatList
+                data={filteredOrders}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                contentContainerStyle={styles.listContent}
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                showsVerticalScrollIndicator={false}
+              />
+            )}
     </View>
   )
 }

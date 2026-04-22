@@ -1,4 +1,6 @@
 import type { SearchResult } from '../hooks/use-search'
+import Clock from 'lucide-react-native/dist/esm/icons/clock'
+import Star from 'lucide-react-native/dist/esm/icons/star'
 import * as React from 'react'
 import {
   Image,
@@ -6,9 +8,7 @@ import {
   Text,
   View,
 } from 'react-native'
-import Star from 'lucide-react-native/dist/esm/icons/star'
-import Clock from 'lucide-react-native/dist/esm/icons/clock'
-import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
+import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScalePressable } from '../../../utils/animations'
 
@@ -23,7 +23,8 @@ export function formatPrice(value: number): string {
 
 export function formatDistance(meters: number): string {
   const km = meters / 1000
-  if (km < 1) return `${Math.round(meters)} m`
+  if (km < 1)
+    return `${Math.round(meters)} m`
   return `${km.toFixed(1)} km`
 }
 
@@ -62,7 +63,9 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
         {hasPromo && (
           <View style={styles.promoBanner}>
             <Text style={styles.promoBannerText}>
-              -{Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100)}%
+              -
+              {Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100)}
+              %
             </Text>
           </View>
         )}
@@ -116,7 +119,9 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
           </Text>
           <Text style={[styles.metaDot, { color: semantic.textTertiary }]}> · </Text>
           <Text style={[styles.priceText, hasPromo && styles.pricePromo]}>
-            {formatPrice(displayPrice)} FCFA
+            {formatPrice(displayPrice)}
+            {' '}
+            FCFA
           </Text>
           {hasPromo && (
             <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
@@ -154,7 +159,9 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
                   />
                 ))}
                 <Text style={[styles.reviewCount, { color: semantic.textTertiary }]}>
-                  ({supplier.reviewCount})
+                  (
+                  {supplier.reviewCount}
+                  )
                 </Text>
               </View>
             )}

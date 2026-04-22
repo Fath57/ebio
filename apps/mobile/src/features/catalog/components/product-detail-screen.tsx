@@ -1,16 +1,3 @@
-import * as React from 'react'
-import { useCallback, useRef, useState } from 'react'
-import {
-  Animated,
-  Dimensions,
-  Image,
-  Pressable,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
-  View,
-} from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -25,6 +12,19 @@ import Share2 from 'lucide-react-native/dist/esm/icons/share-2'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
+import * as React from 'react'
+import { useCallback, useRef, useState } from 'react'
+import {
+  Animated,
+  Dimensions,
+  Image,
+  Pressable,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
@@ -240,7 +240,11 @@ export function ProductDetailScreen({
           {/* Promo badge */}
           {hasPromo && (
             <View style={styles.heroPromoBadge}>
-              <Text style={styles.heroPromoBadgeText}>−{discount}%</Text>
+              <Text style={styles.heroPromoBadgeText}>
+                −
+                {discount}
+                %
+              </Text>
             </View>
           )}
 
@@ -299,16 +303,24 @@ export function ProductDetailScreen({
             </View>
             <View style={styles.priceMetaRow}>
               <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
-                / {unitLabel}
+                /
+                {' '}
+                {unitLabel}
               </Text>
               {hasPromo && (
                 <>
                   <View style={[styles.priceDot, { backgroundColor: semantic.textTertiary }]} />
                   <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
-                    {formatPrice(product.pricePerUnit)} FCFA
+                    {formatPrice(product.pricePerUnit)}
+                    {' '}
+                    FCFA
                   </Text>
                   <View style={styles.discountPill}>
-                    <Text style={styles.discountPillText}>−{discount}%</Text>
+                    <Text style={styles.discountPillText}>
+                      −
+                      {discount}
+                      %
+                    </Text>
                   </View>
                 </>
               )}
@@ -376,7 +388,9 @@ export function ProductDetailScreen({
                     </Text>
                     {supplier.reviewCount !== undefined && (
                       <Text style={[styles.metaTextLight, { color: semantic.textTertiary }]}>
-                        ({supplier.reviewCount})
+                        (
+                        {supplier.reviewCount}
+                        )
                       </Text>
                     )}
                   </View>

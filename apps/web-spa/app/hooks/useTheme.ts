@@ -6,12 +6,14 @@ export type ResolvedTheme = 'light' | 'dark'
 const THEME_STORAGE_KEY = 'app-theme'
 
 function getStoredTheme(): Theme {
-  if (typeof window === 'undefined') return 'system'
+  if (typeof window === 'undefined')
+    return 'system'
   return (localStorage.getItem(THEME_STORAGE_KEY) as Theme) || 'system'
 }
 
 function getSystemTheme(): ResolvedTheme {
-  if (typeof window === 'undefined') return 'light'
+  if (typeof window === 'undefined')
+    return 'light'
   return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 }
 
@@ -37,7 +39,8 @@ function subscribe(callback: () => void): () => void {
 
   // Listen to storage events (cross-tab)
   const handleStorage = (e: StorageEvent) => {
-    if (e.key === THEME_STORAGE_KEY) emitChange()
+    if (e.key === THEME_STORAGE_KEY)
+      emitChange()
   }
   window.addEventListener('storage', handleStorage)
 

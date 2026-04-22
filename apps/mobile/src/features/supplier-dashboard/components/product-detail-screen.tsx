@@ -1,3 +1,7 @@
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import Box from 'lucide-react-native/dist/esm/icons/box'
+import Edit from 'lucide-react-native/dist/esm/icons/pencil'
+import Tag from 'lucide-react-native/dist/esm/icons/tag'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -8,10 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
-import Box from 'lucide-react-native/dist/esm/icons/box'
-import Edit from 'lucide-react-native/dist/esm/icons/pencil'
-import Tag from 'lucide-react-native/dist/esm/icons/tag'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -79,9 +79,11 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDeta
         if (res.ok) {
           setProduct(await res.json())
         }
-      } catch {
+      }
+      catch {
         // ignore
-      } finally {
+      }
+      finally {
         setLoading(false)
       }
     }
@@ -132,37 +134,43 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDeta
       </View>
 
       {/* Photo */}
-      {product.photos.length > 0 ? (
-        <View>
-          <Image
-            source={{ uri: product.photos[selectedPhoto] }}
-            style={styles.mainPhoto}
-            resizeMode="cover"
-          />
-          {hasPromotion && !selectedVariant && (
-            <View style={styles.promoBadge}>
-              <Text style={styles.promoBadgeText}>-{discountPercent}%</Text>
+      {product.photos.length > 0
+        ? (
+            <View>
+              <Image
+                source={{ uri: product.photos[selectedPhoto] }}
+                style={styles.mainPhoto}
+                resizeMode="cover"
+              />
+              {hasPromotion && !selectedVariant && (
+                <View style={styles.promoBadge}>
+                  <Text style={styles.promoBadgeText}>
+                    -
+                    {discountPercent}
+                    %
+                  </Text>
+                </View>
+              )}
+              {product.photos.length > 1 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailRow} contentContainerStyle={styles.thumbnailContent}>
+                  {product.photos.map((url, i) => (
+                    <TouchableOpacity
+                      key={i}
+                      onPress={() => setSelectedPhoto(i)}
+                      style={[styles.thumbnail, i === selectedPhoto && styles.thumbnailActive]}
+                    >
+                      <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          )
+        : (
+            <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
+              <Text style={styles.photoPlaceholderText}>{product.name.charAt(0).toUpperCase()}</Text>
             </View>
           )}
-          {product.photos.length > 1 && (
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailRow} contentContainerStyle={styles.thumbnailContent}>
-              {product.photos.map((url, i) => (
-                <TouchableOpacity
-                  key={i}
-                  onPress={() => setSelectedPhoto(i)}
-                  style={[styles.thumbnail, i === selectedPhoto && styles.thumbnailActive]}
-                >
-                  <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          )}
-        </View>
-      ) : (
-        <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
-          <Text style={styles.photoPlaceholderText}>{product.name.charAt(0).toUpperCase()}</Text>
-        </View>
-      )}
 
       {/* Info */}
       <View style={styles.infoSection}>
@@ -182,11 +190,22 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDeta
 
         {/* Price */}
         <View style={styles.priceRow}>
-          <Text style={styles.price}>{formatPrice(activePrice)} FCFA</Text>
-          <Text style={[styles.priceUnit, { color: semantic.textTertiary }]}>/ {unitLabel}</Text>
+          <Text style={styles.price}>
+            {formatPrice(activePrice)}
+            {' '}
+            FCFA
+          </Text>
+          <Text style={[styles.priceUnit, { color: semantic.textTertiary }]}>
+            /
+            {unitLabel}
+          </Text>
         </View>
         {hasPromotion && !selectedVariant && (
-          <Text style={styles.originalPrice}>{formatPrice(product.pricePerUnit)} FCFA</Text>
+          <Text style={styles.originalPrice}>
+            {formatPrice(product.pricePerUnit)}
+            {' '}
+            FCFA
+          </Text>
         )}
 
         {/* Variants */}
@@ -216,8 +235,12 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDeta
                   <Text style={[
                     styles.variantChipText,
                     selectedVariant?.id === v.id && styles.variantChipTextActive,
-                  ]}>
-                    {v.label} — {formatPrice(v.pricePerUnit)}
+                  ]}
+                  >
+                    {v.label}
+                    {' '}
+                    —
+                    {formatPrice(v.pricePerUnit)}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -244,10 +267,14 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDeta
         {/* Meta */}
         <View style={styles.metaRow}>
           <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
-            Créé le {new Date(product.createdAt).toLocaleDateString('fr-FR')}
+            Créé le
+            {' '}
+            {new Date(product.createdAt).toLocaleDateString('fr-FR')}
           </Text>
           <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
-            Modifié le {new Date(product.updatedAt).toLocaleDateString('fr-FR')}
+            Modifié le
+            {' '}
+            {new Date(product.updatedAt).toLocaleDateString('fr-FR')}
           </Text>
         </View>
 
@@ -274,28 +301,39 @@ const styles = StyleSheet.create({
   backLinkText: { ...typography.bodyS, fontFamily: fonts.sansSb },
 
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing[4], paddingVertical: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
   },
 
   mainPhoto: { width: '100%', height: 300 },
   photoPlaceholder: {
     backgroundColor: colors.neutral[100],
-    justifyContent: 'center', alignItems: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   photoPlaceholderText: { fontFamily: fonts.sansBd, fontSize: 48, color: colors.neutral[400] },
 
   promoBadge: {
-    position: 'absolute', left: spacing[4], top: spacing[4],
-    backgroundColor: colors.coral[400], borderRadius: radius.pill,
-    paddingHorizontal: spacing[3], paddingVertical: spacing[1],
+    position: 'absolute',
+    left: spacing[4],
+    top: spacing[4],
+    backgroundColor: colors.coral[400],
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
   },
   promoBadgeText: { fontFamily: fonts.sansBd, fontSize: 14, color: colors.neutral[0] },
 
   thumbnailRow: { marginTop: spacing[3] },
   thumbnailContent: { paddingHorizontal: spacing[4], gap: spacing[2] },
   thumbnail: {
-    width: 64, height: 64, borderRadius: radius.lg, overflow: 'hidden',
+    width: 64,
+    height: 64,
+    borderRadius: radius.lg,
+    overflow: 'hidden',
     opacity: 0.5,
   },
   thumbnailActive: { opacity: 1, borderWidth: 2, borderColor: colors.green[400] },
@@ -305,8 +343,11 @@ const styles = StyleSheet.create({
 
   badgeRow: { flexDirection: 'row', gap: spacing[2], marginBottom: spacing[3] },
   badge: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing[1],
-    paddingHorizontal: spacing[2], paddingVertical: spacing[1],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
     borderRadius: radius.sm,
   },
   badgeText: { ...typography.caption },
@@ -317,15 +358,21 @@ const styles = StyleSheet.create({
   price: { fontFamily: fonts.mono, fontSize: 28, fontWeight: '800', color: colors.green[600] },
   priceUnit: { ...typography.bodyL },
   originalPrice: {
-    fontFamily: fonts.mono, fontSize: 14, color: colors.neutral[400],
-    textDecorationLine: 'line-through', marginTop: spacing[1],
+    fontFamily: fonts.mono,
+    fontSize: 14,
+    color: colors.neutral[400],
+    textDecorationLine: 'line-through',
+    marginTop: spacing[1],
   },
 
   variantsSection: { marginTop: spacing[5] },
   sectionLabel: { ...typography.caption, fontFamily: fonts.sansSb, marginBottom: spacing[2] },
   variantChip: {
-    borderWidth: 1.5, borderColor: colors.neutral[200],
-    borderRadius: radius.lg, paddingHorizontal: spacing[4], paddingVertical: spacing[2],
+    borderWidth: 1.5,
+    borderColor: colors.neutral[200],
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[2],
     marginRight: spacing[2],
   },
   variantChipActive: { borderColor: colors.green[400], backgroundColor: colors.green[50] },
@@ -334,7 +381,9 @@ const styles = StyleSheet.create({
   variantChipTextActive: { color: colors.green[800] },
 
   stockRow: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing[2],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
     marginTop: spacing[5],
   },
   stockText: { ...typography.bodyS, fontFamily: fonts.sansMd },
@@ -343,16 +392,23 @@ const styles = StyleSheet.create({
   description: { ...typography.bodyL, lineHeight: 15 * 1.7 },
 
   metaRow: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    marginTop: spacing[6], paddingTop: spacing[4],
-    borderTopWidth: 1, borderTopColor: colors.neutral[100],
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: spacing[6],
+    paddingTop: spacing[4],
+    borderTopWidth: 1,
+    borderTopColor: colors.neutral[100],
   },
   metaText: { ...typography.caption },
 
   editButton: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
-    gap: spacing[2], marginTop: spacing[6],
-    height: 52, borderRadius: radius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    marginTop: spacing[6],
+    height: 52,
+    borderRadius: radius.lg,
     backgroundColor: colors.green[400],
   },
   editButtonText: { ...typography.h3, color: colors.neutral[0] },

@@ -52,7 +52,9 @@ export default function OrdersPage() {
             {t('orders.title')}
             {orders?.total != null && (
               <span className="ml-2 text-lg font-normal text-muted-foreground">
-                ({orders.total})
+                (
+                {orders.total}
+                )
               </span>
             )}
           </h2>

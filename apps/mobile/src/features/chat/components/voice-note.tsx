@@ -26,7 +26,7 @@ export function VoiceNoteRecorder({ onSend }: VoiceNoteRecorderProps) {
       if (!permission.granted) {
         Alert.alert(
           'Permission refusée',
-          'L'accès au microphone est requis pour les notes vocales.',
+          'L’accès au microphone est requis pour les notes vocales.',
         )
         return
       }

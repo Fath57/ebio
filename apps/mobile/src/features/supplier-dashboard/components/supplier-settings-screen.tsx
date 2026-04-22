@@ -1,18 +1,15 @@
-import { useState } from 'react'
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
+import Clock from 'lucide-react-native/dist/esm/icons/clock'
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import Store from 'lucide-react-native/dist/esm/icons/store'
 import {
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
-import Clock from 'lucide-react-native/dist/esm/icons/clock'
-import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
-import Store from 'lucide-react-native/dist/esm/icons/store'
-import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 
@@ -92,28 +89,39 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   content: { paddingBottom: spacing[10] },
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing[4], paddingVertical: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
   },
   headerTitle: { ...typography.h2 },
   menuGroup: {
-    marginHorizontal: spacing[4], borderRadius: radius.lg, overflow: 'hidden',
+    marginHorizontal: spacing[4],
+    borderRadius: radius.lg,
+    overflow: 'hidden',
     marginTop: spacing[4],
   },
   menuItem: {
-    flexDirection: 'row', alignItems: 'center',
-    paddingHorizontal: spacing[4], paddingVertical: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
     gap: spacing[3],
   },
   menuIcon: {
-    width: 40, height: 40, borderRadius: 12,
-    justifyContent: 'center', alignItems: 'center',
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuTextContainer: { flex: 1 },
   menuLabel: { ...typography.bodyL, fontFamily: fonts.sansMd },
   menuSublabel: { ...typography.caption, marginTop: 2 },
   menuDivider: {
-    height: 1, backgroundColor: colors.neutral[100],
+    height: 1,
+    backgroundColor: colors.neutral[100],
     marginLeft: spacing[4] + 40 + spacing[3],
   },
 })

@@ -1,3 +1,15 @@
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
+import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
+import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
+import House from 'lucide-react-native/dist/esm/icons/house'
+import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
+import Package from 'lucide-react-native/dist/esm/icons/package'
+import Store from 'lucide-react-native/dist/esm/icons/store'
+import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -10,18 +22,6 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
-import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
-import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
-import Package from 'lucide-react-native/dist/esm/icons/package'
-import Truck from 'lucide-react-native/dist/esm/icons/truck'
-import House from 'lucide-react-native/dist/esm/icons/house'
-import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
-import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
-import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
-import Store from 'lucide-react-native/dist/esm/icons/store'
-import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
-import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -145,21 +145,24 @@ export function OrderTracking({
             paymentMethod: raw.paymentMethod ?? 'CASH_ON_DELIVERY',
             deliveryAddress: raw.deliveryAddress ?? null,
             createdAt: raw.createdAt,
-            items: (raw.items ?? []).map((item: any) => ({
-              productName: item.productName,
-              productPhoto: item.productPhoto ?? null,
-              quantity: item.quantity,
-              unitPrice: item.unitPrice ?? 0,
-              totalPrice: item.totalPrice ?? (item.unitPrice ?? 0) * (item.quantity ?? 1),
+            items: ((raw.items ?? []) as Array<Record<string, unknown>>).map(item => ({
+              productName: item.productName as string,
+              productPhoto: (item.productPhoto ?? null) as string | null,
+              quantity: item.quantity as number,
+              unitPrice: (item.unitPrice ?? 0) as number,
+              totalPrice: (item.totalPrice ?? (item.unitPrice as number ?? 0) * (item.quantity as number ?? 1)) as number,
             })),
-            steps: STATUS_ORDER.map((status) => ({
+            steps: STATUS_ORDER.map(status => ({
               status,
               label: STATUS_CONFIG[status]?.label ?? status,
               reachedAt:
-                status === 'PLACED' ? raw.createdAt
-                : status === 'ACCEPTED' ? raw.acceptedAt
-                : status === 'DELIVERED' ? raw.deliveredAt
-                : null,
+                status === 'PLACED'
+                  ? raw.createdAt
+                  : status === 'ACCEPTED'
+                    ? raw.acceptedAt
+                    : status === 'DELIVERED'
+                      ? raw.deliveredAt
+                      : null,
             })),
           }
           setOrder(mapped)
@@ -238,7 +241,9 @@ export function OrderTracking({
           style={[styles.headerTitle, { color: semantic.textPrimary }]}
           numberOfLines={1}
         >
-          Commande {order.orderNumber}
+          Commande
+          {' '}
+          {order.orderNumber}
         </Text>
         <View style={styles.headerSpacer} />
       </View>
@@ -262,7 +267,8 @@ export function OrderTracking({
             {
               backgroundColor: isCancelled ? colors.coral[50] : colors.green[50],
             },
-          ]}>
+          ]}
+          >
             {getStatusIcon(
               order.currentStatus,
               isCancelled ? colors.coral[400] : colors.green[400],
@@ -273,13 +279,16 @@ export function OrderTracking({
             {
               color: isCancelled ? colors.coral[600] : semantic.textPrimaryColor,
             },
-          ]}>
+          ]}
+          >
             {statusConfig.heroLabel}
           </Text>
           <View style={styles.heroSupplierRow}>
             <Store size={14} color={semantic.textSecondary} />
             <Text style={[styles.heroSupplierName, { color: semantic.textSecondary }]}>
-              Chez {order.supplierName}
+              Chez
+              {' '}
+              {order.supplierName}
             </Text>
           </View>
           {order.createdAt && (
@@ -299,7 +308,7 @@ export function OrderTracking({
               {STATUS_ORDER.map((status, index) => {
                 const isReached = index <= currentStatusIndex
                 const isActive = index === currentStatusIndex
-                const step = order.steps.find((s) => s.status === status)
+                const step = order.steps.find(s => s.status === status)
                 const config = STATUS_CONFIG[status]
                 const isLast = index === STATUS_ORDER.length - 1
 
@@ -327,11 +336,11 @@ export function OrderTracking({
                           borderColor: circleColor,
                         },
                         isActive && styles.timelineCircleActive,
-                      ]}>
+                      ]}
+                      >
                         {isReached
                           ? getStatusIcon(status, iconColor)
-                          : <View style={[styles.timelineDotInner, { backgroundColor: semantic.borderNormal }]} />
-                        }
+                          : <View style={[styles.timelineDotInner, { backgroundColor: semantic.borderNormal }]} />}
                       </View>
                       {/* Connector line */}
                       {!isLast && (
@@ -345,7 +354,8 @@ export function OrderTracking({
                         { color: semantic.textTertiary },
                         isReached && { color: semantic.textPrimary, fontFamily: fonts.sansMd },
                         isActive && { color: semantic.textPrimaryColor, fontFamily: fonts.sansSb },
-                      ]}>
+                      ]}
+                      >
                         {config.label}
                       </Text>
                       {step?.reachedAt && (
@@ -375,7 +385,8 @@ export function OrderTracking({
             <View style={[
               styles.chevronContainer,
               detailsExpanded && styles.chevronExpanded,
-            ]}>
+            ]}
+            >
               <ChevronRight size={18} color={semantic.textTertiary} />
             </View>
           </TouchableOpacity>
@@ -387,11 +398,13 @@ export function OrderTracking({
                 <View key={index}>
                   <View style={styles.itemRow}>
                     <View style={[styles.itemThumb, { backgroundColor: semantic.bgSurface }]}>
-                      {item.productPhoto ? (
-                        <Image source={{ uri: item.productPhoto }} style={styles.itemThumbImage} />
-                      ) : (
-                        <ImageIcon size={16} color={semantic.textTertiary} />
-                      )}
+                      {item.productPhoto
+                        ? (
+                            <Image source={{ uri: item.productPhoto }} style={styles.itemThumbImage} />
+                          )
+                        : (
+                            <ImageIcon size={16} color={semantic.textTertiary} />
+                          )}
                     </View>
                     <View style={styles.itemInfo}>
                       <Text
@@ -401,11 +414,17 @@ export function OrderTracking({
                         {item.productName}
                       </Text>
                       <Text style={[styles.itemQty, { color: semantic.textTertiary }]}>
-                        {item.quantity}x {formatPrice(item.unitPrice)} FCFA
+                        {item.quantity}
+                        x
+                        {formatPrice(item.unitPrice)}
+                        {' '}
+                        FCFA
                       </Text>
                     </View>
                     <Text style={[styles.itemTotal, { color: semantic.textPrimary }]}>
-                      {formatPrice(item.totalPrice)} FCFA
+                      {formatPrice(item.totalPrice)}
+                      {' '}
+                      FCFA
                     </Text>
                   </View>
                   {index < order.items.length - 1 && (
@@ -422,7 +441,9 @@ export function OrderTracking({
                     Sous-total
                   </Text>
                   <Text style={[styles.totalsValue, { color: semantic.textSecondary }]}>
-                    {formatPrice(subtotal)} FCFA
+                    {formatPrice(subtotal)}
+                    {' '}
+                    FCFA
                   </Text>
                 </View>
                 {deliveryFee > 0 && (
@@ -431,7 +452,9 @@ export function OrderTracking({
                       Livraison
                     </Text>
                     <Text style={[styles.totalsValue, { color: semantic.textSecondary }]}>
-                      {formatPrice(deliveryFee)} FCFA
+                      {formatPrice(deliveryFee)}
+                      {' '}
+                      FCFA
                     </Text>
                   </View>
                 )}
@@ -440,7 +463,9 @@ export function OrderTracking({
                     Total
                   </Text>
                   <Text style={[styles.totalsFinalValue, { color: semantic.textPrimaryColor }]}>
-                    {formatPrice(order.total)} FCFA
+                    {formatPrice(order.total)}
+                    {' '}
+                    FCFA
                   </Text>
                 </View>
               </View>
@@ -459,8 +484,7 @@ export function OrderTracking({
             <View style={[styles.infoIconCircle, { backgroundColor: semantic.bgSurface }]}>
               {order.pickupMode === 'DELIVERY'
                 ? <Truck size={16} color={semantic.textPrimaryColor} />
-                : <Store size={16} color={semantic.textPrimaryColor} />
-              }
+                : <Store size={16} color={semantic.textPrimaryColor} />}
             </View>
             <View style={styles.infoContent}>
               <Text style={[styles.infoLabel, { color: semantic.textTertiary }]}>Mode</Text>
@@ -525,16 +549,18 @@ export function OrderTracking({
             accessibilityRole="button"
             accessibilityLabel="Confirmer la réception"
           >
-            {isConfirming ? (
-              <ActivityIndicator size="small" color={colors.neutral[0]} />
-            ) : (
-              <>
-                <CircleCheck size={18} color={colors.neutral[0]} />
-                <Text style={styles.confirmButtonText}>
-                  Confirmer la réception
-                </Text>
-              </>
-            )}
+            {isConfirming
+              ? (
+                  <ActivityIndicator size="small" color={colors.neutral[0]} />
+                )
+              : (
+                  <>
+                    <CircleCheck size={18} color={colors.neutral[0]} />
+                    <Text style={styles.confirmButtonText}>
+                      Confirmer la réception
+                    </Text>
+                  </>
+                )}
           </TouchableOpacity>
         </View>
       )}

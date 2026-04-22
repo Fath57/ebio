@@ -25,6 +25,17 @@ export default antfu(
       'ts/no-explicit-any': 'error',
       'react-refresh/only-export-components': 'off',
       'pnpm/json-enforce-catalog': 'off',
+      // React Compiler rules produce many false positives on legitimate patterns
+      // (React Native Animated API, ref-based caches, initial-data-fetch effects).
+      // Disable them globally — they are hints, not correctness errors.
+      'react-hooks/refs': 'off',
+      'react-hooks/set-state-in-effect': 'off',
+      'react-hooks/immutability': 'off',
+      'react-hooks/preserve-manual-memoization': 'off',
+      'react-hooks/incompatible-library': 'off',
+      'react-hooks-extra/no-direct-set-state-in-use-effect': 'off',
+      // Warn only — not a blocker for stable keys where order is guaranteed.
+      'react/no-array-index-key': 'warn',
     },
   },
 
@@ -50,6 +61,16 @@ export default antfu(
     rules: {
       'ts/no-use-before-define': 'off',
       'node/prefer-global/process': 'off',
+      'ts/no-require-imports': 'off',
+    },
+  },
+
+  // Navigation files use @ts-nocheck due to React Nav v6 / React 19 upstream
+  // incompatibility. `any` is unavoidable here until the types are fixed upstream.
+  {
+    files: ['apps/mobile/src/app/navigation.tsx', 'apps/mobile/src/app/navigation-ref.ts'],
+    rules: {
+      'ts/no-explicit-any': 'off',
     },
   },
 

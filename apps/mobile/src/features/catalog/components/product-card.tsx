@@ -1,3 +1,7 @@
+import type { GestureResponderEvent } from 'react-native'
+import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
+import Minus from 'lucide-react-native/dist/esm/icons/minus'
+import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import * as React from 'react'
 import { useMemo } from 'react'
 import {
@@ -7,9 +11,6 @@ import {
   Text,
   View,
 } from 'react-native'
-import Plus from 'lucide-react-native/dist/esm/icons/plus'
-import Minus from 'lucide-react-native/dist/esm/icons/minus'
-import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { ScalePressable } from '../../../utils/animations'
 import { useCart } from '../../cart/cart-context'
@@ -54,19 +55,22 @@ export function ProductCard({
   const cartItem = useMemo(() => {
     for (const group of groups) {
       const found = group.items.find(i => i.productId === id)
-      if (found) return found
+      if (found)
+        return found
     }
     return null
   }, [groups, id])
 
   const cartEnabled = Boolean(supplierId && supplierName)
 
-  function handleAdd(e: any) {
+  function handleAdd(e: GestureResponderEvent) {
     e.stopPropagation()
-    if (!cartEnabled || !isInStock) return
+    if (!cartEnabled || !isInStock)
+      return
     if (cartItem) {
       updateQuantity(cartItem.id, cartItem.quantity + 1)
-    } else {
+    }
+    else {
       addItem({
         productId: id,
         supplierId: supplierId!,
@@ -80,9 +84,10 @@ export function ProductCard({
     }
   }
 
-  function handleRemove(e: any) {
+  function handleRemove(e: GestureResponderEvent) {
     e.stopPropagation()
-    if (!cartItem) return
+    if (!cartItem)
+      return
     updateQuantity(cartItem.id, cartItem.quantity - 1)
   }
 
@@ -120,7 +125,11 @@ export function ProductCard({
         {/* Top-right promo */}
         {hasPromo && (
           <View style={styles.promoBadge}>
-            <Text style={styles.promoText}>−{discount}%</Text>
+            <Text style={styles.promoText}>
+              −
+              {discount}
+              %
+            </Text>
           </View>
         )}
 
@@ -151,7 +160,8 @@ export function ProductCard({
               <Text style={styles.priceCurrency}> FCFA</Text>
             </Text>
             <Text style={styles.unitLabel}>
-              /{unit}
+              /
+              {unit}
               {hasPromo && (
                 <Text style={styles.originalPrice}>
                   {'  '}
@@ -163,39 +173,41 @@ export function ProductCard({
 
           {/* Cart action — inline, right side */}
           {cartEnabled && isInStock && (
-            cartItem ? (
-              <View style={styles.stepper}>
-                <Pressable
-                  onPress={handleRemove}
-                  hitSlop={6}
-                  style={({ pressed }) => [styles.stepperBtn, pressed && styles.stepperBtnPressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Diminuer la quantité"
-                >
-                  <Minus size={13} color={colors.neutral[0]} strokeWidth={2.8} />
-                </Pressable>
-                <Text style={styles.stepperValue}>{cartItem.quantity}</Text>
-                <Pressable
-                  onPress={handleAdd}
-                  hitSlop={6}
-                  style={({ pressed }) => [styles.stepperBtn, pressed && styles.stepperBtnPressed]}
-                  accessibilityRole="button"
-                  accessibilityLabel="Augmenter la quantité"
-                >
-                  <Plus size={13} color={colors.neutral[0]} strokeWidth={2.8} />
-                </Pressable>
-              </View>
-            ) : (
-              <Pressable
-                onPress={handleAdd}
-                hitSlop={6}
-                style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
-                accessibilityRole="button"
-                accessibilityLabel={`Ajouter ${name} au panier`}
-              >
-                <Plus size={18} color={colors.neutral[0]} strokeWidth={2.8} />
-              </Pressable>
-            )
+            cartItem
+              ? (
+                  <View style={styles.stepper}>
+                    <Pressable
+                      onPress={handleRemove}
+                      hitSlop={6}
+                      style={({ pressed }) => [styles.stepperBtn, pressed && styles.stepperBtnPressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Diminuer la quantité"
+                    >
+                      <Minus size={13} color={colors.neutral[0]} strokeWidth={2.8} />
+                    </Pressable>
+                    <Text style={styles.stepperValue}>{cartItem.quantity}</Text>
+                    <Pressable
+                      onPress={handleAdd}
+                      hitSlop={6}
+                      style={({ pressed }) => [styles.stepperBtn, pressed && styles.stepperBtnPressed]}
+                      accessibilityRole="button"
+                      accessibilityLabel="Augmenter la quantité"
+                    >
+                      <Plus size={13} color={colors.neutral[0]} strokeWidth={2.8} />
+                    </Pressable>
+                  </View>
+                )
+              : (
+                  <Pressable
+                    onPress={handleAdd}
+                    hitSlop={6}
+                    style={({ pressed }) => [styles.addButton, pressed && { opacity: 0.85, transform: [{ scale: 0.96 }] }]}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Ajouter ${name} au panier`}
+                  >
+                    <Plus size={18} color={colors.neutral[0]} strokeWidth={2.8} />
+                  </Pressable>
+                )
           )}
         </View>
       </View>

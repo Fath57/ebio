@@ -1,3 +1,17 @@
+import { useNavigation } from '@react-navigation/native'
+import { LinearGradient } from 'expo-linear-gradient'
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
+import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
+import Clock from 'lucide-react-native/dist/esm/icons/clock'
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
+import Navigation from 'lucide-react-native/dist/esm/icons/navigation'
+import Phone from 'lucide-react-native/dist/esm/icons/phone'
+import ShareIcon from 'lucide-react-native/dist/esm/icons/share-2'
+import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
+import Star from 'lucide-react-native/dist/esm/icons/star'
+import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
@@ -14,30 +28,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { LinearGradient } from 'expo-linear-gradient'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
-import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
-import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
-import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
-import Clock from 'lucide-react-native/dist/esm/icons/clock'
-import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
-import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
-import Navigation from 'lucide-react-native/dist/esm/icons/navigation'
-import Phone from 'lucide-react-native/dist/esm/icons/phone'
-import ShareIcon from 'lucide-react-native/dist/esm/icons/share-2'
-import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
-import Star from 'lucide-react-native/dist/esm/icons/star'
-import Store from 'lucide-react-native/dist/esm/icons/store'
-import { useNavigation } from '@react-navigation/native'
-import { useTheme } from '../../../theme/theme-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
-import { apiFetch } from '../../../utils/api-client'
+import { useTheme } from '../../../theme/theme-context'
 import { FadeInView, ScalePressable } from '../../../utils/animations'
+import { apiFetch } from '../../../utils/api-client'
 import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
 import { ContactActionSheet } from './contact-action-sheet'
-import { NavigateButton } from './navigate-button'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const COVER_HEIGHT = 260
@@ -91,12 +89,6 @@ interface SupplierProfileScreenProps {
   onGoBack?: () => void
 }
 
-const BADGE_LABELS: Record<string, { label: string, icon: 'check' | 'star' | 'leaf' }> = {
-  VALIDATED: { label: 'Validé eBio', icon: 'check' },
-  TOP_SELLER: { label: 'Top Vendeur', icon: 'star' },
-  CERTIFIED_BIO: { label: 'Bio Certifié', icon: 'leaf' },
-}
-
 const BADGE_MAP: Record<string, BadgeType> = {
   VALIDATED_EBIO: 'VALIDATED',
   TOP_SELLER: 'TOP_SELLER',
@@ -124,8 +116,10 @@ function getCurrentDayKey(): string {
 
 function formatDistance(meters: number): string {
   const km = meters / 1000
-  if (km < 0.1) return `${Math.round(meters)} m`
-  if (km < 10) return `${km.toFixed(1)} km`
+  if (km < 0.1)
+    return `${Math.round(meters)} m`
+  if (km < 10)
+    return `${km.toFixed(1)} km`
   return `${Math.round(km)} km`
 }
 
@@ -144,8 +138,6 @@ function StarRatingRow({
   semantic: ReturnType<typeof useTheme>['semantic']
 }) {
   const displayRating = rating ?? 0
-  const filledCount = Math.floor(displayRating)
-  const hasHalf = displayRating - filledCount >= 0.25
 
   return (
     <View style={ratingStyles.container}>
@@ -160,7 +152,10 @@ function StarRatingRow({
         {displayRating.toFixed(1)}
       </Text>
       <Text style={[ratingStyles.reviewCount, { color: semantic.textTertiary }]}>
-        ({reviewCount} avis)
+        (
+        {reviewCount}
+        {' '}
+        avis)
       </Text>
 
       {/* Dot separator */}
@@ -323,29 +318,37 @@ export function SupplierProfileScreen({
           let products: Product[] = []
           if (productsRes.ok) {
             const productsData = await productsRes.json()
-            products = (productsData.data ?? productsData ?? []).map((p: any) => ({
-              id: p.id,
-              name: p.name,
-              imageUrl: p.photo ?? p.imageUrl ?? null,
-              pricePerUnit: p.pricePerUnit,
-              promotionalPrice: p.promotionalPrice ?? null,
-              unit: p.unit,
-              isInStock: (p.stock ?? 0) > 0,
+            products = ((productsData.data ?? productsData ?? []) as Array<Record<string, unknown>>).map(p => ({
+              id: p.id as string,
+              name: p.name as string,
+              imageUrl: (p.photo ?? p.imageUrl ?? null) as string | null,
+              pricePerUnit: p.pricePerUnit as number,
+              promotionalPrice: (p.promotionalPrice ?? null) as number | null,
+              unit: p.unit as string,
+              isInStock: ((p.stock as number | undefined) ?? 0) > 0,
             }))
           }
 
           // Map opening hours from API format {lundi: {open, close}} to array
           const dayMap: Record<string, string> = {
-            lundi: 'MONDAY', mardi: 'TUESDAY', mercredi: 'WEDNESDAY',
-            jeudi: 'THURSDAY', vendredi: 'FRIDAY', samedi: 'SATURDAY', dimanche: 'SUNDAY',
+            lundi: 'MONDAY',
+            mardi: 'TUESDAY',
+            mercredi: 'WEDNESDAY',
+            jeudi: 'THURSDAY',
+            vendredi: 'FRIDAY',
+            samedi: 'SATURDAY',
+            dimanche: 'SUNDAY',
           }
           const openingHours: OpeningHour[] = Object.entries(raw.openingHours ?? {}).map(
-            ([frDay, value]: [string, any]) => ({
-              day: dayMap[frDay] ?? frDay.toUpperCase(),
-              openTime: value?.open ?? '',
-              closeTime: value?.close ?? '',
-              isClosed: value === null || value === undefined,
-            }),
+            ([frDay, value]) => {
+              const v = value as { open?: string, close?: string } | null | undefined
+              return {
+                day: dayMap[frDay] ?? frDay.toUpperCase(),
+                openTime: v?.open ?? '',
+                closeTime: v?.close ?? '',
+                isClosed: v === null || v === undefined,
+              }
+            },
           )
 
           // Determine if currently open
@@ -361,7 +364,8 @@ export function SupplierProfileScreen({
 
           // Map badges from validationStatus
           const badges: BadgeType[] = []
-          if (raw.validationStatus === 'VALIDATED') badges.push('VALIDATED')
+          if (raw.validationStatus === 'VALIDATED')
+            badges.push('VALIDATED')
 
           // Map to SupplierProfile
           const mapped: SupplierProfile = {
@@ -402,7 +406,8 @@ export function SupplierProfileScreen({
 
   const handleProductPress = useCallback((productId: string) => {
     const product = supplier?.products?.find(p => p.id === productId)
-    if (!product || !supplier) return
+    if (!product || !supplier)
+      return
     const supplierInfo = {
       id: supplier.id,
       shopName: supplier.shopName,
@@ -421,17 +426,20 @@ export function SupplierProfileScreen({
   }, [supplier?.phoneNumber])
 
   const handleNavigate = useCallback(() => {
-    if (!supplier) return
+    if (!supplier)
+      return
     const { latitude, longitude } = supplier
     const url = Platform.select({
       ios: `maps:0,0?q=${latitude},${longitude}`,
       android: `geo:${latitude},${longitude}?q=${latitude},${longitude}`,
     })
-    if (url) Linking.openURL(url)
+    if (url)
+      Linking.openURL(url)
   }, [supplier])
 
   const handleShare = useCallback(async () => {
-    if (!supplier) return
+    if (!supplier)
+      return
     try {
       await Share.share({
         message: `Découvrez ${supplier.shopName} sur eBio ! 🌿`,
@@ -444,7 +452,8 @@ export function SupplierProfileScreen({
 
   // Current day schedule info
   const currentDayInfo = useMemo(() => {
-    if (!supplier || !supplier.openingHours?.length) return null
+    if (!supplier || !supplier.openingHours?.length)
+      return null
     const todayKey = getCurrentDayKey()
     const todayHours = supplier.openingHours.find(h => h.day === todayKey)
     if (!todayHours || todayHours.isClosed) {
@@ -469,7 +478,8 @@ export function SupplierProfileScreen({
   }, [supplier])
 
   const visibleProducts = useMemo(() => {
-    if (!supplier?.products) return []
+    if (!supplier?.products)
+      return []
     return showAllProducts
       ? supplier.products
       : supplier.products.slice(0, MAX_VISIBLE_PRODUCTS)
@@ -511,17 +521,19 @@ export function SupplierProfileScreen({
         {/* ================================================================= */}
         <View style={styles.heroContainer}>
           {/* Cover photo */}
-          {supplier.coverPhotoUrl ? (
-            <Image
-              source={{ uri: supplier.coverPhotoUrl }}
-              style={styles.coverImage}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={[styles.coverImage, { backgroundColor: colors.green[100] }]}>
-              <Store size={48} color={colors.green[200]} strokeWidth={1.5} />
-            </View>
-          )}
+          {supplier.coverPhotoUrl
+            ? (
+                <Image
+                  source={{ uri: supplier.coverPhotoUrl }}
+                  style={styles.coverImage}
+                  resizeMode="cover"
+                />
+              )
+            : (
+                <View style={[styles.coverImage, { backgroundColor: colors.green[100] }]}>
+                  <Store size={48} color={colors.green[200]} strokeWidth={1.5} />
+                </View>
+              )}
 
           {/* Gradient overlay */}
           <LinearGradient
@@ -545,19 +557,21 @@ export function SupplierProfileScreen({
           {/* Profile photo — overlapping bottom of cover */}
           <View style={styles.profilePhotoAnchor}>
             <View style={[styles.profilePhotoWrapper, { borderColor: semantic.bgPage }]}>
-              {supplier.profilePhotoUrl ? (
-                <Image
-                  source={{ uri: supplier.profilePhotoUrl }}
-                  style={styles.profilePhoto}
-                  resizeMode="cover"
-                />
-              ) : (
-                <View style={[styles.profilePhoto, styles.profilePlaceholder]}>
-                  <Text style={styles.profileInitial}>
-                    {supplier.shopName.charAt(0).toUpperCase()}
-                  </Text>
-                </View>
-              )}
+              {supplier.profilePhotoUrl
+                ? (
+                    <Image
+                      source={{ uri: supplier.profilePhotoUrl }}
+                      style={styles.profilePhoto}
+                      resizeMode="cover"
+                    />
+                  )
+                : (
+                    <View style={[styles.profilePhoto, styles.profilePlaceholder]}>
+                      <Text style={styles.profileInitial}>
+                        {supplier.shopName.charAt(0).toUpperCase()}
+                      </Text>
+                    </View>
+                  )}
             </View>
           </View>
         </View>
@@ -575,7 +589,10 @@ export function SupplierProfileScreen({
           <View style={styles.addressRow}>
             <MapPin size={14} color={semantic.textTertiary} strokeWidth={2} />
             <Text style={[styles.addressText, { color: semantic.textTertiary }]} numberOfLines={1}>
-              {supplier.address} · {formatDistance(supplier.distance)}
+              {supplier.address}
+              {' '}
+              ·
+              {formatDistance(supplier.distance)}
             </Text>
           </View>
 
@@ -597,7 +614,8 @@ export function SupplierProfileScreen({
             >
               {(supplier.badges ?? []).map((badge) => {
                 const variant = BADGE_MAP[badge]
-                if (!variant) return null
+                if (!variant)
+                  return null
                 return <Badge key={badge} variant={variant} />
               })}
             </ScrollView>
@@ -611,34 +629,34 @@ export function SupplierProfileScreen({
         {/* QUICK ACTIONS ROW                                                  */}
         {/* ================================================================= */}
         <FadeInView delay={200}>
-        <View style={styles.quickActionsRow}>
-          {supplier.phoneNumber && (
+          <View style={styles.quickActionsRow}>
+            {supplier.phoneNumber && (
+              <QuickAction
+                icon={Phone}
+                label="Appeler"
+                onPress={handleCall}
+                semantic={semantic}
+              />
+            )}
             <QuickAction
-              icon={Phone}
-              label="Appeler"
-              onPress={handleCall}
+              icon={MessageCircle}
+              label="Message"
+              onPress={handleOpenChat}
               semantic={semantic}
             />
-          )}
-          <QuickAction
-            icon={MessageCircle}
-            label="Message"
-            onPress={handleOpenChat}
-            semantic={semantic}
-          />
-          <QuickAction
-            icon={Navigation}
-            label="Itinéraire"
-            onPress={handleNavigate}
-            semantic={semantic}
-          />
-          <QuickAction
-            icon={ShareIcon}
-            label="Partager"
-            onPress={handleShare}
-            semantic={semantic}
-          />
-        </View>
+            <QuickAction
+              icon={Navigation}
+              label="Itinéraire"
+              onPress={handleNavigate}
+              semantic={semantic}
+            />
+            <QuickAction
+              icon={ShareIcon}
+              label="Partager"
+              onPress={handleShare}
+              semantic={semantic}
+            />
+          </View>
         </FadeInView>
 
         {/* Divider */}
@@ -663,11 +681,13 @@ export function SupplierProfileScreen({
                 </Text>
               </View>
             </View>
-            {isHoursExpanded ? (
-              <ChevronUp size={20} color={semantic.textTertiary} strokeWidth={2} />
-            ) : (
-              <ChevronDown size={20} color={semantic.textTertiary} strokeWidth={2} />
-            )}
+            {isHoursExpanded
+              ? (
+                  <ChevronUp size={20} color={semantic.textTertiary} strokeWidth={2} />
+                )
+              : (
+                  <ChevronDown size={20} color={semantic.textTertiary} strokeWidth={2} />
+                )}
           </TouchableOpacity>
 
           {isHoursExpanded && supplier.openingHours?.length > 0 && (
@@ -725,7 +745,9 @@ export function SupplierProfileScreen({
         <View style={styles.section}>
           <View style={styles.productSectionHeader}>
             <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
-              Produits ({supplier.products?.length ?? 0})
+              Produits (
+              {supplier.products?.length ?? 0}
+              )
             </Text>
             {hasMoreProducts && !showAllProducts && (
               <TouchableOpacity
@@ -740,33 +762,35 @@ export function SupplierProfileScreen({
             )}
           </View>
 
-          {(supplier.products?.length ?? 0) === 0 ? (
-            <View style={[styles.emptyProducts, { backgroundColor: semantic.bgSurface }]}>
-              <ShoppingBag size={32} color={semantic.textTertiary} strokeWidth={1.5} />
-              <Text style={[styles.emptyProductsText, { color: semantic.textTertiary }]}>
-                Aucun produit disponible
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.productGrid}>
-              {visibleProducts.map(product => (
-                <View key={product.id} style={styles.productCell}>
-                  <ProductCard
-                    id={product.id}
-                    name={product.name}
-                    imageUrl={product.imageUrl}
-                    pricePerUnit={product.pricePerUnit}
-                    promotionalPrice={product.promotionalPrice}
-                    unit={product.unit}
-                    isInStock={product.isInStock}
-                    supplierId={supplier.id}
-                    supplierName={supplier.shopName}
-                    onPress={handleProductPress}
-                  />
+          {(supplier.products?.length ?? 0) === 0
+            ? (
+                <View style={[styles.emptyProducts, { backgroundColor: semantic.bgSurface }]}>
+                  <ShoppingBag size={32} color={semantic.textTertiary} strokeWidth={1.5} />
+                  <Text style={[styles.emptyProductsText, { color: semantic.textTertiary }]}>
+                    Aucun produit disponible
+                  </Text>
                 </View>
-              ))}
-            </View>
-          )}
+              )
+            : (
+                <View style={styles.productGrid}>
+                  {visibleProducts.map(product => (
+                    <View key={product.id} style={styles.productCell}>
+                      <ProductCard
+                        id={product.id}
+                        name={product.name}
+                        imageUrl={product.imageUrl}
+                        pricePerUnit={product.pricePerUnit}
+                        promotionalPrice={product.promotionalPrice}
+                        unit={product.unit}
+                        isInStock={product.isInStock}
+                        supplierId={supplier.id}
+                        supplierName={supplier.shopName}
+                        onPress={handleProductPress}
+                      />
+                    </View>
+                  ))}
+                </View>
+              )}
         </View>
       </ScrollView>
 

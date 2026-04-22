@@ -1,6 +1,6 @@
 import type { CreatePaymentMethodInput, ListPaymentMethodsQuery, UpdatePaymentMethodInput } from './contracts/payment-methods.contract'
 import { EntityManager, FilterQuery } from '@mikro-orm/core'
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { ConflictException, Injectable } from '@nestjs/common'
 import { config } from '../../config/env.config'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentMethodType, PaymentProvider } from './payment.entity'

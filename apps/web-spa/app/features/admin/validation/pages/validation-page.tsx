@@ -54,67 +54,71 @@ export default function ValidationPage() {
         </div>
         {suppliers.length > 0 && (
           <Badge variant="outline" className="text-sm">
-            {suppliers.length} en attente
+            {suppliers.length}
+            {' '}
+            en attente
           </Badge>
         )}
       </div>
 
-      {suppliers.length === 0 ? (
-        <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-          Aucune demande de validation en attente.
-        </div>
-      ) : (
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>Fournisseur</TableHead>
-              <TableHead>Boutique</TableHead>
-              <TableHead>Téléphone</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead>Statut</TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {suppliers.map(supplier => (
-              <TableRow
-                key={supplier.id}
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => navigate(`/admin/validations/${supplier.id}`)}
-              >
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{supplier.fullName}</p>
-                    {supplier.email && (
-                      <p className="text-xs text-muted-foreground">{supplier.email}</p>
-                    )}
-                  </div>
-                </TableCell>
-                <TableCell>{supplier.shopName}</TableCell>
-                <TableCell>{supplier.phone ?? '-'}</TableCell>
-                <TableCell>{new Date(supplier.submittedAt).toLocaleDateString('fr-FR')}</TableCell>
-                <TableCell>
-                  <Badge variant={STATUS_VARIANTS[supplier.validationStatus] ?? 'outline'}>
-                    {STATUS_LABELS[supplier.validationStatus] ?? supplier.validationStatus}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      navigate(`/admin/validations/${supplier.id}`)
-                    }}
+      {suppliers.length === 0
+        ? (
+            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
+              Aucune demande de validation en attente.
+            </div>
+          )
+        : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Fournisseur</TableHead>
+                  <TableHead>Boutique</TableHead>
+                  <TableHead>Téléphone</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Statut</TableHead>
+                  <TableHead>Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {suppliers.map(supplier => (
+                  <TableRow
+                    key={supplier.id}
+                    className="cursor-pointer hover:bg-muted/50"
+                    onClick={() => navigate(`/admin/validations/${supplier.id}`)}
                   >
-                    Examiner
-                  </Button>
-                </TableCell>
-              </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      )}
+                    <TableCell>
+                      <div>
+                        <p className="font-medium">{supplier.fullName}</p>
+                        {supplier.email && (
+                          <p className="text-xs text-muted-foreground">{supplier.email}</p>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>{supplier.shopName}</TableCell>
+                    <TableCell>{supplier.phone ?? '-'}</TableCell>
+                    <TableCell>{new Date(supplier.submittedAt).toLocaleDateString('fr-FR')}</TableCell>
+                    <TableCell>
+                      <Badge variant={STATUS_VARIANTS[supplier.validationStatus] ?? 'outline'}>
+                        {STATUS_LABELS[supplier.validationStatus] ?? supplier.validationStatus}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          navigate(`/admin/validations/${supplier.id}`)
+                        }}
+                      >
+                        Examiner
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
     </div>
   )
 }

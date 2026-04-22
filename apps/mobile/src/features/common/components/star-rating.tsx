@@ -1,6 +1,6 @@
+import Star from 'lucide-react-native/dist/esm/icons/star'
 import * as React from 'react'
 import { StyleSheet, TouchableOpacity, View } from 'react-native'
-import Star from 'lucide-react-native/dist/esm/icons/star'
 import { colors } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 

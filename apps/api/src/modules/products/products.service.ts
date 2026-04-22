@@ -6,12 +6,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
+import { Media, MediaStatus } from '../media/media.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { Category } from './entities/category.entity'
 import { ProductVariant } from './entities/product-variant.entity'
-import { Media, MediaStatus } from '../media/media.entity'
 import { Product, ProductStatus, ProductUnit } from './entities/product.entity'
 
 const PLAN_PRODUCT_LIMITS: Record<string, number> = {
@@ -270,7 +270,8 @@ export class ProductsService {
     const maxProducts = subscription[0]?.max_products
 
     // null means unlimited (PRO/COOP plans)
-    if (maxProducts === null) return
+    if (maxProducts === null)
+      return
 
     const limit = maxProducts ?? PLAN_PRODUCT_LIMITS[planName] ?? 5
 

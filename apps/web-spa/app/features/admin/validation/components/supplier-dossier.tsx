@@ -1,8 +1,8 @@
+import type { SupplierValidationItem } from '../utils/validation-queries'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import type { SupplierValidationItem } from '../utils/validation-queries'
 
 interface SupplierDossierProps {
   supplier: SupplierValidationItem

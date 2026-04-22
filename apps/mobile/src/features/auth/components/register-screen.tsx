@@ -1,3 +1,9 @@
+import Eye from 'lucide-react-native/dist/esm/icons/eye'
+import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
+import Lock from 'lucide-react-native/dist/esm/icons/lock'
+import Mail from 'lucide-react-native/dist/esm/icons/mail'
+import Phone from 'lucide-react-native/dist/esm/icons/phone'
+import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import { useState } from 'react'
 import {
   ActivityIndicator,
@@ -12,14 +18,6 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Mail from 'lucide-react-native/dist/esm/icons/mail'
-import Lock from 'lucide-react-native/dist/esm/icons/lock'
-import Eye from 'lucide-react-native/dist/esm/icons/eye'
-import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
-import Phone from 'lucide-react-native/dist/esm/icons/phone'
-import UserIcon from 'lucide-react-native/dist/esm/icons/user'
-import { useTheme } from '../../../theme/theme-context'
-import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import {
   notifyAuthChange,
   registerWithEmailOtp,
@@ -28,6 +26,8 @@ import {
   requestOtp,
   verifyOtp,
 } from '../../../lib/auth-client'
+import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
+import { useTheme } from '../../../theme/theme-context'
 import { OtpInput, ResendTimer } from './otp-input'
 
 type Step = 'phone-input' | 'otp' | 'name' | 'email-form' | 'email-otp'
@@ -70,9 +70,11 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
       }
       setStep('otp')
       setResendKey(k => k + 1)
-    } catch {
+    }
+    catch {
       setError('Une erreur est survenue')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -90,14 +92,17 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
         // New user — save the registration token and ask for name
         setRegistrationToken(result.registrationToken ?? null)
         setStep('name')
-      } else {
+      }
+      else {
         // Existing user — already logged in via OTP
         notifyAuthChange()
         onRegisterSuccess()
       }
-    } catch {
+    }
+    catch {
       setError('Une erreur est survenue')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -126,9 +131,11 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
       }
       notifyAuthChange()
       onRegisterSuccess()
-    } catch {
+    }
+    catch {
       setError('Une erreur est survenue')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -168,9 +175,11 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
       }
       setStep('email-otp')
       setResendKey(k => k + 1)
-    } catch {
+    }
+    catch {
       setError('Une erreur est survenue')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -186,9 +195,11 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
       }
       notifyAuthChange()
       onRegisterSuccess()
-    } catch {
+    }
+    catch {
       setError('Une erreur est survenue')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -288,11 +299,13 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 onPress={handleSendOtp}
                 disabled={!isPhoneValid || loading}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.neutral[0]} size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Recevoir le code</Text>
-                )}
+                {loading
+                  ? (
+                      <ActivityIndicator color={colors.neutral[0]} size="small" />
+                    )
+                  : (
+                      <Text style={styles.submitButtonText}>Recevoir le code</Text>
+                    )}
               </Pressable>
 
               <Pressable onPress={switchToEmail} hitSlop={8} style={styles.methodSwitch}>
@@ -368,11 +381,13 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 onPress={handleCompletePhoneRegistration}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.neutral[0]} size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Créer mon compte</Text>
-                )}
+                {loading
+                  ? (
+                      <ActivityIndicator color={colors.neutral[0]} size="small" />
+                    )
+                  : (
+                      <Text style={styles.submitButtonText}>Créer mon compte</Text>
+                    )}
               </Pressable>
             </>
           )}
@@ -436,11 +451,13 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 onPress={handleSendEmailOtp}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.neutral[0]} size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Recevoir le code</Text>
-                )}
+                {loading
+                  ? (
+                      <ActivityIndicator color={colors.neutral[0]} size="small" />
+                    )
+                  : (
+                      <Text style={styles.submitButtonText}>Recevoir le code</Text>
+                    )}
               </Pressable>
 
               <Pressable onPress={switchToPhone} hitSlop={8} style={styles.methodSwitch}>
@@ -499,23 +516,35 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },
 
   errorBanner: {
-    backgroundColor: colors.coral[50], borderWidth: 1, borderColor: colors.coral[200],
-    borderRadius: radius.md, paddingHorizontal: spacing[4], paddingVertical: spacing[3],
+    backgroundColor: colors.coral[50],
+    borderWidth: 1,
+    borderColor: colors.coral[200],
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
     marginBottom: spacing[5],
   },
   errorText: { ...typography.bodyS, color: colors.coral[600] },
 
   form: { gap: spacing[4] },
   inputContainer: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1,
-    borderRadius: radius.lg, paddingHorizontal: spacing[4], height: 52, gap: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing[4],
+    height: 52,
+    gap: spacing[3],
   },
   input: { flex: 1, fontSize: 15, height: '100%' },
   eyeButton: { padding: spacing[1] },
 
   submitButton: {
-    height: 52, borderRadius: radius.lg,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing[2],
+    height: 52,
+    borderRadius: radius.lg,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing[2],
   },
   submitButtonDisabled: { opacity: 0.6 },
   submitButtonText: { ...typography.h3, color: colors.neutral[0] },
@@ -524,8 +553,11 @@ const styles = StyleSheet.create({
   methodSwitchText: { ...typography.bodyS, fontFamily: fonts.sansSb },
 
   toggleRow: {
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-    gap: spacing[1], marginTop: spacing[2],
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing[1],
+    marginTop: spacing[2],
   },
   toggleLabel: { ...typography.bodyS },
   toggleLink: { ...typography.bodyS, fontFamily: fonts.sansSb },

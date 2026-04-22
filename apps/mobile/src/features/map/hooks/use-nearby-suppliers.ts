@@ -1,5 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
 import * as Location from 'expo-location'
+import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
 export interface NearbySupplier {
@@ -36,7 +36,8 @@ export function useNearbySuppliers(radiusKm?: number): UseNearbyResult {
     setError(null)
     try {
       const params = new URLSearchParams({ latitude: String(lat), longitude: String(lng) })
-      if (radiusKm) params.set('radius', String(radiusKm))
+      if (radiusKm)
+        params.set('radius', String(radiusKm))
       const res = await apiFetch(`/api/suppliers/nearby?${params}`)
       if (res.ok) {
         const data = (await res.json()) as NearbySupplier[]

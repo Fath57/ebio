@@ -17,13 +17,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { ConfirmModal } from '../../common/components/confirm-modal'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
-import { FALLBACK_CATEGORIES } from '../../../utils/category-icons'
-import { useCategories } from '../../search/hooks/use-search'
+import { ConfirmModal } from '../../common/components/confirm-modal'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
+import { useCategories } from '../../search/hooks/use-search'
 
 const MAX_PHOTOS = 3
 
@@ -36,7 +35,6 @@ const UNITS: Array<{ value: Unit, label: string }> = [
   { value: 'PIECE', label: 'Pièce' },
   { value: 'LOT', label: 'Lot' },
 ]
-
 
 interface Variant {
   id: string
@@ -73,7 +71,9 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
     setModal({ visible: true, title, message, type: 'error' })
   }
 
-  useEffect(() => { loadCategories() }, [loadCategories])
+  useEffect(() => {
+    loadCategories()
+  }, [loadCategories])
 
   const [name, setName] = useState(initialData?.name ?? '')
   const [category, setCategory] = useState(initialData?.category ?? '')

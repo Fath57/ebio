@@ -1,6 +1,6 @@
-import * as React from 'react'
-import { createContext, useCallback, useContext, useEffect, useMemo, useReducer, useRef } from 'react'
 import AsyncStorage from '@react-native-async-storage/async-storage'
+import * as React from 'react'
+import { createContext, useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -47,14 +47,14 @@ interface CartState {
   hydrated: boolean
 }
 
-type CartAction =
-  | { type: 'HYDRATE'; groups: SupplierCartGroup[] }
-  | { type: 'ADD_ITEM'; input: AddItemInput }
-  | { type: 'UPDATE_QUANTITY'; itemId: string; quantity: number }
-  | { type: 'REMOVE_ITEM'; itemId: string }
-  | { type: 'CHANGE_DELIVERY_MODE'; supplierId: string; mode: DeliveryMode }
-  | { type: 'CLEAR_SUPPLIER'; supplierId: string }
-  | { type: 'CLEAR_ALL' }
+type CartAction
+  = | { type: 'HYDRATE', groups: SupplierCartGroup[] }
+    | { type: 'ADD_ITEM', input: AddItemInput }
+    | { type: 'UPDATE_QUANTITY', itemId: string, quantity: number }
+    | { type: 'REMOVE_ITEM', itemId: string }
+    | { type: 'CHANGE_DELIVERY_MODE', supplierId: string, mode: DeliveryMode }
+    | { type: 'CLEAR_SUPPLIER', supplierId: string }
+    | { type: 'CLEAR_ALL' }
 
 const STORAGE_KEY = 'ebio_cart'
 
@@ -63,7 +63,7 @@ function generateId(): string {
 }
 
 function removeEmptyGroups(groups: SupplierCartGroup[]): SupplierCartGroup[] {
-  return groups.filter((g) => g.items.length > 0)
+  return groups.filter(g => g.items.length > 0)
 }
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -76,7 +76,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
       const { input } = action
       const qty = input.quantity ?? 1
       const groups = [...state.groups]
-      const groupIndex = groups.findIndex((g) => g.supplierId === input.supplierId)
+      const groupIndex = groups.findIndex(g => g.supplierId === input.supplierId)
 
       if (groupIndex === -1) {
         groups.push({
@@ -97,14 +97,16 @@ function cartReducer(state: CartState, action: CartAction): CartState {
             },
           ],
         })
-      } else {
+      }
+      else {
         const group = { ...groups[groupIndex], items: [...groups[groupIndex].items] }
-        const existingIndex = group.items.findIndex((i) => i.productId === input.productId)
+        const existingIndex = group.items.findIndex(i => i.productId === input.productId)
 
         if (existingIndex !== -1) {
           const existing = group.items[existingIndex]
           group.items[existingIndex] = { ...existing, quantity: existing.quantity + qty }
-        } else {
+        }
+        else {
           group.items.push({
             id: generateId(),
             productId: input.productId,
@@ -126,13 +128,14 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
     case 'UPDATE_QUANTITY': {
       const groups = state.groups.map((group) => {
-        const itemIndex = group.items.findIndex((i) => i.id === action.itemId)
-        if (itemIndex === -1) return group
+        const itemIndex = group.items.findIndex(i => i.id === action.itemId)
+        if (itemIndex === -1)
+          return group
 
         if (action.quantity <= 0) {
           return {
             ...group,
-            items: group.items.filter((i) => i.id !== action.itemId),
+            items: group.items.filter(i => i.id !== action.itemId),
           }
         }
 
@@ -145,16 +148,16 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     }
 
     case 'REMOVE_ITEM': {
-      const groups = state.groups.map((group) => ({
+      const groups = state.groups.map(group => ({
         ...group,
-        items: group.items.filter((i) => i.id !== action.itemId),
+        items: group.items.filter(i => i.id !== action.itemId),
       }))
 
       return { ...state, groups: removeEmptyGroups(groups) }
     }
 
     case 'CHANGE_DELIVERY_MODE': {
-      const groups = state.groups.map((group) =>
+      const groups = state.groups.map(group =>
         group.supplierId === action.supplierId
           ? { ...group, deliveryMode: action.mode }
           : group,
@@ -165,7 +168,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case 'CLEAR_SUPPLIER': {
       return {
         ...state,
-        groups: state.groups.filter((g) => g.supplierId !== action.supplierId),
+        groups: state.groups.filter(g => g.supplierId !== action.supplierId),
       }
     }
 
@@ -224,10 +227,12 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         if (raw) {
           const groups = JSON.parse(raw) as SupplierCartGroup[]
           dispatch({ type: 'HYDRATE', groups })
-        } else {
+        }
+        else {
           dispatch({ type: 'HYDRATE', groups: [] })
         }
-      } catch {
+      }
+      catch {
         dispatch({ type: 'HYDRATE', groups: [] })
       }
     }
@@ -240,7 +245,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       isFirstRender.current = false
       return
     }
-    if (!state.hydrated) return
+    if (!state.hydrated)
+      return
 
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state.groups)).catch(() => {
       // Silently ignore persistence errors
@@ -311,9 +317,9 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   ])
 
   return (
-    <CartContext.Provider value={value}>
+    <CartContext value={value}>
       {children}
-    </CartContext.Provider>
+    </CartContext>
   )
 }
 
@@ -322,5 +328,5 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 // ---------------------------------------------------------------------------
 
 export function useCart() {
-  return useContext(CartContext)
+  return use(CartContext)
 }

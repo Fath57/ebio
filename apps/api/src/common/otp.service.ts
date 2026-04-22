@@ -59,7 +59,8 @@ export class OtpService {
       expiresAt: { $gte: new Date() },
     })
 
-    if (!verification) return false
+    if (!verification)
+      return false
 
     // Consume the OTP
     await fork.nativeDelete(Verification, { id: verification.id })
@@ -114,7 +115,8 @@ export class OtpService {
       expiresAt: { $gte: new Date() },
     })
 
-    if (!verification) return false
+    if (!verification)
+      return false
 
     await fork.nativeDelete(Verification, { id: verification.id })
 
@@ -173,7 +175,8 @@ export class OtpService {
       expiresAt: { $gte: new Date() },
     })
 
-    if (!verification) return false
+    if (!verification)
+      return false
 
     // Mark as verified but don't delete — we'll delete after password is actually reset
     // Store a verified marker
@@ -203,7 +206,8 @@ export class OtpService {
       value: token,
       expiresAt: { $gte: new Date() },
     })
-    if (!verification) return false
+    if (!verification)
+      return false
     await fork.nativeDelete(Verification, { id: verification.id })
     return true
   }
@@ -216,7 +220,8 @@ export class OtpService {
       expiresAt: { $gte: new Date() },
     })
 
-    if (!verification) return false
+    if (!verification)
+      return false
 
     // Consume the verification
     await fork.nativeDelete(Verification, { id: verification.id })

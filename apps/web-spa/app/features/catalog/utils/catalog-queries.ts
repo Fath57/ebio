@@ -1,3 +1,4 @@
+import type { CreateProduct, UpdateProduct } from '@boilerstone/openapi-generator/client/types.gen'
 import { client } from '@boilerstone/openapi-generator'
 import {
   productsControllerCreate,
@@ -5,7 +6,6 @@ import {
   productsControllerSoftDelete,
   productsControllerUpdate,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
-import type { CreateProduct, UpdateProduct } from '@boilerstone/openapi-generator/client/types.gen'
 
 export interface ProductItem {
   id: string

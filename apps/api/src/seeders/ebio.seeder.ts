@@ -26,7 +26,8 @@ export class EbioSeeder extends Seeder {
         existing.name = data.name
         existing.icon = data.icon
         existing.sortOrder = data.sortOrder
-        if (data.imageUrl) existing.imageUrl = data.imageUrl
+        if (data.imageUrl)
+          existing.imageUrl = data.imageUrl
         context.categories[data.slug] = existing
       }
       else {
@@ -75,10 +76,14 @@ export class EbioSeeder extends Seeder {
       "updatedAt" timestamptz DEFAULT NOW()
     )`)
     for (const c of [
-      { slug: 'huiles', rate: 0.04 }, { slug: 'cereales', rate: 0.04 },
-      { slug: 'legumes', rate: 0.04 }, { slug: 'semences', rate: 0.025 },
-      { slug: 'compost', rate: 0.03 }, { slug: 'epices', rate: 0.04 },
-      { slug: 'boissons', rate: 0.035 }, { slug: 'autres', rate: 0.04 },
+      { slug: 'huiles', rate: 0.04 },
+      { slug: 'cereales', rate: 0.04 },
+      { slug: 'legumes', rate: 0.04 },
+      { slug: 'semences', rate: 0.025 },
+      { slug: 'compost', rate: 0.03 },
+      { slug: 'epices', rate: 0.04 },
+      { slug: 'boissons', rate: 0.035 },
+      { slug: 'autres', rate: 0.04 },
     ]) {
       await db.execute(
         `INSERT INTO commission_rates (category_slug, rate) VALUES (?, ?)

@@ -1,3 +1,8 @@
+import Eye from 'lucide-react-native/dist/esm/icons/eye'
+import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
+import Lock from 'lucide-react-native/dist/esm/icons/lock'
+import Mail from 'lucide-react-native/dist/esm/icons/mail'
+import PhoneIcon from 'lucide-react-native/dist/esm/icons/phone'
 import { useState } from 'react'
 import {
   ActivityIndicator,
@@ -12,14 +17,9 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import Mail from 'lucide-react-native/dist/esm/icons/mail'
-import Lock from 'lucide-react-native/dist/esm/icons/lock'
-import Eye from 'lucide-react-native/dist/esm/icons/eye'
-import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
-import PhoneIcon from 'lucide-react-native/dist/esm/icons/phone'
-import { useTheme } from '../../../theme/theme-context'
+import { notifyAuthChange, signInWithEmail } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
-import { signInWithEmail, notifyAuthChange } from '../../../lib/auth-client'
+import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 
 interface LoginScreenProps {
@@ -75,9 +75,11 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
       }
       notifyAuthChange()
       onLoginSuccess()
-    } catch {
+    }
+    catch {
       setError('Une erreur est survenue. Veuillez réessayer.')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -95,9 +97,11 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
       }
       notifyAuthChange()
       onLoginSuccess()
-    } catch {
+    }
+    catch {
       setError('Une erreur est survenue. Veuillez réessayer.')
-    } finally {
+    }
+    finally {
       setLoading(false)
     }
   }
@@ -207,11 +211,13 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
                 onPress={handlePhoneLogin}
                 disabled={!isPhoneValid || !password || loading}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.neutral[0]} size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Se connecter</Text>
-                )}
+                {loading
+                  ? (
+                      <ActivityIndicator color={colors.neutral[0]} size="small" />
+                    )
+                  : (
+                      <Text style={styles.submitButtonText}>Se connecter</Text>
+                    )}
               </Pressable>
 
               <Pressable onPress={switchMethod} hitSlop={8} style={styles.methodSwitch}>
@@ -280,11 +286,13 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
                 onPress={handleEmailLogin}
                 disabled={loading}
               >
-                {loading ? (
-                  <ActivityIndicator color={colors.neutral[0]} size="small" />
-                ) : (
-                  <Text style={styles.submitButtonText}>Se connecter</Text>
-                )}
+                {loading
+                  ? (
+                      <ActivityIndicator color={colors.neutral[0]} size="small" />
+                    )
+                  : (
+                      <Text style={styles.submitButtonText}>Se connecter</Text>
+                    )}
               </Pressable>
 
               <Pressable onPress={switchMethod} hitSlop={8} style={styles.methodSwitch}>
@@ -324,16 +332,25 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },
 
   errorBanner: {
-    backgroundColor: colors.coral[50], borderWidth: 1, borderColor: colors.coral[200],
-    borderRadius: radius.md, paddingHorizontal: spacing[4], paddingVertical: spacing[3],
+    backgroundColor: colors.coral[50],
+    borderWidth: 1,
+    borderColor: colors.coral[200],
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
     marginBottom: spacing[5],
   },
   errorText: { ...typography.bodyS, color: colors.coral[600] },
 
   form: { gap: spacing[4] },
   inputContainer: {
-    flexDirection: 'row', alignItems: 'center', borderWidth: 1,
-    borderRadius: radius.xl, paddingHorizontal: spacing[4], height: 56, gap: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing[4],
+    height: 56,
+    gap: spacing[3],
   },
   input: { flex: 1, fontSize: 15, height: '100%' },
   eyeButton: { padding: spacing[1] },
@@ -342,8 +359,11 @@ const styles = StyleSheet.create({
   forgotText: { ...typography.bodyS, fontFamily: fonts.sansMd },
 
   submitButton: {
-    height: 56, borderRadius: radius.pill,
-    alignItems: 'center', justifyContent: 'center', marginTop: spacing[2],
+    height: 56,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: spacing[2],
     ...shadows.md,
   },
   submitButtonDisabled: { opacity: 0.6 },
@@ -353,8 +373,11 @@ const styles = StyleSheet.create({
   methodSwitchText: { ...typography.bodyS, fontFamily: fonts.sansSb },
 
   toggleRow: {
-    flexDirection: 'row', justifyContent: 'center', alignItems: 'center',
-    gap: spacing[1], marginTop: spacing[2],
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: spacing[1],
+    marginTop: spacing[2],
   },
   toggleLabel: { ...typography.bodyS },
   toggleLink: { ...typography.bodyS, fontFamily: fonts.sansSb },

@@ -1,27 +1,13 @@
+import type { CategoryItem } from '../../../utils/category-icons'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import X from 'lucide-react-native/dist/esm/icons/x'
-import type { CategoryItem } from '../../../utils/category-icons'
-import { FALLBACK_CATEGORIES } from '../../../utils/category-icons'
 import * as React from 'react'
-import { Image } from 'react-native'
 import { useCallback, useRef, useState } from 'react'
-import {
-  Animated,
-  Dimensions,
-  Modal,
-  PanResponder,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
-} from 'react-native'
+import { Animated, Dimensions, Image, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { FALLBACK_CATEGORIES } from '../../../utils/category-icons'
 
 interface FilterValues {
   radius: number | undefined
@@ -57,12 +43,11 @@ const MODE_OPTIONS = [
   { value: 'ORDER' as const, label: 'Commande' },
 ]
 
-const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window')
+const { height: SCREEN_HEIGHT } = Dimensions.get('window')
 const SHEET_HEIGHT = SCREEN_HEIGHT * 0.9
 const DISMISS_THRESHOLD = 120
 
 const THUMB_SIZE = 28
-const TRACK_HORIZONTAL_PADDING = spacing[4] * 2 + 40 // account for labels
 
 function DistanceSlider({
   value,
@@ -92,7 +77,8 @@ function DistanceSlider({
   ).current
 
   function updateValue(locationX: number) {
-    if (trackWidth.current <= 0) return
+    if (trackWidth.current <= 0)
+      return
     const ratio = Math.max(0, Math.min(1, locationX / trackWidth.current))
     const newVal = Math.round(min + ratio * (max - min))
     onChange(newVal)
@@ -102,7 +88,11 @@ function DistanceSlider({
 
   return (
     <View style={sliderStyles.container}>
-      <Text style={[sliderStyles.label, { color: semantic.textSecondary }]}>{min} km</Text>
+      <Text style={[sliderStyles.label, { color: semantic.textSecondary }]}>
+        {min}
+        {' '}
+        km
+      </Text>
       <View
         style={[sliderStyles.track, { backgroundColor: semantic.borderNormal }]}
         onLayout={(e) => { trackWidth.current = e.nativeEvent.layout.width }}
@@ -118,7 +108,11 @@ function DistanceSlider({
           <Text style={sliderStyles.thumbText}>{value}</Text>
         </View>
       </View>
-      <Text style={[sliderStyles.label, { color: semantic.textSecondary }]}>{max} km</Text>
+      <Text style={[sliderStyles.label, { color: semantic.textSecondary }]}>
+        {max}
+        {' '}
+        km
+      </Text>
     </View>
   )
 }
@@ -344,7 +338,7 @@ export function FilterSheet({
                     value={filters.radius}
                     min={1}
                     max={50}
-                    onChange={(val) => setFilters(p => ({ ...p, radius: val }))}
+                    onChange={val => setFilters(p => ({ ...p, radius: val }))}
                     semantic={semantic}
                   />
                 )

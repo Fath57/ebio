@@ -6,8 +6,8 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { useTheme } from '../../../theme/theme-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
+import { useTheme } from '../../../theme/theme-context'
 
 interface OtpInputProps {
   length?: number
@@ -115,7 +115,8 @@ export function ResendTimer({ seconds: initialSeconds, onResend, loading }: Rese
   }, [initialSeconds])
 
   useEffect(() => {
-    if (seconds <= 0) return
+    if (seconds <= 0)
+      return
     const timer = setInterval(() => setSeconds(s => s - 1), 1000)
     return () => clearInterval(timer)
   }, [seconds])
@@ -123,7 +124,10 @@ export function ResendTimer({ seconds: initialSeconds, onResend, loading }: Rese
   if (seconds > 0) {
     return (
       <Text style={[styles.resendText, { color: semantic.textTertiary }]}>
-        Renvoyer dans {seconds}s
+        Renvoyer dans
+        {' '}
+        {seconds}
+        s
       </Text>
     )
   }

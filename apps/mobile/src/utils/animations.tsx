@@ -1,11 +1,10 @@
+import type { PressableProps, StyleProp, ViewStyle } from 'react-native'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
 import {
   Animated,
   Pressable,
-  type PressableProps,
-  type StyleProp,
-  type ViewStyle,
+
 } from 'react-native'
 
 // ─── Fade-in + slide up on mount ────────────────────────────────────────────

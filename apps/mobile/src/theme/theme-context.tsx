@@ -1,5 +1,5 @@
 import * as React from 'react'
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react'
+import { createContext, use, useCallback, useEffect, useMemo, useState } from 'react'
 import { Appearance } from 'react-native'
 import { storage } from '../utils/offline-storage'
 import { darkTheme, lightTheme } from './theme'
@@ -25,7 +25,8 @@ const ThemeContext = createContext<ThemeContextValue>({
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [mode, setModeState] = useState<ThemeMode>(() => {
     const stored = storage.getString(STORAGE_KEY)
-    if (stored === 'light' || stored === 'dark' || stored === 'system') return stored
+    if (stored === 'light' || stored === 'dark' || stored === 'system')
+      return stored
     return 'system'
   })
 
@@ -54,12 +55,12 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }), [mode, isDark, setMode, semantic])
 
   return (
-    <ThemeContext.Provider value={value}>
+    <ThemeContext value={value}>
       {children}
-    </ThemeContext.Provider>
+    </ThemeContext>
   )
 }
 
 export function useTheme() {
-  return useContext(ThemeContext)
+  return use(ThemeContext)
 }

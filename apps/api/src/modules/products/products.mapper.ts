@@ -1,4 +1,4 @@
-import type { ProductResponse, ProductSummary } from './contracts/product.contract'
+import type { ProductResponse } from './contracts/product.contract'
 import type { ProductVariant } from './entities/product-variant.entity'
 import type { Product } from './entities/product.entity'
 

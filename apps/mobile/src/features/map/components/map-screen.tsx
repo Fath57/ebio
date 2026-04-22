@@ -28,7 +28,7 @@ export function MapScreen() {
   const { semantic } = useTheme()
   const mapRef = useRef<MapView>(null)
   const { suppliers, userLocation, loading, error, refresh } = useNearbySuppliers()
-  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [, setSelectedId] = useState<string | null>(null)
 
   const handleRecenter = useCallback(() => {
     if (userLocation && mapRef.current) {
@@ -103,11 +103,13 @@ export function MapScreen() {
                 <View style={[
                   styles.calloutBadge,
                   supplier.isOpen ? styles.calloutBadgeOpen : styles.calloutBadgeClosed,
-                ]}>
+                ]}
+                >
                   <Text style={[
                     styles.calloutBadgeText,
                     supplier.isOpen ? styles.calloutBadgeTextOpen : styles.calloutBadgeTextClosed,
-                  ]}>
+                  ]}
+                  >
                     {supplier.isOpen ? 'Ouvert' : 'Fermé'}
                   </Text>
                 </View>

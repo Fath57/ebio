@@ -1,8 +1,8 @@
+import type { MediaContext } from '../hooks/use-media-upload'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { ImagePlus, Loader2, X } from 'lucide-react'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
-import type { MediaContext } from '../hooks/use-media-upload'
 import { useMediaUpload } from '../hooks/use-media-upload'
 
 interface ImageUploadProps {
@@ -48,10 +48,12 @@ export function ImageUpload({
 
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files
-    if (!files) return
+    if (!files)
+      return
 
     for (const file of Array.from(files)) {
-      if (totalImages + 1 > max) break
+      if (totalImages + 1 > max)
+        break
       const result = await uploadFile(file)
       if (result) {
         if (isSingleMode) {

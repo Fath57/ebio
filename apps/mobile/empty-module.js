@@ -15,7 +15,8 @@ const noopTracer = {
   startSpan: () => noopSpan,
   startActiveSpan: (_name, fnOrOpts, fnOrCtx, fn) => {
     const cb = fn || fnOrCtx || fnOrOpts
-    if (typeof cb === 'function') return cb(noopSpan)
+    if (typeof cb === 'function')
+      return cb(noopSpan)
     return noopSpan
   },
 }

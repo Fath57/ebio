@@ -1,3 +1,11 @@
+import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
+import Minus from 'lucide-react-native/dist/esm/icons/minus'
+import Package from 'lucide-react-native/dist/esm/icons/package'
+import Plus from 'lucide-react-native/dist/esm/icons/plus'
+import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
+import Store from 'lucide-react-native/dist/esm/icons/store'
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
+import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
 import {
   Image,
@@ -8,14 +16,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
-import Minus from 'lucide-react-native/dist/esm/icons/minus'
-import Package from 'lucide-react-native/dist/esm/icons/package'
-import Plus from 'lucide-react-native/dist/esm/icons/plus'
-import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
-import Store from 'lucide-react-native/dist/esm/icons/store'
-import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { FadeInView } from '../../../utils/animations'
@@ -147,7 +147,9 @@ export function CartScreen({
           Votre panier est vide
         </Text>
         <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
-          Parcourez le catalogue pour découvrir{'\n'}les meilleurs produits bio près de chez vous
+          Parcourez le catalogue pour découvrir
+          {'\n'}
+          les meilleurs produits bio près de chez vous
         </Text>
         {onContinueShopping && (
           <TouchableOpacity
@@ -219,106 +221,106 @@ export function CartScreen({
 
               {group.items.map((item, index) => (
                 <FadeInView key={item.id} delay={index * 80}>
-                <View
-                  style={[
-                    styles.itemRow,
-                    index < group.items.length - 1 && [
-                      styles.itemRowBorder,
-                      { borderBottomColor: semantic.borderLight },
-                    ],
-                  ]}
-                >
-                  {item.imageUrl
-                    ? (
-                        <Image
-                          source={{ uri: item.imageUrl }}
-                          style={styles.itemImage}
-                          resizeMode="cover"
-                        />
-                      )
-                    : (
-                        <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
-                          <Package size={24} color={semantic.textTertiary} />
-                        </View>
+                  <View
+                    style={[
+                      styles.itemRow,
+                      index < group.items.length - 1 && [
+                        styles.itemRowBorder,
+                        { borderBottomColor: semantic.borderLight },
+                      ],
+                    ]}
+                  >
+                    {item.imageUrl
+                      ? (
+                          <Image
+                            source={{ uri: item.imageUrl }}
+                            style={styles.itemImage}
+                            resizeMode="cover"
+                          />
+                        )
+                      : (
+                          <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
+                            <Package size={24} color={semantic.textTertiary} />
+                          </View>
+                        )}
+
+                    <View style={styles.itemDetails}>
+                      <View style={styles.itemTopRow}>
+                        <Text style={[styles.itemName, { color: semantic.textPrimary }]} numberOfLines={2}>
+                          {item.name}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => onRemoveItem(item.id)}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Supprimer ${item.name}`}
+                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                          <Trash2 size={16} color={colors.coral[400]} />
+                        </TouchableOpacity>
+                      </View>
+
+                      <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
+                        {formatPrice(item.pricePerUnit)}
+                        {' '}
+                        FCFA /
+                        {' '}
+                        {item.unit}
+                      </Text>
+
+                      {item.availableVariants.length > 0 && (
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.variantRow}
+                        >
+                          {item.availableVariants.map((variant) => {
+                            const isSelected = item.selectedVariant?.id === variant.id
+                            return (
+                              <TouchableOpacity
+                                key={variant.id}
+                                style={[
+                                  styles.variantChip,
+                                  { borderColor: semantic.borderNormal },
+                                  isSelected && [styles.variantChipActive, { backgroundColor: semantic.bgPrimaryLight }],
+                                ]}
+                                onPress={() => onSelectVariant(item.id, variant)}
+                                accessibilityRole="radio"
+                                accessibilityState={{ selected: isSelected }}
+                              >
+                                <Text
+                                  style={[
+                                    styles.variantChipText,
+                                    { color: semantic.textSecondary },
+                                    isSelected && [styles.variantChipTextActive, { color: semantic.textPrimaryColor }],
+                                  ]}
+                                >
+                                  {variant.label}
+                                </Text>
+                              </TouchableOpacity>
+                            )
+                          })}
+                        </ScrollView>
                       )}
 
-                  <View style={styles.itemDetails}>
-                    <View style={styles.itemTopRow}>
-                      <Text style={[styles.itemName, { color: semantic.textPrimary }]} numberOfLines={2}>
-                        {item.name}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => onRemoveItem(item.id)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Supprimer ${item.name}`}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Trash2 size={16} color={colors.coral[400]} />
-                      </TouchableOpacity>
-                    </View>
-
-                    <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
-                      {formatPrice(item.pricePerUnit)}
-                      {' '}
-                      FCFA /
-                      {' '}
-                      {item.unit}
-                    </Text>
-
-                    {item.availableVariants.length > 0 && (
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.variantRow}
-                      >
-                        {item.availableVariants.map((variant) => {
-                          const isSelected = item.selectedVariant?.id === variant.id
-                          return (
-                            <TouchableOpacity
-                              key={variant.id}
-                              style={[
-                                styles.variantChip,
-                                { borderColor: semantic.borderNormal },
-                                isSelected && [styles.variantChipActive, { backgroundColor: semantic.bgPrimaryLight }],
-                              ]}
-                              onPress={() => onSelectVariant(item.id, variant)}
-                              accessibilityRole="radio"
-                              accessibilityState={{ selected: isSelected }}
-                            >
-                              <Text
-                                style={[
-                                  styles.variantChipText,
-                                  { color: semantic.textSecondary },
-                                  isSelected && [styles.variantChipTextActive, { color: semantic.textPrimaryColor }],
-                                ]}
-                              >
-                                {variant.label}
-                              </Text>
-                            </TouchableOpacity>
-                          )
-                        })}
-                      </ScrollView>
-                    )}
-
-                    <View style={styles.quantityRow}>
-                      <QuantityControl
-                        quantity={item.quantity}
-                        onDecrease={() =>
-                          item.quantity <= 1
-                            ? onRemoveItem(item.id)
-                            : onUpdateQuantity(item.id, item.quantity - 1)}
-                        onIncrease={() =>
-                          onUpdateQuantity(item.id, item.quantity + 1)}
-                      />
-                      <Text style={[styles.itemPrice, { color: semantic.textPrimary }]}>
-                        {formatPrice(item.pricePerUnit * item.quantity)}
-                        {' '}
-                        FCFA
-                      </Text>
+                      <View style={styles.quantityRow}>
+                        <QuantityControl
+                          quantity={item.quantity}
+                          onDecrease={() =>
+                            item.quantity <= 1
+                              ? onRemoveItem(item.id)
+                              : onUpdateQuantity(item.id, item.quantity - 1)}
+                          onIncrease={() =>
+                            onUpdateQuantity(item.id, item.quantity + 1)}
+                        />
+                        <Text style={[styles.itemPrice, { color: semantic.textPrimary }]}>
+                          {formatPrice(item.pricePerUnit * item.quantity)}
+                          {' '}
+                          FCFA
+                        </Text>
+                      </View>
                     </View>
                   </View>
-                </View>
                 </FadeInView>
               ))}
 
@@ -410,26 +412,26 @@ export function CartScreen({
 
       {/* Grand total bar */}
       <FadeInView delay={300}>
-      <View style={[styles.grandTotalBar, { backgroundColor: semantic.bgCard }]}>
-        <View>
-          <Text style={[styles.grandTotalLabel, { color: semantic.textSecondary }]}>
-            Total général
-          </Text>
-          <Text style={[styles.grandTotalValue, { color: semantic.textPrimary }]}>
-            {formatPrice(grandTotal)}
-            {' '}
-            FCFA
-          </Text>
+        <View style={[styles.grandTotalBar, { backgroundColor: semantic.bgCard }]}>
+          <View>
+            <Text style={[styles.grandTotalLabel, { color: semantic.textSecondary }]}>
+              Total général
+            </Text>
+            <Text style={[styles.grandTotalValue, { color: semantic.textPrimary }]}>
+              {formatPrice(grandTotal)}
+              {' '}
+              FCFA
+            </Text>
+          </View>
+          <View style={styles.grandTotalItemCount}>
+            <Text style={[styles.grandTotalItemCountText, { color: semantic.textTertiary }]}>
+              {totalItemCount}
+              {' '}
+              article
+              {totalItemCount > 1 ? 's' : ''}
+            </Text>
+          </View>
         </View>
-        <View style={styles.grandTotalItemCount}>
-          <Text style={[styles.grandTotalItemCountText, { color: semantic.textTertiary }]}>
-            {totalItemCount}
-            {' '}
-            article
-            {totalItemCount > 1 ? 's' : ''}
-          </Text>
-        </View>
-      </View>
       </FadeInView>
     </View>
   )

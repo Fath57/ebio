@@ -1,3 +1,4 @@
+import Check from 'lucide-react-native/dist/esm/icons/check'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
 import {
@@ -7,7 +8,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import Check from 'lucide-react-native/dist/esm/icons/check'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 

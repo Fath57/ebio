@@ -41,7 +41,8 @@ export function useNotifications() {
 }
 
 async function registerForPush(): Promise<string | null> {
-  if (Platform.OS === 'web') return null
+  if (Platform.OS === 'web')
+    return null
 
   const { status: existingStatus } = await Notifications.getPermissionsAsync()
   let finalStatus = existingStatus
@@ -51,7 +52,8 @@ async function registerForPush(): Promise<string | null> {
     finalStatus = status
   }
 
-  if (finalStatus !== 'granted') return null
+  if (finalStatus !== 'granted')
+    return null
 
   // Android: configure notification channel
   if (Platform.OS === 'android') {
@@ -82,7 +84,8 @@ async function registerForPush(): Promise<string | null> {
 }
 
 function handleNotificationTap(data: Record<string, unknown>) {
-  if (!navigationRef.isReady()) return
+  if (!navigationRef.isReady())
+    return
 
   const type = data.type as string
 

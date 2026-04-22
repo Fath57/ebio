@@ -17,10 +17,10 @@ import {
   Text,
   View,
 } from 'react-native'
-import { apiFetch } from '../../../utils/api-client'
-import { StaggerItem } from '../../../utils/animations'
+import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { colors, fonts, spacing, radius } from '../../../theme/theme'
+import { StaggerItem } from '../../../utils/animations'
+import { apiFetch } from '../../../utils/api-client'
 
 interface NotificationItem {
   id: string
@@ -63,10 +63,14 @@ function formatRelativeTime(dateStr: string): string {
   const diffHours = Math.floor(diffMin / 60)
   const diffDays = Math.floor(diffHours / 24)
 
-  if (diffMin < 1) return 'À l\'instant'
-  if (diffMin < 60) return `${diffMin} min`
-  if (diffHours < 24) return `${diffHours} h`
-  if (diffDays < 7) return `${diffDays} j`
+  if (diffMin < 1)
+    return 'À l\'instant'
+  if (diffMin < 60)
+    return `${diffMin} min`
+  if (diffHours < 24)
+    return `${diffHours} h`
+  if (diffDays < 7)
+    return `${diffDays} j`
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
@@ -130,34 +134,35 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
 
     return (
       <StaggerItem index={index}>
-      <Pressable
-        style={[
-          styles.card,
-          { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight },
-          isUnread && { borderLeftColor: colors.green[400], borderLeftWidth: 3 },
-        ]}
-        onPress={() => {
-          if (isUnread) markAsRead(item.id)
-        }}
-      >
-        <View style={[styles.iconWrap, { backgroundColor: isUnread ? `${colors.green[400]}15` : semantic.bgSurface }]}>
-          <Icon size={18} color={isUnread ? colors.green[600] : colors.neutral[400]} strokeWidth={2} />
-        </View>
-        <View style={styles.content}>
-          <View style={styles.titleRow}>
-            <Text style={[styles.title, { color: semantic.textPrimary }, isUnread && styles.titleBold]} numberOfLines={1}>
-              {item.title}
-            </Text>
-            <Text style={[styles.time, { color: semantic.textTertiary }]}>
-              {formatRelativeTime(item.createdAt)}
+        <Pressable
+          style={[
+            styles.card,
+            { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight },
+            isUnread && { borderLeftColor: colors.green[400], borderLeftWidth: 3 },
+          ]}
+          onPress={() => {
+            if (isUnread)
+              markAsRead(item.id)
+          }}
+        >
+          <View style={[styles.iconWrap, { backgroundColor: isUnread ? `${colors.green[400]}15` : semantic.bgSurface }]}>
+            <Icon size={18} color={isUnread ? colors.green[600] : colors.neutral[400]} strokeWidth={2} />
+          </View>
+          <View style={styles.content}>
+            <View style={styles.titleRow}>
+              <Text style={[styles.title, { color: semantic.textPrimary }, isUnread && styles.titleBold]} numberOfLines={1}>
+                {item.title}
+              </Text>
+              <Text style={[styles.time, { color: semantic.textTertiary }]}>
+                {formatRelativeTime(item.createdAt)}
+              </Text>
+            </View>
+            <Text style={[styles.body, { color: semantic.textSecondary }]} numberOfLines={2}>
+              {item.body}
             </Text>
           </View>
-          <Text style={[styles.body, { color: semantic.textSecondary }]} numberOfLines={2}>
-            {item.body}
-          </Text>
-        </View>
-        {isUnread && <View style={styles.dot} />}
-      </Pressable>
+          {isUnread && <View style={styles.dot} />}
+        </Pressable>
       </StaggerItem>
     )
   }

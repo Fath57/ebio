@@ -1,4 +1,5 @@
 import type { BetterAuthSession, LoggedInBetterAuthSession } from '../../config/better-auth.config'
+import type { ProductPagination } from './contracts/product.contract'
 import { PaginationParams, TypedBody } from '@lonestone/nzoth/server'
 import {
   Controller,
@@ -20,7 +21,6 @@ import { Public, Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { SuppliersService } from '../suppliers/suppliers.service'
-import type { ProductPagination } from './contracts/product.contract'
 import {
   createProductSchema,
   productPaginationSchema,

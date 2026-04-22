@@ -1,10 +1,11 @@
+import type { AuthenticatedRequest } from './auth.guard'
 import { randomUUID } from 'node:crypto'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { BadRequestException, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { OtpService } from '../../common/otp.service'
+import { AuthGuard } from './auth.guard'
 import { otpRequestSchema, otpVerifySchema } from './contracts/auth.contract'
-import { AuthGuard, type AuthenticatedRequest } from './auth.guard'
 import { OtpAuthService } from './otp-auth.service'
 
 const passwordResetRequestSchema = z.object({

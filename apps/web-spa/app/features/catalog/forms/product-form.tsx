@@ -1,3 +1,4 @@
+import type { Resolver } from 'react-hook-form'
 import { client } from '@boilerstone/openapi-generator'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
@@ -25,7 +26,7 @@ import { useQuery } from '@tanstack/react-query'
 import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useState } from 'react'
-import { useFieldArray, useForm, type Resolver } from 'react-hook-form'
+import { useFieldArray, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { ImageUpload } from '@/features/media/components/image-upload'
@@ -125,7 +126,8 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
   }
 
   function handleBack() {
-    if (currentStep > 0) setCurrentStep(currentStep - 1)
+    if (currentStep > 0)
+      setCurrentStep(currentStep - 1)
   }
 
   function handleSubmit(data: ProductFormData) {
@@ -376,26 +378,35 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
                 <div className="mt-3 space-y-3">
                   {variantFields.map((field, index) => (
                     <div key={field.id} className="flex items-end gap-3 rounded-lg border p-3">
-                      <FormField control={form.control} name={`variants.${index}.label`} render={({ field: f }) => (
-                        <FormItem className="flex-1">
-                          <FormLabel className="text-xs">{t('catalog.form.variantLabel')}</FormLabel>
-                          <FormControl><Input {...f} placeholder="Ex: 0,5 L, 1 L, 5 L" /></FormControl>
-                        </FormItem>
-                      )}
+                      <FormField
+                        control={form.control}
+                        name={`variants.${index}.label`}
+                        render={({ field: f }) => (
+                          <FormItem className="flex-1">
+                            <FormLabel className="text-xs">{t('catalog.form.variantLabel')}</FormLabel>
+                            <FormControl><Input {...f} placeholder="Ex: 0,5 L, 1 L, 5 L" /></FormControl>
+                          </FormItem>
+                        )}
                       />
-                      <FormField control={form.control} name={`variants.${index}.pricePerUnit`} render={({ field: f }) => (
-                        <FormItem className="w-32">
-                          <FormLabel className="text-xs">{t('catalog.form.variantPrice')}</FormLabel>
-                          <FormControl><Input {...f} type="number" min="0" step="100" /></FormControl>
-                        </FormItem>
-                      )}
+                      <FormField
+                        control={form.control}
+                        name={`variants.${index}.pricePerUnit`}
+                        render={({ field: f }) => (
+                          <FormItem className="w-32">
+                            <FormLabel className="text-xs">{t('catalog.form.variantPrice')}</FormLabel>
+                            <FormControl><Input {...f} type="number" min="0" step="100" /></FormControl>
+                          </FormItem>
+                        )}
                       />
-                      <FormField control={form.control} name={`variants.${index}.stock`} render={({ field: f }) => (
-                        <FormItem className="w-24">
-                          <FormLabel className="text-xs">{t('catalog.form.variantStock')}</FormLabel>
-                          <FormControl><Input {...f} type="number" min="0" /></FormControl>
-                        </FormItem>
-                      )}
+                      <FormField
+                        control={form.control}
+                        name={`variants.${index}.stock`}
+                        render={({ field: f }) => (
+                          <FormItem className="w-24">
+                            <FormLabel className="text-xs">{t('catalog.form.variantStock')}</FormLabel>
+                            <FormControl><Input {...f} type="number" min="0" /></FormControl>
+                          </FormItem>
+                        )}
                       />
                       <Button type="button" variant="ghost" size="sm" onClick={() => removeVariant(index)} className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />

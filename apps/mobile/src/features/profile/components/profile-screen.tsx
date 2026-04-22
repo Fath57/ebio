@@ -1,18 +1,18 @@
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
-import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
-import FileText from 'lucide-react-native/dist/esm/icons/file-text'
-import ScanFace from 'lucide-react-native/dist/esm/icons/scan-face'
 import CircleQuestionMark from 'lucide-react-native/dist/esm/icons/circle-question-mark'
+import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
+import FileText from 'lucide-react-native/dist/esm/icons/file-text'
 import Hourglass from 'lucide-react-native/dist/esm/icons/hourglass'
 import LayoutDashboard from 'lucide-react-native/dist/esm/icons/layout-dashboard'
+import LogOutIcon from 'lucide-react-native/dist/esm/icons/log-out'
 import Monitor from 'lucide-react-native/dist/esm/icons/monitor'
 import Moon from 'lucide-react-native/dist/esm/icons/moon'
 import Pen from 'lucide-react-native/dist/esm/icons/pen'
+import ScanFace from 'lucide-react-native/dist/esm/icons/scan-face'
 import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Sun from 'lucide-react-native/dist/esm/icons/sun'
-import LogOutIcon from 'lucide-react-native/dist/esm/icons/log-out'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
 import { useEffect, useState } from 'react'
@@ -26,11 +26,11 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { notifyAuthChange, signOut, useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { signOut, notifyAuthChange, useSession } from '../../../lib/auth-client'
-import { ConfirmModal } from '../../common/components/confirm-modal'
 import { apiFetch } from '../../../utils/api-client'
+import { ConfirmModal } from '../../common/components/confirm-modal'
 
 interface UserProfile {
   id: string
@@ -92,7 +92,8 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
           apiFetch('/api/users/me'),
           apiFetch('/api/suppliers/me/status'),
         ])
-        if (cancelled) return
+        if (cancelled)
+          return
         if (profileRes.ok) {
           const data = await profileRes.json()
           setProfile(data)
@@ -106,11 +107,19 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
           setSupplierStatus(data)
         }
       }
-      catch { if (!cancelled) setProfile(null) }
-      finally { if (!cancelled) setLoading(false) }
+      catch {
+        if (!cancelled)
+          setProfile(null)
+      }
+      finally {
+        if (!cancelled)
+          setLoading(false)
+      }
     }
     load()
-    return () => { cancelled = true }
+    return () => {
+      cancelled = true
+    }
   }, [sessionUserId, refreshTrigger])
 
   async function handleToggleBiometric(value: boolean) {
@@ -155,9 +164,12 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
           resizeMode="contain"
         />
         <Text style={[styles.guestTitle, { color: semantic.textPrimary }]}>
-          Bienvenue</Text>
+          Bienvenue
+        </Text>
         <Text style={[styles.guestSubtitle, { color: semantic.textTertiary }]}>
-          Connectez-vous pour accéder à vos commandes,{'\n'}votre panier et vos favoris.
+          Connectez-vous pour accéder à vos commandes,
+          {'\n'}
+          votre panier et vos favoris.
         </Text>
         <TouchableOpacity
           style={styles.guestLoginButton}
@@ -183,7 +195,8 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
                   styles.themeOptionText,
                   { color: isActive ? colors.green[600] : semantic.textSecondary },
                   isActive && styles.themeOptionTextActive,
-                ]}>
+                ]}
+                >
                   {opt.label}
                 </Text>
               </TouchableOpacity>
@@ -293,7 +306,11 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
                   En attente de validation
                 </Text>
                 <Text style={[styles.pendingSubtitle, { color: semantic.textSecondary }]}>
-                  Votre demande pour « {supplierStatus.shopName} » est en cours d'examen. Vous serez notifié dès que votre compte sera activé.
+                  Votre demande pour «
+                  {' '}
+                  {supplierStatus.shopName}
+                  {' '}
+                  » est en cours d'examen. Vous serez notifié dès que votre compte sera activé.
                 </Text>
               </View>
             </View>
@@ -364,7 +381,8 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
                     styles.themeOptionText,
                     { color: isActive ? colors.green[600] : semantic.textSecondary },
                     isActive && styles.themeOptionTextActive,
-                  ]}>
+                  ]}
+                  >
                     {opt.label}
                   </Text>
                 </TouchableOpacity>

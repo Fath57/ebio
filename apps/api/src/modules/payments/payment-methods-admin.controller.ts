@@ -8,7 +8,6 @@ import { Controller, Query, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { CanManage } from '../../common/decorators/check-permissions.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
-import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import {
   createPaymentMethodSchema,

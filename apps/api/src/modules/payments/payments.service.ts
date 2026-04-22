@@ -1,5 +1,4 @@
 import type { InitiateCheckoutInput, InitiatePayment, VerifyCheckoutInput } from './contracts/payment.contract'
-import type { PaymentGatewayInterface } from './gateways/payment-gateway.interface'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
@@ -14,7 +13,7 @@ import { Order, PaymentMethod as OrderPaymentMethod } from '../orders/entities/o
 import { CommissionService } from './commission.service'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
-import { MobileOperator, Payment, PaymentProvider, PaymentStatus } from './payment.entity'
+import { Payment, PaymentProvider, PaymentStatus } from './payment.entity'
 
 @Injectable()
 export class PaymentsService {

@@ -47,7 +47,8 @@ function formatCurrency(amount: number): string {
 }
 
 function formatDate(dateStr: string | null): string | null {
-  if (!dateStr) return null
+  if (!dateStr)
+    return null
   return new Intl.DateTimeFormat('fr-FR', {
     day: '2-digit',
     month: 'long',
@@ -99,7 +100,10 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h3 className="text-xl font-bold">
-            {t('orders.detail.order')} #{order.orderNumber}
+            {t('orders.detail.order')}
+            {' '}
+            #
+            {order.orderNumber}
           </h3>
           <p className="text-sm text-muted-foreground">
             {formatDate(order.createdAt)}
@@ -114,46 +118,48 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
       </div>
 
       {/* ===== Status stepper ===== */}
-      {isTerminalNegative ? (
-        <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
-          <XCircle className="size-6 text-destructive" />
-          <p className="font-medium text-destructive">
-            {t(`orders.status.${order.status}`)}
-          </p>
-        </div>
-      ) : (
-        <div className="flex items-center">
-          {PROGRESSION_STEPS.map((step, index) => {
-            const isCompleted = index <= currentStepIndex
-            const isCurrent = index === currentStepIndex
-            const isLast = index === PROGRESSION_STEPS.length - 1
+      {isTerminalNegative
+        ? (
+            <div className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4">
+              <XCircle className="size-6 text-destructive" />
+              <p className="font-medium text-destructive">
+                {t(`orders.status.${order.status}`)}
+              </p>
+            </div>
+          )
+        : (
+            <div className="flex items-center">
+              {PROGRESSION_STEPS.map((step, index) => {
+                const isCompleted = index <= currentStepIndex
+                const isCurrent = index === currentStepIndex
+                const isLast = index === PROGRESSION_STEPS.length - 1
 
-            return (
-              <React.Fragment key={step}>
-                <div className="flex flex-col items-center gap-1">
-                  <div
-                    className={`flex size-7 shrink-0 items-center justify-center rounded-full border-2 ${
-                      isCompleted
-                        ? 'border-primary bg-primary text-primary-foreground'
-                        : 'border-muted-foreground/30 bg-background text-muted-foreground/50'
-                    } ${isCurrent ? 'ring-2 ring-primary/30 ring-offset-1' : ''}`}
-                  >
-                    {isCompleted
-                      ? <Check className="size-3.5" />
-                      : <span className="size-1.5 rounded-full bg-current" />}
-                  </div>
-                  <span className={`text-center text-[10px] leading-tight ${isCompleted ? 'font-medium' : 'text-muted-foreground'}`}>
-                    {t(`orders.status.${step}`)}
-                  </span>
-                </div>
-                {!isLast && (
-                  <div className={`mx-0.5 h-0.5 flex-1 ${index < currentStepIndex ? 'bg-primary' : 'border-t border-dashed border-muted-foreground/30'}`} />
-                )}
-              </React.Fragment>
-            )
-          })}
-        </div>
-      )}
+                return (
+                  <React.Fragment key={step}>
+                    <div className="flex flex-col items-center gap-1">
+                      <div
+                        className={`flex size-7 shrink-0 items-center justify-center rounded-full border-2 ${
+                          isCompleted
+                            ? 'border-primary bg-primary text-primary-foreground'
+                            : 'border-muted-foreground/30 bg-background text-muted-foreground/50'
+                        } ${isCurrent ? 'ring-2 ring-primary/30 ring-offset-1' : ''}`}
+                      >
+                        {isCompleted
+                          ? <Check className="size-3.5" />
+                          : <span className="size-1.5 rounded-full bg-current" />}
+                      </div>
+                      <span className={`text-center text-[10px] leading-tight ${isCompleted ? 'font-medium' : 'text-muted-foreground'}`}>
+                        {t(`orders.status.${step}`)}
+                      </span>
+                    </div>
+                    {!isLast && (
+                      <div className={`mx-0.5 h-0.5 flex-1 ${index < currentStepIndex ? 'bg-primary' : 'border-t border-dashed border-muted-foreground/30'}`} />
+                    )}
+                  </React.Fragment>
+                )
+              })}
+            </div>
+          )}
 
       {/* ===== Two column grid: left = items, right = sidebar ===== */}
       <div className="grid gap-6 lg:grid-cols-3">
@@ -164,7 +170,13 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
           {/* Items list */}
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">{t('orders.detail.items')} ({order.items?.length ?? 0})</CardTitle>
+              <CardTitle className="text-base">
+                {t('orders.detail.items')}
+                {' '}
+                (
+                {order.items?.length ?? 0}
+                )
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-0">
               {order.items?.map((item, idx) => (
@@ -189,13 +201,20 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                         <p className="text-xs text-muted-foreground">{item.variantLabel}</p>
                       )}
                       <p className="text-sm text-muted-foreground">
-                        {item.quantity} × {formatCurrency(item.unitPrice)} {t('orders.currency')}
+                        {item.quantity}
+                        {' '}
+                        ×
+                        {formatCurrency(item.unitPrice)}
+                        {' '}
+                        {t('orders.currency')}
                       </p>
                     </div>
 
                     {/* Total */}
                     <p className="shrink-0 font-semibold">
-                      {formatCurrency(item.totalPrice)} {t('orders.currency')}
+                      {formatCurrency(item.totalPrice)}
+                      {' '}
+                      {t('orders.currency')}
                     </p>
                   </div>
                 </React.Fragment>
@@ -206,7 +225,9 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
               <div className="flex items-center justify-between pt-1">
                 <span className="font-bold">{t('orders.detail.total')}</span>
                 <span className="text-lg font-bold">
-                  {formatCurrency(order.totalAmount)} {t('orders.currency')}
+                  {formatCurrency(order.totalAmount)}
+                  {' '}
+                  {t('orders.currency')}
                 </span>
               </div>
             </CardContent>
@@ -300,16 +321,34 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span>{t('orders.detail.subtotal')}</span>
-                <span>{formatCurrency(order.totalAmount - order.commissionAmount)} {t('orders.currency')}</span>
+                <span>
+                  {formatCurrency(order.totalAmount - order.commissionAmount)}
+                  {' '}
+                  {t('orders.currency')}
+                </span>
               </div>
               <div className="flex justify-between text-muted-foreground">
-                <span>{t('orders.detail.commission')} ({order.commissionRate}%)</span>
-                <span>{formatCurrency(order.commissionAmount)} {t('orders.currency')}</span>
+                <span>
+                  {t('orders.detail.commission')}
+                  {' '}
+                  (
+                  {order.commissionRate}
+                  %)
+                </span>
+                <span>
+                  {formatCurrency(order.commissionAmount)}
+                  {' '}
+                  {t('orders.currency')}
+                </span>
               </div>
               <Separator />
               <div className="flex justify-between font-bold">
                 <span>{t('orders.detail.total')}</span>
-                <span>{formatCurrency(order.totalAmount)} {t('orders.currency')}</span>
+                <span>
+                  {formatCurrency(order.totalAmount)}
+                  {' '}
+                  {t('orders.currency')}
+                </span>
               </div>
             </CardContent>
           </Card>

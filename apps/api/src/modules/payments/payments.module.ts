@@ -10,8 +10,8 @@ import { PaymentMethodAdminController } from './payment-methods-admin.controller
 import { PaymentMethodPublicController } from './payment-methods-public.controller'
 import { PaymentMethodService } from './payment-methods.service'
 import { Payment } from './payment.entity'
-import { PaymentsController } from './payments.controller'
 import { PaymentsWebhookController } from './payments-webhook.controller'
+import { PaymentsController } from './payments.controller'
 import { PaymentsService } from './payments.service'
 import { ReceiptService } from './receipt.service'
 

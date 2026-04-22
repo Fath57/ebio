@@ -3,44 +3,44 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
-import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Home from 'lucide-react-native/dist/esm/icons/house'
+import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
 import { Animated, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { ConversationList } from '../features/chat/components/conversation-list'
+import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
+import { LoginScreen } from '../features/auth/components/login-screen'
+import { RegisterScreen } from '../features/auth/components/register-screen'
 import { SupplierRegistration } from '../features/auth/components/supplier-registration'
+import { useCart } from '../features/cart/cart-context'
+import { CartScreen } from '../features/cart/components/cart-screen'
+import { CheckoutFlow } from '../features/cart/components/checkout-flow'
+import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
+import { ConversationList } from '../features/chat/components/conversation-list'
+import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
+import { useNotifications } from '../features/notifications/hooks/use-notifications'
+import { OrderConfirmation } from '../features/orders/components/order-confirmation'
+import { OrderList } from '../features/orders/components/order-list'
+import { OrderTracking } from '../features/orders/components/order-tracking'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
 import { ProfileScreen } from '../features/profile/components/profile-screen'
 import { SearchScreen } from '../features/search/components/search-screen'
-import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
-import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
-import { CartScreen } from '../features/cart/components/cart-screen'
-import { CheckoutFlow } from '../features/cart/components/checkout-flow'
-import { OrderConfirmation } from '../features/orders/components/order-confirmation'
-import { useCart } from '../features/cart/cart-context'
-import { OrderList } from '../features/orders/components/order-list'
-import { OrderTracking } from '../features/orders/components/order-tracking'
 import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
 import { DeliveryZoneEditor } from '../features/supplier-dashboard/components/delivery-zone-editor'
 import { ModeSelector } from '../features/supplier-dashboard/components/mode-selector'
 import { OpeningHoursEditor } from '../features/supplier-dashboard/components/opening-hours-editor'
 import { OrderManagement } from '../features/supplier-dashboard/components/order-management'
-import { ProductForm } from '../features/supplier-dashboard/components/product-form'
 import { ProductDetailScreen as SupplierProductDetail } from '../features/supplier-dashboard/components/product-detail-screen'
+import { ProductForm } from '../features/supplier-dashboard/components/product-form'
 import { ProductList } from '../features/supplier-dashboard/components/product-list'
 import { SupplierSettingsScreen } from '../features/supplier-dashboard/components/supplier-settings-screen'
-import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
-import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
-import { LoginScreen } from '../features/auth/components/login-screen'
-import { RegisterScreen } from '../features/auth/components/register-screen'
+import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { useSession } from '../lib/auth-client'
-import { useNotifications } from '../features/notifications/hooks/use-notifications'
-import { navigationRef } from './navigation-ref'
 import { colors, fonts } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
+import { navigationRef } from './navigation-ref'
 
 function SafeScreen({ children }: { children: React.ReactNode }) {
   const { semantic } = useTheme()
@@ -76,7 +76,7 @@ function SupplierProfileWrapper({ route, navigation }: any) {
   return (
     <SupplierProfileScreen
       supplierId={supplierId}
-      onNavigateToChat={(id) => console.log('chat', id)}
+      onNavigateToChat={(_id) => { /* chat feature pending */ }}
       onNavigateToProduct={(productId, product, supplierInfo) => {
         navigation.navigate('ProductDetail', { product, supplier: supplierInfo })
       }}
@@ -106,7 +106,7 @@ function ProductDetailWrapper({ route, navigation }: any) {
         })
         navigation.goBack()
       }}
-      onNavigateToSupplier={(id) => navigation.navigate('SupplierProfile', { supplierId: id })}
+      onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
     />
   )
 }
@@ -116,7 +116,7 @@ function ChatStackScreen() {
   return (
     <ChatStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <ChatStack.Screen name="ChatHome">
-        {() => <SafeScreen><ConversationList onOpenConversation={(id) => console.log('open chat', id)} /></SafeScreen>}
+        {() => <SafeScreen><ConversationList onOpenConversation={(_id) => { /* chat feature pending */ }} /></SafeScreen>}
       </ChatStack.Screen>
     </ChatStack.Navigator>
   )
@@ -150,7 +150,8 @@ function CartHomeWrapper({ navigation }: any) {
 
   function handleCheckout(supplierId: string) {
     const group = groups.find(g => g.supplierId === supplierId)
-    if (!group) return
+    if (!group)
+      return
 
     const orderSummary = {
       supplierId: group.supplierId,
@@ -380,7 +381,7 @@ function SupplierProductsWrapper({ navigation }: any) {
       <ProductList
         key={refreshKey}
         onAddProduct={() => navigation.navigate('SupplierProductForm')}
-        onEditProduct={(productId) => navigation.navigate('SupplierProductDetail', { productId })}
+        onEditProduct={productId => navigation.navigate('SupplierProductDetail', { productId })}
       />
     </SafeScreen>
   )
@@ -393,7 +394,7 @@ function SupplierProductDetailWrapper({ route, navigation }: any) {
       <SupplierProductDetail
         productId={productId}
         onGoBack={() => navigation.goBack()}
-        onEdit={(id) => navigation.navigate('SupplierProductForm', { productId: id })}
+        onEdit={id => navigation.navigate('SupplierProductForm', { productId: id })}
       />
     </SafeScreen>
   )
@@ -408,7 +409,8 @@ function SupplierProductFormWrapper({ route, navigation }: any) {
         onSave={() => {
           if (productId) {
             navigation.navigate('SupplierProductDetail', { productId })
-          } else {
+          }
+          else {
             navigation.goBack()
           }
         }}
@@ -508,7 +510,7 @@ function NotificationsWrapper({ navigation }: any) {
 function MyOrdersWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <OrderList onOpenOrder={(orderId) => navigation.navigate('OrderTracking', { orderId })} />
+      <OrderList onOpenOrder={orderId => navigation.navigate('OrderTracking', { orderId })} />
     </SafeScreen>
   )
 }
@@ -519,7 +521,7 @@ function OrderTrackingWrapper({ route, navigation }: any) {
     <SafeScreen>
       <OrderTracking
         orderId={orderId}
-        onOpenChat={(supplierId) => console.log('chat', supplierId)}
+        onOpenChat={(_supplierId) => { /* chat feature pending */ }}
         onConfirmReception={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
       />

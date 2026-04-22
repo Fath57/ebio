@@ -1,3 +1,4 @@
+import type { Resolver } from 'react-hook-form'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
   Form,
@@ -11,7 +12,7 @@ import {
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { zodResolver } from '@hookform/resolvers/zod'
 import * as React from 'react'
-import { useForm, type Resolver } from 'react-hook-form'
+import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { ImageUpload } from '@/features/media/components/image-upload'

@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react-native'
 import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Rocket from 'lucide-react-native/dist/esm/icons/rocket'
@@ -11,7 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import type { LucideIcon } from 'lucide-react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { storage } from '../../../utils/offline-storage'

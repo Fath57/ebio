@@ -1,6 +1,6 @@
+import type { CategoryItem } from '../../../utils/category-icons'
 import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
-import type { CategoryItem } from '../../../utils/category-icons'
 import { FALLBACK_CATEGORIES, getCategoryFallbackIcon } from '../../../utils/category-icons'
 import { OfflineCache } from '../../../utils/offline-storage'
 

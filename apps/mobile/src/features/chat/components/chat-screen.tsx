@@ -273,7 +273,7 @@ export function ChatScreen({
         <View style={styles.typingContainer}>
           <Text style={styles.typingText}>
             en train d'
-            {'é'}
+            é
             crire...
           </Text>
         </View>

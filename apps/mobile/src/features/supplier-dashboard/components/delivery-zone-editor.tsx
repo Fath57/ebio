@@ -11,10 +11,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { ConfirmModal } from '../../common/components/confirm-modal'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ConfirmModal } from '../../common/components/confirm-modal'
 
 interface DeliveryZone {
   id: string

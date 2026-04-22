@@ -1,3 +1,8 @@
+import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import Package from 'lucide-react-native/dist/esm/icons/package'
+import Settings from 'lucide-react-native/dist/esm/icons/settings'
+import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
+import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -7,11 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
-import Package from 'lucide-react-native/dist/esm/icons/package'
-import Settings from 'lucide-react-native/dist/esm/icons/settings'
-import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
-import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -43,9 +43,11 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         if (res.ok) {
           setData(await res.json())
         }
-      } catch {
+      }
+      catch {
         // ignore
-      } finally {
+      }
+      finally {
         setLoading(false)
       }
     }
@@ -82,7 +84,8 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         <View style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}>
           <TrendingUp size={20} color={colors.green[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
-            {((data?.revenue ?? 0) / 1000).toFixed(0)}k
+            {((data?.revenue ?? 0) / 1000).toFixed(0)}
+            k
           </Text>
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             Revenus (FCFA)
@@ -120,7 +123,12 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           <ShoppingCart size={20} color={colors.earth[600]} />
           <View style={{ flex: 1 }}>
             <Text style={[styles.alertTitle, { color: colors.earth[800] }]}>
-              {data?.pendingOrders} commande{(data?.pendingOrders ?? 0) > 1 ? 's' : ''} en attente
+              {data?.pendingOrders}
+              {' '}
+              commande
+              {(data?.pendingOrders ?? 0) > 1 ? 's' : ''}
+              {' '}
+              en attente
             </Text>
             <Text style={[styles.alertSubtitle, { color: colors.earth[600] }]}>
               Traitez-les pour satisfaire vos clients
@@ -170,26 +178,38 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
 
   header: {
-    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
-    paddingHorizontal: spacing[4], paddingVertical: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
   },
   headerTitle: { ...typography.h2 },
 
   kpiRow: {
-    flexDirection: 'row', gap: spacing[3],
-    paddingHorizontal: spacing[4], marginTop: spacing[2],
+    flexDirection: 'row',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    marginTop: spacing[2],
   },
   kpiCard: {
-    flex: 1, alignItems: 'center', gap: spacing[1],
-    padding: spacing[4], borderRadius: radius.lg,
+    flex: 1,
+    alignItems: 'center',
+    gap: spacing[1],
+    padding: spacing[4],
+    borderRadius: radius.lg,
   },
   kpiValue: { ...typography.h1 },
   kpiLabel: { ...typography.caption },
 
   alertCard: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing[3],
-    marginHorizontal: spacing[4], marginTop: spacing[5],
-    padding: spacing[4], borderRadius: radius.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginHorizontal: spacing[4],
+    marginTop: spacing[5],
+    padding: spacing[4],
+    borderRadius: radius.lg,
   },
   alertTitle: { ...typography.h3 },
   alertSubtitle: { ...typography.bodyS, marginTop: 2 },
@@ -197,19 +217,28 @@ const styles = StyleSheet.create({
   sectionTitle: {
     ...typography.overline,
     paddingHorizontal: spacing[4],
-    marginTop: spacing[6], marginBottom: spacing[2],
+    marginTop: spacing[6],
+    marginBottom: spacing[2],
   },
 
   actionGroup: {
-    marginHorizontal: spacing[4], borderRadius: radius.lg, overflow: 'hidden',
+    marginHorizontal: spacing[4],
+    borderRadius: radius.lg,
+    overflow: 'hidden',
   },
   actionItem: {
-    flexDirection: 'row', alignItems: 'center', gap: spacing[3],
-    paddingHorizontal: spacing[4], paddingVertical: spacing[4],
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[4],
   },
   actionIcon: {
-    width: 36, height: 36, borderRadius: 10,
-    justifyContent: 'center', alignItems: 'center',
+    width: 36,
+    height: 36,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   actionLabel: { ...typography.bodyL, fontFamily: fonts.sansMd },
   actionDivider: { height: 1, backgroundColor: colors.neutral[100], marginLeft: spacing[4] + 36 + spacing[3] },

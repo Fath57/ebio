@@ -1,8 +1,13 @@
+import type { ComponentProps } from 'react'
 import { cn } from '@boilerstone/ui/lib/utils'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import type { ComponentProps } from 'react'
 import { DayPicker } from 'react-day-picker'
 import { buttonVariants } from './button'
+
+function CalendarChevron({ orientation }: { orientation?: 'left' | 'right' | 'up' | 'down' }) {
+  const Icon = orientation === 'left' ? ChevronLeft : ChevronRight
+  return <Icon className="h-4 w-4" />
+}
 
 function Calendar({
   className,
@@ -53,10 +58,7 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        Chevron: ({ orientation }) => {
-          const Icon = orientation === 'left' ? ChevronLeft : ChevronRight
-          return <Icon className="h-4 w-4" />
-        },
+        Chevron: CalendarChevron,
       }}
       {...props}
     />
