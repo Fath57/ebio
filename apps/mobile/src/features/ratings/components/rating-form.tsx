@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { useState } from 'react'
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 import { StarRating } from '../../common/components/star-rating'
 
 interface RatingFormProps {
@@ -35,7 +36,7 @@ export function RatingForm({ supplierId, orderId, transactionType, onComplete }:
 
   async function handleSubmit() {
     if (!allRated) {
-      Alert.alert('Notation incomplète', 'Veuillez noter tous les critères.')
+      appAlert('Notation incomplète', 'Veuillez noter tous les critères.')
       return
     }
 
@@ -53,16 +54,16 @@ export function RatingForm({ supplierId, orderId, transactionType, onComplete }:
       })
 
       if (res.ok) {
-        Alert.alert('Merci !', 'Votre avis a été enregistré.')
+        appAlert('Merci !', 'Votre avis a été enregistré.')
         onComplete?.()
       }
       else {
         const data = await res.json()
-        Alert.alert('Erreur', data.message ?? 'Impossible d\'envoyer votre avis.')
+        appAlert('Erreur', data.message ?? 'Impossible d\'envoyer votre avis.')
       }
     }
     catch {
-      Alert.alert('Erreur', 'Vérifiez votre connexion.')
+      appAlert('Erreur', 'Vérifiez votre connexion.')
     }
     finally {
       setSubmitting(false)

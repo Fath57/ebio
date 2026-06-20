@@ -21,6 +21,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AppNavigation } from './src/app/navigation'
 import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
+import { AppAlertHost } from './src/features/common/components/app-alert'
 import { useNotifications } from './src/features/notifications/hooks/use-notifications'
 import { colors } from './src/theme/theme'
 import { ThemeProvider } from './src/theme/theme-context'
@@ -58,6 +59,7 @@ export default function App(): React.JSX.Element | null {
       <CartProvider>
         <SafeAreaProvider onLayout={onLayoutRootView}>
           <AppNavigation />
+          <AppAlertHost />
           <StatusBar style="auto" />
           {showSplash && (
             <AnimatedSplash onFinish={() => setShowSplash(false)} />

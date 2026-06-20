@@ -2,7 +2,6 @@ import * as React from 'react'
 import { useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   StyleSheet,
   Text,
   TextInput,
@@ -11,6 +10,7 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 
 interface DisputeFormProps {
   orderId: string
@@ -28,14 +28,14 @@ export function DisputeForm({ orderId, onSuccess, onCancel }: DisputeFormProps) 
 
   function handleSubmit(): void {
     if (!isValid) {
-      Alert.alert(
+      appAlert(
         'Raison trop courte',
         `Veuillez décrire la raison du litige (minimum ${MIN_REASON_LENGTH} caractères).`,
       )
       return
     }
 
-    Alert.alert(
+    appAlert(
       'Confirmer le litige',
       'Êtes-vous sûr de vouloir ouvrir un litige pour cette commande ?',
       [
@@ -58,15 +58,15 @@ export function DisputeForm({ orderId, onSuccess, onCancel }: DisputeFormProps) 
       })
 
       if (res.ok) {
-        Alert.alert('Litige ouvert', 'Votre litige a été enregistré. Nous vous recontacterons rapidement.')
+        appAlert('Litige ouvert', 'Votre litige a été enregistré. Nous vous recontacterons rapidement.')
         onSuccess()
       }
       else {
-        Alert.alert('Erreur', 'Impossible d\u2019ouvrir le litige.')
+        appAlert('Erreur', 'Impossible d\u2019ouvrir le litige.')
       }
     }
     catch {
-      Alert.alert('Erreur', 'Une erreur est survenue.')
+      appAlert('Erreur', 'Une erreur est survenue.')
     }
     finally {
       setIsSubmitting(false)

@@ -16,6 +16,9 @@ web-build/
 *.key
 *.mobileprovision
 
+# Play Store / EAS secrets
+google-play-service-account.json
+
 # Metro
 .metro-health-check*
 

@@ -1,8 +1,8 @@
 import * as FileSystem from 'expo-file-system'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useState } from 'react'
-import { Alert } from 'react-native'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 
 export type MediaContext
   = | 'PRODUCT_PHOTO'
@@ -41,7 +41,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
   const pickAndUpload = useCallback(async (): Promise<UploadedMedia | null> => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
     if (!permission.granted) {
-      Alert.alert('Permission requise', 'Autorisez l\'accès à la galerie pour ajouter des photos.')
+      appAlert('Permission requise', 'Autorisez l\'accès à la galerie pour ajouter des photos.')
       return null
     }
 
@@ -64,7 +64,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
   const takePhotoAndUpload = useCallback(async (): Promise<UploadedMedia | null> => {
     const permission = await ImagePicker.requestCameraPermissionsAsync()
     if (!permission.granted) {
-      Alert.alert('Permission requise', 'Autorisez l\'accès à la caméra.')
+      appAlert('Permission requise', 'Autorisez l\'accès à la caméra.')
       return null
     }
 
@@ -178,7 +178,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     }
     catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur d\'upload'
-      Alert.alert('Erreur', message)
+      appAlert('Erreur', message)
       return null
     }
     finally {

@@ -2,13 +2,13 @@ import { Audio } from 'expo-av'
 import * as React from 'react'
 import { useCallback, useRef, useState } from 'react'
 import {
-  Alert,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
+import { appAlert } from '../../common/components/app-alert'
 
 interface VoiceNoteRecorderProps {
   onSend: (uri: string, durationMs: number) => void
@@ -24,7 +24,7 @@ export function VoiceNoteRecorder({ onSend }: VoiceNoteRecorderProps) {
     try {
       const permission = await Audio.requestPermissionsAsync()
       if (!permission.granted) {
-        Alert.alert(
+        appAlert(
           'Permission refusée',
           'L’accès au microphone est requis pour les notes vocales.',
         )
@@ -48,7 +48,7 @@ export function VoiceNoteRecorder({ onSend }: VoiceNoteRecorderProps) {
       }, 1000)
     }
     catch {
-      Alert.alert('Erreur', 'Impossible de démarrer l\u2019enregistrement.')
+      appAlert('Erreur', 'Impossible de démarrer l\u2019enregistrement.')
     }
   }, [])
 
@@ -148,7 +148,7 @@ export function VoiceNotePlayer({ uri, durationMs }: VoiceNotePlayerProps) {
       setIsPlaying(true)
     }
     catch {
-      Alert.alert('Erreur', 'Impossible de lire la note vocale.')
+      appAlert('Erreur', 'Impossible de lire la note vocale.')
     }
   }, [isPlaying, uri])
 

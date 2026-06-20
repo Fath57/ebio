@@ -2,7 +2,6 @@ import * as React from 'react'
 import { useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   Image,
   StyleSheet,
   Text,
@@ -12,6 +11,7 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 interface PublicationComposerProps {
@@ -53,7 +53,7 @@ export function PublicationComposer({
 
   async function handlePublish(): Promise<void> {
     if (!content.trim()) {
-      Alert.alert('Erreur', 'Veuillez saisir du contenu')
+      appAlert('Erreur', 'Veuillez saisir du contenu')
       return
     }
 
@@ -77,11 +77,11 @@ export function PublicationComposer({
         onPublished?.()
       }
       else {
-        Alert.alert('Erreur', 'Impossible de publier. Veuillez reessayer.')
+        appAlert('Erreur', 'Impossible de publier. Veuillez reessayer.')
       }
     }
     catch {
-      Alert.alert('Erreur', 'Une erreur est survenue')
+      appAlert('Erreur', 'Une erreur est survenue')
     }
     finally {
       setIsSubmitting(false)

@@ -1,17 +1,38 @@
 {
   "cli": {
-    "version": ">= 3.0.0"
+    "version": ">= 3.0.0",
+    "appVersionSource": "remote"
   },
   "build": {
     "preview": {
       "android": {
         "buildType": "apk"
       },
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://ebio-api.31.220.73.143.sslip.io",
+        "EXPO_PUBLIC_WS_URL": "wss://ebio-api.31.220.73.143.sslip.io",
+        "EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY": "pk_sandbox_ezRCQ6w2dT3RPlQ-C4_GOQn6"
+      }
     },
     "production": {
+      "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://ebio-api.31.220.73.143.sslip.io",
+        "EXPO_PUBLIC_WS_URL": "wss://ebio-api.31.220.73.143.sslip.io",
+        "EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY": "pk_sandbox_ezRCQ6w2dT3RPlQ-C4_GOQn6"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal",
+        "releaseStatus": "completed"
       }
     }
   }

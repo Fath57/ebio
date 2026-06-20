@@ -8,7 +8,6 @@ import * as React from 'react'
 import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
-  Alert,
   Platform,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import { WebView } from 'react-native-webview'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
@@ -148,7 +148,7 @@ export function CheckoutFlow({
 
   const handleProceedToPayment = useCallback(async () => {
     if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryAddress.trim()) {
-      Alert.alert('Adresse requise', 'Veuillez saisir une adresse de livraison.')
+      appAlert('Adresse requise', 'Veuillez saisir une adresse de livraison.')
       return
     }
 
@@ -183,7 +183,7 @@ export function CheckoutFlow({
         const existing = (orders.data ?? orders)
           .find((o: { supplierId: string }) => o.supplierId === orderSummary.supplierId)
         if (!existing) {
-          Alert.alert('Erreur', 'Commande existante introuvable. Veuillez réessayer dans 2 minutes.')
+          appAlert('Erreur', 'Commande existante introuvable. Veuillez réessayer dans 2 minutes.')
           return
         }
         order = existing
@@ -193,7 +193,7 @@ export function CheckoutFlow({
         const message = error?.aggregateErrors?.[0]?.message
           ?? error?.message
           ?? 'Impossible de créer la commande. Veuillez réessayer.'
-        Alert.alert('Erreur', message)
+        appAlert('Erreur', message)
         return
       }
 
@@ -213,7 +213,7 @@ export function CheckoutFlow({
 
       if (!paymentRes.ok) {
         const error = await paymentRes.json().catch(() => null)
-        Alert.alert('Erreur', error?.message ?? 'Impossible d\'initier le paiement.')
+        appAlert('Erreur', error?.message ?? 'Impossible d\'initier le paiement.')
         return
       }
 
@@ -222,7 +222,7 @@ export function CheckoutFlow({
       setCurrentStep('PAYMENT')
     }
     catch {
-      Alert.alert('Erreur', 'Une erreur est survenue.')
+      appAlert('Erreur', 'Une erreur est survenue.')
     }
     finally {
       setIsSubmitting(false)
@@ -248,7 +248,7 @@ export function CheckoutFlow({
         }
       }
       else if (data.type === 'closed') {
-        Alert.alert(
+        appAlert(
           'Paiement annulé',
           'Le paiement a été annulé. Votre commande reste en attente de paiement.',
           [
@@ -257,7 +257,7 @@ export function CheckoutFlow({
         )
       }
       else if (data.type === 'failed') {
-        Alert.alert('Paiement échoué', data.reason ?? 'Le paiement a échoué.')
+        appAlert('Paiement échoué', data.reason ?? 'Le paiement a échoué.')
         setCurrentStep('SUMMARY')
       }
     }
@@ -442,7 +442,7 @@ export function CheckoutFlow({
           <TouchableOpacity
             style={styles.webViewBackButton}
             onPress={() => {
-              Alert.alert(
+              appAlert(
                 'Annuler le paiement ?',
                 'Votre commande restera en attente de paiement.',
                 [

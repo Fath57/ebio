@@ -1,6 +1,7 @@
 import * as React from 'react'
-import { Alert, Linking, Platform, StyleSheet, Text, TouchableOpacity } from 'react-native'
+import { Linking, Platform, StyleSheet, Text, TouchableOpacity } from 'react-native'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
+import { appAlert } from '../../common/components/app-alert'
 
 interface NavigateButtonProps {
   latitude: number
@@ -27,7 +28,7 @@ export function NavigateButton({ latitude, longitude, label = 'Destination' }: N
     else {
       const fallback = `https://www.google.com/maps/dir/?api=1&destination=${latitude},${longitude}`
       await Linking.openURL(fallback).catch(() => {
-        Alert.alert('Erreur', 'Impossible d\u2019ouvrir la navigation.')
+        appAlert('Erreur', 'Impossible d\u2019ouvrir la navigation.')
       })
     }
   }
