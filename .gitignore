@@ -9,6 +9,10 @@ dist
 out
 build
 
+# Mobile build artifacts (never commit — too large for GitHub)
+*.apk
+*.aab
+
 # Expo / React Native
 /android
 /ios
