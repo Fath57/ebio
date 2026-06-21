@@ -18,6 +18,7 @@ import { useCart } from '../features/cart/cart-context'
 import { CartScreen } from '../features/cart/components/cart-screen'
 import { CheckoutFlow } from '../features/cart/components/checkout-flow'
 import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
+import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
 import { ConversationList } from '../features/chat/components/conversation-list'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
@@ -43,7 +44,7 @@ import { SupplierProfileScreen } from '../features/supplier-profile/components/s
 import { useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
-import { apiFetch } from '../utils/api-client'
+import { apiFetch, chatFetch } from '../utils/api-client'
 import { navigationRef } from './navigation-ref'
 
 function SafeScreen({ children }: { children: React.ReactNode }) {
@@ -75,12 +76,31 @@ function SearchHomeWrapper({ navigation }: any) {
   )
 }
 
+async function openChatWithSupplier(navigation: any, supplierId: string, peerName?: string) {
+  try {
+    const res = await chatFetch('/api/chat/conversations', {
+      method: 'POST',
+      body: JSON.stringify({ supplierId }),
+    })
+    if (res.ok) {
+      const conv = await res.json()
+      navigation.navigate('Chat', {
+        screen: 'ChatDetail',
+        params: { conversationId: conv.id, peerName: peerName ?? conv.supplierShopName, isSupplier: false },
+      })
+    }
+  }
+  catch {
+    // ignore
+  }
+}
+
 function SupplierProfileWrapper({ route, navigation }: any) {
   const { supplierId } = route.params
   return (
     <SupplierProfileScreen
       supplierId={supplierId}
-      onNavigateToChat={(_id) => { /* chat feature pending */ }}
+      onNavigateToChat={id => openChatWithSupplier(navigation, id)}
       onNavigateToProduct={(productId, product, supplierInfo) => {
         navigation.navigate('ProductDetail', { product, supplier: supplierInfo })
       }}
@@ -117,10 +137,33 @@ function ProductDetailWrapper({ route, navigation }: any) {
 
 const ChatStack = createNativeStackNavigator()
 function ChatStackScreen() {
+  const { data: session } = useSession()
+  const currentUserId = session?.user?.id ?? ''
   return (
     <ChatStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <ChatStack.Screen name="ChatHome">
-        {() => <SafeScreen><ConversationList onOpenConversation={(_id) => { /* chat feature pending */ }} /></SafeScreen>}
+        {({ navigation }) => (
+          <SafeScreen>
+            <ConversationList
+              currentUserId={currentUserId}
+              onOpenConversation={(conversationId, peerName, isSupplier) =>
+                navigation.navigate('ChatDetail', { conversationId, peerName, isSupplier })}
+            />
+          </SafeScreen>
+        )}
+      </ChatStack.Screen>
+      <ChatStack.Screen name="ChatDetail">
+        {({ route, navigation }) => (
+          <SafeScreen>
+            <ChatDetailScreen
+              conversationId={route.params.conversationId}
+              currentUserId={currentUserId}
+              peerName={route.params.peerName}
+              isSupplier={route.params.isSupplier}
+              onGoBack={() => navigation.goBack()}
+            />
+          </SafeScreen>
+        )}
       </ChatStack.Screen>
     </ChatStack.Navigator>
   )
@@ -614,7 +657,7 @@ function OrderTrackingWrapper({ route, navigation }: any) {
     <SafeScreen>
       <OrderTracking
         orderId={orderId}
-        onOpenChat={(_supplierId) => { /* chat feature pending */ }}
+        onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId)}
         onConfirmReception={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
       />
