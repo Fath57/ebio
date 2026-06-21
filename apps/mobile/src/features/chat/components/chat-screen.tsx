@@ -3,6 +3,7 @@ import * as React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FlatList,
+  Image,
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
@@ -12,10 +13,8 @@ import {
   View,
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
-import {
-
-  websocketClient,
-} from '../../../utils/websocket-client'
+import { chatFetch } from '../../../utils/api-client'
+import { websocketClient } from '../../../utils/websocket-client'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { QuickReplies } from './quick-replies'
 import { VoiceNotePlayer, VoiceNoteRecorder } from './voice-note'
@@ -88,9 +87,10 @@ export function ChatScreen({
       onReadReceipt: (receipt) => {
         if (receipt.conversationId !== conversationId)
           return
+        // L'API marque tous les messages de la conversation comme lus (bulk)
         setMessages(prev =>
           prev.map(m =>
-            m.id === receipt.messageId ? { ...m, isRead: true } : m,
+            m.senderId === currentUserId ? { ...m, isRead: true } : m,
           ),
         )
       },
@@ -108,6 +108,38 @@ export function ChatScreen({
       websocketClient.disconnect()
     }
   }, [conversationId, currentUserId])
+
+  // Charge l'historique des messages
+  useEffect(() => {
+    let cancelled = false
+    async function loadHistory(): Promise<void> {
+      try {
+        const res = await chatFetch(`/api/chat/conversations/${conversationId}/messages?limit=30`)
+        if (!res.ok)
+          return
+        const raw = await res.json() as Array<Record<string, unknown>>
+        if (cancelled)
+          return
+        const history: DisplayMessage[] = raw.map(m => ({
+          id: m.id as string,
+          senderId: m.senderId as string,
+          content: (m.content as string) ?? (m.mediaUrl as string) ?? '',
+          type: ((m.type as string) === 'PHOTO' ? 'IMAGE' : (m.type as string)) as DisplayMessage['type'],
+          createdAt: m.createdAt as string,
+          isRead: m.readAt != null,
+        }))
+        // FlatList inversée : l'API renvoie déjà du plus récent au plus ancien
+        setMessages(prev => [...prev.filter(p => p.id === 'auto-prompt'), ...history])
+      }
+      catch {
+        // ignore
+      }
+    }
+    void loadHistory()
+    return () => {
+      cancelled = true
+    }
+  }, [conversationId])
 
   const handleSendText = useCallback(() => {
     const trimmed = inputText.trim()
@@ -167,12 +199,13 @@ export function ChatScreen({
     const uploaded = await pickAndUpload()
 
     if (uploaded) {
-      websocketClient.sendMessage(conversationId, uploaded.publicUrl ?? uploaded.mediaId, 'IMAGE')
+      const url = uploaded.publicUrl ?? uploaded.mediaId
+      websocketClient.sendMessage(conversationId, url, 'IMAGE')
       setMessages(prev => [
         {
           id: Date.now().toString(),
           senderId: currentUserId,
-          content: uri,
+          content: url,
           type: 'IMAGE',
           createdAt: new Date().toISOString(),
           isRead: false,
@@ -222,16 +255,20 @@ export function ChatScreen({
             ? (
                 <VoiceNotePlayer uri={item.content} durationMs={item.voiceDurationMs ?? 0} />
               )
-            : (
-                <Text
-                  style={[
-                    styles.messageText,
-                    isSent ? styles.sentText : styles.receivedText,
-                  ]}
-                >
-                  {item.content}
-                </Text>
-              )}
+            : item.type === 'IMAGE'
+              ? (
+                  <Image source={{ uri: item.content }} style={styles.messageImage} resizeMode="cover" />
+                )
+              : (
+                  <Text
+                    style={[
+                      styles.messageText,
+                      isSent ? styles.sentText : styles.receivedText,
+                    ]}
+                  >
+                    {item.content}
+                  </Text>
+                )}
         </View>
         <View style={styles.metaRow}>
           <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
@@ -362,6 +399,11 @@ const styles = StyleSheet.create({
   },
   messageText: {
     ...typography.bodyS,
+  },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: radius.md,
   },
   sentText: {
     color: colors.neutral[0],

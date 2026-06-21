@@ -10,7 +10,7 @@ import {
 } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { apiFetch } from '../../../utils/api-client'
+import { chatFetch } from '../../../utils/api-client'
 
 interface Conversation {
   id: string
@@ -22,7 +22,8 @@ interface Conversation {
 }
 
 interface ConversationListProps {
-  onOpenConversation: (conversationId: string) => void
+  currentUserId: string
+  onOpenConversation: (conversationId: string, participantName: string) => void
 }
 
 function formatRelativeTime(iso: string): string {
@@ -49,7 +50,7 @@ function formatRelativeTime(iso: string): string {
   })
 }
 
-export function ConversationList({ onOpenConversation }: ConversationListProps) {
+export function ConversationList({ currentUserId, onOpenConversation }: ConversationListProps) {
   const { semantic } = useTheme()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -57,10 +58,22 @@ export function ConversationList({ onOpenConversation }: ConversationListProps) 
 
   const fetchConversations = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/chat/conversations')
+      const res = await chatFetch('/api/chat/conversations')
       if (res.ok) {
-        const data: Conversation[] = await res.json()
-        const sorted = [...data].sort((a, b) => {
+        const raw = await res.json() as Array<Record<string, unknown>>
+        const mapped: Conversation[] = raw.map((c) => {
+          const isBuyer = currentUserId === (c.buyerId as string)
+          const last = c.lastMessage as { content?: string | null, type?: string } | null
+          return {
+            id: c.id as string,
+            participantName: (isBuyer ? c.supplierShopName : c.buyerName) as string ?? '',
+            participantAvatar: (isBuyer ? c.supplierProfilePhoto : c.buyerImage) as string ?? null,
+            lastMessage: last ? (last.content ?? '[média]') : null,
+            lastMessageAt: (c.lastMessageAt as string) ?? null,
+            unreadCount: (c.unreadCount as number) ?? 0,
+          }
+        })
+        const sorted = mapped.sort((a, b) => {
           if (!a.lastMessageAt)
             return 1
           if (!b.lastMessageAt)
@@ -77,7 +90,7 @@ export function ConversationList({ onOpenConversation }: ConversationListProps) 
       setIsLoading(false)
       setIsRefreshing(false)
     }
-  }, [])
+  }, [currentUserId])
 
   useEffect(() => {
     fetchConversations()
@@ -92,7 +105,7 @@ export function ConversationList({ onOpenConversation }: ConversationListProps) 
     ({ item }: { item: Conversation }) => (
       <TouchableOpacity
         style={styles.row}
-        onPress={() => onOpenConversation(item.id)}
+        onPress={() => onOpenConversation(item.id, item.participantName)}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={`Conversation avec ${item.participantName}`}
