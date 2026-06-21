@@ -20,11 +20,12 @@ interface Conversation {
   lastMessageAt: string | null
   unreadCount: number
   isSupplier: boolean
+  orderId: string | null
 }
 
 interface ConversationListProps {
   currentUserId: string
-  onOpenConversation: (conversationId: string, participantName: string, isSupplier: boolean) => void
+  onOpenConversation: (conversationId: string, participantName: string, isSupplier: boolean, orderId: string | null) => void
 }
 
 function formatRelativeTime(iso: string): string {
@@ -73,6 +74,7 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
             lastMessageAt: (c.lastMessageAt as string) ?? null,
             unreadCount: (c.unreadCount as number) ?? 0,
             isSupplier: !isBuyer,
+            orderId: (c.orderId as string) ?? null,
           }
         })
         const sorted = mapped.sort((a, b) => {
@@ -107,7 +109,7 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
     ({ item }: { item: Conversation }) => (
       <TouchableOpacity
         style={styles.row}
-        onPress={() => onOpenConversation(item.id, item.participantName, item.isSupplier)}
+        onPress={() => onOpenConversation(item.id, item.participantName, item.isSupplier, item.orderId)}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={`Conversation avec ${item.participantName}`}

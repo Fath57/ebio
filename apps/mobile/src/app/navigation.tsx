@@ -76,17 +76,22 @@ function SearchHomeWrapper({ navigation }: any) {
   )
 }
 
-async function openChatWithSupplier(navigation: any, supplierId: string, peerName?: string) {
+async function openChatWithSupplier(navigation: any, supplierId: string, peerName?: string, orderId?: string) {
   try {
     const res = await chatFetch('/api/chat/conversations', {
       method: 'POST',
-      body: JSON.stringify({ supplierId }),
+      body: JSON.stringify({ supplierId, ...(orderId ? { orderId } : {}) }),
     })
     if (res.ok) {
       const conv = await res.json()
       navigation.navigate('Chat', {
         screen: 'ChatDetail',
-        params: { conversationId: conv.id, peerName: peerName ?? conv.supplierShopName, isSupplier: false },
+        params: {
+          conversationId: conv.id,
+          peerName: peerName ?? conv.supplierShopName,
+          isSupplier: false,
+          orderId: conv.orderId ?? orderId ?? null,
+        },
       })
     }
   }
@@ -146,8 +151,8 @@ function ChatStackScreen() {
           <SafeScreen>
             <ConversationList
               currentUserId={currentUserId}
-              onOpenConversation={(conversationId, peerName, isSupplier) =>
-                navigation.navigate('ChatDetail', { conversationId, peerName, isSupplier })}
+              onOpenConversation={(conversationId, peerName, isSupplier, orderId) =>
+                navigation.navigate('ChatDetail', { conversationId, peerName, isSupplier, orderId })}
             />
           </SafeScreen>
         )}
@@ -160,7 +165,12 @@ function ChatStackScreen() {
               currentUserId={currentUserId}
               peerName={route.params.peerName}
               isSupplier={route.params.isSupplier}
+              orderId={route.params.orderId}
               onGoBack={() => navigation.goBack()}
+              onOpenOrder={oid => navigation.navigate('Profil', {
+                screen: route.params.isSupplier ? 'SupplierOrderDetail' : 'OrderTracking',
+                params: { orderId: oid },
+              })}
             />
           </SafeScreen>
         )}
@@ -657,7 +667,7 @@ function OrderTrackingWrapper({ route, navigation }: any) {
     <SafeScreen>
       <OrderTracking
         orderId={orderId}
-        onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId)}
+        onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId, undefined, orderId)}
         onConfirmReception={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
       />
