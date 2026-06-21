@@ -53,7 +53,7 @@ export const registerSupplierSchema = z.object({
   address: z.string().min(2).max(255).optional(),
   neighborhood: z.string().min(2).max(100).optional(),
   mobileMoneyNumber: z.string().min(8).max(20),
-  mode: supplierModeEnum.default('CONTACT'),
+  mode: supplierModeEnum.default('ORDER'),
   openingHours: openingHoursSchema.optional(),
 }).meta({
   title: 'RegisterSupplier',

@@ -68,8 +68,8 @@ export class Supplier {
   @Property({ fieldName: 'validation_status' })
   validationStatus: ValidationStatus = ValidationStatus.PENDING
 
-  @Enum({ items: () => SupplierMode, default: SupplierMode.CONTACT })
-  mode: SupplierMode = SupplierMode.CONTACT
+  @Enum({ items: () => SupplierMode, default: SupplierMode.ORDER })
+  mode: SupplierMode = SupplierMode.ORDER
 
   @Property({ fieldName: 'opening_hours', type: 'jsonb', nullable: true })
   openingHours?: Record<string, unknown>

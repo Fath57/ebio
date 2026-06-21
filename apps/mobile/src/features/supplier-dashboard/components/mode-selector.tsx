@@ -3,7 +3,7 @@ import Handshake from 'lucide-react-native/dist/esm/icons/handshake'
 import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import * as React from 'react'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   StyleSheet,
   Text,
@@ -45,7 +45,7 @@ const MODE_OPTIONS: Array<{
 ]
 
 export function ModeSelector({
-  initialMode = 'CONTACT',
+  initialMode = 'ORDER',
   onModeChanged,
 }: ModeSelectorProps) {
   const { semantic } = useTheme()
@@ -57,7 +57,32 @@ export function ModeSelector({
     setModal({ visible: true, title, message, type: 'error' })
   }
 
+  // Charge le mode réellement enregistré pour refléter l'état persistant
+  useEffect(() => {
+    let cancelled = false
+    async function loadMode(): Promise<void> {
+      try {
+        const res = await apiFetch('/api/suppliers/me/settings')
+        if (res.ok) {
+          const data = await res.json() as Record<string, unknown>
+          const mode = data.mode as SupplierMode | undefined
+          if (!cancelled && (mode === 'CONTACT' || mode === 'ORDER'))
+            setSelectedMode(mode)
+        }
+      }
+      catch {
+        // garde la valeur par défaut
+      }
+    }
+    void loadMode()
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
   async function handleSelectMode(mode: SupplierMode): Promise<void> {
+    const previous = selectedMode
+    setSelectedMode(mode) // optimiste : highlight immédiat
     setIsSaving(true)
     try {
       const res = await apiFetch('/api/suppliers/me/settings/mode', {
@@ -65,11 +90,15 @@ export function ModeSelector({
         body: JSON.stringify({ mode }),
       })
       if (res.ok) {
-        setSelectedMode(mode)
         onModeChanged?.(mode)
+      }
+      else {
+        setSelectedMode(previous)
+        showError('Erreur', 'Impossible de changer le mode.')
       }
     }
     catch {
+      setSelectedMode(previous)
       showError('Erreur', 'Impossible de changer le mode.')
     }
     finally {
