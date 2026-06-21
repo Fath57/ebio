@@ -42,11 +42,12 @@ export async function chatFetch(path: string, options: RequestInit = {}): Promis
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       'Origin': API_URL,
+      'Cache-Control': 'no-cache',
       ...(options.headers as Record<string, string> ?? {}),
     }
     if (token)
       headers.Authorization = `Bearer ${token}`
-    return fetch(`${API_URL}${path}`, { ...options, headers })
+    return fetch(`${API_URL}${path}`, { cache: 'no-store', ...options, headers })
   }
 
   let res = await doFetch(await getChatToken())
