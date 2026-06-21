@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
@@ -13,12 +14,12 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 
-type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'DELIVERED'
+type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'DISPUTED'
 
 interface OrderItem {
   name: string
   quantity: number
-  unit: string
+  unitPrice: number
 }
 
 interface SupplierOrder {
@@ -33,6 +34,25 @@ interface SupplierOrder {
 
 interface OrderManagementProps {
   supplierId: string
+}
+
+type Tab = 'pending' | 'active' | 'done'
+
+const TABS: Array<{ key: Tab, label: string, statuses: OrderStatus[] }> = [
+  { key: 'pending', label: 'En attente', statuses: ['PLACED'] },
+  { key: 'active', label: 'En cours', statuses: ['ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY'] },
+  { key: 'done', label: 'Terminées', statuses: ['DELIVERED', 'CANCELLED', 'DISPUTED'] },
+]
+
+const STATUS_LABELS: Record<OrderStatus, string> = {
+  PLACED: 'Nouvelle',
+  ACCEPTED: 'Acceptée',
+  PREPARING: 'En préparation',
+  READY: 'Prête',
+  IN_DELIVERY: 'En livraison',
+  DELIVERED: 'Livrée',
+  CANCELLED: 'Annulée',
+  DISPUTED: 'Litige',
 }
 
 function formatPrice(value: number): string {
@@ -57,14 +77,17 @@ function formatTimeSince(iso: string): string {
   return `il y a ${diffD}j`
 }
 
+// Transitions via PATCH /orders/:id/status (statuts acceptés par l'API)
 const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: string }>> = {
   ACCEPTED: { status: 'PREPARING', label: 'En préparation' },
   PREPARING: { status: 'READY', label: 'Prête' },
-  READY: { status: 'DELIVERED', label: 'Livrée' },
+  READY: { status: 'IN_DELIVERY', label: 'En livraison' },
 }
 
 export function OrderManagement({ supplierId }: OrderManagementProps) {
+  const tabBarHeight = useBottomTabBarHeight()
   const [orders, setOrders] = useState<SupplierOrder[]>([])
+  const [tab, setTab] = useState<Tab>('pending')
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
@@ -88,7 +111,11 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
           id: o.id as string,
           orderNumber: o.orderNumber as string,
           buyerName: (o.buyerName as string) ?? '',
-          items: (o.items as OrderItem[]) ?? [],
+          items: ((o.items as Array<Record<string, unknown>>) ?? []).map(it => ({
+            name: (it.productName as string) ?? (it.name as string) ?? '',
+            quantity: (it.quantity as number) ?? 0,
+            unitPrice: (it.unitPrice as number) ?? 0,
+          })),
           total: (o.totalAmount as number) ?? (o.total as number) ?? 0,
           status: o.status as OrderStatus,
           createdAt: o.createdAt as string,
@@ -116,16 +143,16 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
   async function handleAccept(orderId: string): Promise<void> {
     setProcessingId(orderId)
     try {
-      const res = await apiFetch(`/api/orders/${orderId}/status`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status: 'ACCEPTED' }),
-      })
+      const res = await apiFetch(`/api/orders/${orderId}/accept`, { method: 'PATCH' })
       if (res.ok) {
         setOrders(prev =>
           prev.map(o =>
             o.id === orderId ? { ...o, status: 'ACCEPTED' as OrderStatus } : o,
           ),
         )
+      }
+      else {
+        showError('Erreur', 'Impossible d\u2019accepter la commande.')
       }
     }
     catch {
@@ -143,12 +170,19 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
       async () => {
         setProcessingId(orderId)
         try {
-          const res = await apiFetch(`/api/orders/${orderId}/status`, {
+          const res = await apiFetch(`/api/orders/${orderId}/reject`, {
             method: 'PATCH',
-            body: JSON.stringify({ status: 'REJECTED' }),
+            body: JSON.stringify({ reason: 'Commande refusée par le fournisseur' }),
           })
           if (res.ok) {
-            setOrders(prev => prev.filter(o => o.id !== orderId))
+            setOrders(prev =>
+              prev.map(o =>
+                o.id === orderId ? { ...o, status: 'CANCELLED' as OrderStatus } : o,
+              ),
+            )
+          }
+          else {
+            showError('Erreur', 'Impossible de refuser la commande.')
           }
         }
         catch {
@@ -159,6 +193,29 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
         }
       },
     )
+  }
+
+  async function handleConfirmDelivery(orderId: string): Promise<void> {
+    setProcessingId(orderId)
+    try {
+      const res = await apiFetch(`/api/orders/${orderId}/confirm-delivery`, { method: 'PATCH' })
+      if (res.ok) {
+        setOrders(prev =>
+          prev.map(o =>
+            o.id === orderId ? { ...o, status: 'DELIVERED' as OrderStatus } : o,
+          ),
+        )
+      }
+      else {
+        showError('Erreur', 'Impossible de confirmer la livraison.')
+      }
+    }
+    catch {
+      showError('Erreur', 'Impossible de confirmer la livraison.')
+    }
+    finally {
+      setProcessingId(null)
+    }
   }
 
   async function handleUpdateStatus(orderId: string, newStatus: OrderStatus): Promise<void> {
@@ -199,6 +256,10 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
             <Text style={styles.timeSince}>
               {formatTimeSince(item.createdAt)}
             </Text>
+          </View>
+
+          <View style={styles.badgeRow}>
+            <Text style={styles.statusBadge}>{STATUS_LABELS[item.status]}</Text>
           </View>
 
           <Text style={styles.buyerName}>{item.buyerName}</Text>
@@ -263,6 +324,24 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
                   )}
             </TouchableOpacity>
           )}
+
+          {item.status === 'IN_DELIVERY' && (
+            <TouchableOpacity
+              style={[styles.statusButton, isProcessing && styles.buttonDisabled]}
+              onPress={() => handleConfirmDelivery(item.id)}
+              disabled={isProcessing}
+              accessibilityRole="button"
+              accessibilityLabel="Confirmer la livraison"
+            >
+              {isProcessing
+                ? (
+                    <ActivityIndicator size="small" color={colors.neutral[0]} />
+                  )
+                : (
+                    <Text style={styles.statusButtonText}>Confirmer la livraison</Text>
+                  )}
+            </TouchableOpacity>
+          )}
         </View>
       )
     },
@@ -279,25 +358,42 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
     )
   }
 
-  if (orders.length === 0) {
-    return (
-      <View style={styles.emptyContainer}>
-        <Text style={styles.emptyText}>Aucune commande en attente</Text>
-      </View>
-    )
-  }
+  const activeTab = TABS.find(t => t.key === tab) ?? TABS[0]
+  const filtered = orders.filter(o => activeTab.statuses.includes(o.status))
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.screen}>
+      <View style={styles.tabsRow}>
+        {TABS.map((t) => {
+          const isActive = t.key === tab
+          return (
+            <TouchableOpacity
+              key={t.key}
+              style={[styles.tab, isActive && styles.tabActive]}
+              onPress={() => setTab(t.key)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: isActive }}
+            >
+              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>{t.label}</Text>
+            </TouchableOpacity>
+          )
+        })}
+      </View>
+
       <FlatList
-        data={orders}
+        data={filtered}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         style={styles.list}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[4] }]}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={(
+          <View style={styles.emptylist}>
+            <Text style={styles.emptyText}>Aucune commande</Text>
+          </View>
+        )}
       />
 
       <ConfirmModal
@@ -322,6 +418,52 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
 }
 
 const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+    backgroundColor: colors.neutral[0],
+  },
+  tabsRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    paddingBottom: spacing[2],
+  },
+  tab: {
+    flex: 1,
+    paddingVertical: spacing[2],
+    borderRadius: radius.pill,
+    backgroundColor: colors.neutral[100],
+    alignItems: 'center',
+  },
+  tabActive: {
+    backgroundColor: colors.green[400],
+  },
+  tabText: {
+    ...typography.caption,
+    fontFamily: fonts.sansSb,
+    color: colors.neutral[600],
+  },
+  tabTextActive: {
+    color: colors.neutral[0],
+  },
+  badgeRow: {
+    flexDirection: 'row',
+  },
+  statusBadge: {
+    ...typography.caption,
+    fontFamily: fonts.sansSb,
+    color: colors.green[800],
+    backgroundColor: colors.green[50],
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+  },
+  emptylist: {
+    paddingTop: spacing[12],
+    alignItems: 'center',
+  },
   list: {
     flex: 1,
     backgroundColor: colors.neutral[0],
