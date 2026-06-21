@@ -8,6 +8,7 @@ export const messageTypeEnum = z.enum(['TEXT', 'PHOTO', 'VOICE', 'LOCATION']).me
 export const createConversationSchema = z.object({
   supplierId: z.string().uuid(),
   productId: z.string().uuid().optional(),
+  orderId: z.string().uuid().optional(),
 }).meta({
   title: 'CreateConversation',
   description: 'Create or retrieve an existing conversation with a supplier',

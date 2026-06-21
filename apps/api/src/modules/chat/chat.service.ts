@@ -20,6 +20,7 @@ export class ChatService {
     buyerId: string,
     supplierId: string,
     productId?: string,
+    orderId?: string,
   ): Promise<Conversation> {
     const em = this.em.fork()
 
@@ -29,8 +30,14 @@ export class ChatService {
       archivedAt: null,
     }, { populate: ['buyer', 'supplier'] })
 
-    if (existing)
+    if (existing) {
+      // Un seul fil par paire : on rattache la dernière commande discutée
+      if (orderId && existing.orderId !== orderId) {
+        existing.orderId = orderId
+        await em.persistAndFlush(existing)
+      }
       return existing
+    }
 
     const buyer = await em.findOneOrFail(User, { id: buyerId })
     const supplier = await em.findOneOrFail(Supplier, { id: supplierId }, { populate: ['user'] })
@@ -38,7 +45,7 @@ export class ChatService {
     const conversation = em.create(Conversation, {
       buyer,
       supplier,
-      orderId: undefined,
+      orderId: orderId ?? undefined,
     })
 
     await em.persistAndFlush(conversation)

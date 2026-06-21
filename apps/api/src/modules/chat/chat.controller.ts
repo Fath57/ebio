@@ -37,6 +37,7 @@ export class ChatController {
       req.user.sub,
       body.supplierId,
       body.productId,
+      body.orderId,
     )
 
     const conversations = await this.chatService.getConversations(req.user.sub)
