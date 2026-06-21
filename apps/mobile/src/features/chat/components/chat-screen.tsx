@@ -301,9 +301,15 @@ export function ChatScreen({
         data={messages}
         renderItem={renderMessage}
         keyExtractor={keyExtractor}
-        inverted
-        contentContainerStyle={styles.messageList}
+        inverted={messages.length > 0}
+        style={styles.list}
+        contentContainerStyle={[styles.messageList, messages.length === 0 && styles.messageListEmpty]}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={(
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Démarrez la conversation</Text>
+          </View>
+        )}
       />
 
       {remoteTyping && (
@@ -372,9 +378,24 @@ const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.earth[600],
   },
+  list: {
+    flex: 1,
+  },
   messageList: {
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
+  },
+  messageListEmpty: {
+    flexGrow: 1,
+    justifyContent: 'center',
+  },
+  emptyContainer: {
+    alignItems: 'center',
+    paddingVertical: spacing[8],
+  },
+  emptyText: {
+    ...typography.bodyS,
+    color: colors.neutral[400],
   },
   messageBubbleContainer: {
     marginVertical: spacing[1],
