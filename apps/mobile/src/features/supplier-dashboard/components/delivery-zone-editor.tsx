@@ -1,5 +1,4 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import Map from 'lucide-react-native/dist/esm/icons/map'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import * as React from 'react'
@@ -12,6 +11,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import MapView, { Marker, Polygon, PROVIDER_GOOGLE } from 'react-native-maps'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -22,6 +22,18 @@ interface DeliveryZone {
   name: string
   fee: number
   estimatedMinutes: number
+}
+
+interface LatLng {
+  latitude: number
+  longitude: number
+}
+
+const DEFAULT_REGION = {
+  latitude: 6.3703,
+  longitude: 2.3912,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
 }
 
 interface DeliveryZoneEditorProps {
@@ -36,6 +48,7 @@ export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
   const [newZoneName, setNewZoneName] = useState('')
   const [newZoneFee, setNewZoneFee] = useState('')
   const [newZoneMinutes, setNewZoneMinutes] = useState('')
+  const [points, setPoints] = useState<LatLng[]>([])
   const [isAdding, setIsAdding] = useState(false)
   const [modal, setModal] = useState<{ visible: boolean, title: string, message: string, type: 'success' | 'error' | 'confirm', onConfirm?: () => void }>({ visible: false, title: '', message: '', type: 'error' })
 
@@ -78,17 +91,17 @@ export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
       showError('Champs requis', 'Veuillez remplir le nom et les frais de livraison.')
       return
     }
+    if (points.length < 3) {
+      showError('Zone incomplète', 'Tracez au moins 3 points sur la carte pour délimiter la zone.')
+      return
+    }
 
     setIsAdding(true)
     try {
       const fee = Number.parseFloat(newZoneFee)
       const minutes = newZoneMinutes ? Number.parseInt(newZoneMinutes, 10) : 30
       const body = {
-        polygon: [
-          { latitude: 0, longitude: 0 },
-          { latitude: 0, longitude: 0.01 },
-          { latitude: 0.01, longitude: 0 },
-        ],
+        polygon: points,
         deliveryFee: fee,
         estimatedMinutes: minutes,
       }
@@ -108,6 +121,7 @@ export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
         setNewZoneName('')
         setNewZoneFee('')
         setNewZoneMinutes('')
+        setPoints([])
         onSave?.()
       }
     }
@@ -175,16 +189,44 @@ export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
   function renderHeader(): React.ReactElement {
     return (
       <View style={styles.formSection}>
-        {/* Map placeholder */}
-        <View style={[styles.mapPlaceholder, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
-          <Map size={36} color={semantic.textTertiary} />
-          <Text style={[styles.mapPlaceholderText, { color: semantic.textSecondary }]}>
-            Carte interactive pour dessiner les zones de livraison
-          </Text>
-          <Text style={[styles.mapPlaceholderSubtext, { color: semantic.textTertiary }]}>
-            Tracez un polygone sur la carte pour délimiter votre zone
-          </Text>
+        {/* Interactive map — tap to draw the delivery zone polygon */}
+        <View style={[styles.mapWrap, { borderColor: semantic.borderNormal }]}>
+          <MapView
+            provider={PROVIDER_GOOGLE}
+            style={styles.map}
+            initialRegion={DEFAULT_REGION}
+            onPress={e => setPoints(prev => [...prev, e.nativeEvent.coordinate])}
+          >
+            {points.length >= 3
+              ? (
+                  <Polygon
+                    coordinates={points}
+                    fillColor="rgba(42, 157, 78, 0.25)"
+                    strokeColor={colors.green[400]}
+                    strokeWidth={2}
+                  />
+                )
+              : points.map(p => (
+                  <Marker key={`${p.latitude}-${p.longitude}`} coordinate={p} />
+                ))}
+          </MapView>
+          <View style={[styles.mapToolbar, { backgroundColor: semantic.bgCard }]}>
+            <Text style={[styles.mapToolbarText, { color: semantic.textSecondary }]}>
+              {points.length}
+              {' '}
+              point
+              {points.length > 1 ? 's' : ''}
+            </Text>
+            {points.length > 0 && (
+              <TouchableOpacity onPress={() => setPoints([])} hitSlop={8}>
+                <Text style={styles.mapClearText}>Effacer</Text>
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
+        <Text style={[styles.mapHint, { color: semantic.textTertiary }]}>
+          Touchez la carte pour tracer votre zone (min. 3 points)
+        </Text>
 
         {/* Add zone form */}
         <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Ajouter une zone</Text>
@@ -309,27 +351,40 @@ const styles = StyleSheet.create({
     paddingTop: spacing[4],
     gap: spacing[2],
   },
-  mapPlaceholder: {
-    height: 180,
+  mapWrap: {
+    height: 240,
     borderRadius: radius.lg,
     borderWidth: 1,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
+    overflow: 'hidden',
+  },
+  map: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  mapToolbar: {
+    position: 'absolute',
+    top: spacing[2],
+    right: spacing[2],
+    flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
-    marginBottom: spacing[4],
+    gap: spacing[3],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: radius.pill,
   },
-  mapPlaceholderIcon: {
-    fontSize: 36,
+  mapToolbarText: {
+    ...typography.caption,
+    fontFamily: fonts.sansSb,
   },
-  mapPlaceholderText: {
-    ...typography.bodyS,
-    textAlign: 'center',
+  mapClearText: {
+    ...typography.caption,
+    fontFamily: fonts.sansSb,
+    color: colors.coral[600],
   },
-  mapPlaceholderSubtext: {
+  mapHint: {
     ...typography.caption,
     textAlign: 'center',
-    paddingHorizontal: spacing[4],
+    marginTop: spacing[1],
+    marginBottom: spacing[3],
   },
   sectionTitle: {
     ...typography.h2,
