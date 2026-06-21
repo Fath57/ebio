@@ -44,10 +44,12 @@ export function ChatDetailScreen({ conversationId, currentUserId, peerName, isSu
         <TouchableOpacity onPress={onGoBack} hitSlop={8}>
           <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
         </TouchableOpacity>
+        <View style={styles.avatar}>
+          <Text style={styles.avatarInitial}>{(peerName ?? 'C').charAt(0).toUpperCase()}</Text>
+        </View>
         <Text style={[styles.title, { color: semantic.textPrimary }]} numberOfLines={1}>
           {peerName ?? 'Conversation'}
         </Text>
-        <View style={{ width: 24 }} />
       </View>
 
       {/* Bannière de contexte commande */}
@@ -88,7 +90,16 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
     borderBottomWidth: 1,
   },
-  title: { ...typography.h3, flex: 1, textAlign: 'center' },
+  avatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.green[100],
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarInitial: { fontFamily: fonts.sansBd, fontSize: 16, color: colors.green[600] },
+  title: { ...typography.h3, flex: 1 },
   orderBanner: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -1,5 +1,8 @@
 import type { ChatMessage, ConnectionState } from '../../../utils/websocket-client'
-import * as React from 'react'
+import Check from 'lucide-react-native/dist/esm/icons/check'
+import CheckCheck from 'lucide-react-native/dist/esm/icons/check-check'
+import ImagePlus from 'lucide-react-native/dist/esm/icons/image-plus'
+import Send from 'lucide-react-native/dist/esm/icons/send'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   FlatList,
@@ -14,6 +17,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
+import { useTheme } from '../../../theme/theme-context'
 import { chatFetch } from '../../../utils/api-client'
 import { websocketClient } from '../../../utils/websocket-client'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
@@ -37,24 +41,28 @@ interface DisplayMessage {
   voiceDurationMs?: number
 }
 
+function formatTime(iso: string): string {
+  return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
 export function ChatScreen({
   conversationId,
   currentUserId,
   isSupplier = false,
   initialPromptMessage,
 }: ChatScreenProps) {
+  const { semantic } = useTheme()
+  const insets = useSafeAreaInsets()
   const [messages, setMessages] = useState<DisplayMessage[]>(() => {
     if (initialPromptMessage) {
-      return [
-        {
-          id: 'auto-prompt',
-          senderId: currentUserId,
-          content: initialPromptMessage,
-          type: 'TEXT',
-          createdAt: new Date().toISOString(),
-          isRead: false,
-        },
-      ]
+      return [{
+        id: 'auto-prompt',
+        senderId: currentUserId,
+        content: initialPromptMessage,
+        type: 'TEXT',
+        createdAt: new Date().toISOString(),
+        isRead: false,
+      }]
     }
     return []
   })
@@ -62,7 +70,6 @@ export function ChatScreen({
   const [isTyping, setIsTyping] = useState(false)
   const [remoteTyping, setRemoteTyping] = useState(false)
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
-  const insets = useSafeAreaInsets()
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flatListRef = useRef<FlatList<DisplayMessage>>(null)
 
@@ -71,37 +78,30 @@ export function ChatScreen({
       onMessage: (msg: ChatMessage) => {
         if (msg.conversationId !== conversationId)
           return
-        setMessages(prev => [
-          {
-            id: msg.id,
-            senderId: msg.senderId,
-            content: msg.content,
-            type: msg.type,
-            createdAt: msg.createdAt,
-            isRead: false,
-          },
-          ...prev,
-        ])
-        if (msg.senderId !== currentUserId) {
-          websocketClient.sendReadReceipt(conversationId, msg.id)
-        }
+        // Le serveur émet à toute la room (expéditeur inclus) : on ignore
+        // l'écho de nos propres messages, déjà affichés en optimiste.
+        if (msg.senderId === currentUserId)
+          return
+        setMessages(prev => [{
+          id: msg.id,
+          senderId: msg.senderId,
+          content: msg.content,
+          type: msg.type,
+          createdAt: msg.createdAt,
+          isRead: false,
+        }, ...prev])
+        websocketClient.sendReadReceipt(conversationId, msg.id)
       },
       onReadReceipt: (receipt) => {
         if (receipt.conversationId !== conversationId)
           return
-        // L'API marque tous les messages de la conversation comme lus (bulk)
-        setMessages(prev =>
-          prev.map(m =>
-            m.senderId === currentUserId ? { ...m, isRead: true } : m,
-          ),
-        )
+        setMessages(prev => prev.map(m => (m.senderId === currentUserId ? { ...m, isRead: true } : m)))
       },
       onTyping: (event) => {
         if (event.conversationId !== conversationId)
           return
-        if (event.userId !== currentUserId) {
+        if (event.userId !== currentUserId)
           setRemoteTyping(event.isTyping)
-        }
       },
       onConnectionChange: setConnectionState,
     })
@@ -111,7 +111,6 @@ export function ChatScreen({
     }
   }, [conversationId, currentUserId])
 
-  // Charge l'historique des messages
   useEffect(() => {
     let cancelled = false
     async function loadHistory(): Promise<void> {
@@ -130,7 +129,6 @@ export function ChatScreen({
           createdAt: m.createdAt as string,
           isRead: m.readAt != null,
         }))
-        // FlatList inversée : l'API renvoie déjà du plus récent au plus ancien
         setMessages(prev => [...prev.filter(p => p.id === 'auto-prompt'), ...history])
       }
       catch {
@@ -147,46 +145,37 @@ export function ChatScreen({
     const trimmed = inputText.trim()
     if (!trimmed)
       return
-
     websocketClient.sendMessage(conversationId, trimmed, 'TEXT')
-    setMessages(prev => [
-      {
-        id: Date.now().toString(),
-        senderId: currentUserId,
-        content: trimmed,
-        type: 'TEXT',
-        createdAt: new Date().toISOString(),
-        isRead: false,
-      },
-      ...prev,
-    ])
+    setMessages(prev => [{
+      id: Date.now().toString(),
+      senderId: currentUserId,
+      content: trimmed,
+      type: 'TEXT',
+      createdAt: new Date().toISOString(),
+      isRead: false,
+    }, ...prev])
     setInputText('')
     websocketClient.sendTyping(conversationId, false)
   }, [inputText, conversationId, currentUserId])
 
   const handleQuickReply = useCallback((message: string) => {
     websocketClient.sendMessage(conversationId, message, 'TEXT')
-    setMessages(prev => [
-      {
-        id: Date.now().toString(),
-        senderId: currentUserId,
-        content: message,
-        type: 'TEXT',
-        createdAt: new Date().toISOString(),
-        isRead: false,
-      },
-      ...prev,
-    ])
+    setMessages(prev => [{
+      id: Date.now().toString(),
+      senderId: currentUserId,
+      content: message,
+      type: 'TEXT',
+      createdAt: new Date().toISOString(),
+      isRead: false,
+    }, ...prev])
   }, [conversationId, currentUserId])
 
   const handleTextChange = useCallback((text: string) => {
     setInputText(text)
-
     if (!isTyping) {
       setIsTyping(true)
       websocketClient.sendTyping(conversationId, true)
     }
-
     if (typingTimeout.current)
       clearTimeout(typingTimeout.current)
     typingTimeout.current = setTimeout(() => {
@@ -199,58 +188,44 @@ export function ChatScreen({
 
   const handleSendPhoto = useCallback(async () => {
     const uploaded = await pickAndUpload()
-
     if (uploaded) {
       const url = uploaded.publicUrl ?? uploaded.mediaId
       websocketClient.sendMessage(conversationId, url, 'IMAGE')
-      setMessages(prev => [
-        {
-          id: Date.now().toString(),
-          senderId: currentUserId,
-          content: url,
-          type: 'IMAGE',
-          createdAt: new Date().toISOString(),
-          isRead: false,
-        },
-        ...prev,
-      ])
+      setMessages(prev => [{
+        id: Date.now().toString(),
+        senderId: currentUserId,
+        content: url,
+        type: 'IMAGE',
+        createdAt: new Date().toISOString(),
+        isRead: false,
+      }, ...prev])
     }
   }, [conversationId, currentUserId])
 
   const handleSendVoice = useCallback((uri: string, durationMs: number) => {
     websocketClient.sendMessage(conversationId, uri, 'VOICE')
-    setMessages(prev => [
-      {
-        id: Date.now().toString(),
-        senderId: currentUserId,
-        content: uri,
-        type: 'VOICE',
-        createdAt: new Date().toISOString(),
-        isRead: false,
-        voiceDurationMs: durationMs,
-      },
-      ...prev,
-    ])
+    setMessages(prev => [{
+      id: Date.now().toString(),
+      senderId: currentUserId,
+      content: uri,
+      type: 'VOICE',
+      createdAt: new Date().toISOString(),
+      isRead: false,
+      voiceDurationMs: durationMs,
+    }, ...prev])
   }, [conversationId, currentUserId])
-
-  function formatTime(iso: string): string {
-    const date = new Date(iso)
-    return date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
-  }
 
   const renderMessage = useCallback(({ item }: { item: DisplayMessage }) => {
     const isSent = item.senderId === currentUserId
+    const metaColor = isSent ? 'rgba(255,255,255,0.75)' : semantic.textTertiary
     return (
-      <View
-        style={[
-          styles.messageBubbleContainer,
-          isSent ? styles.sentContainer : styles.receivedContainer,
-        ]}
-      >
+      <View style={[styles.row, isSent ? styles.rowSent : styles.rowReceived]}>
         <View
           style={[
             styles.bubble,
-            isSent ? styles.sentBubble : styles.receivedBubble,
+            isSent
+              ? { backgroundColor: colors.green[400], borderBottomRightRadius: radius.xs }
+              : { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight, borderWidth: 1, borderBottomLeftRadius: radius.xs },
           ]}
         >
           {item.type === 'VOICE'
@@ -259,42 +234,36 @@ export function ChatScreen({
               )
             : item.type === 'IMAGE'
               ? (
-                  <Image source={{ uri: item.content }} style={styles.messageImage} resizeMode="cover" />
+                  <Image source={{ uri: item.content }} style={styles.bubbleImage} resizeMode="cover" />
                 )
               : (
-                  <Text
-                    style={[
-                      styles.messageText,
-                      isSent ? styles.sentText : styles.receivedText,
-                    ]}
-                  >
+                  <Text style={[styles.bubbleText, { color: isSent ? colors.neutral[0] : semantic.textPrimary }]}>
                     {item.content}
                   </Text>
                 )}
-        </View>
-        <View style={styles.metaRow}>
-          <Text style={styles.timeText}>{formatTime(item.createdAt)}</Text>
-          {isSent && (
-            <Text style={styles.readReceipt}>
-              {item.isRead ? '\u2713\u2713' : '\u2713'}
-            </Text>
-          )}
+          <View style={styles.metaRow}>
+            <Text style={[styles.metaTime, { color: metaColor }]}>{formatTime(item.createdAt)}</Text>
+            {isSent && (item.isRead
+              ? <CheckCheck size={14} color={colors.neutral[0]} />
+              : <Check size={14} color={metaColor} />)}
+          </View>
         </View>
       </View>
     )
-  }, [currentUserId])
+  }, [currentUserId, semantic])
 
   const keyExtractor = useCallback((item: DisplayMessage) => item.id, [])
+  const hasText = inputText.trim().length > 0
 
   return (
     <KeyboardAvoidingView
-      style={styles.screen}
+      style={[styles.screen, { backgroundColor: semantic.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {connectionState === 'reconnecting' && (
-        <View style={styles.connectionBanner}>
-          <Text style={styles.connectionText}>Reconnexion en cours...</Text>
+        <View style={[styles.connectionBanner, { backgroundColor: colors.earth[50] }]}>
+          <Text style={styles.connectionText}>Reconnexion…</Text>
         </View>
       )}
 
@@ -309,39 +278,33 @@ export function ChatScreen({
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={(
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Démarrez la conversation</Text>
+            <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>Démarrez la conversation</Text>
           </View>
         )}
       />
 
       {remoteTyping && (
         <View style={styles.typingContainer}>
-          <Text style={styles.typingText}>
-            en train d'
-            é
-            crire...
-          </Text>
+          <Text style={[styles.typingText, { color: semantic.textTertiary }]}>En train d'écrire…</Text>
         </View>
       )}
 
       {isSupplier && <QuickReplies onSend={handleQuickReply} />}
 
-      <View style={[styles.inputBar, { paddingBottom: insets.bottom + spacing[2] }]}>
+      <View style={[styles.inputBar, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: insets.bottom + spacing[2] }]}>
         <TouchableOpacity
-          style={styles.attachButton}
+          style={styles.iconButton}
           onPress={handleSendPhoto}
           accessibilityRole="button"
           accessibilityLabel="Envoyer une photo"
         >
-          <Text style={styles.attachIcon}>{'\uD83D\uDCF7'}</Text>
+          <ImagePlus size={22} color={semantic.textSecondary} />
         </TouchableOpacity>
 
-        <VoiceNoteRecorder onSend={handleSendVoice} />
-
         <TextInput
-          style={styles.textInput}
-          placeholder="Votre message..."
-          placeholderTextColor={colors.neutral[400]}
+          style={[styles.input, { backgroundColor: semantic.bgSurface, color: semantic.textPrimary, borderColor: semantic.borderNormal }]}
+          placeholder="Message…"
+          placeholderTextColor={semantic.textTertiary}
           value={inputText}
           onChangeText={handleTextChange}
           multiline
@@ -349,165 +312,88 @@ export function ChatScreen({
           accessibilityLabel="Saisir un message"
         />
 
-        <TouchableOpacity
-          style={[
-            styles.sendButton,
-            !inputText.trim() && styles.sendButtonDisabled,
-          ]}
-          onPress={handleSendText}
-          disabled={!inputText.trim()}
-          accessibilityRole="button"
-          accessibilityLabel="Envoyer"
-        >
-          <Text style={styles.sendIcon}>{'\u2191'}</Text>
-        </TouchableOpacity>
+        {hasText
+          ? (
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={handleSendText}
+                accessibilityRole="button"
+                accessibilityLabel="Envoyer"
+              >
+                <Send size={18} color={colors.neutral[0]} />
+              </TouchableOpacity>
+            )
+          : (
+              <VoiceNoteRecorder onSend={handleSendVoice} />
+            )}
       </View>
     </KeyboardAvoidingView>
   )
 }
 
 const styles = StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.neutral[0],
-  },
-  connectionBanner: {
-    backgroundColor: colors.earth[50],
-    paddingVertical: spacing[1],
-    alignItems: 'center',
-  },
-  connectionText: {
-    ...typography.caption,
-    color: colors.earth[600],
-  },
-  list: {
-    flex: 1,
-  },
-  messageList: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[2],
-  },
-  messageListEmpty: {
-    flexGrow: 1,
-    justifyContent: 'center',
-  },
-  emptyContainer: {
-    alignItems: 'center',
-    paddingVertical: spacing[8],
-  },
-  emptyText: {
-    ...typography.bodyS,
-    color: colors.neutral[400],
-  },
-  messageBubbleContainer: {
-    marginVertical: spacing[1],
-    maxWidth: '80%',
-  },
-  sentContainer: {
-    alignSelf: 'flex-end',
-  },
-  receivedContainer: {
-    alignSelf: 'flex-start',
-  },
+  screen: { flex: 1 },
+  connectionBanner: { paddingVertical: spacing[1], alignItems: 'center' },
+  connectionText: { ...typography.caption, color: colors.earth[600] },
+  list: { flex: 1 },
+  messageList: { paddingHorizontal: spacing[4], paddingVertical: spacing[2], gap: spacing[1] },
+  messageListEmpty: { flexGrow: 1, justifyContent: 'center' },
+  emptyContainer: { alignItems: 'center', paddingVertical: spacing[8] },
+  emptyText: { ...typography.bodyS },
+
+  row: { maxWidth: '82%' },
+  rowSent: { alignSelf: 'flex-end' },
+  rowReceived: { alignSelf: 'flex-start' },
   bubble: {
     borderRadius: radius.lg,
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[2],
   },
-  sentBubble: {
-    backgroundColor: colors.green[400],
-  },
-  receivedBubble: {
-    backgroundColor: colors.neutral[100],
-  },
-  messageText: {
-    ...typography.bodyS,
-  },
-  messageImage: {
-    width: 200,
-    height: 200,
-    borderRadius: radius.md,
-  },
-  sentText: {
-    color: colors.neutral[0],
-  },
-  receivedText: {
-    color: colors.neutral[800],
-  },
+  bubbleText: { ...typography.bodyS },
+  bubbleImage: { width: 220, height: 220, borderRadius: radius.md },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    alignSelf: 'flex-end',
     gap: spacing[1],
     marginTop: 2,
-    paddingHorizontal: spacing[1],
   },
-  timeText: {
-    fontFamily: fonts.sans,
-    fontSize: 10,
-    color: colors.neutral[400],
-  },
-  readReceipt: {
-    fontFamily: fonts.sans,
-    fontSize: 10,
-    color: colors.green[400],
-  },
-  typingContainer: {
-    paddingHorizontal: spacing[4],
-    paddingVertical: spacing[1],
-  },
-  typingText: {
-    ...typography.caption,
-    color: colors.neutral[400],
-    fontStyle: 'italic',
-  },
+  metaTime: { fontFamily: fonts.sans, fontSize: 10 },
+
+  typingContainer: { paddingHorizontal: spacing[4], paddingBottom: spacing[1] },
+  typingText: { ...typography.caption, fontStyle: 'italic' },
+
   inputBar: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     gap: spacing[2],
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
-    paddingBottom: Platform.OS === 'ios' ? spacing[6] : spacing[2],
+    paddingTop: spacing[2],
     borderTopWidth: 1,
-    borderTopColor: colors.neutral[100],
-    backgroundColor: colors.neutral[0],
   },
-  attachButton: {
-    minHeight: 44,
-    minWidth: 44,
+  iconButton: {
+    width: 40,
+    height: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  attachIcon: {
-    fontSize: 22,
-  },
-  textInput: {
+  input: {
     flex: 1,
-    minHeight: 44,
+    minHeight: 40,
     maxHeight: 120,
     borderWidth: 1,
-    borderColor: colors.neutral[200],
-    borderRadius: radius.lg,
-    paddingHorizontal: spacing[3],
+    borderRadius: radius.xl,
+    paddingHorizontal: spacing[4],
     paddingVertical: spacing[2],
     fontFamily: fonts.sans,
     fontSize: 15,
-    color: colors.neutral[800],
-    backgroundColor: colors.neutral[50],
   },
   sendButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: colors.green[400],
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  sendButtonDisabled: {
-    backgroundColor: colors.neutral[200],
-  },
-  sendIcon: {
-    fontFamily: fonts.sansBd,
-    fontSize: 18,
-    color: colors.neutral[0],
   },
 })

@@ -1,4 +1,8 @@
 import { Audio } from 'expo-av'
+import Mic from 'lucide-react-native/dist/esm/icons/mic'
+import Pause from 'lucide-react-native/dist/esm/icons/pause'
+import Play from 'lucide-react-native/dist/esm/icons/play'
+import Square from 'lucide-react-native/dist/esm/icons/square'
 import * as React from 'react'
 import { useCallback, useRef, useState } from 'react'
 import {
@@ -94,9 +98,9 @@ export function VoiceNoteRecorder({ onSend }: VoiceNoteRecorderProps) {
         isRecording ? 'Relâchez pour envoyer' : 'Maintenez pour enregistrer'
       }
     >
-      <Text style={styles.recordIcon}>
-        {isRecording ? '\u23F9' : '\uD83C\uDF99'}
-      </Text>
+      {isRecording
+        ? <Square size={18} color={colors.neutral[0]} fill={colors.neutral[0]} />
+        : <Mic size={22} color={colors.green[600]} />}
       {isRecording && (
         <Text style={styles.durationText}>{formatDuration(duration)}</Text>
       )}
@@ -167,9 +171,9 @@ export function VoiceNotePlayer({ uri, durationMs }: VoiceNotePlayerProps) {
         accessibilityRole="button"
         accessibilityLabel={isPlaying ? 'Pause' : 'Lire la note vocale'}
       >
-        <Text style={playerStyles.playIcon}>
-          {isPlaying ? '\u23F8' : '\u25B6'}
-        </Text>
+        {isPlaying
+          ? <Pause size={16} color={colors.green[600]} fill={colors.green[600]} />
+          : <Play size={16} color={colors.green[600]} fill={colors.green[600]} />}
       </TouchableOpacity>
 
       <View style={playerStyles.waveformContainer}>
