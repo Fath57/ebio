@@ -2,8 +2,10 @@ import type { AuthenticatedRequest } from './auth.guard'
 import { randomUUID } from 'node:crypto'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { BadRequestException, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common'
+import * as jwt from 'jsonwebtoken'
 import { z } from 'zod'
 import { OtpService } from '../../common/otp.service'
+import { config } from '../../config/env.config'
 import { AuthGuard } from './auth.guard'
 import { otpRequestSchema, otpVerifySchema } from './contracts/auth.contract'
 import { OtpAuthService } from './otp-auth.service'
@@ -65,6 +67,24 @@ export class OtpAuthController {
         image: user.image ?? null,
       },
     }
+  }
+
+  // ─── Chat token (JWT pour le REST chat + le socket Socket.IO) ─────────────────
+  // Le module chat est protégé par JwtAuthGuard / un gateway qui vérifient un JWT
+  // signé avec JWT_SECRET. On émet ce JWT à partir de la session Better Auth.
+  @Get('chat-token')
+  @UseGuards(AuthGuard)
+  async getChatToken(@Req() req: AuthenticatedRequest): Promise<{ token: string }> {
+    const user = req.session?.user
+    if (!user) {
+      throw new UnauthorizedException()
+    }
+    const token = jwt.sign(
+      { sub: user.id, role: (user as { role?: string }).role ?? 'BUYER' },
+      config.jwt.secret,
+      { expiresIn: '7d' },
+    )
+    return { token }
   }
 
   // ─── Phone + password login (no OTP) ─────────────────────────────────────────
