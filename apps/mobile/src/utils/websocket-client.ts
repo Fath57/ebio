@@ -1,7 +1,9 @@
-import { getSessionToken } from './api-client'
+import type { Socket } from 'socket.io-client'
+import { io } from 'socket.io-client'
+import { getChatToken } from './api-client'
 
 const WS_URL = process.env.EXPO_PUBLIC_WS_URL ?? 'ws://localhost:3000'
-const WS_PATH = '/ws/chat'
+const WS_NAMESPACE = '/ws/chat'
 
 type ConnectionState = 'disconnected' | 'connected' | 'reconnecting'
 
@@ -16,7 +18,7 @@ interface ChatMessage {
 
 interface ReadReceipt {
   conversationId: string
-  messageId: string
+  readBy?: string
   readAt: string
 }
 
@@ -39,39 +41,57 @@ const MAX_RETRIES = 10
 const BASE_DELAY_MS = 1000
 const MAX_DELAY_MS = 30000
 
+/** Convertit le type interne mobile vers le type attendu par l'API (MessageType). */
+function toApiType(type: ChatMessage['type']): string {
+  return type === 'IMAGE' ? 'PHOTO' : type
+}
+
+/** Convertit le type API (PHOTO) vers le type interne mobile (IMAGE). */
+function fromApiType(type: string): ChatMessage['type'] {
+  if (type === 'PHOTO')
+    return 'IMAGE'
+  if (type === 'VOICE' || type === 'LOCATION' || type === 'TEXT')
+    return type
+  return 'TEXT'
+}
+
 class WebSocketClient {
-  private socket: WebSocket | null = null
+  private socket: Socket | null = null
   private connectionState: ConnectionState = 'disconnected'
-  private retryCount = 0
-  private retryTimeout: ReturnType<typeof setTimeout> | null = null
   private handlers: WebSocketClientOptions = {}
 
   connect(options: WebSocketClientOptions): void {
     this.handlers = options
-    this.establishConnection()
+    void this.establishConnection()
   }
 
   disconnect(): void {
-    this.clearRetryTimeout()
-    this.retryCount = 0
     if (this.socket) {
-      this.socket.onclose = null
-      this.socket.close()
+      this.socket.removeAllListeners()
+      this.socket.disconnect()
       this.socket = null
     }
     this.updateConnectionState('disconnected')
   }
 
   sendMessage(conversationId: string, content: string, type: ChatMessage['type'] = 'TEXT'): void {
-    this.send('chat:message', { conversationId, content, type })
+    const apiType = toApiType(type)
+    const payload: Record<string, unknown> = { conversationId, type: apiType }
+    if (apiType === 'TEXT') {
+      payload.content = content
+    }
+    else {
+      payload.mediaUrl = content
+    }
+    this.socket?.emit('chat:send', payload)
   }
 
-  sendReadReceipt(conversationId: string, messageId: string): void {
-    this.send('chat:read-receipt', { conversationId, messageId })
+  sendReadReceipt(conversationId: string, _messageId?: string): void {
+    this.socket?.emit('chat:read', { conversationId })
   }
 
   sendTyping(conversationId: string, isTyping: boolean): void {
-    this.send('chat:typing', { conversationId, isTyping })
+    this.socket?.emit('chat:typing', { conversationId, isTyping })
   }
 
   getConnectionState(): ConnectionState {
@@ -79,91 +99,65 @@ class WebSocketClient {
   }
 
   private async establishConnection(): Promise<void> {
-    try {
-      const token = await getSessionToken()
-      if (!token) {
-        this.updateConnectionState('disconnected')
-        return
-      }
-
-      const url = `${WS_URL}${WS_PATH}?token=${encodeURIComponent(token)}`
-      this.socket = new WebSocket(url)
-
-      this.socket.onopen = () => {
-        this.retryCount = 0
-        this.updateConnectionState('connected')
-      }
-
-      this.socket.onmessage = (event: WebSocketMessageEvent) => {
-        try {
-          const parsed = JSON.parse(event.data as string) as {
-            event: string
-            data: unknown
-          }
-          this.handleEvent(parsed.event, parsed.data)
-        }
-        catch {
-          // Ignore malformed messages
-        }
-      }
-
-      this.socket.onerror = () => {
-        // Error will trigger onclose, handled there
-      }
-
-      this.socket.onclose = () => {
-        this.socket = null
-        this.scheduleReconnect()
-      }
-    }
-    catch {
-      this.scheduleReconnect()
-    }
-  }
-
-  private handleEvent(eventName: string, data: unknown): void {
-    switch (eventName) {
-      case 'chat:message':
-        this.handlers.onMessage?.(data as ChatMessage)
-        break
-      case 'chat:read-receipt':
-        this.handlers.onReadReceipt?.(data as ReadReceipt)
-        break
-      case 'chat:typing':
-        this.handlers.onTyping?.(data as TypingEvent)
-        break
-    }
-  }
-
-  private send(event: string, data: unknown): void {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify({ event, data }))
-    }
-  }
-
-  private scheduleReconnect(): void {
-    if (this.retryCount >= MAX_RETRIES) {
+    const token = await getChatToken()
+    if (!token) {
       this.updateConnectionState('disconnected')
       return
     }
 
-    this.updateConnectionState('reconnecting')
-    const delay = Math.min(
-      BASE_DELAY_MS * 2 ** this.retryCount,
-      MAX_DELAY_MS,
-    )
-    this.retryCount += 1
-
-    this.retryTimeout = setTimeout(() => {
-      this.establishConnection()
-    }, delay)
-  }
-
-  private clearRetryTimeout(): void {
-    if (this.retryTimeout) {
-      clearTimeout(this.retryTimeout)
-      this.retryTimeout = null
+    // Déconnecte une éventuelle socket précédente
+    if (this.socket) {
+      this.socket.removeAllListeners()
+      this.socket.disconnect()
     }
+
+    this.socket = io(`${WS_URL}${WS_NAMESPACE}`, {
+      transports: ['websocket'],
+      auth: { token },
+      reconnection: true,
+      reconnectionAttempts: MAX_RETRIES,
+      reconnectionDelay: BASE_DELAY_MS,
+      reconnectionDelayMax: MAX_DELAY_MS,
+    })
+
+    this.socket.on('connect', () => {
+      this.updateConnectionState('connected')
+    })
+
+    this.socket.on('disconnect', () => {
+      this.updateConnectionState('disconnected')
+    })
+
+    this.socket.io.on('reconnect_attempt', () => {
+      this.updateConnectionState('reconnecting')
+    })
+
+    this.socket.on('chat:message', (data: Record<string, unknown>) => {
+      this.handlers.onMessage?.({
+        id: data.id as string,
+        conversationId: data.conversationId as string,
+        senderId: data.senderId as string,
+        content: (data.content as string) ?? (data.mediaUrl as string) ?? '',
+        type: fromApiType((data.type as string) ?? 'TEXT'),
+        createdAt: data.createdAt as string,
+      })
+    })
+
+    this.socket.on('chat:read', (data: Record<string, unknown>) => {
+      this.handlers.onReadReceipt?.({
+        conversationId: data.conversationId as string,
+        readBy: data.readBy as string | undefined,
+        readAt: (data.readAt as string) ?? new Date().toISOString(),
+      })
+    })
+
+    this.socket.on('chat:typing', (data: Record<string, unknown>) => {
+      this.handlers.onTyping?.({
+        conversationId: data.conversationId as string,
+        userId: data.userId as string,
+        isTyping: Boolean(data.isTyping),
+      })
+    })
   }
 
   private updateConnectionState(state: ConnectionState): void {

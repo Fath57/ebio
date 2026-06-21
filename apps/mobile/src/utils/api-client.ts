@@ -12,7 +12,48 @@ export async function setSessionToken(token: string): Promise<void> {
 }
 
 export async function clearTokens(): Promise<void> {
+  cachedChatToken = null
   await SecureStore.deleteItemAsync(SESSION_KEY)
+}
+
+// ─── Chat token (JWT) ─────────────────────────────────────────────────────────
+// Le module chat (REST + socket) exige un JWT distinct de la session Better Auth.
+let cachedChatToken: string | null = null
+
+export async function getChatToken(forceRefresh = false): Promise<string | null> {
+  if (cachedChatToken && !forceRefresh)
+    return cachedChatToken
+  try {
+    const res = await apiFetch('/api/otp-auth/chat-token')
+    if (!res.ok)
+      return null
+    const data = await res.json() as { token?: string }
+    cachedChatToken = data.token ?? null
+    return cachedChatToken
+  }
+  catch {
+    return null
+  }
+}
+
+/** Fetch authentifié avec le JWT chat (et refresh auto sur 401). */
+export async function chatFetch(path: string, options: RequestInit = {}): Promise<Response> {
+  function doFetch(token: string | null): Promise<Response> {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'Origin': API_URL,
+      ...(options.headers as Record<string, string> ?? {}),
+    }
+    if (token)
+      headers.Authorization = `Bearer ${token}`
+    return fetch(`${API_URL}${path}`, { ...options, headers })
+  }
+
+  let res = await doFetch(await getChatToken())
+  if (res.status === 401) {
+    res = await doFetch(await getChatToken(true))
+  }
+  return res
 }
 
 /**
