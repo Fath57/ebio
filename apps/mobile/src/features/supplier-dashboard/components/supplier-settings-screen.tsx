@@ -2,6 +2,7 @@ import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import Pencil from 'lucide-react-native/dist/esm/icons/pencil'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import {
   ScrollView,
@@ -15,6 +16,7 @@ import { useTheme } from '../../../theme/theme-context'
 
 interface SupplierSettingsScreenProps {
   onGoBack: () => void
+  onNavigateToShopProfile: () => void
   onNavigateToOpeningHours: () => void
   onNavigateToDeliveryZones: () => void
   onNavigateToMode: () => void
@@ -22,6 +24,7 @@ interface SupplierSettingsScreenProps {
 
 export function SupplierSettingsScreen({
   onGoBack,
+  onNavigateToShopProfile,
   onNavigateToOpeningHours,
   onNavigateToDeliveryZones,
   onNavigateToMode,
@@ -44,6 +47,19 @@ export function SupplierSettingsScreen({
       </View>
 
       <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
+        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToShopProfile} activeOpacity={0.6}>
+          <View style={[styles.menuIcon, { backgroundColor: colors.coral[50] }]}>
+            <Pencil size={18} color={colors.coral[600]} />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Profil de la boutique</Text>
+            <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Nom, photos, adresse, contact</Text>
+          </View>
+          <ChevronRight size={18} color={semantic.textTertiary} />
+        </TouchableOpacity>
+
+        <View style={styles.menuDivider} />
+
         <TouchableOpacity style={styles.menuItem} onPress={onNavigateToOpeningHours} activeOpacity={0.6}>
           <View style={[styles.menuIcon, { backgroundColor: colors.green[50] }]}>
             <Clock size={18} color={colors.green[600]} />

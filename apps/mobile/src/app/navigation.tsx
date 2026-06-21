@@ -35,6 +35,7 @@ import { OrderManagement } from '../features/supplier-dashboard/components/order
 import { ProductDetailScreen as SupplierProductDetail } from '../features/supplier-dashboard/components/product-detail-screen'
 import { ProductForm } from '../features/supplier-dashboard/components/product-form'
 import { ProductList } from '../features/supplier-dashboard/components/product-list'
+import { ShopProfileEditor } from '../features/supplier-dashboard/components/shop-profile-editor'
 import { SupplierSettingsScreen } from '../features/supplier-dashboard/components/supplier-settings-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { useSession } from '../lib/auth-client'
@@ -296,6 +297,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="SupplierProductForm" component={SupplierProductFormWrapper} />
       <ProfileStack.Screen name="SupplierOrders" component={SupplierOrdersWrapper} />
       <ProfileStack.Screen name="SupplierSettings" component={SupplierSettingsWrapper} />
+      <ProfileStack.Screen name="SupplierShopProfile" component={SupplierShopProfileWrapper} />
       <ProfileStack.Screen name="SupplierOpeningHours" component={SupplierOpeningHoursWrapper} />
       <ProfileStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
       <ProfileStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
@@ -485,9 +487,21 @@ function SupplierSettingsWrapper({ navigation }: any) {
     <SafeScreen>
       <SupplierSettingsScreen
         onGoBack={() => navigation.goBack()}
+        onNavigateToShopProfile={() => navigation.navigate('SupplierShopProfile')}
         onNavigateToOpeningHours={() => navigation.navigate('SupplierOpeningHours')}
         onNavigateToDeliveryZones={() => navigation.navigate('SupplierDeliveryZones')}
         onNavigateToMode={() => navigation.navigate('SupplierMode')}
+      />
+    </SafeScreen>
+  )
+}
+
+function SupplierShopProfileWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <ShopProfileEditor
+        onGoBack={() => navigation.goBack()}
+        onSaved={() => navigation.goBack()}
       />
     </SafeScreen>
   )
