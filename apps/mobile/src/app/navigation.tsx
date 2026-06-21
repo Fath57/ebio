@@ -31,6 +31,7 @@ import { DashboardScreen } from '../features/supplier-dashboard/components/dashb
 import { DeliveryZoneEditor } from '../features/supplier-dashboard/components/delivery-zone-editor'
 import { ModeSelector } from '../features/supplier-dashboard/components/mode-selector'
 import { OpeningHoursEditor } from '../features/supplier-dashboard/components/opening-hours-editor'
+import { OrderDetailScreen } from '../features/supplier-dashboard/components/order-detail-screen'
 import { OrderManagement } from '../features/supplier-dashboard/components/order-management'
 import { ProductDetailScreen as SupplierProductDetail } from '../features/supplier-dashboard/components/product-detail-screen'
 import { ProductForm } from '../features/supplier-dashboard/components/product-form'
@@ -297,6 +298,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="SupplierProductDetail" component={SupplierProductDetailWrapper} />
       <ProfileStack.Screen name="SupplierProductForm" component={SupplierProductFormWrapper} />
       <ProfileStack.Screen name="SupplierOrders" component={SupplierOrdersWrapper} />
+      <ProfileStack.Screen name="SupplierOrderDetail" component={SupplierOrderDetailWrapper} />
       <ProfileStack.Screen name="SupplierSettings" component={SupplierSettingsWrapper} />
       <ProfileStack.Screen name="SupplierShopProfile" component={SupplierShopProfileWrapper} />
       <ProfileStack.Screen name="SupplierReviews" component={SupplierReviewsWrapper} />
@@ -485,10 +487,24 @@ function SupplierProductFormWrapper({ route, navigation }: any) {
   )
 }
 
-function SupplierOrdersWrapper() {
+function SupplierOrdersWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <OrderManagement supplierId="me" />
+      <OrderManagement
+        supplierId="me"
+        onOpenOrder={id => navigation.navigate('SupplierOrderDetail', { orderId: id })}
+      />
+    </SafeScreen>
+  )
+}
+
+function SupplierOrderDetailWrapper({ route, navigation }: any) {
+  return (
+    <SafeScreen>
+      <OrderDetailScreen
+        orderId={route.params.orderId}
+        onGoBack={() => navigation.goBack()}
+      />
     </SafeScreen>
   )
 }

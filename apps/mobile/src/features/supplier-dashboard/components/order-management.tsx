@@ -34,6 +34,7 @@ interface SupplierOrder {
 
 interface OrderManagementProps {
   supplierId: string
+  onOpenOrder?: (orderId: string) => void
 }
 
 type Tab = 'pending' | 'active' | 'done'
@@ -84,7 +85,7 @@ const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: str
   READY: { status: 'IN_DELIVERY', label: 'En livraison' },
 }
 
-export function OrderManagement({ supplierId }: OrderManagementProps) {
+export function OrderManagement({ supplierId, onOpenOrder }: OrderManagementProps) {
   const tabBarHeight = useBottomTabBarHeight()
   const [orders, setOrders] = useState<SupplierOrder[]>([])
   const [tab, setTab] = useState<Tab>('pending')
@@ -251,27 +252,34 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
 
       return (
         <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.orderNumber}>{item.orderNumber}</Text>
-            <Text style={styles.timeSince}>
-              {formatTimeSince(item.createdAt)}
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={() => onOpenOrder?.(item.id)}
+            accessibilityRole="button"
+            accessibilityLabel={`Détails de la commande ${item.orderNumber}`}
+          >
+            <View style={styles.cardHeader}>
+              <Text style={styles.orderNumber}>{item.orderNumber}</Text>
+              <Text style={styles.timeSince}>
+                {formatTimeSince(item.createdAt)}
+              </Text>
+            </View>
+
+            <View style={styles.badgeRow}>
+              <Text style={styles.statusBadge}>{STATUS_LABELS[item.status]}</Text>
+            </View>
+
+            <Text style={styles.buyerName}>{item.buyerName}</Text>
+            <Text style={styles.itemsSummary} numberOfLines={2}>
+              {itemsSummary}
             </Text>
-          </View>
 
-          <View style={styles.badgeRow}>
-            <Text style={styles.statusBadge}>{STATUS_LABELS[item.status]}</Text>
-          </View>
-
-          <Text style={styles.buyerName}>{item.buyerName}</Text>
-          <Text style={styles.itemsSummary} numberOfLines={2}>
-            {itemsSummary}
-          </Text>
-
-          <Text style={styles.totalPrice}>
-            {formatPrice(item.total)}
-            {' '}
-            FCFA
-          </Text>
+            <Text style={styles.totalPrice}>
+              {formatPrice(item.total)}
+              {' '}
+              FCFA
+            </Text>
+          </TouchableOpacity>
 
           {/* Actions */}
           {item.status === 'PLACED' && (
@@ -345,7 +353,7 @@ export function OrderManagement({ supplierId }: OrderManagementProps) {
         </View>
       )
     },
-    [processingId],
+    [processingId, onOpenOrder],
   )
 
   const keyExtractor = useCallback((item: SupplierOrder) => item.id, [])
