@@ -118,12 +118,17 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
     }
     setSaving(true)
     try {
-      const body: Record<string, unknown> = {
-        shopName: shopName.trim(),
-        address: address.trim() || null,
-        neighborhood: neighborhood.trim() || null,
-        mobileMoneyNumber: mobileMoneyNumber.trim() || null,
-      }
+      // L'API attend des strings optionnelles (undefined), jamais null -> on omet les champs vides
+      const body: Record<string, unknown> = { shopName: shopName.trim() }
+      const addr = address.trim()
+      if (addr)
+        body.address = addr
+      const nb = neighborhood.trim()
+      if (nb)
+        body.neighborhood = nb
+      const mm = mobileMoneyNumber.trim()
+      if (mm)
+        body.mobileMoneyNumber = mm
       if (coverPhoto)
         body.coverPhoto = coverPhoto
       if (profilePhoto)
