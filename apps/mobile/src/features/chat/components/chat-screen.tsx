@@ -5,6 +5,7 @@ import ImagePlus from 'lucide-react-native/dist/esm/icons/image-plus'
 import Send from 'lucide-react-native/dist/esm/icons/send'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
+  ActivityIndicator,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -18,7 +19,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { chatFetch } from '../../../utils/api-client'
+import { chatFetch, resolveMediaUrl } from '../../../utils/api-client'
 import { websocketClient } from '../../../utils/websocket-client'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { QuickReplies } from './quick-replies'
@@ -43,6 +44,47 @@ interface DisplayMessage {
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })
+}
+
+/** Image de chat : résout le mediaId en URL signée avant affichage. */
+function ChatImage({ mediaId }: { mediaId: string }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void resolveMediaUrl(mediaId).then((u) => {
+      if (!cancelled)
+        setUrl(u)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [mediaId])
+  if (!url) {
+    return (
+      <View style={[styles.bubbleImage, styles.mediaLoading]}>
+        <ActivityIndicator size="small" color={colors.neutral[400]} />
+      </View>
+    )
+  }
+  return <Image source={{ uri: url }} style={styles.bubbleImage} resizeMode="cover" />
+}
+
+/** Note vocale de chat : résout le mediaId en URL signée avant lecture. */
+function ChatVoice({ mediaId, durationMs }: { mediaId: string, durationMs: number }) {
+  const [url, setUrl] = useState<string | null>(null)
+  useEffect(() => {
+    let cancelled = false
+    void resolveMediaUrl(mediaId).then((u) => {
+      if (!cancelled)
+        setUrl(u)
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [mediaId])
+  if (!url)
+    return <ActivityIndicator size="small" color={colors.neutral[400]} />
+  return <VoiceNotePlayer uri={url} durationMs={durationMs} />
 }
 
 export function ChatScreen({
@@ -184,17 +226,17 @@ export function ChatScreen({
     }, 2000)
   }, [conversationId, isTyping])
 
-  const { pickAndUpload } = useMediaUpload({ context: 'CHAT_ATTACHMENT' })
+  const { pickAndUpload, uploadFile } = useMediaUpload({ context: 'CHAT_ATTACHMENT' })
 
   const handleSendPhoto = useCallback(async () => {
     const uploaded = await pickAndUpload()
     if (uploaded) {
-      const url = uploaded.publicUrl ?? uploaded.mediaId
-      websocketClient.sendMessage(conversationId, url, 'IMAGE')
+      // On envoie le mediaId : l'affichage résout une URL signée (bucket privé)
+      websocketClient.sendMessage(conversationId, uploaded.mediaId, 'IMAGE')
       setMessages(prev => [{
         id: Date.now().toString(),
         senderId: currentUserId,
-        content: url,
+        content: uploaded.mediaId,
         type: 'IMAGE',
         createdAt: new Date().toISOString(),
         isRead: false,
@@ -202,18 +244,21 @@ export function ChatScreen({
     }
   }, [conversationId, currentUserId])
 
-  const handleSendVoice = useCallback((uri: string, durationMs: number) => {
-    websocketClient.sendMessage(conversationId, uri, 'VOICE')
-    setMessages(prev => [{
-      id: Date.now().toString(),
-      senderId: currentUserId,
-      content: uri,
-      type: 'VOICE',
-      createdAt: new Date().toISOString(),
-      isRead: false,
-      voiceDurationMs: durationMs,
-    }, ...prev])
-  }, [conversationId, currentUserId])
+  const handleSendVoice = useCallback(async (uri: string, durationMs: number) => {
+    const uploaded = await uploadFile(uri, 'voice-note.m4a', 'audio/m4a', 0)
+    if (uploaded) {
+      websocketClient.sendMessage(conversationId, uploaded.mediaId, 'VOICE')
+      setMessages(prev => [{
+        id: Date.now().toString(),
+        senderId: currentUserId,
+        content: uploaded.mediaId,
+        type: 'VOICE',
+        createdAt: new Date().toISOString(),
+        isRead: false,
+        voiceDurationMs: durationMs,
+      }, ...prev])
+    }
+  }, [conversationId, currentUserId, uploadFile])
 
   const renderMessage = useCallback(({ item }: { item: DisplayMessage }) => {
     const isSent = item.senderId === currentUserId
@@ -230,11 +275,11 @@ export function ChatScreen({
         >
           {item.type === 'VOICE'
             ? (
-                <VoiceNotePlayer uri={item.content} durationMs={item.voiceDurationMs ?? 0} />
+                <ChatVoice mediaId={item.content} durationMs={item.voiceDurationMs ?? 0} />
               )
             : item.type === 'IMAGE'
               ? (
-                  <Image source={{ uri: item.content }} style={styles.bubbleImage} resizeMode="cover" />
+                  <ChatImage mediaId={item.content} />
                 )
               : (
                   <Text style={[styles.bubbleText, { color: isSent ? colors.neutral[0] : semantic.textPrimary }]}>
@@ -351,6 +396,7 @@ const styles = StyleSheet.create({
   },
   bubbleText: { ...typography.bodyS },
   bubbleImage: { width: 220, height: 220, borderRadius: radius.md },
+  mediaLoading: { justifyContent: 'center', alignItems: 'center', backgroundColor: colors.neutral[100] },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',

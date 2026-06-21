@@ -36,6 +36,35 @@ export async function getChatToken(forceRefresh = false): Promise<string | null>
   }
 }
 
+// ─── Résolution des médias privés (URL signée) ──────────────────────────────
+const signedMediaCache = new Map<string, string>()
+
+/**
+ * Résout un mediaId en URL signée (`/media/:id/download`). Si on reçoit déjà
+ * une URL (http/file), elle est renvoyée telle quelle.
+ */
+export async function resolveMediaUrl(idOrUrl: string): Promise<string | null> {
+  if (!idOrUrl)
+    return null
+  if (idOrUrl.startsWith('http') || idOrUrl.startsWith('file:'))
+    return idOrUrl
+  const cached = signedMediaCache.get(idOrUrl)
+  if (cached)
+    return cached
+  try {
+    const res = await apiFetch(`/api/media/${idOrUrl}/download?expiresIn=86400`)
+    if (!res.ok)
+      return null
+    const data = await res.json() as { downloadUrl?: string }
+    if (data.downloadUrl)
+      signedMediaCache.set(idOrUrl, data.downloadUrl)
+    return data.downloadUrl ?? null
+  }
+  catch {
+    return null
+  }
+}
+
 /** Fetch authentifié avec le JWT chat (et refresh auto sur 401). */
 export async function chatFetch(path: string, options: RequestInit = {}): Promise<Response> {
   function doFetch(token: string | null): Promise<Response> {
