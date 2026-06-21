@@ -8,7 +8,7 @@ import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
-import { Animated, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
@@ -40,6 +40,7 @@ import { SupplierProfileScreen } from '../features/supplier-profile/components/s
 import { useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
+import { apiFetch } from '../utils/api-client'
 import { navigationRef } from './navigation-ref'
 
 function SafeScreen({ children }: { children: React.ReactNode }) {
@@ -395,6 +396,7 @@ function SupplierProductDetailWrapper({ route, navigation }: any) {
         productId={productId}
         onGoBack={() => navigation.goBack()}
         onEdit={id => navigation.navigate('SupplierProductForm', { productId: id })}
+        onDeleted={() => navigation.navigate('SupplierProducts')}
       />
     </SafeScreen>
   )
@@ -402,10 +404,60 @@ function SupplierProductDetailWrapper({ route, navigation }: any) {
 
 function SupplierProductFormWrapper({ route, navigation }: any) {
   const { productId } = route.params ?? {}
+  const [initialData, setInitialData] = React.useState(undefined)
+  const [loading, setLoading] = React.useState(Boolean(productId))
+
+  React.useEffect(() => {
+    if (!productId)
+      return
+    let cancelled = false
+    apiFetch(`/api/products/${productId}`)
+      .then(res => res.json())
+      .then((p) => {
+        if (cancelled || !p)
+          return
+        setInitialData({
+          id: p.id,
+          name: p.name ?? '',
+          description: p.description ?? '',
+          category: p.categoryId ?? '',
+          price: p.pricePerUnit != null ? String(p.pricePerUnit) : '',
+          unit: p.unit ?? 'KG',
+          stock: p.stock != null ? String(p.stock) : '',
+          alertThreshold: p.stockAlertThreshold != null ? String(p.stockAlertThreshold) : '',
+          photos: p.photos ?? [],
+          variants: (p.variants ?? []).map((v: any) => ({
+            id: v.id,
+            label: v.label,
+            price: String(v.pricePerUnit),
+            stock: String(v.stock),
+          })),
+          isActive: p.status !== 'HIDDEN',
+          voiceDescriptionUri: p.voiceDescriptionUrl ?? null,
+          promotionalPrice: p.promotionalPrice ?? null,
+        })
+        setLoading(false)
+      })
+      .catch(() => setLoading(false))
+    return () => {
+      cancelled = true
+    }
+  }, [productId])
+
+  if (loading) {
+    return (
+      <SafeScreen>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color={colors.green[400]} />
+        </View>
+      </SafeScreen>
+    )
+  }
+
   return (
     <SafeScreen>
       <ProductForm
-        initialData={productId ? { id: productId } as any : undefined}
+        initialData={initialData}
         onSave={() => {
           if (productId) {
             navigation.navigate('SupplierProductDetail', { productId })

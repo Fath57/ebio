@@ -51,6 +51,7 @@ interface ProductFormProps {
   initialData?: {
     id: string
     name: string
+    description: string
     category: string
     price: string
     unit: Unit
@@ -60,6 +61,7 @@ interface ProductFormProps {
     variants: Variant[]
     isActive: boolean
     voiceDescriptionUri: string | null
+    promotionalPrice: number | null
   }
   onSave?: () => void
   onCancel?: () => void
@@ -80,6 +82,11 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   }, [loadCategories])
 
   const [name, setName] = useState(initialData?.name ?? '')
+  const [description, setDescription] = useState(initialData?.description ?? '')
+  const [promoPrice, setPromoPrice] = useState(
+    initialData?.promotionalPrice != null ? String(initialData.promotionalPrice) : '',
+  )
+  const [promoDays, setPromoDays] = useState(7)
   const [category, setCategory] = useState(initialData?.category ?? '')
   const [price, setPrice] = useState(initialData?.price ?? '')
   const [unit, setUnit] = useState<Unit>(initialData?.unit ?? 'KG')
@@ -198,6 +205,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
     try {
       const body = {
         name: name.trim(),
+        description: description.trim(),
         categoryId: category,
         pricePerUnit: Number.parseFloat(price),
         unit,
@@ -217,10 +225,21 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         ? `/api/suppliers/me/products/${initialData.id}`
         : '/api/suppliers/me/products'
 
-      await apiFetch(path, {
+      const res = await apiFetch(path, {
         method,
         body: JSON.stringify(body),
       })
+      const saved = await res.json().catch(() => null)
+
+      // Promotion (endpoint dédié) — appliquée si un prix promo est saisi
+      const productId = initialData?.id ?? saved?.id
+      if (productId && promoPrice.trim()) {
+        const expiresAt = new Date(Date.now() + promoDays * 24 * 60 * 60 * 1000).toISOString()
+        await apiFetch(`/api/suppliers/me/products/${productId}/promotion`, {
+          method: 'POST',
+          body: JSON.stringify({ promotionalPrice: Number.parseFloat(promoPrice), expiresAt }),
+        })
+      }
 
       onSave?.()
     }
@@ -290,6 +309,18 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
           value={name}
           onChangeText={setName}
           accessibilityLabel="Nom du produit"
+        />
+
+        {/* Description */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Description</Text>
+        <TextInput
+          style={[styles.textInput, styles.textArea, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+          placeholder="Décrivez votre produit (origine, qualité, conservation...)"
+          placeholderTextColor={semantic.textTertiary}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          accessibilityLabel="Description du produit"
         />
 
         {/* Category */}
@@ -369,6 +400,45 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
             })}
           </View>
         </View>
+
+        {/* Promotion */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Prix promotionnel (optionnel)</Text>
+        <TextInput
+          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+          placeholder="Prix promo (FCFA)"
+          placeholderTextColor={semantic.textTertiary}
+          keyboardType="numeric"
+          value={promoPrice}
+          onChangeText={setPromoPrice}
+          accessibilityLabel="Prix promotionnel"
+        />
+        {promoPrice.trim() !== '' && (
+          <View style={styles.unitRow}>
+            {[7, 15, 30].map((d) => {
+              const isSelected = promoDays === d
+              return (
+                <TouchableOpacity
+                  key={d}
+                  style={[
+                    styles.unitChip,
+                    { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
+                    isSelected && styles.unitChipActive,
+                  ]}
+                  onPress={() => setPromoDays(d)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={`${d} jours`}
+                >
+                  <Text style={[styles.unitChipText, { color: semantic.textSecondary }, isSelected && styles.unitChipTextActive]}>
+                    {d}
+                    {' '}
+                    jours
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        )}
 
         {/* Variants */}
         <View style={styles.sectionHeader}>
@@ -567,6 +637,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     fontFamily: fonts.sans,
     fontSize: 15,
+  },
+  textArea: {
+    minHeight: 88,
+    paddingTop: spacing[3],
+    textAlignVertical: 'top',
   },
   photoRow: {
     flexDirection: 'row',

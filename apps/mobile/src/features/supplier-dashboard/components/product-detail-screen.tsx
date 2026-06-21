@@ -3,6 +3,7 @@ import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import Box from 'lucide-react-native/dist/esm/icons/box'
 import Edit from 'lucide-react-native/dist/esm/icons/pencil'
 import Tag from 'lucide-react-native/dist/esm/icons/tag'
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -16,6 +17,7 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 
 interface Variant {
   id: string
@@ -64,15 +66,43 @@ interface ProductDetailScreenProps {
   productId: string
   onGoBack: () => void
   onEdit: (productId: string) => void
+  onDeleted?: () => void
 }
 
-export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDetailScreenProps) {
+export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [product, setProduct] = useState<ProductDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedPhoto, setSelectedPhoto] = useState(0)
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
+  const [deleting, setDeleting] = useState(false)
+
+  function confirmDelete(): void {
+    appAlert('Supprimer le produit', 'Cette action est irréversible.', [
+      { text: 'Annuler', style: 'cancel' },
+      { text: 'Supprimer', style: 'destructive', onPress: handleDelete },
+    ])
+  }
+
+  async function handleDelete(): Promise<void> {
+    setDeleting(true)
+    try {
+      const res = await apiFetch(`/api/suppliers/me/products/${productId}`, { method: 'DELETE' })
+      if (res.ok) {
+        onDeleted?.()
+      }
+      else {
+        appAlert('Erreur', 'Impossible de supprimer le produit.')
+      }
+    }
+    catch {
+      appAlert('Erreur', 'Vérifiez votre connexion.')
+    }
+    finally {
+      setDeleting(false)
+    }
+  }
 
   useEffect(() => {
     async function load() {
@@ -289,6 +319,25 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDeta
           <Edit size={18} color={colors.neutral[0]} />
           <Text style={styles.editButtonText}>Modifier le produit</Text>
         </TouchableOpacity>
+
+        {/* Delete button */}
+        <TouchableOpacity
+          style={styles.deleteButton}
+          onPress={confirmDelete}
+          disabled={deleting}
+          activeOpacity={0.8}
+        >
+          {deleting
+            ? (
+                <ActivityIndicator size="small" color={colors.coral[600]} />
+              )
+            : (
+                <>
+                  <Trash2 size={18} color={colors.coral[600]} />
+                  <Text style={styles.deleteButtonText}>Supprimer le produit</Text>
+                </>
+              )}
+        </TouchableOpacity>
       </View>
     </ScrollView>
   )
@@ -414,4 +463,17 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green[400],
   },
   editButtonText: { ...typography.h3, color: colors.neutral[0] },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    marginTop: spacing[3],
+    height: 52,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.coral[200],
+    backgroundColor: colors.coral[50],
+  },
+  deleteButtonText: { ...typography.h3, fontSize: 15, color: colors.coral[600] },
 })
