@@ -12,6 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { chatFetch } from '../../../utils/api-client'
 import { websocketClient } from '../../../utils/websocket-client'
@@ -61,6 +62,7 @@ export function ChatScreen({
   const [isTyping, setIsTyping] = useState(false)
   const [remoteTyping, setRemoteTyping] = useState(false)
   const [connectionState, setConnectionState] = useState<ConnectionState>('disconnected')
+  const insets = useSafeAreaInsets()
   const typingTimeout = useRef<ReturnType<typeof setTimeout> | null>(null)
   const flatListRef = useRef<FlatList<DisplayMessage>>(null)
 
@@ -324,7 +326,7 @@ export function ChatScreen({
 
       {isSupplier && <QuickReplies onSend={handleQuickReply} />}
 
-      <View style={styles.inputBar}>
+      <View style={[styles.inputBar, { paddingBottom: insets.bottom + spacing[2] }]}>
         <TouchableOpacity
           style={styles.attachButton}
           onPress={handleSendPhoto}

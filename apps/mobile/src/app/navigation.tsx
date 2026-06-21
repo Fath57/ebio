@@ -778,6 +778,7 @@ const HIDE_TAB_BAR_ROUTES = new Set([
   'ForgotPassword',
   'SupplierRegistration',
   'EditProfile',
+  'ChatDetail',
 ])
 
 export function AppNavigation() {
