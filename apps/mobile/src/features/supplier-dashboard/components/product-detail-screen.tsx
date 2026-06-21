@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import Box from 'lucide-react-native/dist/esm/icons/box'
 import Edit from 'lucide-react-native/dist/esm/icons/pencil'
@@ -67,6 +68,7 @@ interface ProductDetailScreenProps {
 
 export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
+  const tabBarHeight = useBottomTabBarHeight()
   const [product, setProduct] = useState<ProductDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedPhoto, setSelectedPhoto] = useState(0)
@@ -120,7 +122,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit }: ProductDeta
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}

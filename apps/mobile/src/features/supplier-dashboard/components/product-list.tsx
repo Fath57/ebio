@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
@@ -69,6 +70,7 @@ interface ProductListProps {
 
 export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
   const { semantic } = useTheme()
+  const tabBarHeight = useBottomTabBarHeight()
   const [products, setProducts] = useState<Product[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -304,7 +306,7 @@ export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
         keyExtractor={item => item.id}
         renderItem={renderProductCard}
         ListEmptyComponent={renderEmptyState}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[10] }]}
         showsVerticalScrollIndicator={false}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
@@ -312,7 +314,7 @@ export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
 
       {/* FAB */}
       <TouchableOpacity
-        style={styles.fab}
+        style={[styles.fab, { bottom: tabBarHeight + spacing[4] }]}
         onPress={onAddProduct}
         accessibilityRole="button"
         accessibilityLabel="Ajouter un nouveau produit"

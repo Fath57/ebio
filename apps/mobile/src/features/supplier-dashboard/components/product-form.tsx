@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { Audio } from 'expo-av'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
 import Mic from 'lucide-react-native/dist/esm/icons/mic'
@@ -9,6 +10,8 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -64,6 +67,7 @@ interface ProductFormProps {
 
 export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps) {
   const { semantic } = useTheme()
+  const tabBarHeight = useBottomTabBarHeight()
   const { categories, loadCategories } = useCategories()
   const [modal, setModal] = useState<{ visible: boolean, title: string, message: string, type: 'success' | 'error' | 'confirm', onConfirm?: () => void }>({ visible: false, title: '', message: '', type: 'error' })
 
@@ -229,306 +233,312 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   }
 
   return (
-    <ScrollView
-      style={[styles.screen, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
+    <KeyboardAvoidingView
+      style={styles.screen}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <Text style={[styles.title, { color: semantic.textPrimary }]}>
-        {initialData ? 'Modifier le produit' : 'Nouveau produit'}
-      </Text>
+      <ScrollView
+        style={[styles.screen, { backgroundColor: semantic.bgPage }]}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={[styles.title, { color: semantic.textPrimary }]}>
+          {initialData ? 'Modifier le produit' : 'Nouveau produit'}
+        </Text>
 
-      {/* Photos */}
-      <Text style={[styles.label, { color: semantic.textSecondary }]}>
-        Photos (
-        {photoUrls.length}
-        /
-        {MAX_PHOTOS}
-        )
-      </Text>
-      <View style={styles.photoRow}>
-        {photoUrls.map((uri, index) => (
-          <View key={uri} style={styles.photoContainer}>
-            <Image source={{ uri }} style={styles.photoImage} resizeMode="cover" />
-            <TouchableOpacity
-              style={styles.photoRemoveButton}
-              onPress={() => handleRemovePhoto(index)}
-              accessibilityLabel={`Supprimer la photo ${index + 1}`}
-            >
-              <X size={12} color={colors.neutral[0]} />
-            </TouchableOpacity>
-          </View>
-        ))}
-        {photoUrls.length < MAX_PHOTOS && (
-          <TouchableOpacity
-            style={[styles.photoAddButton, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
-            onPress={handleAddPhoto}
-            accessibilityLabel="Ajouter une photo"
-          >
-            <Camera size={20} color={semantic.textTertiary} />
-            <Text style={[styles.photoAddText, { color: semantic.textTertiary }]}>Ajouter</Text>
-            <Text style={[styles.photoGuideText, { color: semantic.textTertiary }]}>Cadrez le produit au centre</Text>
-          </TouchableOpacity>
-        )}
-      </View>
-
-      {/* Name */}
-      <Text style={[styles.label, { color: semantic.textSecondary }]}>Nom du produit *</Text>
-      <TextInput
-        style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-        placeholder="Ex: Huile d'arachide bio"
-        placeholderTextColor={semantic.textTertiary}
-        value={name}
-        onChangeText={setName}
-        accessibilityLabel="Nom du produit"
-      />
-
-      {/* Category */}
-      <Text style={[styles.label, { color: semantic.textSecondary }]}>Catégorie *</Text>
-      <View style={styles.categoryGrid}>
-        {categories.map((cat) => {
-          const isSelected = category === cat.id
-          return (
-            <TouchableOpacity
-              key={cat.id}
-              style={[
-                styles.categoryChip,
-                { borderColor: semantic.borderNormal, backgroundColor: semantic.bgCard },
-                isSelected && styles.categoryChipActive,
-              ]}
-              onPress={() => setCategory(cat.id)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: isSelected }}
-              accessibilityLabel={cat.label}
-            >
-              {cat.imageUrl
-                ? <Image source={{ uri: cat.imageUrl }} style={{ width: 16, height: 16, borderRadius: 4 }} />
-                : <cat.fallbackIcon size={16} color={isSelected ? colors.green[800] : semantic.textSecondary} />}
-              <Text
-                style={[
-                  styles.categoryLabel,
-                  { color: semantic.textSecondary },
-                  isSelected && styles.categoryLabelActive,
-                ]}
-              >
-                {cat.label}
-              </Text>
-            </TouchableOpacity>
+        {/* Photos */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>
+          Photos (
+          {photoUrls.length}
+          /
+          {MAX_PHOTOS}
           )
-        })}
-      </View>
+        </Text>
+        <View style={styles.photoRow}>
+          {photoUrls.map((uri, index) => (
+            <View key={uri} style={styles.photoContainer}>
+              <Image source={{ uri }} style={styles.photoImage} resizeMode="cover" />
+              <TouchableOpacity
+                style={styles.photoRemoveButton}
+                onPress={() => handleRemovePhoto(index)}
+                accessibilityLabel={`Supprimer la photo ${index + 1}`}
+              >
+                <X size={12} color={colors.neutral[0]} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {photoUrls.length < MAX_PHOTOS && (
+            <TouchableOpacity
+              style={[styles.photoAddButton, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
+              onPress={handleAddPhoto}
+              accessibilityLabel="Ajouter une photo"
+            >
+              <Camera size={20} color={semantic.textTertiary} />
+              <Text style={[styles.photoAddText, { color: semantic.textTertiary }]}>Ajouter</Text>
+              <Text style={[styles.photoGuideText, { color: semantic.textTertiary }]}>Cadrez le produit au centre</Text>
+            </TouchableOpacity>
+          )}
+        </View>
 
-      {/* Price + Unit */}
-      <Text style={[styles.label, { color: semantic.textSecondary }]}>Prix et unité *</Text>
-      <View style={styles.priceRow}>
+        {/* Name */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Nom du produit *</Text>
         <TextInput
-          style={[styles.textInput, styles.priceInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-          placeholder="Prix (FCFA)"
+          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+          placeholder="Ex: Huile d'arachide bio"
           placeholderTextColor={semantic.textTertiary}
-          keyboardType="numeric"
-          value={price}
-          onChangeText={setPrice}
-          accessibilityLabel="Prix"
+          value={name}
+          onChangeText={setName}
+          accessibilityLabel="Nom du produit"
         />
-        <View style={styles.unitRow}>
-          {UNITS.map((u) => {
-            const isSelected = unit === u.value
+
+        {/* Category */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Catégorie *</Text>
+        <View style={styles.categoryGrid}>
+          {categories.map((cat) => {
+            const isSelected = category === cat.id
             return (
               <TouchableOpacity
-                key={u.value}
+                key={cat.id}
                 style={[
-                  styles.unitChip,
-                  { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
-                  isSelected && styles.unitChipActive,
+                  styles.categoryChip,
+                  { borderColor: semantic.borderNormal, backgroundColor: semantic.bgCard },
+                  isSelected && styles.categoryChipActive,
                 ]}
-                onPress={() => setUnit(u.value)}
+                onPress={() => setCategory(cat.id)}
                 accessibilityRole="radio"
                 accessibilityState={{ selected: isSelected }}
-                accessibilityLabel={u.label}
+                accessibilityLabel={cat.label}
               >
+                {cat.imageUrl
+                  ? <Image source={{ uri: cat.imageUrl }} style={{ width: 16, height: 16, borderRadius: 4 }} />
+                  : <cat.fallbackIcon size={16} color={isSelected ? colors.green[800] : semantic.textSecondary} />}
                 <Text
                   style={[
-                    styles.unitChipText,
+                    styles.categoryLabel,
                     { color: semantic.textSecondary },
-                    isSelected && styles.unitChipTextActive,
+                    isSelected && styles.categoryLabelActive,
                   ]}
                 >
-                  {u.label}
+                  {cat.label}
                 </Text>
               </TouchableOpacity>
             )
           })}
         </View>
-      </View>
 
-      {/* Variants */}
-      <View style={styles.sectionHeader}>
-        <Text style={[styles.label, { color: semantic.textSecondary }]}>Variantes</Text>
-        <TouchableOpacity
-          style={styles.addVariantButton}
-          onPress={handleAddVariant}
-          accessibilityLabel="Ajouter une variante"
-        >
-          <Text style={[styles.addVariantText, { color: semantic.colorPrimary }]}>+ Ajouter</Text>
-        </TouchableOpacity>
-      </View>
-      {variants.map(variant => (
-        <View key={variant.id} style={styles.variantRow}>
+        {/* Price + Unit */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Prix et unité *</Text>
+        <View style={styles.priceRow}>
           <TextInput
-            style={[styles.textInput, styles.variantInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-            placeholder="Libellé"
-            placeholderTextColor={semantic.textTertiary}
-            value={variant.label}
-            onChangeText={text =>
-              handleUpdateVariant(variant.id, 'label', text)}
-            accessibilityLabel="Libellé de la variante"
-          />
-          <TextInput
-            style={[styles.textInput, styles.variantSmallInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-            placeholder="Prix"
+            style={[styles.textInput, styles.priceInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+            placeholder="Prix (FCFA)"
             placeholderTextColor={semantic.textTertiary}
             keyboardType="numeric"
-            value={variant.price}
-            onChangeText={text =>
-              handleUpdateVariant(variant.id, 'price', text)}
-            accessibilityLabel="Prix de la variante"
+            value={price}
+            onChangeText={setPrice}
+            accessibilityLabel="Prix"
           />
-          <TextInput
-            style={[styles.textInput, styles.variantSmallInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-            placeholder="Stock"
-            placeholderTextColor={semantic.textTertiary}
-            keyboardType="numeric"
-            value={variant.stock}
-            onChangeText={text =>
-              handleUpdateVariant(variant.id, 'stock', text)}
-            accessibilityLabel="Stock de la variante"
-          />
+          <View style={styles.unitRow}>
+            {UNITS.map((u) => {
+              const isSelected = unit === u.value
+              return (
+                <TouchableOpacity
+                  key={u.value}
+                  style={[
+                    styles.unitChip,
+                    { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
+                    isSelected && styles.unitChipActive,
+                  ]}
+                  onPress={() => setUnit(u.value)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={u.label}
+                >
+                  <Text
+                    style={[
+                      styles.unitChipText,
+                      { color: semantic.textSecondary },
+                      isSelected && styles.unitChipTextActive,
+                    ]}
+                  >
+                    {u.label}
+                  </Text>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        </View>
+
+        {/* Variants */}
+        <View style={styles.sectionHeader}>
+          <Text style={[styles.label, { color: semantic.textSecondary }]}>Variantes</Text>
           <TouchableOpacity
-            style={styles.variantRemoveButton}
-            onPress={() => handleRemoveVariant(variant.id)}
-            accessibilityLabel="Supprimer la variante"
+            style={styles.addVariantButton}
+            onPress={handleAddVariant}
+            accessibilityLabel="Ajouter une variante"
           >
-            <X size={16} color={colors.coral[400]} />
+            <Text style={[styles.addVariantText, { color: semantic.colorPrimary }]}>+ Ajouter</Text>
           </TouchableOpacity>
         </View>
-      ))}
+        {variants.map(variant => (
+          <View key={variant.id} style={styles.variantRow}>
+            <TextInput
+              style={[styles.textInput, styles.variantInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+              placeholder="Libellé"
+              placeholderTextColor={semantic.textTertiary}
+              value={variant.label}
+              onChangeText={text =>
+                handleUpdateVariant(variant.id, 'label', text)}
+              accessibilityLabel="Libellé de la variante"
+            />
+            <TextInput
+              style={[styles.textInput, styles.variantSmallInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+              placeholder="Prix"
+              placeholderTextColor={semantic.textTertiary}
+              keyboardType="numeric"
+              value={variant.price}
+              onChangeText={text =>
+                handleUpdateVariant(variant.id, 'price', text)}
+              accessibilityLabel="Prix de la variante"
+            />
+            <TextInput
+              style={[styles.textInput, styles.variantSmallInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+              placeholder="Stock"
+              placeholderTextColor={semantic.textTertiary}
+              keyboardType="numeric"
+              value={variant.stock}
+              onChangeText={text =>
+                handleUpdateVariant(variant.id, 'stock', text)}
+              accessibilityLabel="Stock de la variante"
+            />
+            <TouchableOpacity
+              style={styles.variantRemoveButton}
+              onPress={() => handleRemoveVariant(variant.id)}
+              accessibilityLabel="Supprimer la variante"
+            >
+              <X size={16} color={colors.coral[400]} />
+            </TouchableOpacity>
+          </View>
+        ))}
 
-      {/* Stock */}
-      <Text style={[styles.label, { color: semantic.textSecondary }]}>Stock *</Text>
-      <TextInput
-        style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-        placeholder="Quantité en stock"
-        placeholderTextColor={semantic.textTertiary}
-        keyboardType="numeric"
-        value={stock}
-        onChangeText={setStock}
-        accessibilityLabel="Stock"
-      />
-
-      <Text style={[styles.label, { color: semantic.textSecondary }]}>Seuil d'alerte stock</Text>
-      <TextInput
-        style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-        placeholder="Alerte quand le stock descend sous..."
-        placeholderTextColor={semantic.textTertiary}
-        keyboardType="numeric"
-        value={alertThreshold}
-        onChangeText={setAlertThreshold}
-        accessibilityLabel="Seuil d'alerte stock"
-      />
-
-      {/* Voice description */}
-      <Text style={[styles.label, { color: semantic.textSecondary }]}>Description vocale</Text>
-      <View style={styles.voiceRow}>
-        <TouchableOpacity
-          style={[
-            styles.voiceButton,
-            { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
-            isRecording && styles.voiceButtonRecording,
-          ]}
-          onPress={isRecording ? handleStopRecording : handleStartRecording}
-          accessibilityLabel={
-            isRecording
-              ? 'Arrêter l\'enregistrement'
-              : 'Enregistrer une description vocale'
-          }
-        >
-          {isRecording
-            ? <Square size={18} color={colors.coral[600]} />
-            : <Mic size={18} color={semantic.textSecondary} />}
-          <Text
-            style={[
-              styles.voiceText,
-              { color: semantic.textSecondary },
-              isRecording && styles.voiceTextRecording,
-            ]}
-          >
-            {isRecording ? 'Enregistrement en cours...' : 'Enregistrer'}
-          </Text>
-        </TouchableOpacity>
-        {voiceUri && !isRecording && (
-          <Text style={[styles.voiceRecorded, { color: semantic.textPrimaryColor }]}>Enregistrement sauvegardé</Text>
-        )}
-      </View>
-
-      {/* Status toggle */}
-      <View style={[styles.statusRow, { borderTopColor: semantic.borderLight }]}>
-        <Text style={[styles.statusLabel, { color: semantic.textPrimary }]}>
-          Statut :
-          {' '}
-          {isActive ? 'Actif' : 'Masqué'}
-        </Text>
-        <Switch
-          value={isActive}
-          onValueChange={setIsActive}
-          trackColor={{
-            false: colors.neutral[200],
-            true: colors.green[200],
-          }}
-          thumbColor={isActive ? colors.green[400] : colors.neutral[400]}
-          accessibilityLabel="Statut du produit"
+        {/* Stock */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Stock *</Text>
+        <TextInput
+          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+          placeholder="Quantité en stock"
+          placeholderTextColor={semantic.textTertiary}
+          keyboardType="numeric"
+          value={stock}
+          onChangeText={setStock}
+          accessibilityLabel="Stock"
         />
-      </View>
 
-      {/* Actions */}
-      <View style={styles.actionRow}>
-        {onCancel && (
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Seuil d'alerte stock</Text>
+        <TextInput
+          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+          placeholder="Alerte quand le stock descend sous..."
+          placeholderTextColor={semantic.textTertiary}
+          keyboardType="numeric"
+          value={alertThreshold}
+          onChangeText={setAlertThreshold}
+          accessibilityLabel="Seuil d'alerte stock"
+        />
+
+        {/* Voice description */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Description vocale</Text>
+        <View style={styles.voiceRow}>
           <TouchableOpacity
-            style={[styles.cancelButton, { borderColor: semantic.borderNormal }]}
-            onPress={onCancel}
-            accessibilityLabel="Annuler"
+            style={[
+              styles.voiceButton,
+              { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
+              isRecording && styles.voiceButtonRecording,
+            ]}
+            onPress={isRecording ? handleStopRecording : handleStartRecording}
+            accessibilityLabel={
+              isRecording
+                ? 'Arrêter l\'enregistrement'
+                : 'Enregistrer une description vocale'
+            }
           >
-            <Text style={[styles.cancelButtonText, { color: semantic.textSecondary }]}>Annuler</Text>
+            {isRecording
+              ? <Square size={18} color={colors.coral[600]} />
+              : <Mic size={18} color={semantic.textSecondary} />}
+            <Text
+              style={[
+                styles.voiceText,
+                { color: semantic.textSecondary },
+                isRecording && styles.voiceTextRecording,
+              ]}
+            >
+              {isRecording ? 'Enregistrement en cours...' : 'Enregistrer'}
+            </Text>
           </TouchableOpacity>
-        )}
-        <TouchableOpacity
-          style={[styles.saveButton, isSubmitting && styles.buttonDisabled]}
-          onPress={handleSubmit}
-          disabled={isSubmitting}
-          accessibilityLabel="Enregistrer"
-        >
-          {isSubmitting
-            ? (
-                <ActivityIndicator size="small" color={colors.neutral[0]} />
-              )
-            : (
-                <Text style={styles.saveButtonText}>Enregistrer</Text>
-              )}
-        </TouchableOpacity>
-      </View>
+          {voiceUri && !isRecording && (
+            <Text style={[styles.voiceRecorded, { color: semantic.textPrimaryColor }]}>Enregistrement sauvegardé</Text>
+          )}
+        </View>
 
-      <ConfirmModal
-        visible={modal.visible}
-        icon={TriangleAlert}
-        iconColor={colors.coral[600]}
-        iconBg={colors.coral[50]}
-        title={modal.title}
-        message={modal.message}
-        confirmLabel="OK"
-        confirmStyle="primary"
-        onConfirm={() => setModal(prev => ({ ...prev, visible: false }))}
-        onCancel={() => setModal(prev => ({ ...prev, visible: false }))}
-      />
-    </ScrollView>
+        {/* Status toggle */}
+        <View style={[styles.statusRow, { borderTopColor: semantic.borderLight }]}>
+          <Text style={[styles.statusLabel, { color: semantic.textPrimary }]}>
+            Statut :
+            {' '}
+            {isActive ? 'Actif' : 'Masqué'}
+          </Text>
+          <Switch
+            value={isActive}
+            onValueChange={setIsActive}
+            trackColor={{
+              false: colors.neutral[200],
+              true: colors.green[200],
+            }}
+            thumbColor={isActive ? colors.green[400] : colors.neutral[400]}
+            accessibilityLabel="Statut du produit"
+          />
+        </View>
+
+        {/* Actions */}
+        <View style={styles.actionRow}>
+          {onCancel && (
+            <TouchableOpacity
+              style={[styles.cancelButton, { borderColor: semantic.borderNormal }]}
+              onPress={onCancel}
+              accessibilityLabel="Annuler"
+            >
+              <Text style={[styles.cancelButtonText, { color: semantic.textSecondary }]}>Annuler</Text>
+            </TouchableOpacity>
+          )}
+          <TouchableOpacity
+            style={[styles.saveButton, isSubmitting && styles.buttonDisabled]}
+            onPress={handleSubmit}
+            disabled={isSubmitting}
+            accessibilityLabel="Enregistrer"
+          >
+            {isSubmitting
+              ? (
+                  <ActivityIndicator size="small" color={colors.neutral[0]} />
+                )
+              : (
+                  <Text style={styles.saveButtonText}>Enregistrer</Text>
+                )}
+          </TouchableOpacity>
+        </View>
+
+        <ConfirmModal
+          visible={modal.visible}
+          icon={TriangleAlert}
+          iconColor={colors.coral[600]}
+          iconBg={colors.coral[50]}
+          title={modal.title}
+          message={modal.message}
+          confirmLabel="OK"
+          confirmStyle="primary"
+          onConfirm={() => setModal(prev => ({ ...prev, visible: false }))}
+          onCancel={() => setModal(prev => ({ ...prev, visible: false }))}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

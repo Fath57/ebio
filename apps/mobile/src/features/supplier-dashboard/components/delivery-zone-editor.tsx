@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Map from 'lucide-react-native/dist/esm/icons/map'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
@@ -29,6 +30,7 @@ interface DeliveryZoneEditorProps {
 
 export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
   const { semantic } = useTheme()
+  const tabBarHeight = useBottomTabBarHeight()
   const [zones, setZones] = useState<DeliveryZone[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [newZoneName, setNewZoneName] = useState('')
@@ -261,7 +263,7 @@ export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
         renderItem={renderZoneItem}
         ListHeaderComponent={renderHeader}
         ListEmptyComponent={renderEmptyZones}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
       />
 

@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
@@ -61,6 +62,7 @@ interface OpeningHoursEditorProps {
 
 export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
   const { semantic } = useTheme()
+  const tabBarHeight = useBottomTabBarHeight()
   const [schedule, setSchedule] = useState<WeekSchedule>(createDefaultSchedule)
   const [isLoading, setIsLoading] = useState(true)
   const [isSaving, setIsSaving] = useState(false)
@@ -81,7 +83,7 @@ export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
         const settings = await res.json()
         const raw = settings.openingHours ?? {}
         // Map API format { lundi: { open: '08:00', close: '18:00' } } to our format
-        const mapped: WeekSchedule = { ...DEFAULT_SCHEDULE }
+        const mapped: WeekSchedule = createDefaultSchedule()
         const dayMapping: Record<string, string> = {
           lundi: 'lundi',
           mardi: 'mardi',
@@ -270,7 +272,7 @@ export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
   return (
     <ScrollView
       style={[styles.screen, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
       showsVerticalScrollIndicator={false}
     >
       <Text style={[styles.title, { color: semantic.textPrimary }]}>Horaires d'ouverture</Text>
