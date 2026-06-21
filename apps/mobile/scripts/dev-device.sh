@@ -6,7 +6,6 @@ set -euo pipefail
 
 API_PORT=3000
 METRO_PORT=8081
-MINIO_PORT=9000
 
 # Se placer à la racine de l'app mobile, peu importe d'où le script est appelé
 cd "$(dirname "$0")/.."
@@ -29,7 +28,6 @@ fi
 echo "🔌 Mapping des ports localhost → device..."
 adb reverse "tcp:${API_PORT}" "tcp:${API_PORT}"
 adb reverse "tcp:${METRO_PORT}" "tcp:${METRO_PORT}"
-adb reverse "tcp:${MINIO_PORT}" "tcp:${MINIO_PORT}"
 adb reverse --list
 
 echo "🚀 Démarrage du dev-client (bundler sur localhost)..."
