@@ -258,7 +258,7 @@ export function ChatScreen({
   return (
     <KeyboardAvoidingView
       style={[styles.screen, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
     >
       {connectionState === 'reconnecting' && (

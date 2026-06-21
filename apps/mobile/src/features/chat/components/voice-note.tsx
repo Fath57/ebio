@@ -23,9 +23,11 @@ export function VoiceNoteRecorder({ onSend }: VoiceNoteRecorderProps) {
   const [duration, setDuration] = useState(0)
   const recordingRef = useRef<Audio.Recording | null>(null)
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const startTimeRef = useRef<number>(0)
 
   const handlePressIn = useCallback(async () => {
     try {
+      startTimeRef.current = Date.now()
       const permission = await Audio.requestPermissionsAsync()
       if (!permission.granted) {
         appAlert(
@@ -71,9 +73,11 @@ export function VoiceNoteRecorder({ onSend }: VoiceNoteRecorderProps) {
     try {
       await recording.stopAndUnloadAsync()
       const uri = recording.getURI()
-      const status = await recording.getStatusAsync()
+      const durationMs = startTimeRef.current ? Date.now() - startTimeRef.current : 0
+      // Réinitialise le mode audio pour permettre la lecture après enregistrement
+      void Audio.setAudioModeAsync({ allowsRecordingIOS: false })
       if (uri) {
-        onSend(uri, status.durationMillis ?? 0)
+        onSend(uri, durationMs)
       }
     }
     catch {

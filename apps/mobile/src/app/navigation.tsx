@@ -828,7 +828,16 @@ export function AppNavigation() {
         }}
       >
         <Tab.Screen name="Accueil" component={SearchStackScreen} />
-        <Tab.Screen name="Chat" component={ChatStackScreen} />
+        <Tab.Screen
+          name="Chat"
+          component={ChatStackScreen}
+          listeners={({ navigation }) => ({
+            tabPress: () => {
+              // Toujours revenir à la liste des conversations (pas la conversation courante)
+              navigation.navigate('Chat', { screen: 'ChatHome' })
+            },
+          })}
+        />
         <Tab.Screen name="Panier" component={CartStackScreen} />
         <Tab.Screen name="Profil" component={ProfileStackScreen} />
       </Tab.Navigator>
