@@ -49,6 +49,8 @@ export const configValidationSchema = z.object({
   // BetterAuth
   BETTER_AUTH_SECRET: z.string(),
   TRUSTED_ORIGINS: z.string().transform(val => val.split(',')),
+  GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
+  GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
 
   // Clients
   CLIENTS_WEB_APP_URL: z.string(),
@@ -142,6 +144,10 @@ export const config = {
   betterAuth: {
     secret: configParsed.data.BETTER_AUTH_SECRET,
     trustedOrigins: configParsed.data.TRUSTED_ORIGINS,
+    google: {
+      clientId: configParsed.data.GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: configParsed.data.GOOGLE_OAUTH_CLIENT_SECRET,
+    },
   },
   database: {
     password: configParsed.data.DATABASE_PASSWORD,

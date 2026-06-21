@@ -18,6 +18,8 @@ interface BetterAuthOptionsDynamic {
   afterHook?: ((inputContext: MiddlewareInputContext<MiddlewareOptions>) => Promise<unknown>)
   databaseHooks?: BetterAuthOptions['databaseHooks']
   baseUrl: string
+  googleClientId?: string
+  googleClientSecret?: string
 }
 
 // We should use this, but sadly we do not have our custom fields in the session object (only the plugin added fields)
@@ -63,6 +65,14 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
         return options?.sendResetPassword?.(data, request)
       },
     },
+    socialProviders: options.googleClientId && options.googleClientSecret
+      ? {
+          google: {
+            clientId: options.googleClientId,
+            clientSecret: options.googleClientSecret,
+          },
+        }
+      : undefined,
     emailVerification: {
       sendOnSignUp: true,
       expiresIn: 60 * 60 * 24 * 10, // 10 days

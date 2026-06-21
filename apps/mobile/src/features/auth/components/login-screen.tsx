@@ -21,6 +21,7 @@ import { notifyAuthChange, signInWithEmail } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { GoogleSignInButton } from './google-sign-in-button'
 
 interface LoginScreenProps {
   onLoginSuccess: () => void
@@ -303,6 +304,21 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
             </>
           )}
 
+          {/* ─── Google ─── */}
+          <View style={styles.dividerRow}>
+            <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
+            <Text style={[styles.dividerText, { color: semantic.textTertiary }]}>ou</Text>
+            <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
+          </View>
+
+          <GoogleSignInButton
+            onSuccess={() => {
+              notifyAuthChange()
+              onLoginSuccess()
+            }}
+            onError={setError}
+          />
+
           {/* Toggle to register */}
           <View style={styles.toggleRow}>
             <Text style={[styles.toggleLabel, { color: semantic.textSecondary }]}>
@@ -330,6 +346,10 @@ const styles = StyleSheet.create({
 
   title: { ...typography.h1, marginBottom: spacing[1] },
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },
+
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { ...typography.caption },
 
   errorBanner: {
     backgroundColor: colors.coral[50],

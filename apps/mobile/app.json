@@ -3,6 +3,7 @@
     "name": "eBio Mobile",
     "slug": "ebio-mobile",
     "version": "1.0.0",
+    "scheme": "ebio-mobile",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -49,7 +50,13 @@
       "expo-local-authentication",
       "expo-notifications",
       "expo-secure-store",
-      "expo-font"
+      "expo-font",
+      [
+        "@react-native-google-signin/google-signin",
+        {
+          "iosUrlScheme": "com.googleusercontent.apps.REPLACE_WITH_REVERSED_IOS_CLIENT_ID"
+        }
+      ]
     ],
     "extra": {
       "eas": {

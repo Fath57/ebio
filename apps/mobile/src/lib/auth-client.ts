@@ -1,7 +1,9 @@
+import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
 import { useEffect, useState } from 'react'
 import { apiFetch, clearTokens, setSessionToken } from '../utils/api-client'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
+const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
 
 const AUTH_HEADERS: Record<string, string> = {
   'Content-Type': 'application/json',
@@ -95,6 +97,76 @@ export async function signUpWithEmail(name: string, email: string, password: str
   }
   catch {
     return { user: null, error: 'Erreur de connexion. Vérifiez votre réseau.' }
+  }
+}
+
+// ─── Google OAuth (native) ───────────────────────────────────────────────────
+
+let googleConfigured = false
+
+function ensureGoogleConfigured(): void {
+  if (googleConfigured)
+    return
+  GoogleSignin.configure({
+    webClientId: GOOGLE_WEB_CLIENT_ID,
+    offlineAccess: false,
+  })
+  googleConfigured = true
+}
+
+/**
+ * Connexion / inscription via Google (Sign-In natif).
+ * Récupère un idToken Google, l'envoie à Better Auth (`/sign-in/social`) qui le
+ * vérifie, crée la session et lie/crée le compte. `error: null` sans user = annulé.
+ */
+export async function signInWithGoogle(): Promise<AuthResponse> {
+  try {
+    ensureGoogleConfigured()
+    await GoogleSignin.hasPlayServices({ showPlayServicesUpdateDialog: true })
+    const response = await GoogleSignin.signIn()
+
+    if (response.type !== 'success') {
+      return { user: null, error: null }
+    }
+
+    const idToken = response.data.idToken
+    if (!idToken) {
+      return { user: null, error: 'Impossible de récupérer le jeton Google.' }
+    }
+
+    const res = await fetch(`${API_URL}/api/auth/sign-in/social`, {
+      method: 'POST',
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ provider: 'google', idToken: { token: idToken } }),
+    })
+
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      return { user: null, error: data.message ?? 'Connexion Google échouée.' }
+    }
+
+    const data = await res.json()
+    const fullToken = extractFullToken(res)
+    if (fullToken) {
+      await setSessionToken(fullToken)
+    }
+    else if (data.token) {
+      await setSessionToken(data.token)
+    }
+
+    return { user: data.user ?? null, error: null }
+  }
+  catch (err) {
+    const code = (err as { code?: string }).code
+    const message = (err as { message?: string }).message
+    console.warn('[google-signin] error', { code, message })
+    if (code === statusCodes.SIGN_IN_CANCELLED) {
+      return { user: null, error: null }
+    }
+    if (code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
+      return { user: null, error: 'Google Play Services indisponible.' }
+    }
+    return { user: null, error: 'Connexion Google impossible. Réessayez.' }
   }
 }
 

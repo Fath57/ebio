@@ -28,6 +28,7 @@ import {
 } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { GoogleSignInButton } from './google-sign-in-button'
 import { OtpInput, ResendTimer } from './otp-input'
 
 type Step = 'phone-input' | 'otp' | 'name' | 'email-form' | 'email-otp'
@@ -313,6 +314,21 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                   S'inscrire avec un e-mail
                 </Text>
               </Pressable>
+
+              <View style={styles.dividerRow}>
+                <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
+                <Text style={[styles.dividerText, { color: semantic.textTertiary }]}>ou</Text>
+                <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
+              </View>
+
+              <GoogleSignInButton
+                label="S'inscrire avec Google"
+                onSuccess={() => {
+                  notifyAuthChange()
+                  onRegisterSuccess()
+                }}
+                onError={setError}
+              />
             </>
           )}
 
@@ -514,6 +530,10 @@ const styles = StyleSheet.create({
 
   title: { ...typography.h1, marginBottom: spacing[1] },
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },
+
+  dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
+  dividerLine: { flex: 1, height: 1 },
+  dividerText: { ...typography.caption },
 
   errorBanner: {
     backgroundColor: colors.coral[50],
