@@ -36,6 +36,7 @@ import { ProductDetailScreen as SupplierProductDetail } from '../features/suppli
 import { ProductForm } from '../features/supplier-dashboard/components/product-form'
 import { ProductList } from '../features/supplier-dashboard/components/product-list'
 import { ShopProfileEditor } from '../features/supplier-dashboard/components/shop-profile-editor'
+import { SupplierReviewsScreen } from '../features/supplier-dashboard/components/supplier-reviews-screen'
 import { SupplierSettingsScreen } from '../features/supplier-dashboard/components/supplier-settings-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { useSession } from '../lib/auth-client'
@@ -298,6 +299,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="SupplierOrders" component={SupplierOrdersWrapper} />
       <ProfileStack.Screen name="SupplierSettings" component={SupplierSettingsWrapper} />
       <ProfileStack.Screen name="SupplierShopProfile" component={SupplierShopProfileWrapper} />
+      <ProfileStack.Screen name="SupplierReviews" component={SupplierReviewsWrapper} />
       <ProfileStack.Screen name="SupplierOpeningHours" component={SupplierOpeningHoursWrapper} />
       <ProfileStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
       <ProfileStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
@@ -364,7 +366,16 @@ function SupplierDashboardWrapper({ navigation }: any) {
         onNavigateToProducts={() => navigation.navigate('SupplierProducts')}
         onNavigateToOrders={() => navigation.navigate('SupplierOrders')}
         onNavigateToSettings={() => navigation.navigate('SupplierSettings')}
+        onNavigateToReviews={() => navigation.navigate('SupplierReviews')}
       />
+    </SafeScreen>
+  )
+}
+
+function SupplierReviewsWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <SupplierReviewsScreen onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }

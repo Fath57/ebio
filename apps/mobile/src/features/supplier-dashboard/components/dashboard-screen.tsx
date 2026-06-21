@@ -1,7 +1,10 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Settings from 'lucide-react-native/dist/esm/icons/settings'
 import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
+import Star from 'lucide-react-native/dist/esm/icons/star'
 import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up'
 import { useEffect, useState } from 'react'
 import {
@@ -29,10 +32,12 @@ interface DashboardScreenProps {
   onNavigateToProducts: () => void
   onNavigateToOrders: () => void
   onNavigateToSettings: () => void
+  onNavigateToReviews: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews }: DashboardScreenProps) {
   const { semantic } = useTheme()
+  const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
 
@@ -65,7 +70,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
@@ -109,6 +114,33 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           </Text>
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             Stock critique
+          </Text>
+        </View>
+      </View>
+
+      {/* Secondary metrics */}
+      <View style={styles.kpiRow}>
+        <TouchableOpacity
+          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
+          onPress={onNavigateToReviews}
+          activeOpacity={0.7}
+        >
+          <Star size={20} color={colors.earth[400]} />
+          <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
+            {data?.averageRating != null ? data.averageRating.toFixed(1) : '—'}
+          </Text>
+          <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
+            Note moyenne
+          </Text>
+        </TouchableOpacity>
+
+        <View style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}>
+          <MessageCircle size={20} color={colors.blue[400]} />
+          <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
+            {data?.unreadMessages ?? 0}
+          </Text>
+          <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
+            Messages
           </Text>
         </View>
       </View>
@@ -166,6 +198,15 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
             <Settings size={18} color={colors.earth[600]} />
           </View>
           <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Paramètres boutique</Text>
+        </TouchableOpacity>
+
+        <View style={styles.actionDivider} />
+
+        <TouchableOpacity style={styles.actionItem} onPress={onNavigateToReviews} activeOpacity={0.6}>
+          <View style={[styles.actionIcon, { backgroundColor: colors.coral[50] }]}>
+            <Star size={18} color={colors.coral[600]} />
+          </View>
+          <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Avis clients</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
