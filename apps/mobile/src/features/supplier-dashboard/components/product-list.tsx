@@ -1,6 +1,7 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import Package from 'lucide-react-native/dist/esm/icons/package'
+import Search from 'lucide-react-native/dist/esm/icons/search'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import * as React from 'react'
@@ -68,6 +69,13 @@ interface ProductListProps {
   onEditProduct?: (productId: string) => void
 }
 
+const STATUS_FILTERS: Array<{ key: 'all' | ProductStatus, label: string }> = [
+  { key: 'all', label: 'Tous' },
+  { key: 'ACTIVE', label: 'Actifs' },
+  { key: 'OUT_OF_STOCK', label: 'Rupture' },
+  { key: 'HIDDEN', label: 'Masqués' },
+]
+
 export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
@@ -76,6 +84,8 @@ export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [editingStockId, setEditingStockId] = useState<string | null>(null)
   const [editingStockValue, setEditingStockValue] = useState('')
+  const [search, setSearch] = useState('')
+  const [statusFilter, setStatusFilter] = useState<'all' | ProductStatus>('all')
   const [modal, setModal] = useState<{ visible: boolean, title: string, message: string, type: 'success' | 'error' | 'confirm', onConfirm?: () => void }>({ visible: false, title: '', message: '', type: 'error' })
 
   function showError(title: string, message: string): void {
@@ -289,6 +299,13 @@ export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
     )
   }
 
+  const filtered = products.filter((p) => {
+    if (statusFilter !== 'all' && p.status !== statusFilter)
+      return false
+    const q = search.trim().toLowerCase()
+    return q === '' || p.name.toLowerCase().includes(q)
+  })
+
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <View style={[styles.header, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderNormal }]}>
@@ -301,8 +318,40 @@ export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
         </Text>
       </View>
 
+      {/* Recherche + filtres */}
+      <View style={styles.filterBar}>
+        <View style={[styles.searchBox, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
+          <Search size={18} color={semantic.textTertiary} />
+          <TextInput
+            style={[styles.searchInput, { color: semantic.textPrimary }]}
+            placeholder="Rechercher un produit"
+            placeholderTextColor={semantic.textTertiary}
+            value={search}
+            onChangeText={setSearch}
+            autoCapitalize="none"
+            autoCorrect={false}
+          />
+        </View>
+        <View style={styles.statusChips}>
+          {STATUS_FILTERS.map((f) => {
+            const isSel = statusFilter === f.key
+            return (
+              <TouchableOpacity
+                key={f.key}
+                style={[styles.statusChip, { borderColor: semantic.borderNormal }, isSel && styles.statusChipActive]}
+                onPress={() => setStatusFilter(f.key)}
+              >
+                <Text style={[styles.statusChipText, { color: semantic.textSecondary }, isSel && styles.statusChipTextActive]}>
+                  {f.label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      </View>
+
       <FlatList
-        data={products}
+        data={filtered}
         keyExtractor={item => item.id}
         renderItem={renderProductCard}
         ListEmptyComponent={renderEmptyState}
@@ -359,6 +408,47 @@ const styles = StyleSheet.create({
   headerCount: {
     ...typography.caption,
     marginTop: spacing[1],
+  },
+  filterBar: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+    gap: spacing[2],
+  },
+  searchBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    paddingHorizontal: spacing[3],
+    borderWidth: 1,
+    borderRadius: radius.md,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+  },
+  statusChips: {
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  statusChip: {
+    flex: 1,
+    paddingVertical: spacing[1],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+    alignItems: 'center',
+  },
+  statusChipActive: {
+    backgroundColor: colors.green[400],
+    borderColor: colors.green[400],
+  },
+  statusChipText: {
+    ...typography.caption,
+    fontFamily: fonts.sansSb,
+  },
+  statusChipTextActive: {
+    color: colors.neutral[0],
   },
   listContent: {
     paddingTop: spacing[3],
