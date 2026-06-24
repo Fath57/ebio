@@ -1,6 +1,5 @@
 import BellOff from 'lucide-react-native/dist/esm/icons/bell-off'
 import CheckCheck from 'lucide-react-native/dist/esm/icons/check-check'
-import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left'
 import CreditCardIcon from 'lucide-react-native/dist/esm/icons/credit-card'
 import MessageCircleIcon from 'lucide-react-native/dist/esm/icons/message-circle'
 import PackageIcon from 'lucide-react-native/dist/esm/icons/package'
@@ -21,6 +20,7 @@ import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface NotificationItem {
   id: string
@@ -170,20 +170,17 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: semantic.borderLight }]}>
-        <Pressable onPress={onGoBack} hitSlop={8}>
-          <ChevronLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-        </Pressable>
-        <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>
-          Notifications
-          {unreadCount > 0 && ` (${unreadCount})`}
-        </Text>
-        {unreadCount > 0 && (
-          <Pressable onPress={markAllAsRead} hitSlop={8}>
-            <CheckCheck size={22} color={colors.green[600]} strokeWidth={2} />
-          </Pressable>
-        )}
-      </View>
+      <ScreenHeader
+        title={unreadCount > 0 ? `Notifications (${unreadCount})` : 'Notifications'}
+        onBack={onGoBack}
+        rightSlot={unreadCount > 0
+          ? (
+              <Pressable onPress={markAllAsRead} hitSlop={8} accessibilityRole="button" accessibilityLabel="Tout marquer comme lu">
+                <CheckCheck size={22} color={colors.green[600]} strokeWidth={2} />
+              </Pressable>
+            )
+          : null}
+      />
 
       {notifications.length === 0
         ? (

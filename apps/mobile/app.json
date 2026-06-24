@@ -46,7 +46,12 @@
     },
     "plugins": [
       "expo-dev-client",
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "eBio utilise votre position pour afficher les produits et fournisseurs bio près de vous."
+        }
+      ],
       "expo-local-authentication",
       "expo-notifications",
       "expo-secure-store",

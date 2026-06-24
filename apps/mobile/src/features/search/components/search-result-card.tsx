@@ -134,39 +134,37 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
             : <Text style={[styles.modeContact, { color: semantic.textTertiary }]}>Contacter</Text>}
         </View>
 
-        {/* Row 4: Badges — only if notable */}
-        {(supplier.badges.length > 0 || supplier.reviewCount > 0) && (
-          <View style={styles.badgeRow}>
-            {supplier.badges.includes('VALIDATED') && (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Validé eBio</Text>
-              </View>
-            )}
-            {supplier.badges.includes('TOP_SELLER') && (
-              <View style={[styles.badge, { backgroundColor: colors.earth[50] }]}>
-                <Text style={[styles.badgeText, { color: colors.earth[600] }]}>Top vendeur</Text>
-              </View>
-            )}
-            {supplier.rating !== null && (
-              <View style={styles.starsRow}>
-                {Array.from({ length: 5 }, (_, i) => (
-                  <Star
-                    key={i}
-                    size={10}
-                    color={i < Math.round(supplier.rating!) ? colors.earth[400] : colors.neutral[200]}
-                    fill={i < Math.round(supplier.rating!) ? colors.earth[400] : 'none'}
-                    strokeWidth={0}
-                  />
-                ))}
-                <Text style={[styles.reviewCount, { color: semantic.textTertiary }]}>
-                  (
-                  {supplier.reviewCount}
-                  )
-                </Text>
-              </View>
-            )}
-          </View>
-        )}
+        {/* Row 4: Badges / note — toujours rendue (hauteur réservée) pour des cartes de hauteur égale */}
+        <View style={styles.badgeRow}>
+          {supplier.badges.includes('VALIDATED') && (
+            <View style={styles.badge}>
+              <Text style={styles.badgeText}>Validé eBio</Text>
+            </View>
+          )}
+          {supplier.badges.includes('TOP_SELLER') && (
+            <View style={[styles.badge, { backgroundColor: colors.earth[50] }]}>
+              <Text style={[styles.badgeText, { color: colors.earth[600] }]}>Top vendeur</Text>
+            </View>
+          )}
+          {supplier.rating !== null && (
+            <View style={styles.starsRow}>
+              {Array.from({ length: 5 }, (_, i) => (
+                <Star
+                  key={i}
+                  size={10}
+                  color={i < Math.round(supplier.rating!) ? colors.earth[400] : colors.neutral[200]}
+                  fill={i < Math.round(supplier.rating!) ? colors.earth[400] : 'none'}
+                  strokeWidth={0}
+                />
+              ))}
+              <Text style={[styles.reviewCount, { color: semantic.textTertiary }]}>
+                (
+                {supplier.reviewCount}
+                )
+              </Text>
+            </View>
+          )}
+        </View>
       </View>
     </ScalePressable>
   )
@@ -291,7 +289,6 @@ const styles = StyleSheet.create({
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
   },
   metaText: {
     fontFamily: fonts.sans,
@@ -332,6 +329,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
     marginTop: 2,
+    minHeight: 18, // Hauteur réservée même sans badge/note → cartes alignées
   },
   badge: {
     backgroundColor: colors.green[50],

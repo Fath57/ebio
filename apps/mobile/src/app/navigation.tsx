@@ -3,6 +3,7 @@
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import Home from 'lucide-react-native/dist/esm/icons/house'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
@@ -20,6 +21,9 @@ import { CheckoutFlow } from '../features/cart/components/checkout-flow'
 import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
 import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
 import { ConversationList } from '../features/chat/components/conversation-list'
+import { useLocation } from '../features/common/location-context'
+import { HomeScreen } from '../features/home/components/home-screen'
+import { LocationPickerScreen } from '../features/map/components/location-picker-screen'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { OrderConfirmation } from '../features/orders/components/order-confirmation'
@@ -62,6 +66,8 @@ function SearchStackScreen() {
   return (
     <SearchStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <SearchStack.Screen name="SearchHome" component={SearchHomeWrapper} />
+      <SearchStack.Screen name="SearchResults" component={SearchResultsWrapper} />
+      <SearchStack.Screen name="LocationPicker" component={SearchLocationPickerWrapper} />
       <SearchStack.Screen name="SupplierProfile" component={SupplierProfileWrapper} />
       <SearchStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
     </SearchStack.Navigator>
@@ -71,7 +77,60 @@ function SearchStackScreen() {
 function SearchHomeWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <SearchScreen onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })} />
+      <HomeScreen
+        onOpenSearch={() => navigation.navigate('SearchResults', { autoFocus: true })}
+        onSelectCategory={(slug: string) => navigation.navigate('SearchResults', { category: slug })}
+        onOpenMap={() => navigation.navigate('SearchResults', { viewMode: 'map', title: 'Carte' })}
+        onPickLocation={() => navigation.navigate('LocationPicker')}
+        onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
+        onSeeAll={(preset) => {
+          if (preset === 'validated') {
+            navigation.navigate('SearchResults', { validatedOnly: true, title: 'Validé eBio' })
+          }
+          else if (preset === 'promo') {
+            navigation.navigate('SearchResults', { promoOnly: true, title: 'En promotion' })
+          }
+          else {
+            navigation.navigate('SearchResults', { title: 'Près de vous' })
+          }
+        }}
+      />
+    </SafeScreen>
+  )
+}
+
+function SearchResultsWrapper({ route, navigation }: any) {
+  const params = route.params ?? {}
+  return (
+    <SafeScreen>
+      <SearchScreen
+        onGoBack={() => navigation.goBack()}
+        onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
+        initialQuery={params.query}
+        initialCategory={params.category}
+        initialValidatedOnly={params.validatedOnly}
+        initialPromoOnly={params.promoOnly}
+        initialViewMode={params.viewMode}
+        headerTitle={params.title}
+        initialAutoFocus={params.autoFocus}
+      />
+    </SafeScreen>
+  )
+}
+
+function SearchLocationPickerWrapper({ navigation }: any) {
+  const { latitude, longitude, setManualLocation } = useLocation()
+  return (
+    <SafeScreen>
+      <LocationPickerScreen
+        initialLatitude={latitude}
+        initialLongitude={longitude}
+        onConfirm={(coords) => {
+          setManualLocation(coords)
+          navigation.goBack()
+        }}
+        onGoBack={() => navigation.goBack()}
+      />
     </SafeScreen>
   )
 }
@@ -167,10 +226,14 @@ function ChatStackScreen() {
               isSupplier={route.params.isSupplier}
               orderId={route.params.orderId}
               onGoBack={() => navigation.goBack()}
-              onOpenOrder={oid => navigation.navigate('Profil', {
-                screen: route.params.isSupplier ? 'SupplierOrderDetail' : 'OrderTracking',
-                params: { orderId: oid },
-              })}
+              onOpenOrder={(oid) => {
+                if (route.params.isSupplier) {
+                  navigation.navigate('Profil', { screen: 'SupplierOrderDetail', params: { orderId: oid } })
+                }
+                else {
+                  navigation.navigate('Commandes', { screen: 'OrderTracking', params: { orderId: oid } })
+                }
+              }}
             />
           </SafeScreen>
         )}
@@ -329,7 +392,7 @@ function OrderSuccessWrapper({ route, navigation }: any) {
         orderNumber={orderNumber}
         onTrackOrder={() => {
           navigation.popToTop()
-          navigation.navigate('Profil', {
+          navigation.navigate('Commandes', {
             screen: 'OrderTracking',
             params: { orderId },
           })
@@ -337,6 +400,16 @@ function OrderSuccessWrapper({ route, navigation }: any) {
         onContinueShopping={() => navigation.popToTop()}
       />
     </SafeScreen>
+  )
+}
+
+const OrdersStack = createNativeStackNavigator()
+function OrdersStackScreen() {
+  return (
+    <OrdersStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+      <OrdersStack.Screen name="MyOrders" component={MyOrdersWrapper} />
+      <OrdersStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
+    </OrdersStack.Navigator>
   )
 }
 
@@ -363,8 +436,6 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="ProfileRegister" component={ProfileRegisterWrapper} />
       <ProfileStack.Screen name="ProfileForgotPassword" component={ProfileForgotPasswordWrapper} />
       <ProfileStack.Screen name="Notifications" component={NotificationsWrapper} />
-      <ProfileStack.Screen name="MyOrders" component={MyOrdersWrapper} />
-      <ProfileStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
     </ProfileStack.Navigator>
   )
 }
@@ -382,7 +453,7 @@ function ProfileHomeWrapper({ navigation }: any) {
   return (
     <SafeScreen>
       <ProfileScreen
-        onNavigateToOrders={() => navigation.navigate('MyOrders')}
+        onNavigateToOrders={() => navigation.navigate('Commandes', { screen: 'MyOrders' })}
         onNavigateToNotifications={() => navigation.navigate('Notifications')}
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
@@ -422,6 +493,7 @@ function SupplierDashboardWrapper({ navigation }: any) {
         onNavigateToOrders={() => navigation.navigate('SupplierOrders')}
         onNavigateToSettings={() => navigation.navigate('SupplierSettings')}
         onNavigateToReviews={() => navigation.navigate('SupplierReviews')}
+        onSwitchToBuyer={() => navigation.popToTop()}
       />
     </SafeScreen>
   )
@@ -761,16 +833,18 @@ const badgeStyles = StyleSheet.create({
   },
 })
 
-const TAB_ICONS: Record<string, typeof Search> = {
+const TAB_ICONS: Record<string, typeof Home> = {
   Accueil: Home,
   Chat: MessageCircle,
   Panier: ShoppingBagIcon,
+  Commandes: ClipboardList,
   Profil: User,
 }
 
 const Tab = createBottomTabNavigator()
 
 const HIDE_TAB_BAR_ROUTES = new Set([
+  'LocationPicker',
   'Checkout',
   'OrderSuccess',
   'Login',
@@ -839,6 +913,7 @@ export function AppNavigation() {
           })}
         />
         <Tab.Screen name="Panier" component={CartStackScreen} />
+        <Tab.Screen name="Commandes" component={OrdersStackScreen} />
         <Tab.Screen name="Profil" component={ProfileStackScreen} />
       </Tab.Navigator>
     </NavigationContainer>

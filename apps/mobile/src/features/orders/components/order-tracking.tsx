@@ -1,4 +1,4 @@
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -21,10 +21,10 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type PickupMode = 'ON_SITE' | 'DELIVERY'
@@ -126,7 +126,7 @@ export function OrderTracking({
   const [isConfirming, setIsConfirming] = useState(false)
   const [detailsExpanded, setDetailsExpanded] = useState(true)
   const { semantic } = useTheme()
-  const insets = useSafeAreaInsets()
+  const tabBarHeight = useBottomTabBarHeight()
 
   useEffect(() => {
     async function fetchOrder(): Promise<void> {
@@ -225,32 +225,11 @@ export function OrderTracking({
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       {/* Header */}
-      <View style={[styles.header, { borderBottomColor: semantic.borderLight }]}>
-        {onBack && (
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={onBack}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Retour"
-          >
-            <ArrowLeft size={22} color={semantic.textPrimary} />
-          </TouchableOpacity>
-        )}
-        <Text
-          style={[styles.headerTitle, { color: semantic.textPrimary }]}
-          numberOfLines={1}
-        >
-          Commande
-          {' '}
-          {order.orderNumber}
-        </Text>
-        <View style={styles.headerSpacer} />
-      </View>
+      <ScreenHeader title={`Commande ${order.orderNumber}`} onBack={onBack} />
 
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: 64 + insets.bottom + spacing[6] }]}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + spacing[6] + (isDelivered ? 76 : 0) }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Cancelled banner */}
@@ -540,7 +519,7 @@ export function OrderTracking({
 
       {/* Bottom action bar */}
       {isDelivered && (
-        <View style={[styles.actionBar, { backgroundColor: semantic.bgPage, borderTopColor: semantic.borderLight }]}>
+        <View style={[styles.actionBar, { backgroundColor: semantic.bgPage, borderTopColor: semantic.borderLight, paddingBottom: tabBarHeight + spacing[3] }]}>
           <TouchableOpacity
             style={[styles.confirmButton, isConfirming && styles.buttonDisabled]}
             onPress={handleConfirm}

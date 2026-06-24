@@ -1,5 +1,4 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Settings from 'lucide-react-native/dist/esm/icons/settings'
@@ -18,6 +17,8 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ModeSwitch } from '../../common/components/mode-switch'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface DashboardData {
   pendingOrders: number
@@ -33,9 +34,10 @@ interface DashboardScreenProps {
   onNavigateToOrders: () => void
   onNavigateToSettings: () => void
   onNavigateToReviews: () => void
+  onSwitchToBuyer: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onSwitchToBuyer }: DashboardScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
@@ -74,14 +76,18 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
       showsVerticalScrollIndicator={false}
     >
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onGoBack} hitSlop={8}>
-          <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>
-          Tableau de bord
-        </Text>
-        <View style={{ width: 24 }} />
+      <ScreenHeader title="Tableau de bord" onBack={onGoBack} />
+
+      {/* Mode switcher — back to buyer space */}
+      <View style={styles.modeSwitchWrap}>
+        <ModeSwitch
+          mode="seller"
+          onChange={(m) => {
+            if (m === 'buyer') {
+              onSwitchToBuyer()
+            }
+          }}
+        />
       </View>
 
       {/* KPI cards */}
@@ -227,6 +233,10 @@ const styles = StyleSheet.create({
   },
   headerTitle: { ...typography.h2 },
 
+  modeSwitchWrap: {
+    marginTop: spacing[2],
+    marginBottom: spacing[1],
+  },
   kpiRow: {
     flexDirection: 'row',
     gap: spacing[3],

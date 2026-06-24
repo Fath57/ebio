@@ -1,5 +1,4 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import { useEffect, useState } from 'react'
 import {
@@ -7,12 +6,12 @@ import {
   FlatList,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface Review {
   id: string
@@ -120,13 +119,7 @@ export function SupplierReviewsScreen({ onGoBack }: SupplierReviewsScreenProps) 
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onGoBack} hitSlop={8}>
-          <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>Avis clients</Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader title="Avis clients" onBack={onGoBack} />
 
       {loading
         ? (

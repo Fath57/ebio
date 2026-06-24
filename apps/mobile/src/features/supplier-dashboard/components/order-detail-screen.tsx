@@ -1,17 +1,16 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface OrderItem {
   productName: string
@@ -144,15 +143,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onGoBack} hitSlop={8}>
-          <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: semantic.textPrimary }]} numberOfLines={1}>
-          {order.orderNumber}
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader title={`Commande ${order.orderNumber}`} onBack={onGoBack} />
 
       <ScrollView
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}

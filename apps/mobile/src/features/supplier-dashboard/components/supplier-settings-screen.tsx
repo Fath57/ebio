@@ -1,4 +1,3 @@
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
@@ -13,6 +12,7 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface SupplierSettingsScreenProps {
   onGoBack: () => void
@@ -36,15 +36,7 @@ export function SupplierSettingsScreen({
       style={[styles.container, { backgroundColor: semantic.bgPage }]}
       contentContainerStyle={styles.content}
     >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onGoBack} hitSlop={8}>
-          <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-        </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>
-          Paramètres boutique
-        </Text>
-        <View style={{ width: 24 }} />
-      </View>
+      <ScreenHeader title="Paramètres boutique" onBack={onGoBack} />
 
       <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
         <TouchableOpacity style={styles.menuItem} onPress={onNavigateToShopProfile} activeOpacity={0.6}>

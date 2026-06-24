@@ -1,10 +1,10 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleQuestionMark from 'lucide-react-native/dist/esm/icons/circle-question-mark'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import FileText from 'lucide-react-native/dist/esm/icons/file-text'
 import Hourglass from 'lucide-react-native/dist/esm/icons/hourglass'
-import LayoutDashboard from 'lucide-react-native/dist/esm/icons/layout-dashboard'
 import LogOutIcon from 'lucide-react-native/dist/esm/icons/log-out'
 import Monitor from 'lucide-react-native/dist/esm/icons/monitor'
 import Moon from 'lucide-react-native/dist/esm/icons/moon'
@@ -31,6 +31,7 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ModeSwitch } from '../../common/components/mode-switch'
 
 interface UserProfile {
   id: string
@@ -47,7 +48,7 @@ type ThemeMode = 'light' | 'dark' | 'system'
 const THEME_OPTIONS: { value: ThemeMode, label: string, Icon: typeof Sun }[] = [
   { value: 'light', label: 'Clair', Icon: Sun },
   { value: 'dark', label: 'Sombre', Icon: Moon },
-  { value: 'system', label: 'Systeme', Icon: Monitor },
+  { value: 'system', label: 'Système', Icon: Monitor },
 ]
 
 const ROLE_LABELS: Record<string, string> = {
@@ -69,6 +70,7 @@ interface ProfileScreenProps {
 export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToSupplierRegistration, onNavigateToDashboard, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
+  const tabBarHeight = useBottomTabBarHeight()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [supplierStatus, setSupplierStatus] = useState<{ isSupplier: boolean, supplierId: string | null, validationStatus: string | null, shopName: string | null }>({ isSupplier: false, supplierId: null, validationStatus: null, shopName: null })
   const [loading, setLoading] = useState(true)
@@ -214,9 +216,23 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
       showsVerticalScrollIndicator={false}
     >
+      {/* Mode switcher — visible only for validated suppliers */}
+      {supplierStatus.isSupplier && supplierStatus.validationStatus === 'VALIDATED' && (
+        <View style={styles.modeSwitchWrap}>
+          <ModeSwitch
+            mode="buyer"
+            onChange={(m) => {
+              if (m === 'seller') {
+                onNavigateToDashboard?.()
+              }
+            }}
+          />
+        </View>
+      )}
+
       {/* Profile header */}
       <View>
         <View style={[styles.header, { backgroundColor: semantic.bgCard }]}>
@@ -337,21 +353,6 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
         </View>
       )}
 
-      {/* Supplier dashboard (only when validated) */}
-      {supplierStatus.isSupplier && supplierStatus.validationStatus === 'VALIDATED' && (
-        <View>
-          <View style={styles.section}>
-            <MenuItem
-              icon={LayoutDashboard}
-              label="Tableau de bord"
-              sublabel="Gérez vos produits et commandes"
-              onPress={() => onNavigateToDashboard?.()}
-              semantic={semantic}
-            />
-          </View>
-        </View>
-      )}
-
       {/* Theme */}
       <View>
         <View style={styles.section}>
@@ -426,7 +427,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
                   <ScanFace size={18} color={colors.green[600]} />
                 </View>
                 <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>
-                  Biometrie
+                  Biométrie
                 </Text>
               </View>
               <Switch
@@ -489,7 +490,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
       <View>
         <TouchableOpacity style={styles.logoutButton} onPress={() => setShowLogoutModal(true)}>
           <LogOutIcon size={18} color={colors.coral[600]} />
-          <Text style={styles.logoutText}>Se deconnecter</Text>
+          <Text style={styles.logoutText}>Se déconnecter</Text>
         </TouchableOpacity>
 
         <Text style={[styles.version, { color: semantic.textTertiary }]}>
@@ -678,6 +679,10 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: spacing[5],
+  },
+  modeSwitchWrap: {
+    marginTop: spacing[4],
+    marginBottom: spacing[1],
   },
   pendingBanner: {
     flexDirection: 'row',

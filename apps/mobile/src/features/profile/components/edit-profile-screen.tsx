@@ -1,5 +1,4 @@
 import * as ImagePicker from 'expo-image-picker'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -25,6 +24,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface EditProfileScreenProps {
   onGoBack: () => void
@@ -212,19 +212,17 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
         showsVerticalScrollIndicator={false}
       >
         {/* Header */}
-        <View style={styles.header}>
-          <Pressable onPress={onGoBack} hitSlop={8}>
-            <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-          </Pressable>
-          <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>
-            Modifier le profil
-          </Text>
-          <Pressable onPress={handleSave} disabled={saving} hitSlop={8}>
-            {saving
-              ? <ActivityIndicator size="small" color={colors.green[400]} />
-              : <Check size={24} color={colors.green[400]} strokeWidth={2.5} />}
-          </Pressable>
-        </View>
+        <ScreenHeader
+          title="Modifier le profil"
+          onBack={onGoBack}
+          rightSlot={(
+            <Pressable onPress={handleSave} disabled={saving} hitSlop={8}>
+              {saving
+                ? <ActivityIndicator size="small" color={colors.green[400]} />
+                : <Check size={24} color={colors.green[400]} strokeWidth={2.5} />}
+            </Pressable>
+          )}
+        />
 
         {/* Error */}
         {error && (

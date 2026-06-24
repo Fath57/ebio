@@ -251,7 +251,10 @@ export function FilterSheet({
   ).current
 
   function handleReset() {
+    // Réinitialise ET applique immédiatement (pas besoin d'un second tap sur « Appliquer »).
     setFilters({ ...DEFAULT_FILTERS })
+    onApply({ ...DEFAULT_FILTERS })
+    close()
   }
 
   function handleApply() {
@@ -481,7 +484,7 @@ export function FilterSheet({
                   key={star}
                   style={styles.starButton}
                   onPress={() => handleSetRating(star)}
-                  accessibilityLabel={`${star} etoile${star > 1 ? 's' : ''} minimum`}
+                  accessibilityLabel={`${star} étoile${star > 1 ? 's' : ''} minimum`}
                 >
                   <Star
                     size={28}
@@ -528,7 +531,7 @@ export function FilterSheet({
           {/* Validated only toggle */}
           <View style={styles.section}>
             <View style={styles.toggleRow}>
-              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Valide eBio uniquement</Text>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Validé eBio uniquement</Text>
               <Switch
                 value={filters.validatedOnly}
                 onValueChange={val =>
@@ -542,7 +545,7 @@ export function FilterSheet({
                     ? colors.green[400]
                     : colors.neutral[400]
                 }
-                accessibilityLabel="Valide eBio uniquement"
+                accessibilityLabel="Validé eBio uniquement"
               />
             </View>
           </View>
@@ -553,9 +556,9 @@ export function FilterSheet({
           <TouchableOpacity
             style={[styles.resetButton, { borderColor: semantic.borderNormal }]}
             onPress={handleReset}
-            accessibilityLabel="Reinitialiser les filtres"
+            accessibilityLabel="Réinitialiser les filtres"
           >
-            <Text style={[styles.resetText, { color: semantic.textSecondary }]}>Reinitialiser</Text>
+            <Text style={[styles.resetText, { color: semantic.textSecondary }]}>Réinitialiser</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.applyButton}

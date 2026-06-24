@@ -23,6 +23,8 @@ import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { SlideIn, StaggerItem } from '../../../utils/animations'
+import { ScreenHeader } from '../../common/components/screen-header'
+import { useLocation } from '../../common/location-context'
 import { MapScreen } from '../../map/components/map-screen'
 import { useOfflineSearch } from '../hooks/use-offline-search'
 import { useAutocomplete, useCategories, useSearchProducts } from '../hooks/use-search'
@@ -34,22 +36,34 @@ type ViewMode = 'list' | 'map'
 
 interface SearchScreenProps {
   onNavigateToSupplier?: (supplierId: string) => void
+  onGoBack?: () => void
+  initialQuery?: string
+  initialCategory?: string
+  initialValidatedOnly?: boolean
+  initialPromoOnly?: boolean
+  initialViewMode?: ViewMode
+  /** Titre de l'en-tête (ex. « Près de vous »). Défaut : « Recherche ». */
+  headerTitle?: string
+  /** Focus auto du champ — uniquement quand on vient de la barre de recherche. */
+  initialAutoFocus?: boolean
 }
 
-export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
+export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
   const { semantic } = useTheme()
   const { data: session } = useSession()
   const firstName = session?.user?.name?.split(' ')[0]
-  const [query, setQuery] = useState('')
+  // Page de listing (« Voir tout », catégorie, carte) = pas de champ de recherche, vs mode recherche (barre + clavier).
+  const isListing = Boolean(onGoBack) && !initialAutoFocus
+  const [query, setQuery] = useState(initialQuery ?? '')
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
-    undefined,
+    initialCategory,
   )
-  const [viewMode, setViewMode] = useState<ViewMode>('list')
+  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode ?? 'list')
   const [isFilterVisible, setIsFilterVisible] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const searchInputRef = useRef<TextInput>(null)
 
-  const { results, loading, total, hasMore, search } = useSearchProducts()
+  const { results, loading, loadingMore, total, search, loadMore } = useSearchProducts()
   const { suggestions, autocomplete } = useAutocomplete()
   const { categories, loadCategories } = useCategories()
   const { searchHistory, addTerm, clearHistory } = useOfflineSearch()
@@ -61,12 +75,10 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
     inStockOnly: true,
     minRating: 0,
     mode: 'ALL' as 'ALL' | 'CONTACT' | 'ORDER',
-    validatedOnly: false,
+    validatedOnly: initialValidatedOnly ?? false,
   })
 
-  // Default location (Dakar) — replaced by real geolocation in production
-  const latitude = 14.6928
-  const longitude = -17.4467
+  const { latitude, longitude } = useLocation()
 
   useEffect(() => {
     loadCategories()
@@ -88,14 +100,15 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
         minRating: appliedFilters.minRating > 0 ? appliedFilters.minRating : undefined,
         mode: appliedFilters.mode !== 'ALL' ? appliedFilters.mode : undefined,
         validatedOnly: appliedFilters.validatedOnly || undefined,
+        promoOnly: initialPromoOnly || undefined,
       })
     },
-    [query, selectedCategory, appliedFilters, search, latitude, longitude],
+    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialPromoOnly],
   )
 
   useEffect(() => {
     performSearch()
-  }, []) // Initial search on mount
+  }, [latitude, longitude]) // Initial search + re-run when geolocation resolves
 
   function handleSubmitSearch() {
     if (query.trim()) {
@@ -155,6 +168,7 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
       minRating: filters.minRating > 0 ? filters.minRating : undefined,
       mode: filters.mode !== 'ALL' ? filters.mode : undefined,
       validatedOnly: filters.validatedOnly || undefined,
+      promoOnly: initialPromoOnly || undefined,
     })
   }
 
@@ -206,6 +220,7 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
               <TouchableOpacity
                 style={[
                   styles.catItem,
+                  { backgroundColor: semantic.bgCard },
                   selectedCategory === undefined && styles.catItemActive,
                 ]}
                 onPress={() => {
@@ -236,6 +251,7 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
                   <TouchableOpacity
                     style={[
                       styles.catItem,
+                      { backgroundColor: semantic.bgCard },
                       isActive && styles.catItemActive,
                     ]}
                     onPress={() => handleSelectCategory(cat.slug)}
@@ -276,60 +292,71 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
   }
 
   return (
-    <View style={[styles.screen, { backgroundColor: semantic.bgSurface }]}>
+    <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+      {/* Back header — shown when used as a pushed results screen */}
+      {onGoBack && <ScreenHeader title={headerTitle ?? 'Recherche'} onBack={onGoBack} />}
+
       {/* Search bar */}
       <View style={[styles.searchHeader, { backgroundColor: semantic.bgCard }]}>
-        {/* Greeting */}
-        <View style={styles.greetingSection}>
-          <View>
-            <Text style={[styles.greetingText, { color: semantic.textTertiary }]}>
-              {firstName ? `Bonjour, ${firstName}` : 'Bienvenue sur eBio'}
-            </Text>
-            <Text style={[styles.greetingTitle, { color: semantic.textPrimary }]}>
-              Trouvez du bio près de vous
-            </Text>
+        {/* Greeting — only on the standalone screen, not the pushed results view */}
+        {!onGoBack && (
+          <View style={styles.greetingSection}>
+            <View>
+              <Text style={[styles.greetingText, { color: semantic.textTertiary }]}>
+                {firstName ? `Bonjour, ${firstName}` : 'Bienvenue sur eBio'}
+              </Text>
+              <Text style={[styles.greetingTitle, { color: semantic.textPrimary }]}>
+                Trouvez du bio près de vous
+              </Text>
+            </View>
           </View>
-        </View>
-        <View style={styles.searchRow}>
-          <View style={[styles.searchInputContainer, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
-            <Search size={16} color={semantic.textTertiary} style={styles.searchIcon} />
-            <TextInput
-              ref={searchInputRef}
-              style={[styles.searchInput, { color: semantic.textPrimary }]}
-              placeholder="Rechercher un produit, fournisseur..."
-              placeholderTextColor={semantic.textTertiary}
-              value={query}
-              onChangeText={handleQueryChange}
-              onFocus={() => setIsSearchFocused(true)}
-              onSubmitEditing={handleSubmitSearch}
-              returnKeyType="search"
-              accessibilityLabel="Rechercher"
-            />
-            {query.length > 0 && (
-              <TouchableOpacity
-                style={styles.clearButton}
-                onPress={() => {
-                  setQuery('')
-                  performSearch({ q: '' })
-                }}
-                accessibilityLabel="Effacer la recherche"
-              >
-                <X size={14} color={semantic.textTertiary} />
-              </TouchableOpacity>
-            )}
+        )}
+        {!isListing && (
+          <View style={styles.searchRow}>
+            <View style={[styles.searchInputContainer, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
+              <Search size={16} color={semantic.textTertiary} style={styles.searchIcon} />
+              <TextInput
+                ref={searchInputRef}
+                style={[styles.searchInput, { color: semantic.textPrimary }]}
+                placeholder="Rechercher un produit, fournisseur..."
+                placeholderTextColor={semantic.textTertiary}
+                value={query}
+                onChangeText={handleQueryChange}
+                onFocus={() => setIsSearchFocused(true)}
+                onSubmitEditing={handleSubmitSearch}
+                returnKeyType="search"
+                accessibilityLabel="Rechercher"
+                autoFocus={Boolean(initialAutoFocus)}
+              />
+              {query.length > 0 && (
+                <TouchableOpacity
+                  style={styles.clearButton}
+                  onPress={() => {
+                    setQuery('')
+                    performSearch({ q: '' })
+                  }}
+                  accessibilityLabel="Effacer la recherche"
+                >
+                  <X size={14} color={semantic.textTertiary} />
+                </TouchableOpacity>
+              )}
+            </View>
+            <ViewToggle activeMode={viewMode} onToggle={setViewMode} />
           </View>
-          <ViewToggle activeMode={viewMode} onToggle={setViewMode} />
-        </View>
+        )}
 
-        {/* Filter button */}
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setIsFilterVisible(true)}
-          accessibilityLabel="Ouvrir les filtres"
-        >
-          <SlidersHorizontal size={16} color={semantic.textSecondary} />
-          <Text style={[styles.filterText, { color: semantic.textSecondary }]}>Filtres</Text>
-        </TouchableOpacity>
+        {/* Contrôles — filtres + bascule liste/carte */}
+        <View style={styles.controlsRow}>
+          <TouchableOpacity
+            style={styles.filterButton}
+            onPress={() => setIsFilterVisible(true)}
+            accessibilityLabel="Ouvrir les filtres"
+          >
+            <SlidersHorizontal size={16} color={semantic.textSecondary} />
+            <Text style={[styles.filterText, { color: semantic.textSecondary }]}>Filtres</Text>
+          </TouchableOpacity>
+          {isListing && <ViewToggle activeMode={viewMode} onToggle={setViewMode} />}
+        </View>
       </View>
 
       {/* Autocomplete / History overlay */}
@@ -399,13 +426,16 @@ export function SearchScreen({ onNavigateToSupplier }: SearchScreenProps = {}) {
               renderItem={renderSearchResultItem}
               ListHeaderComponent={renderHeader}
               ListEmptyComponent={renderEmptyState}
+              ListFooterComponent={loadingMore
+                ? (
+                    <View style={styles.footerLoading}>
+                      <ActivityIndicator size="small" color={colors.green[400]} />
+                    </View>
+                  )
+                : null}
               contentContainerStyle={styles.listContent}
               showsVerticalScrollIndicator={false}
-              onEndReached={() => {
-                if (hasMore && !loading) {
-                  // Load more results
-                }
-              }}
+              onEndReached={() => loadMore()}
               onEndReachedThreshold={0.5}
             />
           )
@@ -493,12 +523,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   // clearText removed — now using Lucide X icon directly
+  controlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing[2],
+  },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
     minHeight: 44,
-    marginTop: spacing[2],
   },
   // filterIcon removed — now using Lucide SlidersHorizontal icon directly
   filterText: {
@@ -560,6 +595,10 @@ const styles = StyleSheet.create({
     paddingTop: spacing[2],
     paddingHorizontal: spacing[4],
     paddingBottom: 80, // Extra padding for floating tab bar
+  },
+  footerLoading: {
+    paddingVertical: spacing[4],
+    alignItems: 'center',
   },
   emptyContainer: {
     alignItems: 'center',

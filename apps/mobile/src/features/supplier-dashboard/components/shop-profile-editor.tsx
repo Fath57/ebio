@@ -1,6 +1,5 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import * as Location from 'expo-location'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
@@ -21,6 +20,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 interface ShopProfileEditorProps {
@@ -179,13 +179,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <View style={styles.header}>
-          <TouchableOpacity onPress={onGoBack} hitSlop={8}>
-            <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
-          <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>Profil de la boutique</Text>
-          <View style={{ width: 24 }} />
-        </View>
+        <ScreenHeader title="Profil de la boutique" onBack={onGoBack} />
 
         {/* Cover */}
         <TouchableOpacity style={styles.coverPicker} onPress={handlePickCover} activeOpacity={0.8}>

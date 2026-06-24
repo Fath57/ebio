@@ -1,5 +1,5 @@
 import type { CategoryItem } from '../../../utils/category-icons'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 import { FALLBACK_CATEGORIES, getCategoryFallbackIcon } from '../../../utils/category-icons'
 import { OfflineCache } from '../../../utils/offline-storage'
@@ -15,6 +15,7 @@ interface SearchFilters {
   minRating?: number
   mode?: 'CONTACT' | 'ORDER'
   validatedOnly?: boolean
+  promoOnly?: boolean
   sortBy?: 'distance' | 'rating' | 'price'
   page?: number
 }
@@ -49,47 +50,33 @@ interface SearchResponse {
 
 export type { SearchFilters, SearchResult }
 
+const PAGE_SIZE = 20
+
 export function useSearchProducts() {
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [total, setTotal] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  // Filtres + page courants, mémorisés pour que loadMore réutilise la même requête.
+  const filtersRef = useRef<SearchFilters | null>(null)
+  const pageRef = useRef(1)
 
-  const search = useCallback(async (filters: SearchFilters) => {
-    setLoading(true)
-
+  const fetchPage = useCallback(async (filters: SearchFilters, page: number, append: boolean) => {
     const params = new URLSearchParams()
-    Object.entries(filters).forEach(([key, value]) => {
+    Object.entries({ ...filters, page, limit: PAGE_SIZE }).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         params.append(key, String(value))
       }
     })
 
-    if (filters.q) {
+    if (page === 1 && filters.q) {
       OfflineCache.addSearchTerm(filters.q)
     }
 
     const cacheKey = `search:${params.toString()}`
 
-    try {
-      const cached = await OfflineCache.getCachedResults(cacheKey) as SearchResponse | null
-
-      const res = await apiFetch(`/api/search/products?${params.toString()}`)
-
-      if (res.ok) {
-        const data: SearchResponse = await res.json()
-        setResults(data.results)
-        setTotal(data.total)
-        setHasMore(data.hasMore)
-        await OfflineCache.setCachedResults(cacheKey, data)
-      }
-      else if (cached) {
-        setResults(cached.results)
-        setTotal(cached.total)
-        setHasMore(cached.hasMore)
-      }
-    }
-    catch {
+    async function fallbackToCache() {
       const cached = await OfflineCache.getCachedResults(cacheKey) as SearchResponse | null
       if (cached) {
         setResults(cached.results)
@@ -97,12 +84,49 @@ export function useSearchProducts() {
         setHasMore(cached.hasMore)
       }
     }
-    finally {
-      setLoading(false)
+
+    try {
+      const res = await apiFetch(`/api/search/products?${params.toString()}`)
+      if (res.ok) {
+        const data: SearchResponse = await res.json()
+        setResults(prev => (append ? [...prev, ...data.results] : data.results))
+        setTotal(data.total)
+        setHasMore(data.hasMore)
+        if (!append) {
+          await OfflineCache.setCachedResults(cacheKey, data)
+        }
+      }
+      else if (!append) {
+        await fallbackToCache()
+      }
+    }
+    catch {
+      if (!append) {
+        await fallbackToCache()
+      }
     }
   }, [])
 
-  return { results, loading, total, hasMore, search }
+  const search = useCallback(async (filters: SearchFilters) => {
+    filtersRef.current = filters
+    pageRef.current = 1
+    setLoading(true)
+    await fetchPage(filters, 1, false)
+    setLoading(false)
+  }, [fetchPage])
+
+  const loadMore = useCallback(async () => {
+    if (!hasMore || loading || loadingMore || !filtersRef.current) {
+      return
+    }
+    const nextPage = pageRef.current + 1
+    setLoadingMore(true)
+    await fetchPage(filtersRef.current, nextPage, true)
+    pageRef.current = nextPage
+    setLoadingMore(false)
+  }, [hasMore, loading, loadingMore, fetchPage])
+
+  return { results, loading, loadingMore, total, hasMore, search, loadMore }
 }
 
 export function useAutocomplete() {

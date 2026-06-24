@@ -93,7 +93,7 @@ export const typography = {
 
 // Semantic colors for light/dark mode
 export const lightTheme = {
-  bgPage: colors.neutral[0],
+  bgPage: colors.neutral[50],
   bgSurface: colors.neutral[0],
   bgCard: colors.neutral[0],
   textPrimary: colors.neutral[800],
