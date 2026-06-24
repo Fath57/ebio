@@ -11,6 +11,7 @@ export const searchProductsQuerySchema = z.object({
   minRating: z.coerce.number().min(1).max(5).optional(),
   mode: z.enum(['CONTACT', 'ORDER']).optional(),
   validatedOnly: z.enum(['true', 'false']).default('false').meta({ description: 'Filter validated suppliers only' }),
+  promoOnly: z.enum(['true', 'false']).default('false').meta({ description: 'Filter promotional products only' }),
   sortBy: z.enum(['distance', 'rating', 'price']).default('distance'),
   page: z.coerce.number().default(1),
   limit: z.coerce.number().max(50).default(20),

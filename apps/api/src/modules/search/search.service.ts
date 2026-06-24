@@ -54,6 +54,7 @@ export class SearchService {
       minRating,
       mode,
       validatedOnly,
+      promoOnly,
       sortBy,
       page,
       limit,
@@ -76,6 +77,10 @@ export class SearchService {
 
     if (validatedOnly === 'true') {
       whereClause += `  AND s.validation_status = 'VALIDATED'\n`
+    }
+
+    if (promoOnly === 'true') {
+      whereClause += `  AND p.promotional_price IS NOT NULL\n`
     }
 
     if (q) {
