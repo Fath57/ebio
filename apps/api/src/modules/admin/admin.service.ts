@@ -45,7 +45,7 @@ export class AdminService {
       this.em.count(Supplier, { validationStatus: ValidationStatus.VALIDATED }),
       this.em.getConnection().execute(
         `SELECT COUNT(*) as count, COALESCE(SUM(commission_amount), 0) as revenue
-         FROM orders WHERE "createdAt" >= $1`,
+         FROM orders WHERE "createdAt" >= ?`,
         [startOfMonth],
       ),
       this.em.count(Supplier, {
@@ -55,7 +55,7 @@ export class AdminService {
     ])
 
     const dailySearchesResult = await this.em.getConnection().execute(
-      `SELECT COUNT(*) as count FROM search_logs WHERE "createdAt" >= $1`,
+      `SELECT COUNT(*) as count FROM search_logs WHERE "createdAt" >= ?`,
       [startOfDay],
     ).catch(() => [{ count: 0 }])
 
@@ -99,7 +99,7 @@ export class AdminService {
 
     const productCounts = await this.em.getConnection().execute(
       `SELECT supplier_id, COUNT(*) as count FROM products
-       WHERE supplier_id = ANY($1)
+       WHERE supplier_id = ANY(?)
        GROUP BY supplier_id`,
       [suppliers.map(s => s.id)],
     ).catch(() => [] as Array<{ supplier_id: string, count: string }>)
@@ -354,17 +354,14 @@ export class AdminService {
   }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
     const conditions: string[] = ['1=1']
     const queryParams: unknown[] = []
-    let paramIdx = 1
 
     if (params.from) {
-      conditions.push(`o."createdAt" >= $${paramIdx}`)
+      conditions.push(`o."createdAt" >= ?`)
       queryParams.push(new Date(params.from))
-      paramIdx++
     }
     if (params.to) {
-      conditions.push(`o."createdAt" <= $${paramIdx}`)
+      conditions.push(`o."createdAt" <= ?`)
       queryParams.push(new Date(params.to))
-      paramIdx++
     }
 
     const whereClause = conditions.join(' AND ')
@@ -386,13 +383,13 @@ export class AdminService {
        LEFT JOIN suppliers s ON o.supplier_id = s.id
        WHERE ${whereClause}
        ORDER BY o."createdAt" DESC
-       LIMIT $${paramIdx} OFFSET $${paramIdx + 1}`,
+       LIMIT ? OFFSET ?`,
       queryParams,
     )
 
     const items = rows.map((r: Record<string, unknown>) => ({
       id: r.id as string,
-      date: (r.date as Date).toISOString(),
+      date: this.toIso(r.date) ?? '',
       orderNumber: r.order_number as string,
       buyerName: (r.buyer_name as string) ?? 'Inconnu',
       supplierName: (r.supplier_name as string) ?? 'Inconnu',
@@ -415,7 +412,7 @@ export class AdminService {
 
   async getSettings() {
     const commissions = await this.em.getConnection().execute(
-      `SELECT category, rate FROM commission_rates ORDER BY category`,
+      `SELECT category_slug AS category, rate FROM commission_rates ORDER BY category_slug`,
     )
     const plans = await this.em.getConnection().execute(
       `SELECT name, price_monthly, max_products, order_mode_enabled, advanced_analytics, free_commission_orders, max_members
@@ -427,9 +424,9 @@ export class AdminService {
   async updateCommissionRates(input: CommissionRates): Promise<void> {
     for (const { category, rate } of input.rates) {
       await this.em.getConnection().execute(
-        `INSERT INTO commission_rates (category, rate, "updatedAt")
-         VALUES ($1, $2, NOW())
-         ON CONFLICT (category) DO UPDATE SET rate = $2, "updatedAt" = NOW()`,
+        `INSERT INTO commission_rates (category_slug, rate, "updatedAt")
+         VALUES (?, ?, NOW())
+         ON CONFLICT (category_slug) DO UPDATE SET rate = EXCLUDED.rate, "updatedAt" = NOW()`,
         [category, rate],
       )
     }
@@ -483,6 +480,318 @@ export class AdminService {
     }
     catch (error) {
       this.logger.error(`Failed to send notification to user ${user.id}`, error)
+    }
+  }
+
+  // ===========================================================================
+  // Vues transverses — l'admin n'a pas de profil fournisseur, il ne peut donc
+  // pas passer par les endpoints `me`-scopés. Ces lectures couvrent le support
+  // client : retrouver une commande, un fournisseur, un compte.
+  // ===========================================================================
+
+  async getOrders(params: {
+    status?: string
+    supplierId?: string
+    q?: string
+    page: number
+    limit: number
+  }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
+    const conditions: string[] = ['1=1']
+    const queryParams: unknown[] = []
+
+    if (params.status) {
+      conditions.push(`o.status = ?`)
+      queryParams.push(params.status)
+    }
+    if (params.supplierId) {
+      conditions.push(`o.supplier_id = ?`)
+      queryParams.push(params.supplierId)
+    }
+    if (params.q) {
+      // Trois placeholders distincts : knex lie positionnellement, sans réutilisation.
+      conditions.push(`(o.order_number ILIKE ? OR bu.name ILIKE ? OR s.shop_name ILIKE ?)`)
+      queryParams.push(`%${params.q}%`, `%${params.q}%`, `%${params.q}%`)
+    }
+
+    const from = `FROM orders o
+       LEFT JOIN users bu ON o.buyer_id = bu.id
+       LEFT JOIN suppliers s ON o.supplier_id = s.id`
+    const whereClause = conditions.join(' AND ')
+
+    const countResult = await this.em.getConnection().execute(
+      `SELECT COUNT(*) as count ${from} WHERE ${whereClause}`,
+      queryParams,
+    )
+    const total = Number(countResult[0]?.count ?? 0)
+
+    queryParams.push(params.limit, (params.page - 1) * params.limit)
+
+    const rows = await this.em.getConnection().execute(
+      `SELECT o.id, o.order_number, o.status, o.total_amount, o.commission_amount,
+              o."createdAt" as created_at, o.pickup_mode,
+              bu.id as buyer_id, bu.name as buyer_name,
+              s.id as supplier_id, s.shop_name as supplier_name
+       ${from}
+       WHERE ${whereClause}
+       ORDER BY o."createdAt" DESC
+       LIMIT ? OFFSET ?`,
+      queryParams,
+    )
+
+    return {
+      items: rows.map((r: Record<string, unknown>) => this.mapOrderRow(r)),
+      total,
+      page: params.page,
+      limit: params.limit,
+    }
+  }
+
+  async getOrderById(orderId: string): Promise<unknown> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT o.id, o.order_number, o.status, o.total_amount, o.commission_amount,
+              o.commission_rate, o."createdAt" as created_at, o.pickup_mode,
+              o.payment_method, o.delivery_address, o.delivery_slot,
+              o.accepted_at, o.delivered_at,
+              bu.id as buyer_id, bu.name as buyer_name, bu.email as buyer_email,
+              bu.phone as buyer_phone,
+              s.id as supplier_id, s.shop_name as supplier_name
+       FROM orders o
+       LEFT JOIN users bu ON o.buyer_id = bu.id
+       LEFT JOIN suppliers s ON o.supplier_id = s.id
+       WHERE o.id = ?`,
+      [orderId],
+    )
+
+    const row = rows[0] as Record<string, unknown> | undefined
+    if (!row) {
+      throw new NotFoundException('Commande introuvable')
+    }
+
+    const items = await this.em.getConnection().execute(
+      `SELECT oi.id, oi.quantity, oi.unit_price, oi.total_price,
+              p.name as product_name
+       FROM order_items oi
+       LEFT JOIN products p ON oi.product_id = p.id
+       WHERE oi.order_id = ?`,
+      [orderId],
+    )
+
+    return {
+      ...this.mapOrderRow(row),
+      commissionRate: Number(row.commission_rate ?? 0),
+      paymentMethod: row.payment_method as string,
+      deliveryAddress: (row.delivery_address as string) ?? null,
+      deliverySlot: (row.delivery_slot as string) ?? null,
+      acceptedAt: this.toIso(row.accepted_at),
+      deliveredAt: this.toIso(row.delivered_at),
+      buyerEmail: (row.buyer_email as string) ?? null,
+      buyerPhone: (row.buyer_phone as string) ?? null,
+      items: items.map((i: Record<string, unknown>) => ({
+        id: i.id as string,
+        productName: (i.product_name as string) ?? 'Produit supprimé',
+        quantity: Number(i.quantity ?? 0),
+        unitPrice: Number(i.unit_price ?? 0),
+        totalPrice: Number(i.total_price ?? 0),
+      })),
+    }
+  }
+
+  async getSuppliers(params: {
+    status?: string
+    q?: string
+    page: number
+    limit: number
+  }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
+    const conditions: string[] = ['1=1']
+    const queryParams: unknown[] = []
+
+    if (params.status) {
+      conditions.push(`s.validation_status = ?`)
+      queryParams.push(params.status)
+    }
+    if (params.q) {
+      conditions.push(`(s.shop_name ILIKE ? OR u.name ILIKE ? OR u.email ILIKE ?)`)
+      queryParams.push(`%${params.q}%`, `%${params.q}%`, `%${params.q}%`)
+    }
+
+    const from = `FROM suppliers s LEFT JOIN users u ON s.user_id = u.id`
+    const whereClause = conditions.join(' AND ')
+
+    const countResult = await this.em.getConnection().execute(
+      `SELECT COUNT(*) as count ${from} WHERE ${whereClause}`,
+      queryParams,
+    )
+    const total = Number(countResult[0]?.count ?? 0)
+
+    queryParams.push(params.limit, (params.page - 1) * params.limit)
+
+    const rows = await this.em.getConnection().execute(
+      `SELECT s.id, s.shop_name, s.type, s.mode, s.validation_status, s.timezone,
+              s.address, s.neighborhood, s.global_rating, s.total_reviews,
+              s."createdAt" as created_at,
+              ST_Y(s.location::geometry) as latitude,
+              ST_X(s.location::geometry) as longitude,
+              u.id as user_id, u.name as owner_name, u.email as owner_email,
+              u.phone as owner_phone,
+              (SELECT COUNT(*) FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE') as product_count,
+              (SELECT COUNT(*) FROM orders o WHERE o.supplier_id = s.id) as order_count
+       ${from}
+       WHERE ${whereClause}
+       ORDER BY s."createdAt" DESC
+       LIMIT ? OFFSET ?`,
+      queryParams,
+    )
+
+    return {
+      items: rows.map((r: Record<string, unknown>) => this.mapSupplierRow(r)),
+      total,
+      page: params.page,
+      limit: params.limit,
+    }
+  }
+
+  async getSupplierById(supplierId: string): Promise<unknown> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT s.id, s.shop_name, s.type, s.mode, s.validation_status, s.timezone,
+              s.address, s.neighborhood, s.global_rating, s.total_reviews,
+              s.opening_hours, s.cover_photo, s.profile_photo,
+              s.mobile_money_number, s."createdAt" as created_at,
+              ST_Y(s.location::geometry) as latitude,
+              ST_X(s.location::geometry) as longitude,
+              u.id as user_id, u.name as owner_name, u.email as owner_email,
+              u.phone as owner_phone,
+              (SELECT COUNT(*) FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE') as product_count,
+              (SELECT COUNT(*) FROM orders o WHERE o.supplier_id = s.id) as order_count,
+              (SELECT COALESCE(SUM(o.total_amount), 0) FROM orders o WHERE o.supplier_id = s.id AND o.status = 'DELIVERED') as revenue
+       FROM suppliers s
+       LEFT JOIN users u ON s.user_id = u.id
+       WHERE s.id = ?`,
+      [supplierId],
+    )
+
+    const row = rows[0] as Record<string, unknown> | undefined
+    if (!row) {
+      throw new NotFoundException('Fournisseur introuvable')
+    }
+
+    return {
+      ...this.mapSupplierRow(row),
+      openingHours: row.opening_hours ?? null,
+      coverPhoto: (row.cover_photo as string) ?? null,
+      profilePhoto: (row.profile_photo as string) ?? null,
+      mobileMoneyNumber: (row.mobile_money_number as string) ?? null,
+      revenue: Number(row.revenue ?? 0),
+    }
+  }
+
+  async getUsers(params: {
+    role?: string
+    q?: string
+    page: number
+    limit: number
+  }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
+    const conditions: string[] = ['1=1']
+    const queryParams: unknown[] = []
+
+    if (params.role) {
+      conditions.push(`u.role = ?`)
+      queryParams.push(params.role)
+    }
+    if (params.q) {
+      conditions.push(`(u.name ILIKE ? OR u.email ILIKE ? OR u.phone ILIKE ?)`)
+      queryParams.push(`%${params.q}%`, `%${params.q}%`, `%${params.q}%`)
+    }
+
+    const whereClause = conditions.join(' AND ')
+
+    const countResult = await this.em.getConnection().execute(
+      `SELECT COUNT(*) as count FROM users u WHERE ${whereClause}`,
+      queryParams,
+    )
+    const total = Number(countResult[0]?.count ?? 0)
+
+    queryParams.push(params.limit, (params.page - 1) * params.limit)
+
+    const rows = await this.em.getConnection().execute(
+      `SELECT u.id, u.name, u.email, u.phone, u.role, u."emailVerified" as email_verified,
+              u."createdAt" as created_at,
+              s.id as supplier_id, s.shop_name as supplier_shop_name
+       FROM users u
+       LEFT JOIN suppliers s ON s.user_id = u.id
+       WHERE ${whereClause}
+       ORDER BY u."createdAt" DESC
+       LIMIT ? OFFSET ?`,
+      queryParams,
+    )
+
+    return {
+      items: rows.map((r: Record<string, unknown>) => ({
+        id: r.id as string,
+        name: (r.name as string) ?? '',
+        email: (r.email as string) ?? null,
+        phone: (r.phone as string) ?? null,
+        role: r.role as string,
+        emailVerified: Boolean(r.email_verified),
+        createdAt: this.toIso(r.created_at) ?? '',
+        supplierId: (r.supplier_id as string) ?? null,
+        supplierShopName: (r.supplier_shop_name as string) ?? null,
+      })),
+      total,
+      page: params.page,
+      limit: params.limit,
+    }
+  }
+
+  /** Le driver renvoie les timestamps tantôt en `Date`, tantôt en chaîne. */
+  private toIso(value: unknown): string | null {
+    if (!value)
+      return null
+    return value instanceof Date ? value.toISOString() : new Date(value as string).toISOString()
+  }
+
+  private mapOrderRow(r: Record<string, unknown>) {
+    return {
+      id: r.id as string,
+      orderNumber: r.order_number as string,
+      status: r.status as string,
+      pickupMode: r.pickup_mode as string,
+      totalAmount: Number(r.total_amount ?? 0),
+      commissionAmount: Number(r.commission_amount ?? 0),
+      createdAt: this.toIso(r.created_at) ?? '',
+      buyer: {
+        id: (r.buyer_id as string) ?? null,
+        name: (r.buyer_name as string) ?? 'Inconnu',
+      },
+      supplier: {
+        id: (r.supplier_id as string) ?? null,
+        shopName: (r.supplier_name as string) ?? 'Inconnu',
+      },
+    }
+  }
+
+  private mapSupplierRow(r: Record<string, unknown>) {
+    return {
+      id: r.id as string,
+      shopName: r.shop_name as string,
+      type: r.type as string,
+      mode: r.mode as string,
+      validationStatus: r.validation_status as string,
+      timezone: r.timezone as string,
+      address: (r.address as string) ?? null,
+      neighborhood: (r.neighborhood as string) ?? null,
+      latitude: r.latitude !== null ? Number(r.latitude) : null,
+      longitude: r.longitude !== null ? Number(r.longitude) : null,
+      rating: r.global_rating !== null ? Number(r.global_rating) : null,
+      reviewCount: Number(r.total_reviews ?? 0),
+      productCount: Number(r.product_count ?? 0),
+      orderCount: Number(r.order_count ?? 0),
+      createdAt: this.toIso(r.created_at) ?? '',
+      owner: {
+        id: (r.user_id as string) ?? null,
+        name: (r.owner_name as string) ?? '',
+        email: (r.owner_email as string) ?? null,
+        phone: (r.owner_phone as string) ?? null,
+      },
     }
   }
 }

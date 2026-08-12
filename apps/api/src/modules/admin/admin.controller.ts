@@ -156,6 +156,63 @@ export class AdminController {
     })
   }
 
+  @Get('orders')
+  async getOrders(
+    @Query('status') status?: string,
+    @Query('supplierId') supplierId?: string,
+    @Query('q') q?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminService.getOrders({
+      status,
+      supplierId,
+      q,
+      page: Number(page),
+      limit: Number(limit),
+    })
+  }
+
+  @Get('orders/:id')
+  async getOrderById(@Param('id') id: string) {
+    return this.adminService.getOrderById(id)
+  }
+
+  @Get('suppliers')
+  async getSuppliers(
+    @Query('status') status?: string,
+    @Query('q') q?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminService.getSuppliers({
+      status,
+      q,
+      page: Number(page),
+      limit: Number(limit),
+    })
+  }
+
+  @Get('suppliers/:id')
+  async getSupplierById(@Param('id') id: string) {
+    return this.adminService.getSupplierById(id)
+  }
+
+  @Get('users')
+  async getUsers(
+    @Query('role') role?: string,
+    @Query('q') q?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminService.getUsers({
+      role,
+      q,
+      page: Number(page),
+      limit: Number(limit),
+    })
+  }
+
   @Get('settings')
   async getSettings() {
     return this.adminService.getSettings()
