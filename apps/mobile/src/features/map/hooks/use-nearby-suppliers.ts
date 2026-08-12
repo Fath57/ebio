@@ -1,6 +1,6 @@
-import * as Location from 'expo-location'
 import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
+import { useLocation } from '../../common/location-context'
 
 export interface NearbySupplier {
   id: string
@@ -19,17 +19,20 @@ export interface NearbySupplier {
 
 interface UseNearbyResult {
   suppliers: NearbySupplier[]
-  userLocation: { latitude: number, longitude: number } | null
   loading: boolean
   error: string | null
   refresh: () => void
 }
 
-const DEFAULT_LOCATION = { latitude: 14.6928, longitude: -17.4467 } // Dakar
-
+/**
+ * Fournisseurs autour de la position de l'application. La position vient du
+ * contexte partagé — GPS ou choix manuel de l'utilisateur — et non d'une
+ * seconde géolocalisation : sinon la carte se centre à un endroit et affiche
+ * les marqueurs d'un autre.
+ */
 export function useNearbySuppliers(radiusKm?: number): UseNearbyResult {
+  const { latitude, longitude, loading: locationLoading } = useLocation()
   const [suppliers, setSuppliers] = useState<NearbySupplier[]>([])
-  const [userLocation, setUserLocation] = useState<{ latitude: number, longitude: number } | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -54,39 +57,15 @@ export function useNearbySuppliers(radiusKm?: number): UseNearbyResult {
     }
   }, [radiusKm])
 
-  const detectLocation = useCallback(async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync()
-      if (status !== 'granted') {
-        setUserLocation(DEFAULT_LOCATION)
-        await fetchSuppliers(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude)
-        return
-      }
-      const loc = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.Balanced,
-      })
-      const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude }
-      setUserLocation(coords)
-      await fetchSuppliers(coords.latitude, coords.longitude)
-    }
-    catch {
-      setUserLocation(DEFAULT_LOCATION)
-      await fetchSuppliers(DEFAULT_LOCATION.latitude, DEFAULT_LOCATION.longitude)
-    }
-  }, [fetchSuppliers])
-
   useEffect(() => {
-    detectLocation()
-  }, [detectLocation])
+    if (locationLoading)
+      return
+    fetchSuppliers(latitude, longitude)
+  }, [locationLoading, latitude, longitude, fetchSuppliers])
 
   const refresh = useCallback(() => {
-    if (userLocation) {
-      fetchSuppliers(userLocation.latitude, userLocation.longitude)
-    }
-    else {
-      detectLocation()
-    }
-  }, [userLocation, fetchSuppliers, detectLocation])
+    fetchSuppliers(latitude, longitude)
+  }, [latitude, longitude, fetchSuppliers])
 
-  return { suppliers, userLocation, loading, error, refresh }
+  return { suppliers, loading, error, refresh }
 }

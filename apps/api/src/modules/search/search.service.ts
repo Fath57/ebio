@@ -1,6 +1,8 @@
+import type { OpeningHours } from '../../common/opening-hours'
 import type { SearchProductsQuery, SearchResponse, SearchResult } from './contracts/search.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable } from '@nestjs/common'
+import { isOpenNow } from '../../common/opening-hours'
 
 interface RawSearchRow {
   product_id: string
@@ -18,9 +20,13 @@ interface RawSearchRow {
   global_rating: number | null
   total_reviews: number
   validation_status: string
-  opening_hours: Record<string, unknown> | null
+  opening_hours: OpeningHours
+  timezone: string
   distance: number
 }
+
+/** Rayon appliqué quand la requête est géolocalisée sans rayon explicite. */
+const DEFAULT_RADIUS_METERS = 50_000
 
 interface RawCountRow {
   count: string
@@ -64,17 +70,19 @@ export class SearchService {
 
     const offset = (page - 1) * limit
     const hasLocation = latitude !== undefined && longitude !== undefined
-    const hasRadius = hasLocation && radius !== undefined && radius > 0
+    // Sans rayon explicite on borne quand même : sinon une recherche depuis
+    // Nantes remonte les fournisseurs de Cotonou à 4 500 km.
+    const radiusMeters = radius !== undefined && radius > 0 ? radius : DEFAULT_RADIUS_METERS
     const baseParams: unknown[] = []
 
     let whereClause = `
       WHERE p.status = 'ACTIVE'
     `
 
-    if (hasRadius) {
+    if (hasLocation) {
       whereClause += `  AND s.location IS NOT NULL\n`
       whereClause += `  AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)\n`
-      baseParams.push(longitude, latitude, radius)
+      baseParams.push(longitude, latitude, radiusMeters)
     }
 
     if (validatedOnly === 'true') {
@@ -146,6 +154,7 @@ export class SearchService {
         s.total_reviews,
         s.validation_status,
         s.opening_hours,
+        s.timezone,
         ${distanceSelect}
       FROM products p
       JOIN suppliers s ON p.supplier_id = s.id
@@ -280,7 +289,7 @@ export class SearchService {
         reviewCount: row.total_reviews,
         mode: row.mode,
         badges,
-        isOpen: this.computeIsOpen(row.opening_hours),
+        isOpen: isOpenNow(row.opening_hours, undefined, row.timezone),
       },
       product: {
         id: row.product_id,
@@ -306,31 +315,5 @@ export class SearchService {
     }
 
     return badges
-  }
-
-  private computeIsOpen(openingHours: Record<string, unknown> | null): boolean {
-    if (!openingHours)
-      return false
-
-    const now = new Date()
-    const dayNames = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-    const currentDay = dayNames[now.getDay()]
-    const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
-
-    const daySchedule = openingHours[currentDay]
-    if (!daySchedule)
-      return false
-
-    // Un jour est décrit soit par un créneau unique, soit par une liste de créneaux.
-    const slots = Array.isArray(daySchedule) ? daySchedule : [daySchedule]
-
-    return slots.some((slot: unknown) => {
-      if (typeof slot !== 'object' || slot === null)
-        return false
-      const typedSlot = slot as { open?: string, close?: string, closed?: boolean }
-      if (typedSlot.closed || !typedSlot.open || !typedSlot.close)
-        return false
-      return currentTime >= typedSlot.open && currentTime <= typedSlot.close
-    })
   }
 }

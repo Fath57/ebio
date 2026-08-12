@@ -170,6 +170,7 @@ export class DemoSeeder extends Seeder {
       coverPhoto: IMG.supplier1Cover,
       profilePhoto: IMG.supplier1Profile,
       openingHours: openingHoursNantes,
+      timezone: 'Europe/Paris',
     })
     const s5 = em.create(Supplier, {
       user: supplierUser5,
@@ -185,6 +186,7 @@ export class DemoSeeder extends Seeder {
       coverPhoto: IMG.supplier3Cover,
       profilePhoto: IMG.supplier2Profile,
       openingHours: openingHoursNantes,
+      timezone: 'Europe/Paris',
     })
     const s6 = em.create(Supplier, {
       user: supplierUser6,
@@ -200,6 +202,7 @@ export class DemoSeeder extends Seeder {
       coverPhoto: IMG.supplier2Cover,
       profilePhoto: IMG.supplier3Profile,
       openingHours: openingHoursNantes,
+      timezone: 'Europe/Paris',
     })
     await em.flush()
 

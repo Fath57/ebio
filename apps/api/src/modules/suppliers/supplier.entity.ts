@@ -11,6 +11,9 @@ import {
 } from '@mikro-orm/core'
 import { User } from '../auth/auth.entity'
 
+/** Fuseau par défaut : le marché eBio est béninois. */
+export const DEFAULT_TIMEZONE = 'Africa/Porto-Novo'
+
 export enum SupplierType {
   INPUTS = 'INPUTS',
   TRANSFORMER = 'TRANSFORMER',
@@ -31,7 +34,7 @@ export enum SupplierMode {
 
 @Entity({ tableName: 'suppliers' })
 export class Supplier {
-  [OptionalProps]?: 'id' | 'validationStatus' | 'mode' | 'totalReviews' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'validationStatus' | 'mode' | 'timezone' | 'totalReviews' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -73,6 +76,14 @@ export class Supplier {
 
   @Property({ fieldName: 'opening_hours', type: 'jsonb', nullable: true })
   openingHours?: Record<string, unknown>
+
+  /**
+   * Fuseau IANA dans lequel `openingHours` doit être interprété. Les horaires
+   * sont saisis en heure locale du commerce : sans ce repère, un serveur
+   * hébergé ailleurs déclare les boutiques ouvertes au mauvais moment.
+   */
+  @Property({ default: DEFAULT_TIMEZONE })
+  timezone: string = DEFAULT_TIMEZONE
 
   @Property({ fieldName: 'global_rating', type: 'float', nullable: true })
   globalRating?: number

@@ -21,6 +21,20 @@ export const validationStatusEnum = z.enum([
   description: 'Supplier account validation status',
 })
 
+/** Fuseau IANA — validé en tentant de le résoudre, sans liste en dur. */
+export const timezoneSchema = z.string().min(1).max(64).refine(
+  (tz) => {
+    try {
+      Intl.DateTimeFormat('en-US', { timeZone: tz })
+      return true
+    }
+    catch {
+      return false
+    }
+  },
+  { message: 'Fuseau horaire IANA invalide (ex. Africa/Porto-Novo)' },
+).meta({ title: 'Timezone', description: 'IANA timezone the opening hours are expressed in' })
+
 export const openingHoursSchema = z.record(
   z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']),
   z.object({
@@ -55,6 +69,7 @@ export const registerSupplierSchema = z.object({
   mobileMoneyNumber: z.string().min(8).max(20),
   mode: supplierModeEnum.default('ORDER'),
   openingHours: openingHoursSchema.optional(),
+  timezone: timezoneSchema.optional(),
 }).meta({
   title: 'RegisterSupplier',
   description: 'Data required to register as a supplier',
@@ -83,6 +98,7 @@ export const supplierResponseSchema = z.object({
   validationStatus: validationStatusEnum,
   mode: supplierModeEnum,
   openingHours: openingHoursSchema.nullable(),
+  timezone: z.string(),
   globalRating: z.number().nullable(),
   totalReviews: z.number(),
   createdAt: z.string().datetime(),

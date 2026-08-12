@@ -18,6 +18,7 @@ export class SupplierMapper {
       validationStatus: supplier.validationStatus,
       mode: supplier.mode,
       openingHours: (supplier.openingHours as SupplierResponse['openingHours']) ?? null,
+      timezone: supplier.timezone,
       globalRating: supplier.globalRating ?? null,
       totalReviews: supplier.totalReviews,
       createdAt: supplier.createdAt.toISOString(),

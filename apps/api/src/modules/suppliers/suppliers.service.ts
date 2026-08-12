@@ -1,9 +1,14 @@
+import type { OpeningHours } from '../../common/opening-hours'
 import type { DeliveryZone as DeliveryZoneInput, RegisterSupplier, UpdateSupplier } from './contracts/supplier.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { isOpenNow } from '../../common/opening-hours'
 import { User, UserRole } from '../auth/auth.entity'
 import { DeliveryZone } from './entities/delivery-zone.entity'
 import { Supplier, SupplierMode, SupplierType } from './supplier.entity'
+
+/** Rayon appliqué quand la requête est géolocalisée sans rayon explicite. */
+const DEFAULT_RADIUS_KM = 50
 
 @Injectable()
 export class SuppliersService {
@@ -85,35 +90,28 @@ export class SuppliersService {
   }
 
   async findNearby(latitude?: number, longitude?: number, radiusKm?: number) {
-    const hasLocation = latitude !== undefined && longitude !== undefined && !Number.isNaN(latitude) && !Number.isNaN(longitude)
-    const hasRadius = hasLocation && radiusKm !== undefined && radiusKm > 0
+    const hasLocation = latitude !== undefined && longitude !== undefined
+      && !Number.isNaN(latitude) && !Number.isNaN(longitude)
 
-    let query: string
-    let params: unknown[]
+    // Une requête géolocalisée est toujours bornée : sans rayon explicite, la
+    // carte remontait des fournisseurs à 4 500 km.
+    const radiusMeters = (radiusKm !== undefined && radiusKm > 0 ? radiusKm : DEFAULT_RADIUS_KM) * 1000
 
-    if (hasLocation && hasRadius) {
-      const radiusMeters = radiusKm! * 1000
-      query = `SELECT
-        s.id,
-        s.shop_name AS "shopName",
-        ST_Y(s.location::geometry) AS latitude,
-        ST_X(s.location::geometry) AS longitude,
-        s.global_rating AS "rating",
-        s.mode,
-        s.validation_status AS "validationStatus",
-        s.opening_hours AS "openingHours",
-        s.cover_photo AS "coverPhoto",
-        ROUND(ST_Distance(s.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2) AS distance,
-        (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
-      FROM suppliers s
-      WHERE s.location IS NOT NULL
+    const distanceSelect = hasLocation
+      ? `ROUND(ST_Distance(s.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2)`
+      : `NULL`
+
+    const whereClause = hasLocation
+      ? `WHERE s.location IS NOT NULL
         AND s.validation_status = 'VALIDATED'
-        AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)
-      ORDER BY distance ASC`
-      params = [longitude, latitude, longitude, latitude, radiusMeters]
-    }
-    else if (hasLocation) {
-      query = `SELECT
+        AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)`
+      : `WHERE s.validation_status = 'VALIDATED'`
+
+    const orderClause = hasLocation
+      ? 'ORDER BY distance ASC'
+      : 'ORDER BY s.global_rating DESC NULLS LAST'
+
+    const query = `SELECT
         s.id,
         s.shop_name AS "shopName",
         ST_Y(s.location::geometry) AS latitude,
@@ -122,47 +120,22 @@ export class SuppliersService {
         s.mode,
         s.validation_status AS "validationStatus",
         s.opening_hours AS "openingHours",
+        s.timezone,
         s.cover_photo AS "coverPhoto",
-        ROUND(ST_Distance(s.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2) AS distance,
+        ${distanceSelect} AS distance,
         (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
       FROM suppliers s
-      WHERE s.location IS NOT NULL
-        AND s.validation_status = 'VALIDATED'
-      ORDER BY distance ASC`
-      params = [longitude, latitude]
-    }
-    else {
-      query = `SELECT
-        s.id,
-        s.shop_name AS "shopName",
-        ST_Y(s.location::geometry) AS latitude,
-        ST_X(s.location::geometry) AS longitude,
-        s.global_rating AS "rating",
-        s.mode,
-        s.validation_status AS "validationStatus",
-        s.opening_hours AS "openingHours",
-        s.cover_photo AS "coverPhoto",
-        NULL AS distance,
-        (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
-      FROM suppliers s
-      WHERE s.validation_status = 'VALIDATED'
-      ORDER BY s.global_rating DESC NULLS LAST`
-      params = []
-    }
+      ${whereClause}
+      ${orderClause}`
+
+    const params = hasLocation
+      ? [longitude, latitude, longitude, latitude, radiusMeters]
+      : []
 
     const rows = await this.em.getConnection().execute(query, params)
 
-    const now = new Date()
-    const dayKey = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'][now.getDay()]
-    const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-
     return rows.map((row: Record<string, unknown>) => {
-      const hours = row.openingHours as Record<string, { open: string, close: string, closed?: boolean }> | null
-      const todayHours = hours?.[dayKey]
-      // Un jour absent, marqué `closed`, ou hors créneau => fermé.
-      const isOpen = todayHours && !todayHours.closed
-        ? currentTime >= todayHours.open && currentTime <= todayHours.close
-        : false
+      const isOpen = isOpenNow(row.openingHours as OpeningHours, undefined, row.timezone as string)
 
       return {
         id: row.id,
@@ -253,6 +226,7 @@ export class SuppliersService {
       coverPhoto: supplier.coverPhoto ?? null,
       profilePhoto: supplier.profilePhoto ?? null,
       openingHours: supplier.openingHours,
+      timezone: supplier.timezone,
       mode: supplier.mode,
       deliveryZones: zones.map(z => ({
         id: z.id,
