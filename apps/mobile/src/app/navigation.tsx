@@ -83,6 +83,8 @@ function SearchHomeWrapper({ navigation }: any) {
         onOpenMap={() => navigation.navigate('SearchResults', { viewMode: 'map', title: 'Carte' })}
         onPickLocation={() => navigation.navigate('LocationPicker')}
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
+        onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
+        onOpenProfile={() => navigation.navigate('Profil', { screen: 'ProfileHome' })}
         onSeeAll={(preset) => {
           if (preset === 'validated') {
             navigation.navigate('SearchResults', { validatedOnly: true, title: 'Validé eBio' })
@@ -471,6 +473,7 @@ function SupplierRegistrationWrapper({ navigation }: any) {
       <SupplierRegistration
         isPhoneVerified
         onComplete={() => navigation.popToTop()}
+        onGoBack={() => navigation.goBack()}
       />
     </SafeScreen>
   )
@@ -523,6 +526,7 @@ function SupplierProductsWrapper({ navigation }: any) {
         key={refreshKey}
         onAddProduct={() => navigation.navigate('SupplierProductForm')}
         onEditProduct={productId => navigation.navigate('SupplierProductDetail', { productId })}
+        onGoBack={() => navigation.goBack()}
       />
     </SafeScreen>
   )
@@ -618,6 +622,7 @@ function SupplierOrdersWrapper({ navigation }: any) {
       <OrderManagement
         supplierId="me"
         onOpenOrder={id => navigation.navigate('SupplierOrderDetail', { orderId: id })}
+        onGoBack={() => navigation.goBack()}
       />
     </SafeScreen>
   )
@@ -662,7 +667,7 @@ function SupplierShopProfileWrapper({ navigation }: any) {
 function SupplierOpeningHoursWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <OpeningHoursEditor onSave={() => navigation.goBack()} />
+      <OpeningHoursEditor onSave={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }
@@ -670,7 +675,7 @@ function SupplierOpeningHoursWrapper({ navigation }: any) {
 function SupplierDeliveryZonesWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <DeliveryZoneEditor onSave={() => navigation.goBack()} />
+      <DeliveryZoneEditor onSave={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }
@@ -678,7 +683,7 @@ function SupplierDeliveryZonesWrapper({ navigation }: any) {
 function SupplierModeWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <ModeSelector onModeChanged={() => navigation.goBack()} />
+      <ModeSelector onModeChanged={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }

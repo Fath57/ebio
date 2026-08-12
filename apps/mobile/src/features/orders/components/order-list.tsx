@@ -17,6 +17,7 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { useTheme } from '../../../theme/theme-context'
 import { ScalePressable, StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type FilterTab = 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
@@ -249,24 +250,12 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-          <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>
-            Mes commandes
-          </Text>
-          {!isLoading && orderCount > 0 && (
-            <View style={[styles.countBadge, { backgroundColor: semantic.bgPrimaryLight }]}>
-              <Text style={[styles.countBadgeText, { color: semantic.textPrimaryColor }]}>
-                {orderCount}
-                {' '}
-                commande
-                {orderCount > 1 ? 's' : ''}
-              </Text>
-            </View>
-          )}
-        </View>
-      </View>
+      <ScreenHeader
+        title="Mes commandes"
+        subtitle={!isLoading && orderCount > 0
+          ? `${orderCount} commande${orderCount > 1 ? 's' : ''}`
+          : undefined}
+      />
 
       {/* Filter tabs */}
       <View style={styles.filterRow}>

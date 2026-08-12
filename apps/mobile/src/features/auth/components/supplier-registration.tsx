@@ -25,6 +25,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { storage } from '../../../utils/offline-storage'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 const DRAFT_KEY = 'supplier_registration_draft'
@@ -80,11 +81,13 @@ interface SupplierRegistrationProps {
   /** Called when phone OTP step is already verified */
   isPhoneVerified?: boolean
   onComplete?: () => void
+  onGoBack?: () => void
 }
 
 export function SupplierRegistration({
   isPhoneVerified = false,
   onComplete,
+  onGoBack,
 }: SupplierRegistrationProps) {
   const { semantic } = useTheme()
   const [draft, setDraft] = useState<RegistrationDraft>(loadDraft)
@@ -590,6 +593,7 @@ export function SupplierRegistration({
       style={[styles.screen, { backgroundColor: semantic.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ScreenHeader title="Devenir fournisseur" onBack={onGoBack} />
       <ScrollView
         contentContainerStyle={styles.screenContent}
         keyboardShouldPersistTaps="handled"

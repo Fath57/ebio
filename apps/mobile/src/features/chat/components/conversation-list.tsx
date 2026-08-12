@@ -11,6 +11,7 @@ import {
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { chatFetch } from '../../../utils/api-client'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface Conversation {
   id: string
@@ -169,24 +170,28 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
     )
   }
 
-  if (conversations.length === 0) {
-    return (
-      <View style={[styles.emptyContainer, { backgroundColor: semantic.bgPage }]}>
-        <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>Aucune conversation</Text>
-      </View>
-    )
-  }
-
+  // Racine d'onglet : en-tête sans bouton retour, seulement le repère « où suis-je ».
   return (
-    <FlatList
-      data={conversations}
-      renderItem={renderItem}
-      keyExtractor={keyExtractor}
-      style={[styles.list, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.listContent}
-      refreshing={isRefreshing}
-      onRefresh={handleRefresh}
-    />
+    <View style={[styles.list, { backgroundColor: semantic.bgPage }]}>
+      <ScreenHeader title="Messages" />
+      {conversations.length === 0
+        ? (
+            <View style={[styles.emptyContainer, { backgroundColor: semantic.bgPage }]}>
+              <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>Aucune conversation</Text>
+            </View>
+          )
+        : (
+            <FlatList
+              data={conversations}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              style={[styles.list, { backgroundColor: semantic.bgPage }]}
+              contentContainerStyle={styles.listContent}
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+            />
+          )}
+    </View>
   )
 }
 

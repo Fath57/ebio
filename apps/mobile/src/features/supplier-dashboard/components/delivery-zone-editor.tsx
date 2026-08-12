@@ -19,6 +19,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface LatLng {
   latitude: number
@@ -34,6 +35,7 @@ interface DeliveryZone {
 
 interface DeliveryZoneEditorProps {
   onSave?: () => void
+  onGoBack?: () => void
 }
 
 const DEFAULT_CENTER: LatLng = { latitude: 6.3703, longitude: 2.3912 }
@@ -57,7 +59,7 @@ function circleToPolygon(center: LatLng, radiusMeters: number, segments = 24): L
   return points
 }
 
-export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
+export function DeliveryZoneEditor({ onSave, onGoBack }: DeliveryZoneEditorProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const mapRef = useRef<MapView>(null)
@@ -184,9 +186,7 @@ export function DeliveryZoneEditor({ onSave }: DeliveryZoneEditorProps) {
       style={[styles.screen, { backgroundColor: semantic.bgPage }]}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={[styles.headerBar, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderLight }]}>
-        <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>Zones de livraison</Text>
-      </View>
+      <ScreenHeader title="Zones de livraison" onBack={onGoBack} />
 
       {/* Carte (enfant stable -> ne se remonte pas à chaque frappe) */}
       <View style={styles.mapContainer}>

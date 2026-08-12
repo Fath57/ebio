@@ -17,6 +17,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 const DAYS_OF_WEEK: Array<{ key: string, label: string }> = [
   { key: 'monday', label: 'Lundi' },
@@ -42,6 +43,13 @@ interface DaySchedule {
 
 type WeekSchedule = Record<string, DaySchedule>
 
+/** Créneau tel que l'API le stocke et le renvoie. */
+interface ApiDayHours {
+  open?: string
+  close?: string
+  closed?: boolean
+}
+
 function createDefaultSchedule(): WeekSchedule {
   const schedule: WeekSchedule = {}
   for (const day of DAYS_OF_WEEK) {
@@ -58,9 +66,10 @@ function createDefaultSchedule(): WeekSchedule {
 
 interface OpeningHoursEditorProps {
   onSave?: () => void
+  onGoBack?: () => void
 }
 
-export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
+export function OpeningHoursEditor({ onSave, onGoBack }: OpeningHoursEditorProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [schedule, setSchedule] = useState<WeekSchedule>(createDefaultSchedule)
@@ -81,26 +90,19 @@ export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
       const res = await apiFetch('/api/suppliers/me/settings')
       if (res.ok) {
         const settings = await res.json()
-        const raw = settings.openingHours ?? {}
-        // Map API format { lundi: { open: '08:00', close: '18:00' } } to our format
+        // Format API : { monday: { open: 'HH:MM', close: 'HH:MM', closed?: true } }.
+        // On parcourt la semaine canonique — un jour absent vaut « fermé ».
+        const raw = (settings.openingHours ?? {}) as Record<string, ApiDayHours | null>
         const mapped: WeekSchedule = createDefaultSchedule()
-        const dayMapping: Record<string, string> = {
-          lundi: 'lundi',
-          mardi: 'mardi',
-          mercredi: 'mercredi',
-          jeudi: 'jeudi',
-          vendredi: 'vendredi',
-          samedi: 'samedi',
-          dimanche: 'dimanche',
-        }
-        for (const [key, value] of Object.entries(raw)) {
-          const dayKey = dayMapping[key] ?? key
-          if (dayKey in mapped && value) {
-            const v = value as { open?: string, close?: string }
-            const [oh = '08', om = '00'] = (v.open ?? '08:00').split(':')
-            const [ch = '18', cm = '00'] = (v.close ?? '18:00').split(':')
-            mapped[dayKey] = { isOpen: true, openHour: oh, openMinute: om, closeHour: ch, closeMinute: cm }
+        for (const day of DAYS_OF_WEEK) {
+          const value = raw[day.key]
+          if (!value || value.closed) {
+            mapped[day.key] = { ...mapped[day.key], isOpen: false }
+            continue
           }
+          const [oh = '08', om = '00'] = (value.open ?? '08:00').split(':')
+          const [ch = '18', cm = '00'] = (value.close ?? '18:00').split(':')
+          mapped[day.key] = { isOpen: true, openHour: oh, openMinute: om, closeHour: ch, closeMinute: cm }
         }
         setSchedule(mapped)
       }
@@ -159,22 +161,25 @@ export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
   async function handleSave(): Promise<void> {
     setIsSaving(true)
     try {
-      // Convert our format to API format { lundi: { open: '08:00', close: '18:00' } }
-      const apiFormat: Record<string, { open: string, close: string } | null> = {}
+      // Un jour fermé garde ses horaires et porte `closed: true` : le contrat
+      // n'accepte pas `null`, et l'utilisateur retrouve ses créneaux en rouvrant.
+      const apiFormat: Record<string, ApiDayHours> = {}
       for (const [dayKey, day] of Object.entries(schedule)) {
-        if (day.isOpen) {
-          apiFormat[dayKey] = { open: `${day.openHour}:${day.openMinute}`, close: `${day.closeHour}:${day.closeMinute}` }
-        }
-        else {
-          apiFormat[dayKey] = null
+        apiFormat[dayKey] = {
+          open: `${day.openHour}:${day.openMinute}`,
+          close: `${day.closeHour}:${day.closeMinute}`,
+          ...(day.isOpen ? {} : { closed: true }),
         }
       }
       const res = await apiFetch('/api/suppliers/me/settings/opening-hours', {
         method: 'PATCH',
-        body: JSON.stringify(apiFormat),
+        body: JSON.stringify({ openingHours: apiFormat }),
       })
       if (res.ok) {
         showSuccess('Enregistré', 'Vos horaires ont été mis à jour.', () => onSave?.())
+      }
+      else {
+        showError('Erreur', 'Impossible d\'enregistrer les horaires.')
       }
     }
     catch {
@@ -270,109 +275,111 @@ export function OpeningHoursEditor({ onSave }: OpeningHoursEditorProps) {
   }
 
   return (
-    <ScrollView
-      style={[styles.screen, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
-      showsVerticalScrollIndicator={false}
-    >
-      <Text style={[styles.title, { color: semantic.textPrimary }]}>Horaires d'ouverture</Text>
-
-      <TouchableOpacity
-        style={styles.closeTodayButton}
-        onPress={handleCloseToday}
-        accessibilityLabel="Fermer aujourd'hui"
+    <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+      <ScreenHeader title="Horaires d'ouverture" onBack={onGoBack} />
+      <ScrollView
+        style={[styles.screen, { backgroundColor: semantic.bgPage }]}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
+        showsVerticalScrollIndicator={false}
       >
-        <Lock size={14} color={colors.coral[600]} style={{ marginRight: 6 }} />
-        <Text style={styles.closeTodayText}>
-          Fermé aujourd'hui
-        </Text>
-      </TouchableOpacity>
 
-      {DAYS_OF_WEEK.map((day) => {
-        const daySchedule = schedule[day.key]
-        return (
-          <View key={day.key} style={[styles.dayCard, { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal }]}>
-            <View style={styles.dayHeader}>
-              <Text style={[styles.dayLabel, { color: semantic.textPrimary }]}>{day.label}</Text>
-              <View style={styles.dayToggleRow}>
-                <Text style={[styles.dayStatus, { color: semantic.textTertiary }]}>
-                  {daySchedule.isOpen ? 'Ouvert' : 'Fermé'}
-                </Text>
-                <Switch
-                  value={daySchedule.isOpen}
-                  onValueChange={() => handleToggleDay(day.key)}
-                  trackColor={{
-                    false: colors.neutral[200],
-                    true: colors.green[200],
-                  }}
-                  thumbColor={
-                    daySchedule.isOpen
-                      ? colors.green[400]
-                      : colors.neutral[400]
-                  }
-                  accessibilityLabel={`${day.label} ouvert ou fermé`}
-                />
+        <TouchableOpacity
+          style={styles.closeTodayButton}
+          onPress={handleCloseToday}
+          accessibilityLabel="Fermer aujourd'hui"
+        >
+          <Lock size={14} color={colors.coral[600]} style={{ marginRight: 6 }} />
+          <Text style={styles.closeTodayText}>
+            Fermé aujourd'hui
+          </Text>
+        </TouchableOpacity>
+
+        {DAYS_OF_WEEK.map((day) => {
+          const daySchedule = schedule[day.key]
+          return (
+            <View key={day.key} style={[styles.dayCard, { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal }]}>
+              <View style={styles.dayHeader}>
+                <Text style={[styles.dayLabel, { color: semantic.textPrimary }]}>{day.label}</Text>
+                <View style={styles.dayToggleRow}>
+                  <Text style={[styles.dayStatus, { color: semantic.textTertiary }]}>
+                    {daySchedule.isOpen ? 'Ouvert' : 'Fermé'}
+                  </Text>
+                  <Switch
+                    value={daySchedule.isOpen}
+                    onValueChange={() => handleToggleDay(day.key)}
+                    trackColor={{
+                      false: colors.neutral[200],
+                      true: colors.green[200],
+                    }}
+                    thumbColor={
+                      daySchedule.isOpen
+                        ? colors.green[400]
+                        : colors.neutral[400]
+                    }
+                    accessibilityLabel={`${day.label} ouvert ou fermé`}
+                  />
+                </View>
               </View>
+
+              {daySchedule.isOpen && (
+                <View style={[styles.timeSection, { borderTopColor: semantic.borderLight }]}>
+                  {renderTimePicker(day.key, 'openHour', 'openMinute', 'Ouverture')}
+                  {renderTimePicker(
+                    day.key,
+                    'closeHour',
+                    'closeMinute',
+                    'Fermeture',
+                  )}
+                  <Text style={[styles.timeSummary, { color: semantic.textPrimaryColor }]}>
+                    {daySchedule.openHour}
+                    :
+                    {daySchedule.openMinute}
+                    {' '}
+                    {'\u2014'}
+                    {' '}
+                    {daySchedule.closeHour}
+                    :
+                    {daySchedule.closeMinute}
+                  </Text>
+                </View>
+              )}
             </View>
+          )
+        })}
 
-            {daySchedule.isOpen && (
-              <View style={[styles.timeSection, { borderTopColor: semantic.borderLight }]}>
-                {renderTimePicker(day.key, 'openHour', 'openMinute', 'Ouverture')}
-                {renderTimePicker(
-                  day.key,
-                  'closeHour',
-                  'closeMinute',
-                  'Fermeture',
-                )}
-                <Text style={[styles.timeSummary, { color: semantic.textPrimaryColor }]}>
-                  {daySchedule.openHour}
-                  :
-                  {daySchedule.openMinute}
-                  {' '}
-                  {'\u2014'}
-                  {' '}
-                  {daySchedule.closeHour}
-                  :
-                  {daySchedule.closeMinute}
-                </Text>
-              </View>
-            )}
-          </View>
-        )
-      })}
+        <TouchableOpacity
+          style={[styles.saveButton, isSaving && styles.buttonDisabled]}
+          onPress={handleSave}
+          disabled={isSaving}
+          accessibilityLabel="Enregistrer les horaires"
+        >
+          {isSaving
+            ? (
+                <ActivityIndicator size="small" color={colors.neutral[0]} />
+              )
+            : (
+                <Text style={styles.saveButtonText}>Enregistrer</Text>
+              )}
+        </TouchableOpacity>
 
-      <TouchableOpacity
-        style={[styles.saveButton, isSaving && styles.buttonDisabled]}
-        onPress={handleSave}
-        disabled={isSaving}
-        accessibilityLabel="Enregistrer les horaires"
-      >
-        {isSaving
-          ? (
-              <ActivityIndicator size="small" color={colors.neutral[0]} />
-            )
-          : (
-              <Text style={styles.saveButtonText}>Enregistrer</Text>
-            )}
-      </TouchableOpacity>
-
-      <ConfirmModal
-        visible={modal.visible}
-        icon={modal.type === 'success' ? CircleCheck : TriangleAlert}
-        iconColor={modal.type === 'success' ? colors.green[600] : colors.coral[600]}
-        iconBg={modal.type === 'success' ? colors.green[50] : colors.coral[50]}
-        title={modal.title}
-        message={modal.message}
-        confirmLabel="OK"
-        confirmStyle="primary"
-        onConfirm={() => {
-          const onConfirm = modal.onConfirm
-          setModal(prev => ({ ...prev, visible: false }))
-          onConfirm?.()
-        }}
-        onCancel={() => setModal(prev => ({ ...prev, visible: false }))}
-      />
-    </ScrollView>
+        <ConfirmModal
+          visible={modal.visible}
+          icon={modal.type === 'success' ? CircleCheck : TriangleAlert}
+          iconColor={modal.type === 'success' ? colors.green[600] : colors.coral[600]}
+          iconBg={modal.type === 'success' ? colors.green[50] : colors.coral[50]}
+          title={modal.title}
+          message={modal.message}
+          confirmLabel="OK"
+          confirmStyle="primary"
+          onConfirm={() => {
+            const onConfirm = modal.onConfirm
+            setModal(prev => ({ ...prev, visible: false }))
+            onConfirm?.()
+          }}
+          onCancel={() => setModal(prev => ({ ...prev, visible: false }))}
+        />
+      </ScrollView>
+    </View>
   )
 }
 

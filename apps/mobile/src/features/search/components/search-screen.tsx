@@ -30,7 +30,6 @@ import { useOfflineSearch } from '../hooks/use-offline-search'
 import { useAutocomplete, useCategories, useSearchProducts } from '../hooks/use-search'
 import { FilterSheet } from './filter-sheet'
 import { SearchResultCard } from './search-result-card'
-import { ViewToggle } from './view-toggle'
 
 type ViewMode = 'list' | 'map'
 
@@ -58,7 +57,9 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
   const [selectedCategory, setSelectedCategory] = useState<string | undefined>(
     initialCategory,
   )
-  const [viewMode, setViewMode] = useState<ViewMode>(initialViewMode ?? 'list')
+  // La carte est un écran dédié : on n'y bascule pas depuis la liste, et on n'en
+  // revient pas non plus. Le mode est donc figé à l'ouverture de l'écran.
+  const viewMode: ViewMode = initialViewMode ?? 'list'
   const [isFilterVisible, setIsFilterVisible] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const searchInputRef = useRef<TextInput>(null)
@@ -177,6 +178,17 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
     autocomplete(text, latitude, longitude)
   }
 
+  // Un filtre est « actif » dès qu'il s'écarte de la valeur neutre. `inStockOnly`
+  // vaut true par défaut : c'est le décocher qui constitue un filtre.
+  const hasActiveFilters
+    = appliedFilters.radius !== undefined
+      || appliedFilters.maxPrice !== undefined
+      || appliedFilters.minRating > 0
+      || appliedFilters.mode !== 'ALL'
+      || appliedFilters.validatedOnly
+      || !appliedFilters.inStockOnly
+      || appliedFilters.categories.length > 0
+
   function renderSearchResultItem({ item, index }: { item: SearchResult, index: number }) {
     return (
       <StaggerItem index={index}>
@@ -293,25 +305,42 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      {/* Back header — shown when used as a pushed results screen */}
-      {onGoBack && <ScreenHeader title={headerTitle ?? 'Recherche'} onBack={onGoBack} />}
+      {/* Back header — shown when used as a pushed results screen.
+          Les filtres vivent dans son rightSlot : action de niveau écran, comme
+          « Tout marquer lu » sur les notifications. Absents en mode carte, où
+          ils ne s'appliquent pas aux points de vente affichés. */}
+      {onGoBack && (
+        <ScreenHeader
+          title={headerTitle ?? 'Recherche'}
+          onBack={onGoBack}
+          rightSlot={viewMode === 'list'
+            ? (
+                <FilterButton
+                  onPress={() => setIsFilterVisible(true)}
+                  isActive={hasActiveFilters}
+                  color={semantic.textSecondary}
+                />
+              )
+            : undefined}
+        />
+      )}
 
-      {/* Search bar */}
-      <View style={[styles.searchHeader, { backgroundColor: semantic.bgCard }]}>
-        {/* Greeting — only on the standalone screen, not the pushed results view */}
-        {!onGoBack && (
-          <View style={styles.greetingSection}>
-            <View>
-              <Text style={[styles.greetingText, { color: semantic.textTertiary }]}>
-                {firstName ? `Bonjour, ${firstName}` : 'Bienvenue sur eBio'}
-              </Text>
-              <Text style={[styles.greetingTitle, { color: semantic.textPrimary }]}>
-                Trouvez du bio près de vous
-              </Text>
+      {/* Bloc recherche — inutile en listing (pas de champ) et en mode carte. */}
+      {viewMode === 'list' && !isListing && (
+        <View style={[styles.searchHeader, { backgroundColor: semantic.bgCard }]}>
+          {/* Greeting — only on the standalone screen, not the pushed results view */}
+          {!onGoBack && (
+            <View style={styles.greetingSection}>
+              <View>
+                <Text style={[styles.greetingText, { color: semantic.textTertiary }]}>
+                  {firstName ? `Bonjour, ${firstName}` : 'Bienvenue sur eBio'}
+                </Text>
+                <Text style={[styles.greetingTitle, { color: semantic.textPrimary }]}>
+                  Trouvez du bio près de vous
+                </Text>
+              </View>
             </View>
-          </View>
-        )}
-        {!isListing && (
+          )}
           <View style={styles.searchRow}>
             <View style={[styles.searchInputContainer, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
               <Search size={16} color={semantic.textTertiary} style={styles.searchIcon} />
@@ -341,23 +370,9 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
                 </TouchableOpacity>
               )}
             </View>
-            <ViewToggle activeMode={viewMode} onToggle={setViewMode} />
           </View>
-        )}
-
-        {/* Contrôles — filtres + bascule liste/carte */}
-        <View style={styles.controlsRow}>
-          <TouchableOpacity
-            style={styles.filterButton}
-            onPress={() => setIsFilterVisible(true)}
-            accessibilityLabel="Ouvrir les filtres"
-          >
-            <SlidersHorizontal size={16} color={semantic.textSecondary} />
-            <Text style={[styles.filterText, { color: semantic.textSecondary }]}>Filtres</Text>
-          </TouchableOpacity>
-          {isListing && <ViewToggle activeMode={viewMode} onToggle={setViewMode} />}
         </View>
-      </View>
+      )}
 
       {/* Autocomplete / History overlay */}
       {isSearchFocused && (
@@ -440,14 +455,11 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
             />
           )
         : (
-            <View style={styles.mapContainer}>
-              {renderHeader()}
-              <MapScreen />
-            </View>
+            <MapScreen onNavigateToSupplier={handleCardPress} />
           )}
 
       {/* Loading indicator */}
-      {loading && (
+      {loading && viewMode === 'list' && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.green[400]} />
         </View>
@@ -462,6 +474,33 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
         categoryOptions={categories}
       />
     </View>
+  )
+}
+
+/**
+ * Accès aux filtres, posé dans le `rightSlot` de l'en-tête d'écran. La pastille
+ * signale qu'au moins un filtre est appliqué — sans quoi rien ne distingue une
+ * liste filtrée d'une liste complète.
+ */
+function FilterButton({ onPress, isActive, color }: {
+  onPress: () => void
+  isActive: boolean
+  color: string
+}) {
+  return (
+    <TouchableOpacity
+      style={styles.filterButton}
+      onPress={onPress}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={isActive ? 'Filtres, actifs' : 'Ouvrir les filtres'}
+    >
+      <View>
+        <SlidersHorizontal size={18} color={color} strokeWidth={2.2} />
+        {isActive && <View style={styles.filterDot} />}
+      </View>
+      <Text style={[styles.filterText, { color }]}>Filtres</Text>
+    </TouchableOpacity>
   )
 }
 
@@ -523,17 +562,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   // clearText removed — now using Lucide X icon directly
-  controlsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: spacing[2],
-  },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[1],
-    minHeight: 44,
+    minHeight: 40,
+  },
+  filterDot: {
+    position: 'absolute',
+    top: -2,
+    right: -3,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    borderColor: colors.neutral[0],
+    backgroundColor: colors.green[400],
   },
   // filterIcon removed — now using Lucide SlidersHorizontal icon directly
   filterText: {
@@ -685,8 +729,5 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     alignItems: 'center',
-  },
-  mapContainer: {
-    flex: 1,
   },
 })

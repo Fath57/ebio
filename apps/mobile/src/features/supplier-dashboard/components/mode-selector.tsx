@@ -14,12 +14,14 @@ import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 type SupplierMode = 'CONTACT' | 'ORDER'
 
 interface ModeSelectorProps {
   initialMode?: SupplierMode
   onModeChanged?: (mode: SupplierMode) => void
+  onGoBack?: () => void
 }
 
 const MODE_OPTIONS: Array<{
@@ -47,6 +49,7 @@ const MODE_OPTIONS: Array<{
 export function ModeSelector({
   initialMode = 'ORDER',
   onModeChanged,
+  onGoBack,
 }: ModeSelectorProps) {
   const { semantic } = useTheme()
   const [selectedMode, setSelectedMode] = useState<SupplierMode>(initialMode)
@@ -108,8 +111,8 @@ export function ModeSelector({
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+      <ScreenHeader title="Mode de fonctionnement" onBack={onGoBack} />
       <View style={styles.header}>
-        <Text style={[styles.title, { color: semantic.textPrimary }]}>Mode de fonctionnement</Text>
         <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
           Choisissez comment les acheteurs interagissent avec votre boutique.
         </Text>

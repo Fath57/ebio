@@ -1,52 +1,96 @@
 import Locate from 'lucide-react-native/dist/esm/icons/locate'
 import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw'
-import Star from 'lucide-react-native/dist/esm/icons/star'
-import * as React from 'react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Platform,
+  Pressable,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native'
-import MapView, { Callout, Marker, PROVIDER_GOOGLE } from 'react-native-maps'
-import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
+import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { useLocation } from '../../common/location-context'
 import { useNearbySuppliers } from '../hooks/use-nearby-suppliers'
 import { SupplierMarker } from './supplier-marker'
+import { SupplierSheet } from './supplier-sheet'
 
-const DAKAR_REGION = {
-  latitude: 14.6928,
-  longitude: -17.4467,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
+interface MapScreenProps {
+  onNavigateToSupplier?: (supplierId: string) => void
 }
 
-export function MapScreen() {
+/** Niveau de zoom d'ouverture — environ un quart d'agglomération. */
+const DEFAULT_DELTA = 0.08
+
+/** Hauteur de la tab bar flottante à dégager en bas de carte. */
+const TAB_BAR_CLEARANCE = 64
+/**
+ * Les vues de marqueur personnalisées doivent cesser de se redessiner une fois
+ * posées, sinon Android repeint la carte en continu.
+ */
+const TRACK_CHANGES_MS = 600
+
+export function MapScreen({ onNavigateToSupplier }: MapScreenProps) {
   const { semantic } = useTheme()
   const mapRef = useRef<MapView>(null)
-  const { suppliers, userLocation, loading, error, refresh } = useNearbySuppliers()
-  const [, setSelectedId] = useState<string | null>(null)
+  const { suppliers, loading, error, refresh } = useNearbySuppliers()
+  // Position de référence de l'app : GPS ou choix manuel de l'utilisateur.
+  const { latitude, longitude, loading: locationLoading } = useLocation()
+  const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [tracksChanges, setTracksChanges] = useState(true)
+  const hasAutoCentered = useRef(false)
+
+  // `initialRegion` est figé au premier rendu : si la position se résout après,
+  // la carte resterait sur le repli. On recadre une seule fois, sans reprendre
+  // la main sur les déplacements manuels ensuite.
+  useEffect(() => {
+    if (locationLoading || hasAutoCentered.current)
+      return
+    hasAutoCentered.current = true
+    mapRef.current?.animateToRegion({
+      latitude,
+      longitude,
+      latitudeDelta: DEFAULT_DELTA,
+      longitudeDelta: DEFAULT_DELTA,
+    }, 600)
+  }, [locationLoading, latitude, longitude])
+
+  useEffect(() => {
+    setTracksChanges(true)
+    const timer = setTimeout(() => setTracksChanges(false), TRACK_CHANGES_MS)
+    return () => clearTimeout(timer)
+  }, [selectedId, suppliers.length])
 
   const handleRecenter = useCallback(() => {
-    if (userLocation && mapRef.current) {
-      mapRef.current.animateToRegion({
-        ...userLocation,
-        latitudeDelta: 0.05,
-        longitudeDelta: 0.05,
-      }, 500)
-    }
-  }, [userLocation])
+    mapRef.current?.animateToRegion({
+      latitude,
+      longitude,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    }, 500)
+  }, [latitude, longitude])
 
-  const handleMarkerPress = useCallback((supplierId: string) => {
+  const handleMarkerPress = useCallback((supplierId: string, latitude: number, longitude: number) => {
     setSelectedId(supplierId)
+    // Décale le centrage vers le haut pour que le pin ne finisse pas sous la fiche.
+    mapRef.current?.animateToRegion({
+      latitude: latitude - 0.012,
+      longitude,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    }, 350)
   }, [])
 
-  const initialRegion = userLocation
-    ? { ...userLocation, latitudeDelta: 0.08, longitudeDelta: 0.08 }
-    : DAKAR_REGION
+  const selected = suppliers.find(s => s.id === selectedId) ?? null
+
+  const initialRegion = {
+    latitude,
+    longitude,
+    latitudeDelta: DEFAULT_DELTA,
+    longitudeDelta: DEFAULT_DELTA,
+  }
 
   return (
     <View style={styles.container}>
@@ -58,7 +102,9 @@ export function MapScreen() {
         showsUserLocation
         showsMyLocationButton={false}
         showsCompass={false}
-        mapPadding={{ top: 0, right: 0, bottom: 100, left: 0 }}
+        toolbarEnabled={false}
+        mapPadding={{ top: 0, right: 0, bottom: TAB_BAR_CLEARANCE, left: 0 }}
+        onPress={() => setSelectedId(null)}
       >
         {suppliers.map(supplier => (
           <Marker
@@ -67,104 +113,75 @@ export function MapScreen() {
               latitude: supplier.latitude,
               longitude: supplier.longitude,
             }}
-            onPress={() => handleMarkerPress(supplier.id)}
+            anchor={{ x: 0.5, y: 1 }}
+            zIndex={supplier.id === selectedId ? 2 : 1}
+            tracksViewChanges={tracksChanges}
+            onPress={() => handleMarkerPress(supplier.id, supplier.latitude, supplier.longitude)}
+            accessibilityLabel={supplier.shopName}
           >
             <SupplierMarker
-              shopName={supplier.shopName}
               isValidated={supplier.isValidated}
               isOpen={supplier.isOpen}
+              isSelected={supplier.id === selectedId}
             />
-            <Callout tooltip>
-              <View style={[styles.callout, { backgroundColor: semantic.bgCard }]}>
-                <Text style={[styles.calloutName, { color: semantic.textPrimary }]}>{supplier.shopName}</Text>
-                {supplier.rating !== null && (
-                  <View style={styles.calloutRating}>
-                    <Star
-                      size={12}
-                      color={colors.earth[400]}
-                      fill={colors.earth[400]}
-                      strokeWidth={0}
-                    />
-                    <Text style={styles.calloutRatingText}>
-                      {supplier.rating.toFixed(1)}
-                    </Text>
-                  </View>
-                )}
-                {supplier.topProduct && (
-                  <Text style={[styles.calloutProduct, { color: semantic.textSecondary }]} numberOfLines={1}>
-                    {supplier.topProduct}
-                  </Text>
-                )}
-                <Text style={[styles.calloutDistance, { color: semantic.textTertiary }]}>
-                  {supplier.distance.toFixed(1)}
-                  {' '}
-                  km
-                </Text>
-                <View style={[
-                  styles.calloutBadge,
-                  supplier.isOpen ? styles.calloutBadgeOpen : styles.calloutBadgeClosed,
-                ]}
-                >
-                  <Text style={[
-                    styles.calloutBadgeText,
-                    supplier.isOpen ? styles.calloutBadgeTextOpen : styles.calloutBadgeTextClosed,
-                  ]}
-                  >
-                    {supplier.isOpen ? 'Ouvert' : 'Fermé'}
-                  </Text>
-                </View>
-              </View>
-            </Callout>
           </Marker>
         ))}
       </MapView>
 
-      {/* Floating controls */}
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={[styles.controlButton, { backgroundColor: semantic.bgCard }]}
-          onPress={handleRecenter}
-          accessibilityLabel="Recentrer sur ma position"
-        >
-          <Locate size={20} color={semantic.textPrimary} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.controlButton, { backgroundColor: semantic.bgCard }]}
-          onPress={refresh}
-          accessibilityLabel="Rafraîchir les fournisseurs"
-        >
-          <RefreshCw size={20} color={semantic.textPrimary} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Supplier count */}
+      {/* Compteur */}
       <View style={[styles.countBadge, { backgroundColor: semantic.bgCard }]}>
         <Text style={[styles.countText, { color: semantic.textPrimary }]}>
           {suppliers.length}
           {' '}
           fournisseur
           {suppliers.length > 1 ? 's' : ''}
-          {' '}
-          à proximité
         </Text>
       </View>
 
-      {/* Loading overlay */}
+      {/* Contrôles carte */}
+      <View style={styles.controls}>
+        <Pressable
+          style={[styles.controlButton, { backgroundColor: semantic.bgCard }]}
+          onPress={handleRecenter}
+          accessibilityRole="button"
+          accessibilityLabel="Recentrer sur ma position"
+        >
+          <Locate size={20} color={semantic.textPrimary} strokeWidth={2.2} />
+        </Pressable>
+        <Pressable
+          style={[styles.controlButton, { backgroundColor: semantic.bgCard }]}
+          onPress={refresh}
+          accessibilityRole="button"
+          accessibilityLabel="Rafraîchir les fournisseurs"
+        >
+          <RefreshCw size={20} color={semantic.textPrimary} strokeWidth={2.2} />
+        </Pressable>
+      </View>
+
       {loading && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color={colors.green[400]} />
         </View>
       )}
 
-      {/* Error */}
       {error && !loading && (
-        <View style={styles.errorBanner}>
+        <View style={[styles.errorBanner, { bottom: TAB_BAR_CLEARANCE + spacing[4] }]}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity onPress={refresh}>
+          <Pressable onPress={refresh} accessibilityRole="button" accessibilityLabel="Réessayer">
             <Text style={styles.errorRetry}>Réessayer</Text>
-          </TouchableOpacity>
+          </Pressable>
         </View>
       )}
+
+      <SupplierSheet
+        supplier={selected}
+        onClose={() => setSelectedId(null)}
+        onOpenSupplier={(id) => {
+          setSelectedId(null)
+          onNavigateToSupplier?.(id)
+        }}
+        bottomInset={TAB_BAR_CLEARANCE}
+      />
     </View>
   )
 }
@@ -175,6 +192,19 @@ const styles = StyleSheet.create({
   },
   map: {
     flex: 1,
+  },
+  countBadge: {
+    position: 'absolute',
+    top: spacing[4],
+    left: spacing[4],
+    borderRadius: radius.pill,
+    paddingVertical: spacing[2],
+    paddingHorizontal: spacing[3],
+    ...shadows.md,
+  },
+  countText: {
+    ...typography.caption,
+    fontFamily: fonts.sansSb,
   },
   controls: {
     position: 'absolute',
@@ -188,84 +218,7 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
-  countBadge: {
-    position: 'absolute',
-    bottom: spacing[4],
-    left: spacing[4],
-    right: spacing[4],
-    borderRadius: radius.lg,
-    paddingVertical: spacing[3],
-    paddingHorizontal: spacing[4],
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 6,
-    alignItems: 'center',
-  },
-  countText: {
-    ...typography.bodyS,
-    fontFamily: fonts.sansSb,
-  },
-  callout: {
-    borderRadius: radius.lg,
-    padding: spacing[3],
-    minWidth: 160,
-    maxWidth: 220,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    elevation: 4,
-    gap: spacing[1],
-  },
-  calloutName: {
-    ...typography.h3,
-  },
-  calloutRating: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  calloutRatingText: {
-    fontFamily: fonts.sansMd,
-    fontSize: 12,
-    color: colors.earth[600],
-  },
-  calloutProduct: {
-    ...typography.caption,
-  },
-  calloutDistance: {
-    ...typography.caption,
-  },
-  calloutBadge: {
-    alignSelf: 'flex-start',
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing[2],
-    paddingVertical: 2,
-    marginTop: spacing[1],
-  },
-  calloutBadgeOpen: {
-    backgroundColor: colors.green[50],
-  },
-  calloutBadgeClosed: {
-    backgroundColor: colors.neutral[100],
-  },
-  calloutBadgeText: {
-    fontFamily: fonts.sansSb,
-    fontSize: 10,
-  },
-  calloutBadgeTextOpen: {
-    color: colors.green[800],
-  },
-  calloutBadgeTextClosed: {
-    color: colors.neutral[600],
+    ...shadows.md,
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -275,7 +228,6 @@ const styles = StyleSheet.create({
   },
   errorBanner: {
     position: 'absolute',
-    bottom: spacing[12],
     left: spacing[4],
     right: spacing[4],
     backgroundColor: colors.coral[50],

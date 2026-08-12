@@ -20,6 +20,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 type ProductStatus = 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN'
 
@@ -67,6 +68,7 @@ function formatPrice(value: number): string {
 interface ProductListProps {
   onAddProduct?: () => void
   onEditProduct?: (productId: string) => void
+  onGoBack?: () => void
 }
 
 const STATUS_FILTERS: Array<{ key: 'all' | ProductStatus, label: string }> = [
@@ -76,7 +78,7 @@ const STATUS_FILTERS: Array<{ key: 'all' | ProductStatus, label: string }> = [
   { key: 'HIDDEN', label: 'Masqués' },
 ]
 
-export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
+export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductListProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [products, setProducts] = useState<Product[]>([])
@@ -308,15 +310,11 @@ export function ProductList({ onAddProduct, onEditProduct }: ProductListProps) {
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <View style={[styles.header, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderNormal }]}>
-        <Text style={[styles.headerTitle, { color: semantic.textPrimary }]}>Mes produits</Text>
-        <Text style={[styles.headerCount, { color: semantic.textTertiary }]}>
-          {products.length}
-          {' '}
-          produit
-          {products.length > 1 ? 's' : ''}
-        </Text>
-      </View>
+      <ScreenHeader
+        title="Mes produits"
+        subtitle={`${products.length} produit${products.length > 1 ? 's' : ''}`}
+        onBack={onGoBack}
+      />
 
       {/* Recherche + filtres */}
       <View style={styles.filterBar}>

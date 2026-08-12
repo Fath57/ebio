@@ -1,62 +1,63 @@
-import * as React from 'react'
-import { StyleSheet, Text, View } from 'react-native'
-import { colors, fonts, radius } from '../../../theme/theme'
+import Check from 'lucide-react-native/dist/esm/icons/check'
+import { StyleSheet, View } from 'react-native'
+import Svg, { Circle, Path } from 'react-native-svg'
+import { colors } from '../../../theme/theme'
 
 interface SupplierMarkerProps {
-  shopName: string
   isValidated: boolean
   isOpen: boolean
+  /** Pin agrandi et assombri quand la fiche du fournisseur est ouverte. */
+  isSelected?: boolean
 }
 
-export function SupplierMarker({
-  shopName,
-  isValidated,
-  isOpen,
-}: SupplierMarkerProps) {
+/** Goutte de carte classique, dessinée dans un viewBox 24×34. */
+const PIN_PATH = 'M12 0C5.373 0 0 5.373 0 12c0 6.9 7.2 16.2 10.65 20.4a1.75 1.75 0 0 0 2.7 0C16.8 28.2 24 18.9 24 12 24 5.373 18.627 0 12 0Z'
+
+const PIN_RATIO = 34 / 24
+const WIDTH_DEFAULT = 30
+const WIDTH_SELECTED = 40
+
+/**
+ * Marqueur fournisseur : goutte pleine à contour blanc, pastille centrale
+ * blanche, coche verte pour les fournisseurs validés. La couleur porte
+ * l'ouverture (vert = ouvert, gris = fermé), la taille porte la sélection.
+ */
+export function SupplierMarker({ isValidated, isOpen, isSelected = false }: SupplierMarkerProps) {
+  const width = isSelected ? WIDTH_SELECTED : WIDTH_DEFAULT
+  const height = width * PIN_RATIO
+  const fill = isSelected
+    ? colors.green[600]
+    : isOpen ? colors.green[400] : colors.neutral[400]
+
+  // Centre de la tête du pin : (12/24, 12/34) du viewBox.
+  const headSize = width * 0.34
+  const headTop = height * (12 / 34) - headSize / 2
+  const headLeft = width / 2 - headSize / 2
+
   return (
-    <View
-      style={[styles.marker, isOpen ? styles.markerOpen : styles.markerClosed]}
-    >
-      <Text style={styles.label} numberOfLines={1}>
-        {shopName}
-      </Text>
-      {isValidated && <View style={styles.validatedDot} />}
+    <View style={[styles.wrapper, { width, height }]}>
+      <Svg width={width} height={height} viewBox="0 0 24 34">
+        <Path d={PIN_PATH} fill={fill} stroke={colors.neutral[0]} strokeWidth={1.5} />
+        <Circle cx={12} cy={12} r={5} fill={colors.neutral[0]} />
+      </Svg>
+
+      {isValidated && (
+        <View style={[styles.head, { top: headTop, left: headLeft, width: headSize, height: headSize }]}>
+          <Check size={headSize * 0.85} color={fill} strokeWidth={3.5} />
+        </View>
+      )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
-  marker: {
-    flexDirection: 'row',
+  wrapper: {
     alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.neutral[0],
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    borderRadius: radius.lg,
-    borderWidth: 2,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    justifyContent: 'flex-start',
   },
-  markerOpen: {
-    borderColor: colors.green[400],
-  },
-  markerClosed: {
-    borderColor: colors.neutral[400],
-  },
-  label: {
-    fontFamily: fonts.sansSb,
-    fontSize: 12,
-    color: colors.neutral[800],
-    maxWidth: 100,
-  },
-  validatedDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: colors.green[400],
+  head: {
+    position: 'absolute',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 })

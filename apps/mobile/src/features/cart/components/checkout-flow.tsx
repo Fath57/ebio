@@ -22,6 +22,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
@@ -271,24 +272,12 @@ export function CheckoutFlow({
   if (currentStep === 'SUMMARY') {
     return (
       <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
+        <ScreenHeader title="Validation de la commande" onBack={onCancel} />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
         >
-          {/* Header */}
-          <View style={styles.stepHeader}>
-            <TouchableOpacity
-              style={styles.backButton}
-              onPress={onCancel}
-              accessibilityLabel="Retour"
-            >
-              <ArrowLeft size={22} color={semantic.textPrimary} strokeWidth={2} />
-            </TouchableOpacity>
-            <Text style={[styles.stepTitle, { color: semantic.textPrimary }]}>
-              Validation de la commande
-            </Text>
-          </View>
 
           {/* Supplier */}
           <View style={[styles.card, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}>

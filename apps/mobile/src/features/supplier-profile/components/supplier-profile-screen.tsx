@@ -1,6 +1,5 @@
 import { useNavigation } from '@react-navigation/native'
 import { LinearGradient } from 'expo-linear-gradient'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
@@ -20,7 +19,6 @@ import {
   Image,
   Linking,
   Platform,
-  Pressable,
   ScrollView,
   Share,
   StyleSheet,
@@ -35,6 +33,7 @@ import { FadeInView, ScalePressable } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
 import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
+import { ScreenHeader } from '../../common/components/screen-header'
 import { ContactActionSheet } from './contact-action-sheet'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -543,16 +542,10 @@ export function SupplierProfileScreen({
             end={{ x: 0, y: 1 }}
           />
 
-          {/* Back button */}
-          <Pressable
-            style={[styles.backButton, { top: insets.top + 8 }]}
-            onPress={() => onGoBack ? onGoBack() : navigation.goBack()}
-            accessibilityRole="button"
-            accessibilityLabel="Retour"
-            hitSlop={8}
-          >
-            <ArrowLeft size={20} color={colors.neutral[0]} strokeWidth={2.5} />
-          </Pressable>
+          <ScreenHeader
+            variant="transparent"
+            onBack={() => onGoBack ? onGoBack() : navigation.goBack()}
+          />
 
           {/* Profile photo — overlapping bottom of cover */}
           <View style={styles.profilePhotoAnchor}>

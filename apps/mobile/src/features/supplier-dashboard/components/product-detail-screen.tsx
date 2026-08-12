@@ -1,5 +1,4 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import Box from 'lucide-react-native/dist/esm/icons/box'
 import Edit from 'lucide-react-native/dist/esm/icons/pencil'
 import Tag from 'lucide-react-native/dist/esm/icons/tag'
@@ -18,6 +17,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface Variant {
   id: string
@@ -150,196 +150,203 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
   const statusInfo = STATUS_LABELS[product.status] ?? STATUS_LABELS.ACTIVE
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={onGoBack} hitSlop={8}>
-          <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => onEdit(product.id)} hitSlop={8}>
-          <Edit size={20} color={semantic.textPrimaryColor} strokeWidth={2} />
-        </TouchableOpacity>
-      </View>
+    <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
+      <ScreenHeader
+        title={product.name}
+        onBack={onGoBack}
+        rightSlot={(
+          <TouchableOpacity
+            onPress={() => onEdit(product.id)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Modifier le produit"
+          >
+            <Edit size={20} color={semantic.textPrimaryColor} strokeWidth={2} />
+          </TouchableOpacity>
+        )}
+      />
+      <ScrollView
+        style={[styles.container, { backgroundColor: semantic.bgPage }]}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
+        showsVerticalScrollIndicator={false}
+      >
 
-      {/* Photo */}
-      {product.photos.length > 0
-        ? (
-            <View>
-              <Image
-                source={{ uri: product.photos[selectedPhoto] }}
-                style={styles.mainPhoto}
-                resizeMode="cover"
-              />
-              {hasPromotion && !selectedVariant && (
-                <View style={styles.promoBadge}>
-                  <Text style={styles.promoBadgeText}>
-                    -
-                    {discountPercent}
-                    %
-                  </Text>
-                </View>
-              )}
-              {product.photos.length > 1 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailRow} contentContainerStyle={styles.thumbnailContent}>
-                  {product.photos.map((url, i) => (
-                    <TouchableOpacity
-                      key={i}
-                      onPress={() => setSelectedPhoto(i)}
-                      style={[styles.thumbnail, i === selectedPhoto && styles.thumbnailActive]}
-                    >
-                      <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              )}
+        {/* Photo */}
+        {product.photos.length > 0
+          ? (
+              <View>
+                <Image
+                  source={{ uri: product.photos[selectedPhoto] }}
+                  style={styles.mainPhoto}
+                  resizeMode="cover"
+                />
+                {hasPromotion && !selectedVariant && (
+                  <View style={styles.promoBadge}>
+                    <Text style={styles.promoBadgeText}>
+                      -
+                      {discountPercent}
+                      %
+                    </Text>
+                  </View>
+                )}
+                {product.photos.length > 1 && (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailRow} contentContainerStyle={styles.thumbnailContent}>
+                    {product.photos.map((url, i) => (
+                      <TouchableOpacity
+                        key={i}
+                        onPress={() => setSelectedPhoto(i)}
+                        style={[styles.thumbnail, i === selectedPhoto && styles.thumbnailActive]}
+                      >
+                        <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                )}
+              </View>
+            )
+          : (
+              <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
+                <Text style={styles.photoPlaceholderText}>{product.name.charAt(0).toUpperCase()}</Text>
+              </View>
+            )}
+
+        {/* Info */}
+        <View style={styles.infoSection}>
+          {/* Category + Status */}
+          <View style={styles.badgeRow}>
+            <View style={[styles.badge, { backgroundColor: semantic.bgSurface }]}>
+              <Tag size={12} color={semantic.textSecondary} />
+              <Text style={[styles.badgeText, { color: semantic.textSecondary }]}>{product.categoryName}</Text>
             </View>
-          )
-        : (
-            <View style={[styles.mainPhoto, styles.photoPlaceholder]}>
-              <Text style={styles.photoPlaceholderText}>{product.name.charAt(0).toUpperCase()}</Text>
+            <View style={[styles.badge, { backgroundColor: statusInfo.bg }]}>
+              <Text style={[styles.badgeText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+            </View>
+          </View>
+
+          {/* Name */}
+          <Text style={[styles.productName, { color: semantic.textPrimary }]}>{product.name}</Text>
+
+          {/* Price */}
+          <View style={styles.priceRow}>
+            <Text style={styles.price}>
+              {formatPrice(activePrice)}
+              {' '}
+              FCFA
+            </Text>
+            <Text style={[styles.priceUnit, { color: semantic.textTertiary }]}>
+              /
+              {unitLabel}
+            </Text>
+          </View>
+          {hasPromotion && !selectedVariant && (
+            <Text style={styles.originalPrice}>
+              {formatPrice(product.pricePerUnit)}
+              {' '}
+              FCFA
+            </Text>
+          )}
+
+          {/* Variants */}
+          {product.variants.length > 0 && (
+            <View style={styles.variantsSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Variantes</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                <TouchableOpacity
+                  onPress={() => setSelectedVariant(null)}
+                  style={[styles.variantChip, !selectedVariant && styles.variantChipActive]}
+                >
+                  <Text style={[styles.variantChipText, !selectedVariant && styles.variantChipTextActive]}>
+                    Standard
+                  </Text>
+                </TouchableOpacity>
+                {product.variants.map(v => (
+                  <TouchableOpacity
+                    key={v.id}
+                    onPress={() => setSelectedVariant(v)}
+                    disabled={v.stock === 0}
+                    style={[
+                      styles.variantChip,
+                      selectedVariant?.id === v.id && styles.variantChipActive,
+                      v.stock === 0 && styles.variantChipDisabled,
+                    ]}
+                  >
+                    <Text style={[
+                      styles.variantChipText,
+                      selectedVariant?.id === v.id && styles.variantChipTextActive,
+                    ]}
+                    >
+                      {v.label}
+                      {' '}
+                      —
+                      {formatPrice(v.pricePerUnit)}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
             </View>
           )}
 
-      {/* Info */}
-      <View style={styles.infoSection}>
-        {/* Category + Status */}
-        <View style={styles.badgeRow}>
-          <View style={[styles.badge, { backgroundColor: semantic.bgSurface }]}>
-            <Tag size={12} color={semantic.textSecondary} />
-            <Text style={[styles.badgeText, { color: semantic.textSecondary }]}>{product.categoryName}</Text>
+          {/* Stock */}
+          <View style={styles.stockRow}>
+            <Box size={16} color={isOutOfStock ? colors.coral[600] : colors.green[600]} />
+            <Text style={[styles.stockText, { color: isOutOfStock ? colors.coral[600] : colors.green[600] }]}>
+              {isOutOfStock ? 'En rupture de stock' : `En stock — ${activeStock} ${unitLabel}`}
+            </Text>
           </View>
-          <View style={[styles.badge, { backgroundColor: statusInfo.bg }]}>
-            <Text style={[styles.badgeText, { color: statusInfo.color }]}>{statusInfo.label}</Text>
+
+          {/* Description */}
+          {product.description && (
+            <View style={styles.descriptionSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Description</Text>
+              <Text style={[styles.description, { color: semantic.textPrimary }]}>{product.description}</Text>
+            </View>
+          )}
+
+          {/* Meta */}
+          <View style={styles.metaRow}>
+            <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
+              Créé le
+              {' '}
+              {new Date(product.createdAt).toLocaleDateString('fr-FR')}
+            </Text>
+            <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
+              Modifié le
+              {' '}
+              {new Date(product.updatedAt).toLocaleDateString('fr-FR')}
+            </Text>
           </View>
+
+          {/* Edit button */}
+          <TouchableOpacity
+            style={styles.editButton}
+            onPress={() => onEdit(product.id)}
+            activeOpacity={0.8}
+          >
+            <Edit size={18} color={colors.neutral[0]} />
+            <Text style={styles.editButtonText}>Modifier le produit</Text>
+          </TouchableOpacity>
+
+          {/* Delete button */}
+          <TouchableOpacity
+            style={styles.deleteButton}
+            onPress={confirmDelete}
+            disabled={deleting}
+            activeOpacity={0.8}
+          >
+            {deleting
+              ? (
+                  <ActivityIndicator size="small" color={colors.coral[600]} />
+                )
+              : (
+                  <>
+                    <Trash2 size={18} color={colors.coral[600]} />
+                    <Text style={styles.deleteButtonText}>Supprimer le produit</Text>
+                  </>
+                )}
+          </TouchableOpacity>
         </View>
-
-        {/* Name */}
-        <Text style={[styles.productName, { color: semantic.textPrimary }]}>{product.name}</Text>
-
-        {/* Price */}
-        <View style={styles.priceRow}>
-          <Text style={styles.price}>
-            {formatPrice(activePrice)}
-            {' '}
-            FCFA
-          </Text>
-          <Text style={[styles.priceUnit, { color: semantic.textTertiary }]}>
-            /
-            {unitLabel}
-          </Text>
-        </View>
-        {hasPromotion && !selectedVariant && (
-          <Text style={styles.originalPrice}>
-            {formatPrice(product.pricePerUnit)}
-            {' '}
-            FCFA
-          </Text>
-        )}
-
-        {/* Variants */}
-        {product.variants.length > 0 && (
-          <View style={styles.variantsSection}>
-            <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Variantes</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <TouchableOpacity
-                onPress={() => setSelectedVariant(null)}
-                style={[styles.variantChip, !selectedVariant && styles.variantChipActive]}
-              >
-                <Text style={[styles.variantChipText, !selectedVariant && styles.variantChipTextActive]}>
-                  Standard
-                </Text>
-              </TouchableOpacity>
-              {product.variants.map(v => (
-                <TouchableOpacity
-                  key={v.id}
-                  onPress={() => setSelectedVariant(v)}
-                  disabled={v.stock === 0}
-                  style={[
-                    styles.variantChip,
-                    selectedVariant?.id === v.id && styles.variantChipActive,
-                    v.stock === 0 && styles.variantChipDisabled,
-                  ]}
-                >
-                  <Text style={[
-                    styles.variantChipText,
-                    selectedVariant?.id === v.id && styles.variantChipTextActive,
-                  ]}
-                  >
-                    {v.label}
-                    {' '}
-                    —
-                    {formatPrice(v.pricePerUnit)}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        )}
-
-        {/* Stock */}
-        <View style={styles.stockRow}>
-          <Box size={16} color={isOutOfStock ? colors.coral[600] : colors.green[600]} />
-          <Text style={[styles.stockText, { color: isOutOfStock ? colors.coral[600] : colors.green[600] }]}>
-            {isOutOfStock ? 'En rupture de stock' : `En stock — ${activeStock} ${unitLabel}`}
-          </Text>
-        </View>
-
-        {/* Description */}
-        {product.description && (
-          <View style={styles.descriptionSection}>
-            <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Description</Text>
-            <Text style={[styles.description, { color: semantic.textPrimary }]}>{product.description}</Text>
-          </View>
-        )}
-
-        {/* Meta */}
-        <View style={styles.metaRow}>
-          <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
-            Créé le
-            {' '}
-            {new Date(product.createdAt).toLocaleDateString('fr-FR')}
-          </Text>
-          <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
-            Modifié le
-            {' '}
-            {new Date(product.updatedAt).toLocaleDateString('fr-FR')}
-          </Text>
-        </View>
-
-        {/* Edit button */}
-        <TouchableOpacity
-          style={styles.editButton}
-          onPress={() => onEdit(product.id)}
-          activeOpacity={0.8}
-        >
-          <Edit size={18} color={colors.neutral[0]} />
-          <Text style={styles.editButtonText}>Modifier le produit</Text>
-        </TouchableOpacity>
-
-        {/* Delete button */}
-        <TouchableOpacity
-          style={styles.deleteButton}
-          onPress={confirmDelete}
-          disabled={deleting}
-          activeOpacity={0.8}
-        >
-          {deleting
-            ? (
-                <ActivityIndicator size="small" color={colors.coral[600]} />
-              )
-            : (
-                <>
-                  <Trash2 size={18} color={colors.coral[600]} />
-                  <Text style={styles.deleteButtonText}>Supprimer le produit</Text>
-                </>
-              )}
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+      </ScrollView>
+    </View>
   )
 }
 

@@ -32,6 +32,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ModeSwitch } from '../../common/components/mode-switch'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 interface UserProfile {
   id: string
@@ -214,303 +215,306 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
     : '?'
 
   return (
-    <ScrollView
-      style={[styles.container, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Mode switcher — visible only for validated suppliers */}
-      {supplierStatus.isSupplier && supplierStatus.validationStatus === 'VALIDATED' && (
-        <View style={styles.modeSwitchWrap}>
-          <ModeSwitch
-            mode="buyer"
-            onChange={(m) => {
-              if (m === 'seller') {
-                onNavigateToDashboard?.()
-              }
-            }}
-          />
-        </View>
-      )}
-
-      {/* Profile header */}
-      <View>
-        <View style={[styles.header, { backgroundColor: semantic.bgCard }]}>
-          <View style={styles.avatarContainer}>
-            {profile?.image
-              ? (
-                  <Image source={{ uri: profile.image }} style={styles.avatar} />
-                )
-              : (
-                  <View style={styles.avatarFallback}>
-                    <Text style={styles.avatarText}>{initials}</Text>
-                  </View>
-                )}
-            <TouchableOpacity
-              style={styles.editAvatarButton}
-              accessibilityLabel="Modifier le profil"
-              onPress={() => onNavigateToEditProfile?.()}
-            >
-              <Pen size={12} color={colors.neutral[0]} />
-            </TouchableOpacity>
-          </View>
-
-          <Text style={[styles.name, { color: semantic.textPrimary }]}>
-            {profile?.name ?? 'Utilisateur'}
-          </Text>
-
-          {profile?.email && !profile.email.endsWith('@phone.ebio.app') && (
-            <Text style={[styles.email, { color: semantic.textSecondary }]}>
-              {profile.email}
-            </Text>
-          )}
-
-          {profile?.phone && (
-            <Text style={[styles.phone, { color: semantic.textTertiary }]}>
-              {profile.phone}
-            </Text>
-          )}
-
-          <View style={styles.roleBadge}>
-            <ShieldCheck size={12} color={colors.green[800]} />
-            <Text style={styles.roleText}>
-              {ROLE_LABELS[profile?.role ?? 'BUYER']}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Edit profile */}
-      <View>
-        <View style={styles.section}>
-          <MenuItem
-            icon={Pen}
-            iconBg={colors.blue[50]}
-            iconColor={colors.blue[600]}
-            label="Modifier le profil"
-            sublabel="Nom, e-mail, téléphone"
-            onPress={() => onNavigateToEditProfile?.()}
-            semantic={semantic}
-          />
-        </View>
-      </View>
-
-      {/* Quick actions */}
-      {/* Become supplier (only for buyers who haven't applied) */}
-      {profile?.role === 'BUYER' && !supplierStatus.isSupplier && (
-        <View>
-          <View style={styles.section}>
-            <MenuItem
-              icon={Store}
-              label="Devenir fournisseur"
-              sublabel="Vendez vos produits sur eBio"
-              onPress={handleRoleSwitch}
-              semantic={semantic}
+    <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
+      <ScreenHeader title="Profil" />
+      <ScrollView
+        style={[styles.container, { backgroundColor: semantic.bgPage }]}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Mode switcher — visible only for validated suppliers */}
+        {supplierStatus.isSupplier && supplierStatus.validationStatus === 'VALIDATED' && (
+          <View style={styles.modeSwitchWrap}>
+            <ModeSwitch
+              mode="buyer"
+              onChange={(m) => {
+                if (m === 'seller') {
+                  onNavigateToDashboard?.()
+                }
+              }}
             />
           </View>
-        </View>
-      )}
+        )}
 
-      {/* Pending validation banner */}
-      {supplierStatus.isSupplier && supplierStatus.validationStatus === 'PENDING' && (
+        {/* Profile header */}
+        <View>
+          <View style={[styles.header, { backgroundColor: semantic.bgCard }]}>
+            <View style={styles.avatarContainer}>
+              {profile?.image
+                ? (
+                    <Image source={{ uri: profile.image }} style={styles.avatar} />
+                  )
+                : (
+                    <View style={styles.avatarFallback}>
+                      <Text style={styles.avatarText}>{initials}</Text>
+                    </View>
+                  )}
+              <TouchableOpacity
+                style={styles.editAvatarButton}
+                accessibilityLabel="Modifier le profil"
+                onPress={() => onNavigateToEditProfile?.()}
+              >
+                <Pen size={12} color={colors.neutral[0]} />
+              </TouchableOpacity>
+            </View>
+
+            <Text style={[styles.name, { color: semantic.textPrimary }]}>
+              {profile?.name ?? 'Utilisateur'}
+            </Text>
+
+            {profile?.email && !profile.email.endsWith('@phone.ebio.app') && (
+              <Text style={[styles.email, { color: semantic.textSecondary }]}>
+                {profile.email}
+              </Text>
+            )}
+
+            {profile?.phone && (
+              <Text style={[styles.phone, { color: semantic.textTertiary }]}>
+                {profile.phone}
+              </Text>
+            )}
+
+            <View style={styles.roleBadge}>
+              <ShieldCheck size={12} color={colors.green[800]} />
+              <Text style={styles.roleText}>
+                {ROLE_LABELS[profile?.role ?? 'BUYER']}
+              </Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Edit profile */}
         <View>
           <View style={styles.section}>
-            <View style={[styles.pendingBanner, { backgroundColor: semantic.bgCard }]}>
-              <Hourglass size={24} color={colors.earth[400]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.pendingTitle, { color: semantic.textPrimary }]}>
-                  En attente de validation
-                </Text>
-                <Text style={[styles.pendingSubtitle, { color: semantic.textSecondary }]}>
-                  Votre demande pour «
-                  {' '}
-                  {supplierStatus.shopName}
-                  {' '}
-                  » est en cours d'examen. Vous serez notifié dès que votre compte sera activé.
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Complement requested banner */}
-      {supplierStatus.isSupplier && supplierStatus.validationStatus === 'COMPLEMENT_REQUESTED' && (
-        <View>
-          <View style={styles.section}>
-            <View style={[styles.pendingBanner, { backgroundColor: colors.coral[50], borderColor: colors.coral[200], borderWidth: 1 }]}>
-              <Store size={24} color={colors.coral[400]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.pendingTitle, { color: colors.coral[600] }]}>
-                  Complément demandé
-                </Text>
-                <Text style={[styles.pendingSubtitle, { color: colors.coral[600] }]}>
-                  Des informations supplémentaires sont nécessaires pour valider votre boutique.
-                </Text>
-              </View>
-            </View>
-          </View>
-        </View>
-      )}
-
-      {/* Theme */}
-      <View>
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
-            APPARENCE
-          </Text>
-          <View style={[styles.themeSelector, { backgroundColor: semantic.bgCard }]}>
-            {THEME_OPTIONS.map((opt) => {
-              const isActive = mode === opt.value
-              return (
-                <TouchableOpacity
-                  key={opt.value}
-                  style={[
-                    styles.themeOption,
-                    isActive && styles.themeOptionActive,
-                  ]}
-                  onPress={() => setMode(opt.value)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isActive }}
-                  accessibilityLabel={opt.label}
-                >
-                  <opt.Icon
-                    size={18}
-                    color={isActive ? colors.green[600] : semantic.textTertiary}
-                  />
-                  <Text style={[
-                    styles.themeOptionText,
-                    { color: isActive ? colors.green[600] : semantic.textSecondary },
-                    isActive && styles.themeOptionTextActive,
-                  ]}
-                  >
-                    {opt.label}
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        </View>
-      </View>
-
-      {/* Orders */}
-      <View>
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
-            COMMANDES
-          </Text>
-          <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
             <MenuItem
-              icon={ClipboardList}
-              iconBg={colors.earth[50]}
-              iconColor={colors.earth[600]}
-              label="Mes commandes"
-              sublabel="Historique et suivi"
-              onPress={() => onNavigateToOrders?.()}
-              semantic={semantic}
-              grouped
-            />
-          </View>
-        </View>
-      </View>
-
-      {/* Settings */}
-      <View>
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
-            PARAMÈTRES
-          </Text>
-          <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
-            <View style={styles.menuItemRow}>
-              <View style={styles.menuItemLeft}>
-                <View style={[styles.menuIconContainer, { backgroundColor: colors.green[50] }]}>
-                  <ScanFace size={18} color={colors.green[600]} />
-                </View>
-                <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>
-                  Biométrie
-                </Text>
-              </View>
-              <Switch
-                value={biometricEnabled}
-                onValueChange={handleToggleBiometric}
-                trackColor={{ true: colors.green[400], false: colors.neutral[200] }}
-                thumbColor={colors.neutral[0]}
-              />
-            </View>
-
-            <View style={styles.menuDivider} />
-
-            <MenuItem
-              icon={Bell}
+              icon={Pen}
               iconBg={colors.blue[50]}
               iconColor={colors.blue[600]}
-              label="Notifications"
-              onPress={() => onNavigateToNotifications?.()}
+              label="Modifier le profil"
+              sublabel="Nom, e-mail, téléphone"
+              onPress={() => onNavigateToEditProfile?.()}
               semantic={semantic}
-              grouped
             />
-
           </View>
         </View>
-      </View>
 
-      {/* Support */}
-      <View>
-        <View style={styles.section}>
-          <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
-            SUPPORT
+        {/* Quick actions */}
+        {/* Become supplier (only for buyers who haven't applied) */}
+        {profile?.role === 'BUYER' && !supplierStatus.isSupplier && (
+          <View>
+            <View style={styles.section}>
+              <MenuItem
+                icon={Store}
+                label="Devenir fournisseur"
+                sublabel="Vendez vos produits sur eBio"
+                onPress={handleRoleSwitch}
+                semantic={semantic}
+              />
+            </View>
+          </View>
+        )}
+
+        {/* Pending validation banner */}
+        {supplierStatus.isSupplier && supplierStatus.validationStatus === 'PENDING' && (
+          <View>
+            <View style={styles.section}>
+              <View style={[styles.pendingBanner, { backgroundColor: semantic.bgCard }]}>
+                <Hourglass size={24} color={colors.earth[400]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.pendingTitle, { color: semantic.textPrimary }]}>
+                    En attente de validation
+                  </Text>
+                  <Text style={[styles.pendingSubtitle, { color: semantic.textSecondary }]}>
+                    Votre demande pour «
+                    {' '}
+                    {supplierStatus.shopName}
+                    {' '}
+                    » est en cours d'examen. Vous serez notifié dès que votre compte sera activé.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Complement requested banner */}
+        {supplierStatus.isSupplier && supplierStatus.validationStatus === 'COMPLEMENT_REQUESTED' && (
+          <View>
+            <View style={styles.section}>
+              <View style={[styles.pendingBanner, { backgroundColor: colors.coral[50], borderColor: colors.coral[200], borderWidth: 1 }]}>
+                <Store size={24} color={colors.coral[400]} />
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.pendingTitle, { color: colors.coral[600] }]}>
+                    Complément demandé
+                  </Text>
+                  <Text style={[styles.pendingSubtitle, { color: colors.coral[600] }]}>
+                    Des informations supplémentaires sont nécessaires pour valider votre boutique.
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Theme */}
+        <View>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
+              APPARENCE
+            </Text>
+            <View style={[styles.themeSelector, { backgroundColor: semantic.bgCard }]}>
+              {THEME_OPTIONS.map((opt) => {
+                const isActive = mode === opt.value
+                return (
+                  <TouchableOpacity
+                    key={opt.value}
+                    style={[
+                      styles.themeOption,
+                      isActive && styles.themeOptionActive,
+                    ]}
+                    onPress={() => setMode(opt.value)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isActive }}
+                    accessibilityLabel={opt.label}
+                  >
+                    <opt.Icon
+                      size={18}
+                      color={isActive ? colors.green[600] : semantic.textTertiary}
+                    />
+                    <Text style={[
+                      styles.themeOptionText,
+                      { color: isActive ? colors.green[600] : semantic.textSecondary },
+                      isActive && styles.themeOptionTextActive,
+                    ]}
+                    >
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+          </View>
+        </View>
+
+        {/* Orders */}
+        <View>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
+              COMMANDES
+            </Text>
+            <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
+              <MenuItem
+                icon={ClipboardList}
+                iconBg={colors.earth[50]}
+                iconColor={colors.earth[600]}
+                label="Mes commandes"
+                sublabel="Historique et suivi"
+                onPress={() => onNavigateToOrders?.()}
+                semantic={semantic}
+                grouped
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Settings */}
+        <View>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
+              PARAMÈTRES
+            </Text>
+            <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
+              <View style={styles.menuItemRow}>
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.menuIconContainer, { backgroundColor: colors.green[50] }]}>
+                    <ScanFace size={18} color={colors.green[600]} />
+                  </View>
+                  <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>
+                    Biométrie
+                  </Text>
+                </View>
+                <Switch
+                  value={biometricEnabled}
+                  onValueChange={handleToggleBiometric}
+                  trackColor={{ true: colors.green[400], false: colors.neutral[200] }}
+                  thumbColor={colors.neutral[0]}
+                />
+              </View>
+
+              <View style={styles.menuDivider} />
+
+              <MenuItem
+                icon={Bell}
+                iconBg={colors.blue[50]}
+                iconColor={colors.blue[600]}
+                label="Notifications"
+                onPress={() => onNavigateToNotifications?.()}
+                semantic={semantic}
+                grouped
+              />
+
+            </View>
+          </View>
+        </View>
+
+        {/* Support */}
+        <View>
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>
+              SUPPORT
+            </Text>
+            <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
+              <MenuItem
+                icon={CircleQuestionMark}
+                iconBg={colors.green[50]}
+                iconColor={colors.green[600]}
+                label="Centre d'aide"
+                onPress={() => {}}
+                semantic={semantic}
+                grouped
+              />
+
+              <View style={styles.menuDivider} />
+
+              <MenuItem
+                icon={FileText}
+                iconBg={colors.neutral[100]}
+                iconColor={colors.neutral[600]}
+                label="Conditions d'utilisation"
+                onPress={() => {}}
+                semantic={semantic}
+                grouped
+              />
+            </View>
+          </View>
+        </View>
+
+        {/* Logout */}
+        <View>
+          <TouchableOpacity style={styles.logoutButton} onPress={() => setShowLogoutModal(true)}>
+            <LogOutIcon size={18} color={colors.coral[600]} />
+            <Text style={styles.logoutText}>Se déconnecter</Text>
+          </TouchableOpacity>
+
+          <Text style={[styles.version, { color: semantic.textTertiary }]}>
+            eBio v1.0.0
           </Text>
-          <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
-            <MenuItem
-              icon={CircleQuestionMark}
-              iconBg={colors.green[50]}
-              iconColor={colors.green[600]}
-              label="Centre d'aide"
-              onPress={() => {}}
-              semantic={semantic}
-              grouped
-            />
-
-            <View style={styles.menuDivider} />
-
-            <MenuItem
-              icon={FileText}
-              iconBg={colors.neutral[100]}
-              iconColor={colors.neutral[600]}
-              label="Conditions d'utilisation"
-              onPress={() => {}}
-              semantic={semantic}
-              grouped
-            />
-          </View>
         </View>
-      </View>
 
-      {/* Logout */}
-      <View>
-        <TouchableOpacity style={styles.logoutButton} onPress={() => setShowLogoutModal(true)}>
-          <LogOutIcon size={18} color={colors.coral[600]} />
-          <Text style={styles.logoutText}>Se déconnecter</Text>
-        </TouchableOpacity>
-
-        <Text style={[styles.version, { color: semantic.textTertiary }]}>
-          eBio v1.0.0
-        </Text>
-      </View>
-
-      <ConfirmModal
-        visible={showLogoutModal}
-        icon={LogOutIcon}
-        iconColor={colors.coral[400]}
-        iconBg={colors.coral[50]}
-        title="Se déconnecter ?"
-        message="Vous devrez vous reconnecter pour accéder à vos commandes et votre panier."
-        confirmLabel="Se déconnecter"
-        confirmStyle="destructive"
-        onConfirm={handleLogout}
-        onCancel={() => setShowLogoutModal(false)}
-      />
-    </ScrollView>
+        <ConfirmModal
+          visible={showLogoutModal}
+          icon={LogOutIcon}
+          iconColor={colors.coral[400]}
+          iconBg={colors.coral[50]}
+          title="Se déconnecter ?"
+          message="Vous devrez vous reconnecter pour accéder à vos commandes et votre panier."
+          confirmLabel="Se déconnecter"
+          confirmStyle="destructive"
+          onConfirm={handleLogout}
+          onCancel={() => setShowLogoutModal(false)}
+        />
+      </ScrollView>
+    </View>
   )
 }
 

@@ -1,17 +1,12 @@
-import type { CategoryItem } from '../../../utils/category-icons'
 import type { SearchResult } from '../../search/hooks/use-search'
-import { LinearGradient } from 'expo-linear-gradient'
 import BadgeCheck from 'lucide-react-native/dist/esm/icons/badge-check'
-import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
-import Search from 'lucide-react-native/dist/esm/icons/search'
 import Tag from 'lucide-react-native/dist/esm/icons/tag'
 import { useEffect } from 'react'
 import {
   ActivityIndicator,
-  Image,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -19,12 +14,15 @@ import {
   View,
 } from 'react-native'
 import { useSession } from '../../../lib/auth-client'
-import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
+import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { useCategories } from '../../search/hooks/use-search'
 import { useHomeFeed } from '../hooks/use-home-feed'
+import { CategoryRail } from './category-rail'
+import { HomeBannerCarousel } from './home-banner-carousel'
+import { HomeHeader } from './home-header'
 
 export type HomePreset = 'nearby' | 'validated' | 'promo'
 
@@ -35,12 +33,27 @@ interface HomeScreenProps {
   onNavigateToSupplier: (supplierId: string) => void
   onSeeAll: (preset: HomePreset) => void
   onPickLocation: () => void
+  onOpenNotifications: () => void
+  onOpenProfile: () => void
 }
 
-export function HomeScreen({ onOpenSearch, onSelectCategory, onOpenMap, onNavigateToSupplier, onSeeAll, onPickLocation }: HomeScreenProps) {
+export function HomeScreen({
+  onOpenSearch,
+  onSelectCategory,
+  onOpenMap,
+  onNavigateToSupplier,
+  onSeeAll,
+  onPickLocation,
+  onOpenNotifications,
+  onOpenProfile,
+}: HomeScreenProps) {
   const { semantic } = useTheme()
   const { data: session } = useSession()
-  const firstName = session?.user?.name?.split(' ')[0]
+  const userName = session?.user?.name
+  const firstName = userName?.split(' ')[0]
+  const initials = userName
+    ? userName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
+    : '?'
   const { latitude, longitude, label: locationLabel } = useLocation()
   const { categories, loadCategories } = useCategories()
   const { nearby, validated, promos, loading } = useHomeFeed(latitude, longitude)
@@ -49,139 +62,105 @@ export function HomeScreen({ onOpenSearch, onSelectCategory, onOpenMap, onNaviga
     loadCategories()
   }, [loadCategories])
 
+  // Les bannières mettent en avant les promotions ; à défaut les fournisseurs
+  // validés, puis simplement ce qui est le plus proche.
+  const banners = promos.length > 0 ? promos : validated.length > 0 ? validated : nearby
+
   return (
-    <ScrollView
-      style={[styles.screen, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.content}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Hero */}
-      <LinearGradient
-        colors={[colors.green[600], colors.green[400]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.hero}
+    <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+      <HomeHeader
+        locationLabel={locationLabel}
+        initials={initials}
+        avatarUrl={session?.user?.image}
+        onPickLocation={onPickLocation}
+        onOpenSearch={onOpenSearch}
+        onOpenNotifications={onOpenNotifications}
+        onOpenProfile={onOpenProfile}
+      />
+
+      <ScrollView
+        style={styles.screen}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        <Pressable
-          style={styles.locationChip}
-          onPress={onPickLocation}
-          accessibilityRole="button"
-          accessibilityLabel="Changer ma position"
-        >
-          <MapPin size={13} color={colors.neutral[0]} strokeWidth={2.4} />
-          <Text style={styles.locationText} numberOfLines={1}>{locationLabel}</Text>
-          <ChevronDown size={13} color={colors.neutral[0]} strokeWidth={2.4} />
-        </Pressable>
+        {/* Accroche */}
+        <View style={styles.intro}>
+          <Text style={[styles.greeting, { color: semantic.textTertiary }]}>
+            {firstName ? `Bonjour, ${firstName} 👋` : 'Bonjour 👋'}
+          </Text>
+          <Text style={[styles.tagline, { color: semantic.textSecondary }]}>
+            L'avenir d'une agriculture responsable commence ici.
+          </Text>
+        </View>
 
-        <Text style={styles.greeting}>
-          {firstName ? `Bonjour, ${firstName} 👋` : 'Bienvenue sur eBio 👋'}
-        </Text>
-        <Text style={styles.slogan}>Trouvez du bio près de vous</Text>
-
+        {/* Accès carte */}
         <Pressable
-          style={styles.searchBar}
-          onPress={onOpenSearch}
-          accessibilityRole="search"
-          accessibilityLabel="Rechercher un produit ou un fournisseur"
-        >
-          <Search size={20} color={colors.green[600]} strokeWidth={2.2} />
-          <Text style={styles.searchPlaceholder}>Rechercher un produit, fournisseur...</Text>
-        </Pressable>
-
-        <Pressable
-          style={styles.mapButton}
+          style={[styles.mapCta, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}
           onPress={onOpenMap}
           accessibilityRole="button"
-          accessibilityLabel="Explorer la carte"
+          accessibilityLabel="Rechercher sur la carte"
         >
-          <MapIcon size={16} color={colors.neutral[0]} strokeWidth={2.2} />
-          <Text style={styles.mapButtonText}>Explorer la carte</Text>
+          <View style={[styles.mapCtaIcon, { backgroundColor: semantic.bgPrimaryLight }]}>
+            <MapIcon size={18} color={colors.green[400]} strokeWidth={2.2} />
+          </View>
+          <Text style={[styles.mapCtaLabel, { color: semantic.textPrimary }]}>
+            Rechercher sur la carte
+          </Text>
+          <ChevronRight size={18} color={semantic.textTertiary} strokeWidth={2.4} />
         </Pressable>
-      </LinearGradient>
 
-      {/* Categories */}
-      <View style={styles.categoriesBlock}>
-        <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>CATÉGORIES</Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.categoriesRow}
-        >
-          {categories.map(cat => (
-            <CategoryTile
-              key={cat.id}
-              category={cat}
-              onPress={() => onSelectCategory(cat.slug)}
-              textColor={semantic.textSecondary}
-              tileBg={colors.green[50]}
-            />
-          ))}
-        </ScrollView>
-      </View>
+        {/* Bannières */}
+        <View style={styles.bannersBlock}>
+          <HomeBannerCarousel items={banners} onPress={onNavigateToSupplier} />
+        </View>
 
-      {loading
-        ? (
-            <View style={styles.loading}>
-              <ActivityIndicator size="large" color={colors.green[400]} />
-            </View>
-          )
-        : (
-            <>
-              <HomeSection
-                title="Près de vous"
-                Icon={MapPin}
-                iconColor={colors.green[600]}
-                data={nearby}
-                onSeeAll={() => onSeeAll('nearby')}
-                onNavigateToSupplier={onNavigateToSupplier}
-                textColor={semantic.textPrimary}
-              />
-              <HomeSection
-                title="Validé eBio"
-                Icon={BadgeCheck}
-                iconColor={colors.green[600]}
-                data={validated}
-                onSeeAll={() => onSeeAll('validated')}
-                onNavigateToSupplier={onNavigateToSupplier}
-                textColor={semantic.textPrimary}
-              />
-              <HomeSection
-                title="En promotion"
-                Icon={Tag}
-                iconColor={colors.coral[400]}
-                data={promos}
-                onSeeAll={() => onSeeAll('promo')}
-                onNavigateToSupplier={onNavigateToSupplier}
-                textColor={semantic.textPrimary}
-              />
-            </>
-          )}
-    </ScrollView>
-  )
-}
+        {/* Catégories */}
+        <View style={styles.categoriesBlock}>
+          <Text style={[styles.blockTitle, { color: semantic.textTertiary }]}>
+            Catégories de produits
+          </Text>
+          <CategoryRail categories={categories} onSelect={onSelectCategory} />
+        </View>
 
-function CategoryTile({ category, onPress, textColor, tileBg }: {
-  category: CategoryItem
-  onPress: () => void
-  textColor: string
-  tileBg: string
-}) {
-  return (
-    <Pressable
-      style={styles.catTile}
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={category.label}
-    >
-      <View style={[styles.catCircle, { backgroundColor: tileBg }]}>
-        {category.imageUrl
-          ? <Image source={{ uri: category.imageUrl }} style={styles.catImage} />
-          : <category.fallbackIcon size={24} color={colors.green[600]} strokeWidth={2} />}
-      </View>
-      <Text style={[styles.catLabel, { color: textColor }]} numberOfLines={1}>
-        {category.label}
-      </Text>
-    </Pressable>
+        {loading
+          ? (
+              <View style={styles.loading}>
+                <ActivityIndicator size="large" color={colors.green[400]} />
+              </View>
+            )
+          : (
+              <>
+                <HomeSection
+                  title="Explorer près de vous"
+                  Icon={MapPin}
+                  iconColor={colors.coral[400]}
+                  data={nearby}
+                  onSeeAll={() => onSeeAll('nearby')}
+                  onNavigateToSupplier={onNavigateToSupplier}
+                  textColor={semantic.textSecondary}
+                />
+                <HomeSection
+                  title="Validé eBio"
+                  Icon={BadgeCheck}
+                  iconColor={colors.green[400]}
+                  data={validated}
+                  onSeeAll={() => onSeeAll('validated')}
+                  onNavigateToSupplier={onNavigateToSupplier}
+                  textColor={semantic.textSecondary}
+                />
+                <HomeSection
+                  title="En promotion"
+                  Icon={Tag}
+                  iconColor={colors.coral[400]}
+                  data={promos}
+                  onSeeAll={() => onSeeAll('promo')}
+                  onNavigateToSupplier={onNavigateToSupplier}
+                  textColor={semantic.textSecondary}
+                />
+              </>
+            )}
+      </ScrollView>
+    </View>
   )
 }
 
@@ -201,16 +180,16 @@ function HomeSection({ title, Icon, iconColor, data, onSeeAll, onNavigateToSuppl
     <View style={styles.section}>
       <View style={styles.sectionHeader}>
         <View style={styles.sectionTitleRow}>
-          <Icon size={16} color={iconColor} strokeWidth={2.2} />
-          <Text style={[styles.sectionHeading, { color: textColor }]}>{title}</Text>
+          <Icon size={14} color={iconColor} strokeWidth={2.4} />
+          <Text style={[styles.overline, { color: textColor }]}>{title}</Text>
         </View>
         <Pressable
           style={styles.seeAll}
           onPress={onSeeAll}
           accessibilityRole="button"
-          accessibilityLabel={`Voir tout : ${title}`}
+          accessibilityLabel={`Tout voir : ${title}`}
         >
-          <Text style={styles.seeAllText}>Voir tout</Text>
+          <Text style={styles.seeAllText}>Tout voir</Text>
           <ChevronRight size={15} color={colors.green[600]} strokeWidth={2.4} />
         </Pressable>
       </View>
@@ -237,111 +216,60 @@ const styles = StyleSheet.create({
   content: {
     paddingBottom: 96, // clear the floating tab bar (64px) + breathing room
   },
-  hero: {
-    paddingHorizontal: spacing[5],
+  intro: {
+    paddingHorizontal: spacing[4],
     paddingTop: spacing[4],
-    paddingBottom: spacing[6],
-    borderBottomLeftRadius: radius.xxl,
-    borderBottomRightRadius: radius.xxl,
-  },
-  locationChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    gap: spacing[1],
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    paddingHorizontal: spacing[3],
-    paddingVertical: 6,
-    borderRadius: radius.pill,
-    minHeight: 32,
-  },
-  locationText: {
-    fontFamily: fonts.sansSb,
-    fontSize: 13,
-    color: colors.neutral[0],
+    gap: 2,
   },
   greeting: {
     fontFamily: fonts.sansMd,
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.9)',
-    marginTop: spacing[4],
+    fontSize: 13,
   },
-  slogan: {
+  tagline: {
     fontFamily: fonts.display,
-    fontSize: 28,
-    lineHeight: 28 * 1.15,
-    color: colors.neutral[0],
-    marginTop: spacing[1],
+    fontSize: 20,
+    lineHeight: 20 * 1.25,
   },
-  searchBar: {
+  mapCta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
-    backgroundColor: colors.neutral[0],
+    marginHorizontal: spacing[4],
+    marginTop: spacing[4],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
     borderRadius: radius.lg,
-    paddingHorizontal: spacing[4],
-    minHeight: 56,
-    marginTop: spacing[5],
-    ...shadows.md,
+    borderWidth: 1,
   },
-  searchPlaceholder: {
-    flex: 1,
-    fontFamily: fonts.sans,
-    fontSize: 15,
-    color: colors.neutral[400],
-  },
-  mapButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  mapCtaIcon: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
     justifyContent: 'center',
-    gap: spacing[2],
-    alignSelf: 'flex-start',
-    marginTop: spacing[3],
-    paddingHorizontal: spacing[4],
-    minHeight: 40,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: 'rgba(255,255,255,0.5)',
+    alignItems: 'center',
   },
-  mapButtonText: {
+  mapCtaLabel: {
+    flex: 1,
     fontFamily: fonts.sansSb,
-    fontSize: 13,
-    color: colors.neutral[0],
+    fontSize: 15,
+  },
+  bannersBlock: {
+    marginTop: spacing[5],
   },
   categoriesBlock: {
-    marginTop: spacing[5],
+    marginTop: spacing[6],
   },
-  sectionTitle: {
+  overline: {
+    ...typography.overline,
+  },
+  blockTitle: {
     ...typography.overline,
     paddingHorizontal: spacing[4],
     marginBottom: spacing[3],
   },
-  categoriesRow: {
-    paddingHorizontal: spacing[4],
-    gap: spacing[4],
-  },
-  catTile: {
+  loading: {
+    paddingTop: spacing[10],
     alignItems: 'center',
-    width: 72,
-    gap: spacing[1],
-  },
-  catCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
-    ...shadows.sm,
-  },
-  catImage: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-  },
-  catLabel: {
-    fontFamily: fonts.sansMd,
-    fontSize: 12,
-    textAlign: 'center',
   },
   section: {
     marginTop: spacing[6],
@@ -357,10 +285,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-  },
-  sectionHeading: {
-    fontFamily: fonts.sansBd,
-    fontSize: 18,
   },
   seeAll: {
     flexDirection: 'row',
@@ -380,9 +304,5 @@ const styles = StyleSheet.create({
   },
   carouselCard: {
     width: 264,
-  },
-  loading: {
-    paddingTop: spacing[10],
-    alignItems: 'center',
   },
 })

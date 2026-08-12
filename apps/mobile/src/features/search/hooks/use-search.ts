@@ -24,6 +24,9 @@ interface SearchResult {
   supplier: {
     id: string
     shopName: string
+    /** Coordonnées du point de vente — `null` si le fournisseur n'est pas localisé. */
+    latitude: number | null
+    longitude: number | null
     distance: number
     rating: number | null
     reviewCount: number

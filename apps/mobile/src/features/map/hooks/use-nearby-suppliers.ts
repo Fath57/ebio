@@ -5,6 +5,8 @@ import { apiFetch } from '../../../utils/api-client'
 export interface NearbySupplier {
   id: string
   shopName: string
+  /** Photo de couverture de la boutique — `null` si le fournisseur n'en a pas. */
+  coverPhoto: string | null
   latitude: number
   longitude: number
   rating: number | null

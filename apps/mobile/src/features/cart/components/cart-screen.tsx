@@ -19,6 +19,7 @@ import {
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { FadeInView } from '../../../utils/animations'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 type DeliveryMode = 'PICKUP' | 'DELIVERY'
 
@@ -139,30 +140,33 @@ export function CartScreen({
 
   if (groups.length === 0) {
     return (
-      <View style={[styles.emptyContainer, { backgroundColor: semantic.bgPage }]}>
-        <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
-          <ShoppingCart size={40} color={colors.green[400]} />
+      <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+        <ScreenHeader title="Mon panier" />
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
+            <ShoppingCart size={40} color={colors.green[400]} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
+            Votre panier est vide
+          </Text>
+          <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
+            Parcourez le catalogue pour découvrir
+            {'\n'}
+            les meilleurs produits bio près de chez vous
+          </Text>
+          {onContinueShopping && (
+            <TouchableOpacity
+              style={styles.emptyCtaButton}
+              onPress={onContinueShopping}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Explorer le catalogue"
+            >
+              <Text style={styles.emptyCtaText}>Explorer le catalogue</Text>
+              <ArrowRight size={18} color={colors.neutral[0]} />
+            </TouchableOpacity>
+          )}
         </View>
-        <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
-          Votre panier est vide
-        </Text>
-        <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
-          Parcourez le catalogue pour découvrir
-          {'\n'}
-          les meilleurs produits bio près de chez vous
-        </Text>
-        {onContinueShopping && (
-          <TouchableOpacity
-            style={styles.emptyCtaButton}
-            onPress={onContinueShopping}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Explorer le catalogue"
-          >
-            <Text style={styles.emptyCtaText}>Explorer le catalogue</Text>
-            <ArrowRight size={18} color={colors.neutral[0]} />
-          </TouchableOpacity>
-        )}
       </View>
     )
   }
@@ -178,23 +182,15 @@ export function CartScreen({
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+      <ScreenHeader
+        title="Mon panier"
+        subtitle={`${totalItemCount} article${totalItemCount > 1 ? 's' : ''}`}
+      />
       <ScrollView
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        {/* Header with title + item count */}
-        <View style={styles.header}>
-          <Text style={[styles.title, { color: semantic.textPrimary }]}>Mon panier</Text>
-          <View style={styles.itemCountBadge}>
-            <Text style={styles.itemCountText}>
-              {totalItemCount}
-              {' '}
-              article
-              {totalItemCount > 1 ? 's' : ''}
-            </Text>
-          </View>
-        </View>
 
         {groups.map((group) => {
           const groupTotal = computeGroupTotal(group.items)

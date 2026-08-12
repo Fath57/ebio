@@ -1,4 +1,3 @@
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import { useEffect, useState } from 'react'
@@ -6,6 +5,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ScreenHeader } from '../../common/components/screen-header'
 import { ChatScreen } from './chat-screen'
 
 interface ChatDetailScreenProps {
@@ -40,17 +40,15 @@ export function ChatDetailScreen({ conversationId, currentUserId, peerName, isSu
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <View style={[styles.header, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderLight }]}>
-        <TouchableOpacity onPress={onGoBack} hitSlop={8}>
-          <ArrowLeft size={24} color={semantic.textPrimary} strokeWidth={2} />
-        </TouchableOpacity>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarInitial}>{(peerName ?? 'C').charAt(0).toUpperCase()}</Text>
-        </View>
-        <Text style={[styles.title, { color: semantic.textPrimary }]} numberOfLines={1}>
-          {peerName ?? 'Conversation'}
-        </Text>
-      </View>
+      <ScreenHeader
+        title={peerName ?? 'Conversation'}
+        onBack={onGoBack}
+        leadingSlot={(
+          <View style={styles.avatar}>
+            <Text style={styles.avatarInitial}>{(peerName ?? 'C').charAt(0).toUpperCase()}</Text>
+          </View>
+        )}
+      />
 
       {/* Bannière de contexte commande */}
       {orderId != null && orderId !== '' && (

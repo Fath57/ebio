@@ -13,6 +13,7 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 
 type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'DISPUTED'
 
@@ -35,6 +36,7 @@ interface SupplierOrder {
 interface OrderManagementProps {
   supplierId: string
   onOpenOrder?: (orderId: string) => void
+  onGoBack?: () => void
 }
 
 type Tab = 'pending' | 'active' | 'done'
@@ -85,7 +87,7 @@ const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: str
   READY: { status: 'IN_DELIVERY', label: 'En livraison' },
 }
 
-export function OrderManagement({ supplierId, onOpenOrder }: OrderManagementProps) {
+export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderManagementProps) {
   const tabBarHeight = useBottomTabBarHeight()
   const [orders, setOrders] = useState<SupplierOrder[]>([])
   const [tab, setTab] = useState<Tab>('pending')
@@ -371,6 +373,7 @@ export function OrderManagement({ supplierId, onOpenOrder }: OrderManagementProp
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader title="Commandes reçues" onBack={onGoBack} />
       <View style={styles.tabsRow}>
         {TABS.map((t) => {
           const isActive = t.key === tab

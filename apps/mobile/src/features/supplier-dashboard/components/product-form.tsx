@@ -24,6 +24,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { useCategories } from '../../search/hooks/use-search'
 
@@ -256,16 +257,16 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
       style={styles.screen}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
+      <ScreenHeader
+        title={initialData ? 'Modifier le produit' : 'Nouveau produit'}
+        onBack={onCancel}
+      />
       <ScrollView
         style={[styles.screen, { backgroundColor: semantic.bgPage }]}
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <Text style={[styles.title, { color: semantic.textPrimary }]}>
-          {initialData ? 'Modifier le produit' : 'Nouveau produit'}
-        </Text>
-
         {/* Photos */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>
           Photos (
