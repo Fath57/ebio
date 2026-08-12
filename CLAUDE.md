@@ -17,6 +17,8 @@ You must always follow these guidelines.
 ## Active Technologies
 - TypeScript (strict mode) on Node.js 24.13.0 (001-ebio-marketplace-v1)
 - PostgreSQL + PostGIS (geospatial queries), Redis (cache, sessions, rate limiting, WebSocket adapter), Cloudflare R2 (S3-compatible file storage) (001-ebio-marketplace-v1)
+- TypeScript strict, Node.js 24.13.0 + API — NestJS, MikroORM 6, Zod (contrats), Redis (cache), `node:crypto` (AES-256-GCM). Mobile — React Native/Expo, `react-native-webview` (présent), `expo-web-browser` + `expo-auth-session` (à ajouter), `expo-crypto` (PKCE, à confirmer). (002-tiktok-videos)
+- PostgreSQL (champs TikTok sur `Supplier`) ; Redis (cache liste vidéos, TTL court). (002-tiktok-videos)
 
 ## Lint rules — avoid these 8 repeat offenders
 
@@ -34,4 +36,5 @@ Project uses `@antfu/eslint-config` strict. Run `pnpm lint` before declaring wor
 React Compiler rules (`react-hooks/refs`, `react-hooks/set-state-in-effect`, `react-hooks-extra/no-direct-set-state-in-use-effect`, etc.) are **intentionally disabled** — they produce false positives on legitimate patterns (RN Animated API, initial-data-fetch effects). Don't try to refactor around them.
 
 ## Recent Changes
+- 002-tiktok-videos: Added TypeScript strict, Node.js 24.13.0 + API — NestJS, MikroORM 6, Zod (contrats), Redis (cache), `node:crypto` (AES-256-GCM). Mobile — React Native/Expo, `react-native-webview` (présent), `expo-web-browser` + `expo-auth-session` (à ajouter), `expo-crypto` (PKCE, à confirmer).
 - 001-ebio-marketplace-v1: Added TypeScript (strict mode) on Node.js 24.13.0
