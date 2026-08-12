@@ -161,6 +161,8 @@ export class AdminController {
     @Query('status') status?: string,
     @Query('supplierId') supplierId?: string,
     @Query('q') q?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
@@ -168,6 +170,8 @@ export class AdminController {
       status,
       supplierId,
       q,
+      sortBy,
+      sortDir,
       page: Number(page),
       limit: Number(limit),
     })
@@ -182,12 +186,16 @@ export class AdminController {
   async getSuppliers(
     @Query('status') status?: string,
     @Query('q') q?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
     return this.adminService.getSuppliers({
       status,
       q,
+      sortBy,
+      sortDir,
       page: Number(page),
       limit: Number(limit),
     })
@@ -202,12 +210,16 @@ export class AdminController {
   async getUsers(
     @Query('role') role?: string,
     @Query('q') q?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
     return this.adminService.getUsers({
       role,
       q,
+      sortBy,
+      sortDir,
       page: Number(page),
       limit: Number(limit),
     })

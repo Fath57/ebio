@@ -10,10 +10,22 @@ import type {
   AdminControllerGetDashboardResponses,
   AdminControllerGetDisputesData,
   AdminControllerGetDisputesResponses,
+  AdminControllerGetOrderByIdData,
+  AdminControllerGetOrderByIdResponses,
+  AdminControllerGetOrdersData,
+  AdminControllerGetOrdersResponses,
   AdminControllerGetReportsData,
   AdminControllerGetReportsResponses,
+  AdminControllerGetSettingsData,
+  AdminControllerGetSettingsResponses,
+  AdminControllerGetSupplierByIdData,
+  AdminControllerGetSupplierByIdResponses,
+  AdminControllerGetSuppliersData,
+  AdminControllerGetSuppliersResponses,
   AdminControllerGetTransactionsData,
   AdminControllerGetTransactionsResponses,
+  AdminControllerGetUsersData,
+  AdminControllerGetUsersResponses,
   AdminControllerGetValidationsData,
   AdminControllerGetValidationsResponses,
   AdminControllerResolveDisputeData,
@@ -50,6 +62,14 @@ import type {
   AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses,
   AppControllerGetHelloData,
   AppControllerGetHelloResponses,
+  CategoriesControllerCreateData,
+  CategoriesControllerCreateResponses,
+  CategoriesControllerFindByIdData,
+  CategoriesControllerFindByIdResponses,
+  CategoriesControllerRemoveData,
+  CategoriesControllerRemoveResponses,
+  CategoriesControllerUpdateData,
+  CategoriesControllerUpdateResponses,
   ChatControllerCreateConversationData,
   ChatControllerCreateConversationResponses,
   ChatControllerGetConversationsData,
@@ -84,8 +104,34 @@ import type {
   CommunityControllerLeaveGroupResponses,
   CommunityControllerReportPublicationData,
   CommunityControllerReportPublicationResponses,
-  FilesControllerGetUploadUrlData,
-  FilesControllerGetUploadUrlResponses,
+  MediaControllerCompleteUploadData,
+  MediaControllerCompleteUploadResponses,
+  MediaControllerDeleteMediaData,
+  MediaControllerDeleteMediaResponses,
+  MediaControllerFindByEntityData,
+  MediaControllerFindByEntityResponses,
+  MediaControllerFindByIdData,
+  MediaControllerFindByIdResponses,
+  MediaControllerGetDownloadUrlData,
+  MediaControllerGetDownloadUrlResponses,
+  MediaControllerInitiateUploadData,
+  MediaControllerInitiateUploadResponses,
+  NotificationsControllerGetAllData,
+  NotificationsControllerGetAllResponses,
+  NotificationsControllerGetUnreadCountData,
+  NotificationsControllerGetUnreadCountResponses,
+  NotificationsControllerGetUnreadData,
+  NotificationsControllerGetUnreadResponses,
+  NotificationsControllerMarkAllAsReadData,
+  NotificationsControllerMarkAllAsReadResponses,
+  NotificationsControllerMarkAsReadData,
+  NotificationsControllerMarkAsReadResponses,
+  NotificationsControllerRegisterTokenData,
+  NotificationsControllerRegisterTokenResponses,
+  NotificationsControllerSendTestNotificationData,
+  NotificationsControllerSendTestNotificationResponses,
+  NotificationsControllerUnregisterTokenData,
+  NotificationsControllerUnregisterTokenResponses,
   OrdersControllerAcceptData,
   OrdersControllerAcceptResponses,
   OrdersControllerConfirmDeliveryData,
@@ -102,10 +148,58 @@ import type {
   OrdersControllerRejectResponses,
   OrdersControllerUpdateStatusData,
   OrdersControllerUpdateStatusResponses,
-  PaymentsControllerHandleWebhookData,
-  PaymentsControllerHandleWebhookResponses,
-  PaymentsControllerInitiateData,
-  PaymentsControllerInitiateResponses,
+  OtpAuthControllerGetChatTokenData,
+  OtpAuthControllerGetChatTokenResponses,
+  OtpAuthControllerGetSessionData,
+  OtpAuthControllerGetSessionResponses,
+  OtpAuthControllerLoginWithPhoneData,
+  OtpAuthControllerLoginWithPhoneResponses,
+  OtpAuthControllerRegisterWithEmailData,
+  OtpAuthControllerRegisterWithEmailResponses,
+  OtpAuthControllerRegisterWithTokenData,
+  OtpAuthControllerRegisterWithTokenResponses,
+  OtpAuthControllerRequestEmailOtpData,
+  OtpAuthControllerRequestEmailOtpResponses,
+  OtpAuthControllerRequestOtpData,
+  OtpAuthControllerRequestOtpResponses,
+  OtpAuthControllerRequestPasswordResetData,
+  OtpAuthControllerRequestPasswordResetResponses,
+  OtpAuthControllerResetPasswordData,
+  OtpAuthControllerResetPasswordResponses,
+  OtpAuthControllerVerifyOtpData,
+  OtpAuthControllerVerifyOtpResponses,
+  OtpAuthControllerVerifyPasswordResetData,
+  OtpAuthControllerVerifyPasswordResetResponses,
+  PaymentMethodAdminControllerCreateData,
+  PaymentMethodAdminControllerCreateResponses,
+  PaymentMethodAdminControllerGetOneData,
+  PaymentMethodAdminControllerGetOneResponses,
+  PaymentMethodAdminControllerListData,
+  PaymentMethodAdminControllerListResponses,
+  PaymentMethodAdminControllerRemoveData,
+  PaymentMethodAdminControllerRemoveResponses,
+  PaymentMethodAdminControllerToggleActiveData,
+  PaymentMethodAdminControllerToggleActiveResponses,
+  PaymentMethodAdminControllerUpdateData,
+  PaymentMethodAdminControllerUpdateResponses,
+  PaymentMethodPublicControllerGetAvailableData,
+  PaymentMethodPublicControllerGetAvailableResponses,
+  PaymentsControllerGetPaymentInfoData,
+  PaymentsControllerGetPaymentInfoResponses,
+  PaymentsControllerGetPaymentStatusData,
+  PaymentsControllerGetPaymentStatusResponses,
+  PaymentsControllerInitiateCheckoutPaymentData,
+  PaymentsControllerInitiateCheckoutPaymentResponses,
+  PaymentsControllerInitiateNoRedirectPaymentData,
+  PaymentsControllerInitiateNoRedirectPaymentResponses,
+  PaymentsControllerVerifyCheckoutPaymentData,
+  PaymentsControllerVerifyCheckoutPaymentResponses,
+  PaymentsWebhookControllerHandleFedaPayWebhookData,
+  PaymentsWebhookControllerHandleFedaPayWebhookResponses,
+  PaymentsWebhookControllerHandlePawerPayerWebhookData,
+  PaymentsWebhookControllerHandlePawerPayerWebhookResponses,
+  PaymentsWebhookControllerHandleStripeWebhookData,
+  PaymentsWebhookControllerHandleStripeWebhookResponses,
   PostControllerCreatePostData,
   PostControllerCreatePostResponses,
   PostControllerGetUserPostData,
@@ -120,6 +214,8 @@ import type {
   PostControllerUpdatePostResponses,
   ProductsControllerCreateData,
   ProductsControllerCreateResponses,
+  ProductsControllerFindByIdData,
+  ProductsControllerFindByIdResponses,
   ProductsControllerFindBySupplierData,
   ProductsControllerFindBySupplierResponses,
   ProductsControllerSetPromotionData,
@@ -176,14 +272,32 @@ import type {
   SubscriptionsControllerUpgradeSubscriptionResponses,
   SuppliersControllerCreateDeliveryZoneData,
   SuppliersControllerCreateDeliveryZoneResponses,
+  SuppliersControllerDeleteDeliveryZoneData,
+  SuppliersControllerDeleteDeliveryZoneResponses,
   SuppliersControllerFindByIdData,
   SuppliersControllerFindByIdResponses,
+  SuppliersControllerFindNearbyData,
+  SuppliersControllerFindNearbyResponses,
+  SuppliersControllerGetAnalyticsData,
+  SuppliersControllerGetAnalyticsResponses,
   SuppliersControllerGetDashboardData,
   SuppliersControllerGetDashboardResponses,
+  SuppliersControllerGetMyStatusData,
+  SuppliersControllerGetMyStatusResponses,
+  SuppliersControllerGetRatingsOverviewData,
+  SuppliersControllerGetRatingsOverviewResponses,
+  SuppliersControllerGetSettingsData,
+  SuppliersControllerGetSettingsResponses,
+  SuppliersControllerGetTopProductsData,
+  SuppliersControllerGetTopProductsResponses,
   SuppliersControllerRegisterData,
   SuppliersControllerRegisterResponses,
   SuppliersControllerUpdateMeData,
   SuppliersControllerUpdateMeResponses,
+  SuppliersControllerUpdateModeData,
+  SuppliersControllerUpdateModeResponses,
+  SuppliersControllerUpdateOpeningHoursData,
+  SuppliersControllerUpdateOpeningHoursResponses,
   TrainingControllerCompleteModuleData,
   TrainingControllerCompleteModuleResponses,
   TrainingControllerGetDownloadUrlData,
@@ -225,6 +339,190 @@ export const appControllerGetHello = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({ url: "/api", ...options });
+
+export const otpAuthControllerGetSession = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<OtpAuthControllerGetSessionData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    OtpAuthControllerGetSessionResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/otp-auth/session", ...options });
+
+export const otpAuthControllerGetChatToken = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<OtpAuthControllerGetChatTokenData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    OtpAuthControllerGetChatTokenResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/otp-auth/chat-token", ...options });
+
+export const otpAuthControllerLoginWithPhone = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerLoginWithPhoneData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerLoginWithPhoneResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/login",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerRequestOtp = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerRequestOtpData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerRequestOtpResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/request",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerVerifyOtp = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerVerifyOtpData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerVerifyOtpResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/verify",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerRegisterWithToken = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerRegisterWithTokenData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerRegisterWithTokenResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/register",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerRequestEmailOtp = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerRequestEmailOtpData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerRequestEmailOtpResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/email/request",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerRegisterWithEmail = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerRegisterWithEmailData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerRegisterWithEmailResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/email/register",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerRequestPasswordReset = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerRequestPasswordResetData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerRequestPasswordResetResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/password-reset/request",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerVerifyPasswordReset = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerVerifyPasswordResetData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerVerifyPasswordResetResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/password-reset/verify",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const otpAuthControllerResetPassword = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OtpAuthControllerResetPasswordData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OtpAuthControllerResetPasswordResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/password-reset/reset",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const commentsControllerGetComments = <
   ThrowOnError extends boolean = false,
@@ -656,6 +954,17 @@ export const suppliersControllerRegister = <
     },
   });
 
+export const suppliersControllerFindNearby = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerFindNearbyData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SuppliersControllerFindNearbyResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/nearby", ...options });
+
 export const suppliersControllerFindById = <
   ThrowOnError extends boolean = false,
 >(
@@ -684,6 +993,17 @@ export const suppliersControllerUpdateMe = <
       ...options.headers,
     },
   });
+
+export const suppliersControllerGetMyStatus = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SuppliersControllerGetMyStatusData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SuppliersControllerGetMyStatusResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/status", ...options });
 
 export const suppliersControllerGetDashboard = <
   ThrowOnError extends boolean = false,
@@ -714,6 +1034,97 @@ export const suppliersControllerCreateDeliveryZone = <
     },
   });
 
+export const suppliersControllerDeleteDeliveryZone = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerDeleteDeliveryZoneData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    SuppliersControllerDeleteDeliveryZoneResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/delivery-zones/{zoneId}", ...options });
+
+export const suppliersControllerGetSettings = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SuppliersControllerGetSettingsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SuppliersControllerGetSettingsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/settings", ...options });
+
+export const suppliersControllerUpdateOpeningHours = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerUpdateOpeningHoursData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SuppliersControllerUpdateOpeningHoursResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/settings/opening-hours",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const suppliersControllerUpdateMode = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerUpdateModeData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SuppliersControllerUpdateModeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/settings/mode",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const suppliersControllerGetAnalytics = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerGetAnalyticsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SuppliersControllerGetAnalyticsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/analytics", ...options });
+
+export const suppliersControllerGetTopProducts = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerGetTopProductsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SuppliersControllerGetTopProductsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/analytics/top-products", ...options });
+
+export const suppliersControllerGetRatingsOverview = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SuppliersControllerGetRatingsOverviewData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SuppliersControllerGetRatingsOverviewResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/analytics/ratings", ...options });
+
 export const usersControllerGetMe = <ThrowOnError extends boolean = false>(
   options?: Options<UsersControllerGetMeData, ThrowOnError>,
 ) =>
@@ -739,16 +1150,174 @@ export const usersControllerUpdateMe = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const filesControllerGetUploadUrl = <
+export const mediaControllerInitiateUpload = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<FilesControllerGetUploadUrlData, ThrowOnError>,
+  options: Options<MediaControllerInitiateUploadData, ThrowOnError>,
 ) =>
-  (options?.client ?? client).post<
-    FilesControllerGetUploadUrlResponses,
+  (options.client ?? client).post<
+    MediaControllerInitiateUploadResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/files/upload-url", ...options });
+  >({
+    url: "/api/media/upload",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const mediaControllerCompleteUpload = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerCompleteUploadData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    MediaControllerCompleteUploadResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/media/complete",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const mediaControllerDeleteMedia = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerDeleteMediaData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    MediaControllerDeleteMediaResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/{id}", ...options });
+
+export const mediaControllerFindById = <ThrowOnError extends boolean = false>(
+  options: Options<MediaControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    MediaControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/{id}", ...options });
+
+export const mediaControllerGetDownloadUrl = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerGetDownloadUrlData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    MediaControllerGetDownloadUrlResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/{id}/download", ...options });
+
+export const mediaControllerFindByEntity = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerFindByEntityData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    MediaControllerFindByEntityResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/entity/{entityType}/{entityId}", ...options });
+
+export const notificationsControllerRegisterToken = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<NotificationsControllerRegisterTokenData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    NotificationsControllerRegisterTokenResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications/register-token", ...options });
+
+export const notificationsControllerUnregisterToken = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<NotificationsControllerUnregisterTokenData, ThrowOnError>,
+) =>
+  (options?.client ?? client).delete<
+    NotificationsControllerUnregisterTokenResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications/unregister-token", ...options });
+
+export const notificationsControllerGetUnread = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<NotificationsControllerGetUnreadData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    NotificationsControllerGetUnreadResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications/unread", ...options });
+
+export const notificationsControllerGetAll = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<NotificationsControllerGetAllData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    NotificationsControllerGetAllResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications", ...options });
+
+export const notificationsControllerGetUnreadCount = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<NotificationsControllerGetUnreadCountData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    NotificationsControllerGetUnreadCountResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications/count", ...options });
+
+export const notificationsControllerMarkAsRead = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<NotificationsControllerMarkAsReadData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    NotificationsControllerMarkAsReadResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications/{id}/read", ...options });
+
+export const notificationsControllerMarkAllAsRead = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<NotificationsControllerMarkAllAsReadData, ThrowOnError>,
+) =>
+  (options?.client ?? client).patch<
+    NotificationsControllerMarkAllAsReadResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications/read-all", ...options });
+
+export const notificationsControllerSendTestNotification = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<
+    NotificationsControllerSendTestNotificationData,
+    ThrowOnError
+  >,
+) =>
+  (options?.client ?? client).post<
+    NotificationsControllerSendTestNotificationResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/notifications/test", ...options });
 
 export const productsControllerFindBySupplier = <
   ThrowOnError extends boolean = false,
@@ -760,6 +1329,17 @@ export const productsControllerFindBySupplier = <
     unknown,
     ThrowOnError
   >({ url: "/api/suppliers/{supplierId}/products", ...options });
+
+export const productsControllerFindById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductsControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ProductsControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/products/{id}", ...options });
 
 export const productsControllerCreate = <ThrowOnError extends boolean = false>(
   options: Options<ProductsControllerCreateData, ThrowOnError>,
@@ -850,6 +1430,64 @@ export const productsControllerSubscribeToStockAlert = <
     unknown,
     ThrowOnError
   >({ url: "/api/products/{id}/stock-alert", ...options });
+
+export const categoriesControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CategoriesControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    CategoriesControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/categories/{id}", ...options });
+
+export const categoriesControllerFindById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CategoriesControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    CategoriesControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/categories/{id}", ...options });
+
+export const categoriesControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CategoriesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    CategoriesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/categories/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const categoriesControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CategoriesControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CategoriesControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/categories",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const ordersControllerFindAll = <ThrowOnError extends boolean = false>(
   options: Options<OrdersControllerFindAllData, ThrowOnError>,
@@ -957,13 +1595,27 @@ export const ordersControllerCreateDispute = <
     },
   });
 
-export const paymentsControllerInitiate = <
+export const paymentsControllerGetPaymentInfo = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<PaymentsControllerInitiateData, ThrowOnError>,
+  options: Options<PaymentsControllerGetPaymentInfoData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    PaymentsControllerGetPaymentInfoResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/orders/{id}/info", ...options });
+
+export const paymentsControllerInitiateNoRedirectPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    PaymentsControllerInitiateNoRedirectPaymentData,
+    ThrowOnError
+  >,
 ) =>
   (options.client ?? client).post<
-    PaymentsControllerInitiateResponses,
+    PaymentsControllerInitiateNoRedirectPaymentResponses,
     unknown,
     ThrowOnError
   >({
@@ -975,23 +1627,188 @@ export const paymentsControllerInitiate = <
     },
   });
 
-export const paymentsControllerHandleWebhook = <
+export const paymentsControllerInitiateCheckoutPayment = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<PaymentsControllerHandleWebhookData, ThrowOnError>,
+  options: Options<PaymentsControllerInitiateCheckoutPaymentData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    PaymentsControllerHandleWebhookResponses,
+    PaymentsControllerInitiateCheckoutPaymentResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/payments/webhook/fedapay",
+    url: "/api/payments/initiate-checkout",
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
   });
+
+export const paymentsControllerVerifyCheckoutPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerVerifyCheckoutPaymentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerVerifyCheckoutPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/verify-checkout",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerGetPaymentStatus = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerGetPaymentStatusData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    PaymentsControllerGetPaymentStatusResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/orders/{id}/status", ...options });
+
+export const paymentsWebhookControllerHandleFedaPayWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<
+    PaymentsWebhookControllerHandleFedaPayWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options?.client ?? client).post<
+    PaymentsWebhookControllerHandleFedaPayWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/fedapay", ...options });
+
+export const paymentsWebhookControllerHandleStripeWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    PaymentsWebhookControllerHandleStripeWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    PaymentsWebhookControllerHandleStripeWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/stripe", ...options });
+
+export const paymentsWebhookControllerHandlePawerPayerWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<
+    PaymentsWebhookControllerHandlePawerPayerWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options?.client ?? client).post<
+    PaymentsWebhookControllerHandlePawerPayerWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/pawerpayer", ...options });
+
+export const paymentMethodAdminControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<PaymentMethodAdminControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    PaymentMethodAdminControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payment-methods", ...options });
+
+export const paymentMethodAdminControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentMethodAdminControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentMethodAdminControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/payment-methods",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentMethodAdminControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentMethodAdminControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    PaymentMethodAdminControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payment-methods/{id}", ...options });
+
+export const paymentMethodAdminControllerGetOne = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentMethodAdminControllerGetOneData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    PaymentMethodAdminControllerGetOneResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payment-methods/{id}", ...options });
+
+export const paymentMethodAdminControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentMethodAdminControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    PaymentMethodAdminControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/payment-methods/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentMethodAdminControllerToggleActive = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentMethodAdminControllerToggleActiveData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentMethodAdminControllerToggleActiveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payment-methods/{id}/toggle", ...options });
+
+export const paymentMethodPublicControllerGetAvailable = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<
+    PaymentMethodPublicControllerGetAvailableData,
+    ThrowOnError
+  >,
+) =>
+  (options?.client ?? client).get<
+    PaymentMethodPublicControllerGetAvailableResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payment-methods/available", ...options });
 
 export const chatControllerGetConversations = <
   ThrowOnError extends boolean = false,
@@ -1466,6 +2283,68 @@ export const adminControllerGetTransactions = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/transactions", ...options });
+
+export const adminControllerGetOrders = <ThrowOnError extends boolean = false>(
+  options: Options<AdminControllerGetOrdersData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetOrdersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/orders", ...options });
+
+export const adminControllerGetOrderById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetOrderByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetOrderByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/orders/{id}", ...options });
+
+export const adminControllerGetSuppliers = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetSuppliersData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetSuppliersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/suppliers", ...options });
+
+export const adminControllerGetSupplierById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetSupplierByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetSupplierByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/suppliers/{id}", ...options });
+
+export const adminControllerGetUsers = <ThrowOnError extends boolean = false>(
+  options: Options<AdminControllerGetUsersData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetUsersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/users", ...options });
+
+export const adminControllerGetSettings = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminControllerGetSettingsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminControllerGetSettingsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/settings", ...options });
 
 export const adminControllerUpdateCommissions = <
   ThrowOnError extends boolean = false,

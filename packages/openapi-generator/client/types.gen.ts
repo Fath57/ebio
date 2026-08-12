@@ -70,6 +70,25 @@ export type BroadcastNotification = {
 };
 
 /**
+ * OtpRequest
+ *
+ * Request OTP via SMS
+ */
+export type OtpRequest = {
+  phone: string;
+};
+
+/**
+ * OtpVerify
+ *
+ * Verify OTP code
+ */
+export type OtpVerify = {
+  phone: string;
+  code: string;
+};
+
+/**
  * CreateRole
  */
 export type CreateRole = {
@@ -103,6 +122,7 @@ export type AssignRole = {
 export type CreateConversation = {
   supplierId: string;
   productId?: string;
+  orderId?: string;
 };
 
 /**
@@ -319,36 +339,102 @@ export type UpdatePostSchema = {
 };
 
 /**
- * InitiatePayment
+ * InitiateUpload
  *
- * Data required to initiate a mobile money payment
+ * Demande d'URL signée(s) pour upload direct vers S3
  */
-export type InitiatePayment = {
-  orderId: string;
-  operator: MobileOperator;
-  phoneNumber: string;
+export type InitiateUpload = {
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  context: MediaContext;
+  entityType?: string;
+  entityId?: string;
+  parts: number;
 };
 
 /**
- * WebhookEvent
+ * CompleteUpload
  *
- * FedaPay webhook event payload
+ * Finalise un upload multipart et déclenche l'optimisation
  */
-export type WebhookEvent = {
-  id: string;
-  type: string;
-  data: {
-    id: number;
-    reference?: string;
-    amount?: number;
-    status: string;
-    customer?: {
-      phone_number?: {
-        number: string;
-        country: string;
-      };
-    };
-  };
+export type CompleteUpload = {
+  mediaId: string;
+  uploadId?: string;
+  parts?: Array<{
+    partNumber: number;
+    etag: string;
+  }>;
+};
+
+/**
+ * CreatePaymentMethodInput
+ *
+ * Input for creating a payment method
+ */
+export type CreatePaymentMethodInput = {
+  name: string;
+  code: string;
+  type: "mobile" | "card";
+  provider: "fedapay" | "stripe" | "pawerpayer";
+  countryCode: string;
+  commission: number;
+  priority: number;
+  active: boolean;
+  useFedapayCheckout: boolean;
+  supportsPayout: boolean;
+  supportsRefund: boolean;
+};
+
+/**
+ * UpdatePaymentMethodInput
+ *
+ * Input for updating a payment method
+ */
+export type UpdatePaymentMethodInput = {
+  name?: string;
+  code?: string;
+  type?: "mobile" | "card";
+  provider?: "fedapay" | "stripe" | "pawerpayer";
+  countryCode?: string;
+  commission?: number;
+  priority?: number;
+  active?: boolean;
+  useFedapayCheckout?: boolean;
+  supportsPayout?: boolean;
+  supportsRefund?: boolean;
+  icon?: string;
+};
+
+/**
+ * InitiatePayment
+ *
+ * Input for initiating a no-redirect (USSD) payment
+ */
+export type InitiatePayment = {
+  orderId: string;
+  paymentMethodId: string;
+  phoneNumber?: string;
+};
+
+/**
+ * InitiateCheckoutInput
+ *
+ * Input for creating a pending payment before opening Checkout.js
+ */
+export type InitiateCheckoutInput = {
+  orderId: string;
+};
+
+/**
+ * VerifyCheckoutInput
+ *
+ * Input for verifying a payment made via Checkout.js
+ */
+export type VerifyCheckoutInput = {
+  orderId: string;
+  paymentId: string;
+  fedapayTransactionId: string;
 };
 
 /**
@@ -358,6 +444,8 @@ export type WebhookEvent = {
  */
 export type UpdateUser = {
   name?: string;
+  email?: string;
+  phone?: string;
   image?: string;
   deviceId?: string;
 };
@@ -370,13 +458,14 @@ export type UpdateUser = {
 export type RegisterSupplier = {
   shopName: string;
   type: SupplierType;
-  latitude: number;
-  longitude: number;
-  address: string;
-  neighborhood: string;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  neighborhood?: string;
   mobileMoneyNumber: string;
   mode: SupplierMode;
   openingHours?: OpeningHours;
+  timezone?: Timezone;
 };
 
 /**
@@ -394,6 +483,9 @@ export type UpdateSupplier = {
   mobileMoneyNumber?: string;
   mode?: SupplierMode;
   openingHours?: OpeningHours;
+  timezone?: Timezone;
+  coverPhoto?: string;
+  profilePhoto?: string;
 };
 
 /**
@@ -411,6 +503,20 @@ export type DeliveryZone = {
 };
 
 /**
+ * UpdateOpeningHours
+ */
+export type UpdateOpeningHours = {
+  openingHours: OpeningHours;
+};
+
+/**
+ * UpdateMode
+ */
+export type UpdateMode = {
+  mode: "CONTACT" | "ORDER";
+};
+
+/**
  * CreateOrder
  *
  * Data required to place a new order
@@ -420,7 +526,7 @@ export type CreateOrder = {
   pickupMode: PickupMode;
   paymentMethod: PaymentMethod;
   deliveryAddress?: string;
-  deliverySlot?: Date;
+  deliverySlot?: string;
   items: Array<OrderItemInput>;
 };
 
@@ -452,6 +558,32 @@ export type CreateDispute = {
 };
 
 /**
+ * CreateCategory
+ *
+ * Data required to create a new category
+ */
+export type CreateCategory = {
+  name: string;
+  slug: string;
+  icon: string;
+  imageUrl?: string;
+  sortOrder: number;
+};
+
+/**
+ * UpdateCategory
+ *
+ * Update category -- all fields optional
+ */
+export type UpdateCategory = {
+  name?: string;
+  slug?: string;
+  icon?: string;
+  imageUrl?: string;
+  sortOrder?: number;
+};
+
+/**
  * CreateProduct
  *
  * Data required to create a new product
@@ -470,6 +602,7 @@ export type CreateProduct = {
     pricePerUnit: number;
     stock?: number;
   }>;
+  mediaIds?: Array<string>;
 };
 
 /**
@@ -491,6 +624,7 @@ export type UpdateProduct = {
     pricePerUnit: number;
     stock?: number;
   }>;
+  mediaIds?: Array<string>;
 };
 
 /**
@@ -872,6 +1006,169 @@ export type PublicPostsSchema = {
 };
 
 /**
+ * PaymentMethodList
+ *
+ * Paginated list of payment methods
+ */
+export type PaymentMethodList = {
+  data: Array<PaymentMethodOutput>;
+  meta: PaginationMeta;
+};
+
+/**
+ * PaymentMethodOutput
+ *
+ * Payment method details (admin view)
+ */
+export type PaymentMethodOutput = {
+  id: string;
+  name: string;
+  code: string;
+  type: "mobile" | "card";
+  provider: "fedapay" | "stripe" | "pawerpayer";
+  countryCode: string;
+  commission: number;
+  priority: number;
+  active: boolean;
+  useFedapayCheckout: boolean;
+  supportsPayout: boolean;
+  supportsRefund: boolean;
+  icon?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * PaginationMeta
+ *
+ * Pagination metadata
+ */
+export type PaginationMeta = {
+  itemCount: number;
+  pageSize: number;
+  offset: number;
+  hasMore: boolean;
+};
+
+/**
+ * MessageResponse
+ *
+ * Simple message response
+ */
+export type MessageResponse = {
+  message: string;
+};
+
+/**
+ * AvailablePaymentMethods
+ *
+ * List of available payment methods for a country
+ */
+export type AvailablePaymentMethods = {
+  methods: Array<AvailablePaymentMethod>;
+};
+
+/**
+ * AvailablePaymentMethod
+ *
+ * Payment method visible to the user (no provider details)
+ */
+export type AvailablePaymentMethod = {
+  id: string;
+  name: string;
+  code: string;
+  type: "mobile" | "card";
+  useFedapayCheckout: boolean;
+  requiresPhone: boolean;
+  icon?: string | null;
+};
+
+/**
+ * PaymentInfo
+ *
+ * Payment info for the frontend to display and init Checkout.js
+ */
+export type PaymentInfo = {
+  amount: number;
+  currency: string;
+  fedapayPublicKey: string | null;
+};
+
+/**
+ * NoRedirectPaymentResult
+ *
+ * Result after initiating a no-redirect payment
+ */
+export type NoRedirectPaymentResult = {
+  paymentId: string;
+  status: "pending";
+};
+
+/**
+ * CheckoutVerifyResult
+ *
+ * Result after verifying a Checkout.js payment
+ */
+export type CheckoutVerifyResult = {
+  paymentId: string;
+  status: "completed";
+};
+
+/**
+ * PaymentStatusResponse
+ *
+ * Current payment status for an order
+ */
+export type PaymentStatusResponse = {
+  paymentId: string;
+  status: PaymentStatus;
+  amount: number;
+  currency: string;
+  paidAt: string | null;
+  provider: PaymentProvider;
+};
+
+/**
+ * PaymentStatus
+ *
+ * Current status of a payment
+ */
+export const PaymentStatus = {
+  PENDING: "PENDING",
+  CAPTURED: "CAPTURED",
+  ESCROW: "ESCROW",
+  RELEASED: "RELEASED",
+  REFUNDED: "REFUNDED",
+  FAILED: "FAILED",
+} as const;
+
+/**
+ * PaymentStatus
+ *
+ * Current status of a payment
+ */
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
+
+/**
+ * PaymentProvider
+ *
+ * Payment gateway provider
+ */
+export const PaymentProvider = {
+  FEDAPAY: "fedapay",
+  STRIPE: "stripe",
+  PAWERPAYER: "pawerpayer",
+} as const;
+
+/**
+ * PaymentProvider
+ *
+ * Payment gateway provider
+ */
+export type PaymentProvider =
+  (typeof PaymentProvider)[keyof typeof PaymentProvider];
+
+/**
  * SearchResponse
  */
 export type SearchResponse = {
@@ -888,6 +1185,8 @@ export type SearchResult = {
   supplier: {
     id: string;
     shopName: string;
+    latitude: number | null;
+    longitude: number | null;
     distance: number;
     rating: number | null;
     reviewCount: number;
@@ -925,7 +1224,7 @@ export type CategoriesResponse = {
     id: string;
     name: string;
     slug: string;
-    icon: string;
+    imageUrl: string | null;
     productCount: number;
   }>;
 };
@@ -1203,23 +1502,31 @@ export type FilterQueryStringSchema = string;
 export type CommentsControllerPostSlug = string;
 
 /**
- * MobileOperator
+ * MediaContext
  *
- * Mobile money operator
+ * Contexte d'utilisation du média
  */
-export const MobileOperator = {
-  MTN: "MTN",
-  MOOV: "MOOV",
-  ORANGE: "ORANGE",
+export const MediaContext = {
+  PRODUCT_PHOTO: "PRODUCT_PHOTO",
+  SUPPLIER_COVER: "SUPPLIER_COVER",
+  SUPPLIER_PROFILE: "SUPPLIER_PROFILE",
+  IDENTITY_DOCUMENT: "IDENTITY_DOCUMENT",
+  BUSINESS_PROOF: "BUSINESS_PROOF",
+  CHAT_ATTACHMENT: "CHAT_ATTACHMENT",
+  VOICE_NOTE: "VOICE_NOTE",
+  VOICE_DESCRIPTION: "VOICE_DESCRIPTION",
+  TRAINING_CONTENT: "TRAINING_CONTENT",
+  TRAINING_THUMBNAIL: "TRAINING_THUMBNAIL",
+  COMMUNITY_MEDIA: "COMMUNITY_MEDIA",
+  CATEGORY_IMAGE: "CATEGORY_IMAGE",
 } as const;
 
 /**
- * MobileOperator
+ * MediaContext
  *
- * Mobile money operator
+ * Contexte d'utilisation du média
  */
-export type MobileOperator =
-  (typeof MobileOperator)[keyof typeof MobileOperator];
+export type MediaContext = (typeof MediaContext)[keyof typeof MediaContext];
 
 /**
  * SupplierType
@@ -1264,6 +1571,13 @@ export type OpeningHours = {
     closed?: boolean;
   };
 };
+
+/**
+ * Timezone
+ *
+ * IANA timezone the opening hours are expressed in
+ */
+export type Timezone = string;
 
 /**
  * PickupMode
@@ -1352,9 +1666,9 @@ export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus];
  */
 export type SearchProductsQuery = {
   q?: string;
-  latitude: number;
-  longitude: number;
-  radius: number;
+  latitude?: number;
+  longitude?: number;
+  radius?: number;
   category?: string;
   maxPrice?: number;
   /**
@@ -1367,6 +1681,10 @@ export type SearchProductsQuery = {
    * Filter validated suppliers only
    */
   validatedOnly: "true" | "false";
+  /**
+   * Filter promotional products only
+   */
+  promoOnly: "true" | "false";
   sortBy: "distance" | "rating" | "price";
   page: number;
   limit: number;
@@ -1485,6 +1803,165 @@ export type AppControllerGetHelloData = {
 
 export type AppControllerGetHelloResponses = {
   200: unknown;
+};
+
+export type OtpAuthControllerGetSessionData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/session";
+};
+
+export type OtpAuthControllerGetSessionResponses = {
+  200: unknown;
+};
+
+export type OtpAuthControllerGetChatTokenData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/chat-token";
+};
+
+export type OtpAuthControllerGetChatTokenResponses = {
+  200: unknown;
+};
+
+export type OtpAuthControllerLoginWithPhoneData = {
+  body: {
+    phone: string;
+    password: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/login";
+};
+
+export type OtpAuthControllerLoginWithPhoneResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerRequestOtpData = {
+  /**
+   * OtpRequest
+   *
+   * Request OTP via SMS
+   */
+  body: {
+    phone: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/request";
+};
+
+export type OtpAuthControllerRequestOtpResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerVerifyOtpData = {
+  /**
+   * OtpVerify
+   *
+   * Verify OTP code
+   */
+  body: {
+    phone: string;
+    code: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/verify";
+};
+
+export type OtpAuthControllerVerifyOtpResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerRegisterWithTokenData = {
+  body: {
+    phone: string;
+    registrationToken: string;
+    name: string;
+    password: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/register";
+};
+
+export type OtpAuthControllerRegisterWithTokenResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerRequestEmailOtpData = {
+  body: {
+    email: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/email/request";
+};
+
+export type OtpAuthControllerRequestEmailOtpResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerRegisterWithEmailData = {
+  body: {
+    email: string;
+    code: string;
+    name: string;
+    password: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/email/register";
+};
+
+export type OtpAuthControllerRegisterWithEmailResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerRequestPasswordResetData = {
+  body: {
+    identifier: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/password-reset/request";
+};
+
+export type OtpAuthControllerRequestPasswordResetResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerVerifyPasswordResetData = {
+  body: {
+    identifier: string;
+    code: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/password-reset/verify";
+};
+
+export type OtpAuthControllerVerifyPasswordResetResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerResetPasswordData = {
+  body: {
+    identifier: string;
+    newPassword: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/password-reset/reset";
+};
+
+export type OtpAuthControllerResetPasswordResponses = {
+  201: unknown;
 };
 
 export type CommentsControllerGetCommentsData = {
@@ -2619,9 +3096,9 @@ export type SearchControllerSearchProductsData = {
   path?: never;
   query: {
     q?: string;
-    latitude: number;
-    longitude: number;
-    radius: number;
+    latitude?: number;
+    longitude?: number;
+    radius?: number;
     category?: string;
     maxPrice?: number;
     /**
@@ -2634,6 +3111,10 @@ export type SearchControllerSearchProductsData = {
      * Filter validated suppliers only
      */
     validatedOnly: "true" | "false";
+    /**
+     * Filter promotional products only
+     */
+    promoOnly: "true" | "false";
     sortBy: "distance" | "rating" | "price";
     page: number;
     limit: number;
@@ -2703,10 +3184,10 @@ export type SuppliersControllerRegisterData = {
      * Type of supplier activity
      */
     type: "INPUTS" | "TRANSFORMER";
-    latitude: number;
-    longitude: number;
-    address: string;
-    neighborhood: string;
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+    neighborhood?: string;
     mobileMoneyNumber: string;
     /**
      * SupplierMode
@@ -2726,6 +3207,12 @@ export type SuppliersControllerRegisterData = {
         closed?: boolean;
       };
     };
+    /**
+     * Timezone
+     *
+     * IANA timezone the opening hours are expressed in
+     */
+    timezone?: string;
   };
   path?: never;
   query?: never;
@@ -2734,6 +3221,21 @@ export type SuppliersControllerRegisterData = {
 
 export type SuppliersControllerRegisterResponses = {
   201: unknown;
+};
+
+export type SuppliersControllerFindNearbyData = {
+  body?: never;
+  path?: never;
+  query: {
+    latitude: string;
+    longitude: string;
+    radius: string;
+  };
+  url: "/api/suppliers/nearby";
+};
+
+export type SuppliersControllerFindNearbyResponses = {
+  200: unknown;
 };
 
 export type SuppliersControllerFindByIdData = {
@@ -2786,6 +3288,14 @@ export type SuppliersControllerUpdateMeData = {
         closed?: boolean;
       };
     };
+    /**
+     * Timezone
+     *
+     * IANA timezone the opening hours are expressed in
+     */
+    timezone?: string;
+    coverPhoto?: string;
+    profilePhoto?: string;
   };
   path?: never;
   query?: never;
@@ -2793,6 +3303,17 @@ export type SuppliersControllerUpdateMeData = {
 };
 
 export type SuppliersControllerUpdateMeResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerGetMyStatusData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/status";
+};
+
+export type SuppliersControllerGetMyStatusResponses = {
   200: unknown;
 };
 
@@ -2830,6 +3351,110 @@ export type SuppliersControllerCreateDeliveryZoneResponses = {
   201: unknown;
 };
 
+export type SuppliersControllerDeleteDeliveryZoneData = {
+  body?: never;
+  path: {
+    zoneId: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/delivery-zones/{zoneId}";
+};
+
+export type SuppliersControllerDeleteDeliveryZoneResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerGetSettingsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/settings";
+};
+
+export type SuppliersControllerGetSettingsResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerUpdateOpeningHoursData = {
+  /**
+   * UpdateOpeningHours
+   */
+  body: {
+    /**
+     * OpeningHours
+     *
+     * Weekly opening hours with days as keys
+     */
+    openingHours: {
+      [key: string]: {
+        open: string;
+        close: string;
+        closed?: boolean;
+      };
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/settings/opening-hours";
+};
+
+export type SuppliersControllerUpdateOpeningHoursResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerUpdateModeData = {
+  /**
+   * UpdateMode
+   */
+  body: {
+    mode: "CONTACT" | "ORDER";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/settings/mode";
+};
+
+export type SuppliersControllerUpdateModeResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerGetAnalyticsData = {
+  body?: never;
+  path?: never;
+  query: {
+    period: string;
+  };
+  url: "/api/suppliers/me/analytics";
+};
+
+export type SuppliersControllerGetAnalyticsResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerGetTopProductsData = {
+  body?: never;
+  path?: never;
+  query: {
+    period: string;
+  };
+  url: "/api/suppliers/me/analytics/top-products";
+};
+
+export type SuppliersControllerGetTopProductsResponses = {
+  200: unknown;
+};
+
+export type SuppliersControllerGetRatingsOverviewData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/analytics/ratings";
+};
+
+export type SuppliersControllerGetRatingsOverviewResponses = {
+  200: unknown;
+};
+
 export type UsersControllerGetMeData = {
   body?: never;
   path?: never;
@@ -2849,6 +3474,8 @@ export type UsersControllerUpdateMeData = {
    */
   body: {
     name?: string;
+    email?: string;
+    phone?: string;
     image?: string;
     deviceId?: string;
   };
@@ -2861,14 +3488,212 @@ export type UsersControllerUpdateMeResponses = {
   200: unknown;
 };
 
-export type FilesControllerGetUploadUrlData = {
+export type MediaControllerInitiateUploadData = {
+  /**
+   * InitiateUpload
+   *
+   * Demande d'URL signée(s) pour upload direct vers S3
+   */
+  body: {
+    fileName: string;
+    mimeType: string;
+    fileSize: number;
+    /**
+     * MediaContext
+     *
+     * Contexte d'utilisation du média
+     */
+    context:
+      | "PRODUCT_PHOTO"
+      | "SUPPLIER_COVER"
+      | "SUPPLIER_PROFILE"
+      | "IDENTITY_DOCUMENT"
+      | "BUSINESS_PROOF"
+      | "CHAT_ATTACHMENT"
+      | "VOICE_NOTE"
+      | "VOICE_DESCRIPTION"
+      | "TRAINING_CONTENT"
+      | "TRAINING_THUMBNAIL"
+      | "COMMUNITY_MEDIA"
+      | "CATEGORY_IMAGE";
+    entityType?: string;
+    entityId?: string;
+    parts: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/media/upload";
+};
+
+export type MediaControllerInitiateUploadResponses = {
+  201: unknown;
+};
+
+export type MediaControllerCompleteUploadData = {
+  /**
+   * CompleteUpload
+   *
+   * Finalise un upload multipart et déclenche l'optimisation
+   */
+  body: {
+    mediaId: string;
+    uploadId?: string;
+    parts?: Array<{
+      partNumber: number;
+      etag: string;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/media/complete";
+};
+
+export type MediaControllerCompleteUploadResponses = {
+  201: unknown;
+};
+
+export type MediaControllerDeleteMediaData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/media/{id}";
+};
+
+export type MediaControllerDeleteMediaResponses = {
+  200: unknown;
+};
+
+export type MediaControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/media/{id}";
+};
+
+export type MediaControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type MediaControllerGetDownloadUrlData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    expiresIn: string;
+  };
+  url: "/api/media/{id}/download";
+};
+
+export type MediaControllerGetDownloadUrlResponses = {
+  200: unknown;
+};
+
+export type MediaControllerFindByEntityData = {
+  body?: never;
+  path: {
+    entityType: string;
+    entityId: string;
+  };
+  query?: never;
+  url: "/api/media/entity/{entityType}/{entityId}";
+};
+
+export type MediaControllerFindByEntityResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerRegisterTokenData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/api/files/upload-url";
+  url: "/api/notifications/register-token";
 };
 
-export type FilesControllerGetUploadUrlResponses = {
+export type NotificationsControllerRegisterTokenResponses = {
+  201: unknown;
+};
+
+export type NotificationsControllerUnregisterTokenData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/unregister-token";
+};
+
+export type NotificationsControllerUnregisterTokenResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerGetUnreadData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/unread";
+};
+
+export type NotificationsControllerGetUnreadResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerGetAllData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications";
+};
+
+export type NotificationsControllerGetAllResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerGetUnreadCountData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/count";
+};
+
+export type NotificationsControllerGetUnreadCountResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerMarkAsReadData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/notifications/{id}/read";
+};
+
+export type NotificationsControllerMarkAsReadResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerMarkAllAsReadData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/read-all";
+};
+
+export type NotificationsControllerMarkAllAsReadResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerSendTestNotificationData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/test";
+};
+
+export type NotificationsControllerSendTestNotificationResponses = {
   201: unknown;
 };
 
@@ -2880,11 +3705,32 @@ export type ProductsControllerFindBySupplierData = {
   query: {
     status: string;
     categoryId: string;
+    /**
+     * Starting position of the query
+     */
+    offset: number;
+    /**
+     * Number of items to return
+     */
+    pageSize: number;
   };
   url: "/api/suppliers/{supplierId}/products";
 };
 
 export type ProductsControllerFindBySupplierResponses = {
+  200: unknown;
+};
+
+export type ProductsControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/products/{id}";
+};
+
+export type ProductsControllerFindByIdResponses = {
   200: unknown;
 };
 
@@ -2918,6 +3764,7 @@ export type ProductsControllerCreateData = {
       pricePerUnit: number;
       stock?: number;
     }>;
+    mediaIds?: Array<string>;
   };
   path?: never;
   query?: never;
@@ -2971,6 +3818,7 @@ export type ProductsControllerUpdateData = {
       pricePerUnit: number;
       stock?: number;
     }>;
+    mediaIds?: Array<string>;
   };
   path: {
     id: string;
@@ -3037,6 +3885,78 @@ export type ProductsControllerSubscribeToStockAlertResponses = {
   201: unknown;
 };
 
+export type CategoriesControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/categories/{id}";
+};
+
+export type CategoriesControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type CategoriesControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/categories/{id}";
+};
+
+export type CategoriesControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type CategoriesControllerUpdateData = {
+  /**
+   * UpdateCategory
+   *
+   * Update category -- all fields optional
+   */
+  body: {
+    name?: string;
+    slug?: string;
+    icon?: string;
+    imageUrl?: string;
+    sortOrder?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/categories/{id}";
+};
+
+export type CategoriesControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type CategoriesControllerCreateData = {
+  /**
+   * CreateCategory
+   *
+   * Data required to create a new category
+   */
+  body: {
+    name: string;
+    slug: string;
+    icon: string;
+    imageUrl?: string;
+    sortOrder: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/categories";
+};
+
+export type CategoriesControllerCreateResponses = {
+  201: unknown;
+};
+
 export type OrdersControllerFindAllData = {
   body?: never;
   path?: never;
@@ -3044,6 +3964,7 @@ export type OrdersControllerFindAllData = {
     status: string;
     page: string;
     limit: string;
+    view: string;
   };
   url: "/api/orders";
 };
@@ -3073,7 +3994,7 @@ export type OrdersControllerCreateData = {
      */
     paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY";
     deliveryAddress?: string;
-    deliverySlot?: Date;
+    deliverySlot?: string;
     items: Array<{
       productId: string;
       variantId?: string;
@@ -3188,64 +4109,317 @@ export type OrdersControllerCreateDisputeResponses = {
   201: unknown;
 };
 
-export type PaymentsControllerInitiateData = {
+export type PaymentsControllerGetPaymentInfoData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/payments/orders/{id}/info";
+};
+
+export type PaymentsControllerGetPaymentInfoResponses = {
+  /**
+   * Payment info for the frontend to display and init Checkout.js
+   */
+  200: PaymentInfo;
+};
+
+export type PaymentsControllerGetPaymentInfoResponse =
+  PaymentsControllerGetPaymentInfoResponses[keyof PaymentsControllerGetPaymentInfoResponses];
+
+export type PaymentsControllerInitiateNoRedirectPaymentData = {
   /**
    * InitiatePayment
    *
-   * Data required to initiate a mobile money payment
+   * Input for initiating a no-redirect (USSD) payment
    */
   body: {
     orderId: string;
-    /**
-     * MobileOperator
-     *
-     * Mobile money operator
-     */
-    operator: "MTN" | "MOOV" | "ORANGE";
-    phoneNumber: string;
+    paymentMethodId: string;
+    phoneNumber?: string;
   };
   path?: never;
   query?: never;
   url: "/api/payments/initiate";
 };
 
-export type PaymentsControllerInitiateResponses = {
-  201: unknown;
+export type PaymentsControllerInitiateNoRedirectPaymentResponses = {
+  /**
+   * Result after initiating a no-redirect payment
+   */
+  200: NoRedirectPaymentResult;
 };
 
-export type PaymentsControllerHandleWebhookData = {
+export type PaymentsControllerInitiateNoRedirectPaymentResponse =
+  PaymentsControllerInitiateNoRedirectPaymentResponses[keyof PaymentsControllerInitiateNoRedirectPaymentResponses];
+
+export type PaymentsControllerInitiateCheckoutPaymentData = {
   /**
-   * WebhookEvent
+   * InitiateCheckoutInput
    *
-   * FedaPay webhook event payload
+   * Input for creating a pending payment before opening Checkout.js
    */
   body: {
+    orderId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/initiate-checkout";
+};
+
+export type PaymentsControllerInitiateCheckoutPaymentResponses = {
+  /**
+   * Result after initiating a no-redirect payment
+   */
+  200: NoRedirectPaymentResult;
+};
+
+export type PaymentsControllerInitiateCheckoutPaymentResponse =
+  PaymentsControllerInitiateCheckoutPaymentResponses[keyof PaymentsControllerInitiateCheckoutPaymentResponses];
+
+export type PaymentsControllerVerifyCheckoutPaymentData = {
+  /**
+   * VerifyCheckoutInput
+   *
+   * Input for verifying a payment made via Checkout.js
+   */
+  body: {
+    orderId: string;
+    paymentId: string;
+    fedapayTransactionId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/verify-checkout";
+};
+
+export type PaymentsControllerVerifyCheckoutPaymentResponses = {
+  /**
+   * Result after verifying a Checkout.js payment
+   */
+  200: CheckoutVerifyResult;
+};
+
+export type PaymentsControllerVerifyCheckoutPaymentResponse =
+  PaymentsControllerVerifyCheckoutPaymentResponses[keyof PaymentsControllerVerifyCheckoutPaymentResponses];
+
+export type PaymentsControllerGetPaymentStatusData = {
+  body?: never;
+  path: {
     id: string;
-    type: string;
-    data: {
-      id: number;
-      reference?: string;
-      amount?: number;
-      status: string;
-      customer?: {
-        phone_number?: {
-          number: string;
-          country: string;
-        };
-      };
-    };
   };
-  headers: {
-    "x-fedapay-signature": string;
-  };
+  query?: never;
+  url: "/api/payments/orders/{id}/status";
+};
+
+export type PaymentsControllerGetPaymentStatusResponses = {
+  /**
+   * Current payment status for an order
+   */
+  200: PaymentStatusResponse;
+};
+
+export type PaymentsControllerGetPaymentStatusResponse =
+  PaymentsControllerGetPaymentStatusResponses[keyof PaymentsControllerGetPaymentStatusResponses];
+
+export type PaymentsWebhookControllerHandleFedaPayWebhookData = {
+  body?: never;
   path?: never;
   query?: never;
   url: "/api/payments/webhook/fedapay";
 };
 
-export type PaymentsControllerHandleWebhookResponses = {
+export type PaymentsWebhookControllerHandleFedaPayWebhookResponses = {
   201: unknown;
 };
+
+export type PaymentsWebhookControllerHandleStripeWebhookData = {
+  body?: never;
+  headers: {
+    "stripe-signature": string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/stripe";
+};
+
+export type PaymentsWebhookControllerHandleStripeWebhookResponses = {
+  201: unknown;
+};
+
+export type PaymentsWebhookControllerHandlePawerPayerWebhookData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/pawerpayer";
+};
+
+export type PaymentsWebhookControllerHandlePawerPayerWebhookResponses = {
+  201: unknown;
+};
+
+export type PaymentMethodAdminControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/payment-methods";
+};
+
+export type PaymentMethodAdminControllerListResponses = {
+  /**
+   * Paginated list of payment methods
+   */
+  200: PaymentMethodList;
+};
+
+export type PaymentMethodAdminControllerListResponse =
+  PaymentMethodAdminControllerListResponses[keyof PaymentMethodAdminControllerListResponses];
+
+export type PaymentMethodAdminControllerCreateData = {
+  /**
+   * CreatePaymentMethodInput
+   *
+   * Input for creating a payment method
+   */
+  body: {
+    name: string;
+    code: string;
+    type: "mobile" | "card";
+    provider: "fedapay" | "stripe" | "pawerpayer";
+    countryCode: string;
+    commission: number;
+    priority: number;
+    active: boolean;
+    useFedapayCheckout: boolean;
+    supportsPayout: boolean;
+    supportsRefund: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/payment-methods";
+};
+
+export type PaymentMethodAdminControllerCreateResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerCreateResponse =
+  PaymentMethodAdminControllerCreateResponses[keyof PaymentMethodAdminControllerCreateResponses];
+
+export type PaymentMethodAdminControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}";
+};
+
+export type PaymentMethodAdminControllerRemoveResponses = {
+  /**
+   * Simple message response
+   */
+  200: MessageResponse;
+};
+
+export type PaymentMethodAdminControllerRemoveResponse =
+  PaymentMethodAdminControllerRemoveResponses[keyof PaymentMethodAdminControllerRemoveResponses];
+
+export type PaymentMethodAdminControllerGetOneData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}";
+};
+
+export type PaymentMethodAdminControllerGetOneResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerGetOneResponse =
+  PaymentMethodAdminControllerGetOneResponses[keyof PaymentMethodAdminControllerGetOneResponses];
+
+export type PaymentMethodAdminControllerUpdateData = {
+  /**
+   * UpdatePaymentMethodInput
+   *
+   * Input for updating a payment method
+   */
+  body: {
+    name?: string;
+    code?: string;
+    type?: "mobile" | "card";
+    provider?: "fedapay" | "stripe" | "pawerpayer";
+    countryCode?: string;
+    commission?: number;
+    priority?: number;
+    active?: boolean;
+    useFedapayCheckout?: boolean;
+    supportsPayout?: boolean;
+    supportsRefund?: boolean;
+    icon?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}";
+};
+
+export type PaymentMethodAdminControllerUpdateResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerUpdateResponse =
+  PaymentMethodAdminControllerUpdateResponses[keyof PaymentMethodAdminControllerUpdateResponses];
+
+export type PaymentMethodAdminControllerToggleActiveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}/toggle";
+};
+
+export type PaymentMethodAdminControllerToggleActiveResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerToggleActiveResponse =
+  PaymentMethodAdminControllerToggleActiveResponses[keyof PaymentMethodAdminControllerToggleActiveResponses];
+
+export type PaymentMethodPublicControllerGetAvailableData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/payment-methods/available";
+};
+
+export type PaymentMethodPublicControllerGetAvailableResponses = {
+  /**
+   * List of available payment methods for a country
+   */
+  200: AvailablePaymentMethods;
+};
+
+export type PaymentMethodPublicControllerGetAvailableResponse =
+  PaymentMethodPublicControllerGetAvailableResponses[keyof PaymentMethodPublicControllerGetAvailableResponses];
 
 export type ChatControllerGetConversationsData = {
   body?: never;
@@ -3267,6 +4441,7 @@ export type ChatControllerCreateConversationData = {
   body: {
     supplierId: string;
     productId?: string;
+    orderId?: string;
   };
   path?: never;
   query?: never;
@@ -3809,6 +4984,98 @@ export type AdminControllerGetTransactionsData = {
 };
 
 export type AdminControllerGetTransactionsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetOrdersData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    supplierId: string;
+    q: string;
+    sortBy: string;
+    sortDir: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/orders";
+};
+
+export type AdminControllerGetOrdersResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetOrderByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/orders/{id}";
+};
+
+export type AdminControllerGetOrderByIdResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetSuppliersData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    q: string;
+    sortBy: string;
+    sortDir: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/suppliers";
+};
+
+export type AdminControllerGetSuppliersResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetSupplierByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/suppliers/{id}";
+};
+
+export type AdminControllerGetSupplierByIdResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetUsersData = {
+  body?: never;
+  path?: never;
+  query: {
+    role: string;
+    q: string;
+    sortBy: string;
+    sortDir: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/users";
+};
+
+export type AdminControllerGetUsersResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetSettingsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings";
+};
+
+export type AdminControllerGetSettingsResponses = {
   200: unknown;
 };
 

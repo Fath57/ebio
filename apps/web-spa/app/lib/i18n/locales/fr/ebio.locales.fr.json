@@ -352,6 +352,35 @@
     }
   },
   "admin": {
+    "categories": {
+      "title": "Gestion des catégories",
+      "description": "Gérez les catégories de produits de la plateforme",
+      "addCategory": "Ajouter une catégorie",
+      "addCategoryDescription": "Créez une nouvelle catégorie de produits",
+      "editCategory": "Modifier la catégorie",
+      "editCategoryDescription": "Mettez à jour les informations de la catégorie",
+      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette catégorie ?",
+      "deleteWarning": "Cette action est irréversible. Les produits associés ne seront plus catégorisés.",
+      "columns": {
+        "name": "Nom",
+        "slug": "Slug",
+        "icon": "Icône",
+        "sortOrder": "Ordre",
+        "productCount": "Produits",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Nom de la catégorie",
+        "namePlaceholder": "Ex: Huiles",
+        "slug": "Slug",
+        "slugPlaceholder": "huiles",
+        "icon": "Icône",
+        "iconPlaceholder": "Ex: Droplets",
+        "sortOrder": "Ordre d'affichage",
+        "create": "Créer la catégorie",
+        "update": "Mettre à jour"
+      }
+    },
     "dashboard": {
       "title": "Tableau de bord Admin",
       "description": "Vue d'ensemble de la plateforme eBio",
@@ -364,49 +393,6 @@
         "pendingValidations": "Validations en attente",
         "disputes": "Litiges",
         "searchesPerDay": "Recherches/jour"
-      }
-    },
-    "validation": {
-      "title": "Validations Fournisseurs",
-      "description": "Validez les dossiers d'inscription des fournisseurs",
-      "status": {
-        "pending": "En attente"
-      },
-      "columns": {
-        "name": "Nom",
-        "email": "Email",
-        "shopName": "Nom de la boutique",
-        "status": "Statut",
-        "submittedAt": "Date de soumission",
-        "actions": "Actions"
-      },
-      "actions": {
-        "validate": "Valider eBio",
-        "reject": "Refuser",
-        "requestComplement": "Demander un complément"
-      },
-      "rejectDialog": {
-        "title": "Motif du refus",
-        "reasonPlaceholder": "Indiquez la raison du refus..."
-      },
-      "complementDialog": {
-        "title": "Demande de complément",
-        "messagePlaceholder": "Indiquez les documents manquants..."
-      },
-      "dossier": {
-        "title": "Dossier Fournisseur",
-        "identity": "Identité",
-        "fullName": "Nom complet",
-        "email": "Email",
-        "phone": "Téléphone",
-        "shopInfo": "Fiche Boutique",
-        "shopName": "Nom de la boutique",
-        "address": "Adresse",
-        "businessNumber": "Numéro RCCM",
-        "businessProof": "Justificatif d'activité",
-        "identityDocument": "Pièce d'identité",
-        "businessDocument": "Document professionnel",
-        "viewDocument": "Voir le document"
       }
     },
     "moderation": {
@@ -425,60 +411,6 @@
         "deleteContent": "Supprimer le contenu",
         "warnAuthor": "Avertir l'auteur",
         "ignore": "Ignorer"
-      }
-    },
-    "transactions": {
-      "title": "Transactions",
-      "description": "Suivi financier de la plateforme",
-      "currency": "FCFA",
-      "exportCsv": "Exporter CSV",
-      "from": "Du",
-      "to": "Au",
-      "columns": {
-        "reference": "Référence",
-        "buyer": "Acheteur",
-        "supplier": "Fournisseur",
-        "amount": "Montant",
-        "commission": "Commission",
-        "date": "Date",
-        "status": "Statut"
-      },
-      "status": {
-        "completed": "Terminé",
-        "pending": "En attente",
-        "failed": "Échoué",
-        "refunded": "Remboursé"
-      },
-      "disputes": {
-        "title": "Litiges",
-        "dispute": "Litige",
-        "amount": "Montant",
-        "noDisputes": "Aucun litige en cours",
-        "status": {
-          "open": "Ouvert",
-          "resolved": "Résolu",
-          "closed": "Fermé"
-        }
-      }
-    },
-    "settings": {
-      "title": "Paramètres Plateforme",
-      "description": "Configuration générale de la plateforme eBio",
-      "currency": "FCFA",
-      "month": "/mois",
-      "commission": {
-        "title": "Taux de commission",
-        "rate": "Taux (%)",
-        "miseEnRelation": "Mise en relation",
-        "commande": "Commander",
-        "plan": "Plan",
-        "premium": "Premium"
-      },
-      "plans": {
-        "title": "Plans d'abonnement",
-        "name": "Nom du plan",
-        "price": "Prix",
-        "features": "Fonctionnalités"
       }
     },
     "roles": {
@@ -526,33 +458,101 @@
         }
       }
     },
-    "categories": {
-      "title": "Gestion des catégories",
-      "description": "Gérez les catégories de produits de la plateforme",
-      "addCategory": "Ajouter une catégorie",
-      "addCategoryDescription": "Créez une nouvelle catégorie de produits",
-      "editCategory": "Modifier la catégorie",
-      "editCategoryDescription": "Mettez à jour les informations de la catégorie",
-      "deleteConfirm": "Êtes-vous sûr de vouloir supprimer cette catégorie ?",
-      "deleteWarning": "Cette action est irréversible. Les produits associés ne seront plus catégorisés.",
+    "settings": {
+      "title": "Paramètres Plateforme",
+      "description": "Configuration générale de la plateforme eBio",
+      "currency": "FCFA",
+      "month": "/mois",
+      "commission": {
+        "title": "Taux de commission",
+        "rate": "Taux (%)",
+        "miseEnRelation": "Mise en relation",
+        "commande": "Commander",
+        "plan": "Plan",
+        "premium": "Premium"
+      },
+      "plans": {
+        "title": "Plans d'abonnement",
+        "name": "Nom du plan",
+        "price": "Prix",
+        "features": "Fonctionnalités"
+      }
+    },
+    "transactions": {
+      "title": "Transactions",
+      "description": "Suivi financier de la plateforme",
+      "currency": "FCFA",
+      "exportCsv": "Exporter CSV",
+      "from": "Du",
+      "to": "Au",
+      "columns": {
+        "reference": "Référence",
+        "buyer": "Acheteur",
+        "supplier": "Fournisseur",
+        "amount": "Montant",
+        "commission": "Commission",
+        "date": "Date",
+        "status": "Statut"
+      },
+      "status": {
+        "completed": "Terminé",
+        "pending": "En attente",
+        "failed": "Échoué",
+        "refunded": "Remboursé"
+      },
+      "disputes": {
+        "title": "Litiges",
+        "dispute": "Litige",
+        "amount": "Montant",
+        "noDisputes": "Aucun litige en cours",
+        "status": {
+          "open": "Ouvert",
+          "resolved": "Résolu",
+          "closed": "Fermé"
+        }
+      }
+    },
+    "validation": {
+      "title": "Validations Fournisseurs",
+      "description": "Validez les dossiers d'inscription des fournisseurs",
+      "status": {
+        "pending": "En attente"
+      },
       "columns": {
         "name": "Nom",
-        "slug": "Slug",
-        "icon": "Icône",
-        "sortOrder": "Ordre",
-        "productCount": "Produits",
+        "email": "Email",
+        "shopName": "Nom de la boutique",
+        "status": "Statut",
+        "submittedAt": "Date de soumission",
         "actions": "Actions"
       },
-      "form": {
-        "name": "Nom de la catégorie",
-        "namePlaceholder": "Ex: Huiles",
-        "slug": "Slug",
-        "slugPlaceholder": "huiles",
-        "icon": "Icône",
-        "iconPlaceholder": "Ex: Droplets",
-        "sortOrder": "Ordre d'affichage",
-        "create": "Créer la catégorie",
-        "update": "Mettre à jour"
+      "actions": {
+        "validate": "Valider eBio",
+        "reject": "Refuser",
+        "requestComplement": "Demander un complément"
+      },
+      "rejectDialog": {
+        "title": "Motif du refus",
+        "reasonPlaceholder": "Indiquez la raison du refus..."
+      },
+      "complementDialog": {
+        "title": "Demande de complément",
+        "messagePlaceholder": "Indiquez les documents manquants..."
+      },
+      "dossier": {
+        "title": "Dossier Fournisseur",
+        "identity": "Identité",
+        "fullName": "Nom complet",
+        "email": "Email",
+        "phone": "Téléphone",
+        "shopInfo": "Fiche Boutique",
+        "shopName": "Nom de la boutique",
+        "address": "Adresse",
+        "businessNumber": "Numéro RCCM",
+        "businessProof": "Justificatif d'activité",
+        "identityDocument": "Pièce d'identité",
+        "businessDocument": "Document professionnel",
+        "viewDocument": "Voir le document"
       }
     }
   },

@@ -20,6 +20,33 @@ import { Dispute, DisputeStatus } from '../orders/entities/dispute.entity'
 import { Supplier, ValidationStatus } from '../suppliers/supplier.entity'
 import { ContentReport, ReportStatus, ReportTargetType } from './entities/content-report.entity'
 
+/** Colonnes triables — liste fermée, aucune valeur de requête n'atteint le SQL. */
+const ORDER_SORT_COLUMNS: Record<string, string> = {
+  createdAt: 'o."createdAt"',
+  orderNumber: 'o.order_number',
+  status: 'o.status',
+  totalAmount: 'o.total_amount',
+  commissionAmount: 'o.commission_amount',
+  buyer: 'bu.name',
+  supplier: 's.shop_name',
+}
+
+const SUPPLIER_SORT_COLUMNS: Record<string, string> = {
+  createdAt: 's."createdAt"',
+  shopName: 's.shop_name',
+  validationStatus: 's.validation_status',
+  rating: 's.global_rating',
+  productCount: 'product_count',
+  orderCount: 'order_count',
+}
+
+const USER_SORT_COLUMNS: Record<string, string> = {
+  createdAt: 'u."createdAt"',
+  name: 'u.name',
+  email: 'u.email',
+  role: 'u.role',
+}
+
 @Injectable()
 export class AdminService {
   private readonly logger = new Logger(AdminService.name)
@@ -483,6 +510,21 @@ export class AdminService {
     }
   }
 
+  /**
+   * Traduit un couple (champ, sens) en clause ORDER BY. La colonne est prise
+   * dans une liste fermée : elle est concaténée au SQL, jamais liée.
+   */
+  private buildOrderBy(
+    allowed: Record<string, string>,
+    fallback: string,
+    sortBy?: string,
+    sortDir?: string,
+  ): string {
+    const column = (sortBy && allowed[sortBy]) ?? allowed[fallback]
+    const direction = sortDir?.toLowerCase() === 'asc' ? 'ASC' : 'DESC'
+    return `ORDER BY ${column} ${direction} NULLS LAST`
+  }
+
   // ===========================================================================
   // Vues transverses — l'admin n'a pas de profil fournisseur, il ne peut donc
   // pas passer par les endpoints `me`-scopés. Ces lectures couvrent le support
@@ -493,6 +535,8 @@ export class AdminService {
     status?: string
     supplierId?: string
     q?: string
+    sortBy?: string
+    sortDir?: string
     page: number
     limit: number
   }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
@@ -533,7 +577,7 @@ export class AdminService {
               s.id as supplier_id, s.shop_name as supplier_name
        ${from}
        WHERE ${whereClause}
-       ORDER BY o."createdAt" DESC
+       ${this.buildOrderBy(ORDER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
        LIMIT ? OFFSET ?`,
       queryParams,
     )
@@ -599,6 +643,8 @@ export class AdminService {
   async getSuppliers(params: {
     status?: string
     q?: string
+    sortBy?: string
+    sortDir?: string
     page: number
     limit: number
   }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
@@ -637,7 +683,7 @@ export class AdminService {
               (SELECT COUNT(*) FROM orders o WHERE o.supplier_id = s.id) as order_count
        ${from}
        WHERE ${whereClause}
-       ORDER BY s."createdAt" DESC
+       ${this.buildOrderBy(SUPPLIER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
        LIMIT ? OFFSET ?`,
       queryParams,
     )
@@ -687,6 +733,8 @@ export class AdminService {
   async getUsers(params: {
     role?: string
     q?: string
+    sortBy?: string
+    sortDir?: string
     page: number
     limit: number
   }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
@@ -719,7 +767,7 @@ export class AdminService {
        FROM users u
        LEFT JOIN suppliers s ON s.user_id = u.id
        WHERE ${whereClause}
-       ORDER BY u."createdAt" DESC
+       ${this.buildOrderBy(USER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
        LIMIT ? OFFSET ?`,
       queryParams,
     )

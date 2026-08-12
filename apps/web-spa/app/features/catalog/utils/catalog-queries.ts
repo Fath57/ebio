@@ -41,6 +41,8 @@ export function fetchProductsQueryOptions(supplierId?: string) {
         query: {
           status: '',
           categoryId: '',
+          offset: 0,
+          pageSize: 50,
         },
       })
       if (response.error)

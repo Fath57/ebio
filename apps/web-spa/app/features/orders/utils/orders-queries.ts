@@ -77,7 +77,7 @@ export function fetchOrdersQueryOptions(status?: string) {
     queryKey: ['orders', status],
     queryFn: async () => {
       const response = await ordersControllerFindAll({
-        query: { status: status ?? '', page: '1', limit: '50' },
+        query: { status: status ?? '', page: '1', limit: '50', view: '' },
       })
       if (response.error)
         throw new Error('Failed to fetch orders')

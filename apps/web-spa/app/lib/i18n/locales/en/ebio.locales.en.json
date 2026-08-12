@@ -352,6 +352,35 @@
     }
   },
   "admin": {
+    "categories": {
+      "title": "Categories management",
+      "description": "Manage product categories on the platform",
+      "addCategory": "Add category",
+      "addCategoryDescription": "Create a new product category",
+      "editCategory": "Edit category",
+      "editCategoryDescription": "Update category information",
+      "deleteConfirm": "Are you sure you want to delete this category?",
+      "deleteWarning": "This action is irreversible. Associated products will no longer be categorized.",
+      "columns": {
+        "name": "Name",
+        "slug": "Slug",
+        "icon": "Icon",
+        "sortOrder": "Order",
+        "productCount": "Products",
+        "actions": "Actions"
+      },
+      "form": {
+        "name": "Category name",
+        "namePlaceholder": "E.g. Oils",
+        "slug": "Slug",
+        "slugPlaceholder": "oils",
+        "icon": "Icon",
+        "iconPlaceholder": "E.g. Droplets",
+        "sortOrder": "Display order",
+        "create": "Create category",
+        "update": "Update"
+      }
+    },
     "dashboard": {
       "title": "Admin Dashboard",
       "description": "eBio platform overview",
@@ -364,49 +393,6 @@
         "pendingValidations": "Pending validations",
         "disputes": "Disputes",
         "searchesPerDay": "Searches/day"
-      }
-    },
-    "validation": {
-      "title": "Supplier Validations",
-      "description": "Review supplier registration dossiers",
-      "status": {
-        "pending": "Pending"
-      },
-      "columns": {
-        "name": "Name",
-        "email": "Email",
-        "shopName": "Shop name",
-        "status": "Status",
-        "submittedAt": "Submitted at",
-        "actions": "Actions"
-      },
-      "actions": {
-        "validate": "Validate eBio",
-        "reject": "Reject",
-        "requestComplement": "Request complement"
-      },
-      "rejectDialog": {
-        "title": "Rejection reason",
-        "reasonPlaceholder": "Enter the rejection reason..."
-      },
-      "complementDialog": {
-        "title": "Request complement",
-        "messagePlaceholder": "Indicate the missing documents..."
-      },
-      "dossier": {
-        "title": "Supplier Dossier",
-        "identity": "Identity",
-        "fullName": "Full name",
-        "email": "Email",
-        "phone": "Phone",
-        "shopInfo": "Shop Profile",
-        "shopName": "Shop name",
-        "address": "Address",
-        "businessNumber": "Business number",
-        "businessProof": "Business proof",
-        "identityDocument": "Identity document",
-        "businessDocument": "Business document",
-        "viewDocument": "View document"
       }
     },
     "moderation": {
@@ -425,60 +411,6 @@
         "deleteContent": "Delete content",
         "warnAuthor": "Warn author",
         "ignore": "Ignore"
-      }
-    },
-    "transactions": {
-      "title": "Transactions",
-      "description": "Platform financial overview",
-      "currency": "FCFA",
-      "exportCsv": "Export CSV",
-      "from": "From",
-      "to": "To",
-      "columns": {
-        "reference": "Reference",
-        "buyer": "Buyer",
-        "supplier": "Supplier",
-        "amount": "Amount",
-        "commission": "Commission",
-        "date": "Date",
-        "status": "Status"
-      },
-      "status": {
-        "completed": "Completed",
-        "pending": "Pending",
-        "failed": "Failed",
-        "refunded": "Refunded"
-      },
-      "disputes": {
-        "title": "Disputes",
-        "dispute": "Dispute",
-        "amount": "Amount",
-        "noDisputes": "No ongoing disputes",
-        "status": {
-          "open": "Open",
-          "resolved": "Resolved",
-          "closed": "Closed"
-        }
-      }
-    },
-    "settings": {
-      "title": "Platform Settings",
-      "description": "General eBio platform configuration",
-      "currency": "FCFA",
-      "month": "/month",
-      "commission": {
-        "title": "Commission rates",
-        "rate": "Rate (%)",
-        "miseEnRelation": "Contact mode",
-        "commande": "Order mode",
-        "plan": "Plan",
-        "premium": "Premium"
-      },
-      "plans": {
-        "title": "Subscription plans",
-        "name": "Plan name",
-        "price": "Price",
-        "features": "Features"
       }
     },
     "roles": {
@@ -526,33 +458,101 @@
         }
       }
     },
-    "categories": {
-      "title": "Categories management",
-      "description": "Manage product categories on the platform",
-      "addCategory": "Add category",
-      "addCategoryDescription": "Create a new product category",
-      "editCategory": "Edit category",
-      "editCategoryDescription": "Update category information",
-      "deleteConfirm": "Are you sure you want to delete this category?",
-      "deleteWarning": "This action is irreversible. Associated products will no longer be categorized.",
+    "settings": {
+      "title": "Platform Settings",
+      "description": "General eBio platform configuration",
+      "currency": "FCFA",
+      "month": "/month",
+      "commission": {
+        "title": "Commission rates",
+        "rate": "Rate (%)",
+        "miseEnRelation": "Contact mode",
+        "commande": "Order mode",
+        "plan": "Plan",
+        "premium": "Premium"
+      },
+      "plans": {
+        "title": "Subscription plans",
+        "name": "Plan name",
+        "price": "Price",
+        "features": "Features"
+      }
+    },
+    "transactions": {
+      "title": "Transactions",
+      "description": "Platform financial overview",
+      "currency": "FCFA",
+      "exportCsv": "Export CSV",
+      "from": "From",
+      "to": "To",
+      "columns": {
+        "reference": "Reference",
+        "buyer": "Buyer",
+        "supplier": "Supplier",
+        "amount": "Amount",
+        "commission": "Commission",
+        "date": "Date",
+        "status": "Status"
+      },
+      "status": {
+        "completed": "Completed",
+        "pending": "Pending",
+        "failed": "Failed",
+        "refunded": "Refunded"
+      },
+      "disputes": {
+        "title": "Disputes",
+        "dispute": "Dispute",
+        "amount": "Amount",
+        "noDisputes": "No ongoing disputes",
+        "status": {
+          "open": "Open",
+          "resolved": "Resolved",
+          "closed": "Closed"
+        }
+      }
+    },
+    "validation": {
+      "title": "Supplier Validations",
+      "description": "Review supplier registration dossiers",
+      "status": {
+        "pending": "Pending"
+      },
       "columns": {
         "name": "Name",
-        "slug": "Slug",
-        "icon": "Icon",
-        "sortOrder": "Order",
-        "productCount": "Products",
+        "email": "Email",
+        "shopName": "Shop name",
+        "status": "Status",
+        "submittedAt": "Submitted at",
         "actions": "Actions"
       },
-      "form": {
-        "name": "Category name",
-        "namePlaceholder": "E.g. Oils",
-        "slug": "Slug",
-        "slugPlaceholder": "oils",
-        "icon": "Icon",
-        "iconPlaceholder": "E.g. Droplets",
-        "sortOrder": "Display order",
-        "create": "Create category",
-        "update": "Update"
+      "actions": {
+        "validate": "Validate eBio",
+        "reject": "Reject",
+        "requestComplement": "Request complement"
+      },
+      "rejectDialog": {
+        "title": "Rejection reason",
+        "reasonPlaceholder": "Enter the rejection reason..."
+      },
+      "complementDialog": {
+        "title": "Request complement",
+        "messagePlaceholder": "Indicate the missing documents..."
+      },
+      "dossier": {
+        "title": "Supplier Dossier",
+        "identity": "Identity",
+        "fullName": "Full name",
+        "email": "Email",
+        "phone": "Phone",
+        "shopInfo": "Shop Profile",
+        "shopName": "Shop name",
+        "address": "Address",
+        "businessNumber": "Business number",
+        "businessProof": "Business proof",
+        "identityDocument": "Identity document",
+        "businessDocument": "Business document",
+        "viewDocument": "View document"
       }
     }
   },

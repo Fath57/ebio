@@ -1,14 +1,14 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Lonestone API",
-    "description": "The Lonestone API description",
+    "title": "eBio API",
+    "description": "API du marketplace eBio",
     "version": "1.0",
     "contact": {}
   },
   "tags": [
     {
-      "name": "@lonestone",
+      "name": "ebio",
       "description": ""
     }
   ],
@@ -23,6 +23,402 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/session": {
+      "get": {
+        "operationId": "OtpAuthController_getSession",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/chat-token": {
+      "get": {
+        "operationId": "OtpAuthController_getChatToken",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/login": {
+      "post": {
+        "operationId": "OtpAuthController_loginWithPhone",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "phone",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/request": {
+      "post": {
+        "operationId": "OtpAuthController_requestOtp",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Request OTP via SMS",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  }
+                },
+                "required": [
+                  "phone"
+                ],
+                "additionalProperties": false,
+                "title": "OtpRequest",
+                "description": "Request OTP via SMS"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/verify": {
+      "post": {
+        "operationId": "OtpAuthController_verifyOtp",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Verify OTP code",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 6
+                  }
+                },
+                "required": [
+                  "phone",
+                  "code"
+                ],
+                "additionalProperties": false,
+                "title": "OtpVerify",
+                "description": "Verify OTP code"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/register": {
+      "post": {
+        "operationId": "OtpAuthController_registerWithToken",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  },
+                  "registrationToken": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "phone",
+                  "registrationToken",
+                  "name",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/email/request": {
+      "post": {
+        "operationId": "OtpAuthController_requestEmailOtp",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/email/register": {
+      "post": {
+        "operationId": "OtpAuthController_registerWithEmail",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 6
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "email",
+                  "code",
+                  "name",
+                  "password"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/password-reset/request": {
+      "post": {
+        "operationId": "OtpAuthController_requestPasswordReset",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "identifier"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/password-reset/verify": {
+      "post": {
+        "operationId": "OtpAuthController_verifyPasswordReset",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 6
+                  }
+                },
+                "required": [
+                  "identifier",
+                  "code"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/password-reset/reset": {
+      "post": {
+        "operationId": "OtpAuthController_resetPassword",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "identifier": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "identifier",
+                  "newPassword"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         }
@@ -2253,7 +2649,7 @@
           },
           {
             "name": "latitude",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
               "type": "number",
@@ -2263,7 +2659,7 @@
           },
           {
             "name": "longitude",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
               "type": "number",
@@ -2273,10 +2669,9 @@
           },
           {
             "name": "radius",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
-              "default": 10000,
               "type": "number"
             }
           },
@@ -2339,6 +2734,20 @@
             "schema": {
               "default": "false",
               "description": "Filter validated suppliers only",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          },
+          {
+            "name": "promoOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "description": "Filter promotional products only",
               "type": "string",
               "enum": [
                 "true",
@@ -2517,6 +2926,7 @@
                     "maxLength": 20
                   },
                   "mode": {
+                    "default": "ORDER",
                     "type": "string",
                     "enum": [
                       "CONTACT",
@@ -2571,15 +2981,18 @@
                     ],
                     "title": "OpeningHours",
                     "description": "Weekly opening hours with days as keys"
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "title": "Timezone",
+                    "description": "IANA timezone the opening hours are expressed in"
                   }
                 },
                 "required": [
                   "shopName",
                   "type",
-                  "latitude",
-                  "longitude",
-                  "address",
-                  "neighborhood",
                   "mobileMoneyNumber",
                   "mode"
                 ],
@@ -2592,6 +3005,45 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/nearby": {
+      "get": {
+        "operationId": "SuppliersController_findNearby",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "radius",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": ""
           }
         }
@@ -2675,6 +3127,7 @@
                     "maxLength": 20
                   },
                   "mode": {
+                    "default": "ORDER",
                     "type": "string",
                     "enum": [
                       "CONTACT",
@@ -2729,6 +3182,21 @@
                     ],
                     "title": "OpeningHours",
                     "description": "Weekly opening hours with days as keys"
+                  },
+                  "timezone": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64,
+                    "title": "Timezone",
+                    "description": "IANA timezone the opening hours are expressed in"
+                  },
+                  "coverPhoto": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "profilePhoto": {
+                    "type": "string",
+                    "format": "uri"
                   }
                 },
                 "additionalProperties": false,
@@ -2738,6 +3206,20 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/status": {
+      "get": {
+        "operationId": "SuppliersController_getMyStatus",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -2827,6 +3309,219 @@
         }
       }
     },
+    "/api/suppliers/me/delivery-zones/{zoneId}": {
+      "delete": {
+        "operationId": "SuppliersController_deleteDeliveryZone",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [
+          {
+            "name": "zoneId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/settings": {
+      "get": {
+        "operationId": "SuppliersController_getSettings",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/settings/opening-hours": {
+      "patch": {
+        "operationId": "SuppliersController_updateOpeningHours",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "openingHours": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "open": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "close": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "open",
+                        "close"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "required": [
+                      "monday",
+                      "tuesday",
+                      "wednesday",
+                      "thursday",
+                      "friday",
+                      "saturday",
+                      "sunday"
+                    ],
+                    "title": "OpeningHours",
+                    "description": "Weekly opening hours with days as keys"
+                  }
+                },
+                "required": [
+                  "openingHours"
+                ],
+                "additionalProperties": false,
+                "title": "UpdateOpeningHours"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/settings/mode": {
+      "patch": {
+        "operationId": "SuppliersController_updateMode",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "CONTACT",
+                      "ORDER"
+                    ]
+                  }
+                },
+                "required": [
+                  "mode"
+                ],
+                "additionalProperties": false,
+                "title": "UpdateMode"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/analytics": {
+      "get": {
+        "operationId": "SuppliersController_getAnalytics",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/analytics/top-products": {
+      "get": {
+        "operationId": "SuppliersController_getTopProducts",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/analytics/ratings": {
+      "get": {
+        "operationId": "SuppliersController_getRatingsOverview",
+        "tags": [
+          "Suppliers"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/users/me": {
       "get": {
         "operationId": "UsersController_getMe",
@@ -2859,6 +3554,14 @@
                     "minLength": 2,
                     "maxLength": 100
                   },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "phone": {
+                    "type": "string"
+                  },
                   "image": {
                     "type": "string",
                     "format": "uri"
@@ -2881,11 +3584,376 @@
         }
       }
     },
-    "/api/files/upload-url": {
+    "/api/media/upload": {
       "post": {
-        "operationId": "FilesController_getUploadUrl",
+        "operationId": "MediaController_initiateUpload",
         "tags": [
-          "Files"
+          "Media"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Demande d'URL signée(s) pour upload direct vers S3",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fileName": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "mimeType": {
+                    "type": "string",
+                    "pattern": "^(image|audio|video|application)\\/"
+                  },
+                  "fileSize": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "context": {
+                    "type": "string",
+                    "enum": [
+                      "PRODUCT_PHOTO",
+                      "SUPPLIER_COVER",
+                      "SUPPLIER_PROFILE",
+                      "IDENTITY_DOCUMENT",
+                      "BUSINESS_PROOF",
+                      "CHAT_ATTACHMENT",
+                      "VOICE_NOTE",
+                      "VOICE_DESCRIPTION",
+                      "TRAINING_CONTENT",
+                      "TRAINING_THUMBNAIL",
+                      "COMMUNITY_MEDIA",
+                      "CATEGORY_IMAGE"
+                    ],
+                    "title": "MediaContext",
+                    "description": "Contexte d'utilisation du média"
+                  },
+                  "entityType": {
+                    "type": "string"
+                  },
+                  "entityId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "parts": {
+                    "default": 1,
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  }
+                },
+                "required": [
+                  "fileName",
+                  "mimeType",
+                  "fileSize",
+                  "context",
+                  "parts"
+                ],
+                "additionalProperties": false,
+                "title": "InitiateUpload",
+                "description": "Demande d'URL signée(s) pour upload direct vers S3",
+                "examples": [
+                  {
+                    "fileName": "huile-palme.jpg",
+                    "mimeType": "image/jpeg",
+                    "fileSize": 524288,
+                    "context": "PRODUCT_PHOTO",
+                    "parts": 1
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/media/complete": {
+      "post": {
+        "operationId": "MediaController_completeUpload",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Finalise un upload multipart et déclenche l'optimisation",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "uploadId": {
+                    "type": "string"
+                  },
+                  "parts": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "partNumber": {
+                          "type": "number"
+                        },
+                        "etag": {
+                          "type": "string"
+                        }
+                      },
+                      "required": [
+                        "partNumber",
+                        "etag"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "mediaId"
+                ],
+                "additionalProperties": false,
+                "title": "CompleteUpload",
+                "description": "Finalise un upload multipart et déclenche l'optimisation"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/media/{id}": {
+      "get": {
+        "operationId": "MediaController_findById",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "MediaController_deleteMedia",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/media/{id}/download": {
+      "get": {
+        "operationId": "MediaController_getDownloadUrl",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "expiresIn",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/media/entity/{entityType}/{entityId}": {
+      "get": {
+        "operationId": "MediaController_findByEntity",
+        "tags": [
+          "Media"
+        ],
+        "parameters": [
+          {
+            "name": "entityType",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "entityId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/register-token": {
+      "post": {
+        "operationId": "NotificationsController_registerToken",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/unregister-token": {
+      "delete": {
+        "operationId": "NotificationsController_unregisterToken",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/unread": {
+      "get": {
+        "operationId": "NotificationsController_getUnread",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "operationId": "NotificationsController_getAll",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/count": {
+      "get": {
+        "operationId": "NotificationsController_getUnreadCount",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markAsRead",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/read-all": {
+      "patch": {
+        "operationId": "NotificationsController_markAllAsRead",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/test": {
+      "post": {
+        "operationId": "NotificationsController_sendTestNotification",
+        "tags": [
+          "Notifications"
         ],
         "parameters": [],
         "responses": {
@@ -2922,6 +3990,53 @@
             "name": "categoryId",
             "required": true,
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "offset",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "description": "Starting position of the query",
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "pageSize",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "description": "Number of items to return",
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/products/{id}": {
+      "get": {
+        "operationId": "ProductsController_findById",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
             "schema": {
               "type": "string"
             }
@@ -3027,6 +4142,14 @@
                         "pricePerUnit"
                       ],
                       "additionalProperties": false
+                    }
+                  },
+                  "mediaIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
                   }
                 },
@@ -3155,6 +4278,14 @@
                         "pricePerUnit"
                       ],
                       "additionalProperties": false
+                    }
+                  },
+                  "mediaIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
                   }
                 },
@@ -3315,6 +4446,173 @@
         }
       }
     },
+    "/api/categories/{id}": {
+      "get": {
+        "operationId": "CategoriesController_findById",
+        "tags": [
+          "Categories"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "operationId": "CategoriesController_update",
+        "tags": [
+          "Categories"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update category -- all fields optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "icon": {
+                    "default": "📦",
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateCategory",
+                "description": "Update category -- all fields optional"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "CategoriesController_remove",
+        "tags": [
+          "Categories"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/categories": {
+      "post": {
+        "operationId": "CategoriesController_create",
+        "tags": [
+          "Categories"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Data required to create a new category",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "slug": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 100
+                  },
+                  "icon": {
+                    "default": "📦",
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "format": "uri"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "name",
+                  "slug",
+                  "icon",
+                  "sortOrder"
+                ],
+                "additionalProperties": false,
+                "title": "CreateCategory",
+                "description": "Data required to create a new category"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/orders": {
       "post": {
         "operationId": "OrdersController_create",
@@ -3360,8 +4658,7 @@
                   },
                   "deliverySlot": {
                     "type": "string",
-                    "format": "date-time",
-                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                    "maxLength": 200
                   },
                   "items": {
                     "minItems": 1,
@@ -3452,6 +4749,14 @@
           },
           {
             "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "view",
             "required": true,
             "in": "query",
             "schema": {
@@ -3679,16 +4984,48 @@
         }
       }
     },
+    "/api/payments/orders/{id}/info": {
+      "get": {
+        "operationId": "PaymentsController_getPaymentInfo",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment info for the frontend to display and init Checkout.js",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentInfo"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/payments/initiate": {
       "post": {
-        "operationId": "PaymentsController_initiate",
+        "operationId": "PaymentsController_initiateNoRedirectPayment",
         "tags": [
           "Payments"
         ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Data required to initiate a mobile money payment",
+          "description": "Input for initiating a no-redirect (USSD) payment",
           "content": {
             "application/json": {
               "schema": {
@@ -3699,41 +5036,181 @@
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
-                  "operator": {
+                  "paymentMethodId": {
                     "type": "string",
-                    "enum": [
-                      "MTN",
-                      "MOOV",
-                      "ORANGE"
-                    ],
-                    "title": "MobileOperator",
-                    "description": "Mobile money operator"
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "phoneNumber": {
                     "type": "string",
-                    "minLength": 8,
-                    "maxLength": 20
+                    "minLength": 8
                   }
                 },
                 "required": [
                   "orderId",
-                  "operator",
-                  "phoneNumber"
+                  "paymentMethodId"
                 ],
                 "additionalProperties": false,
                 "title": "InitiatePayment",
-                "description": "Data required to initiate a mobile money payment",
-                "examples": [
-                  {
-                    "orderId": "550e8400-e29b-41d4-a716-446655440000",
-                    "operator": "MTN",
-                    "phoneNumber": "+22990123456"
-                  }
-                ]
+                "description": "Input for initiating a no-redirect (USSD) payment"
               }
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Result after initiating a no-redirect payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoRedirectPaymentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/initiate-checkout": {
+      "post": {
+        "operationId": "PaymentsController_initiateCheckoutPayment",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Input for creating a pending payment before opening Checkout.js",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "orderId"
+                ],
+                "additionalProperties": false,
+                "title": "InitiateCheckoutInput",
+                "description": "Input for creating a pending payment before opening Checkout.js"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result after initiating a no-redirect payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NoRedirectPaymentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/verify-checkout": {
+      "post": {
+        "operationId": "PaymentsController_verifyCheckoutPayment",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Input for verifying a payment made via Checkout.js",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "paymentId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "fedapayTransactionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "orderId",
+                  "paymentId",
+                  "fedapayTransactionId"
+                ],
+                "additionalProperties": false,
+                "title": "VerifyCheckoutInput",
+                "description": "Input for verifying a payment made via Checkout.js"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result after verifying a Checkout.js payment",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CheckoutVerifyResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/orders/{id}/status": {
+      "get": {
+        "operationId": "PaymentsController_getPaymentStatus",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Current payment status for an order",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentStatusResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/webhook/fedapay": {
+      "post": {
+        "operationId": "PaymentsWebhookController_handleFedaPayWebhook",
+        "tags": [
+          "PaymentsWebhook"
+        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
@@ -3741,15 +5218,15 @@
         }
       }
     },
-    "/api/payments/webhook/fedapay": {
+    "/api/payments/webhook/stripe": {
       "post": {
-        "operationId": "PaymentsController_handleWebhook",
+        "operationId": "PaymentsWebhookController_handleStripeWebhook",
         "tags": [
-          "Payments"
+          "PaymentsWebhook"
         ],
         "parameters": [
           {
-            "name": "x-fedapay-signature",
+            "name": "stripe-signature",
             "required": true,
             "in": "header",
             "schema": {
@@ -3757,80 +5234,367 @@
             }
           }
         ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/payments/webhook/pawerpayer": {
+      "post": {
+        "operationId": "PaymentsWebhookController_handlePawerPayerWebhook",
+        "tags": [
+          "PaymentsWebhook"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/payment-methods": {
+      "get": {
+        "operationId": "PaymentMethodAdminController_list",
+        "tags": [
+          "PaymentMethodAdmin"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Paginated list of payment methods",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodList"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "operationId": "PaymentMethodAdminController_create",
+        "tags": [
+          "PaymentMethodAdmin"
+        ],
+        "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "FedaPay webhook event payload",
+          "description": "Input for creating a payment method",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "id": {
-                    "type": "string"
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
                   },
                   "type": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                      "mobile",
+                      "card"
+                    ]
                   },
-                  "data": {
-                    "type": "object",
-                    "properties": {
-                      "id": {
-                        "type": "number"
-                      },
-                      "reference": {
-                        "type": "string"
-                      },
-                      "amount": {
-                        "type": "number"
-                      },
-                      "status": {
-                        "type": "string"
-                      },
-                      "customer": {
-                        "type": "object",
-                        "properties": {
-                          "phone_number": {
-                            "type": "object",
-                            "properties": {
-                              "number": {
-                                "type": "string"
-                              },
-                              "country": {
-                                "type": "string"
-                              }
-                            },
-                            "required": [
-                              "number",
-                              "country"
-                            ],
-                            "additionalProperties": false
-                          }
-                        },
-                        "additionalProperties": false
-                      }
-                    },
-                    "required": [
-                      "id",
-                      "status"
-                    ],
-                    "additionalProperties": false
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "fedapay",
+                      "stripe",
+                      "pawerpayer"
+                    ]
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 3
+                  },
+                  "commission": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "priority": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "active": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "useFedapayCheckout": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "supportsPayout": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "supportsRefund": {
+                    "default": false,
+                    "type": "boolean"
                   }
                 },
                 "required": [
-                  "id",
+                  "name",
+                  "code",
                   "type",
-                  "data"
+                  "provider",
+                  "countryCode",
+                  "commission",
+                  "priority",
+                  "active",
+                  "useFedapayCheckout",
+                  "supportsPayout",
+                  "supportsRefund"
                 ],
                 "additionalProperties": false,
-                "title": "WebhookEvent",
-                "description": "FedaPay webhook event payload"
+                "title": "CreatePaymentMethodInput",
+                "description": "Input for creating a payment method"
               }
             }
           }
         },
         "responses": {
-          "201": {
-            "description": ""
+          "200": {
+            "description": "Payment method details (admin view)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/payment-methods/{id}": {
+      "get": {
+        "operationId": "PaymentMethodAdminController_getOne",
+        "tags": [
+          "PaymentMethodAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment method details (admin view)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodOutput"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "operationId": "PaymentMethodAdminController_update",
+        "tags": [
+          "PaymentMethodAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Input for updating a payment method",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "mobile",
+                      "card"
+                    ]
+                  },
+                  "provider": {
+                    "type": "string",
+                    "enum": [
+                      "fedapay",
+                      "stripe",
+                      "pawerpayer"
+                    ]
+                  },
+                  "countryCode": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 3
+                  },
+                  "commission": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "priority": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "useFedapayCheckout": {
+                    "type": "boolean"
+                  },
+                  "supportsPayout": {
+                    "type": "boolean"
+                  },
+                  "supportsRefund": {
+                    "type": "boolean"
+                  },
+                  "icon": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdatePaymentMethodInput",
+                "description": "Input for updating a payment method"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Payment method details (admin view)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodOutput"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "operationId": "PaymentMethodAdminController_remove",
+        "tags": [
+          "PaymentMethodAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Simple message response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MessageResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/payment-methods/{id}/toggle": {
+      "post": {
+        "operationId": "PaymentMethodAdminController_toggleActive",
+        "tags": [
+          "PaymentMethodAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Payment method details (admin view)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaymentMethodOutput"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payment-methods/available": {
+      "get": {
+        "operationId": "PaymentMethodPublicController_getAvailable",
+        "tags": [
+          "PaymentMethodPublic"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "List of available payment methods for a country",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AvailablePaymentMethods"
+                }
+              }
+            }
           }
         }
       }
@@ -3856,6 +5620,11 @@
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "productId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "orderId": {
                     "type": "string",
                     "format": "uuid",
                     "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -5070,6 +6839,263 @@
         }
       }
     },
+    "/api/admin/orders": {
+      "get": {
+        "operationId": "AdminController_getOrders",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDir",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{id}": {
+      "get": {
+        "operationId": "AdminController_getOrderById",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/suppliers": {
+      "get": {
+        "operationId": "AdminController_getSuppliers",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDir",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/suppliers/{id}": {
+      "get": {
+        "operationId": "AdminController_getSupplierById",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/users": {
+      "get": {
+        "operationId": "AdminController_getUsers",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "role",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortBy",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "sortDir",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/settings": {
+      "get": {
+        "operationId": "AdminController_getSettings",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/settings/commissions": {
       "put": {
         "operationId": "AdminController_updateCommissions",
@@ -5527,6 +7553,41 @@
         "title": "BroadcastNotification",
         "description": "Send a notification to a group of users"
       },
+      "OtpRequest": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          }
+        },
+        "required": [
+          "phone"
+        ],
+        "additionalProperties": false,
+        "title": "OtpRequest",
+        "description": "Request OTP via SMS"
+      },
+      "OtpVerify": {
+        "type": "object",
+        "properties": {
+          "phone": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6
+          }
+        },
+        "required": [
+          "phone",
+          "code"
+        ],
+        "additionalProperties": false,
+        "title": "OtpVerify",
+        "description": "Verify OTP code"
+      },
       "CreateRole": {
         "type": "object",
         "properties": {
@@ -5608,6 +7669,11 @@
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "orderId": {
             "type": "string",
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
@@ -6032,6 +8098,241 @@
         "title": "UpdatePostSchema",
         "description": "Schema for updating a post"
       },
+      "InitiateUpload": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mimeType": {
+            "type": "string",
+            "pattern": "^(image|audio|video|application)\\/"
+          },
+          "fileSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "context": {
+            "$ref": "#/components/schemas/MediaContext"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "parts": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "fileSize",
+          "context",
+          "parts"
+        ],
+        "additionalProperties": false,
+        "title": "InitiateUpload",
+        "description": "Demande d'URL signée(s) pour upload direct vers S3",
+        "examples": [
+          {
+            "fileName": "huile-palme.jpg",
+            "mimeType": "image/jpeg",
+            "fileSize": 524288,
+            "context": "PRODUCT_PHOTO",
+            "parts": 1
+          }
+        ]
+      },
+      "CompleteUpload": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "uploadId": {
+            "type": "string"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "partNumber": {
+                  "type": "number"
+                },
+                "etag": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "partNumber",
+                "etag"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "mediaId"
+        ],
+        "additionalProperties": false,
+        "title": "CompleteUpload",
+        "description": "Finalise un upload multipart et déclenche l'optimisation"
+      },
+      "CreatePaymentMethodInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3
+          },
+          "commission": {
+            "default": 0,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "priority": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "default": true,
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "default": false,
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "default": false,
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "type",
+          "provider",
+          "countryCode",
+          "commission",
+          "priority",
+          "active",
+          "useFedapayCheckout",
+          "supportsPayout",
+          "supportsRefund"
+        ],
+        "additionalProperties": false,
+        "title": "CreatePaymentMethodInput",
+        "description": "Input for creating a payment method"
+      },
+      "UpdatePaymentMethodInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3
+          },
+          "commission": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdatePaymentMethodInput",
+        "description": "Input for updating a payment method"
+      },
       "InitiatePayment": {
         "type": "object",
         "properties": {
@@ -6040,93 +8341,66 @@
             "format": "uuid",
             "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
-          "operator": {
-            "$ref": "#/components/schemas/MobileOperator"
+          "paymentMethodId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "phoneNumber": {
             "type": "string",
-            "minLength": 8,
-            "maxLength": 20
+            "minLength": 8
           }
         },
         "required": [
           "orderId",
-          "operator",
-          "phoneNumber"
+          "paymentMethodId"
         ],
         "additionalProperties": false,
         "title": "InitiatePayment",
-        "description": "Data required to initiate a mobile money payment",
-        "examples": [
-          {
-            "orderId": "550e8400-e29b-41d4-a716-446655440000",
-            "operator": "MTN",
-            "phoneNumber": "+22990123456"
-          }
-        ]
+        "description": "Input for initiating a no-redirect (USSD) payment"
       },
-      "WebhookEvent": {
+      "InitiateCheckoutInput": {
         "type": "object",
         "properties": {
-          "id": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string"
-          },
-          "data": {
-            "type": "object",
-            "properties": {
-              "id": {
-                "type": "number"
-              },
-              "reference": {
-                "type": "string"
-              },
-              "amount": {
-                "type": "number"
-              },
-              "status": {
-                "type": "string"
-              },
-              "customer": {
-                "type": "object",
-                "properties": {
-                  "phone_number": {
-                    "type": "object",
-                    "properties": {
-                      "number": {
-                        "type": "string"
-                      },
-                      "country": {
-                        "type": "string"
-                      }
-                    },
-                    "required": [
-                      "number",
-                      "country"
-                    ],
-                    "additionalProperties": false
-                  }
-                },
-                "additionalProperties": false
-              }
-            },
-            "required": [
-              "id",
-              "status"
-            ],
-            "additionalProperties": false
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
         "required": [
-          "id",
-          "type",
-          "data"
+          "orderId"
         ],
         "additionalProperties": false,
-        "title": "WebhookEvent",
-        "description": "FedaPay webhook event payload"
+        "title": "InitiateCheckoutInput",
+        "description": "Input for creating a pending payment before opening Checkout.js"
+      },
+      "VerifyCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "fedapayTransactionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "orderId",
+          "paymentId",
+          "fedapayTransactionId"
+        ],
+        "additionalProperties": false,
+        "title": "VerifyCheckoutInput",
+        "description": "Input for verifying a payment made via Checkout.js"
       },
       "UpdateUser": {
         "type": "object",
@@ -6135,6 +8409,14 @@
             "type": "string",
             "minLength": 2,
             "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "phone": {
+            "type": "string"
           },
           "image": {
             "type": "string",
@@ -6189,15 +8471,14 @@
           },
           "openingHours": {
             "$ref": "#/components/schemas/OpeningHours"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/Timezone"
           }
         },
         "required": [
           "shopName",
           "type",
-          "latitude",
-          "longitude",
-          "address",
-          "neighborhood",
           "mobileMoneyNumber",
           "mode"
         ],
@@ -6246,6 +8527,17 @@
           },
           "openingHours": {
             "$ref": "#/components/schemas/OpeningHours"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/Timezone"
+          },
+          "coverPhoto": {
+            "type": "string",
+            "format": "uri"
+          },
+          "profilePhoto": {
+            "type": "string",
+            "format": "uri"
           }
         },
         "additionalProperties": false,
@@ -6298,6 +8590,36 @@
         "title": "DeliveryZone",
         "description": "Delivery zone defined by a polygon with fee and estimated time"
       },
+      "UpdateOpeningHours": {
+        "type": "object",
+        "properties": {
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          }
+        },
+        "required": [
+          "openingHours"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateOpeningHours"
+      },
+      "UpdateMode": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "CONTACT",
+              "ORDER"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateMode"
+      },
       "CreateOrder": {
         "type": "object",
         "properties": {
@@ -6319,8 +8641,7 @@
           },
           "deliverySlot": {
             "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+            "maxLength": 200
           },
           "items": {
             "minItems": 1,
@@ -6405,6 +8726,78 @@
         "title": "CreateDispute",
         "description": "Open a dispute on an order"
       },
+      "CreateCategory": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "icon": {
+            "default": "📦",
+            "type": "string",
+            "maxLength": 50
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "icon",
+          "sortOrder"
+        ],
+        "additionalProperties": false,
+        "title": "CreateCategory",
+        "description": "Data required to create a new category"
+      },
+      "UpdateCategory": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "icon": {
+            "default": "📦",
+            "type": "string",
+            "maxLength": 50
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateCategory",
+        "description": "Update category -- all fields optional"
+      },
       "CreateProduct": {
         "type": "object",
         "properties": {
@@ -6469,6 +8862,14 @@
                 "pricePerUnit"
               ],
               "additionalProperties": false
+            }
+          },
+          "mediaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         },
@@ -6549,6 +8950,14 @@
                 "pricePerUnit"
               ],
               "additionalProperties": false
+            }
+          },
+          "mediaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
           }
         },
@@ -7554,6 +9963,366 @@
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
       },
+      "PaymentMethodList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentMethodOutput"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentMethodList",
+        "description": "Paginated list of payment methods"
+      },
+      "PaymentMethodOutput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string"
+          },
+          "commission": {
+            "type": "number"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "type": "boolean"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "type",
+          "provider",
+          "countryCode",
+          "commission",
+          "priority",
+          "active",
+          "useFedapayCheckout",
+          "supportsPayout",
+          "supportsRefund",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentMethodOutput",
+        "description": "Payment method details (admin view)"
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "itemCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "itemCount",
+          "pageSize",
+          "offset",
+          "hasMore"
+        ],
+        "additionalProperties": false,
+        "title": "PaginationMeta",
+        "description": "Pagination metadata"
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false,
+        "title": "MessageResponse",
+        "description": "Simple message response"
+      },
+      "AvailablePaymentMethods": {
+        "type": "object",
+        "properties": {
+          "methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailablePaymentMethod"
+            }
+          }
+        },
+        "required": [
+          "methods"
+        ],
+        "additionalProperties": false,
+        "title": "AvailablePaymentMethods",
+        "description": "List of available payment methods for a country"
+      },
+      "AvailablePaymentMethod": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "useFedapayCheckout": {
+            "type": "boolean"
+          },
+          "requiresPhone": {
+            "type": "boolean"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "type",
+          "useFedapayCheckout",
+          "requiresPhone"
+        ],
+        "additionalProperties": false,
+        "title": "AvailablePaymentMethod",
+        "description": "Payment method visible to the user (no provider details)"
+      },
+      "PaymentInfo": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "fedapayPublicKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "fedapayPublicKey"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentInfo",
+        "description": "Payment info for the frontend to display and init Checkout.js"
+      },
+      "NoRedirectPaymentResult": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "type": "string",
+            "const": "pending"
+          }
+        },
+        "required": [
+          "paymentId",
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "NoRedirectPaymentResult",
+        "description": "Result after initiating a no-redirect payment"
+      },
+      "CheckoutVerifyResult": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "type": "string",
+            "const": "completed"
+          }
+        },
+        "required": [
+          "paymentId",
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "CheckoutVerifyResult",
+        "description": "Result after verifying a Checkout.js payment"
+      },
+      "PaymentStatusResponse": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "$ref": "#/components/schemas/PaymentProvider"
+          }
+        },
+        "required": [
+          "paymentId",
+          "status",
+          "amount",
+          "currency",
+          "paidAt",
+          "provider"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentStatusResponse",
+        "description": "Current payment status for an order"
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "CAPTURED",
+          "ESCROW",
+          "RELEASED",
+          "REFUNDED",
+          "FAILED"
+        ],
+        "title": "PaymentStatus",
+        "description": "Current status of a payment"
+      },
+      "PaymentProvider": {
+        "type": "string",
+        "enum": [
+          "fedapay",
+          "stripe",
+          "pawerpayer"
+        ],
+        "title": "PaymentProvider",
+        "description": "Payment gateway provider"
+      },
       "SearchResponse": {
         "type": "object",
         "properties": {
@@ -7596,6 +10365,26 @@
               "shopName": {
                 "type": "string"
               },
+              "latitude": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "longitude": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "distance": {
                 "type": "number"
               },
@@ -7637,6 +10426,8 @@
             "required": [
               "id",
               "shopName",
+              "latitude",
+              "longitude",
               "distance",
               "rating",
               "reviewCount",
@@ -7764,8 +10555,15 @@
                 "slug": {
                   "type": "string"
                 },
-                "icon": {
-                  "type": "string"
+                "imageUrl": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 },
                 "productCount": {
                   "type": "number"
@@ -7775,7 +10573,7 @@
                 "id",
                 "name",
                 "slug",
-                "icon",
+                "imageUrl",
                 "productCount"
               ],
               "additionalProperties": false
@@ -8399,15 +11197,24 @@
       "CommentsController_postSlug": {
         "type": "string"
       },
-      "MobileOperator": {
+      "MediaContext": {
         "type": "string",
         "enum": [
-          "MTN",
-          "MOOV",
-          "ORANGE"
+          "PRODUCT_PHOTO",
+          "SUPPLIER_COVER",
+          "SUPPLIER_PROFILE",
+          "IDENTITY_DOCUMENT",
+          "BUSINESS_PROOF",
+          "CHAT_ATTACHMENT",
+          "VOICE_NOTE",
+          "VOICE_DESCRIPTION",
+          "TRAINING_CONTENT",
+          "TRAINING_THUMBNAIL",
+          "COMMUNITY_MEDIA",
+          "CATEGORY_IMAGE"
         ],
-        "title": "MobileOperator",
-        "description": "Mobile money operator"
+        "title": "MediaContext",
+        "description": "Contexte d'utilisation du média"
       },
       "SupplierType": {
         "type": "string",
@@ -8419,6 +11226,7 @@
         "description": "Type of supplier activity"
       },
       "SupplierMode": {
+        "default": "ORDER",
         "type": "string",
         "enum": [
           "CONTACT",
@@ -8473,6 +11281,13 @@
         ],
         "title": "OpeningHours",
         "description": "Weekly opening hours with days as keys"
+      },
+      "Timezone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "title": "Timezone",
+        "description": "IANA timezone the opening hours are expressed in"
       },
       "PickupMode": {
         "type": "string",
@@ -8559,7 +11374,6 @@
             "maximum": 180
           },
           "radius": {
-            "default": 10000,
             "type": "number"
           },
           "category": {
@@ -8598,6 +11412,15 @@
               "false"
             ]
           },
+          "promoOnly": {
+            "default": "false",
+            "description": "Filter promotional products only",
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ]
+          },
           "sortBy": {
             "default": "distance",
             "type": "string",
@@ -8618,11 +11441,9 @@
           }
         },
         "required": [
-          "latitude",
-          "longitude",
-          "radius",
           "inStockOnly",
           "validatedOnly",
+          "promoOnly",
           "sortBy",
           "page",
           "limit"

@@ -46,6 +46,17 @@ export default [
       route('admin/validations', 'features/admin/validation/pages/validation-page.tsx'),
       route('admin/validations/:supplierId', 'features/admin/validation/pages/validation-detail-page.tsx'),
 
+      // Admin — Commandes
+      route('admin/commandes', 'features/admin/orders/pages/admin-orders-page.tsx'),
+      route('admin/commandes/:orderId', 'features/admin/orders/pages/admin-order-detail-page.tsx'),
+
+      // Admin — Fournisseurs
+      route('admin/fournisseurs', 'features/admin/suppliers/pages/admin-suppliers-page.tsx'),
+      route('admin/fournisseurs/:supplierId', 'features/admin/suppliers/pages/admin-supplier-detail-page.tsx'),
+
+      // Admin — Utilisateurs
+      route('admin/utilisateurs', 'features/admin/users/pages/admin-users-page.tsx'),
+
       // Admin — Moderation
       route('admin/moderation', 'features/admin/moderation/pages/moderation-page.tsx'),
 
