@@ -56,14 +56,28 @@ const IMG = {
   bissap: ['https://images.unsplash.com/photo-1563227812-0ea4c22e6cc8?w=600&h=600&fit=crop'],
 }
 
+// Clés en anglais : c'est ce que lisent SearchService.computeIsOpen et
+// SuppliersService.findNearby pour calculer `isOpen`.
 const openingHours = {
-  lundi: { open: '07:00', close: '18:00' },
-  mardi: { open: '07:00', close: '18:00' },
-  mercredi: { open: '07:00', close: '18:00' },
-  jeudi: { open: '07:00', close: '18:00' },
-  vendredi: { open: '07:00', close: '18:00' },
-  samedi: { open: '07:00', close: '14:00' },
-  dimanche: null,
+  monday: { open: '07:00', close: '18:00' },
+  tuesday: { open: '07:00', close: '18:00' },
+  wednesday: { open: '07:00', close: '18:00' },
+  thursday: { open: '07:00', close: '18:00' },
+  friday: { open: '07:00', close: '18:00' },
+  saturday: { open: '07:00', close: '14:00' },
+  // Fermé : on garde les créneaux et on pose `closed`, comme l'éditeur d'horaires.
+  sunday: { open: '07:00', close: '14:00', closed: true },
+}
+
+// Horaires « commerce de centre-ville » pour les points de vente nantais.
+const openingHoursNantes = {
+  monday: { open: '09:00', close: '19:30' },
+  tuesday: { open: '09:00', close: '19:30' },
+  wednesday: { open: '09:00', close: '19:30' },
+  thursday: { open: '09:00', close: '19:30' },
+  friday: { open: '09:00', close: '20:00' },
+  saturday: { open: '08:30', close: '20:00' },
+  sunday: { open: '09:00', close: '13:00' },
 }
 
 function daysAgo(n: number): Date {
@@ -89,6 +103,9 @@ export class DemoSeeder extends Seeder {
     const supplierUser1 = await this.createUser(em, 'Koffi Adjanohoun', 'koffi@example.com', '+22996000001', UserRole.SUPPLIER, supplierRole)
     const supplierUser2 = await this.createUser(em, 'Adama Sossou', 'adama@example.com', '+22995000001', UserRole.SUPPLIER, supplierRole)
     const supplierUser3 = await this.createUser(em, 'Fatou Diallo', 'fatou@example.com', '+22994000001', UserRole.SUPPLIER, supplierRole)
+    const supplierUser4 = await this.createUser(em, 'Élodie Renaud', 'elodie@example.com', '+33240000001', UserRole.SUPPLIER, supplierRole)
+    const supplierUser5 = await this.createUser(em, 'Marc Lebreton', 'marc@example.com', '+33240000002', UserRole.SUPPLIER, supplierRole)
+    const supplierUser6 = await this.createUser(em, 'Sonia Barreau', 'sonia@example.com', '+33240000003', UserRole.SUPPLIER, supplierRole)
 
     // ===== SUPPLIERS =====
     console.info('Creating supplier profiles...')
@@ -137,6 +154,53 @@ export class DemoSeeder extends Seeder {
       profilePhoto: IMG.supplier3Profile,
       openingHours,
     })
+
+    // --- Points de vente nantais ---
+    const s4 = em.create(Supplier, {
+      user: supplierUser4,
+      shopName: 'Ferme Bio de Talensac',
+      type: SupplierType.TRANSFORMER,
+      validationStatus: ValidationStatus.VALIDATED,
+      mode: SupplierMode.ORDER,
+      address: 'Marché de Talensac, 44000 Nantes',
+      neighborhood: 'Hauts-Pavés — Saint-Félix',
+      mobileMoneyNumber: '+33240000001',
+      globalRating: 4.7,
+      totalReviews: 31,
+      coverPhoto: IMG.supplier1Cover,
+      profilePhoto: IMG.supplier1Profile,
+      openingHours: openingHoursNantes,
+    })
+    const s5 = em.create(Supplier, {
+      user: supplierUser5,
+      shopName: 'Le Panier Chantenay',
+      type: SupplierType.TRANSFORMER,
+      validationStatus: ValidationStatus.VALIDATED,
+      mode: SupplierMode.ORDER,
+      address: '12 rue de la Montagne, 44100 Nantes',
+      neighborhood: 'Chantenay',
+      mobileMoneyNumber: '+33240000002',
+      globalRating: 4.4,
+      totalReviews: 17,
+      coverPhoto: IMG.supplier3Cover,
+      profilePhoto: IMG.supplier2Profile,
+      openingHours: openingHoursNantes,
+    })
+    const s6 = em.create(Supplier, {
+      user: supplierUser6,
+      shopName: 'Semences & Compost Doulon',
+      type: SupplierType.INPUTS,
+      validationStatus: ValidationStatus.VALIDATED,
+      mode: SupplierMode.CONTACT,
+      address: '5 route de Sainte-Luce, 44300 Nantes',
+      neighborhood: 'Doulon — Bottière',
+      mobileMoneyNumber: '+33240000003',
+      globalRating: 4.1,
+      totalReviews: 9,
+      coverPhoto: IMG.supplier2Cover,
+      profilePhoto: IMG.supplier3Profile,
+      openingHours: openingHoursNantes,
+    })
     await em.flush()
 
     // PostGIS location (raw SQL, no entity field for geography constructor)
@@ -144,6 +208,10 @@ export class DemoSeeder extends Seeder {
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(2.4183, 6.3654)::geography WHERE id = ?`, [s1.id])
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(2.6289, 6.4969)::geography WHERE id = ?`, [s2.id])
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(2.4264, 6.3616)::geography WHERE id = ?`, [s3.id])
+    // Nantes — ST_MakePoint attend (longitude, latitude)
+    await db.execute(`UPDATE suppliers SET location = ST_MakePoint(-1.5546, 47.2216)::geography WHERE id = ?`, [s4.id])
+    await db.execute(`UPDATE suppliers SET location = ST_MakePoint(-1.5920, 47.2050)::geography WHERE id = ?`, [s5.id])
+    await db.execute(`UPDATE suppliers SET location = ST_MakePoint(-1.5100, 47.2320)::geography WHERE id = ?`, [s6.id])
 
     // ===== BADGES =====
     console.info('Creating badges...')
@@ -154,6 +222,10 @@ export class DemoSeeder extends Seeder {
     em.create(Badge, { supplier: s3, type: BadgeType.VALIDATED, grantedBy: admin.id })
     em.create(Badge, { supplier: s3, type: BadgeType.TOP_SELLER, grantedBy: 'system' })
     em.create(Badge, { supplier: s3, type: BadgeType.CERTIFIED_BIO, grantedBy: admin.id })
+    em.create(Badge, { supplier: s4, type: BadgeType.VALIDATED, grantedBy: admin.id })
+    em.create(Badge, { supplier: s4, type: BadgeType.CERTIFIED_BIO, grantedBy: admin.id })
+    em.create(Badge, { supplier: s5, type: BadgeType.VALIDATED, grantedBy: admin.id })
+    em.create(Badge, { supplier: s6, type: BadgeType.VALIDATED, grantedBy: admin.id })
     await em.flush()
 
     // ===== CATEGORIES (from context) =====
@@ -207,8 +279,31 @@ export class DemoSeeder extends Seeder {
 
     this.createProduct(em, s3, cats.boissons, 'Bissap naturel', 'Boisson a l\'hibiscus, recette traditionnelle. Bouteille 1L. Riche en vitamine C.', 1000, ProductUnit.PIECE, 40, 8, IMG.bissap, 800, 7)
 
+    // --- Supplier 4: Ferme Bio de Talensac (Nantes) ---
+    this.createProduct(em, s4, cats.legumes, 'Panier de legumes de saison', 'Panier hebdomadaire compose le matin meme au marche de Talensac. 5 a 7 varietes selon la recolte.', 1800, ProductUnit.LOT, 40, 8, IMG.tomates)
+
+    this.createProduct(em, s4, cats.legumes, 'Carottes des sables', 'Carottes de plein champ cultivees en Loire-Atlantique. Douces et croquantes.', 700, ProductUnit.KG, 120, 20, IMG.oignons)
+
+    this.createProduct(em, s4, cats.legumes, 'Mache nantaise bio', 'Mache produite sous serre froide autour de Nantes. Recolte du jour.', 900, ProductUnit.SACHET, 60, 12, IMG.gombo, 750, 10)
+
+    this.createProduct(em, s4, cats.boissons, 'Jus de pomme fermier', 'Jus de pomme presse a froid, vergers de Loire-Atlantique. Bouteille 1L.', 1200, ProductUnit.PIECE, 80, 15, IMG.jusAnanas)
+
+    // --- Supplier 5: Le Panier Chantenay (Nantes) ---
+    this.createProduct(em, s5, cats.cereales, 'Farine de ble T65 bio', 'Farine moulue sur meule de pierre, ble cultive en Pays de la Loire. Sac de 5 kg.', 1400, ProductUnit.KG, 90, 15, IMG.farineMais)
+
+    this.createProduct(em, s5, cats.huiles, 'Huile de colza premiere pression', 'Huile de colza bio pressee a froid. Riche en omega 3. Bouteille 75 cl.', 2200, ProductUnit.LITER, 45, 10, IMG.huileArachide)
+
+    this.createProduct(em, s5, cats.legumes, 'Pommes de terre Bintje', 'Pommes de terre de conservation, culture bio. Filet de 10 kg.', 950, ProductUnit.KG, 150, 25, IMG.oignons)
+
+    // --- Supplier 6: Semences & Compost Doulon (Nantes) ---
+    this.createProduct(em, s6, cats.semences, 'Semences de mache maraichere', 'Variete Verte de Cambrai, adaptee au climat nantais. Sachet de 500 graines.', 1300, ProductUnit.SACHET, 180, 30, IMG.semencesTomate)
+
+    this.createProduct(em, s6, cats.compost, 'Compost de dechets verts', 'Compost normalise NFU 44-051, produit a partir des dechets verts de la metropole.', 450, ProductUnit.KG, 600, 60, IMG.compost)
+
+    this.createProduct(em, s6, cats.compost, 'Terreau universel bio', 'Terreau sans tourbe, enrichi en compost vegetal. Sac de 40 L.', 800, ProductUnit.LOT, 70, 15, IMG.compost, 650, 20)
+
     await em.flush()
-    console.info('  Created 22 products with photos')
+    console.info('  Created 32 products with photos')
 
     // --- Variants ---
     em.create(ProductVariant, { product: p1, label: '0,5 L', pricePerUnit: 1500, stock: 30 })

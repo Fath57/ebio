@@ -21,6 +21,9 @@ export const searchResultSchema = z.object({
   supplier: z.object({
     id: z.string().uuid(),
     shopName: z.string(),
+    /** Coordonnées du point de vente — `null` si le fournisseur n'est pas localisé. */
+    latitude: z.number().nullable(),
+    longitude: z.number().nullable(),
     distance: z.number(),
     rating: z.number().nullable(),
     reviewCount: z.number(),

@@ -12,6 +12,8 @@ interface RawSearchRow {
   promotional_price: number | null
   supplier_id: string
   shop_name: string
+  latitude: number | null
+  longitude: number | null
   mode: 'CONTACT' | 'ORDER'
   global_rating: number | null
   total_reviews: number
@@ -137,6 +139,8 @@ export class SearchService {
         p.promotional_price,
         s.id as supplier_id,
         s.shop_name,
+        ST_Y(s.location::geometry) as latitude,
+        ST_X(s.location::geometry) as longitude,
         s.mode,
         s.global_rating,
         s.total_reviews,
@@ -269,6 +273,8 @@ export class SearchService {
       supplier: {
         id: row.supplier_id,
         shopName: row.shop_name,
+        latitude: row.latitude !== null ? Number(row.latitude) : null,
+        longitude: row.longitude !== null ? Number(row.longitude) : null,
         distance: Math.round(row.distance),
         rating: row.global_rating,
         reviewCount: row.total_reviews,
@@ -312,14 +318,17 @@ export class SearchService {
     const currentTime = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`
 
     const daySchedule = openingHours[currentDay]
-    if (!daySchedule || !Array.isArray(daySchedule))
+    if (!daySchedule)
       return false
 
-    return daySchedule.some((slot: unknown) => {
+    // Un jour est décrit soit par un créneau unique, soit par une liste de créneaux.
+    const slots = Array.isArray(daySchedule) ? daySchedule : [daySchedule]
+
+    return slots.some((slot: unknown) => {
       if (typeof slot !== 'object' || slot === null)
         return false
-      const typedSlot = slot as { open?: string, close?: string }
-      if (!typedSlot.open || !typedSlot.close)
+      const typedSlot = slot as { open?: string, close?: string, closed?: boolean }
+      if (typedSlot.closed || !typedSlot.open || !typedSlot.close)
         return false
       return currentTime >= typedSlot.open && currentTime <= typedSlot.close
     })

@@ -20,6 +20,7 @@ import { Public, Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import {
   deliveryZoneSchema,
+  openingHoursSchema,
   registerSupplierSchema,
   updateSupplierSchema,
 } from './contracts/supplier.contract'
@@ -139,7 +140,7 @@ export class SuppliersController {
   @CanUpdate('Supplier')
   async updateOpeningHours(
     @Session() session: LoggedInBetterAuthSession,
-    @TypedBody(z.object({ openingHours: z.record(z.string(), z.unknown()) }).meta({ title: 'UpdateOpeningHours' })) body: { openingHours: Record<string, unknown> },
+    @TypedBody(z.object({ openingHours: openingHoursSchema }).meta({ title: 'UpdateOpeningHours' })) body: { openingHours: Record<string, unknown> },
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
     return this.suppliersService.updateOpeningHours(supplier.id, body.openingHours)

@@ -102,6 +102,7 @@ export class SuppliersService {
         s.mode,
         s.validation_status AS "validationStatus",
         s.opening_hours AS "openingHours",
+        s.cover_photo AS "coverPhoto",
         ROUND(ST_Distance(s.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2) AS distance,
         (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
       FROM suppliers s
@@ -121,6 +122,7 @@ export class SuppliersService {
         s.mode,
         s.validation_status AS "validationStatus",
         s.opening_hours AS "openingHours",
+        s.cover_photo AS "coverPhoto",
         ROUND(ST_Distance(s.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2) AS distance,
         (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
       FROM suppliers s
@@ -139,6 +141,7 @@ export class SuppliersService {
         s.mode,
         s.validation_status AS "validationStatus",
         s.opening_hours AS "openingHours",
+        s.cover_photo AS "coverPhoto",
         NULL AS distance,
         (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
       FROM suppliers s
@@ -154,15 +157,17 @@ export class SuppliersService {
     const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
 
     return rows.map((row: Record<string, unknown>) => {
-      const hours = row.openingHours as Record<string, { open: string, close: string }> | null
+      const hours = row.openingHours as Record<string, { open: string, close: string, closed?: boolean }> | null
       const todayHours = hours?.[dayKey]
-      const isOpen = todayHours
+      // Un jour absent, marqué `closed`, ou hors créneau => fermé.
+      const isOpen = todayHours && !todayHours.closed
         ? currentTime >= todayHours.open && currentTime <= todayHours.close
         : false
 
       return {
         id: row.id,
         shopName: row.shopName,
+        coverPhoto: row.coverPhoto ?? null,
         latitude: Number(row.latitude),
         longitude: Number(row.longitude),
         rating: row.rating !== null ? Number(row.rating) : null,
