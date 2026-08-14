@@ -5,6 +5,7 @@ import { Seeder } from '@mikro-orm/seeder'
 import { CommentSeeder } from '../modules/example/comments/comment.seeder'
 import { PostSeeder } from '../modules/example/posts/post.seeder'
 import { AuthSeeder } from './auth.seeder'
+import { BannerSeeder } from './banner.seeder'
 import { DemoSeeder } from './demo.seeder'
 import { EbioSeeder } from './ebio.seeder'
 import { RbacSeeder } from './rbac.seeder'
@@ -28,6 +29,10 @@ export class DatabaseSeeder extends Seeder {
     // Run demo seeder for complete test data
     await new DemoSeeder().run(em, context)
     console.info('DemoSeeder done')
+
+    // Les bannières s'appuient sur les fournisseurs et produits déjà créés
+    await new BannerSeeder().run(em)
+    console.info('BannerSeeder done')
 
     // Run PostSeeder to create posts
     await new PostSeeder().run(em, context)
