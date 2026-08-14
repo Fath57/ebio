@@ -34,7 +34,7 @@ export enum SupplierMode {
 
 @Entity({ tableName: 'suppliers' })
 export class Supplier {
-  [OptionalProps]?: 'id' | 'validationStatus' | 'mode' | 'timezone' | 'totalReviews' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'validationStatus' | 'mode' | 'timezone' | 'deliveryFee' | 'totalReviews' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -66,6 +66,17 @@ export class Supplier {
 
   @Property({ fieldName: 'mobile_money_number', nullable: true })
   mobileMoneyNumber?: string
+
+  /** Flat fee charged on a delivery order. Zero means delivery is free. */
+  @Property({ fieldName: 'delivery_fee', type: 'float', default: 0 })
+  deliveryFee: number = 0
+
+  /**
+   * Items subtotal above which delivery is offered. Null disables the waiver;
+   * the comparison excludes the fee itself, so it cannot fund its own waiver.
+   */
+  @Property({ fieldName: 'free_delivery_from', type: 'float', nullable: true })
+  freeDeliveryFrom?: number
 
   @Enum({ items: () => ValidationStatus, default: ValidationStatus.PENDING })
   @Property({ fieldName: 'validation_status' })

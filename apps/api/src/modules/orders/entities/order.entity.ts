@@ -27,7 +27,7 @@ export enum PaymentMethod {
 
 @Entity({ tableName: 'orders' })
 export class Order {
-  [OptionalProps]?: 'id' | 'status' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'deliveryFee' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -56,6 +56,15 @@ export class Order {
   @Property({ fieldName: 'delivery_slot', nullable: true, length: 200 })
   deliverySlot?: string
 
+  /**
+   * Delivery fee as it stood when the order was placed. Copied rather than read
+   * back from the shop: a later price change must not rewrite past orders.
+   * Included in `totalAmount`, and excluded from the commission base.
+   */
+  @Property({ fieldName: 'delivery_fee', type: 'float', default: 0 })
+  deliveryFee: number = 0
+
+  /** Items subtotal plus `deliveryFee` — what the buyer actually pays. */
   @Property({ fieldName: 'total_amount', type: 'float' })
   totalAmount!: number
 

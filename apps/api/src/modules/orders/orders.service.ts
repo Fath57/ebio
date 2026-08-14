@@ -10,6 +10,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { computeDeliveryFee } from '../../common/delivery-fee'
 import { User } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -94,7 +95,11 @@ export class OrdersService {
     }
 
     const categorySlug = await this.getCategorySlug(itemEntities[0].product)
+    // The commission base is the items only. Delivery is the shop's own cost,
+    // passed through to it in full, and the platform takes no cut of it.
     const commission = this.commissionService.calculate(totalAmount, categorySlug)
+
+    const deliveryFee = computeDeliveryFee(supplier, data.pickupMode === PickupMode.DELIVERY, totalAmount)
 
     const order = this.em.create(Order, {
       orderNumber,
@@ -104,7 +109,8 @@ export class OrdersService {
       paymentMethod: data.paymentMethod as PaymentMethod,
       deliveryAddress: data.deliveryAddress,
       deliverySlot: data.deliverySlot || undefined,
-      totalAmount,
+      deliveryFee,
+      totalAmount: totalAmount + deliveryFee,
       commissionRate: commission.rate,
       commissionAmount: commission.commissionAmount,
     })

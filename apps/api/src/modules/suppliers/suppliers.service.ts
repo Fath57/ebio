@@ -31,6 +31,8 @@ export class SuppliersService {
       mobileMoneyNumber: data.mobileMoneyNumber,
       mode: data.mode as SupplierMode,
       openingHours: data.openingHours,
+      deliveryFee: data.deliveryFee ?? 0,
+      freeDeliveryFrom: data.freeDeliveryFrom ?? undefined,
     })
 
     user.role = UserRole.SUPPLIER
@@ -74,6 +76,11 @@ export class SuppliersService {
       supplier.mobileMoneyNumber = data.mobileMoneyNumber
     if (data.mode !== undefined)
       supplier.mode = data.mode as SupplierMode
+    if (data.deliveryFee !== undefined)
+      supplier.deliveryFee = data.deliveryFee
+    // Null is meaningful here — it clears the free-delivery threshold.
+    if (data.freeDeliveryFrom !== undefined)
+      supplier.freeDeliveryFrom = data.freeDeliveryFrom ?? undefined
     if (data.openingHours !== undefined)
       supplier.openingHours = data.openingHours
     if (data.coverPhoto !== undefined)
@@ -242,7 +249,12 @@ export class SuppliersService {
   async getSettings(supplierId: string) {
     const supplier = await this.findById(supplierId)
     const zones = await this.em.find(DeliveryZone, { supplier: { id: supplierId } })
+    // Without this, the editors can only overwrite the position with wherever
+    // the shopkeeper happens to stand — never review or correct what is stored.
+    const coordinates = await this.findCoordinates(supplierId)
     return {
+      latitude: coordinates?.latitude ?? null,
+      longitude: coordinates?.longitude ?? null,
       shopName: supplier.shopName,
       address: supplier.address,
       neighborhood: supplier.neighborhood,
@@ -252,6 +264,8 @@ export class SuppliersService {
       openingHours: supplier.openingHours,
       timezone: supplier.timezone,
       mode: supplier.mode,
+      deliveryFee: supplier.deliveryFee ?? 0,
+      freeDeliveryFrom: supplier.freeDeliveryFrom ?? null,
       deliveryZones: zones.map(z => ({
         id: z.id,
         deliveryFee: z.deliveryFee,

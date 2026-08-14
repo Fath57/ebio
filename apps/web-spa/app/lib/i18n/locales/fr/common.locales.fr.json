@@ -427,7 +427,11 @@
       "neighborhood": "Quartier",
       "neighborhoodPlaceholder": "Ex: Cocody, Plateau",
       "mobileMoneyNumber": "Numéro Mobile Money",
-      "mobileMoneyPlaceholder": "+229 XX XX XX XX XX"
+      "mobileMoneyPlaceholder": "+229 XX XX XX XX XX",
+      "deliveryFee": "Frais de livraison (FCFA)",
+      "deliveryFeeHint": "0 = livraison offerte. Le retrait sur place reste toujours gratuit.",
+      "freeDeliveryFrom": "Livraison offerte à partir de (FCFA)",
+      "freeDeliveryFromHint": "Montant des produits, hors frais. Vide = toujours facturée."
     },
     "openingHours": {
       "title": "Horaires d'ouverture",
@@ -473,7 +477,20 @@
       "zoneDeleted": "Zone de livraison supprimée",
       "zoneError": "Erreur lors de l'opération",
       "modeUpdated": "Mode de fonctionnement mis à jour",
-      "modeError": "Erreur lors du changement de mode"
+      "modeError": "Erreur lors du changement de mode",
+      "locationUpdated": "Position de la boutique mise à jour",
+      "locationError": "Erreur lors de la mise à jour de la position"
+    },
+    "location": {
+      "title": "Position de la boutique",
+      "description": "Le point exact où les acheteurs vous trouveront sur la carte",
+      "search": "Rechercher une adresse",
+      "searchPlaceholder": "Ex : Marché Ganhi, Cotonou",
+      "searchHint": "Choisissez une suggestion pour remplir les coordonnées, ou saisissez-les directement.",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "preview": "Voir sur Google Maps",
+      "noPosition": "Aucune position enregistrée : votre boutique n'apparaîtra pas sur la carte."
     }
   },
   "notifications": {

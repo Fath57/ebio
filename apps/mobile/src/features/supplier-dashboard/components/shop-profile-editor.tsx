@@ -2,6 +2,8 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import * as Location from 'expo-location'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
 import Check from 'lucide-react-native/dist/esm/icons/check'
+import Locate from 'lucide-react-native/dist/esm/icons/locate'
+import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import { useEffect, useState } from 'react'
 import {
@@ -21,7 +23,11 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
+
+/** Cotonou — where the map opens when the shop has no position yet. */
+const FALLBACK_CENTER = { latitude: 6.3703, longitude: 2.3912 }
 
 interface ShopProfileEditorProps {
   onGoBack: () => void
@@ -44,6 +50,9 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
+  const [pickingOnMap, setPickingOnMap] = useState(false)
+  const [deliveryFee, setDeliveryFee] = useState('')
+  const [freeDeliveryFrom, setFreeDeliveryFrom] = useState('')
 
   const { pickAndUpload: pickCover } = useMediaUpload({ context: 'SUPPLIER_COVER' })
   const { pickAndUpload: pickProfile } = useMediaUpload({ context: 'SUPPLIER_PROFILE' })
@@ -63,6 +72,12 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
           setMobileMoneyNumber((data.mobileMoneyNumber as string) ?? '')
           setCoverPhoto((data.coverPhoto as string) ?? null)
           setProfilePhoto((data.profilePhoto as string) ?? null)
+          if (typeof data.latitude === 'number' && typeof data.longitude === 'number') {
+            setLatitude(data.latitude)
+            setLongitude(data.longitude)
+          }
+          setDeliveryFee(typeof data.deliveryFee === 'number' && data.deliveryFee > 0 ? String(data.deliveryFee) : '')
+          setFreeDeliveryFrom(typeof data.freeDeliveryFrom === 'number' ? String(data.freeDeliveryFrom) : '')
         }
       }
       catch {
@@ -137,6 +152,11 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
         body.latitude = latitude
         body.longitude = longitude
       }
+      // An empty field means "no fee" and "no waiver" — both are sent, so
+      // clearing one actually clears it rather than leaving the old value.
+      body.deliveryFee = Number(deliveryFee.replace(',', '.')) || 0
+      const waiver = Number(freeDeliveryFrom.replace(',', '.'))
+      body.freeDeliveryFrom = freeDeliveryFrom.trim() && waiver > 0 ? waiver : null
 
       const res = await apiFetch('/api/suppliers/me', {
         method: 'PUT',
@@ -167,6 +187,21 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
   }
 
   const hasLocation = latitude !== null && longitude !== null
+
+  if (pickingOnMap) {
+    return (
+      <LocationPickerScreen
+        initialLatitude={latitude ?? FALLBACK_CENTER.latitude}
+        initialLongitude={longitude ?? FALLBACK_CENTER.longitude}
+        onConfirm={(coords) => {
+          setLatitude(coords.latitude)
+          setLongitude(coords.longitude)
+          setPickingOnMap(false)
+        }}
+        onGoBack={() => setPickingOnMap(false)}
+      />
+    )
+  }
 
   return (
     <KeyboardAvoidingView
@@ -246,31 +281,85 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
           onChangeText={setMobileMoneyNumber}
         />
 
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Frais de livraison</Text>
+        <TextInput
+          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+          placeholder="0 = livraison offerte"
+          placeholderTextColor={semantic.textTertiary}
+          keyboardType="numeric"
+          value={deliveryFee}
+          onChangeText={setDeliveryFee}
+        />
+        <Text style={[styles.fieldHint, { color: semantic.textTertiary }]}>
+          Montant en FCFA ajouté aux commandes livrées. Le retrait sur place reste gratuit.
+        </Text>
+
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Livraison offerte à partir de</Text>
+        <TextInput
+          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+          placeholder="Laisser vide pour toujours facturer"
+          placeholderTextColor={semantic.textTertiary}
+          keyboardType="numeric"
+          value={freeDeliveryFrom}
+          onChangeText={setFreeDeliveryFrom}
+        />
+        <Text style={[styles.fieldHint, { color: semantic.textTertiary }]}>
+          Montant des produits, hors frais, à partir duquel la livraison est offerte.
+        </Text>
+
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Localisation</Text>
-        <TouchableOpacity
-          style={[styles.locationButton, { borderColor: hasLocation ? colors.green[400] : semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
-          onPress={handleDetectLocation}
-          disabled={locating}
-          activeOpacity={0.7}
-        >
-          {locating
+
+        {/* The recorded position is shown, not merely acknowledged: a shopkeeper
+            correcting a wrong pin needs to see what is stored first. */}
+        <View style={[styles.locationStatus, { backgroundColor: semantic.bgSurface, borderColor: hasLocation ? colors.green[400] : semantic.borderNormal }]}>
+          {hasLocation
             ? (
-                <ActivityIndicator size="small" color={colors.green[400]} />
-              )
-            : hasLocation
-              ? (
-                  <>
-                    <Check size={18} color={colors.green[600]} />
+                <>
+                  <Check size={18} color={colors.green[600]} />
+                  <View style={styles.locationStatusText}>
                     <Text style={[styles.locationText, { color: colors.green[600] }]}>Position enregistrée</Text>
-                  </>
-                )
+                    <Text style={[styles.locationCoords, { color: semantic.textTertiary }]}>
+                      {`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+                    </Text>
+                  </View>
+                </>
+              )
+            : (
+                <>
+                  <MapPin size={18} color={semantic.textSecondary} />
+                  <Text style={[styles.locationText, { color: semantic.textSecondary }]}>Aucune position enregistrée</Text>
+                </>
+              )}
+        </View>
+
+        <View style={styles.locationActions}>
+          <TouchableOpacity
+            style={[styles.locationAction, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
+            onPress={handleDetectLocation}
+            disabled={locating}
+            activeOpacity={0.7}
+          >
+            {locating
+              ? <ActivityIndicator size="small" color={colors.green[400]} />
               : (
                   <>
-                    <MapPin size={18} color={semantic.textSecondary} />
-                    <Text style={[styles.locationText, { color: semantic.textSecondary }]}>Détecter ma position</Text>
+                    <Locate size={16} color={semantic.textSecondary} />
+                    <Text style={[styles.locationActionText, { color: semantic.textSecondary }]}>Ma position</Text>
                   </>
                 )}
-        </TouchableOpacity>
+          </TouchableOpacity>
+
+          {/* Lets the position be fixed from anywhere — a wrong pin would
+              otherwise require standing inside the shop to correct it. */}
+          <TouchableOpacity
+            style={[styles.locationAction, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
+            onPress={() => setPickingOnMap(true)}
+            activeOpacity={0.7}
+          >
+            <MapIcon size={16} color={semantic.textSecondary} />
+            <Text style={[styles.locationActionText, { color: semantic.textSecondary }]}>Sur la carte</Text>
+          </TouchableOpacity>
+        </View>
 
         <TouchableOpacity
           style={[styles.saveButton, saving && styles.saveButtonDisabled]}
@@ -337,16 +426,42 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 15,
   },
-  locationButton: {
+  fieldHint: {
+    ...typography.caption,
+    marginTop: -spacing[2],
+    marginBottom: spacing[2],
+  },
+  locationStatus: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    minHeight: 56,
+    paddingHorizontal: spacing[4],
+    borderWidth: 1,
+    borderRadius: radius.md,
+  },
+  locationStatusText: {
+    flex: 1,
+    gap: 2,
+  },
+  locationText: { ...typography.bodyS, fontFamily: fonts.sansSb },
+  locationCoords: { ...typography.caption, fontVariant: ['tabular-nums'] },
+  locationActions: {
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginTop: spacing[3],
+  },
+  locationAction: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
-    minHeight: 48,
+    minHeight: 44,
     borderWidth: 1,
     borderRadius: radius.md,
   },
-  locationText: { ...typography.bodyS, fontFamily: fonts.sansSb },
+  locationActionText: { ...typography.bodyS, fontFamily: fonts.sansMd },
   saveButton: {
     marginTop: spacing[6],
     height: 52,

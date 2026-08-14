@@ -13,6 +13,7 @@ interface ReceiptData {
     unitPrice: number
     totalPrice: number
   }>
+  deliveryFee: number
   totalAmount: number
   paymentMethod: string
   paidAt: Date | null
@@ -46,6 +47,7 @@ export class ReceiptService {
         unitPrice: item.unitPrice,
         totalPrice: item.totalPrice,
       })),
+      deliveryFee: order.deliveryFee,
       totalAmount: order.totalAmount,
       paymentMethod: order.paymentMethod,
       paidAt: payment?.paidAt ?? null,

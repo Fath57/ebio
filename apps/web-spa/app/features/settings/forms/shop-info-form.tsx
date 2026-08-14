@@ -1,7 +1,9 @@
+import type { Resolver } from 'react-hook-form'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
   Form,
   FormControl,
+  FormDescription,
   FormField,
   FormItem,
   FormLabel,
@@ -19,6 +21,9 @@ const shopInfoSchema = z.object({
   address: z.string().min(2).max(255),
   neighborhood: z.string().min(2).max(100),
   mobileMoneyNumber: z.string().min(8).max(20),
+  deliveryFee: z.coerce.number().min(0),
+  // Empty means no waiver at all, which the API stores as null.
+  freeDeliveryFrom: z.coerce.number().min(0).nullable(),
 })
 
 export type ShopInfoFormData = z.infer<typeof shopInfoSchema>
@@ -32,12 +37,15 @@ interface ShopInfoFormProps {
 export function ShopInfoForm({ onSubmit, isPending, initialData }: ShopInfoFormProps) {
   const { t } = useTranslation()
   const form = useForm<ShopInfoFormData>({
-    resolver: zodResolver(shopInfoSchema),
+    // `z.coerce` widens the resolver's generics — same cast as the other forms.
+    resolver: zodResolver(shopInfoSchema) as Resolver<ShopInfoFormData>,
     defaultValues: {
       shopName: '',
       address: '',
       neighborhood: '',
       mobileMoneyNumber: '',
+      deliveryFee: 0,
+      freeDeliveryFrom: null,
     },
   })
 
@@ -48,6 +56,8 @@ export function ShopInfoForm({ onSubmit, isPending, initialData }: ShopInfoFormP
         address: initialData.address ?? '',
         neighborhood: initialData.neighborhood ?? '',
         mobileMoneyNumber: initialData.mobileMoneyNumber ?? '',
+        deliveryFee: initialData.deliveryFee ?? 0,
+        freeDeliveryFrom: initialData.freeDeliveryFrom ?? null,
       })
     }
   }, [initialData, form])
@@ -112,6 +122,49 @@ export function ShopInfoForm({ onSubmit, isPending, initialData }: ShopInfoFormP
             </FormItem>
           )}
         />
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <FormField
+            control={form.control}
+            name="deliveryFee"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('settings.shopInfo.deliveryFee')}</FormLabel>
+                <FormControl>
+                  <Input {...field} type="number" min={0} step="any" />
+                </FormControl>
+                <FormDescription>{t('settings.shopInfo.deliveryFeeHint')}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="freeDeliveryFrom"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('settings.shopInfo.freeDeliveryFrom')}</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    min={0}
+                    step="any"
+                    name={field.name}
+                    ref={field.ref}
+                    onBlur={field.onBlur}
+                    value={field.value ?? ''}
+                    // An empty field clears the waiver rather than reading as 0,
+                    // which would make every delivery free.
+                    onChange={event => field.onChange(event.target.value === '' ? null : event.target.value)}
+                  />
+                </FormControl>
+                <FormDescription>{t('settings.shopInfo.freeDeliveryFromHint')}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <Button type="submit" disabled={isPending}>
           {isPending ? t('common.saving') : t('common.save')}

@@ -16,6 +16,7 @@ export class OrderMapper {
       paymentMethod: order.paymentMethod,
       deliveryAddress: order.deliveryAddress ?? null,
       deliverySlot: order.deliverySlot ?? null,
+      deliveryFee: order.deliveryFee,
       totalAmount: order.totalAmount,
       commissionRate: order.commissionRate,
       commissionAmount: order.commissionAmount,

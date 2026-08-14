@@ -2,6 +2,7 @@ import { Controller, Get, Query, UseGuards } from '@nestjs/common'
 import { RateLimit } from '../../common/decorators/rate-limit.decorator'
 import { RateLimitGuard } from '../../common/guards/rate-limit.guard'
 import { Public } from '../auth/auth.decorator'
+import { placeKindSchema } from './contracts/geocoding.contract'
 import { GeocodingService } from './geocoding.service'
 
 /**
@@ -19,8 +20,18 @@ export class GeocodingController {
   async autocomplete(
     @Query('q') q: string = '',
     @Query('session') session?: string,
+    @Query('kind') kind?: string,
   ) {
-    return { suggestions: await this.geocodingService.autocomplete(q, session) }
+    // Anything other than the one accepted value falls back to city search,
+    // which is what every existing caller expects.
+    const parsed = placeKindSchema.safeParse(kind)
+    return {
+      suggestions: await this.geocodingService.autocomplete(
+        q,
+        session,
+        parsed.success ? parsed.data : 'city',
+      ),
+    }
   }
 
   @Get('place')

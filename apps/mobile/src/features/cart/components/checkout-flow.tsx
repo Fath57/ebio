@@ -23,6 +23,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useDeliveryFee } from '../hooks/use-delivery-fee'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
@@ -136,6 +137,11 @@ export function CheckoutFlow({
   onCancel,
 }: CheckoutFlowProps) {
   const { semantic } = useTheme()
+  const { deliveryFee } = useDeliveryFee(
+    orderSummary.supplierId,
+    orderSummary.deliveryMode === 'DELIVERY',
+    orderSummary.total,
+  )
   const insets = useSafeAreaInsets()
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('SUMMARY')
@@ -146,6 +152,9 @@ export function CheckoutFlow({
   const [pendingPaymentId, setPendingPaymentId] = useState<string | null>(null)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
+  // Amount as the server settled it, delivery fee included. The payment widget
+  // must charge that, never a total recomputed on the phone.
+  const [amountDue, setAmountDue] = useState<number | null>(null)
 
   const handleProceedToPayment = useCallback(async () => {
     if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryAddress.trim()) {
@@ -172,7 +181,7 @@ export function CheckoutFlow({
         }),
       })
 
-      let order: { id: string, orderNumber?: string }
+      let order: { id: string, orderNumber?: string, totalAmount?: number }
 
       if (orderRes.ok) {
         order = await orderRes.json()
@@ -199,6 +208,9 @@ export function CheckoutFlow({
       }
 
       setOrderNumber(order.orderNumber ?? order.id)
+      if (typeof order.totalAmount === 'number') {
+        setAmountDue(order.totalAmount)
+      }
       setPendingOrderId(order.id)
 
       if (!fedapayPublicKey) {
@@ -365,10 +377,19 @@ export function CheckoutFlow({
               </View>
             ))}
 
+            {orderSummary.deliveryMode === 'DELIVERY' && (
+              <View style={styles.feeRow}>
+                <Text style={[styles.feeLabel, { color: semantic.textSecondary }]}>Livraison</Text>
+                <Text style={[styles.feeValue, { color: deliveryFee > 0 ? semantic.textPrimary : colors.green[600] }]}>
+                  {deliveryFee > 0 ? `${formatPrice(deliveryFee)} FCFA` : 'Offerte'}
+                </Text>
+              </View>
+            )}
+
             <View style={[styles.totalRow, { borderTopColor: semantic.borderNormal }]}>
               <Text style={[styles.totalLabel, { color: semantic.textPrimary }]}>Total</Text>
               <Text style={styles.totalValue}>
-                {formatPrice(orderSummary.total)}
+                {formatPrice(orderSummary.total + deliveryFee)}
                 {' '}
                 FCFA
               </Text>
@@ -419,7 +440,7 @@ export function CheckoutFlow({
   if (currentStep === 'PAYMENT' && fedapayPublicKey && pendingPaymentId) {
     const checkoutHtml = buildFedaPayCheckoutHtml(
       fedapayPublicKey,
-      orderSummary.total,
+      amountDue ?? orderSummary.total + deliveryFee,
       `Commande eBio - ${orderSummary.supplierName}`,
       pendingPaymentId,
       customer,
@@ -599,6 +620,20 @@ const styles = StyleSheet.create({
   },
 
   // Total
+  feeRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: spacing[2],
+  },
+  feeLabel: {
+    fontFamily: fonts.sans,
+    fontSize: 14,
+  },
+  feeValue: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
+  },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

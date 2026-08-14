@@ -31,6 +31,8 @@ export class SupplierMapper {
       mode: supplier.mode,
       openingHours: (supplier.openingHours as SupplierResponse['openingHours']) ?? null,
       timezone: supplier.timezone,
+      deliveryFee: supplier.deliveryFee ?? 0,
+      freeDeliveryFrom: supplier.freeDeliveryFrom ?? null,
       isOpen: isOpenNow(supplier.openingHours as OpeningHours, undefined, supplier.timezone),
       globalRating: supplier.globalRating ?? null,
       totalReviews: supplier.totalReviews,

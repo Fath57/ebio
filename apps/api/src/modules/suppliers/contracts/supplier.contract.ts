@@ -68,6 +68,8 @@ export const registerSupplierSchema = z.object({
   neighborhood: z.string().min(2).max(100).optional(),
   mobileMoneyNumber: z.string().min(8).max(20),
   mode: supplierModeEnum.default('ORDER'),
+  deliveryFee: z.number().min(0).optional(),
+  freeDeliveryFrom: z.number().min(0).nullable().optional(),
   openingHours: openingHoursSchema.optional(),
   timezone: timezoneSchema.optional(),
 }).meta({
@@ -99,6 +101,8 @@ export const supplierResponseSchema = z.object({
   mode: supplierModeEnum,
   openingHours: openingHoursSchema.nullable(),
   timezone: z.string(),
+  deliveryFee: z.number(),
+  freeDeliveryFrom: z.number().nullable(),
   // Evaluated server-side in the shop's timezone: the buyer's phone may sit
   // elsewhere, and a day's `closed` flag is easy to overlook client-side.
   isOpen: z.boolean(),

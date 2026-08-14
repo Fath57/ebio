@@ -1,5 +1,11 @@
 import { z } from 'zod'
 
+/**
+ * What is being looked for. `city` narrows to localities — picking a delivery
+ * area. `address` keeps streets and businesses, for a shop pinning its own door.
+ */
+export const placeKindSchema = z.enum(['city', 'address']).meta({ title: 'PlaceKind' })
+
 export const placeSuggestionSchema = z.object({
   /** Identifiant Google, à repasser tel quel pour obtenir les coordonnées. */
   placeId: z.string(),
@@ -20,5 +26,6 @@ export const resolvedPlaceSchema = z.object({
   longitude: z.number(),
 }).meta({ title: 'ResolvedPlace' })
 
+export type PlaceKind = z.infer<typeof placeKindSchema>
 export type PlaceSuggestion = z.infer<typeof placeSuggestionSchema>
 export type ResolvedPlace = z.infer<typeof resolvedPlaceSchema>

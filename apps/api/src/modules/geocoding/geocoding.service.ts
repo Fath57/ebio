@@ -1,4 +1,4 @@
-import type { PlaceSuggestion, ResolvedPlace } from './contracts/geocoding.contract'
+import type { PlaceKind, PlaceSuggestion, ResolvedPlace } from './contracts/geocoding.contract'
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { config } from '../../config/env.config'
 
@@ -40,13 +40,15 @@ export class GeocodingService {
     return key
   }
 
-  async autocomplete(query: string, sessionToken?: string): Promise<PlaceSuggestion[]> {
+  async autocomplete(query: string, sessionToken?: string, kind: PlaceKind = 'city'): Promise<PlaceSuggestion[]> {
     const normalized = query.trim().toLowerCase()
     if (normalized.length < 2) {
       return []
     }
 
-    const cacheKey = `ac:${normalized}`
+    // The kind belongs in the key: the same input yields different results for
+    // a delivery area and for a shop's own doorstep.
+    const cacheKey = `ac:${kind}:${normalized}`
     const cached = this.readCache<PlaceSuggestion[]>(cacheKey)
     if (cached) {
       return cached
@@ -54,8 +56,12 @@ export class GeocodingService {
 
     const url = new URL('https://maps.googleapis.com/maps/api/place/autocomplete/json')
     url.searchParams.set('input', query)
-    // `(cities)` restreint aux localités : on cherche une ville, pas un commerce.
-    url.searchParams.set('types', '(cities)')
+    // `(cities)` narrows to localities — a buyer picks a town, not a shop. An
+    // `address` search leaves the filter out entirely, so streets and
+    // businesses both come back: a shopkeeper is pinning their own doorstep.
+    if (kind === 'city') {
+      url.searchParams.set('types', '(cities)')
+    }
     url.searchParams.set('key', this.apiKey)
     if (sessionToken) {
       // Regroupe les frappes d'une même recherche en une seule session facturée.

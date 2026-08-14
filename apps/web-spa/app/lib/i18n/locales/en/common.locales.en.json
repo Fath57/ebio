@@ -427,7 +427,11 @@
       "neighborhood": "Neighborhood",
       "neighborhoodPlaceholder": "E.g. Downtown",
       "mobileMoneyNumber": "Mobile Money number",
-      "mobileMoneyPlaceholder": "+229 XX XX XX XX XX"
+      "mobileMoneyPlaceholder": "+229 XX XX XX XX XX",
+      "deliveryFee": "Delivery fee (FCFA)",
+      "deliveryFeeHint": "0 means free delivery. On-site pickup is always free.",
+      "freeDeliveryFrom": "Free delivery from (FCFA)",
+      "freeDeliveryFromHint": "Items subtotal, fee excluded. Empty means always charged."
     },
     "openingHours": {
       "title": "Opening hours",
@@ -473,7 +477,20 @@
       "zoneDeleted": "Delivery zone deleted",
       "zoneError": "Operation failed",
       "modeUpdated": "Operating mode updated",
-      "modeError": "Failed to change mode"
+      "modeError": "Failed to change mode",
+      "locationUpdated": "Shop position updated",
+      "locationError": "Could not update the position"
+    },
+    "location": {
+      "title": "Shop position",
+      "description": "The exact point where buyers will find you on the map",
+      "search": "Search an address",
+      "searchPlaceholder": "e.g. Marché Ganhi, Cotonou",
+      "searchHint": "Pick a suggestion to fill the coordinates, or type them in directly.",
+      "latitude": "Latitude",
+      "longitude": "Longitude",
+      "preview": "View on Google Maps",
+      "noPosition": "No position recorded: your shop will not appear on the map."
     }
   },
   "notifications": {

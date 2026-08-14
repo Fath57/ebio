@@ -109,6 +109,7 @@ export const orderResponseSchema = z.object({
   paymentMethod: paymentMethodEnum,
   deliveryAddress: z.string().nullable(),
   deliverySlot: z.string().nullable(),
+  deliveryFee: z.number(),
   totalAmount: z.number(),
   commissionRate: z.number(),
   commissionAmount: z.number(),

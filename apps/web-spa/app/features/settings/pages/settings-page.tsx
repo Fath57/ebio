@@ -3,6 +3,7 @@ import type { SupplierMode } from '../components/mode-selector'
 import type { OpeningHoursFormData } from '../forms/opening-hours-form'
 import type { ProfileFormData } from '../forms/profile-form'
 import type { ShopInfoFormData } from '../forms/shop-info-form'
+import type { ShopLocationFormData } from '../forms/shop-location-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
   suppliersControllerCreateDeliveryZone,
@@ -27,6 +28,7 @@ import { ModeSelector } from '../components/mode-selector'
 import { OpeningHoursForm } from '../forms/opening-hours-form'
 import { ProfileForm } from '../forms/profile-form'
 import { ShopInfoForm } from '../forms/shop-info-form'
+import { ShopLocationForm } from '../forms/shop-location-form'
 
 // ─── Types ───────────────────────────────────────────────
 
@@ -47,6 +49,10 @@ interface SupplierSettingsData {
   mobileMoneyNumber: string | null
   coverPhoto: string | null
   profilePhoto: string | null
+  latitude: number | null
+  longitude: number | null
+  deliveryFee: number
+  freeDeliveryFrom: number | null
   openingHours: Record<string, { open: string, close: string, closed?: boolean }> | null
   mode: SupplierMode
   deliveryZones: DeliveryZoneItem[]
@@ -166,6 +172,22 @@ export default function SettingsPage() {
     },
     onError: () => {
       toast.error(t('settings.toast.shopInfoError'))
+    },
+  })
+
+  const { mutate: updateShopLocation, isPending: isUpdatingLocation } = useMutation({
+    mutationFn: async (data: ShopLocationFormData) => {
+      const response = await suppliersControllerUpdateMe({ body: data })
+      if (response.error)
+        throw new Error('Failed to update shop location')
+      return response.data
+    },
+    onSuccess: () => {
+      invalidateSettings()
+      toast.success(t('settings.toast.locationUpdated'))
+    },
+    onError: () => {
+      toast.error(t('settings.toast.locationError'))
     },
   })
 
@@ -395,6 +417,27 @@ export default function SettingsPage() {
                     address: settings?.address ?? '',
                     neighborhood: settings?.neighborhood ?? '',
                     mobileMoneyNumber: settings?.mobileMoneyNumber ?? '',
+                    deliveryFee: settings?.deliveryFee ?? 0,
+                    freeDeliveryFrom: settings?.freeDeliveryFrom ?? null,
+                  }}
+                />
+              </CardContent>
+            </Card>
+
+            <Separator />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('settings.location.title')}</CardTitle>
+                <CardDescription>{t('settings.location.description')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <ShopLocationForm
+                  onSubmit={updateShopLocation}
+                  isPending={isUpdatingLocation}
+                  initialData={{
+                    latitude: settings?.latitude ?? null,
+                    longitude: settings?.longitude ?? null,
                   }}
                 />
               </CardContent>
