@@ -49,13 +49,22 @@ export class BannerSeeder extends Seeder {
     const suppliers = await em.find(
       Supplier,
       { validationStatus: ValidationStatus.VALIDATED, coverPhoto: { $ne: null } },
-      { orderBy: { globalRating: 'DESC' }, limit: MAX_SEEDED },
+      { orderBy: { globalRating: 'DESC' }, limit: MAX_SEEDED * 3 },
     )
+
+    // Une base peut contenir plusieurs lignes pour la même boutique — seeds
+    // rejoués, imports successifs. Sans ce filtre, le carrousel afficherait
+    // deux fois la même enseigne.
+    const seenShops = new Set<string>()
 
     for (const supplier of suppliers) {
       if (created.length >= MAX_SEEDED) {
         break
       }
+      if (seenShops.has(supplier.shopName)) {
+        continue
+      }
+      seenShops.add(supplier.shopName)
       em.create(Banner, {
         title: supplier.shopName,
         subtitle: supplier.neighborhood ?? supplier.address,
