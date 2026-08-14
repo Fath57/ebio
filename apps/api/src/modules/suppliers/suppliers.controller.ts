@@ -41,7 +41,8 @@ export class SuppliersController {
     @TypedBody(registerSupplierSchema) body: z.infer<typeof registerSupplierSchema>,
   ) {
     const supplier = await this.suppliersService.register(session.user.id, body)
-    return SupplierMapper.toResponse(supplier)
+    const coordinates = await this.suppliersService.findCoordinates(supplier.id)
+    return SupplierMapper.toResponse(supplier, coordinates)
   }
 
   @Get('nearby')
@@ -62,7 +63,8 @@ export class SuppliersController {
   @Public()
   async findById(@Param('id') id: string) {
     const supplier = await this.suppliersService.findById(id)
-    return SupplierMapper.toResponse(supplier)
+    const coordinates = await this.suppliersService.findCoordinates(supplier.id)
+    return SupplierMapper.toResponse(supplier, coordinates)
   }
 
   @Put('me')
@@ -75,7 +77,8 @@ export class SuppliersController {
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
     const updated = await this.suppliersService.update(supplier.id, body)
-    return SupplierMapper.toResponse(updated)
+    const coordinates = await this.suppliersService.findCoordinates(updated.id)
+    return SupplierMapper.toResponse(updated, coordinates)
   }
 
   @Get('me/status')

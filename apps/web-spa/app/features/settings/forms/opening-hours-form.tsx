@@ -36,6 +36,17 @@ const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday'
 
 const defaultDay = { open: '08:00', close: '18:00', closed: true }
 
+/**
+ * An open day is stored without a `closed` key — its absence means "open".
+ * The form field would then receive `undefined`, and react-hook-form's
+ * `Controller`, having no named value on reset, would stay on its initial
+ * "closed" state while the hours themselves render. Make the state explicit
+ * before handing it to the form.
+ */
+function normalizeDay(slot: { open: string, close: string, closed?: boolean }) {
+  return { open: slot.open, close: slot.close, closed: slot.closed ?? false }
+}
+
 interface OpeningHoursFormProps {
   onSubmit: (data: OpeningHoursFormData) => void
   isPending: boolean
@@ -45,7 +56,8 @@ interface OpeningHoursFormProps {
 function buildDefaults(data?: Record<string, { open: string, close: string, closed?: boolean }>): OpeningHoursFormData {
   const result: Record<string, { open: string, close: string, closed?: boolean }> = {}
   for (const day of DAYS) {
-    result[day] = data?.[day] ?? defaultDay
+    const slot = data?.[day]
+    result[day] = slot ? normalizeDay(slot) : defaultDay
   }
   return result as OpeningHoursFormData
 }

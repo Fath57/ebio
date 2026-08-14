@@ -74,8 +74,9 @@ interface SupplierProfile {
   products: Product[]
   openingHours: OpeningHour[]
   isCurrentlyOpen: boolean
-  latitude: number
-  longitude: number
+  // Null while the shop has never recorded its position.
+  latitude: number | null
+  longitude: number | null
   phoneNumber: string | null
   whatsappNumber: string | null
   mode: 'CONTACT' | 'ORDER'
@@ -328,8 +329,9 @@ export function SupplierProfileScreen({
             }))
           }
 
-          // Map opening hours from API format {lundi: {open, close}} to array
-          const dayMap: Record<string, string> = {
+          // Days are stored in English. Shops created before the format was
+          // unified still carry French keys.
+          const legacyDayMap: Record<string, string> = {
             lundi: 'MONDAY',
             mardi: 'TUESDAY',
             mercredi: 'WEDNESDAY',
@@ -339,27 +341,21 @@ export function SupplierProfileScreen({
             dimanche: 'SUNDAY',
           }
           const openingHours: OpeningHour[] = Object.entries(raw.openingHours ?? {}).map(
-            ([frDay, value]) => {
-              const v = value as { open?: string, close?: string } | null | undefined
+            ([day, value]) => {
+              const v = value as { open?: string, close?: string, closed?: boolean } | null | undefined
               return {
-                day: dayMap[frDay] ?? frDay.toUpperCase(),
+                day: legacyDayMap[day] ?? day.toUpperCase(),
                 openTime: v?.open ?? '',
                 closeTime: v?.close ?? '',
-                isClosed: v === null || v === undefined,
+                // A closed day keeps its hours in the database so they are
+                // there again on reopening: the flag decides, not their absence.
+                isClosed: !v || v.closed === true || !v.open || !v.close,
               }
             },
           )
 
-          // Determine if currently open
-          const now = new Date()
-          const currentHour = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-          const jsDay = now.getDay()
-          const todayIdx = jsDay === 0 ? 6 : jsDay - 1
-          const todayKey = DAY_ORDER[todayIdx]
-          const todayHours = openingHours.find(h => h.day === todayKey)
-          const isCurrentlyOpen = todayHours
-            ? !todayHours.isClosed && currentHour >= todayHours.openTime && currentHour <= todayHours.closeTime
-            : false
+          // Computed by the server, in the shop's own timezone.
+          const isCurrentlyOpen = raw.isOpen === true
 
           // Map badges from validationStatus
           const badges: BadgeType[] = []
@@ -380,8 +376,10 @@ export function SupplierProfileScreen({
             products,
             openingHours,
             isCurrentlyOpen,
-            latitude: raw.latitude ?? 0,
-            longitude: raw.longitude ?? 0,
+            // Kept null rather than defaulted to 0: coordinates 0,0 sit in the
+            // Gulf of Guinea and would send buyers on a route to open water.
+            latitude: typeof raw.latitude === 'number' ? raw.latitude : null,
+            longitude: typeof raw.longitude === 'number' ? raw.longitude : null,
             phoneNumber: raw.mobileMoneyNumber ?? null,
             whatsappNumber: raw.whatsappNumber ?? null,
             mode: raw.mode ?? 'CONTACT',
@@ -428,6 +426,8 @@ export function SupplierProfileScreen({
     if (!supplier)
       return
     const { latitude, longitude } = supplier
+    if (latitude === null || longitude === null)
+      return
     const url = Platform.select({
       ios: `maps:0,0?q=${latitude},${longitude}`,
       android: `geo:${latitude},${longitude}?q=${latitude},${longitude}`,
@@ -637,12 +637,16 @@ export function SupplierProfileScreen({
               onPress={handleOpenChat}
               semantic={semantic}
             />
-            <QuickAction
-              icon={Navigation}
-              label="Itinéraire"
-              onPress={handleNavigate}
-              semantic={semantic}
-            />
+            {/* No point offering directions to a shop that has never recorded
+                its position. */}
+            {supplier.latitude !== null && supplier.longitude !== null && (
+              <QuickAction
+                icon={Navigation}
+                label="Itinéraire"
+                onPress={handleNavigate}
+                semantic={semantic}
+              />
+            )}
             <QuickAction
               icon={ShareIcon}
               label="Partager"

@@ -34,10 +34,13 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
   const mapRef = useRef<MapView>(null)
   const [center, setCenter] = useState({ latitude: initialLatitude, longitude: initialLongitude })
   const [locating, setLocating] = useState(false)
-  const { query, setQuery, suggestions, searching, resolve, reset } = usePlaceSearch()
+  const { query, setQuery, suggestions, searching, resolve, accept, reset } = usePlaceSearch()
 
   async function handleSelectPlace(placeId: string, label: string) {
     Keyboard.dismiss()
+    // Close the list before the network round-trip: the choice is already made,
+    // and keeping it open while resolving feels sluggish.
+    accept(label)
     const place = await resolve(placeId)
     if (!place) {
       return
@@ -46,7 +49,6 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
     setCenter(coords)
     // Zoom « ville » : assez large pour se repérer, assez serré pour ajuster.
     mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.08, longitudeDelta: 0.08 }, 600)
-    setQuery(label)
   }
 
   async function handleUseMyLocation() {
@@ -147,12 +149,15 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
           </View>
         )}
 
-        {/* Hint */}
-        <View style={[styles.hint, { backgroundColor: semantic.bgCard }]}>
-          <Text style={[styles.hintText, { color: semantic.textSecondary }]}>
-            Déplacez la carte pour ajuster le point
-          </Text>
-        </View>
+        {/* Fine-tuning hint — irrelevant, and in the way, while the city list
+            is open. */}
+        {suggestions.length === 0 && (
+          <View style={[styles.hint, { backgroundColor: semantic.bgCard }]}>
+            <Text style={[styles.hintText, { color: semantic.textSecondary }]}>
+              Déplacez la carte pour ajuster le point
+            </Text>
+          </View>
+        )}
 
         {/* Recentrage GPS */}
         <TouchableOpacity
@@ -217,7 +222,10 @@ const styles = StyleSheet.create({
     maxHeight: 260,
     borderBottomLeftRadius: radius.lg,
     borderBottomRightRadius: radius.lg,
-    ...shadows.md,
+    // Sits above the pin and the GPS button: on Android elevation decides the
+    // stacking, not render order.
+    zIndex: 2,
+    ...shadows.lg,
   },
   suggestion: {
     flexDirection: 'row',

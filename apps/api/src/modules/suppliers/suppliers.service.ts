@@ -153,6 +153,30 @@ export class SuppliersService {
     })
   }
 
+  /**
+   * Reads a shop's coordinates back.
+   *
+   * The `location` column is a PostGIS geography, which Postgres hands back as
+   * EWKB — an opaque hex string on the entity. `ST_Y`/`ST_X` turn it into usable
+   * numbers, the way the search queries already do.
+   */
+  async findCoordinates(supplierId: string): Promise<{ latitude: number, longitude: number } | null> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT ST_Y(location::geometry) AS latitude,
+              ST_X(location::geometry) AS longitude
+       FROM suppliers
+       WHERE id = ? AND location IS NOT NULL`,
+      [supplierId],
+    )
+
+    const row = rows[0] as { latitude: number, longitude: number } | undefined
+    if (!row) {
+      return null
+    }
+
+    return { latitude: Number(row.latitude), longitude: Number(row.longitude) }
+  }
+
   async updateLocation(supplierId: string, latitude: number, longitude: number): Promise<void> {
     await this.em.getConnection().execute(
       `UPDATE suppliers SET location = ST_MakePoint(?, ?)::geography WHERE id = ?`,

@@ -99,6 +99,9 @@ export const supplierResponseSchema = z.object({
   mode: supplierModeEnum,
   openingHours: openingHoursSchema.nullable(),
   timezone: z.string(),
+  // Evaluated server-side in the shop's timezone: the buyer's phone may sit
+  // elsewhere, and a day's `closed` flag is easy to overlook client-side.
+  isOpen: z.boolean(),
   globalRating: z.number().nullable(),
   totalReviews: z.number(),
   createdAt: z.string().datetime(),

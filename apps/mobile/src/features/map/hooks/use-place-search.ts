@@ -24,10 +24,16 @@ export function usePlaceSearch() {
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
   const [searching, setSearching] = useState(false)
   const sessionToken = useRef(createSessionToken())
+  /**
+   * Text written into the field by a selection. Without this guard, writing the
+   * chosen city's name restarts the search and reopens the list the user has
+   * just closed.
+   */
+  const acceptedQuery = useRef<string | null>(null)
 
   useEffect(() => {
     const trimmed = query.trim()
-    if (trimmed.length < MIN_QUERY_LENGTH) {
+    if (query === acceptedQuery.current || trimmed.length < MIN_QUERY_LENGTH) {
       setSuggestions([])
       return
     }
@@ -72,12 +78,20 @@ export function usePlaceSearch() {
     return (await res.json()) as { latitude: number, longitude: number, label: string }
   }, [])
 
+  /** Writes the chosen city into the field and closes the list for good. */
+  const accept = useCallback((label: string) => {
+    acceptedQuery.current = label
+    setQuery(label)
+    setSuggestions([])
+  }, [])
+
   const reset = useCallback(() => {
+    acceptedQuery.current = null
     setQuery('')
     setSuggestions([])
   }, [])
 
-  return { query, setQuery, suggestions, searching, resolve, reset }
+  return { query, setQuery, suggestions, searching, resolve, accept, reset }
 }
 
 function createSessionToken(): string {

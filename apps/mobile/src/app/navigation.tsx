@@ -1,7 +1,7 @@
 // eslint-disable-next-line ts/ban-ts-comment
 // @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
-import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
+import { getFocusedRouteNameFromRoute, NavigationContainer, StackActions } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import Home from 'lucide-react-native/dist/esm/icons/house'
@@ -895,6 +895,32 @@ const TAB_ICONS: Record<string, typeof Home> = {
 
 const Tab = createBottomTabNavigator()
 
+/**
+ * Brings the Chat tab back to the conversation list.
+ *
+ * Without this, leaving a conversation through another tab keeps it on top of
+ * the stack: you land back in it on return, and since `ChatDetail` hides the
+ * tab bar, you end up trapped there.
+ *
+ * `navigate({ screen: 'ChatHome' })` is not enough. In React Navigation 7 a
+ * navigation no longer pops back to a screen already in the stack, and nested
+ * params are read only once — the tab bar even puts the old ones back right
+ * after our listener. So we target the child stack directly through `target`,
+ * the only way for an action to travel down: otherwise it bubbles up.
+ */
+function popChatStackToTop(navigation) {
+  // Read on press rather than captured when the listener is created: the route
+  // frozen in the closure would carry the state from before the conversation
+  // was opened.
+  const state = navigation.getState().routes.find(r => r.name === 'Chat')?.state
+  // `key` is missing until the stack has mounted; an `index` of 0 means we are
+  // already on the list. Nothing to pop in either case.
+  if (!state?.key || !state.index) {
+    return
+  }
+  navigation.dispatch({ ...StackActions.popToTop(), target: state.key })
+}
+
 const HIDE_TAB_BAR_ROUTES = new Set([
   'LocationPicker',
   'Checkout',
@@ -958,10 +984,7 @@ export function AppNavigation() {
           name="Chat"
           component={ChatStackScreen}
           listeners={({ navigation }) => ({
-            tabPress: () => {
-              // Toujours revenir à la liste des conversations (pas la conversation courante)
-              navigation.navigate('Chat', { screen: 'ChatHome' })
-            },
+            tabPress: () => popChatStackToTop(navigation),
           })}
         />
         <Tab.Screen name="Panier" component={CartStackScreen} />
