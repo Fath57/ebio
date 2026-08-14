@@ -1,12 +1,18 @@
 import * as Location from 'expo-location'
 import Locate from 'lucide-react-native/dist/esm/icons/locate'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import Search from 'lucide-react-native/dist/esm/icons/search'
+import X from 'lucide-react-native/dist/esm/icons/x'
 import { useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Keyboard,
   Platform,
+  Pressable,
+  ScrollView,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
@@ -14,6 +20,7 @@ import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'
 import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { usePlaceSearch } from '../hooks/use-place-search'
 
 interface LocationPickerScreenProps {
   initialLatitude: number
@@ -27,6 +34,20 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
   const mapRef = useRef<MapView>(null)
   const [center, setCenter] = useState({ latitude: initialLatitude, longitude: initialLongitude })
   const [locating, setLocating] = useState(false)
+  const { query, setQuery, suggestions, searching, resolve, reset } = usePlaceSearch()
+
+  async function handleSelectPlace(placeId: string, label: string) {
+    Keyboard.dismiss()
+    const place = await resolve(placeId)
+    if (!place) {
+      return
+    }
+    const coords = { latitude: place.latitude, longitude: place.longitude }
+    setCenter(coords)
+    // Zoom « ville » : assez large pour se repérer, assez serré pour ajuster.
+    mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.08, longitudeDelta: 0.08 }, 600)
+    setQuery(label)
+  }
 
   async function handleUseMyLocation() {
     setLocating(true)
@@ -51,6 +72,33 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Choisir ma position" onBack={onGoBack} />
 
+      {/* Recherche de ville — évite de faire glisser la carte sur des centaines
+          de kilomètres pour changer de région. */}
+      <View style={[styles.searchBar, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderLight }]}>
+        <View style={[styles.searchField, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
+          <Search size={16} color={semantic.textTertiary} strokeWidth={2.2} />
+          <TextInput
+            style={[styles.searchInput, { color: semantic.textPrimary }]}
+            value={query}
+            onChangeText={setQuery}
+            placeholder="Rechercher une ville…"
+            placeholderTextColor={semantic.textTertiary}
+            autoCorrect={false}
+            returnKeyType="search"
+            accessibilityLabel="Rechercher une ville"
+          />
+          {searching
+            ? <ActivityIndicator size="small" color={colors.green[400]} />
+            : query.length > 0
+              ? (
+                  <Pressable onPress={reset} hitSlop={8} accessibilityLabel="Effacer la recherche">
+                    <X size={16} color={semantic.textTertiary} strokeWidth={2.4} />
+                  </Pressable>
+                )
+              : null}
+        </View>
+      </View>
+
       <View style={styles.mapWrap}>
         <MapView
           ref={mapRef}
@@ -67,6 +115,37 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
           <MapPin size={44} color={colors.green[600]} fill={colors.green[200]} strokeWidth={2.2} />
           <View style={styles.pinShadow} />
         </View>
+
+        {/* Suggestions — superposées à la carte, elles disparaissent au choix */}
+        {suggestions.length > 0 && (
+          <View style={[styles.suggestions, { backgroundColor: semantic.bgCard }]}>
+            <ScrollView keyboardShouldPersistTaps="handled">
+              {suggestions.map(suggestion => (
+                <Pressable
+                  key={suggestion.placeId}
+                  style={styles.suggestion}
+                  onPress={() => handleSelectPlace(suggestion.placeId, suggestion.label)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${suggestion.label} ${suggestion.context}`}
+                >
+                  <MapPin size={15} color={colors.green[400]} strokeWidth={2.2} />
+                  <View style={styles.suggestionText}>
+                    <Text style={[styles.suggestionLabel, { color: semantic.textPrimary }]} numberOfLines={1}>
+                      {suggestion.label}
+                    </Text>
+                    {suggestion.context
+                      ? (
+                          <Text style={[styles.suggestionContext, { color: semantic.textTertiary }]} numberOfLines={1}>
+                            {suggestion.context}
+                          </Text>
+                        )
+                      : null}
+                  </View>
+                </Pressable>
+              ))}
+            </ScrollView>
+          </View>
+        )}
 
         {/* Hint */}
         <View style={[styles.hint, { backgroundColor: semantic.bgCard }]}>
@@ -109,6 +188,55 @@ const styles = StyleSheet.create({
   },
   mapWrap: {
     flex: 1,
+  },
+  searchBar: {
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
+    borderBottomWidth: 1,
+  },
+  searchField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.pill,
+    borderWidth: 1,
+  },
+  searchInput: {
+    flex: 1,
+    fontFamily: fonts.sans,
+    fontSize: 15,
+    minHeight: 44,
+  },
+  suggestions: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    maxHeight: 260,
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+    ...shadows.md,
+  },
+  suggestion: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    minHeight: 52,
+  },
+  suggestionText: {
+    flex: 1,
+  },
+  suggestionLabel: {
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
+  },
+  suggestionContext: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+    marginTop: 1,
   },
   pinOverlay: {
     ...StyleSheet.absoluteFillObject,

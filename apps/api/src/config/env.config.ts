@@ -51,6 +51,7 @@ export const configValidationSchema = z.object({
   TRUSTED_ORIGINS: z.string().transform(val => val.split(',')),
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
+  GOOGLE_MAPS_API_KEY: z.string().optional(), // Places : suggestions de villes
 
   // Clients
   CLIENTS_WEB_APP_URL: z.string(),
@@ -141,6 +142,10 @@ export const config = {
     port: configParsed.data.API_PORT,
   },
   version: getVersion(),
+  // Google Maps Platform — Places, pour les suggestions de villes.
+  maps: {
+    googleApiKey: configParsed.data.GOOGLE_MAPS_API_KEY,
+  },
   betterAuth: {
     secret: configParsed.data.BETTER_AUTH_SECRET,
     trustedOrigins: configParsed.data.TRUSTED_ORIGINS,
