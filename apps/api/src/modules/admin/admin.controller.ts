@@ -1,5 +1,5 @@
 import type { Response } from 'express'
-import type { JwtAuthenticatedRequest } from '../../common/guards/jwt-auth.guard'
+import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import type {
   BroadcastNotification,
   CommissionRates,
@@ -24,6 +24,7 @@ import { CanManage } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
+import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { AdminService } from './admin.service'
 import {
@@ -64,10 +65,9 @@ export class AdminController {
   async validateSupplier(
     @Param('supplierId') supplierId: string,
     @TypedBody(validationActionSchema) body: ValidationActionInput,
-    @Res({ passthrough: true }) res: Response,
+    @Session() session: LoggedInBetterAuthSession,
   ) {
-    const req = res.req as unknown as JwtAuthenticatedRequest
-    await this.adminService.validateSupplier(supplierId, body, req.user.sub)
+    await this.adminService.validateSupplier(supplierId, body, session.user.id)
     return { success: true }
   }
 
@@ -90,10 +90,9 @@ export class AdminController {
   async resolveReport(
     @Param('id') id: string,
     @TypedBody(resolveReportSchema) body: ResolveReportInput,
-    @Res({ passthrough: true }) res: Response,
+    @Session() session: LoggedInBetterAuthSession,
   ) {
-    const req = res.req as unknown as JwtAuthenticatedRequest
-    await this.adminService.resolveReport(id, body, req.user.sub)
+    await this.adminService.resolveReport(id, body, session.user.id)
     return { success: true }
   }
 
@@ -114,10 +113,9 @@ export class AdminController {
   async resolveDispute(
     @Param('id') id: string,
     @TypedBody(disputeResolutionSchema) body: DisputeResolutionInput,
-    @Res({ passthrough: true }) res: Response,
+    @Session() session: LoggedInBetterAuthSession,
   ) {
-    const req = res.req as unknown as JwtAuthenticatedRequest
-    await this.adminService.resolveDispute(id, body, req.user.sub)
+    await this.adminService.resolveDispute(id, body, session.user.id)
     return { success: true }
   }
 
@@ -125,20 +123,18 @@ export class AdminController {
   async suspendSupplier(
     @Param('id') id: string,
     @TypedBody(suspendSupplierSchema) body: SuspendSupplierInput,
-    @Res({ passthrough: true }) res: Response,
+    @Session() session: LoggedInBetterAuthSession,
   ) {
-    const req = res.req as unknown as JwtAuthenticatedRequest
-    await this.adminService.suspendSupplier(id, body.reason, req.user.sub)
+    await this.adminService.suspendSupplier(id, body.reason, session.user.id)
     return { success: true }
   }
 
   @Patch('suppliers/:id/reinstate')
   async reinstateSupplier(
     @Param('id') id: string,
-    @Res({ passthrough: true }) res: Response,
+    @Session() session: LoggedInBetterAuthSession,
   ) {
-    const req = res.req as unknown as JwtAuthenticatedRequest
-    await this.adminService.reinstateSupplier(id, req.user.sub)
+    await this.adminService.reinstateSupplier(id, session.user.id)
     return { success: true }
   }
 

@@ -166,6 +166,19 @@ export async function signInWithGoogle(): Promise<AuthResponse> {
     if (code === statusCodes.PLAY_SERVICES_NOT_AVAILABLE) {
       return { user: null, error: 'Google Play Services indisponible.' }
     }
+    // Code 10 = DEVELOPER_ERROR : la signature de l'app installée n'est pas
+    // déclarée sur le client OAuth Android. Réessayer n'y changera rien, c'est
+    // une configuration. La constante n'est pas exposée par `statusCodes`,
+    // d'où la comparaison au littéral.
+    if (code === '10') {
+      return {
+        user: null,
+        error: 'Cette version de l\'application n\'est pas autorisée pour la connexion Google. Contactez le support.',
+      }
+    }
+    if (code === statusCodes.IN_PROGRESS) {
+      return { user: null, error: null }
+    }
     return { user: null, error: 'Connexion Google impossible. Réessayez.' }
   }
 }

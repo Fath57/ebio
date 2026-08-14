@@ -346,20 +346,25 @@
     }
   },
   "analytics": {
-    "title": "Analytics",
-    "description": "Track your shop performance",
-    "revenue": "Revenue",
-    "ordersCount": "Orders count",
     "averageOrder": "Average order",
-    "currency": "FCFA",
-    "topProducts": "Top selling products",
-    "ratingsOverview": "Ratings overview",
-    "reviews": "Reviews",
     "columns": {
       "product": "Product",
       "quantitySold": "Quantity sold",
       "revenue": "Revenue"
-    }
+    },
+    "currency": "FCFA",
+    "description": "Track your shop performance",
+    "ordersCount": "Orders count",
+    "period": {
+      "week": "This week",
+      "month": "This month",
+      "quarter": "This quarter"
+    },
+    "ratingsOverview": "Ratings overview",
+    "revenue": "Revenue",
+    "reviews": "Reviews",
+    "title": "Analytics",
+    "topProducts": "Top selling products"
   },
   "subscriptions": {
     "title": "My Subscription",

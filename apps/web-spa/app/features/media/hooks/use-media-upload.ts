@@ -1,18 +1,10 @@
+import type { MediaContext } from '@boilerstone/openapi-generator/client/types.gen'
 import { client } from '@boilerstone/openapi-generator'
 import { useCallback, useState } from 'react'
 
-// Doublon manuel de l'énumération de l'API — à garder synchronisé avec
-// `MediaContext` dans apps/api/src/modules/media/media.entity.ts.
-export type MediaContext
-  = | 'PRODUCT_PHOTO'
-    | 'CATEGORY_IMAGE'
-    | 'BANNER_IMAGE'
-    | 'SUPPLIER_COVER'
-    | 'SUPPLIER_PROFILE'
-    | 'IDENTITY_DOCUMENT'
-    | 'BUSINESS_PROOF'
-    | 'CHAT_ATTACHMENT'
-    | 'COMMUNITY_MEDIA'
+// Le type vient du client généré : une copie manuelle divergeait
+// silencieusement à chaque ajout de contexte côté API.
+export type { MediaContext }
 
 interface UploadedMedia {
   mediaId: string

@@ -346,20 +346,25 @@
     }
   },
   "analytics": {
-    "title": "Statistiques",
-    "description": "Suivez les performances de votre boutique",
-    "revenue": "Chiffre d'affaires",
-    "ordersCount": "Nombre de commandes",
     "averageOrder": "Panier moyen",
-    "currency": "FCFA",
-    "topProducts": "Produits les plus vendus",
-    "ratingsOverview": "Aperçu des notes",
-    "reviews": "Avis",
     "columns": {
       "product": "Produit",
       "quantitySold": "Quantité vendue",
       "revenue": "Revenu"
-    }
+    },
+    "currency": "FCFA",
+    "description": "Suivez les performances de votre boutique",
+    "ordersCount": "Nombre de commandes",
+    "period": {
+      "week": "Cette semaine",
+      "month": "Ce mois",
+      "quarter": "Ce trimestre"
+    },
+    "ratingsOverview": "Aperçu des notes",
+    "revenue": "Chiffre d'affaires",
+    "reviews": "Avis",
+    "title": "Statistiques",
+    "topProducts": "Produits les plus vendus"
   },
   "subscriptions": {
     "title": "Mon Abonnement",
