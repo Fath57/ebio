@@ -7,7 +7,10 @@ export const queryClient = new QueryClient({
       gcTime: 15 * 60 * 1000, // 15 minutes — cache kept in memory
       retry: 1,
       refetchOnWindowFocus: false,
-      refetchOnMount: false, // Don't refetch when component re-mounts if data is fresh
+      // `true` (défaut React Query) recharge au montage uniquement si la donnée
+      // est périmée. `false` l'empêchait même après invalidation : une liste
+      // rouverte après une mutation affichait l'état d'avant.
+      refetchOnMount: true,
     },
   },
 })

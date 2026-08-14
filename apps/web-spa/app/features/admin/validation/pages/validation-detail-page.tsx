@@ -29,6 +29,8 @@ export default function ValidationDetailPage() {
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'validation'] })
+    // Le statut change aussi la liste générale des fournisseurs.
+    queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] })
     navigate('/admin/validations')
   }
 
