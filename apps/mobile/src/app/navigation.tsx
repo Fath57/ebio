@@ -83,6 +83,7 @@ function SearchHomeWrapper({ navigation }: any) {
         onOpenMap={() => navigation.navigate('SearchResults', { viewMode: 'map', title: 'Carte' })}
         onPickLocation={() => navigation.navigate('LocationPicker')}
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
+        onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
         onOpenProfile={() => navigation.navigate('Profil', { screen: 'ProfileHome' })}
         onSeeAll={(preset) => {
@@ -176,8 +177,54 @@ function SupplierProfileWrapper({ route, navigation }: any) {
 }
 
 function ProductDetailWrapper({ route, navigation }: any) {
-  const { product, supplier } = route.params
+  const { productId } = route.params ?? {}
+  const [loaded, setLoaded] = React.useState<{ product: any, supplier: any } | null>(null)
   const { addItem } = useCart()
+
+  // Une bannière ne transporte qu'un identifiant : on complète nous-mêmes le
+  // produit et son fournisseur, que l'écran attend en objets.
+  React.useEffect(() => {
+    if (!productId)
+      return
+    let cancelled = false
+    async function load() {
+      try {
+        const productRes = await apiFetch(`/api/products/${productId}`)
+        if (!productRes.ok)
+          return
+        const p = await productRes.json()
+        const supplierRes = await apiFetch(`/api/suppliers/${p.supplierId}`)
+        const s = supplierRes.ok ? await supplierRes.json() : null
+        if (!cancelled) {
+          setLoaded({
+            product: { ...p, imageUrl: p.photos?.[0] ?? null },
+            supplier: s,
+          })
+        }
+      }
+      catch {
+        // L'écran affichera son état vide.
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [productId])
+
+  const product = route.params?.product ?? loaded?.product
+  const supplier = route.params?.supplier ?? loaded?.supplier
+
+  if (!product || !supplier) {
+    return (
+      <SafeScreen>
+        <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+          <ActivityIndicator size="large" color={colors.green[400]} />
+        </View>
+      </SafeScreen>
+    )
+  }
+
   return (
     <ProductDetailScreen
       product={product}

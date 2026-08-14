@@ -4,6 +4,7 @@ import { Controller, Get, Patch, Post, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { CanCreate, CanRead, CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
+import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Public, Session } from '../auth/auth.decorator'
@@ -16,7 +17,7 @@ import {
 import { SubscriptionsService } from './subscriptions.service'
 
 @Controller('subscriptions')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, ActiveSupplierGuard)
 export class SubscriptionsController {
   constructor(
     private readonly subscriptionsService: SubscriptionsService,

@@ -2871,6 +2871,227 @@
         }
       }
     },
+    "/api/banners/active": {
+      "get": {
+        "operationId": "BannersController_findActive",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/banners": {
+      "get": {
+        "operationId": "BannersController_findAll",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "BannersController_create",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Data required to create a home banner",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "subtitle": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "maxLength": 1024,
+                    "format": "uri"
+                  },
+                  "targetType": {
+                    "type": "string",
+                    "enum": [
+                      "SUPPLIER",
+                      "PRODUCT"
+                    ],
+                    "title": "BannerTargetType",
+                    "description": "What the banner points to when tapped"
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "position": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "title",
+                  "imageUrl",
+                  "targetType",
+                  "targetId",
+                  "isActive",
+                  "position"
+                ],
+                "additionalProperties": false,
+                "title": "CreateBanner",
+                "description": "Data required to create a home banner"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/banners/{id}": {
+      "get": {
+        "operationId": "BannersController_findById",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "operationId": "BannersController_update",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update a banner — every field optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 255
+                  },
+                  "subtitle": {
+                    "type": "string",
+                    "maxLength": 255
+                  },
+                  "imageUrl": {
+                    "type": "string",
+                    "maxLength": 1024,
+                    "format": "uri"
+                  },
+                  "targetType": {
+                    "type": "string",
+                    "enum": [
+                      "SUPPLIER",
+                      "PRODUCT"
+                    ],
+                    "title": "BannerTargetType",
+                    "description": "What the banner points to when tapped"
+                  },
+                  "targetId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "position": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateBanner",
+                "description": "Update a banner — every field optional"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "BannersController_remove",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/register": {
       "post": {
         "operationId": "SuppliersController_register",
@@ -3626,7 +3847,8 @@
                       "TRAINING_CONTENT",
                       "TRAINING_THUMBNAIL",
                       "COMMUNITY_MEDIA",
-                      "CATEGORY_IMAGE"
+                      "CATEGORY_IMAGE",
+                      "BANNER_IMAGE"
                     ],
                     "title": "MediaContext",
                     "description": "Contexte d'utilisation du média"
@@ -6784,6 +7006,29 @@
         }
       }
     },
+    "/api/admin/suppliers/{id}/reinstate": {
+      "patch": {
+        "operationId": "AdminController_reinstateSupplier",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/transactions": {
       "get": {
         "operationId": "AdminController_getTransactions",
@@ -7052,6 +7297,85 @@
           },
           {
             "name": "sortDir",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/payments": {
+      "get": {
+        "operationId": "AdminController_getPayments",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "provider",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
             "required": true,
             "in": "query",
             "schema": {
@@ -7659,6 +7983,94 @@
         ],
         "additionalProperties": false,
         "title": "AssignRole"
+      },
+      "CreateBanner": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 1024,
+            "format": "uri"
+          },
+          "targetType": {
+            "$ref": "#/components/schemas/BannerTargetType"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "position": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "title",
+          "imageUrl",
+          "targetType",
+          "targetId",
+          "isActive",
+          "position"
+        ],
+        "additionalProperties": false,
+        "title": "CreateBanner",
+        "description": "Data required to create a home banner"
+      },
+      "UpdateBanner": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 1024,
+            "format": "uri"
+          },
+          "targetType": {
+            "$ref": "#/components/schemas/BannerTargetType"
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "position": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateBanner",
+        "description": "Update a banner — every field optional"
       },
       "CreateConversation": {
         "type": "object",
@@ -10616,6 +11028,15 @@
         "title": "DisputeResolution",
         "description": "Resolution outcome for a dispute"
       },
+      "BannerTargetType": {
+        "type": "string",
+        "enum": [
+          "SUPPLIER",
+          "PRODUCT"
+        ],
+        "title": "BannerTargetType",
+        "description": "What the banner points to when tapped"
+      },
       "AiCoreMessage": {
         "type": "object",
         "properties": {
@@ -11211,7 +11632,8 @@
           "TRAINING_CONTENT",
           "TRAINING_THUMBNAIL",
           "COMMUNITY_MEDIA",
-          "CATEGORY_IMAGE"
+          "CATEGORY_IMAGE",
+          "BANNER_IMAGE"
         ],
         "title": "MediaContext",
         "description": "Contexte d'utilisation du média"

@@ -1188,6 +1188,53 @@ export const zDisputeResolutionInput = z.object({
 });
 
 /**
+ * BannerTargetType
+ *
+ * What the banner points to when tapped
+ */
+export const zBannerTargetType = z.enum(["SUPPLIER", "PRODUCT"]);
+
+/**
+ * CreateBanner
+ *
+ * Data required to create a home banner
+ */
+export const zCreateBanner = z.object({
+  title: z.string().min(1).max(255),
+  subtitle: z.optional(z.string().max(255)),
+  imageUrl: z.url().max(1024),
+  targetType: zBannerTargetType,
+  targetId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  isActive: z.boolean().default(true),
+  position: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateBanner
+ *
+ * Update a banner — every field optional
+ */
+export const zUpdateBanner = z.object({
+  title: z.optional(z.string().min(1).max(255)),
+  subtitle: z.optional(z.string().max(255)),
+  imageUrl: z.optional(z.url().max(1024)),
+  targetType: z.optional(zBannerTargetType),
+  targetId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  isActive: z.optional(z.boolean()).default(true),
+  position: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
  * AiCoreMessage
  *
  * A message in the conversation history following Vercel AI SDK patterns
@@ -1528,6 +1575,7 @@ export const zMediaContext = z.enum([
   "TRAINING_THUMBNAIL",
   "COMMUNITY_MEDIA",
   "CATEGORY_IMAGE",
+  "BANNER_IMAGE",
 ]);
 
 /**
@@ -2783,6 +2831,74 @@ export const zSearchControllerGetCategoriesData = z.object({
  */
 export const zSearchControllerGetCategoriesResponse = zCategoriesResponse;
 
+export const zBannersControllerFindActiveData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zBannersControllerFindAllData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zBannersControllerCreateData = z.object({
+  body: z.object({
+    title: z.string().min(1).max(255),
+    subtitle: z.optional(z.string().max(255)),
+    imageUrl: z.url().max(1024),
+    targetType: z.enum(["SUPPLIER", "PRODUCT"]),
+    targetId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    isActive: z.boolean().default(true),
+    position: z.int().gte(0).lte(9007199254740991).default(0),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zBannersControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zBannersControllerFindByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zBannersControllerUpdateData = z.object({
+  body: z.object({
+    title: z.optional(z.string().min(1).max(255)),
+    subtitle: z.optional(z.string().max(255)),
+    imageUrl: z.optional(z.url().max(1024)),
+    targetType: z.optional(z.enum(["SUPPLIER", "PRODUCT"])),
+    targetId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    isActive: z.optional(z.boolean()).default(true),
+    position: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -2985,6 +3101,7 @@ export const zMediaControllerInitiateUploadData = z.object({
       "TRAINING_THUMBNAIL",
       "COMMUNITY_MEDIA",
       "CATEGORY_IMAGE",
+      "BANNER_IMAGE",
     ]),
     entityType: z.optional(z.string()),
     entityId: z.optional(
@@ -3989,6 +4106,14 @@ export const zAdminControllerSuspendSupplierData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminControllerReinstateSupplierData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zAdminControllerGetTransactionsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -4052,6 +4177,21 @@ export const zAdminControllerGetUsersData = z.object({
     q: z.string(),
     sortBy: z.string(),
     sortDir: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zAdminControllerGetPaymentsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    provider: z.string(),
+    q: z.string(),
+    from: z.string(),
+    to: z.string(),
+    format: z.string(),
     page: z.string(),
     limit: z.string(),
   }),

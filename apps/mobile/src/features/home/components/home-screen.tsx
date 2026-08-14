@@ -1,4 +1,5 @@
 import type { SearchResult } from '../../search/hooks/use-search'
+import type { HomeBanner } from '../hooks/use-home-banners'
 import BadgeCheck from 'lucide-react-native/dist/esm/icons/badge-check'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import MapIcon from 'lucide-react-native/dist/esm/icons/map'
@@ -19,6 +20,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { useCategories } from '../../search/hooks/use-search'
+import { useHomeBanners } from '../hooks/use-home-banners'
 import { useHomeFeed } from '../hooks/use-home-feed'
 import { CategoryRail } from './category-rail'
 import { HomeBannerCarousel } from './home-banner-carousel'
@@ -31,6 +33,7 @@ interface HomeScreenProps {
   onSelectCategory: (slug: string) => void
   onOpenMap: () => void
   onNavigateToSupplier: (supplierId: string) => void
+  onNavigateToProduct: (productId: string) => void
   onSeeAll: (preset: HomePreset) => void
   onPickLocation: () => void
   onOpenNotifications: () => void
@@ -42,6 +45,7 @@ export function HomeScreen({
   onSelectCategory,
   onOpenMap,
   onNavigateToSupplier,
+  onNavigateToProduct,
   onSeeAll,
   onPickLocation,
   onOpenNotifications,
@@ -57,14 +61,27 @@ export function HomeScreen({
   const { latitude, longitude, label: locationLabel } = useLocation()
   const { categories, loadCategories } = useCategories()
   const { nearby, validated, promos, loading } = useHomeFeed(latitude, longitude)
+  const { banners: editorialBanners } = useHomeBanners()
 
   useEffect(() => {
     loadCategories()
   }, [loadCategories])
 
-  // Les bannières mettent en avant les promotions ; à défaut les fournisseurs
-  // validés, puis simplement ce qui est le plus proche.
-  const banners = promos.length > 0 ? promos : validated.length > 0 ? validated : nearby
+  // Les bannières pilotées depuis le back-office priment. Sans aucune bannière
+  // publiée, on retombe sur une sélection automatique — promotions, à défaut
+  // fournisseurs validés, à défaut les plus proches — pour ne jamais laisser
+  // la section vide.
+  const fallbackSource = promos.length > 0 ? promos : validated.length > 0 ? validated : nearby
+  const banners: HomeBanner[] = editorialBanners.length > 0
+    ? editorialBanners
+    : fallbackSource.slice(0, 5).map(item => ({
+        id: `${item.supplier.id}-${item.product.id}`,
+        title: item.product.name,
+        subtitle: item.supplier.shopName,
+        imageUrl: item.product.photo ?? '',
+        targetType: 'SUPPLIER' as const,
+        targetId: item.supplier.id,
+      }))
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
@@ -111,7 +128,11 @@ export function HomeScreen({
 
         {/* Bannières */}
         <View style={styles.bannersBlock}>
-          <HomeBannerCarousel items={banners} onPress={onNavigateToSupplier} />
+          <HomeBannerCarousel
+            items={banners}
+            onOpenSupplier={onNavigateToSupplier}
+            onOpenProduct={onNavigateToProduct}
+          />
         </View>
 
         {/* Catégories */}

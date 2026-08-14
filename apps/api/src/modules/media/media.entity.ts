@@ -29,6 +29,7 @@ export enum MediaContext {
   TRAINING_THUMBNAIL = 'TRAINING_THUMBNAIL',
   COMMUNITY_MEDIA = 'COMMUNITY_MEDIA',
   CATEGORY_IMAGE = 'CATEGORY_IMAGE',
+  BANNER_IMAGE = 'BANNER_IMAGE',
 }
 
 @Entity({ tableName: 'media' })

@@ -1,0 +1,13 @@
+<%- include('partials/heading', { text: 'Votre compte est réactivé', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<p>
+  La suspension du compte <strong><%= shopName %></strong> a été levée.
+  Votre boutique est de nouveau visible dans les recherches et sur la carte,
+  et vous retrouvez l'accès complet à votre catalogue et à vos commandes.
+</p>
+
+<%- include('partials/button', { href: dashboardUrl, label: 'Accéder à mon espace', variant: 'primary' }) %>
+
+<p>Merci de votre confiance,<br>L'équipe eBio</p>

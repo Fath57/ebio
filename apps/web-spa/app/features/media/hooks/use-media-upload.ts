@@ -1,9 +1,12 @@
 import { client } from '@boilerstone/openapi-generator'
 import { useCallback, useState } from 'react'
 
+// Doublon manuel de l'énumération de l'API — à garder synchronisé avec
+// `MediaContext` dans apps/api/src/modules/media/media.entity.ts.
 export type MediaContext
   = | 'PRODUCT_PHOTO'
     | 'CATEGORY_IMAGE'
+    | 'BANNER_IMAGE'
     | 'SUPPLIER_COVER'
     | 'SUPPLIER_PROFILE'
     | 'IDENTITY_DOCUMENT'

@@ -10,6 +10,7 @@ import { AdminModule } from './modules/admin/admin.module'
 import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { RolesModule } from './modules/auth/roles/roles.module'
+import { BannersModule } from './modules/banners/banners.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { CommunityModule } from './modules/community/community.module'
 import { DbModule } from './modules/db/db.module'
@@ -112,6 +113,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     NestConfigModule,
     ExampleModule,
     SearchModule,
+    BannersModule,
     SuppliersModule,
     ProductsModule,
     OrdersModule,

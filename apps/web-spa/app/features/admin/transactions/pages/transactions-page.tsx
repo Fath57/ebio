@@ -1,60 +1,137 @@
+import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
+import type { PaymentItem } from '../utils/payments-queries'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
-import { DatePicker } from '@boilerstone/ui/components/primitives/date-picker'
-import { Label } from '@boilerstone/ui/components/primitives/label'
-import { Separator } from '@boilerstone/ui/components/primitives/separator'
+import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
+import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
 import { useQuery } from '@tanstack/react-query'
-import { format } from 'date-fns'
-import { Download } from 'lucide-react'
-import { useState } from 'react'
+import { Download, Search } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Can } from '@/lib/casl/can'
 import {
-  exportTransactionsCsvUrl,
+  exportPaymentsCsvUrl,
   fetchDisputesQueryOptions,
-  fetchTransactionsQueryOptions,
-} from '../utils/transactions-queries'
+  fetchPaymentsQueryOptions,
+} from '../utils/payments-queries'
+
+const PAGE_SIZE = 20
+
+const STATUS_OPTIONS = ['PENDING', 'CAPTURED', 'ESCROW', 'RELEASED', 'REFUNDED', 'FAILED']
+
+const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
+  PENDING: 'secondary',
+  CAPTURED: 'secondary',
+  ESCROW: 'secondary',
+  RELEASED: 'default',
+  REFUNDED: 'outline',
+  FAILED: 'destructive',
+}
+
+function formatAmount(value: number): string {
+  return `${value.toLocaleString('fr-FR')} FCFA`
+}
+
+function TotalCard({ label, value, hint, accent }: {
+  label: string
+  value: number
+  hint: string
+  accent?: boolean
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-muted-foreground text-sm font-medium">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <p className={`text-2xl font-bold ${accent ? 'text-primary' : ''}`}>{formatAmount(value)}</p>
+        <p className="text-muted-foreground mt-1 text-xs">{hint}</p>
+      </CardContent>
+    </Card>
+  )
+}
 
 export default function TransactionsPage() {
-  const { t } = useTranslation()
-  const [fromDate, setFromDate] = useState<Date | undefined>()
-  const [toDate, setToDate] = useState<Date | undefined>()
+  const { t, i18n } = useTranslation()
+  const [search, setSearch] = useState('')
+  const [status, setStatus] = useState('')
+  const [from, setFrom] = useState('')
+  const [to, setTo] = useState('')
+  const [page, setPage] = useState(1)
 
-  const dateParams = {
-    from: fromDate ? format(fromDate, 'yyyy-MM-dd') : undefined,
-    to: toDate ? format(toDate, 'yyyy-MM-dd') : undefined,
+  const filters = {
+    q: search || undefined,
+    status: status || undefined,
+    from: from || undefined,
+    to: to || undefined,
   }
 
-  const { data: transactions, isLoading: isLoadingTransactions } = useQuery(
-    fetchTransactionsQueryOptions(dateParams),
-  )
+  const { data, isLoading } = useQuery(fetchPaymentsQueryOptions({ ...filters, page }))
+  const { data: disputes, isLoading: isLoadingDisputes } = useQuery(fetchDisputesQueryOptions())
 
-  const { data: disputes, isLoading: isLoadingDisputes } = useQuery(
-    fetchDisputesQueryOptions(),
-  )
+  const columns = useMemo<Array<ColumnDef<PaymentItem, unknown>>>(() => [
+    {
+      id: 'createdAt',
+      header: t('admin.transactions.columns.date'),
+      enableSorting: false,
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(i18n.language),
+    },
+    {
+      id: 'orderNumber',
+      header: t('admin.transactions.columns.reference'),
+      enableSorting: false,
+      cell: ({ row }) => (
+        <>
+          <div className="font-medium">{row.original.orderNumber ?? '—'}</div>
+          <div className="text-muted-foreground text-xs">
+            {row.original.providerReference ?? row.original.provider}
+          </div>
+        </>
+      ),
+    },
+    {
+      id: 'buyer',
+      header: t('admin.transactions.columns.buyer'),
+      enableSorting: false,
+      cell: ({ row }) => row.original.buyerName,
+    },
+    {
+      id: 'supplier',
+      header: t('admin.transactions.columns.supplier'),
+      enableSorting: false,
+      cell: ({ row }) => row.original.supplierName,
+    },
+    {
+      id: 'status',
+      header: t('admin.transactions.columns.status'),
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Badge variant={STATUS_VARIANTS[row.original.status] ?? 'outline'}>
+          {t(`admin.transactions.status.${row.original.status}`)}
+        </Badge>
+      ),
+    },
+    {
+      id: 'amount',
+      header: t('admin.transactions.columns.amount'),
+      enableSorting: false,
+      meta: { align: 'right' },
+      cell: ({ row }) => formatAmount(row.original.amount),
+    },
+    {
+      id: 'commission',
+      header: t('admin.transactions.columns.commission'),
+      enableSorting: false,
+      meta: { align: 'right' },
+      // Zéro tant que le séquestre n'est pas libéré : rien n'est acquis.
+      cell: ({ row }) => (row.original.commission > 0
+        ? formatAmount(row.original.commission)
+        : <span className="text-muted-foreground">—</span>),
+    },
+  ], [t, i18n.language])
 
-  const handleExport = () => {
-    window.open(exportTransactionsCsvUrl(dateParams), '_blank')
-  }
-
-  if (isLoadingTransactions) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
+  const totals = data?.totals
 
   return (
     <div className="space-y-6">
@@ -63,119 +140,132 @@ export default function TransactionsPage() {
           <h2 className="text-2xl font-bold">{t('admin.transactions.title')}</h2>
           <p className="text-muted-foreground">{t('admin.transactions.description')}</p>
         </div>
-        <Can action="read" subject="Payment">
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="mr-2 h-4 w-4" />
-            {t('admin.transactions.exportCsv')}
-          </Button>
-        </Can>
+        <Button variant="outline" onClick={() => window.open(exportPaymentsCsvUrl(filters), '_blank')}>
+          <Download className="mr-2 h-4 w-4" />
+          {t('admin.transactions.exportCsv')}
+        </Button>
       </div>
 
-      <div className="flex items-center gap-4">
-        <div className="flex items-center gap-2">
-          <Label>{t('admin.transactions.from')}</Label>
-          <DatePicker
-            value={fromDate}
-            onChange={setFromDate}
-            placeholder={t('admin.transactions.from')}
-            dateFormat="dd/MM/yyyy"
-          />
-        </div>
-        <div className="flex items-center gap-2">
-          <Label>{t('admin.transactions.to')}</Label>
-          <DatePicker
-            value={toDate}
-            onChange={setToDate}
-            placeholder={t('admin.transactions.to')}
-            dateFormat="dd/MM/yyyy"
-          />
-        </div>
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <TotalCard
+          label={t('admin.transactions.totals.collected')}
+          value={totals?.collected ?? 0}
+          hint={t('admin.transactions.totals.collectedHint')}
+        />
+        <TotalCard
+          label={t('admin.transactions.totals.inEscrow')}
+          value={totals?.inEscrow ?? 0}
+          hint={t('admin.transactions.totals.inEscrowHint')}
+        />
+        <TotalCard
+          label={t('admin.transactions.totals.commissionEarned')}
+          value={totals?.commissionEarned ?? 0}
+          hint={t('admin.transactions.totals.commissionEarnedHint')}
+          accent
+        />
+        <TotalCard
+          label={t('admin.transactions.totals.refunded')}
+          value={totals?.refunded ?? 0}
+          hint={t('admin.transactions.totals.refundedHint')}
+        />
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('admin.transactions.columns.reference')}</TableHead>
-            <TableHead>{t('admin.transactions.columns.buyer')}</TableHead>
-            <TableHead>{t('admin.transactions.columns.supplier')}</TableHead>
-            <TableHead>{t('admin.transactions.columns.amount')}</TableHead>
-            <TableHead>{t('admin.transactions.columns.commission')}</TableHead>
-            <TableHead>{t('admin.transactions.columns.date')}</TableHead>
-            <TableHead>{t('admin.transactions.columns.status')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {transactions?.data?.map(tx => (
-            <TableRow key={tx.id}>
-              <TableCell className="font-medium">
-                #
-                {tx.reference || tx.id.slice(0, 8)}
-              </TableCell>
-              <TableCell>{tx.buyerName}</TableCell>
-              <TableCell>{tx.supplierName}</TableCell>
-              <TableCell>
-                {tx.amount}
-                {' '}
-                {t('admin.transactions.currency')}
-              </TableCell>
-              <TableCell>
-                {tx.commission}
-                {' '}
-                {t('admin.transactions.currency')}
-              </TableCell>
-              <TableCell>{new Date(tx.createdAt).toLocaleDateString()}</TableCell>
-              <TableCell>
-                <Badge variant={tx.status === 'COMPLETED' ? 'default' : 'outline'}>
-                  {t(`admin.transactions.status.${tx.status.toLowerCase()}`)}
-                </Badge>
-              </TableCell>
-            </TableRow>
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative min-w-64 flex-1">
+          <Search className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+          <Input
+            className="pl-9"
+            value={search}
+            placeholder={t('admin.transactions.searchPlaceholder')}
+            onChange={(event) => {
+              setSearch(event.target.value)
+              setPage(1)
+            }}
+          />
+        </div>
+        <select
+          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+          value={status}
+          onChange={(event) => {
+            setStatus(event.target.value)
+            setPage(1)
+          }}
+        >
+          <option value="">{t('admin.transactions.allStatuses')}</option>
+          {STATUS_OPTIONS.map(value => (
+            <option key={value} value={value}>{t(`admin.transactions.status.${value}`)}</option>
           ))}
-        </TableBody>
-      </Table>
-
-      <Separator />
-
-      <div>
-        <h3 className="text-lg font-semibold mb-4">{t('admin.transactions.disputes.title')}</h3>
-        {isLoadingDisputes
-          ? <Skeleton className="h-32 w-full" />
-          : (
-              <div className="space-y-3">
-                {disputes?.data?.length === 0 && (
-                  <p className="text-sm text-muted-foreground">{t('admin.transactions.disputes.noDisputes')}</p>
-                )}
-                {disputes?.data?.map(dispute => (
-                  <Card key={dispute.id}>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center justify-between">
-                        <span>
-                          {t('admin.transactions.disputes.dispute')}
-                          {' '}
-                          #
-                          {dispute.id.slice(0, 8)}
-                        </span>
-                        <Badge variant="destructive">{t(`admin.transactions.disputes.status.${dispute.status.toLowerCase()}`)}</Badge>
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="text-sm text-muted-foreground">{dispute.reason}</p>
-                      <p className="text-sm mt-1">
-                        <span className="font-medium">
-                          {t('admin.transactions.disputes.amount')}
-                          :
-                          {' '}
-                        </span>
-                        {dispute.amount}
-                        {' '}
-                        {t('admin.transactions.currency')}
-                      </p>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
+        </select>
+        <Input
+          type="date"
+          className="w-40"
+          value={from}
+          onChange={(event) => {
+            setFrom(event.target.value)
+            setPage(1)
+          }}
+        />
+        <Input
+          type="date"
+          className="w-40"
+          value={to}
+          onChange={(event) => {
+            setTo(event.target.value)
+            setPage(1)
+          }}
+        />
       </div>
+
+      <DataTable
+        columns={columns}
+        data={data?.items ?? []}
+        total={data?.total ?? 0}
+        page={page}
+        pageSize={PAGE_SIZE}
+        onPageChange={setPage}
+        sorting={[]}
+        onSortingChange={() => {}}
+        isLoading={isLoading}
+        labels={{
+          empty: t('admin.transactions.empty'),
+          resultCount: count => t('dataTable.resultCount', { count }),
+          pageOf: (current, lastPage) => t('dataTable.pageOf', { page: current, lastPage }),
+          previous: t('dataTable.previous'),
+          next: t('dataTable.next'),
+        }}
+      />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('admin.transactions.disputes.title')}</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {isLoadingDisputes
+            ? <Skeleton className="h-24 w-full" />
+            : (disputes?.items ?? []).length === 0
+                ? (
+                    <p className="text-muted-foreground text-sm">
+                      {t('admin.transactions.disputes.noDisputes')}
+                    </p>
+                  )
+                : (
+                    <div className="space-y-2">
+                      {(disputes?.items ?? []).map(dispute => (
+                        <div
+                          key={dispute.id}
+                          className="flex items-center justify-between rounded-md border p-3 text-sm"
+                        >
+                          <span>{dispute.reason}</span>
+                          <div className="flex items-center gap-3">
+                            <span className="font-medium">{formatAmount(dispute.amount)}</span>
+                            <Badge variant="destructive">{dispute.status}</Badge>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+        </CardContent>
+      </Card>
     </div>
   )
 }

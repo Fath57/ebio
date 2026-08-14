@@ -57,6 +57,11 @@ export default [
       // Admin — Utilisateurs
       route('admin/utilisateurs', 'features/admin/users/pages/admin-users-page.tsx'),
 
+      // Admin — Bannières
+      route('admin/bannieres', 'features/admin/banners/pages/banners-page.tsx'),
+      route('admin/bannieres/nouvelle', 'features/admin/banners/pages/banner-create-page.tsx'),
+      route('admin/bannieres/:bannerId/modifier', 'features/admin/banners/pages/banner-edit-page.tsx'),
+
       // Admin — Moderation
       route('admin/moderation', 'features/admin/moderation/pages/moderation-page.tsx'),
 

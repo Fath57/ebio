@@ -1,3 +1,4 @@
+import type { TemplateName } from '../email/email-template.service'
 import type {
   BroadcastNotification,
   CommissionRates,
@@ -13,7 +14,9 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
+import { config } from '../../config/env.config'
 import { User, UserRole } from '../auth/auth.entity'
+import { EmailService } from '../email/email.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Dispute, DisputeStatus } from '../orders/entities/dispute.entity'
@@ -54,6 +57,7 @@ export class AdminService {
   constructor(
     private readonly em: EntityManager,
     private readonly notificationsService: NotificationsService,
+    private readonly emailService: EmailService,
   ) {}
 
   async getDashboardKpis(): Promise<DashboardKpi> {
@@ -367,10 +371,74 @@ export class AdminService {
       'Compte suspendu',
       `Votre compte a été suspendu : ${reason}`,
     )
+    await this.sendSupplierEmail(supplier, 'supplier-suspended', 'Votre compte eBio a été suspendu', { reason })
 
     this.logger.warn(`Supplier ${supplierId} suspended by admin ${adminId}: ${reason}`)
 
     await this.em.flush()
+  }
+
+  /**
+   * Lève une suspension et remet le fournisseur en ligne. Refuse d'agir sur un
+   * compte qui n'est pas suspendu, pour ne pas valider par erreur un dossier
+   * en attente ou rejeté.
+   */
+  async reinstateSupplier(supplierId: string, adminId: string): Promise<void> {
+    const supplier = await this.em.findOne(Supplier, { id: supplierId }, { populate: ['user'] })
+    if (!supplier) {
+      throw new NotFoundException('Fournisseur non trouvé')
+    }
+    if (supplier.validationStatus !== ValidationStatus.SUSPENDED) {
+      throw new BadRequestException('Ce fournisseur n\'est pas suspendu')
+    }
+
+    supplier.validationStatus = ValidationStatus.VALIDATED
+
+    await this.sendSupplierNotification(
+      supplier.user,
+      NotificationType.SYSTEM,
+      'Compte réactivé',
+      'La suspension de votre compte a été levée.',
+    )
+    await this.sendSupplierEmail(supplier, 'supplier-reinstated', 'Votre compte eBio est réactivé', {})
+
+    this.logger.warn(`Supplier ${supplierId} reinstated by admin ${adminId}`)
+
+    await this.em.flush()
+  }
+
+  /**
+   * Envoi d'e-mail best-effort : un échec SMTP ne doit pas annuler la décision
+   * administrative, qui reste tracée en base et dans les journaux.
+   */
+  private async sendSupplierEmail(
+    supplier: Supplier,
+    template: TemplateName,
+    subject: string,
+    data: Record<string, unknown>,
+  ): Promise<void> {
+    const email = supplier.user?.email
+    if (!email) {
+      this.logger.warn(`Supplier ${supplier.id} has no email address, skipping notification`)
+      return
+    }
+
+    try {
+      await this.emailService.sendTemplatedEmail({
+        to: email,
+        subject,
+        template,
+        data: {
+          userName: supplier.user?.name ?? '',
+          shopName: supplier.shopName,
+          dashboardUrl: `${config.clients.webApp.url}/catalogue`,
+          ...data,
+        },
+      })
+    }
+    catch (error) {
+      this.logger.error(`Failed to email supplier ${supplier.id}`, error)
+    }
   }
 
   async getTransactions(params: {
@@ -788,6 +856,147 @@ export class AdminService {
       page: params.page,
       limit: params.limit,
     }
+  }
+
+  /**
+   * Vue financière : les paiements, et non les commandes.
+   *
+   * La distinction est comptable. Une commande annulée ou jamais réglée n'a
+   * donné lieu à aucun mouvement d'argent ; l'additionner à une commande livrée
+   * produit un total dépourvu de sens. On part donc de `payments`.
+   */
+  async getPayments(params: {
+    status?: string
+    provider?: string
+    q?: string
+    from?: string
+    to?: string
+    page: number
+    limit: number
+  }): Promise<{
+    items: unknown[]
+    total: number
+    page: number
+    limit: number
+    totals: Record<string, number>
+  }> {
+    const conditions: string[] = ['1=1']
+    const queryParams: unknown[] = []
+
+    if (params.status) {
+      conditions.push(`p.status = ?`)
+      queryParams.push(params.status)
+    }
+    if (params.provider) {
+      conditions.push(`p.provider = ?`)
+      queryParams.push(params.provider)
+    }
+    if (params.from) {
+      conditions.push(`p."createdAt" >= ?`)
+      queryParams.push(new Date(params.from))
+    }
+    if (params.to) {
+      conditions.push(`p."createdAt" <= ?`)
+      queryParams.push(new Date(params.to))
+    }
+    if (params.q) {
+      conditions.push(`(o.order_number ILIKE ? OR bu.name ILIKE ? OR s.shop_name ILIKE ? OR p.provider_reference ILIKE ?)`)
+      const like = `%${params.q}%`
+      queryParams.push(like, like, like, like)
+    }
+
+    const from = `FROM payments p
+       LEFT JOIN orders o ON p.order_id = o.id
+       LEFT JOIN users bu ON o.buyer_id = bu.id
+       LEFT JOIN suppliers s ON o.supplier_id = s.id`
+    const whereClause = conditions.join(' AND ')
+
+    const [countRow] = await this.em.getConnection().execute(
+      `SELECT COUNT(*) as count ${from} WHERE ${whereClause}`,
+      queryParams,
+    ) as Array<{ count: string }>
+
+    // Les agrégats portent sur l'ensemble filtré, pas sur la page affichée.
+    const [totalsRow] = await this.em.getConnection().execute(
+      `SELECT
+         COALESCE(SUM(p.amount) FILTER (WHERE p.status IN ('CAPTURED','ESCROW','RELEASED')), 0) AS collected,
+         COALESCE(SUM(p.amount) FILTER (WHERE p.status IN ('CAPTURED','ESCROW')), 0) AS in_escrow,
+         COALESCE(SUM(o.commission_amount) FILTER (WHERE p.status = 'RELEASED'), 0) AS commission_earned,
+         COALESCE(SUM(p.amount) FILTER (WHERE p.status = 'REFUNDED'), 0) AS refunded
+       ${from} WHERE ${whereClause}`,
+      queryParams,
+    ) as Array<Record<string, unknown>>
+
+    const dataParams = [...queryParams, params.limit, (params.page - 1) * params.limit]
+    const rows = await this.em.getConnection().execute(
+      `SELECT p.id, p.amount, p.provider, p.provider_reference, p.payment_method,
+              p.operator, p.status, p.paid_at, p.released_at, p.refunded_at,
+              p."createdAt" as created_at,
+              o.id as order_id, o.order_number, o.commission_amount,
+              bu.name as buyer_name, s.shop_name as supplier_name
+       ${from}
+       WHERE ${whereClause}
+       ORDER BY p."createdAt" DESC
+       LIMIT ? OFFSET ?`,
+      dataParams,
+    )
+
+    return {
+      items: rows.map((r: Record<string, unknown>) => ({
+        id: r.id as string,
+        orderId: (r.order_id as string) ?? null,
+        orderNumber: (r.order_number as string) ?? null,
+        buyerName: (r.buyer_name as string) ?? 'Inconnu',
+        supplierName: (r.supplier_name as string) ?? 'Inconnu',
+        amount: Number(r.amount ?? 0),
+        // La commission n'est acquise qu'une fois le séquestre libéré.
+        commission: r.status === 'RELEASED' ? Number(r.commission_amount ?? 0) : 0,
+        provider: r.provider as string,
+        providerReference: (r.provider_reference as string) ?? null,
+        paymentMethod: (r.payment_method as string) ?? null,
+        operator: (r.operator as string) ?? null,
+        status: r.status as string,
+        paidAt: this.toIso(r.paid_at),
+        releasedAt: this.toIso(r.released_at),
+        refundedAt: this.toIso(r.refunded_at),
+        createdAt: this.toIso(r.created_at) ?? '',
+      })),
+      total: Number(countRow?.count ?? 0),
+      page: params.page,
+      limit: params.limit,
+      totals: {
+        collected: Number(totalsRow?.collected ?? 0),
+        inEscrow: Number(totalsRow?.in_escrow ?? 0),
+        commissionEarned: Number(totalsRow?.commission_earned ?? 0),
+        refunded: Number(totalsRow?.refunded ?? 0),
+      },
+    }
+  }
+
+  async exportPaymentsCsv(params: {
+    status?: string
+    provider?: string
+    q?: string
+    from?: string
+    to?: string
+  }): Promise<string> {
+    const result = await this.getPayments({ ...params, page: 1, limit: 10000 })
+    const header = 'Date;Référence;N° commande;Acheteur;Fournisseur;Montant;Commission;Prestataire;Réf. prestataire;Statut'
+    const rows = (result.items as Array<Record<string, unknown>>).map(item =>
+      [
+        item.createdAt,
+        item.id,
+        item.orderNumber ?? '',
+        item.buyerName,
+        item.supplierName,
+        item.amount,
+        item.commission,
+        item.provider,
+        item.providerReference ?? '',
+        item.status,
+      ].join(';'),
+    )
+    return [header, ...rows].join('\n')
   }
 
   /** Le driver renvoie les timestamps tantôt en `Date`, tantôt en chaîne. */

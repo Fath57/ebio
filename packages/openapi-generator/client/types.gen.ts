@@ -115,6 +115,36 @@ export type AssignRole = {
 };
 
 /**
+ * CreateBanner
+ *
+ * Data required to create a home banner
+ */
+export type CreateBanner = {
+  title: string;
+  subtitle?: string;
+  imageUrl: string;
+  targetType: BannerTargetType;
+  targetId: string;
+  isActive: boolean;
+  position: number;
+};
+
+/**
+ * UpdateBanner
+ *
+ * Update a banner — every field optional
+ */
+export type UpdateBanner = {
+  title?: string;
+  subtitle?: string;
+  imageUrl?: string;
+  targetType?: BannerTargetType;
+  targetId?: string;
+  isActive?: boolean;
+  position?: number;
+};
+
+/**
  * CreateConversation
  *
  * Create or retrieve an existing conversation with a supplier
@@ -1287,6 +1317,24 @@ export type DisputeResolution =
   (typeof DisputeResolution)[keyof typeof DisputeResolution];
 
 /**
+ * BannerTargetType
+ *
+ * What the banner points to when tapped
+ */
+export const BannerTargetType = {
+  SUPPLIER: "SUPPLIER",
+  PRODUCT: "PRODUCT",
+} as const;
+
+/**
+ * BannerTargetType
+ *
+ * What the banner points to when tapped
+ */
+export type BannerTargetType =
+  (typeof BannerTargetType)[keyof typeof BannerTargetType];
+
+/**
  * AiCoreMessage
  *
  * A message in the conversation history following Vercel AI SDK patterns
@@ -1519,6 +1567,7 @@ export const MediaContext = {
   TRAINING_THUMBNAIL: "TRAINING_THUMBNAIL",
   COMMUNITY_MEDIA: "COMMUNITY_MEDIA",
   CATEGORY_IMAGE: "CATEGORY_IMAGE",
+  BANNER_IMAGE: "BANNER_IMAGE",
 } as const;
 
 /**
@@ -3170,6 +3219,114 @@ export type SearchControllerGetCategoriesResponses = {
 export type SearchControllerGetCategoriesResponse =
   SearchControllerGetCategoriesResponses[keyof SearchControllerGetCategoriesResponses];
 
+export type BannersControllerFindActiveData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/banners/active";
+};
+
+export type BannersControllerFindActiveResponses = {
+  200: unknown;
+};
+
+export type BannersControllerFindAllData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/banners";
+};
+
+export type BannersControllerFindAllResponses = {
+  200: unknown;
+};
+
+export type BannersControllerCreateData = {
+  /**
+   * CreateBanner
+   *
+   * Data required to create a home banner
+   */
+  body: {
+    title: string;
+    subtitle?: string;
+    imageUrl: string;
+    /**
+     * BannerTargetType
+     *
+     * What the banner points to when tapped
+     */
+    targetType: "SUPPLIER" | "PRODUCT";
+    targetId: string;
+    isActive: boolean;
+    position: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/banners";
+};
+
+export type BannersControllerCreateResponses = {
+  201: unknown;
+};
+
+export type BannersControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/banners/{id}";
+};
+
+export type BannersControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type BannersControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/banners/{id}";
+};
+
+export type BannersControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type BannersControllerUpdateData = {
+  /**
+   * UpdateBanner
+   *
+   * Update a banner — every field optional
+   */
+  body: {
+    title?: string;
+    subtitle?: string;
+    imageUrl?: string;
+    /**
+     * BannerTargetType
+     *
+     * What the banner points to when tapped
+     */
+    targetType?: "SUPPLIER" | "PRODUCT";
+    targetId?: string;
+    isActive?: boolean;
+    position?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/banners/{id}";
+};
+
+export type BannersControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -3515,7 +3672,8 @@ export type MediaControllerInitiateUploadData = {
       | "TRAINING_CONTENT"
       | "TRAINING_THUMBNAIL"
       | "COMMUNITY_MEDIA"
-      | "CATEGORY_IMAGE";
+      | "CATEGORY_IMAGE"
+      | "BANNER_IMAGE";
     entityType?: string;
     entityId?: string;
     parts: number;
@@ -4970,6 +5128,19 @@ export type AdminControllerSuspendSupplierResponses = {
   200: unknown;
 };
 
+export type AdminControllerReinstateSupplierData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/suppliers/{id}/reinstate";
+};
+
+export type AdminControllerReinstateSupplierResponses = {
+  200: unknown;
+};
+
 export type AdminControllerGetTransactionsData = {
   body?: never;
   path?: never;
@@ -5065,6 +5236,26 @@ export type AdminControllerGetUsersData = {
 };
 
 export type AdminControllerGetUsersResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetPaymentsData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    provider: string;
+    q: string;
+    from: string;
+    to: string;
+    format: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/payments";
+};
+
+export type AdminControllerGetPaymentsResponses = {
   200: unknown;
 };
 

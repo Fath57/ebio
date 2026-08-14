@@ -23,6 +23,7 @@ export type Subjects
     | 'ContentReport'
     | 'Badge'
     | 'Category'
+    | 'Banner'
     | 'all'
 
 export type Actions = 'create' | 'read' | 'update' | 'delete' | 'manage'

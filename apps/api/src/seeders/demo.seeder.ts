@@ -5,6 +5,7 @@ import { Seeder } from '@mikro-orm/seeder'
 import { hashPassword } from 'better-auth/crypto'
 import { Account, User, UserRole } from '../modules/auth/auth.entity'
 import { Role } from '../modules/auth/entities/role.entity'
+import { Banner, BannerTargetType } from '../modules/banners/banner.entity'
 import { Conversation } from '../modules/chat/entities/conversation.entity'
 import { Message, MessageType } from '../modules/chat/entities/message.entity'
 import { CommunityGroup, GroupType } from '../modules/community/entities/community-group.entity'
@@ -307,6 +308,34 @@ export class DemoSeeder extends Seeder {
 
     await em.flush()
     console.info('  Created 32 products with photos')
+
+    // ===== BANNIÈRES D'ACCUEIL =====
+    console.info('Creating home banners...')
+    em.create(Banner, {
+      title: 'Ferme Bio de Talensac',
+      subtitle: 'Le marché nantais livré chez vous',
+      imageUrl: IMG.supplier1Cover,
+      targetType: BannerTargetType.SUPPLIER,
+      targetId: s4.id,
+      position: 0,
+    })
+    em.create(Banner, {
+      title: 'Panier de légumes de saison',
+      subtitle: 'Composé le matin même',
+      imageUrl: IMG.tomates[0],
+      targetType: BannerTargetType.PRODUCT,
+      targetId: p11.id,
+      position: 1,
+    })
+    em.create(Banner, {
+      title: 'Huiles Bio Koffi',
+      subtitle: 'Pressées à froid à Cotonou',
+      imageUrl: IMG.supplier3Cover,
+      targetType: BannerTargetType.SUPPLIER,
+      targetId: s1.id,
+      position: 2,
+    })
+    await em.flush()
 
     // --- Variants ---
     em.create(ProductVariant, { product: p1, label: '0,5 L', pricePerUnit: 1500, stock: 30 })

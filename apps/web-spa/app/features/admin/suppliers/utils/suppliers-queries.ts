@@ -1,6 +1,8 @@
 import {
   adminControllerGetSupplierById,
   adminControllerGetSuppliers,
+  adminControllerReinstateSupplier,
+  adminControllerSuspendSupplier,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export interface AdminSupplierOwner {
@@ -83,4 +85,19 @@ export function fetchAdminSupplierQueryOptions(supplierId: string) {
       return response.data as AdminSupplierDetail
     },
   }
+}
+
+export async function suspendSupplier(supplierId: string, reason: string): Promise<void> {
+  const response = await adminControllerSuspendSupplier({
+    path: { id: supplierId },
+    body: { reason },
+  })
+  if (response.error)
+    throw new Error('Failed to suspend supplier')
+}
+
+export async function reinstateSupplier(supplierId: string): Promise<void> {
+  const response = await adminControllerReinstateSupplier({ path: { id: supplierId } })
+  if (response.error)
+    throw new Error('Failed to reinstate supplier')
 }

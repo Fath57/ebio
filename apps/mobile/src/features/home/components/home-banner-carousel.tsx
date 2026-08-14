@@ -1,24 +1,21 @@
-import type { SearchResult } from '../../search/hooks/use-search'
+import type { HomeBanner } from '../hooks/use-home-banners'
 import { LinearGradient } from 'expo-linear-gradient'
 import { Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { formatPrice } from '../../search/components/search-result-card'
 
 interface HomeBannerCarouselProps {
-  items: SearchResult[]
-  onPress: (supplierId: string) => void
+  items: HomeBanner[]
+  onOpenSupplier: (supplierId: string) => void
+  onOpenProduct: (productId: string) => void
 }
 
-/** Nombre maximum de bannières affichées — au-delà, le carrousel devient une liste. */
-const MAX_BANNERS = 5
-
 /**
- * Carrousel de bannières en tête d'accueil : grande image, titre produit et
- * fournisseur en surimpression. La carte suivante dépasse volontairement
- * (« peek ») pour signaler le défilement horizontal.
+ * Carrousel de bannières en tête d'accueil : grande image, titre et sous-titre
+ * en surimpression. La carte suivante dépasse volontairement (« peek ») pour
+ * signaler le défilement horizontal.
  */
-export function HomeBannerCarousel({ items, onPress }: HomeBannerCarouselProps) {
+export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: HomeBannerCarouselProps) {
   const { width } = useWindowDimensions()
   const { semantic } = useTheme()
 
@@ -26,7 +23,6 @@ export function HomeBannerCarousel({ items, onPress }: HomeBannerCarouselProps) 
     return null
 
   const cardWidth = width - spacing[4] * 2 - spacing[8]
-  const banners = items.slice(0, MAX_BANNERS)
 
   return (
     <ScrollView
@@ -37,50 +33,34 @@ export function HomeBannerCarousel({ items, onPress }: HomeBannerCarouselProps) 
       snapToAlignment="start"
       contentContainerStyle={styles.track}
     >
-      {banners.map((item) => {
-        const { supplier, product } = item
-        const hasPromo = product.promotionalPrice !== null
-        return (
-          <Pressable
-            key={`${supplier.id}-${product.id}`}
-            style={[styles.card, { width: cardWidth, backgroundColor: semantic.bgSurface }]}
-            onPress={() => onPress(supplier.id)}
-            accessibilityRole="button"
-            accessibilityLabel={`${product.name} chez ${supplier.shopName}`}
-          >
-            {product.photo
-              ? <Image source={{ uri: product.photo }} style={styles.image} resizeMode="cover" />
-              : (
-                  <View style={[styles.image, styles.imagePlaceholder]}>
-                    <Text style={styles.placeholderLetter}>{product.name.charAt(0).toUpperCase()}</Text>
-                  </View>
-                )}
+      {items.map(banner => (
+        <Pressable
+          key={banner.id}
+          style={[styles.card, { width: cardWidth, backgroundColor: semantic.bgSurface }]}
+          onPress={() => banner.targetType === 'SUPPLIER'
+            ? onOpenSupplier(banner.targetId)
+            : onOpenProduct(banner.targetId)}
+          accessibilityRole="button"
+          accessibilityLabel={banner.subtitle ? `${banner.title} — ${banner.subtitle}` : banner.title}
+        >
+          <Image source={{ uri: banner.imageUrl }} style={styles.image} resizeMode="cover" />
 
-            <LinearGradient
-              colors={['transparent', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.88)']}
-              locations={[0, 0.55, 1]}
-              start={{ x: 0, y: 0 }}
-              end={{ x: 0, y: 1 }}
-              style={styles.scrim}
-            />
+          <LinearGradient
+            colors={['transparent', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.88)']}
+            locations={[0, 0.55, 1]}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 0, y: 1 }}
+            style={styles.scrim}
+          />
 
-            {hasPromo && (
-              <View style={styles.promoTag}>
-                <Text style={styles.promoTagText}>
-                  {formatPrice(product.promotionalPrice!)}
-                  {' '}
-                  FCFA
-                </Text>
-              </View>
-            )}
-
-            <View style={styles.caption}>
-              <Text style={styles.title} numberOfLines={1}>{product.name}</Text>
-              <Text style={styles.subtitle} numberOfLines={1}>{supplier.shopName}</Text>
-            </View>
-          </Pressable>
-        )
-      })}
+          <View style={styles.caption}>
+            <Text style={styles.title} numberOfLines={1}>{banner.title}</Text>
+            {banner.subtitle
+              ? <Text style={styles.subtitle} numberOfLines={1}>{banner.subtitle}</Text>
+              : null}
+          </View>
+        </Pressable>
+      ))}
     </ScrollView>
   )
 }
@@ -100,32 +80,8 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-  imagePlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: colors.green[50],
-  },
-  placeholderLetter: {
-    fontFamily: fonts.display,
-    fontSize: 48,
-    color: colors.green[200],
-  },
   scrim: {
     ...StyleSheet.absoluteFillObject,
-  },
-  promoTag: {
-    position: 'absolute',
-    top: spacing[3],
-    left: spacing[3],
-    backgroundColor: colors.coral[400],
-    paddingHorizontal: spacing[3],
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  promoTagText: {
-    fontFamily: fonts.sansBd,
-    fontSize: 11,
-    color: colors.neutral[0],
   },
   caption: {
     position: 'absolute',

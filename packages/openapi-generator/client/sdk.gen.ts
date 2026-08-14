@@ -14,6 +14,8 @@ import type {
   AdminControllerGetOrderByIdResponses,
   AdminControllerGetOrdersData,
   AdminControllerGetOrdersResponses,
+  AdminControllerGetPaymentsData,
+  AdminControllerGetPaymentsResponses,
   AdminControllerGetReportsData,
   AdminControllerGetReportsResponses,
   AdminControllerGetSettingsData,
@@ -28,6 +30,8 @@ import type {
   AdminControllerGetUsersResponses,
   AdminControllerGetValidationsData,
   AdminControllerGetValidationsResponses,
+  AdminControllerReinstateSupplierData,
+  AdminControllerReinstateSupplierResponses,
   AdminControllerResolveDisputeData,
   AdminControllerResolveDisputeResponses,
   AdminControllerResolveReportData,
@@ -62,6 +66,18 @@ import type {
   AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses,
   AppControllerGetHelloData,
   AppControllerGetHelloResponses,
+  BannersControllerCreateData,
+  BannersControllerCreateResponses,
+  BannersControllerFindActiveData,
+  BannersControllerFindActiveResponses,
+  BannersControllerFindAllData,
+  BannersControllerFindAllResponses,
+  BannersControllerFindByIdData,
+  BannersControllerFindByIdResponses,
+  BannersControllerRemoveData,
+  BannersControllerRemoveResponses,
+  BannersControllerUpdateData,
+  BannersControllerUpdateResponses,
   CategoriesControllerCreateData,
   CategoriesControllerCreateResponses,
   CategoriesControllerFindByIdData,
@@ -935,6 +951,76 @@ export const searchControllerGetCategories = <
     unknown,
     ThrowOnError
   >({ url: "/api/search/categories", ...options });
+
+export const bannersControllerFindActive = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<BannersControllerFindActiveData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    BannersControllerFindActiveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/banners/active", ...options });
+
+export const bannersControllerFindAll = <ThrowOnError extends boolean = false>(
+  options?: Options<BannersControllerFindAllData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    BannersControllerFindAllResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/banners", ...options });
+
+export const bannersControllerCreate = <ThrowOnError extends boolean = false>(
+  options: Options<BannersControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    BannersControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/banners",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const bannersControllerRemove = <ThrowOnError extends boolean = false>(
+  options: Options<BannersControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    BannersControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/banners/{id}", ...options });
+
+export const bannersControllerFindById = <ThrowOnError extends boolean = false>(
+  options: Options<BannersControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    BannersControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/banners/{id}", ...options });
+
+export const bannersControllerUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<BannersControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    BannersControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/banners/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const suppliersControllerRegister = <
   ThrowOnError extends boolean = false,
@@ -2273,6 +2359,17 @@ export const adminControllerSuspendSupplier = <
     },
   });
 
+export const adminControllerReinstateSupplier = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerReinstateSupplierData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminControllerReinstateSupplierResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/suppliers/{id}/reinstate", ...options });
+
 export const adminControllerGetTransactions = <
   ThrowOnError extends boolean = false,
 >(
@@ -2334,6 +2431,17 @@ export const adminControllerGetUsers = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({ url: "/api/admin/users", ...options });
+
+export const adminControllerGetPayments = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetPaymentsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetPaymentsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payments", ...options });
 
 export const adminControllerGetSettings = <
   ThrowOnError extends boolean = false,

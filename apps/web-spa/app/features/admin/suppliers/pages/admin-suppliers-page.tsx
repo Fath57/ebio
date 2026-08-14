@@ -11,11 +11,13 @@ import { fetchAdminSuppliersQueryOptions } from '../utils/suppliers-queries'
 
 const PAGE_SIZE = 20
 
-const STATUS_OPTIONS = ['PENDING', 'VALIDATED', 'REJECTED']
+const STATUS_OPTIONS = ['PENDING', 'VALIDATED', 'COMPLEMENT_REQUESTED', 'SUSPENDED', 'REJECTED']
 
 const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   PENDING: 'secondary',
   VALIDATED: 'default',
+  COMPLEMENT_REQUESTED: 'secondary',
+  SUSPENDED: 'destructive',
   REJECTED: 'destructive',
 }
 

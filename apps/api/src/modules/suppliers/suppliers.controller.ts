@@ -14,6 +14,7 @@ import {
 import { z } from 'zod'
 import { CanRead, CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
+import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Public, Session } from '../auth/auth.decorator'
@@ -28,7 +29,7 @@ import { SupplierMapper } from './suppliers.mapper'
 import { SuppliersService } from './suppliers.service'
 
 @Controller('suppliers')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, ActiveSupplierGuard)
 export class SuppliersController {
   constructor(
     private readonly suppliersService: SuppliersService,

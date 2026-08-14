@@ -147,6 +147,7 @@
   "nav": {
     "account": "My account",
     "analytics": "Analytics",
+    "banners": "Banners",
     "catalogue": "Catalogue",
     "categories": "Categories",
     "dashboard": "Dashboard",
@@ -485,6 +486,45 @@
     }
   },
   "admin": {
+    "banners": {
+      "title": "Banners",
+      "description": "Highlights in the mobile home carousel.",
+      "add": "New banner",
+      "addDescription": "Pick the image, title and destination.",
+      "edit": "Edit banner",
+      "empty": "No banners.",
+      "notFound": "Banner not found.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "brokenTarget": "Target deleted",
+      "columns": {
+        "position": "Order",
+        "preview": "Image",
+        "title": "Title",
+        "target": "Destination",
+        "status": "Status"
+      },
+      "targetType": {
+        "SUPPLIER": "Supplier",
+        "PRODUCT": "Product"
+      },
+      "form": {
+        "title": "Title",
+        "subtitle": "Subtitle",
+        "subtitleHint": "Shown under the title, smaller.",
+        "image": "Image",
+        "imageHint": "Wide format recommended, 2:1 — e.g. 1200×600.",
+        "targetType": "Destination type",
+        "target": "Destination",
+        "selectSupplier": "Choose a supplier…",
+        "productIdPlaceholder": "Product identifier",
+        "productIdHint": "Paste the product identifier from its detail page.",
+        "position": "Order",
+        "positionHint": "Ascending: 0 shows first.",
+        "isActive": "Active",
+        "isActiveHint": "An inactive banner never appears in the app."
+      }
+    },
     "categories": {
       "title": "Categories management",
       "description": "Manage product categories on the platform",
@@ -664,13 +704,7 @@
       }
     },
     "suppliers": {
-      "title": "Suppliers",
-      "description": "Every supplier, validated or not.",
-      "searchPlaceholder": "Shop, owner name or email…",
       "allStatuses": "All statuses",
-      "empty": "No suppliers.",
-      "notFound": "Supplier not found.",
-      "notLocated": "Not located",
       "columns": {
         "shop": "Shop",
         "owner": "Owner",
@@ -680,11 +714,16 @@
         "rating": "Rating",
         "located": "Location"
       },
-      "status": {
-        "PENDING": "Pending",
-        "VALIDATED": "Validated",
-        "REJECTED": "Rejected"
+      "days": {
+        "monday": "Monday",
+        "tuesday": "Tuesday",
+        "wednesday": "Wednesday",
+        "thursday": "Thursday",
+        "friday": "Friday",
+        "saturday": "Saturday",
+        "sunday": "Sunday"
       },
+      "description": "Every supplier, validated or not.",
       "detail": {
         "activity": "Activity",
         "owner": "Owner",
@@ -701,38 +740,40 @@
         "closed": "Closed",
         "noOpeningHours": "No opening hours set."
       },
-      "days": {
-        "monday": "Monday",
-        "tuesday": "Tuesday",
-        "wednesday": "Wednesday",
-        "thursday": "Thursday",
-        "friday": "Friday",
-        "saturday": "Saturday",
-        "sunday": "Sunday"
-      }
+      "empty": "No suppliers.",
+      "notFound": "Supplier not found.",
+      "notLocated": "Not located",
+      "searchPlaceholder": "Shop, owner name or email…",
+      "status": {
+        "COMPLEMENT_REQUESTED": "Documents requested",
+        "PENDING": "Pending",
+        "REJECTED": "Rejected",
+        "SUSPENDED": "Suspended",
+        "VALIDATED": "Validated"
+      },
+      "suspension": {
+        "title": "Account suspension",
+        "hint": "A suspended supplier disappears from search and the map, and can no longer edit their catalogue or handle orders. They are notified by email.",
+        "suspendedHint": "This account is suspended. Reinstating makes it visible again and restores full access.",
+        "reasonPlaceholder": "Reason shared with the supplier…",
+        "suspend": "Suspend account",
+        "reinstate": "Lift suspension"
+      },
+      "title": "Suppliers"
     },
     "transactions": {
-      "title": "Transactions",
-      "description": "Platform financial overview",
-      "currency": "FCFA",
-      "exportCsv": "Export CSV",
-      "from": "From",
-      "to": "To",
+      "allStatuses": "All statuses",
       "columns": {
+        "date": "Date",
         "reference": "Reference",
         "buyer": "Buyer",
         "supplier": "Supplier",
+        "status": "Status",
         "amount": "Amount",
-        "commission": "Commission",
-        "date": "Date",
-        "status": "Status"
+        "commission": "Commission"
       },
-      "status": {
-        "completed": "Completed",
-        "pending": "Pending",
-        "failed": "Failed",
-        "refunded": "Refunded"
-      },
+      "currency": "FCFA",
+      "description": "Real payments: collections, escrow and commissions.",
       "disputes": {
         "title": "Disputes",
         "dispute": "Dispute",
@@ -743,6 +784,30 @@
           "resolved": "Resolved",
           "closed": "Closed"
         }
+      },
+      "empty": "No payments.",
+      "exportCsv": "Export CSV",
+      "from": "From",
+      "searchPlaceholder": "Order number, buyer, shop or provider reference…",
+      "status": {
+        "PENDING": "Pending",
+        "CAPTURED": "Collected",
+        "ESCROW": "In escrow",
+        "RELEASED": "Released",
+        "REFUNDED": "Refunded",
+        "FAILED": "Failed"
+      },
+      "title": "Transactions",
+      "to": "To",
+      "totals": {
+        "collected": "Collected",
+        "collectedHint": "Money actually received from buyers.",
+        "inEscrow": "In escrow",
+        "inEscrowHint": "Held by the platform, owed to suppliers.",
+        "commissionEarned": "Commission earned",
+        "commissionEarnedHint": "Only on released payments.",
+        "refunded": "Refunded",
+        "refundedHint": "Returned to buyers."
       }
     },
     "users": {

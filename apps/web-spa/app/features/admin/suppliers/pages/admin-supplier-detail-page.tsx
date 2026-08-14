@@ -3,11 +3,17 @@ import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { ArrowLeft, Ban, RotateCcw } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
-import { fetchAdminSupplierQueryOptions } from '../utils/suppliers-queries'
+import {
+  fetchAdminSupplierQueryOptions,
+  reinstateSupplier,
+  suspendSupplier,
+} from '../utils/suppliers-queries'
 
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
@@ -23,9 +29,30 @@ function InfoRow({ label, value }: { label: string, value: string | null }) {
 export default function AdminSupplierDetailPage() {
   const { t, i18n } = useTranslation()
   const { supplierId } = useParams()
+  const queryClient = useQueryClient()
+  const [reason, setReason] = useState('')
   const { data: supplier, isLoading } = useQuery({
     ...fetchAdminSupplierQueryOptions(supplierId ?? ''),
     enabled: Boolean(supplierId),
+  })
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['admin', 'suppliers'] })
+    // Suspendre ou réactiver modifie le statut lu par la file de validation.
+    queryClient.invalidateQueries({ queryKey: ['admin', 'validation'] })
+  }
+
+  const suspend = useMutation({
+    mutationFn: () => suspendSupplier(supplierId ?? '', reason),
+    onSuccess: () => {
+      setReason('')
+      invalidate()
+    },
+  })
+
+  const reinstate = useMutation({
+    mutationFn: () => reinstateSupplier(supplierId ?? ''),
+    onSuccess: invalidate,
   })
 
   if (isLoading) {
@@ -122,6 +149,50 @@ export default function AdminSupplierDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('admin.suppliers.suspension.title')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {supplier.validationStatus === 'SUSPENDED'
+            ? (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    {t('admin.suppliers.suspension.suspendedHint')}
+                  </p>
+                  <Button
+                    variant="outline"
+                    disabled={reinstate.isPending}
+                    onClick={() => reinstate.mutate()}
+                  >
+                    <RotateCcw className="mr-2 h-4 w-4" />
+                    {t('admin.suppliers.suspension.reinstate')}
+                  </Button>
+                </>
+              )
+            : (
+                <>
+                  <p className="text-muted-foreground text-sm">
+                    {t('admin.suppliers.suspension.hint')}
+                  </p>
+                  <Textarea
+                    value={reason}
+                    onChange={event => setReason(event.target.value)}
+                    placeholder={t('admin.suppliers.suspension.reasonPlaceholder')}
+                  />
+                  <Button
+                    variant="destructive"
+                    disabled={suspend.isPending || reason.trim().length === 0}
+                    onClick={() => suspend.mutate()}
+                  >
+                    <Ban className="mr-2 h-4 w-4" />
+                    {t('admin.suppliers.suspension.suspend')}
+                  </Button>
+                </>
+              )}
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

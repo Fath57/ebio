@@ -147,6 +147,7 @@
   "nav": {
     "account": "Mon compte",
     "analytics": "Statistiques",
+    "banners": "Bannières",
     "catalogue": "Catalogue",
     "categories": "Catégories",
     "dashboard": "Tableau de bord",
@@ -485,6 +486,45 @@
     }
   },
   "admin": {
+    "banners": {
+      "title": "Bannières",
+      "description": "Mises en avant du carrousel d'accueil mobile.",
+      "add": "Nouvelle bannière",
+      "addDescription": "Choisissez l'image, le titre et la destination.",
+      "edit": "Modifier la bannière",
+      "empty": "Aucune bannière.",
+      "notFound": "Bannière introuvable.",
+      "active": "Active",
+      "inactive": "Inactive",
+      "brokenTarget": "Cible supprimée",
+      "columns": {
+        "position": "Ordre",
+        "preview": "Visuel",
+        "title": "Titre",
+        "target": "Destination",
+        "status": "État"
+      },
+      "targetType": {
+        "SUPPLIER": "Fournisseur",
+        "PRODUCT": "Produit"
+      },
+      "form": {
+        "title": "Titre",
+        "subtitle": "Sous-titre",
+        "subtitleHint": "Affiché sous le titre, en plus petit.",
+        "image": "Visuel",
+        "imageHint": "Format large recommandé, 2:1 — par exemple 1200×600.",
+        "targetType": "Type de destination",
+        "target": "Destination",
+        "selectSupplier": "Choisir un fournisseur…",
+        "productIdPlaceholder": "Identifiant du produit",
+        "productIdHint": "Collez l'identifiant du produit depuis sa fiche.",
+        "position": "Ordre",
+        "positionHint": "Croissant : 0 s'affiche en premier.",
+        "isActive": "Active",
+        "isActiveHint": "Une bannière inactive n'apparaît pas dans l'application."
+      }
+    },
     "categories": {
       "title": "Gestion des catégories",
       "description": "Gérez les catégories de produits de la plateforme",
@@ -664,13 +704,7 @@
       }
     },
     "suppliers": {
-      "title": "Fournisseurs",
-      "description": "Tous les fournisseurs, validés ou non.",
-      "searchPlaceholder": "Boutique, nom ou email du propriétaire…",
       "allStatuses": "Tous les statuts",
-      "empty": "Aucun fournisseur.",
-      "notFound": "Fournisseur introuvable.",
-      "notLocated": "Non localisé",
       "columns": {
         "shop": "Boutique",
         "owner": "Propriétaire",
@@ -680,11 +714,16 @@
         "rating": "Note",
         "located": "Localisation"
       },
-      "status": {
-        "PENDING": "En attente",
-        "VALIDATED": "Validé",
-        "REJECTED": "Rejeté"
+      "days": {
+        "monday": "Lundi",
+        "tuesday": "Mardi",
+        "wednesday": "Mercredi",
+        "thursday": "Jeudi",
+        "friday": "Vendredi",
+        "saturday": "Samedi",
+        "sunday": "Dimanche"
       },
+      "description": "Tous les fournisseurs, validés ou non.",
       "detail": {
         "activity": "Activité",
         "owner": "Propriétaire",
@@ -701,38 +740,40 @@
         "closed": "Fermé",
         "noOpeningHours": "Aucun horaire renseigné."
       },
-      "days": {
-        "monday": "Lundi",
-        "tuesday": "Mardi",
-        "wednesday": "Mercredi",
-        "thursday": "Jeudi",
-        "friday": "Vendredi",
-        "saturday": "Samedi",
-        "sunday": "Dimanche"
-      }
+      "empty": "Aucun fournisseur.",
+      "notFound": "Fournisseur introuvable.",
+      "notLocated": "Non localisé",
+      "searchPlaceholder": "Boutique, nom ou email du propriétaire…",
+      "status": {
+        "COMPLEMENT_REQUESTED": "Complément demandé",
+        "PENDING": "En attente",
+        "REJECTED": "Rejeté",
+        "SUSPENDED": "Suspendu",
+        "VALIDATED": "Validé"
+      },
+      "suspension": {
+        "title": "Suspension du compte",
+        "hint": "Un fournisseur suspendu disparaît des recherches et de la carte, et ne peut plus modifier son catalogue ni traiter de commandes. Il en est averti par e-mail.",
+        "suspendedHint": "Ce compte est suspendu. La réactivation le rend de nouveau visible et lui rend l'accès complet.",
+        "reasonPlaceholder": "Motif communiqué au fournisseur…",
+        "suspend": "Suspendre le compte",
+        "reinstate": "Lever la suspension"
+      },
+      "title": "Fournisseurs"
     },
     "transactions": {
-      "title": "Transactions",
-      "description": "Suivi financier de la plateforme",
-      "currency": "FCFA",
-      "exportCsv": "Exporter CSV",
-      "from": "Du",
-      "to": "Au",
+      "allStatuses": "Tous les statuts",
       "columns": {
+        "date": "Date",
         "reference": "Référence",
         "buyer": "Acheteur",
         "supplier": "Fournisseur",
+        "status": "Statut",
         "amount": "Montant",
-        "commission": "Commission",
-        "date": "Date",
-        "status": "Statut"
+        "commission": "Commission"
       },
-      "status": {
-        "completed": "Terminé",
-        "pending": "En attente",
-        "failed": "Échoué",
-        "refunded": "Remboursé"
-      },
+      "currency": "FCFA",
+      "description": "Paiements réels : encaissements, séquestre et commissions.",
       "disputes": {
         "title": "Litiges",
         "dispute": "Litige",
@@ -743,6 +784,30 @@
           "resolved": "Résolu",
           "closed": "Fermé"
         }
+      },
+      "empty": "Aucun paiement.",
+      "exportCsv": "Exporter CSV",
+      "from": "Du",
+      "searchPlaceholder": "N° de commande, acheteur, boutique ou référence prestataire…",
+      "status": {
+        "PENDING": "En attente",
+        "CAPTURED": "Encaissé",
+        "ESCROW": "Sous séquestre",
+        "RELEASED": "Reversé",
+        "REFUNDED": "Remboursé",
+        "FAILED": "Échoué"
+      },
+      "title": "Transactions",
+      "to": "Au",
+      "totals": {
+        "collected": "Encaissé",
+        "collectedHint": "Argent réellement reçu des acheteurs.",
+        "inEscrow": "Sous séquestre",
+        "inEscrowHint": "Retenu par la plateforme, dû aux fournisseurs.",
+        "commissionEarned": "Commissions acquises",
+        "commissionEarnedHint": "Uniquement sur les paiements reversés.",
+        "refunded": "Remboursé",
+        "refundedHint": "Rendu aux acheteurs."
       }
     },
     "users": {

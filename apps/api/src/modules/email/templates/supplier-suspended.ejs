@@ -1,0 +1,18 @@
+<%- include('partials/heading', { text: 'Votre compte a été suspendu', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<p>
+  Le compte fournisseur <strong><%= shopName %></strong> a été suspendu par notre équipe.
+  Votre boutique n'apparaît plus dans les recherches ni sur la carte, et vous ne pouvez
+  plus modifier votre catalogue ni traiter de nouvelles commandes.
+</p>
+
+<p><strong>Motif :</strong> <%= reason %></p>
+
+<p>
+  Si vous pensez qu'il s'agit d'une erreur, ou une fois la situation régularisée,
+  répondez à cet e-mail : notre équipe réexaminera votre dossier.
+</p>
+
+<p>L'équipe eBio</p>

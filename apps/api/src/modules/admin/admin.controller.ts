@@ -132,6 +132,16 @@ export class AdminController {
     return { success: true }
   }
 
+  @Patch('suppliers/:id/reinstate')
+  async reinstateSupplier(
+    @Param('id') id: string,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const req = res.req as unknown as JwtAuthenticatedRequest
+    await this.adminService.reinstateSupplier(id, req.user.sub)
+    return { success: true }
+  }
+
   @Get('transactions')
   async getTransactions(
     @Query('from') from?: string,
@@ -220,6 +230,36 @@ export class AdminController {
       q,
       sortBy,
       sortDir,
+      page: Number(page),
+      limit: Number(limit),
+    })
+  }
+
+  @Get('payments')
+  async getPayments(
+    @Query('status') status?: string,
+    @Query('provider') provider?: string,
+    @Query('q') q?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('format') format: string = 'json',
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    if (format === 'csv') {
+      const csv = await this.adminService.exportPaymentsCsv({ status, provider, q, from, to })
+      res!.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res!.setHeader('Content-Disposition', 'attachment; filename=paiements.csv')
+      return csv
+    }
+
+    return this.adminService.getPayments({
+      status,
+      provider,
+      q,
+      from,
+      to,
       page: Number(page),
       limit: Number(limit),
     })

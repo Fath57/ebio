@@ -12,6 +12,7 @@ import {
 import { z } from 'zod'
 import { CanCreate, CanRead, CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
+import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
@@ -28,7 +29,7 @@ import { OrderMapper } from './orders.mapper'
 import { OrdersService } from './orders.service'
 
 @Controller('orders')
-@UseGuards(AuthGuard)
+@UseGuards(AuthGuard, ActiveSupplierGuard)
 export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,

@@ -8,6 +8,8 @@ export type TemplateName
     | 'verify-email'
     | 'welcome'
     | 'otp-code'
+    | 'supplier-suspended'
+    | 'supplier-reinstated'
 
 @Injectable()
 export class EmailTemplateService {
