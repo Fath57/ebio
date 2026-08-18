@@ -99,7 +99,10 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
       setUploadedMedia(prev => [...prev, uploaded])
       return uploaded
     }
-    catch {
+    catch (error) {
+      // Swallowing this left every failure looking like nothing happened —
+      // a blocked cross-origin PUT to the bucket in particular.
+      console.error('[media] upload failed', error)
       return null
     }
     finally {

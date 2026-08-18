@@ -15,6 +15,7 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -124,59 +125,67 @@ export function OrderTracking({
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isConfirming, setIsConfirming] = useState(false)
+  const [isRefreshing, setIsRefreshing] = useState(false)
   const [detailsExpanded, setDetailsExpanded] = useState(true)
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
 
-  useEffect(() => {
-    async function fetchOrder(): Promise<void> {
-      try {
-        const res = await apiFetch(`/api/orders/${orderId}`)
-        if (res.ok) {
-          const raw = await res.json()
-          const mapped: OrderDetail = {
-            id: raw.id,
-            orderNumber: raw.orderNumber,
-            supplierName: raw.supplierName,
-            supplierId: raw.supplierId,
-            currentStatus: raw.status,
-            total: raw.totalAmount ?? raw.total ?? 0,
-            pickupMode: raw.pickupMode ?? 'ON_SITE',
-            paymentMethod: raw.paymentMethod ?? 'CASH_ON_DELIVERY',
-            deliveryAddress: raw.deliveryAddress ?? null,
-            createdAt: raw.createdAt,
-            items: ((raw.items ?? []) as Array<Record<string, unknown>>).map(item => ({
-              productName: item.productName as string,
-              productPhoto: (item.productPhoto ?? null) as string | null,
-              quantity: item.quantity as number,
-              unitPrice: (item.unitPrice ?? 0) as number,
-              totalPrice: (item.totalPrice ?? (item.unitPrice as number ?? 0) * (item.quantity as number ?? 1)) as number,
-            })),
-            steps: STATUS_ORDER.map(status => ({
-              status,
-              label: STATUS_CONFIG[status]?.label ?? status,
-              reachedAt:
-                status === 'PLACED'
-                  ? raw.createdAt
-                  : status === 'ACCEPTED'
-                    ? raw.acceptedAt
-                    : status === 'DELIVERED'
-                      ? raw.deliveredAt
-                      : null,
-            })),
-          }
-          setOrder(mapped)
+  const fetchOrder = useCallback(async (): Promise<void> => {
+    try {
+      const res = await apiFetch(`/api/orders/${orderId}`)
+      if (res.ok) {
+        const raw = await res.json()
+        const mapped: OrderDetail = {
+          id: raw.id,
+          orderNumber: raw.orderNumber,
+          supplierName: raw.supplierName,
+          supplierId: raw.supplierId,
+          currentStatus: raw.status,
+          total: raw.totalAmount ?? raw.total ?? 0,
+          pickupMode: raw.pickupMode ?? 'ON_SITE',
+          paymentMethod: raw.paymentMethod ?? 'CASH_ON_DELIVERY',
+          deliveryAddress: raw.deliveryAddress ?? null,
+          createdAt: raw.createdAt,
+          items: ((raw.items ?? []) as Array<Record<string, unknown>>).map(item => ({
+            productName: item.productName as string,
+            productPhoto: (item.productPhoto ?? null) as string | null,
+            quantity: item.quantity as number,
+            unitPrice: (item.unitPrice ?? 0) as number,
+            totalPrice: (item.totalPrice ?? (item.unitPrice as number ?? 0) * (item.quantity as number ?? 1)) as number,
+          })),
+          steps: STATUS_ORDER.map(status => ({
+            status,
+            label: STATUS_CONFIG[status]?.label ?? status,
+            reachedAt:
+              status === 'PLACED'
+                ? raw.createdAt
+                : status === 'ACCEPTED'
+                  ? raw.acceptedAt
+                  : status === 'DELIVERED'
+                    ? raw.deliveredAt
+                    : null,
+          })),
         }
-      }
-      catch {
-        // Silently fail
-      }
-      finally {
-        setIsLoading(false)
+        setOrder(mapped)
       }
     }
-    fetchOrder()
+    catch {
+      // Silently fail
+    }
+    finally {
+      setIsLoading(false)
+      setIsRefreshing(false)
+    }
   }, [orderId])
+
+  useEffect(() => {
+    fetchOrder()
+  }, [fetchOrder])
+
+  const handleRefresh = useCallback(() => {
+    setIsRefreshing(true)
+    fetchOrder()
+  }, [fetchOrder])
 
   const handleConfirm = useCallback(async () => {
     setIsConfirming(true)
@@ -231,6 +240,16 @@ export function OrderTracking({
         style={styles.scrollView}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: tabBarHeight + spacing[6] + (isDelivered ? 76 : 0) }]}
         showsVerticalScrollIndicator={false}
+        // The status advances on the supplier's side, with nothing pushed here.
+        // Pulling is the only way to see it move without leaving the screen.
+        refreshControl={(
+          <RefreshControl
+            refreshing={isRefreshing}
+            onRefresh={handleRefresh}
+            tintColor={colors.green[400]}
+            colors={[colors.green[400]]}
+          />
+        )}
       >
         {/* Cancelled banner */}
         {isCancelled && (

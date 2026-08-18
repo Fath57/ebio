@@ -136,7 +136,8 @@
       "title": "Accès non autorisé",
       "description": "Vous n'avez pas les droits nécessaires pour accéder à cette page.",
       "backHome": "Retour à l'accueil"
-    }
+    },
+    "loading": "Chargement…"
   },
   "userRoles": {
     "BUYER": "Acheteur",
@@ -544,7 +545,21 @@
         "position": "Ordre",
         "positionHint": "Croissant : 0 s'affiche en premier.",
         "isActive": "Active",
-        "isActiveHint": "Une bannière inactive n'apparaît pas dans l'application."
+        "isActiveHint": "Une bannière inactive n'apparaît pas dans l'application.",
+        "pickImage": "Choisir une image",
+        "replaceImage": "Recadrer ou remplacer",
+        "preview": "Aperçu mobile",
+        "titlePlaceholder": "Titre de la bannière",
+        "noResult": "Aucun résultat",
+        "pick": {
+          "SUPPLIER": "Choisir une boutique",
+          "PRODUCT": "Choisir un produit"
+        },
+        "search": {
+          "SUPPLIER": "Rechercher une boutique…",
+          "PRODUCT": "Rechercher un produit…"
+        },
+        "uploadError": "L'image n'a pas pu être envoyée. Réessayez ou vérifiez la console."
       }
     },
     "categories": {
@@ -906,5 +921,13 @@
     "pageOf": "Page {{page}} / {{lastPage}}",
     "resultCount_one": "{{count}} résultat",
     "resultCount_other": "{{count}} résultats"
+  },
+  "media": {
+    "cropper": {
+      "title": "Recadrer l'image",
+      "description": "Déplacez et zoomez pour choisir la zone visible. Le cadre respecte le format 2:1 du carrousel.",
+      "zoom": "Zoom",
+      "confirm": "Valider le recadrage"
+    }
   }
 }

@@ -75,8 +75,12 @@ export class SearchService {
     const radiusMeters = radius !== undefined && radius > 0 ? radius : DEFAULT_RADIUS_METERS
     const baseParams: unknown[] = []
 
+    // A suspended shop disappears from the catalogue, always. Filtering on
+    // `VALIDATED` instead would also hide shops merely awaiting review, which
+    // is what the optional `validatedOnly` flag below is for.
     let whereClause = `
       WHERE p.status = 'ACTIVE'
+        AND s.validation_status <> 'SUSPENDED'
     `
 
     if (hasLocation) {
@@ -197,6 +201,7 @@ export class SearchService {
         FROM products p
         JOIN suppliers s ON p.supplier_id = s.id
         WHERE p.status = 'ACTIVE'
+          AND s.validation_status <> 'SUSPENDED'
           AND s.location IS NOT NULL
           AND ST_DWithin(s.location, ST_MakePoint($1, $2)::geography, 50000)
           AND p.name ILIKE $3

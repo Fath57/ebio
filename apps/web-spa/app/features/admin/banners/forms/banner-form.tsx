@@ -1,4 +1,5 @@
 import type { Resolver } from 'react-hook-form'
+import type { PickerOption } from '../components/entity-picker'
 import type { BannerTargetType } from '../utils/banners-queries'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
@@ -13,13 +14,15 @@ import {
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQuery } from '@tanstack/react-query'
+import { Package, Store } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { fetchAdminSuppliersQueryOptions } from '@/features/admin/suppliers/utils/suppliers-queries'
-import { ImageUpload } from '@/features/media/components/image-upload'
+import { BannerImageField } from '../components/banner-image-field'
+import { BannerPreview } from '../components/banner-preview'
+import { EntityPicker } from '../components/entity-picker'
+import { searchProducts, searchSuppliers } from '../utils/target-search'
 
 const bannerSchema = z.object({
   title: z.string().min(1),
@@ -37,10 +40,24 @@ interface BannerFormProps {
   onSubmit: (data: BannerFormData) => void
   isPending: boolean
   initialData?: Partial<BannerFormData>
+  /** Label and picture of the target being edited, so the picker opens filled. */
+  initialTarget?: PickerOption | null
 }
 
-export const BannerForm: React.FC<BannerFormProps> = ({ onSubmit, isPending, initialData }) => {
+const TARGET_TYPES: Array<{ value: BannerTargetType, icon: typeof Store }> = [
+  { value: 'SUPPLIER', icon: Store },
+  { value: 'PRODUCT', icon: Package },
+]
+
+export const BannerForm: React.FC<BannerFormProps> = ({
+  onSubmit,
+  isPending,
+  initialData,
+  initialTarget,
+}) => {
   const { t } = useTranslation()
+  const [target, setTarget] = React.useState<PickerOption | null>(initialTarget ?? null)
+
   const form = useForm<BannerFormData>({
     resolver: zodResolver(bannerSchema) as Resolver<BannerFormData>,
     defaultValues: {
@@ -55,132 +72,66 @@ export const BannerForm: React.FC<BannerFormProps> = ({ onSubmit, isPending, ini
   })
 
   const targetType = form.watch('targetType') as BannerTargetType
+  const targetId = form.watch('targetId')
+  const imageUrl = form.watch('imageUrl')
+  const title = form.watch('title')
+  const subtitle = form.watch('subtitle')
 
-  // Liste large : le back-office compte peu de fournisseurs, un select suffit.
-  const { data: suppliers } = useQuery({
-    ...fetchAdminSuppliersQueryOptions({ page: 1 }),
-    enabled: targetType === 'SUPPLIER',
-  })
+  // Bound per type so switching the type re-runs the right search.
+  const handleSearch = React.useCallback(
+    (query: string) => (targetType === 'SUPPLIER' ? searchSuppliers(query) : searchProducts(query)),
+    [targetType],
+  )
+
+  function handleSelectTarget(option: PickerOption) {
+    setTarget(option)
+    form.setValue('targetId', option.id, { shouldValidate: true })
+    // A banner usually carries the name of what it points at; offering it saves
+    // retyping, without overwriting a title the editor already wrote.
+    if (!form.getValues('title')) {
+      form.setValue('title', option.label)
+    }
+    if (!form.getValues('subtitle') && option.context) {
+      form.setValue('subtitle', option.context)
+    }
+  }
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-        <FormField
-          control={form.control}
-          name="title"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('admin.banners.form.title')}</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="subtitle"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('admin.banners.form.subtitle')}</FormLabel>
-              <FormControl>
-                <Input {...field} />
-              </FormControl>
-              <FormDescription>{t('admin.banners.form.subtitleHint')}</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="imageUrl"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('admin.banners.form.image')}</FormLabel>
-              <FormControl>
-                <ImageUpload
-                  context="BANNER_IMAGE"
-                  initialUrl={field.value || undefined}
-                  onUrlChange={url => form.setValue('imageUrl', url ?? '')}
-                />
-              </FormControl>
-              <FormDescription>{t('admin.banners.form.imageHint')}</FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="targetType"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('admin.banners.form.targetType')}</FormLabel>
-              <FormControl>
-                <select
-                  className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-                  value={field.value}
-                  onChange={(event) => {
-                    field.onChange(event.target.value)
-                    // La cible précédente n'a plus de sens si le type change.
-                    form.setValue('targetId', '')
-                  }}
-                >
-                  <option value="SUPPLIER">{t('admin.banners.targetType.SUPPLIER')}</option>
-                  <option value="PRODUCT">{t('admin.banners.targetType.PRODUCT')}</option>
-                </select>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <FormField
-          control={form.control}
-          name="targetId"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>{t('admin.banners.form.target')}</FormLabel>
-              <FormControl>
-                {targetType === 'SUPPLIER'
-                  ? (
-                      <select
-                        className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-                        value={field.value}
-                        onChange={event => field.onChange(event.target.value)}
-                      >
-                        <option value="">{t('admin.banners.form.selectSupplier')}</option>
-                        {(suppliers?.items ?? []).map(supplier => (
-                          <option key={supplier.id} value={supplier.id}>
-                            {supplier.shopName}
-                          </option>
-                        ))}
-                      </select>
-                    )
-                  : <Input {...field} placeholder={t('admin.banners.form.productIdPlaceholder')} />}
-              </FormControl>
-              <FormDescription>
-                {targetType === 'PRODUCT' ? t('admin.banners.form.productIdHint') : null}
-              </FormDescription>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="grid gap-6 sm:grid-cols-2">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid gap-8 lg:grid-cols-[1fr_auto]">
+        <div className="space-y-6">
           <FormField
             control={form.control}
-            name="position"
+            name="targetType"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('admin.banners.form.position')}</FormLabel>
+                <FormLabel>{t('admin.banners.form.targetType')}</FormLabel>
                 <FormControl>
-                  <Input type="number" min={0} {...field} />
+                  <div className="grid grid-cols-2 gap-3">
+                    {TARGET_TYPES.map(({ value, icon: Icon }) => (
+                      <button
+                        key={value}
+                        type="button"
+                        onClick={() => {
+                          field.onChange(value)
+                          // The previous target belongs to the other type.
+                          form.setValue('targetId', '')
+                          setTarget(null)
+                        }}
+                        className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
+                          field.value === value
+                            ? 'border-primary bg-primary/5'
+                            : 'hover:bg-accent/40'
+                        }`}
+                      >
+                        <Icon className={field.value === value ? 'text-primary h-5 w-5' : 'text-muted-foreground h-5 w-5'} />
+                        <span className="text-sm font-medium">
+                          {t(`admin.banners.targetType.${value}`)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 </FormControl>
-                <FormDescription>{t('admin.banners.form.positionHint')}</FormDescription>
                 <FormMessage />
               </FormItem>
             )}
@@ -188,22 +139,112 @@ export const BannerForm: React.FC<BannerFormProps> = ({ onSubmit, isPending, ini
 
           <FormField
             control={form.control}
-            name="isActive"
-            render={({ field }) => (
-              <FormItem className="flex flex-col justify-center gap-2">
-                <FormLabel>{t('admin.banners.form.isActive')}</FormLabel>
+            name="targetId"
+            render={() => (
+              <FormItem>
+                <FormLabel>{t('admin.banners.form.target')}</FormLabel>
                 <FormControl>
-                  <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  <EntityPicker
+                    value={targetId}
+                    selected={target}
+                    placeholder={t(`admin.banners.form.pick.${targetType}`)}
+                    searchPlaceholder={t(`admin.banners.form.search.${targetType}`)}
+                    emptyLabel={t('admin.banners.form.noResult')}
+                    onSearch={handleSearch}
+                    onSelect={handleSelectTarget}
+                  />
                 </FormControl>
-                <FormDescription>{t('admin.banners.form.isActiveHint')}</FormDescription>
+                <FormMessage />
               </FormItem>
             )}
           />
+
+          <FormField
+            control={form.control}
+            name="imageUrl"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('admin.banners.form.image')}</FormLabel>
+                <FormControl>
+                  <BannerImageField
+                    value={field.value}
+                    onChange={url => form.setValue('imageUrl', url, { shouldValidate: true })}
+                  />
+                </FormControl>
+                <FormDescription>{t('admin.banners.form.imageHint')}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="title"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('admin.banners.form.title')}</FormLabel>
+                <FormControl>
+                  <Input {...field} maxLength={60} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="subtitle"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>{t('admin.banners.form.subtitle')}</FormLabel>
+                <FormControl>
+                  <Input {...field} maxLength={80} />
+                </FormControl>
+                <FormDescription>{t('admin.banners.form.subtitleHint')}</FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="position"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('admin.banners.form.position')}</FormLabel>
+                  <FormControl>
+                    <Input type="number" min={0} {...field} />
+                  </FormControl>
+                  <FormDescription>{t('admin.banners.form.positionHint')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="isActive"
+              render={({ field }) => (
+                <FormItem className="flex flex-col justify-center gap-2">
+                  <FormLabel>{t('admin.banners.form.isActive')}</FormLabel>
+                  <FormControl>
+                    <Switch checked={field.value} onCheckedChange={field.onChange} />
+                  </FormControl>
+                  <FormDescription>{t('admin.banners.form.isActiveHint')}</FormDescription>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <Button type="submit" disabled={isPending}>
+            {isPending ? t('common.saving') : t('common.save')}
+          </Button>
         </div>
 
-        <Button type="submit" disabled={isPending}>
-          {isPending ? t('common.saving') : t('common.save')}
-        </Button>
+        <div className="lg:sticky lg:top-6 lg:h-fit lg:w-80">
+          <BannerPreview imageUrl={imageUrl} title={title} subtitle={subtitle} />
+        </div>
       </form>
     </Form>
   )

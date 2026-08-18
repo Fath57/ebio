@@ -37,7 +37,7 @@ export default function BannerEditPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/admin/bannieres')}>
           <ArrowLeft className="mr-1 h-4 w-4" />
@@ -61,6 +61,11 @@ export default function BannerEditPage() {
             isActive: banner.isActive,
             position: banner.position,
           }}
+          // Without it the picker would show its placeholder over an existing
+          // target, reading as if nothing had been chosen.
+          initialTarget={banner.targetId
+            ? { id: banner.targetId, label: banner.targetLabel ?? banner.targetId }
+            : null}
         />
       </Card>
     </div>

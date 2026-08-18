@@ -5,6 +5,7 @@ import {
   Controller,
   Delete,
   Get,
+  NotFoundException,
   Param,
   Patch,
   Post,
@@ -87,8 +88,23 @@ export class ProductsController {
 
   @Get('products/:id')
   @Public()
-  async findById(@Param('id') id: string) {
+  async findById(
+    @Session() session: BetterAuthSession,
+    @Param('id') id: string,
+  ) {
     const product = await this.productsService.findById(id)
+
+    // A suspended shop's catalogue must not stay reachable by direct link,
+    // which is how a product page is opened from a share or an old order. The
+    // owner keeps access, so they can still see what buyers no longer can.
+    if (product.supplier.validationStatus === ValidationStatus.SUSPENDED) {
+      const isOwner = session?.user?.id
+        && product.supplier.user?.id === session.user.id
+      if (!isOwner) {
+        throw new NotFoundException('Product not found')
+      }
+    }
+
     const [variants, stats] = await Promise.all([
       this.productsService.getVariantsByProductId(product.id),
       this.productsService.getProductStats(product.id),

@@ -136,7 +136,8 @@
       "title": "Unauthorized",
       "description": "You do not have permission to access this page.",
       "backHome": "Back to home"
-    }
+    },
+    "loading": "Loading…"
   },
   "userRoles": {
     "BUYER": "Buyer",
@@ -544,7 +545,21 @@
         "position": "Order",
         "positionHint": "Ascending: 0 shows first.",
         "isActive": "Active",
-        "isActiveHint": "An inactive banner never appears in the app."
+        "isActiveHint": "An inactive banner never appears in the app.",
+        "pickImage": "Choose an image",
+        "replaceImage": "Crop or replace",
+        "preview": "Mobile preview",
+        "titlePlaceholder": "Banner title",
+        "noResult": "No result",
+        "pick": {
+          "SUPPLIER": "Choose a shop",
+          "PRODUCT": "Choose a product"
+        },
+        "search": {
+          "SUPPLIER": "Search a shop…",
+          "PRODUCT": "Search a product…"
+        },
+        "uploadError": "The image could not be uploaded. Try again or check the console."
       }
     },
     "categories": {
@@ -906,5 +921,13 @@
     "pageOf": "Page {{page}} of {{lastPage}}",
     "resultCount_one": "{{count}} result",
     "resultCount_other": "{{count}} results"
+  },
+  "media": {
+    "cropper": {
+      "title": "Crop the image",
+      "description": "Drag and zoom to choose the visible area. The frame keeps the carousel's 2:1 ratio.",
+      "zoom": "Zoom",
+      "confirm": "Apply crop"
+    }
   }
 }

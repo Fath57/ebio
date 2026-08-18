@@ -294,31 +294,36 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
               <ActivityIndicator size="large" color={colors.green[400]} />
             </View>
           )
-        : filteredOrders.length === 0
-          ? (
-              <View style={styles.centeredContainer}>
-                <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
-                  <ShoppingBag size={32} color={colors.green[400]} />
+        : (
+            <FlatList
+              data={filteredOrders}
+              renderItem={renderItem}
+              keyExtractor={keyExtractor}
+              contentContainerStyle={[
+                styles.listContent,
+                filteredOrders.length === 0 && styles.listContentEmpty,
+              ]}
+              refreshing={isRefreshing}
+              onRefresh={handleRefresh}
+              showsVerticalScrollIndicator={false}
+              // Rendered inside the list rather than beside it: an empty state
+              // laid out as a sibling cannot be pulled, and waiting for a first
+              // order is exactly when one reaches for a refresh.
+              ListEmptyComponent={(
+                <View style={styles.centeredContainer}>
+                  <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
+                    <ShoppingBag size={32} color={colors.green[400]} />
+                  </View>
+                  <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
+                    Aucune commande
+                  </Text>
+                  <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
+                    Vos commandes apparaîtront ici
+                  </Text>
                 </View>
-                <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
-                  Aucune commande
-                </Text>
-                <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
-                  Vos commandes apparaîtront ici
-                </Text>
-              </View>
-            )
-          : (
-              <FlatList
-                data={filteredOrders}
-                renderItem={renderItem}
-                keyExtractor={keyExtractor}
-                contentContainerStyle={styles.listContent}
-                refreshing={isRefreshing}
-                onRefresh={handleRefresh}
-                showsVerticalScrollIndicator={false}
-              />
-            )}
+              )}
+            />
+          )}
     </View>
   )
 }
@@ -376,6 +381,9 @@ const styles = StyleSheet.create({
   },
 
   // List
+  listContentEmpty: {
+    flexGrow: 1,
+  },
   listContent: {
     paddingHorizontal: spacing[4],
     paddingTop: spacing[2],

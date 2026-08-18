@@ -26,7 +26,7 @@ export default function BannerCreatePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
+    <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={() => navigate('/admin/bannieres')}>
           <ArrowLeft className="mr-1 h-4 w-4" />

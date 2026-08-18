@@ -742,7 +742,7 @@ export class AdminService {
     const rows = await this.em.getConnection().execute(
       `SELECT s.id, s.shop_name, s.type, s.mode, s.validation_status, s.timezone,
               s.address, s.neighborhood, s.global_rating, s.total_reviews,
-              s."createdAt" as created_at,
+              s.profile_photo, s."createdAt" as created_at,
               ST_Y(s.location::geometry) as latitude,
               ST_X(s.location::geometry) as longitude,
               u.id as user_id, u.name as owner_name, u.email as owner_email,
@@ -761,6 +761,57 @@ export class AdminService {
       total,
       page: params.page,
       limit: params.limit,
+    }
+  }
+
+  /**
+   * Products an editor can pick from, searched by name or shop.
+   *
+   * Deliberately unbounded by location and by supplier status: the back office
+   * needs to see the whole catalogue, including a shop that is only pending.
+   */
+  async getProducts(params: { q?: string, supplierId?: string, limit: number }): Promise<{ items: unknown[] }> {
+    const conditions: string[] = [`p.status = 'ACTIVE'`]
+    const queryParams: unknown[] = []
+
+    if (params.q) {
+      conditions.push(`(p.name ILIKE ? OR s.shop_name ILIKE ?)`)
+      queryParams.push(`%${params.q}%`, `%${params.q}%`)
+    }
+
+    if (params.supplierId) {
+      conditions.push(`p.supplier_id = ?`)
+      queryParams.push(params.supplierId)
+    }
+
+    // Capped rather than paginated: this feeds a picker, where scrolling past a
+    // few dozen results means the search terms were the wrong tool.
+    const limit = Math.min(Math.max(params.limit, 1), 50)
+    queryParams.push(limit)
+
+    const rows = await this.em.getConnection().execute(
+      `SELECT p.id, p.name, p.price_per_unit, p.promotional_price, p.unit,
+              p.photos->>0 AS photo,
+              s.id AS supplier_id, s.shop_name
+       FROM products p
+       JOIN suppliers s ON s.id = p.supplier_id
+       WHERE ${conditions.join(' AND ')}
+       ORDER BY p.name ASC
+       LIMIT ?`,
+      queryParams,
+    )
+
+    return {
+      items: (rows as Array<Record<string, unknown>>).map(r => ({
+        id: r.id as string,
+        name: r.name as string,
+        photo: (r.photo as string) ?? null,
+        pricePerUnit: Number(r.price_per_unit ?? 0),
+        promotionalPrice: r.promotional_price != null ? Number(r.promotional_price) : null,
+        unit: (r.unit as string) ?? null,
+        supplierId: r.supplier_id as string,
+        supplierName: r.shop_name as string,
+      })),
     }
   }
 
@@ -1036,6 +1087,7 @@ export class AdminService {
       timezone: r.timezone as string,
       address: (r.address as string) ?? null,
       neighborhood: (r.neighborhood as string) ?? null,
+      profilePhoto: (r.profile_photo as string) ?? null,
       latitude: r.latitude !== null ? Number(r.latitude) : null,
       longitude: r.longitude !== null ? Number(r.longitude) : null,
       rating: r.global_rating !== null ? Number(r.global_rating) : null,

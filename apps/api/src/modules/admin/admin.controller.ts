@@ -212,6 +212,20 @@ export class AdminController {
     return this.adminService.getSupplierById(id)
   }
 
+  /**
+   * Product lookup for the back office. The public search needs coordinates and
+   * hides anything not on sale nearby, neither of which suits an editor
+   * choosing what to feature.
+   */
+  @Get('products')
+  async getProducts(
+    @Query('q') q?: string,
+    @Query('supplierId') supplierId?: string,
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminService.getProducts({ q, supplierId, limit: Number(limit) })
+  }
+
   @Get('users')
   async getUsers(
     @Query('role') role?: string,
