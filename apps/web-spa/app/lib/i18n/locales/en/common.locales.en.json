@@ -156,6 +156,7 @@
     "moderation": "Moderation",
     "notifications": "Notifications",
     "orders": "Orders",
+    "productUnits": "Units of sale",
     "roles": "Roles",
     "settings": "Settings",
     "subscription": "Subscription",
@@ -673,6 +674,46 @@
         "quantity": "Qty",
         "unitPrice": "Unit price",
         "commissionDetail": "Commission ({{rate}}%)"
+      }
+    },
+    "productUnits": {
+      "title": "Units of sale",
+      "description": "Manage the units offered to suppliers in the product form",
+      "addUnit": "Add a unit",
+      "addUnitDescription": "Create a new unit of sale",
+      "editUnit": "Edit unit",
+      "editUnitDescription": "Update the label, order or state of the unit",
+      "active": "Active",
+      "inactive": "Disabled",
+      "deleteConfirm": "Delete this unit?",
+      "deleteWarning": "A unit used by products cannot be deleted: disable it to remove it from the forms.",
+      "deleteBlocked": "Products use this unit",
+      "columns": {
+        "label": "Label",
+        "shortLabel": "Short",
+        "code": "Code",
+        "sortOrder": "Order",
+        "productCount": "Products",
+        "status": "State",
+        "actions": "Actions"
+      },
+      "form": {
+        "label": "Label",
+        "labelPlaceholder": "e.g. Kilogram",
+        "labelHint": "Full name shown in the product form",
+        "shortLabel": "Short label",
+        "shortLabelPlaceholder": "kg",
+        "shortLabelHint": "Short form appended to a price: 1,200 FCFA / kg",
+        "code": "Code",
+        "codePlaceholder": "KILOGRAM",
+        "codeHint": "Identifier stored on every product. Generated from the label.",
+        "codeLocked": "The code is locked: it is already written on existing products.",
+        "sortOrder": "Display order",
+        "sortOrderHint": "Ascending, smallest first",
+        "isActive": "Active unit",
+        "isActiveHint": "A disabled unit disappears from the product form without touching existing products",
+        "create": "Create unit",
+        "update": "Update"
       }
     },
     "roles": {

@@ -16,6 +16,8 @@ import type {
   AdminControllerGetOrdersResponses,
   AdminControllerGetPaymentsData,
   AdminControllerGetPaymentsResponses,
+  AdminControllerGetProductsData,
+  AdminControllerGetProductsResponses,
   AdminControllerGetReportsData,
   AdminControllerGetReportsResponses,
   AdminControllerGetSettingsData,
@@ -120,6 +122,10 @@ import type {
   CommunityControllerLeaveGroupResponses,
   CommunityControllerReportPublicationData,
   CommunityControllerReportPublicationResponses,
+  GeocodingControllerAutocompleteData,
+  GeocodingControllerAutocompleteResponses,
+  GeocodingControllerResolvePlaceData,
+  GeocodingControllerResolvePlaceResponses,
   MediaControllerCompleteUploadData,
   MediaControllerCompleteUploadResponses,
   MediaControllerDeleteMediaData,
@@ -244,6 +250,18 @@ import type {
   ProductsControllerUpdateResponses,
   ProductsControllerUpdateStockData,
   ProductsControllerUpdateStockResponses,
+  ProductUnitsControllerCreateData,
+  ProductUnitsControllerCreateResponses,
+  ProductUnitsControllerFindActiveData,
+  ProductUnitsControllerFindActiveResponses,
+  ProductUnitsControllerFindAllData,
+  ProductUnitsControllerFindAllResponses,
+  ProductUnitsControllerFindByIdData,
+  ProductUnitsControllerFindByIdResponses,
+  ProductUnitsControllerRemoveData,
+  ProductUnitsControllerRemoveResponses,
+  ProductUnitsControllerUpdateData,
+  ProductUnitsControllerUpdateResponses,
   PublicPostControllerGetPostData,
   PublicPostControllerGetPostResponses,
   PublicPostControllerGetPostsData,
@@ -1022,6 +1040,28 @@ export const bannersControllerUpdate = <ThrowOnError extends boolean = false>(
     },
   });
 
+export const geocodingControllerAutocomplete = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<GeocodingControllerAutocompleteData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GeocodingControllerAutocompleteResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/geocoding/autocomplete", ...options });
+
+export const geocodingControllerResolvePlace = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<GeocodingControllerResolvePlaceData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GeocodingControllerResolvePlaceResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/geocoding/place", ...options });
+
 export const suppliersControllerRegister = <
   ThrowOnError extends boolean = false,
 >(
@@ -1568,6 +1608,86 @@ export const categoriesControllerCreate = <
     ThrowOnError
   >({
     url: "/api/categories",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productUnitsControllerFindActive = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<ProductUnitsControllerFindActiveData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    ProductUnitsControllerFindActiveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/product-units/active", ...options });
+
+export const productUnitsControllerFindAll = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<ProductUnitsControllerFindAllData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    ProductUnitsControllerFindAllResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/product-units", ...options });
+
+export const productUnitsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductUnitsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ProductUnitsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/product-units",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productUnitsControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductUnitsControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    ProductUnitsControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/product-units/{id}", ...options });
+
+export const productUnitsControllerFindById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductUnitsControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ProductUnitsControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/product-units/{id}", ...options });
+
+export const productUnitsControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductUnitsControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    ProductUnitsControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/product-units/{id}",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -2422,6 +2542,17 @@ export const adminControllerGetSupplierById = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/suppliers/{id}", ...options });
+
+export const adminControllerGetProducts = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetProductsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetProductsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/products", ...options });
 
 export const adminControllerGetUsers = <ThrowOnError extends boolean = false>(
   options: Options<AdminControllerGetUsersData, ThrowOnError>,

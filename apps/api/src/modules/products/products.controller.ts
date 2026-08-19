@@ -30,6 +30,7 @@ import {
   stockUpdateSchema,
   updateProductSchema,
 } from './contracts/product.contract'
+import { ProductStatus } from './entities/product.entity'
 import { ProductMapper } from './products.mapper'
 import { ProductsService } from './products.service'
 import { StockAlertService } from './stock-alert.service'
@@ -69,10 +70,17 @@ export class ProductsController {
       return emptyResult
     }
 
+    // The owner manages their whole catalogue, withdrawn and deleted items
+    // included; a buyer only ever sees what is on sale. Recognising the owner
+    // by id too, not just by the `me` alias, keeps the dashboard working
+    // whichever form it uses.
+    const isOwner = supplierId === 'me'
+      || (!!session?.user?.id && supplier.user?.id === session.user.id)
+
     const result = await this.productsService.findBySupplierId(
       resolvedId,
       pagination,
-      { status, categoryId },
+      { status, categoryId, includeHidden: isOwner },
     )
 
     return {
@@ -94,15 +102,16 @@ export class ProductsController {
   ) {
     const product = await this.productsService.findById(id)
 
-    // A suspended shop's catalogue must not stay reachable by direct link,
-    // which is how a product page is opened from a share or an old order. The
-    // owner keeps access, so they can still see what buyers no longer can.
-    if (product.supplier.validationStatus === ValidationStatus.SUSPENDED) {
-      const isOwner = session?.user?.id
-        && product.supplier.user?.id === session.user.id
-      if (!isOwner) {
-        throw new NotFoundException('Product not found')
-      }
+    // Neither a suspended shop's catalogue nor a product its owner withdrew or
+    // deleted must stay reachable by direct link, which is how a product page
+    // is opened from a share, a notification or an old order. The owner keeps
+    // access, so they can still see what buyers no longer can.
+    const isOwner = !!session?.user?.id
+      && product.supplier.user?.id === session.user.id
+    const isWithdrawn = product.supplier.validationStatus === ValidationStatus.SUSPENDED
+      || product.status === ProductStatus.HIDDEN
+    if (isWithdrawn && !isOwner) {
+      throw new NotFoundException('Product not found')
     }
 
     const [variants, stats] = await Promise.all([

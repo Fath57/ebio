@@ -5,9 +5,14 @@ import {
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
 
-export const productUnitEnum = z.enum(['KG', 'LITER', 'SACHET', 'PIECE', 'LOT']).meta({
-  title: 'ProductUnit',
-  description: 'Unit of measurement for products',
+/**
+ * Free-form code rather than an enum: the list of units is managed from the
+ * backoffice, and a schema frozen at build time would reject every unit added
+ * after it. `ProductUnitsService` checks the code against the table.
+ */
+export const productUnitCode = z.string().min(1).max(32).meta({
+  title: 'ProductUnitCode',
+  description: 'Code of a unit of sale, from the product units reference list',
 })
 
 export const productStatusEnum = z.enum(['ACTIVE', 'OUT_OF_STOCK', 'HIDDEN']).meta({
@@ -26,7 +31,7 @@ export const createProductSchema = z.object({
   categoryId: z.string().uuid(),
   description: z.string().max(2000).optional(),
   pricePerUnit: z.number().min(0),
-  unit: productUnitEnum,
+  unit: productUnitCode,
   stock: z.number().int().min(0).default(0),
   stockAlertThreshold: z.number().int().min(0).default(5),
   status: productStatusEnum.default('ACTIVE'),
@@ -76,7 +81,7 @@ export const productResponseSchema = z.object({
   voiceDescriptionUrl: z.string().nullable(),
   photos: z.array(z.string()),
   pricePerUnit: z.number(),
-  unit: productUnitEnum,
+  unit: productUnitCode,
   stock: z.number(),
   stockAlertThreshold: z.number(),
   status: productStatusEnum,
@@ -95,7 +100,7 @@ export const productSummarySchema = z.object({
   name: z.string(),
   photo: z.string().nullable(),
   pricePerUnit: z.number(),
-  unit: productUnitEnum,
+  unit: productUnitCode,
   stock: z.number(),
   status: productStatusEnum,
   promotionalPrice: z.number().nullable(),

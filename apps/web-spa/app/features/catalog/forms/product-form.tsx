@@ -29,6 +29,7 @@ import { useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
+import { fetchActiveProductUnitsQueryOptions } from '@/features/admin/product-units/utils/product-units-queries'
 import { ImageUpload } from '@/features/media/components/image-upload'
 
 // ---------- Schema ----------
@@ -44,7 +45,7 @@ const productSchema = z.object({
   categoryId: z.string().uuid(),
   description: z.string().max(2000).optional(),
   pricePerUnit: z.coerce.number().min(0),
-  unit: z.enum(['KG', 'LITER', 'SACHET', 'PIECE', 'LOT']),
+  unit: z.string().min(1),
   stock: z.coerce.number().int().min(0),
   stockAlertThreshold: z.coerce.number().int().min(0).default(5),
   status: z.enum(['ACTIVE', 'OUT_OF_STOCK', 'HIDDEN']).default('ACTIVE'),
@@ -88,6 +89,9 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
   })
   const categories = categoriesData?.categories ?? []
 
+  const { data: unitsData } = useQuery(fetchActiveProductUnitsQueryOptions())
+  const units = unitsData?.items ?? []
+
   const form = useForm<ProductFormData>({
     resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
     defaultValues: {
@@ -95,7 +99,7 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
       categoryId: initialData?.categoryId ?? '',
       description: initialData?.description ?? '',
       pricePerUnit: initialData?.pricePerUnit ?? 0,
-      unit: initialData?.unit ?? 'KG',
+      unit: initialData?.unit ?? '',
       stock: initialData?.stock ?? 0,
       stockAlertThreshold: initialData?.stockAlertThreshold ?? 5,
       status: initialData?.status ?? 'ACTIVE',
@@ -282,16 +286,14 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>{t('catalog.form.unit')}</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={t('catalog.form.unit')} /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="KG">{t('catalog.units.kg')}</SelectItem>
-                        <SelectItem value="LITER">{t('catalog.units.liter')}</SelectItem>
-                        <SelectItem value="SACHET">{t('catalog.units.sachet')}</SelectItem>
-                        <SelectItem value="PIECE">{t('catalog.units.piece')}</SelectItem>
-                        <SelectItem value="LOT">{t('catalog.units.lot')}</SelectItem>
+                        {units.map(unit => (
+                          <SelectItem key={unit.id} value={unit.code}>{unit.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />

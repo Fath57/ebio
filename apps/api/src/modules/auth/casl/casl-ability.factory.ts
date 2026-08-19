@@ -7,6 +7,7 @@ import { Role } from '../entities/role.entity'
 
 export type Subjects
   = | 'Product'
+    | 'ProductUnit'
     | 'Order'
     | 'Payment'
     | 'PaymentMethod'

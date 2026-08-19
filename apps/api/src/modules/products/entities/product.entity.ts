@@ -18,14 +18,6 @@ export enum ProductStatus {
   HIDDEN = 'HIDDEN',
 }
 
-export enum ProductUnit {
-  KG = 'KG',
-  LITER = 'LITER',
-  SACHET = 'SACHET',
-  PIECE = 'PIECE',
-  LOT = 'LOT',
-}
-
 @Entity({ tableName: 'products' })
 @Index({ properties: ['supplier', 'category', 'status'] })
 export class Product {
@@ -55,8 +47,13 @@ export class Product {
   @Property({ fieldName: 'price_per_unit', type: 'float' })
   pricePerUnit!: number
 
-  @Enum({ items: () => ProductUnit })
-  unit!: ProductUnit
+  /**
+   * Code of a row in `product_units`. Kept as plain text rather than a foreign
+   * key so the reference list can be reshaped from the backoffice without ever
+   * rewriting a product or the orders that quote it.
+   */
+  @Property()
+  unit!: string
 
   @Property({ default: 0 })
   stock: number = 0

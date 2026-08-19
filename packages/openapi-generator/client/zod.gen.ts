@@ -429,6 +429,35 @@ export const zUpdateCategory = z.object({
 });
 
 /**
+ * CreateProductUnit
+ *
+ * Data required to add a unit of sale
+ */
+export const zCreateProductUnit = z.object({
+  code: z
+    .string()
+    .min(1)
+    .max(32)
+    .regex(/^[A-Z0-9_]+$/),
+  label: z.string().min(1).max(64),
+  shortLabel: z.string().min(1).max(16),
+  isActive: z.boolean().default(true),
+  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateProductUnit
+ *
+ * Update a unit of sale — every field optional, the code is immutable
+ */
+export const zUpdateProductUnit = z.object({
+  label: z.optional(z.string().min(1).max(64)),
+  shortLabel: z.optional(z.string().min(1).max(16)),
+  isActive: z.optional(z.boolean()).default(true),
+  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
  * StockUpdate
  *
  * Update product stock level
@@ -1655,6 +1684,8 @@ export const zRegisterSupplier = z.object({
   neighborhood: z.optional(z.string().min(2).max(100)),
   mobileMoneyNumber: z.string().min(8).max(20),
   mode: zSupplierMode,
+  deliveryFee: z.optional(z.number().gte(0)),
+  freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
   openingHours: z.optional(zOpeningHours),
   timezone: z.optional(zTimezone),
 });
@@ -1673,6 +1704,8 @@ export const zUpdateSupplier = z.object({
   neighborhood: z.optional(z.string().min(2).max(100)),
   mobileMoneyNumber: z.optional(z.string().min(8).max(20)),
   mode: z.optional(zSupplierMode),
+  deliveryFee: z.optional(z.number().gte(0)),
+  freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
   openingHours: z.optional(zOpeningHours),
   timezone: z.optional(zTimezone),
   coverPhoto: z.optional(z.url()),
@@ -1733,11 +1766,11 @@ export const zCreateOrder = z.object({
 });
 
 /**
- * ProductUnit
+ * ProductUnitCode
  *
- * Unit of measurement for products
+ * Code of a unit of sale, from the product units reference list
  */
-export const zProductUnit = z.enum(["KG", "LITER", "SACHET", "PIECE", "LOT"]);
+export const zProductUnitCode = z.string().min(1).max(32);
 
 /**
  * ProductStatus
@@ -1760,7 +1793,7 @@ export const zCreateProduct = z.object({
     ),
   description: z.optional(z.string().max(2000)),
   pricePerUnit: z.number().gte(0),
-  unit: zProductUnit,
+  unit: zProductUnitCode,
   stock: z.int().gte(0).lte(9007199254740991).default(0),
   stockAlertThreshold: z.int().gte(0).lte(9007199254740991).default(5),
   status: zProductStatus,
@@ -1800,7 +1833,7 @@ export const zUpdateProduct = z.object({
   ),
   description: z.optional(z.string().max(2000)),
   pricePerUnit: z.optional(z.number().gte(0)),
-  unit: z.optional(zProductUnit),
+  unit: z.optional(zProductUnitCode),
   stock: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
   stockAlertThreshold: z
     .optional(z.int().gte(0).lte(9007199254740991))
@@ -2899,6 +2932,25 @@ export const zBannersControllerUpdateData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zGeocodingControllerAutocompleteData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    q: z.string(),
+    session: z.string(),
+    kind: z.string(),
+  }),
+});
+
+export const zGeocodingControllerResolvePlaceData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    placeId: z.string(),
+    session: z.string(),
+  }),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -2909,6 +2961,8 @@ export const zSuppliersControllerRegisterData = z.object({
     neighborhood: z.optional(z.string().min(2).max(100)),
     mobileMoneyNumber: z.string().min(8).max(20),
     mode: z.enum(["CONTACT", "ORDER"]),
+    deliveryFee: z.optional(z.number().gte(0)),
+    freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
     openingHours: z.optional(
       z.record(
         z.string(),
@@ -2953,6 +3007,8 @@ export const zSuppliersControllerUpdateMeData = z.object({
     neighborhood: z.optional(z.string().min(2).max(100)),
     mobileMoneyNumber: z.optional(z.string().min(8).max(20)),
     mode: z.optional(z.enum(["CONTACT", "ORDER"])),
+    deliveryFee: z.optional(z.number().gte(0)),
+    freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
     openingHours: z.optional(
       z.record(
         z.string(),
@@ -3254,7 +3310,7 @@ export const zProductsControllerCreateData = z.object({
       ),
     description: z.optional(z.string().max(2000)),
     pricePerUnit: z.number().gte(0),
-    unit: z.enum(["KG", "LITER", "SACHET", "PIECE", "LOT"]),
+    unit: z.string().min(1).max(32),
     stock: z.int().gte(0).lte(9007199254740991).default(0),
     stockAlertThreshold: z.int().gte(0).lte(9007199254740991).default(5),
     status: z.enum(["ACTIVE", "OUT_OF_STOCK", "HIDDEN"]),
@@ -3301,7 +3357,7 @@ export const zProductsControllerUpdateData = z.object({
     ),
     description: z.optional(z.string().max(2000)),
     pricePerUnit: z.optional(z.number().gte(0)),
-    unit: z.optional(z.enum(["KG", "LITER", "SACHET", "PIECE", "LOT"])),
+    unit: z.optional(z.string().min(1).max(32)),
     stock: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
     stockAlertThreshold: z
       .optional(z.int().gte(0).lte(9007199254740991))
@@ -3404,6 +3460,63 @@ export const zCategoriesControllerCreateData = z.object({
     sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
   }),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductUnitsControllerFindActiveData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductUnitsControllerFindAllData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductUnitsControllerCreateData = z.object({
+  body: z.object({
+    code: z
+      .string()
+      .min(1)
+      .max(32)
+      .regex(/^[A-Z0-9_]+$/),
+    label: z.string().min(1).max(64),
+    shortLabel: z.string().min(1).max(16),
+    isActive: z.boolean().default(true),
+    sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductUnitsControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductUnitsControllerFindByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductUnitsControllerUpdateData = z.object({
+  body: z.object({
+    label: z.optional(z.string().min(1).max(64)),
+    shortLabel: z.optional(z.string().min(1).max(16)),
+    isActive: z.optional(z.boolean()).default(true),
+    sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 
@@ -4167,6 +4280,16 @@ export const zAdminControllerGetSupplierByIdData = z.object({
     id: z.string(),
   }),
   query: z.optional(z.never()),
+});
+
+export const zAdminControllerGetProductsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    q: z.string(),
+    supplierId: z.string(),
+    limit: z.string(),
+  }),
 });
 
 export const zAdminControllerGetUsersData = z.object({

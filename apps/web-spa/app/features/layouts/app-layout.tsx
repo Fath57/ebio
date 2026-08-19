@@ -15,6 +15,7 @@ import {
   Monitor,
   Moon,
   Package,
+  Ruler,
   Settings,
   Shield,
   ShieldCheck,
@@ -104,6 +105,7 @@ export default function AppLayout() {
     { to: '/admin/moderation', label: t('nav.moderation'), icon: <ShieldCheck className="h-4 w-4" /> },
     { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
     { to: '/admin/categories', label: t('nav.categories'), icon: <FolderTree className="h-4 w-4" /> },
+    { to: '/admin/unites', label: t('nav.productUnits'), icon: <Ruler className="h-4 w-4" /> },
     { to: '/admin/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
     { to: '/admin/roles', label: t('nav.roles'), icon: <Shield className="h-4 w-4" /> },
   ]

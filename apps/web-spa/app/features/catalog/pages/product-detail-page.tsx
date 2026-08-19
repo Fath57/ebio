@@ -7,6 +7,7 @@ import { BarChart3, Box, Clock, Edit, ImageOff, Package, ShoppingCart, Tag, Tren
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
+import { fetchActiveProductUnitsQueryOptions } from '@/features/admin/product-units/utils/product-units-queries'
 import { fetchProductByIdQueryOptions } from '../utils/catalog-queries'
 
 interface Variant { id: string, label: string, pricePerUnit: number, stock: number }
@@ -50,6 +51,7 @@ export default function ProductDetailPage() {
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
 
   const { data, isLoading } = useQuery(fetchProductByIdQueryOptions(productId!))
+  const { data: unitsData } = useQuery(fetchActiveProductUnitsQueryOptions())
   const product = data as ProductDetail | undefined
 
   if (isLoading) {
@@ -84,7 +86,9 @@ export default function ProductDetailPage() {
   const originalPrice = selectedVariant?.pricePerUnit ?? product.pricePerUnit
   const activeStock = selectedVariant?.stock ?? product.stock
   const isOutOfStock = activeStock === 0 || product.status === 'OUT_OF_STOCK'
-  const unitLabel = t(`catalog.units.${product.unit.toLowerCase()}`)
+  // Read from the reference list, not from a translation key: a unit added
+  // from the backoffice has no key and would print « catalog.units.botte ».
+  const unitLabel = unitsData?.items.find(unit => unit.code === product.unit)?.label ?? product.unit
 
   return (
     <div className="max-w-6xl mx-auto">

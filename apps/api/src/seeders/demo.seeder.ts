@@ -15,8 +15,9 @@ import { OrderItem } from '../modules/orders/entities/order-item.entity'
 import { Order, OrderStatus, PaymentMethod, PickupMode } from '../modules/orders/entities/order.entity'
 import { MobileOperator, Payment, PaymentProvider, PaymentStatus } from '../modules/payments/payment.entity'
 import { Category } from '../modules/products/entities/category.entity'
+import { ProductUnit } from '../modules/products/entities/product-unit.entity'
 import { ProductVariant } from '../modules/products/entities/product-variant.entity'
-import { Product, ProductStatus, ProductUnit } from '../modules/products/entities/product.entity'
+import { Product, ProductStatus } from '../modules/products/entities/product.entity'
 import { Badge, BadgeType } from '../modules/ratings/entities/badge.entity'
 import { Review, TransactionType } from '../modules/ratings/entities/review.entity'
 import { SubscriptionPlan } from '../modules/subscriptions/entities/subscription-plan.entity'
@@ -234,76 +235,91 @@ export class DemoSeeder extends Seeder {
     // ===== CATEGORIES (from context) =====
     const cats = context.categories as Record<string, Category>
 
+    // ===== UNITS OF SALE =====
+    // The reference list the product forms read; admins extend it from the
+    // backoffice afterwards.
+    const units: Array<[string, string, string]> = [
+      ['KG', 'Kilogramme', 'kg'],
+      ['LITER', 'Litre', 'litre'],
+      ['SACHET', 'Sachet', 'sachet'],
+      ['PIECE', 'Pièce', 'pièce'],
+      ['LOT', 'Lot', 'lot'],
+    ]
+    units.forEach(([code, label, shortLabel], index) => {
+      em.create(ProductUnit, { code, label, shortLabel, sortOrder: index })
+    })
+    await em.flush()
+
     // ===== PRODUCTS =====
     console.info('Creating products...')
 
     // --- Supplier 1: Huiles Bio Koffi ---
-    const p1 = this.createProduct(em, s1, cats.huiles, 'Huile de palme bio', 'Huile de palme artisanale, pressee a froid. Production locale de Dantokpa. Sans additifs ni conservateurs.', 2500, ProductUnit.LITER, 45, 10, IMG.huilePalme)
+    const p1 = this.createProduct(em, s1, cats.huiles, 'Huile de palme bio', 'Huile de palme artisanale, pressee a froid. Production locale de Dantokpa. Sans additifs ni conservateurs.', 2500, 'LITER', 45, 10, IMG.huilePalme)
 
-    this.createProduct(em, s1, cats.huiles, 'Huile d\'arachide pure', 'Huile d\'arachide 100% naturelle, ideale pour la friture et la cuisine beninoise traditionnelle.', 3000, ProductUnit.LITER, 30, 5, IMG.huileArachide)
+    this.createProduct(em, s1, cats.huiles, 'Huile d\'arachide pure', 'Huile d\'arachide 100% naturelle, ideale pour la friture et la cuisine beninoise traditionnelle.', 3000, 'LITER', 30, 5, IMG.huileArachide)
 
-    const p3 = this.createProduct(em, s1, cats.huiles, 'Huile de coco vierge', 'Huile de coco pressee a froid, parfaite pour la cuisine et les soins capillaires. En promotion !', 4000, ProductUnit.LITER, 20, 5, IMG.huileCoco, 3200, 30)
+    const p3 = this.createProduct(em, s1, cats.huiles, 'Huile de coco vierge', 'Huile de coco pressee a froid, parfaite pour la cuisine et les soins capillaires. En promotion !', 4000, 'LITER', 20, 5, IMG.huileCoco, 3200, 30)
 
-    this.createProduct(em, s1, cats.huiles, 'Beurre de karite brut', 'Beurre de karite non raffine, riche en vitamines. Usage cosmetique et culinaire.', 3500, ProductUnit.KG, 15, 3, IMG.beurreKarite)
+    this.createProduct(em, s1, cats.huiles, 'Beurre de karite brut', 'Beurre de karite non raffine, riche en vitamines. Usage cosmetique et culinaire.', 3500, 'KG', 15, 3, IMG.beurreKarite)
 
-    this.createProduct(em, s1, cats.cereales, 'Gari blanc superieur', 'Gari de manioc seche au soleil, qualite superieure. Grain fin et regulier.', 800, ProductUnit.KG, 100, 20, IMG.farineManioc)
+    this.createProduct(em, s1, cats.cereales, 'Gari blanc superieur', 'Gari de manioc seche au soleil, qualite superieure. Grain fin et regulier.', 800, 'KG', 100, 20, IMG.farineManioc)
 
-    this.createProduct(em, s1, cats.cereales, 'Farine de mais bio', 'Farine de mais moulee traditionnellement. Ideale pour akassa, pate, bouillie.', 600, ProductUnit.KG, 80, 15, IMG.farineMais)
+    this.createProduct(em, s1, cats.cereales, 'Farine de mais bio', 'Farine de mais moulee traditionnellement. Ideale pour akassa, pate, bouillie.', 600, 'KG', 80, 15, IMG.farineMais)
 
-    this.createProduct(em, s1, cats.cereales, 'Riz local bio', 'Riz paddy du nord Benin, cultive sans engrais chimiques.', 1200, ProductUnit.KG, 0, 10, IMG.riz, undefined, undefined, ProductStatus.OUT_OF_STOCK)
+    this.createProduct(em, s1, cats.cereales, 'Riz local bio', 'Riz paddy du nord Benin, cultive sans engrais chimiques.', 1200, 'KG', 0, 10, IMG.riz, undefined, undefined, ProductStatus.OUT_OF_STOCK)
 
     // --- Supplier 2: Intrants Bio Adama ---
-    this.createProduct(em, s2, cats.semences, 'Semences de tomate bio', 'Variete locale resistante aux maladies. Sachet de 100 graines, taux de germination 95%.', 1500, ProductUnit.SACHET, 200, 30, IMG.semencesTomate)
+    this.createProduct(em, s2, cats.semences, 'Semences de tomate bio', 'Variete locale resistante aux maladies. Sachet de 100 graines, taux de germination 95%.', 1500, 'SACHET', 200, 30, IMG.semencesTomate)
 
-    this.createProduct(em, s2, cats.semences, 'Semences de gombo nain', 'Gombo nain a haut rendement. Sachet de 50 graines. Recolte en 45 jours.', 1000, ProductUnit.SACHET, 150, 20, IMG.semencesGombo)
+    this.createProduct(em, s2, cats.semences, 'Semences de gombo nain', 'Gombo nain a haut rendement. Sachet de 50 graines. Recolte en 45 jours.', 1000, 'SACHET', 150, 20, IMG.semencesGombo)
 
-    this.createProduct(em, s2, cats.compost, 'Compost organique premium', 'Compost naturel a base de dechets verts. Enrichit le sol, ameliore la retention d\'eau.', 500, ProductUnit.KG, 500, 50, IMG.compost)
+    this.createProduct(em, s2, cats.compost, 'Compost organique premium', 'Compost naturel a base de dechets verts. Enrichit le sol, ameliore la retention d\'eau.', 500, 'KG', 500, 50, IMG.compost)
 
-    this.createProduct(em, s2, cats.compost, 'Fumier de volaille bio', 'Fumier composte et tamise. Riche en azote. Ideal pour les cultures maraicheres.', 400, ProductUnit.KG, 300, 40, IMG.compost)
+    this.createProduct(em, s2, cats.compost, 'Fumier de volaille bio', 'Fumier composte et tamise. Riche en azote. Ideal pour les cultures maraicheres.', 400, 'KG', 300, 40, IMG.compost)
 
     // --- Supplier 3: Fruits & Legumes Fatou ---
-    const p11 = this.createProduct(em, s3, cats.legumes, 'Tomates fraiches bio', 'Tomates locales cultivees sans pesticides. Cueillies le matin meme. Lot de 5 kg.', 1200, ProductUnit.KG, 60, 10, IMG.tomates)
+    const p11 = this.createProduct(em, s3, cats.legumes, 'Tomates fraiches bio', 'Tomates locales cultivees sans pesticides. Cueillies le matin meme. Lot de 5 kg.', 1200, 'KG', 60, 10, IMG.tomates)
 
-    this.createProduct(em, s3, cats.legumes, 'Piment frais local', 'Piment vert et rouge, recolte du jour. Fort arome, gout authentique.', 300, ProductUnit.KG, 40, 10, IMG.piment)
+    this.createProduct(em, s3, cats.legumes, 'Piment frais local', 'Piment vert et rouge, recolte du jour. Fort arome, gout authentique.', 300, 'KG', 40, 10, IMG.piment)
 
-    this.createProduct(em, s3, cats.legumes, 'Gombo frais', 'Gombo tendre et croquant, ideal pour sauce gombo. Recolte a maturite.', 500, ProductUnit.KG, 35, 8, IMG.gombo)
+    this.createProduct(em, s3, cats.legumes, 'Gombo frais', 'Gombo tendre et croquant, ideal pour sauce gombo. Recolte a maturite.', 500, 'KG', 35, 8, IMG.gombo)
 
-    this.createProduct(em, s3, cats.legumes, 'Oignons rouges bio', 'Oignons rouges du Nord Benin, saveur douce. Filet de 5 kg.', 800, ProductUnit.KG, 50, 10, IMG.oignons)
+    this.createProduct(em, s3, cats.legumes, 'Oignons rouges bio', 'Oignons rouges du Nord Benin, saveur douce. Filet de 5 kg.', 800, 'KG', 50, 10, IMG.oignons)
 
-    this.createProduct(em, s3, cats.legumes, 'Mangues Kent bio', 'Mangues Kent mures a point. Sucrees et juteuses. Caisse de 6 fruits.', 1500, ProductUnit.LOT, 25, 5, IMG.mangues, 1200, 15)
+    this.createProduct(em, s3, cats.legumes, 'Mangues Kent bio', 'Mangues Kent mures a point. Sucrees et juteuses. Caisse de 6 fruits.', 1500, 'LOT', 25, 5, IMG.mangues, 1200, 15)
 
-    this.createProduct(em, s3, cats.legumes, 'Ananas Pain de Sucre', 'Ananas bio de la vallee de l\'Oueme. Tres sucre, peu acide.', 800, ProductUnit.PIECE, 30, 5, IMG.ananas)
+    this.createProduct(em, s3, cats.legumes, 'Ananas Pain de Sucre', 'Ananas bio de la vallee de l\'Oueme. Tres sucre, peu acide.', 800, 'PIECE', 30, 5, IMG.ananas)
 
-    this.createProduct(em, s3, cats.epices, 'Gingembre frais bio', 'Gingembre frais du Benin. Puissant arome, ideal pour tisanes et cuisine.', 1000, ProductUnit.KG, 20, 5, IMG.gingembre)
+    this.createProduct(em, s3, cats.epices, 'Gingembre frais bio', 'Gingembre frais du Benin. Puissant arome, ideal pour tisanes et cuisine.', 1000, 'KG', 20, 5, IMG.gingembre)
 
-    this.createProduct(em, s3, cats.epices, 'Curcuma en poudre', 'Curcuma bio seche et moulu. Anti-inflammatoire naturel. Sachet 200g.', 600, ProductUnit.SACHET, 40, 8, IMG.curcuma)
+    this.createProduct(em, s3, cats.epices, 'Curcuma en poudre', 'Curcuma bio seche et moulu. Anti-inflammatoire naturel. Sachet 200g.', 600, 'SACHET', 40, 8, IMG.curcuma)
 
-    this.createProduct(em, s3, cats.boissons, 'Jus d\'ananas frais', 'Jus d\'ananas 100% naturel, sans sucre ajoute. Bouteille 1L.', 1500, ProductUnit.PIECE, 50, 10, IMG.jusAnanas)
+    this.createProduct(em, s3, cats.boissons, 'Jus d\'ananas frais', 'Jus d\'ananas 100% naturel, sans sucre ajoute. Bouteille 1L.', 1500, 'PIECE', 50, 10, IMG.jusAnanas)
 
-    this.createProduct(em, s3, cats.boissons, 'Bissap naturel', 'Boisson a l\'hibiscus, recette traditionnelle. Bouteille 1L. Riche en vitamine C.', 1000, ProductUnit.PIECE, 40, 8, IMG.bissap, 800, 7)
+    this.createProduct(em, s3, cats.boissons, 'Bissap naturel', 'Boisson a l\'hibiscus, recette traditionnelle. Bouteille 1L. Riche en vitamine C.', 1000, 'PIECE', 40, 8, IMG.bissap, 800, 7)
 
     // --- Supplier 4: Ferme Bio de Talensac (Nantes) ---
-    this.createProduct(em, s4, cats.legumes, 'Panier de legumes de saison', 'Panier hebdomadaire compose le matin meme au marche de Talensac. 5 a 7 varietes selon la recolte.', 1800, ProductUnit.LOT, 40, 8, IMG.tomates)
+    this.createProduct(em, s4, cats.legumes, 'Panier de legumes de saison', 'Panier hebdomadaire compose le matin meme au marche de Talensac. 5 a 7 varietes selon la recolte.', 1800, 'LOT', 40, 8, IMG.tomates)
 
-    this.createProduct(em, s4, cats.legumes, 'Carottes des sables', 'Carottes de plein champ cultivees en Loire-Atlantique. Douces et croquantes.', 700, ProductUnit.KG, 120, 20, IMG.oignons)
+    this.createProduct(em, s4, cats.legumes, 'Carottes des sables', 'Carottes de plein champ cultivees en Loire-Atlantique. Douces et croquantes.', 700, 'KG', 120, 20, IMG.oignons)
 
-    this.createProduct(em, s4, cats.legumes, 'Mache nantaise bio', 'Mache produite sous serre froide autour de Nantes. Recolte du jour.', 900, ProductUnit.SACHET, 60, 12, IMG.gombo, 750, 10)
+    this.createProduct(em, s4, cats.legumes, 'Mache nantaise bio', 'Mache produite sous serre froide autour de Nantes. Recolte du jour.', 900, 'SACHET', 60, 12, IMG.gombo, 750, 10)
 
-    this.createProduct(em, s4, cats.boissons, 'Jus de pomme fermier', 'Jus de pomme presse a froid, vergers de Loire-Atlantique. Bouteille 1L.', 1200, ProductUnit.PIECE, 80, 15, IMG.jusAnanas)
+    this.createProduct(em, s4, cats.boissons, 'Jus de pomme fermier', 'Jus de pomme presse a froid, vergers de Loire-Atlantique. Bouteille 1L.', 1200, 'PIECE', 80, 15, IMG.jusAnanas)
 
     // --- Supplier 5: Le Panier Chantenay (Nantes) ---
-    this.createProduct(em, s5, cats.cereales, 'Farine de ble T65 bio', 'Farine moulue sur meule de pierre, ble cultive en Pays de la Loire. Sac de 5 kg.', 1400, ProductUnit.KG, 90, 15, IMG.farineMais)
+    this.createProduct(em, s5, cats.cereales, 'Farine de ble T65 bio', 'Farine moulue sur meule de pierre, ble cultive en Pays de la Loire. Sac de 5 kg.', 1400, 'KG', 90, 15, IMG.farineMais)
 
-    this.createProduct(em, s5, cats.huiles, 'Huile de colza premiere pression', 'Huile de colza bio pressee a froid. Riche en omega 3. Bouteille 75 cl.', 2200, ProductUnit.LITER, 45, 10, IMG.huileArachide)
+    this.createProduct(em, s5, cats.huiles, 'Huile de colza premiere pression', 'Huile de colza bio pressee a froid. Riche en omega 3. Bouteille 75 cl.', 2200, 'LITER', 45, 10, IMG.huileArachide)
 
-    this.createProduct(em, s5, cats.legumes, 'Pommes de terre Bintje', 'Pommes de terre de conservation, culture bio. Filet de 10 kg.', 950, ProductUnit.KG, 150, 25, IMG.oignons)
+    this.createProduct(em, s5, cats.legumes, 'Pommes de terre Bintje', 'Pommes de terre de conservation, culture bio. Filet de 10 kg.', 950, 'KG', 150, 25, IMG.oignons)
 
     // --- Supplier 6: Semences & Compost Doulon (Nantes) ---
-    this.createProduct(em, s6, cats.semences, 'Semences de mache maraichere', 'Variete Verte de Cambrai, adaptee au climat nantais. Sachet de 500 graines.', 1300, ProductUnit.SACHET, 180, 30, IMG.semencesTomate)
+    this.createProduct(em, s6, cats.semences, 'Semences de mache maraichere', 'Variete Verte de Cambrai, adaptee au climat nantais. Sachet de 500 graines.', 1300, 'SACHET', 180, 30, IMG.semencesTomate)
 
-    this.createProduct(em, s6, cats.compost, 'Compost de dechets verts', 'Compost normalise NFU 44-051, produit a partir des dechets verts de la metropole.', 450, ProductUnit.KG, 600, 60, IMG.compost)
+    this.createProduct(em, s6, cats.compost, 'Compost de dechets verts', 'Compost normalise NFU 44-051, produit a partir des dechets verts de la metropole.', 450, 'KG', 600, 60, IMG.compost)
 
-    this.createProduct(em, s6, cats.compost, 'Terreau universel bio', 'Terreau sans tourbe, enrichi en compost vegetal. Sac de 40 L.', 800, ProductUnit.LOT, 70, 15, IMG.compost, 650, 20)
+    this.createProduct(em, s6, cats.compost, 'Terreau universel bio', 'Terreau sans tourbe, enrichi en compost vegetal. Sac de 40 L.', 800, 'LOT', 70, 15, IMG.compost, 650, 20)
 
     await em.flush()
     console.info('  Created 32 products with photos')
@@ -533,7 +549,7 @@ export class DemoSeeder extends Seeder {
     name: string,
     description: string,
     price: number,
-    unit: ProductUnit,
+    unit: string,
     stock: number,
     alertThreshold: number,
     photos: string[],

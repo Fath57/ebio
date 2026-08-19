@@ -23,22 +23,13 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { useCategories } from '../../search/hooks/use-search'
 
 const MAX_PHOTOS = 3
-
-type Unit = 'KG' | 'LITER' | 'SACHET' | 'PIECE' | 'LOT'
-
-const UNITS: Array<{ value: Unit, label: string }> = [
-  { value: 'KG', label: 'Kg' },
-  { value: 'LITER', label: 'Litre' },
-  { value: 'SACHET', label: 'Sachet' },
-  { value: 'PIECE', label: 'Pièce' },
-  { value: 'LOT', label: 'Lot' },
-]
 
 interface Variant {
   id: string
@@ -55,7 +46,7 @@ interface ProductFormProps {
     description: string
     category: string
     price: string
-    unit: Unit
+    unit: string
     stock: string
     alertThreshold: string
     photos: string[]
@@ -72,6 +63,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const { categories, loadCategories } = useCategories()
+  const { units } = useProductUnits()
   const [modal, setModal] = useState<{ visible: boolean, title: string, message: string, type: 'success' | 'error' | 'confirm', onConfirm?: () => void }>({ visible: false, title: '', message: '', type: 'error' })
 
   function showError(title: string, message: string): void {
@@ -90,7 +82,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   const [promoDays, setPromoDays] = useState(7)
   const [category, setCategory] = useState(initialData?.category ?? '')
   const [price, setPrice] = useState(initialData?.price ?? '')
-  const [unit, setUnit] = useState<Unit>(initialData?.unit ?? 'KG')
+  const [unit, setUnit] = useState<string>(initialData?.unit ?? '')
   const [stock, setStock] = useState(initialData?.stock ?? '')
   const [alertThreshold, setAlertThreshold] = useState(
     initialData?.alertThreshold ?? '',
@@ -194,10 +186,10 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   }
 
   async function handleSubmit(): Promise<void> {
-    if (!name.trim() || !category || !price.trim() || !stock.trim()) {
+    if (!name.trim() || !category || !price.trim() || !unit || !stock.trim()) {
       showError(
         'Champs requis',
-        'Veuillez remplir le nom, la catégorie, le prix et le stock.',
+        'Veuillez remplir le nom, la catégorie, le prix, l\'unité et le stock.',
       )
       return
     }
@@ -372,17 +364,17 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
             accessibilityLabel="Prix"
           />
           <View style={styles.unitRow}>
-            {UNITS.map((u) => {
-              const isSelected = unit === u.value
+            {units.map((u) => {
+              const isSelected = unit === u.code
               return (
                 <TouchableOpacity
-                  key={u.value}
+                  key={u.code}
                   style={[
                     styles.unitChip,
                     { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
                     isSelected && styles.unitChipActive,
                   ]}
-                  onPress={() => setUnit(u.value)}
+                  onPress={() => setUnit(u.code)}
                   accessibilityRole="radio"
                   accessibilityState={{ selected: isSelected }}
                   accessibilityLabel={u.label}

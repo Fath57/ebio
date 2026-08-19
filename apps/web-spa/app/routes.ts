@@ -73,6 +73,11 @@ export default [
       route('admin/categories/nouveau', 'features/admin/categories/pages/category-create-page.tsx'),
       route('admin/categories/:categoryId/modifier', 'features/admin/categories/pages/category-edit-page.tsx'),
 
+      // Admin — Unites de vente
+      route('admin/unites', 'features/admin/product-units/pages/product-units-page.tsx'),
+      route('admin/unites/nouveau', 'features/admin/product-units/pages/product-unit-create-page.tsx'),
+      route('admin/unites/:unitId/modifier', 'features/admin/product-units/pages/product-unit-edit-page.tsx'),
+
       // Admin — Settings & Roles
       route('admin/parametres', 'features/admin/settings/pages/admin-settings-page.tsx'),
       route('admin/roles', 'features/admin/roles/pages/roles-page.tsx'),

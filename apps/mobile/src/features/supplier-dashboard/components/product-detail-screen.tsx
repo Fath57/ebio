@@ -16,6 +16,7 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 
@@ -44,14 +45,6 @@ interface ProductDetail {
   updatedAt: string
 }
 
-const UNIT_LABELS: Record<string, string> = {
-  KG: 'kg',
-  LITER: 'litre',
-  SACHET: 'sachet',
-  PIECE: 'pièce',
-  LOT: 'lot',
-}
-
 const STATUS_LABELS: Record<string, { label: string, color: string, bg: string }> = {
   ACTIVE: { label: 'Actif', color: colors.green[800], bg: colors.green[50] },
   OUT_OF_STOCK: { label: 'En rupture', color: colors.coral[800], bg: colors.coral[50] },
@@ -71,6 +64,7 @@ interface ProductDetailScreenProps {
 
 export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
+  const { shortLabel } = useProductUnits()
   const tabBarHeight = useBottomTabBarHeight()
   const [product, setProduct] = useState<ProductDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -146,7 +140,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
   const activePrice = selectedVariant?.pricePerUnit ?? (hasPromotion ? product.promotionalPrice! : product.pricePerUnit)
   const activeStock = selectedVariant?.stock ?? product.stock
   const isOutOfStock = activeStock === 0 || product.status === 'OUT_OF_STOCK'
-  const unitLabel = UNIT_LABELS[product.unit] ?? product.unit
+  const unitLabel = shortLabel(product.unit)
   const statusInfo = STATUS_LABELS[product.status] ?? STATUS_LABELS.ACTIVE
 
   return (

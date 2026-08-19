@@ -494,6 +494,8 @@ export type RegisterSupplier = {
   neighborhood?: string;
   mobileMoneyNumber: string;
   mode: SupplierMode;
+  deliveryFee?: number;
+  freeDeliveryFrom?: number | null;
   openingHours?: OpeningHours;
   timezone?: Timezone;
 };
@@ -512,6 +514,8 @@ export type UpdateSupplier = {
   neighborhood?: string;
   mobileMoneyNumber?: string;
   mode?: SupplierMode;
+  deliveryFee?: number;
+  freeDeliveryFrom?: number | null;
   openingHours?: OpeningHours;
   timezone?: Timezone;
   coverPhoto?: string;
@@ -614,6 +618,31 @@ export type UpdateCategory = {
 };
 
 /**
+ * CreateProductUnit
+ *
+ * Data required to add a unit of sale
+ */
+export type CreateProductUnit = {
+  code: string;
+  label: string;
+  shortLabel: string;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+/**
+ * UpdateProductUnit
+ *
+ * Update a unit of sale — every field optional, the code is immutable
+ */
+export type UpdateProductUnit = {
+  label?: string;
+  shortLabel?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+/**
  * CreateProduct
  *
  * Data required to create a new product
@@ -623,7 +652,7 @@ export type CreateProduct = {
   categoryId: string;
   description?: string;
   pricePerUnit: number;
-  unit: ProductUnit;
+  unit: ProductUnitCode;
   stock: number;
   stockAlertThreshold: number;
   status: ProductStatus;
@@ -645,7 +674,7 @@ export type UpdateProduct = {
   categoryId?: string;
   description?: string;
   pricePerUnit?: number;
-  unit?: ProductUnit;
+  unit?: ProductUnitCode;
   stock?: number;
   stockAlertThreshold?: number;
   status?: ProductStatus;
@@ -1671,24 +1700,11 @@ export type OrderItemInput = {
 };
 
 /**
- * ProductUnit
+ * ProductUnitCode
  *
- * Unit of measurement for products
+ * Code of a unit of sale, from the product units reference list
  */
-export const ProductUnit = {
-  KG: "KG",
-  LITER: "LITER",
-  SACHET: "SACHET",
-  PIECE: "PIECE",
-  LOT: "LOT",
-} as const;
-
-/**
- * ProductUnit
- *
- * Unit of measurement for products
- */
-export type ProductUnit = (typeof ProductUnit)[keyof typeof ProductUnit];
+export type ProductUnitCode = string;
 
 /**
  * ProductStatus
@@ -3327,6 +3343,35 @@ export type BannersControllerUpdateResponses = {
   200: unknown;
 };
 
+export type GeocodingControllerAutocompleteData = {
+  body?: never;
+  path?: never;
+  query: {
+    q: string;
+    session: string;
+    kind: string;
+  };
+  url: "/api/geocoding/autocomplete";
+};
+
+export type GeocodingControllerAutocompleteResponses = {
+  200: unknown;
+};
+
+export type GeocodingControllerResolvePlaceData = {
+  body?: never;
+  path?: never;
+  query: {
+    placeId: string;
+    session: string;
+  };
+  url: "/api/geocoding/place";
+};
+
+export type GeocodingControllerResolvePlaceResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -3352,6 +3397,8 @@ export type SuppliersControllerRegisterData = {
      * How buyers interact with this supplier
      */
     mode: "CONTACT" | "ORDER";
+    deliveryFee?: number;
+    freeDeliveryFrom?: number | null;
     /**
      * OpeningHours
      *
@@ -3433,6 +3480,8 @@ export type SuppliersControllerUpdateMeData = {
      * How buyers interact with this supplier
      */
     mode?: "CONTACT" | "ORDER";
+    deliveryFee?: number;
+    freeDeliveryFrom?: number | null;
     /**
      * OpeningHours
      *
@@ -3904,11 +3953,11 @@ export type ProductsControllerCreateData = {
     description?: string;
     pricePerUnit: number;
     /**
-     * ProductUnit
+     * ProductUnitCode
      *
-     * Unit of measurement for products
+     * Code of a unit of sale, from the product units reference list
      */
-    unit: "KG" | "LITER" | "SACHET" | "PIECE" | "LOT";
+    unit: string;
     stock: number;
     stockAlertThreshold: number;
     /**
@@ -3958,11 +4007,11 @@ export type ProductsControllerUpdateData = {
     description?: string;
     pricePerUnit?: number;
     /**
-     * ProductUnit
+     * ProductUnitCode
      *
-     * Unit of measurement for products
+     * Code of a unit of sale, from the product units reference list
      */
-    unit?: "KG" | "LITER" | "SACHET" | "PIECE" | "LOT";
+    unit?: string;
     stock?: number;
     stockAlertThreshold?: number;
     /**
@@ -4113,6 +4162,99 @@ export type CategoriesControllerCreateData = {
 
 export type CategoriesControllerCreateResponses = {
   201: unknown;
+};
+
+export type ProductUnitsControllerFindActiveData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/product-units/active";
+};
+
+export type ProductUnitsControllerFindActiveResponses = {
+  200: unknown;
+};
+
+export type ProductUnitsControllerFindAllData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/product-units";
+};
+
+export type ProductUnitsControllerFindAllResponses = {
+  200: unknown;
+};
+
+export type ProductUnitsControllerCreateData = {
+  /**
+   * CreateProductUnit
+   *
+   * Data required to add a unit of sale
+   */
+  body: {
+    code: string;
+    label: string;
+    shortLabel: string;
+    isActive: boolean;
+    sortOrder: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/product-units";
+};
+
+export type ProductUnitsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type ProductUnitsControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/product-units/{id}";
+};
+
+export type ProductUnitsControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type ProductUnitsControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/product-units/{id}";
+};
+
+export type ProductUnitsControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type ProductUnitsControllerUpdateData = {
+  /**
+   * UpdateProductUnit
+   *
+   * Update a unit of sale — every field optional, the code is immutable
+   */
+  body: {
+    label?: string;
+    shortLabel?: string;
+    isActive?: boolean;
+    sortOrder?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/product-units/{id}";
+};
+
+export type ProductUnitsControllerUpdateResponses = {
+  200: unknown;
 };
 
 export type OrdersControllerFindAllData = {
@@ -5218,6 +5360,21 @@ export type AdminControllerGetSupplierByIdData = {
 };
 
 export type AdminControllerGetSupplierByIdResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetProductsData = {
+  body?: never;
+  path?: never;
+  query: {
+    q: string;
+    supplierId: string;
+    limit: string;
+  };
+  url: "/api/admin/products";
+};
+
+export type AdminControllerGetProductsResponses = {
   200: unknown;
 };
 

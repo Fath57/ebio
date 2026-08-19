@@ -156,6 +156,7 @@
     "moderation": "Modération",
     "notifications": "Notifications",
     "orders": "Commandes",
+    "productUnits": "Unités de vente",
     "roles": "Rôles",
     "settings": "Paramètres",
     "subscription": "Abonnement",
@@ -673,6 +674,46 @@
         "quantity": "Qté",
         "unitPrice": "Prix unitaire",
         "commissionDetail": "Commission ({{rate}} %)"
+      }
+    },
+    "productUnits": {
+      "title": "Unités de vente",
+      "description": "Gérez les unités proposées aux fournisseurs dans le formulaire produit",
+      "addUnit": "Ajouter une unité",
+      "addUnitDescription": "Créez une nouvelle unité de vente",
+      "editUnit": "Modifier l'unité",
+      "editUnitDescription": "Mettez à jour le libellé, l'ordre ou l'état de l'unité",
+      "active": "Active",
+      "inactive": "Désactivée",
+      "deleteConfirm": "Supprimer cette unité ?",
+      "deleteWarning": "Une unité utilisée par des produits ne peut pas être supprimée : désactivez-la pour la retirer des formulaires.",
+      "deleteBlocked": "Des produits utilisent cette unité",
+      "columns": {
+        "label": "Libellé",
+        "shortLabel": "Abrégé",
+        "code": "Code",
+        "sortOrder": "Ordre",
+        "productCount": "Produits",
+        "status": "État",
+        "actions": "Actions"
+      },
+      "form": {
+        "label": "Libellé",
+        "labelPlaceholder": "Ex : Kilogramme",
+        "labelHint": "Nom complet affiché dans le formulaire produit",
+        "shortLabel": "Abrégé",
+        "shortLabelPlaceholder": "kg",
+        "shortLabelHint": "Forme courte accolée au prix : 1 200 FCFA / kg",
+        "code": "Code",
+        "codePlaceholder": "KILOGRAMME",
+        "codeHint": "Identifiant enregistré sur chaque produit. Généré depuis le libellé.",
+        "codeLocked": "Le code est figé : il est déjà inscrit sur les produits existants.",
+        "sortOrder": "Ordre d'affichage",
+        "sortOrderHint": "Croissant, du plus petit au plus grand",
+        "isActive": "Unité active",
+        "isActiveHint": "Une unité désactivée disparaît du formulaire produit sans toucher aux produits existants",
+        "create": "Créer l'unité",
+        "update": "Mettre à jour"
       }
     },
     "roles": {

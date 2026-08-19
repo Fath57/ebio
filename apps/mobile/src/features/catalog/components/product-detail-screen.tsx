@@ -28,6 +28,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
+import { useProductUnits } from '../hooks/use-product-units'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const HERO_HEIGHT = 380
@@ -60,19 +61,6 @@ interface ProductDetailScreenProps {
   onNavigateToSupplier: (supplierId: string) => void
 }
 
-const UNIT_LABELS: Record<string, string> = {
-  KG: 'le kilogramme',
-  LITER: 'le litre',
-  SACHET: 'le sachet',
-  PIECE: 'la pièce',
-  LOT: 'le lot',
-  kg: 'le kilogramme',
-  litre: 'le litre',
-  sachet: 'le sachet',
-  piece: 'la pièce',
-  lot: 'le lot',
-}
-
 export function ProductDetailScreen({
   product,
   supplier,
@@ -81,6 +69,7 @@ export function ProductDetailScreen({
   onNavigateToSupplier,
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
+  const { shortLabel } = useProductUnits()
   const insets = useSafeAreaInsets()
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
@@ -90,7 +79,7 @@ export function ProductDetailScreen({
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
   const totalPrice = displayPrice * quantity
   const discount = hasPromo ? Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100) : 0
-  const unitLabel = UNIT_LABELS[product.unit] ?? product.unit
+  const unitLabel = shortLabel(product.unit)
 
   const handleDecrement = useCallback(() => {
     setQuantity(prev => Math.max(1, prev - 1))

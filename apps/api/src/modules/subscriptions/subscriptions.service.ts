@@ -132,7 +132,9 @@ export class SubscriptionsService {
     const maxProducts = subscription?.plan?.maxProducts ?? 5 // Default free tier
 
     const rows = await this.em.getConnection().execute(
-      `SELECT COUNT(*)::int as count FROM products WHERE supplier_id = ? AND status != 'ARCHIVED'`,
+      // 'ARCHIVED' is not a product status: the exclusion never applied and
+      // deleted products counted against the plan.
+      `SELECT COUNT(*)::int as count FROM products WHERE supplier_id = ? AND status <> 'HIDDEN'`,
       [supplierId],
     )
 

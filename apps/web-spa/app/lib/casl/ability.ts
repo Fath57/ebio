@@ -3,6 +3,7 @@ import { AbilityBuilder, PureAbility } from '@casl/ability'
 export type Actions = 'create' | 'read' | 'update' | 'delete' | 'manage'
 export type Subjects
   = | 'Product'
+    | 'ProductUnit'
     | 'Order'
     | 'Payment'
     | 'Supplier'

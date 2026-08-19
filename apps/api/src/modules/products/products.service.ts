@@ -12,7 +12,8 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { Category } from './entities/category.entity'
 import { ProductVariant } from './entities/product-variant.entity'
-import { Product, ProductStatus, ProductUnit } from './entities/product.entity'
+import { Product, ProductStatus } from './entities/product.entity'
+import { ProductUnitsService } from './product-units.service'
 
 const PLAN_PRODUCT_LIMITS: Record<string, number> = {
   FREE: 5,
@@ -26,6 +27,7 @@ export class ProductsService {
   constructor(
     private readonly em: EntityManager,
     private readonly notificationsService: NotificationsService,
+    private readonly productUnitsService: ProductUnitsService,
   ) {}
 
   async create(supplierId: string, data: CreateProduct): Promise<Product> {
@@ -35,6 +37,8 @@ export class ProductsService {
     if (!category) {
       throw new NotFoundException('Category not found')
     }
+
+    await this.productUnitsService.assertUsable(data.unit)
 
     // Resolve mediaIds to photo URLs
     let photos: string[] = []
@@ -55,7 +59,7 @@ export class ProductsService {
       description: data.description,
       photos,
       pricePerUnit: data.pricePerUnit,
-      unit: data.unit as ProductUnit,
+      unit: data.unit,
       stock: data.stock ?? 0,
       stockAlertThreshold: data.stockAlertThreshold ?? 5,
       status: (data.status as ProductStatus) ?? ProductStatus.ACTIVE,
@@ -125,15 +129,23 @@ export class ProductsService {
   async findBySupplierId(
     supplierId: string,
     pagination: { pageSize: number, offset: number },
-    filters?: { status?: string, categoryId?: string },
+    filters?: { status?: string, categoryId?: string, includeHidden?: boolean },
   ): Promise<{ products: Product[], total: number, pagination: { pageSize: number, offset: number } }> {
     const where: Record<string, unknown> = { supplier: { id: supplierId } }
 
-    if (filters?.status) {
-      where.status = filters.status
-    }
     if (filters?.categoryId) {
       where.category = { id: filters.categoryId }
+    }
+
+    // HIDDEN marks a product withdrawn from sale as well as one soft-deleted,
+    // so it belongs to the owner's view alone. The allowed set is intersected
+    // with the requested status rather than overwritten by it: a buyer asking
+    // for `status=HIDDEN` then matches nothing instead of reaching around the
+    // rule.
+    const allowed = Object.values(ProductStatus)
+      .filter(status => filters?.includeHidden || status !== ProductStatus.HIDDEN)
+    where.status = {
+      $in: filters?.status ? allowed.filter(status => status === filters.status) : allowed,
     }
 
     const [products, total] = await this.em.findAndCount(Product, where, {
@@ -155,8 +167,12 @@ export class ProductsService {
       product.description = data.description
     if (data.pricePerUnit !== undefined)
       product.pricePerUnit = data.pricePerUnit
-    if (data.unit !== undefined)
-      product.unit = data.unit as ProductUnit
+    // Only a change is checked: a supplier editing the price of a product
+    // priced in a unit since retired must not be blocked by that unit.
+    if (data.unit !== undefined && data.unit !== product.unit) {
+      await this.productUnitsService.assertUsable(data.unit)
+      product.unit = data.unit
+    }
     if (data.stock !== undefined)
       product.stock = data.stock
     if (data.stockAlertThreshold !== undefined)
