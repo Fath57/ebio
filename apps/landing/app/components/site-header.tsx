@@ -9,7 +9,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-20 border-b border-line/60 bg-white">
       <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-5">
-        <a href="/" className="flex items-center gap-2" aria-label="eBio — accueil">
+        <a href="/" className="flex items-center gap-2" aria-label="eBio, accueil">
           <img src="/logo-ebio.png" alt="eBio" className="h-10 w-auto" />
         </a>
         <nav aria-label="Navigation principale" className="hidden items-center gap-7 md:flex">
