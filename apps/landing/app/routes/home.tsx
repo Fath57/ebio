@@ -29,7 +29,7 @@ export async function action({ request }: Route.ActionArgs) {
 }
 
 export function meta(_args: Route.MetaArgs) {
-  const title = 'eBio — Des produits locaux et bio, près de chez vous'
+  const title = 'eBio · Des produits locaux et bio, près de chez vous'
   const description
     = 'eBio met sur la carte les producteurs, transformateurs et boutiques bio autour de vous, au Bénin. '
       + 'Commandez, payez par Mobile Money, faites-vous livrer ou passez retirer à la boutique.'
