@@ -126,6 +126,22 @@ import type {
   GeocodingControllerAutocompleteResponses,
   GeocodingControllerResolvePlaceData,
   GeocodingControllerResolvePlaceResponses,
+  LandingControllerCreateFaqData,
+  LandingControllerCreateFaqResponses,
+  LandingControllerFindAllFaqsData,
+  LandingControllerFindAllFaqsResponses,
+  LandingControllerGetAdminContentData,
+  LandingControllerGetAdminContentResponses,
+  LandingControllerGetContentData,
+  LandingControllerGetContentResponses,
+  LandingControllerRemoveFaqData,
+  LandingControllerRemoveFaqResponses,
+  LandingControllerSendContactMessageData,
+  LandingControllerSendContactMessageResponses,
+  LandingControllerUpdateFaqData,
+  LandingControllerUpdateFaqResponses,
+  LandingControllerUpdateSectionData,
+  LandingControllerUpdateSectionResponses,
   MediaControllerCompleteUploadData,
   MediaControllerCompleteUploadResponses,
   MediaControllerDeleteMediaData,
@@ -1033,6 +1049,115 @@ export const bannersControllerUpdate = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     url: "/api/banners/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const landingControllerGetContent = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<LandingControllerGetContentData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    LandingControllerGetContentResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/landing/content", ...options });
+
+export const landingControllerSendContactMessage = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerSendContactMessageData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    LandingControllerSendContactMessageResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/landing/contact",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const landingControllerGetAdminContent = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<LandingControllerGetAdminContentData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    LandingControllerGetAdminContentResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/landing/content/admin", ...options });
+
+export const landingControllerUpdateSection = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerUpdateSectionData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    LandingControllerUpdateSectionResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/landing/content/{key}", ...options });
+
+export const landingControllerFindAllFaqs = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<LandingControllerFindAllFaqsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    LandingControllerFindAllFaqsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/landing/faqs", ...options });
+
+export const landingControllerCreateFaq = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerCreateFaqData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    LandingControllerCreateFaqResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/landing/faqs",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const landingControllerRemoveFaq = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerRemoveFaqData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    LandingControllerRemoveFaqResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/landing/faqs/{id}", ...options });
+
+export const landingControllerUpdateFaq = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerUpdateFaqData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    LandingControllerUpdateFaqResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/landing/faqs/{id}",
     ...options,
     headers: {
       "Content-Type": "application/json",

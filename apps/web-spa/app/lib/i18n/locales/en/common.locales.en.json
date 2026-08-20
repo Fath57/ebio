@@ -159,6 +159,7 @@
     "productUnits": "Units of sale",
     "roles": "Roles",
     "settings": "Settings",
+    "site": "Landing site",
     "subscription": "Subscription",
     "suppliers": "Suppliers",
     "themeDark": "Dark mode",
@@ -779,6 +780,76 @@
         "name": "Plan name",
         "price": "Price",
         "features": "Features"
+      }
+    },
+    "site": {
+      "title": "Landing site",
+      "description": "Manage the texts, store links and FAQ of e-bio.org",
+      "save": "Save",
+      "saved": "Saved",
+      "stores": {
+        "title": "Mobile app",
+        "description": "While a URL is empty, the store badge opens the “Coming soon” dialog. Paste the URL on publication day and the site points to the store, no deploy needed.",
+        "playUrl": "Google Play URL",
+        "appUrl": "App Store URL",
+        "modalTitle": "Waiting dialog title",
+        "modalBody": "Waiting dialog text"
+      },
+      "hero": {
+        "title": "Hero",
+        "description": "The first screen of the site",
+        "eyebrow": "Eyebrow",
+        "mainTitle": "Title",
+        "highlight": "Green part of the title",
+        "highlightHint": "Must be an exact part of the title",
+        "subtitle": "Subtitle",
+        "footnote": "Small line under the badges"
+      },
+      "trust": {
+        "title": "Trust points",
+        "description": "The three cards under the hero",
+        "pointTitle": "Title",
+        "pointBody": "Text"
+      },
+      "steps": {
+        "title": "How it works",
+        "description": "The three buyer-side steps",
+        "eyebrow": "Eyebrow",
+        "sectionTitle": "Section title",
+        "stepTitle": "Step title",
+        "stepBody": "Step text"
+      },
+      "supplier": {
+        "title": "Suppliers section",
+        "description": "The green band for producers and processors",
+        "eyebrow": "Eyebrow",
+        "sectionTitle": "Title",
+        "body": "Introduction text",
+        "points": "Selling points (one per line)",
+        "ctaLabel": "Button label"
+      },
+      "footer": {
+        "title": "Footer",
+        "description": "Text and contact shown at the bottom of every page",
+        "tagline": "Tagline",
+        "contactEmail": "Contact email",
+        "bottomLine": "Bottom line"
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "The questions shown on the site. An inactive question stays here without being published.",
+        "question": "Question",
+        "answer": "Answer",
+        "active": "Published",
+        "inactive": "Hidden",
+        "order": "Order",
+        "add": "Add a question",
+        "deleteConfirm": "Delete this question?"
+      },
+      "contact": {
+        "title": "Contact form",
+        "description": "Messages sent from the site's contact section land in these inboxes.",
+        "recipients": "Recipients (one email per line)"
       }
     },
     "suppliers": {

@@ -9,6 +9,7 @@ import {
   ClipboardList,
   CreditCard,
   FolderTree,
+  Globe,
   Images,
   LayoutDashboard,
   LogOut,
@@ -106,6 +107,7 @@ export default function AppLayout() {
     { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
     { to: '/admin/categories', label: t('nav.categories'), icon: <FolderTree className="h-4 w-4" /> },
     { to: '/admin/unites', label: t('nav.productUnits'), icon: <Ruler className="h-4 w-4" /> },
+    { to: '/admin/site', label: t('nav.site'), icon: <Globe className="h-4 w-4" /> },
     { to: '/admin/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
     { to: '/admin/roles', label: t('nav.roles'), icon: <Shield className="h-4 w-4" /> },
   ]

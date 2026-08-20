@@ -17,6 +17,7 @@ import { DbModule } from './modules/db/db.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
 import { GeocodingModule } from './modules/geocoding/geocoding.module'
+import { LandingModule } from './modules/landing/landing.module'
 import { MediaModule } from './modules/media/media.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
 import { OrdersModule } from './modules/orders/orders.module'
@@ -115,6 +116,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     ExampleModule,
     SearchModule,
     BannersModule,
+    LandingModule,
     GeocodingModule,
     SuppliersModule,
     ProductsModule,

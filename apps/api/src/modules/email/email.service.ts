@@ -8,6 +8,8 @@ export interface EmailOptions {
   subject: string
   content: string
   html?: string
+  /** Address a reply should go to when it differs from the sender. */
+  replyTo?: string
 }
 
 export interface TemplatedEmailOptions {
@@ -57,6 +59,7 @@ export class EmailService {
     subject,
     content,
     html,
+    replyTo,
   }: EmailOptions): Promise<void> {
     try {
       const mailOptions = {
@@ -65,6 +68,7 @@ export class EmailService {
         subject,
         text: content,
         html: html || content,
+        ...(replyTo ? { replyTo } : {}),
       }
 
       const info = await this.transporter.sendMail(mailOptions)
@@ -75,6 +79,11 @@ export class EmailService {
       this.logger.error(`Failed to send email to ${to}:`, error)
       throw new Error(`Failed to send email: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
+  }
+
+  /** Renders a branded template without sending, for callers composing the mail themselves. */
+  async renderTemplate(template: TemplateName, data: Record<string, unknown>, subject: string): Promise<string> {
+    return this.templateService.render(template, data, subject)
   }
 
   async sendTemplatedEmail({

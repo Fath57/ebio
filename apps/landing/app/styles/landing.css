@@ -1,0 +1,115 @@
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+@import 'tailwindcss';
+
+/* eBio design tokens — single source: the v2.0 design system charter. */
+@theme {
+  --color-green-50: #e8f5ec;
+  --color-green-100: #c5e6cf;
+  --color-green-200: #7cc896;
+  --color-green-400: #2a9d4e;
+  --color-green-600: #1e7a37;
+  --color-green-800: #134e23;
+  --color-green-900: #0a2912;
+
+  --color-earth-50: #FAF5ED;
+  --color-earth-100: #F0E0C2;
+  --color-earth-400: #C07B2A;
+  --color-earth-600: #8A5518;
+  --color-earth-800: #543310;
+
+  --color-blue-50: #eaeff6;
+  --color-blue-100: #c4d1e6;
+  --color-blue-200: #8aa4cc;
+  --color-blue-400: #4a6da6;
+  --color-blue-600: #335289;
+  --color-blue-800: #213559;
+
+  --color-coral-400: #F06040;
+  --color-coral-600: #B83820;
+
+  --color-paper: #F7F6F2;
+  --color-ink: #2A2924;
+  --color-ink-soft: #5A5852;
+  --color-ink-faint: #9B9890;
+  --color-line: #D5D3CE;
+
+  --font-sans: 'Plus Jakarta Sans', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Courier New', monospace;
+
+  --radius-card: 12px;
+  --radius-button: 10px;
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/*
+ * The dotted paper grain of the page background. Kept in CSS rather than an
+ * image so it costs nothing and inherits the paper color.
+ */
+.paper-grain {
+  background-image: radial-gradient(rgba(42, 41, 36, 0.055) 1px, transparent 1px);
+  background-size: 22px 22px;
+}
+
+/*
+ * Eyebrow labels: the charter's UPPERCASE + letterspacing treatment. Not
+ * named `overline`: Tailwind owns that class and draws a line over the text.
+ */
+.eyebrow {
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* Long-form legal text, styled here once rather than utility by utility. */
+.legal-prose h2 {
+  margin-top: 2.5rem;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--color-ink);
+}
+
+.legal-prose p {
+  margin-top: 1rem;
+  line-height: 1.75;
+  color: var(--color-ink-soft);
+}
+
+.legal-prose ul {
+  margin-top: 1rem;
+  padding-left: 1.25rem;
+  list-style: disc;
+  color: var(--color-ink-soft);
+}
+
+.legal-prose li {
+  margin-top: 0.5rem;
+  line-height: 1.7;
+}
+
+/*
+ * Bare links only: a link carrying utility classes, like the mailto button on
+ * the deletion page, keeps its own styling instead of being repainted green.
+ */
+.legal-prose a:not([class]) {
+  color: var(--color-green-600);
+  font-weight: 600;
+  text-decoration: underline;
+}

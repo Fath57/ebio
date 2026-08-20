@@ -369,6 +369,38 @@ export type UpdatePostSchema = {
 };
 
 /**
+ * ContactMessage
+ *
+ * Message sent from the landing contact form
+ */
+export type ContactMessage = {
+  name: string;
+  email: string;
+  message: string;
+  company?: string;
+};
+
+/**
+ * CreateLandingFaq
+ */
+export type CreateLandingFaq = {
+  question: string;
+  answer: string;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+/**
+ * UpdateLandingFaq
+ */
+export type UpdateLandingFaq = {
+  question?: string;
+  answer?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+/**
  * InitiateUpload
  *
  * Demande d'URL signée(s) pour upload direct vers S3
@@ -3340,6 +3372,126 @@ export type BannersControllerUpdateData = {
 };
 
 export type BannersControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type LandingControllerGetContentData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/landing/content";
+};
+
+export type LandingControllerGetContentResponses = {
+  200: unknown;
+};
+
+export type LandingControllerSendContactMessageData = {
+  /**
+   * ContactMessage
+   *
+   * Message sent from the landing contact form
+   */
+  body: {
+    name: string;
+    email: string;
+    message: string;
+    company?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/landing/contact";
+};
+
+export type LandingControllerSendContactMessageResponses = {
+  201: unknown;
+};
+
+export type LandingControllerGetAdminContentData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/landing/content/admin";
+};
+
+export type LandingControllerGetAdminContentResponses = {
+  200: unknown;
+};
+
+export type LandingControllerUpdateSectionData = {
+  body?: never;
+  path: {
+    key: string;
+  };
+  query?: never;
+  url: "/api/landing/content/{key}";
+};
+
+export type LandingControllerUpdateSectionResponses = {
+  200: unknown;
+};
+
+export type LandingControllerFindAllFaqsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/landing/faqs";
+};
+
+export type LandingControllerFindAllFaqsResponses = {
+  200: unknown;
+};
+
+export type LandingControllerCreateFaqData = {
+  /**
+   * CreateLandingFaq
+   */
+  body: {
+    question: string;
+    answer: string;
+    isActive: boolean;
+    sortOrder: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/landing/faqs";
+};
+
+export type LandingControllerCreateFaqResponses = {
+  201: unknown;
+};
+
+export type LandingControllerRemoveFaqData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/landing/faqs/{id}";
+};
+
+export type LandingControllerRemoveFaqResponses = {
+  200: unknown;
+};
+
+export type LandingControllerUpdateFaqData = {
+  /**
+   * UpdateLandingFaq
+   */
+  body: {
+    question?: string;
+    answer?: string;
+    isActive?: boolean;
+    sortOrder?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/landing/faqs/{id}";
+};
+
+export type LandingControllerUpdateFaqResponses = {
   200: unknown;
 };
 

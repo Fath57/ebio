@@ -70,3 +70,4 @@ android/
 
 # ios
 ios/
+.openai-key

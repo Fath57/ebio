@@ -3092,6 +3092,256 @@
         }
       }
     },
+    "/api/landing/content": {
+      "get": {
+        "operationId": "LandingController_getContent",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/contact": {
+      "post": {
+        "operationId": "LandingController_sendContactMessage",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Message sent from the landing contact form",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 3000
+                  },
+                  "company": {
+                    "type": "string",
+                    "maxLength": 0
+                  }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "message"
+                ],
+                "additionalProperties": false,
+                "title": "ContactMessage",
+                "description": "Message sent from the landing contact form"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/content/admin": {
+      "get": {
+        "operationId": "LandingController_getAdminContent",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/content/{key}": {
+      "put": {
+        "operationId": "LandingController_updateSection",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [
+          {
+            "name": "key",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/faqs": {
+      "get": {
+        "operationId": "LandingController_findAllFaqs",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "LandingController_createFaq",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "answer": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "question",
+                  "answer",
+                  "isActive",
+                  "sortOrder"
+                ],
+                "additionalProperties": false,
+                "title": "CreateLandingFaq"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/faqs/{id}": {
+      "patch": {
+        "operationId": "LandingController_updateFaq",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "answer": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateLandingFaq"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "LandingController_removeFaq",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/geocoding/autocomplete": {
       "get": {
         "operationId": "GeocodingController_autocomplete",
@@ -8828,6 +9078,99 @@
         "additionalProperties": false,
         "title": "UpdatePostSchema",
         "description": "Schema for updating a post"
+      },
+      "ContactMessage": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "email": {
+            "type": "string",
+            "maxLength": 200,
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "message": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 3000
+          },
+          "company": {
+            "type": "string",
+            "maxLength": 0
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "message"
+        ],
+        "additionalProperties": false,
+        "title": "ContactMessage",
+        "description": "Message sent from the landing contact form"
+      },
+      "CreateLandingFaq": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "question",
+          "answer",
+          "isActive",
+          "sortOrder"
+        ],
+        "additionalProperties": false,
+        "title": "CreateLandingFaq"
+      },
+      "UpdateLandingFaq": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 300
+          },
+          "answer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateLandingFaq"
       },
       "InitiateUpload": {
         "type": "object",

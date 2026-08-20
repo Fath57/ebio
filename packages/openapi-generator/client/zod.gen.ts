@@ -220,6 +220,43 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * ContactMessage
+ *
+ * Message sent from the landing contact form
+ */
+export const zContactMessage = z.object({
+  name: z.string().min(1).max(120),
+  email: z
+    .email()
+    .max(200)
+    .regex(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+    ),
+  message: z.string().min(10).max(3000),
+  company: z.optional(z.string().max(0)),
+});
+
+/**
+ * CreateLandingFaq
+ */
+export const zCreateLandingFaq = z.object({
+  question: z.string().min(1).max(300),
+  answer: z.string().min(1).max(2000),
+  isActive: z.boolean().default(true),
+  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateLandingFaq
+ */
+export const zUpdateLandingFaq = z.object({
+  question: z.optional(z.string().min(1).max(300)),
+  answer: z.optional(z.string().min(1).max(2000)),
+  isActive: z.optional(z.boolean()).default(true),
+  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
  * CompleteUpload
  *
  * Finalise un upload multipart et déclenche l'optimisation
@@ -2925,6 +2962,80 @@ export const zBannersControllerUpdateData = z.object({
     ),
     isActive: z.optional(z.boolean()).default(true),
     position: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerGetContentData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerSendContactMessageData = z.object({
+  body: z.object({
+    name: z.string().min(1).max(120),
+    email: z
+      .email()
+      .max(200)
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+    message: z.string().min(10).max(3000),
+    company: z.optional(z.string().max(0)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerGetAdminContentData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerUpdateSectionData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    key: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerFindAllFaqsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerCreateFaqData = z.object({
+  body: z.object({
+    question: z.string().min(1).max(300),
+    answer: z.string().min(1).max(2000),
+    isActive: z.boolean().default(true),
+    sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerRemoveFaqData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerUpdateFaqData = z.object({
+  body: z.object({
+    question: z.optional(z.string().min(1).max(300)),
+    answer: z.optional(z.string().min(1).max(2000)),
+    isActive: z.optional(z.boolean()).default(true),
+    sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
   }),
   path: z.object({
     id: z.string(),

@@ -1,0 +1,34 @@
+<%- include('partials/heading', { text: 'Nouveau message depuis e-bio.org', level: 1 }) %>
+
+<p>
+  <strong><%= name %></strong> vous a écrit depuis le formulaire de contact du site.
+</p>
+
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin: 16px 0; border-collapse: collapse;">
+  <tr>
+    <td style="padding: 6px 12px 6px 0; color: #5A5852; white-space: nowrap;">Nom</td>
+    <td style="padding: 6px 0; color: #2A2924;"><strong><%= name %></strong></td>
+  </tr>
+  <tr>
+    <td style="padding: 6px 12px 6px 0; color: #5A5852;">Email</td>
+    <td style="padding: 6px 0;"><a href="mailto:<%= email %>" style="color: #1e7a37;"><%= email %></a></td>
+  </tr>
+  <% if (phone) { %>
+  <tr>
+    <td style="padding: 6px 12px 6px 0; color: #5A5852;">Téléphone</td>
+    <td style="padding: 6px 0; color: #2A2924;"><%= phone %></td>
+  </tr>
+  <% } %>
+  <tr>
+    <td style="padding: 6px 12px 6px 0; color: #5A5852;">Motif</td>
+    <td style="padding: 6px 0; color: #2A2924;"><%= reasonLabel %></td>
+  </tr>
+</table>
+
+<div style="background-color: #F7F6F2; border-radius: 10px; padding: 16px 20px; margin: 8px 0 16px;">
+  <p style="margin: 0; white-space: pre-line; color: #2A2924;"><%= message %></p>
+</div>
+
+<p style="color: #5A5852; font-size: 13px;">
+  Répondez directement à cet e-mail pour écrire à <%= name %>.
+</p>

@@ -73,6 +73,9 @@ export default [
       route('admin/categories/nouveau', 'features/admin/categories/pages/category-create-page.tsx'),
       route('admin/categories/:categoryId/modifier', 'features/admin/categories/pages/category-edit-page.tsx'),
 
+      // Admin — Site vitrine
+      route('admin/site', 'features/admin/site/pages/site-page.tsx'),
+
       // Admin — Unites de vente
       route('admin/unites', 'features/admin/product-units/pages/product-units-page.tsx'),
       route('admin/unites/nouveau', 'features/admin/product-units/pages/product-unit-create-page.tsx'),

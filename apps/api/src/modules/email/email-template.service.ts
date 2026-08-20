@@ -10,6 +10,7 @@ export type TemplateName
     | 'otp-code'
     | 'supplier-suspended'
     | 'supplier-reinstated'
+    | 'contact-message'
 
 @Injectable()
 export class EmailTemplateService {

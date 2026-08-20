@@ -25,6 +25,7 @@ export type Subjects
     | 'Badge'
     | 'Category'
     | 'Banner'
+    | 'LandingContent'
     | 'all'
 
 export type Actions = 'create' | 'read' | 'update' | 'delete' | 'manage'

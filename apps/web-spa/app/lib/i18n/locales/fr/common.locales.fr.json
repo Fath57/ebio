@@ -159,6 +159,7 @@
     "productUnits": "Unités de vente",
     "roles": "Rôles",
     "settings": "Paramètres",
+    "site": "Site vitrine",
     "subscription": "Abonnement",
     "suppliers": "Fournisseurs",
     "themeDark": "Mode sombre",
@@ -779,6 +780,76 @@
         "name": "Nom du plan",
         "price": "Prix",
         "features": "Fonctionnalités"
+      }
+    },
+    "site": {
+      "title": "Site vitrine",
+      "description": "Gérez les textes, les liens des stores et la FAQ de e-bio.org",
+      "save": "Enregistrer",
+      "saved": "Enregistré",
+      "stores": {
+        "title": "Application mobile",
+        "description": "Tant qu'une URL est vide, le badge du store ouvre la fenêtre « Bientôt disponible ». Collez l'URL le jour de la publication et le site pointe vers le store, sans déploiement.",
+        "playUrl": "URL Google Play",
+        "appUrl": "URL App Store",
+        "modalTitle": "Titre de la fenêtre d'attente",
+        "modalBody": "Texte de la fenêtre d'attente"
+      },
+      "hero": {
+        "title": "Écran d'accueil",
+        "description": "Le premier écran du site",
+        "eyebrow": "Sur-titre",
+        "mainTitle": "Titre",
+        "highlight": "Partie du titre en vert",
+        "highlightHint": "Doit être un morceau exact du titre",
+        "subtitle": "Sous-titre",
+        "footnote": "Petite ligne sous les badges"
+      },
+      "trust": {
+        "title": "Points de confiance",
+        "description": "Les trois cartes sous l'écran d'accueil",
+        "pointTitle": "Titre",
+        "pointBody": "Texte"
+      },
+      "steps": {
+        "title": "Comment ça marche",
+        "description": "Les trois étapes côté acheteur",
+        "eyebrow": "Sur-titre",
+        "sectionTitle": "Titre de la section",
+        "stepTitle": "Titre de l'étape",
+        "stepBody": "Texte de l'étape"
+      },
+      "supplier": {
+        "title": "Section fournisseurs",
+        "description": "La bande verte destinée aux producteurs et transformateurs",
+        "eyebrow": "Sur-titre",
+        "sectionTitle": "Titre",
+        "body": "Texte d'introduction",
+        "points": "Arguments (un par ligne)",
+        "ctaLabel": "Texte du bouton"
+      },
+      "footer": {
+        "title": "Pied de page",
+        "description": "Texte et contact affichés en bas de toutes les pages",
+        "tagline": "Phrase de présentation",
+        "contactEmail": "Email de contact",
+        "bottomLine": "Ligne du bas"
+      },
+      "faq": {
+        "title": "FAQ",
+        "description": "Les questions affichées sur le site. Une question inactive reste ici sans être publiée.",
+        "question": "Question",
+        "answer": "Réponse",
+        "active": "Publiée",
+        "inactive": "Masquée",
+        "order": "Ordre",
+        "add": "Ajouter une question",
+        "deleteConfirm": "Supprimer cette question ?"
+      },
+      "contact": {
+        "title": "Formulaire de contact",
+        "description": "Les messages envoyés depuis la section « Contactez-nous » du site arrivent dans ces boîtes.",
+        "recipients": "Destinataires (un email par ligne)"
       }
     },
     "suppliers": {
