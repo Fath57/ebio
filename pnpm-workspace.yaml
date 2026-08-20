@@ -36,9 +36,12 @@ catalogs:
     react-i18next: ^16.5.4
     i18next: ^25.8.0
   auth:
-    # Better Auth
-    better-auth: ^1.4.18
-    "@better-auth/expo": ^1.4.6
+    # Better Auth — pinned, not ranged. The Docker build re-resolves these when
+    # it prunes to a production tree, and a caret let production drift to 1.7.1
+    # while the lockfile said 1.4.18. 1.7.x reads an `account.issuer` column the
+    # schema does not have, so every Google sign-in ended in a 500.
+    better-auth: 1.4.18
+    "@better-auth/expo": 1.4.6
   build:
     # Node, vite, ts
     "@types/node": ^25.1.0
