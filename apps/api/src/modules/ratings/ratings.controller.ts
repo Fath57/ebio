@@ -1,11 +1,12 @@
-import type { JwtAuthenticatedRequest } from '../../common/guards/jwt-auth.guard'
+import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import { TypedBody } from '@lonestone/nzoth/server'
-import { Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common'
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { CanCreate } from '../../common/decorators/check-permissions.decorator'
 import { Public } from '../../common/decorators/public.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
+import { Session } from '../auth/auth.decorator'
+import { AuthGuard } from '../auth/auth.guard'
 import { createReviewSchema } from './contracts/rating.contract'
 import { RatingsService } from './ratings.service'
 
@@ -13,14 +14,16 @@ import { RatingsService } from './ratings.service'
 export class RatingsController {
   constructor(private readonly ratingsService: RatingsService) {}
 
+  // Session auth like every buyer route — the JWT guard here belonged to the
+  // chat module and rejected the app's session token as « expired ».
   @Post('reviews')
-  @UseGuards(JwtAuthGuard, CaslGuard)
+  @UseGuards(AuthGuard, CaslGuard)
   @CanCreate('Review')
   async createReview(
-    @Req() req: JwtAuthenticatedRequest,
+    @Session() session: LoggedInBetterAuthSession,
     @TypedBody(createReviewSchema) body: z.infer<typeof createReviewSchema>,
   ) {
-    return this.ratingsService.createReview(req.user.sub, body)
+    return this.ratingsService.createReview(session.user.id, body)
   }
 
   @Public()
@@ -46,10 +49,10 @@ export class RatingsController {
   }
 
   @Post('reviews/:id/report')
-  @UseGuards(JwtAuthGuard, CaslGuard)
+  @UseGuards(AuthGuard, CaslGuard)
   @CanCreate('ContentReport')
   async reportReview(
-    @Req() _req: JwtAuthenticatedRequest,
+    @Session() _session: LoggedInBetterAuthSession,
     @Param('id') _reviewId: string,
     @TypedBody(z.object({ reason: z.string().max(500) })) _body: { reason: string },
   ) {
