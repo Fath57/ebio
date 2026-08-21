@@ -19,6 +19,8 @@ export interface CheckStatusResult {
   paidAt?: Date
   reference?: string
   providerPaymentMethodId?: string
+  /** Amount FedaPay actually charged — never trust the client's number. */
+  amount?: number
 }
 
 export interface RefundResult {

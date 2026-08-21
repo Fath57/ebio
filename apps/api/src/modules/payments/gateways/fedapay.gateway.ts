@@ -54,7 +54,7 @@ export class FedaPayGateway implements PaymentGatewayInterface {
 
   async checkStatus(providerTransactionId: string): Promise<CheckStatusResult> {
     const transaction = await Transaction.retrieve(Number(providerTransactionId))
-    const txn = transaction as unknown as { status?: string, approved_at?: string, reference?: string, payment_method_id?: number }
+    const txn = transaction as unknown as { status?: string, approved_at?: string, reference?: string, payment_method_id?: number, amount?: number }
     const mappedStatus = FEDAPAY_STATUS_MAP[txn.status ?? 'pending'] ?? 'pending'
 
     return {
@@ -64,6 +64,7 @@ export class FedaPayGateway implements PaymentGatewayInterface {
         : undefined,
       reference: txn.reference ?? undefined,
       providerPaymentMethodId: txn.payment_method_id ? String(txn.payment_method_id) : undefined,
+      amount: typeof txn.amount === 'number' ? txn.amount : undefined,
     }
   }
 

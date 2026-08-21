@@ -1,10 +1,10 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
-import type { TopupInput } from './contracts/wallet.contract'
+import type { TopupInput, VerifyTopupInput } from './contracts/wallet.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
-import { Controller, Get, Post, Query, UseGuards } from '@nestjs/common'
+import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
-import { topupSchema } from './contracts/wallet.contract'
+import { topupSchema, verifyTopupSchema } from './contracts/wallet.contract'
 import { TopupService } from './topup.service'
 import { WalletService } from './wallet.service'
 
@@ -40,6 +40,16 @@ export class WalletController {
     @Query('limit') limit: string = '20',
   ) {
     return this.topupService.listForUser(session.user.id, Number(page), Number(limit))
+  }
+
+  /** The widget's completion, re-checked server-side before any credit. */
+  @Post('me/topups/:id/verify')
+  async verifyTopup(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(verifyTopupSchema) body: VerifyTopupInput,
+  ) {
+    return this.topupService.verify(session.user.id, id, body.fedapayTransactionId)
   }
 
   /** Starts a FedaPay payment whose confirmation credits the wallet. */

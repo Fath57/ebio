@@ -1,6 +1,5 @@
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
-import { config } from '../../config/env.config'
 import { User } from '../auth/auth.entity'
 import { FedaPayGateway } from '../payments/gateways/fedapay.gateway'
 import { TopupStatus, WalletTopup } from './entities/wallet-topup.entity'
@@ -17,8 +16,12 @@ export class TopupService {
     private readonly walletService: WalletService,
   ) {}
 
-  /** Starts the FedaPay checkout; the webhook confirmation credits the wallet. */
-  async initiate(userId: string, amount: number): Promise<{ topupId: string, redirectUrl: string }> {
+  /**
+   * Same pattern as the order checkout: the FedaPay transaction is created
+   * by the Checkout.js widget on the phone; here we only open the pending
+   * topup the widget will settle through verify().
+   */
+  async initiate(userId: string, amount: number): Promise<{ topupId: string, amount: number }> {
     const wallet = await this.walletService.getOrCreate({ userId })
     const user = await this.em.findOneOrFail(User, { id: userId })
 
@@ -29,32 +32,47 @@ export class TopupService {
     })
     await this.em.flush()
 
-    let result
-    try {
-      result = await this.fedapay.initiatePayment({
-        orderId: `topup-${topup.id}`,
-        amount,
-        currency: 'XOF',
-        paymentMethod: 'FEDAPAY',
-        phoneNumber: user.phone ?? undefined,
-        callbackUrl: `${config.api.baseUrl}/api/payments/webhook/fedapay`,
-      })
-    }
-    catch (error) {
-      // The pending row must not survive a payment that never started.
-      await this.em.removeAndFlush(topup)
-      const raw = error as { message?: unknown } | null
-      this.logger.error(`Topup initiation failed for user ${userId}: ${String(raw?.message ?? error)}`)
-      throw new BadRequestException('Le paiement FedaPay n’a pas pu démarrer. Réessayez dans un instant.')
+    return { topupId: topup.id, amount }
+  }
+
+  /**
+   * Called by the app when the widget completes. The server re-checks the
+   * transaction with FedaPay and compares the paid amount to the topup —
+   * the client's word is never enough to credit a wallet.
+   */
+  async verify(userId: string, topupId: string, fedapayTransactionId: string): Promise<{ status: string, balance: number }> {
+    const topup = await this.em.findOne(WalletTopup, { id: topupId, user: { id: userId } })
+    if (!topup) {
+      throw new BadRequestException('Recharge introuvable')
     }
 
-    topup.fedapayTransactionId = result.providerTransactionId
-    if (!result.redirectUrl) {
-      throw new Error('FedaPay returned no redirect URL for the topup')
+    if (topup.status === TopupStatus.PENDING) {
+      let check
+      try {
+        check = await this.fedapay.checkStatus(fedapayTransactionId)
+      }
+      catch {
+        throw new BadRequestException('Transaction FedaPay introuvable')
+      }
+      if (check.status === 'completed') {
+        if (check.amount !== undefined && check.amount !== Math.round(Number(topup.amount))) {
+          this.logger.warn(`Topup ${topupId}: paid ${check.amount}, expected ${topup.amount}`)
+          throw new BadRequestException('Le montant payé ne correspond pas à la recharge')
+        }
+        topup.fedapayTransactionId = fedapayTransactionId
+        await this.em.flush()
+        await this.settleFromProvider(fedapayTransactionId, 'completed')
+      }
+      else if (check.status === 'failed' || check.status === 'refunded') {
+        topup.fedapayTransactionId = fedapayTransactionId
+        await this.em.flush()
+        await this.settleFromProvider(fedapayTransactionId, 'failed')
+      }
     }
-    await this.em.flush()
 
-    return { topupId: topup.id, redirectUrl: result.redirectUrl }
+    this.em.clear()
+    const fresh = await this.em.findOneOrFail(WalletTopup, { id: topupId }, { populate: ['wallet'] })
+    return { status: fresh.status, balance: Number(fresh.wallet.balance) }
   }
 
   async listForUser(userId: string, page: number, limit: number) {

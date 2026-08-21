@@ -12,6 +12,7 @@ import {
   View,
 } from 'react-native'
 import { WebView } from 'react-native-webview'
+import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -57,6 +58,67 @@ function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
 }
 
+function buildTopupCheckoutHtml(
+  publicKey: string,
+  amount: number,
+  topupId: string,
+  customerName: string,
+  customerEmail: string | null,
+): string {
+  const nameParts = customerName.trim().split(/\s+/)
+  const firstname = nameParts[0] ?? 'Client'
+  const lastname = nameParts.slice(1).join(' ') || firstname
+  const customerBlock = [
+    `firstname: '${firstname.replace(/'/g, '\\\'')}'`,
+    `lastname: '${lastname.replace(/'/g, '\\\'')}'`,
+    customerEmail ? `email: '${customerEmail.replace(/'/g, '\\\'')}'` : null,
+  ].filter(Boolean).join(',\n          ')
+
+  return `
+<!DOCTYPE html>
+<html><head>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  body { margin: 0; padding: 20px; background: #F7F6F2; font-family: -apple-system, sans-serif;
+    display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+  .loading { color: #5A5852; font-size: 16px; text-align: center; }
+</style>
+</head><body>
+<p class="loading">Chargement du paiement...</p>
+<script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
+<script>
+  FedaPay.init({
+    public_key: '${publicKey}',
+    transaction: {
+      amount: ${amount},
+      description: 'Recharge du portefeuille eBio',
+      custom_metadata: { topup_id: '${topupId}' }
+    },
+    customer: {
+      ${customerBlock}
+    },
+    currency: { iso: 'XOF' },
+    onComplete: function(resp) {
+      if (resp.reason === 'CHECKOUT_COMPLETED' || (resp.transaction && resp.transaction.status === 'approved')) {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'completed',
+          transactionId: String(resp.transaction.id)
+        }));
+      } else {
+        window.ReactNativeWebView.postMessage(JSON.stringify({
+          type: 'failed',
+          reason: resp.reason || 'Paiement échoué'
+        }));
+      }
+    },
+    onClose: function() {
+      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'closed' }));
+    }
+  }).open();
+</script>
+</body></html>`
+}
+
 interface WalletScreenProps {
   onGoBack: () => void
 }
@@ -70,8 +132,12 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
   const [isToppingUp, setIsToppingUp] = useState(false)
   const [topupAmount, setTopupAmount] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  // FedaPay checkout page for the topup; closing it refreshes the balance.
-  const [topupUrl, setTopupUrl] = useState<string | null>(null)
+  const { data: session } = useSession()
+  const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
+  // Checkout.js widget HTML, same mechanism as the order payment: local page,
+  // native postMessage on completion, server-side re-check before crediting.
+  const [checkoutHtml, setCheckoutHtml] = useState<string | null>(null)
+  const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     try {
@@ -117,15 +183,61 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
         appAlert('Erreur', body?.message ?? 'Impossible de démarrer la recharge.')
         return
       }
-      const data = await res.json() as { redirectUrl: string }
+      const data = await res.json() as { topupId: string, amount: number }
       setIsToppingUp(false)
       setTopupAmount('')
-      setTopupUrl(data.redirectUrl)
+      setPendingTopupId(data.topupId)
+      setCheckoutHtml(buildTopupCheckoutHtml(
+        fedapayPublicKey ?? '',
+        data.amount,
+        data.topupId,
+        session?.user?.name ?? 'Client eBio',
+        session?.user?.email ?? null,
+      ))
     }
     finally {
       setIsSubmitting(false)
     }
-  }, [topupAmount])
+  }, [topupAmount, fedapayPublicKey, session])
+
+  const closeCheckout = useCallback(() => {
+    setCheckoutHtml(null)
+    setPendingTopupId(null)
+    setIsLoading(true)
+    load()
+  }, [load])
+
+  const handleCheckoutMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data) as { type: string, transactionId?: string, reason?: string }
+      if (data.type === 'completed' && pendingTopupId && data.transactionId) {
+        // The server re-checks the transaction with FedaPay (status AND
+        // amount) before crediting — the widget's word alone is worthless.
+        const res = await apiFetch(`/api/wallet/me/topups/${pendingTopupId}/verify`, {
+          method: 'POST',
+          body: JSON.stringify({ fedapayTransactionId: data.transactionId }),
+        })
+        if (res.ok) {
+          appAlert('Recharge confirmée', 'Votre portefeuille a été crédité.')
+        }
+        else {
+          const body = await res.json().catch(() => null) as { message?: string } | null
+          appAlert('Vérification échouée', body?.message ?? 'La recharge sera vérifiée automatiquement.')
+        }
+        closeCheckout()
+      }
+      else if (data.type === 'failed') {
+        appAlert('Paiement échoué', data.reason ?? 'Le paiement a échoué.')
+        closeCheckout()
+      }
+      else if (data.type === 'closed') {
+        closeCheckout()
+      }
+    }
+    catch {
+      closeCheckout()
+    }
+  }, [pendingTopupId, closeCheckout])
 
   if (isLoading) {
     return (
@@ -137,18 +249,16 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
 
   // FedaPay payment page: once the user leaves it, the webhook has (or will
   // shortly have) credited the wallet — reload on close.
-  if (topupUrl) {
+  if (checkoutHtml) {
     return (
       <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader
-          title="Recharge du portefeuille"
-          onBack={() => {
-            setTopupUrl(null)
-            setIsLoading(true)
-            load()
-          }}
+        <ScreenHeader title="Recharge du portefeuille" onBack={closeCheckout} />
+        <WebView
+          source={{ html: checkoutHtml }}
+          style={{ flex: 1 }}
+          onMessage={handleCheckoutMessage}
+          javaScriptEnabled
         />
-        <WebView source={{ uri: topupUrl }} style={{ flex: 1 }} />
       </View>
     )
   }
@@ -175,7 +285,8 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
             {formatAmount(wallet?.balance ?? 0)}
           </Text>
           <TouchableOpacity
-            style={styles.topupButton}
+            style={[styles.topupButton, !fedapayPublicKey && styles.buttonDisabled]}
+            disabled={!fedapayPublicKey}
             onPress={() => setIsToppingUp(true)}
             activeOpacity={0.8}
           >
