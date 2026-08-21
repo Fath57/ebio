@@ -5,7 +5,9 @@ import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -401,7 +403,10 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
 
       {/* Add number modal */}
       <Modal visible={isAddingNumber} transparent animationType="slide" onRequestClose={() => setIsAddingNumber(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Nouveau numéro</Text>
             <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
@@ -439,12 +444,15 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       {/* Withdraw modal */}
       <Modal visible={isWithdrawing} transparent animationType="slide" onRequestClose={() => setIsWithdrawing(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Demander un reversement</Text>
             <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
@@ -491,7 +499,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   )

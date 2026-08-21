@@ -2,7 +2,9 @@ import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -370,7 +372,10 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
 
       {/* Topup modal */}
       <Modal visible={isToppingUp} transparent animationType="slide" onRequestClose={() => setIsToppingUp(false)}>
-        <View style={styles.modalOverlay}>
+        <KeyboardAvoidingView
+          style={styles.modalOverlay}
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        >
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Recharger mon portefeuille</Text>
             <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
@@ -418,7 +423,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </View>
   )
