@@ -2,9 +2,12 @@ import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Search from 'lucide-react-native/dist/esm/icons/search'
+import { useFocusEffect } from '@react-navigation/native'
+import { useCallback, useState } from 'react'
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { apiFetch } from '../../../utils/api-client'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 interface HomeHeaderProps {
@@ -25,6 +28,35 @@ interface HomeHeaderProps {
  * la place du bouton retour via `leadingSlot`, la puce de localisation celle du
  * titre, et les actions occupent le `rightSlot`.
  */
+/** Unread notifications, re-counted whenever the home screen regains focus. */
+function useUnreadCount(): number {
+  const [count, setCount] = useState(0)
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+      async function load(): Promise<void> {
+        try {
+          const res = await apiFetch('/api/notifications/unread')
+          if (res.ok && !cancelled) {
+            const items = await res.json() as unknown[]
+            setCount(Array.isArray(items) ? items.length : 0)
+          }
+        }
+        catch {
+          // keep the previous count on a network hiccup
+        }
+      }
+      load()
+      return () => {
+        cancelled = true
+      }
+    }, []),
+  )
+
+  return count
+}
+
 export function HomeHeader({
   locationLabel,
   initials,
@@ -34,6 +66,7 @@ export function HomeHeader({
   onOpenNotifications,
   onOpenProfile,
 }: HomeHeaderProps) {
+  const unreadCount = useUnreadCount()
   const { semantic } = useTheme()
 
   return (
@@ -77,9 +110,14 @@ export function HomeHeader({
             onPress={onOpenNotifications}
             hitSlop={8}
             accessibilityRole="button"
-            accessibilityLabel="Notifications"
+            accessibilityLabel={unreadCount > 0 ? `Notifications, ${unreadCount} non lues` : 'Notifications'}
           >
             <Bell size={20} color={semantic.textSecondary} strokeWidth={2.2} />
+            {unreadCount > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
+              </View>
+            )}
           </Pressable>
 
           <Pressable
@@ -103,6 +141,25 @@ export function HomeHeader({
 }
 
 const styles = StyleSheet.create({
+  badge: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    minWidth: 16,
+    height: 16,
+    borderRadius: 8,
+    paddingHorizontal: 3,
+    backgroundColor: colors.coral[400],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  badgeText: {
+    color: colors.neutral[0],
+    fontFamily: fonts.sansBd,
+    fontSize: 10,
+    lineHeight: 12,
+  },
+
   leading: {
     flex: 1,
     flexDirection: 'row',
