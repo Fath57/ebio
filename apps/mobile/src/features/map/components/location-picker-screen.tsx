@@ -1,10 +1,10 @@
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import * as Location from 'expo-location'
 import Locate from 'lucide-react-native/dist/esm/icons/locate'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Search from 'lucide-react-native/dist/esm/icons/search'
 import X from 'lucide-react-native/dist/esm/icons/x'
-import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
-import { useContext, useRef, useState } from 'react'
+import { use, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Keyboard,
@@ -34,7 +34,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
   // The bottom tab bar overlays these stack screens: without this offset the
   // confirm button hides behind it. Context (not the hook) so the picker also
   // works outside any tab navigator.
-  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const { semantic } = useTheme()
   const mapRef = useRef<MapView>(null)
   const [center, setCenter] = useState({ latitude: initialLatitude, longitude: initialLongitude })

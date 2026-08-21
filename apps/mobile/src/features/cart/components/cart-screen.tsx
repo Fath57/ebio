@@ -18,8 +18,8 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { FadeInView } from '../../../utils/animations'
+import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 type DeliveryMode = 'PICKUP' | 'DELIVERY'

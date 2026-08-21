@@ -1,4 +1,5 @@
 import type { Route } from './+types/boutique'
+import process from 'node:process'
 import { SITE_URL } from '@/components/constants'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'

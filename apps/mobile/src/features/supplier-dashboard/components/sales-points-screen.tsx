@@ -1,4 +1,5 @@
 import type { ApiWeekHours } from './week-schedule-editor'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import * as Location from 'expo-location'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
@@ -7,8 +8,7 @@ import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
-import { useCallback, useContext, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
@@ -53,7 +53,7 @@ interface SalesPointsScreenProps {
  */
 export function SalesPointsScreen({ onGoBack }: SalesPointsScreenProps) {
   // The tab bar overlays the bottom of these screens.
-  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const { semantic } = useTheme()
   const [points, setPoints] = useState<SalesPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -255,7 +255,7 @@ interface SalesPointFormProps {
 }
 
 function SalesPointForm({ point, onDone }: SalesPointFormProps) {
-  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const { semantic } = useTheme()
   const [name, setName] = useState(point?.name ?? '')
   const [address, setAddress] = useState(point?.address ?? '')

@@ -18,8 +18,8 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { apiFetch } from '../../../utils/api-client'
+import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
 

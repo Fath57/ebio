@@ -20,8 +20,8 @@ import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
-import { handleNotificationTap } from '../hooks/use-notifications'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { handleNotificationTap } from '../hooks/use-notifications'
 
 interface NotificationItem {
   id: string

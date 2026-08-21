@@ -31,10 +31,10 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { FadeInView, ScalePressable } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
-import { useLocation } from '../../common/location-context'
 import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useLocation } from '../../common/location-context'
 import { ContactActionSheet } from './contact-action-sheet'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
