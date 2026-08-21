@@ -6,6 +6,7 @@ import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import { useState } from 'react'
 import {
+  Linking,
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
@@ -28,6 +29,7 @@ import {
 } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import Check from 'lucide-react-native/dist/esm/icons/check'
 import { GoogleSignInButton } from './google-sign-in-button'
 import { OtpInput, ResendTimer } from './otp-input'
 
@@ -52,6 +54,8 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [resendKey, setResendKey] = useState(0)
+  // Store requirement: no account without explicit terms acceptance.
+  const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   const iconColor = semantic.textTertiary
   const inputBg = semantic.bgSurface
@@ -274,6 +278,43 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
 
         {/* Form */}
         <View style={styles.form}>
+          {/* Terms gate — required before any of the three signup paths */}
+          {(step === 'phone-input' || step === 'email-form') && (
+            <Pressable
+              style={styles.termsRow}
+              onPress={() => setAcceptedTerms(v => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acceptedTerms }}
+            >
+              <View style={[
+                styles.checkbox,
+                { borderColor: acceptedTerms ? colors.green[400] : semantic.borderNormal },
+                acceptedTerms && { backgroundColor: colors.green[400] },
+              ]}
+              >
+                {acceptedTerms && <Check size={13} color={colors.neutral[0]} strokeWidth={3} />}
+              </View>
+              <Text style={[styles.termsText, { color: semantic.textSecondary }]}>
+                J'accepte les
+                {' '}
+                <Text
+                  style={[styles.termsLink, { color: semantic.textPrimaryColor }]}
+                  onPress={() => Linking.openURL('https://e-bio.org/cgu')}
+                >
+                  conditions générales
+                </Text>
+                {' '}
+                et la
+                {' '}
+                <Text
+                  style={[styles.termsLink, { color: semantic.textPrimaryColor }]}
+                  onPress={() => Linking.openURL('https://e-bio.org/confidentialite')}
+                >
+                  politique de confidentialité
+                </Text>
+              </Text>
+            </Pressable>
+          )}
           {/* ─── Phone input step ─── */}
           {step === 'phone-input' && (
             <>
@@ -295,10 +336,10 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 style={({ pressed }) => [
                   styles.submitButton,
                   { backgroundColor: colors.green[400], opacity: pressed ? 0.85 : 1 },
-                  (!isPhoneValid || loading) && styles.submitButtonDisabled,
+                  (!isPhoneValid || loading || !acceptedTerms) && styles.submitButtonDisabled,
                 ]}
                 onPress={handleSendOtp}
-                disabled={!isPhoneValid || loading}
+                disabled={!isPhoneValid || loading || !acceptedTerms}
               >
                 {loading
                   ? (
@@ -321,14 +362,19 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
               </View>
 
-              <GoogleSignInButton
-                label="S'inscrire avec Google"
-                onSuccess={() => {
-                  notifyAuthChange()
-                  onRegisterSuccess()
-                }}
-                onError={setError}
-              />
+              <View
+                pointerEvents={acceptedTerms ? 'auto' : 'none'}
+                style={!acceptedTerms && styles.submitButtonDisabled}
+              >
+                <GoogleSignInButton
+                  label="S'inscrire avec Google"
+                  onSuccess={() => {
+                    notifyAuthChange()
+                    onRegisterSuccess()
+                  }}
+                  onError={setError}
+                />
+              </View>
             </>
           )}
 
@@ -462,10 +508,10 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 style={({ pressed }) => [
                   styles.submitButton,
                   { backgroundColor: colors.green[400], opacity: pressed ? 0.85 : 1 },
-                  loading && styles.submitButtonDisabled,
+                  (loading || !acceptedTerms) && styles.submitButtonDisabled,
                 ]}
                 onPress={handleSendEmailOtp}
-                disabled={loading}
+                disabled={loading || !acceptedTerms}
               >
                 {loading
                   ? (
@@ -522,6 +568,24 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
 }
 
 const styles = StyleSheet.create({
+  termsRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[3],
+    marginBottom: spacing[4],
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 5,
+    borderWidth: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 1,
+  },
+  termsText: { ...typography.bodyS, flex: 1 },
+  termsLink: { fontFamily: fonts.sansSb, textDecorationLine: 'underline' },
+
   flex: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: spacing[6] },
 
