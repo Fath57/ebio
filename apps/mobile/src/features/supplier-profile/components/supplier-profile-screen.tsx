@@ -465,8 +465,11 @@ export function SupplierProfileScreen({
     if (!supplier)
       return
     try {
+      // The link lands on the public shop page (rich preview in WhatsApp),
+      // which opens the app when installed and offers the stores otherwise.
+      const url = `https://e-bio.org/boutique/${supplier.id}`
       await Share.share({
-        message: `Découvrez ${supplier.shopName} sur eBio ! 🌿`,
+        message: `Découvrez ${supplier.shopName} sur eBio ! 🌿\n${url}`,
       })
     }
     catch {

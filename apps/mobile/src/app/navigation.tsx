@@ -986,7 +986,23 @@ export function AppNavigation() {
   }
 
   return (
-    <NavigationContainer ref={navigationRef}>
+    <NavigationContainer
+      ref={navigationRef}
+      linking={{
+        prefixes: ['ebio-mobile://', 'https://e-bio.org'],
+        config: {
+          screens: {
+            Accueil: {
+              screens: {
+                // Shared profile links: ebio-mobile://boutique/:supplierId
+                // and https://e-bio.org/boutique/:supplierId
+                SupplierProfile: 'boutique/:supplierId',
+              },
+            },
+          },
+        },
+      }}
+    >
       <Tab.Navigator
         screenOptions={({ route }) => {
           const focused = getFocusedRouteNameFromRoute(route)
