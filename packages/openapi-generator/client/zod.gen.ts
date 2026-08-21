@@ -3677,6 +3677,15 @@ export const zWalletControllerGetMyWalletData = z.object({
   }),
 });
 
+export const zWalletControllerGetMyTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
 export const zWalletControllerTopupData = z.object({
   body: z.object({
     amount: z.int().gte(100).lte(1000000),
@@ -3787,6 +3796,16 @@ export const zWalletAdminControllerActOnWithdrawalData = z.object({
     id: z.string(),
   }),
   query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
 });
 
 export const zWalletAdminControllerWalletsOverviewData = z.object({

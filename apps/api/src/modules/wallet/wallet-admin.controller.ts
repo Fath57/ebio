@@ -9,6 +9,7 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { adminPayoutNumberActionSchema, adminWithdrawalActionSchema } from './contracts/wallet.contract'
+import { TopupService } from './topup.service'
 import { WithdrawalsService } from './withdrawals.service'
 
 @Controller('admin')
@@ -16,7 +17,10 @@ import { WithdrawalsService } from './withdrawals.service'
 @Roles('ADMIN')
 @CanManage('all')
 export class WalletAdminController {
-  constructor(private readonly withdrawalsService: WithdrawalsService) {}
+  constructor(
+    private readonly withdrawalsService: WithdrawalsService,
+    private readonly topupService: TopupService,
+  ) {}
 
   @Get('payout-numbers')
   async listNumbers(
@@ -59,6 +63,15 @@ export class WalletAdminController {
       throw new BadRequestException('Un motif de refus est requis')
     }
     return this.withdrawalsService.reject(id, session.user.id, body.rejectionReason)
+  }
+
+  @Get('wallet-topups')
+  async listTopups(
+    @Query('status') status?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.topupService.adminList(status, Number(page), Number(limit))
   }
 
   @Get('wallets')

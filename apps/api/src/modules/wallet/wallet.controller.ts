@@ -32,6 +32,16 @@ export class WalletController {
     }
   }
 
+  /** Every topup with its status — pending and failed ones included. */
+  @Get('me/topups')
+  async getMyTopups(
+    @Session() session: LoggedInBetterAuthSession,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.topupService.listForUser(session.user.id, Number(page), Number(limit))
+  }
+
   /** Starts a FedaPay payment whose confirmation credits the wallet. */
   @Post('topup')
   async topup(

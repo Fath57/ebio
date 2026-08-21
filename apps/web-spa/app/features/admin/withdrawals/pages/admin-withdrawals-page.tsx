@@ -1,4 +1,4 @@
-import type { AdminPayoutNumber, AdminWithdrawal } from '../utils/withdrawals-queries'
+import type { AdminPayoutNumber, AdminTopup, AdminWithdrawal } from '../utils/withdrawals-queries'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
@@ -27,10 +27,17 @@ import { Link } from 'react-router'
 import {
   actOnPayoutNumber,
   actOnWithdrawal,
+  fetchAdminTopupsQueryOptions,
   fetchAdminWithdrawalsQueryOptions,
   fetchPayoutNumbersQueryOptions,
   fetchWalletsOverviewQueryOptions,
 } from '../utils/withdrawals-queries'
+
+const TOPUP_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive'> = {
+  PENDING: 'secondary',
+  COMPLETED: 'default',
+  FAILED: 'destructive',
+}
 
 const WITHDRAWAL_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
   PENDING: 'secondary',
@@ -66,6 +73,8 @@ export default function AdminWithdrawalsPage() {
     fetchAdminWithdrawalsQueryOptions(undefined, 1),
   )
   const { data: overview, isLoading: isLoadingOverview } = useQuery(fetchWalletsOverviewQueryOptions())
+  const [topupsPage, setTopupsPage] = useState(1)
+  const { data: topups, isLoading: isLoadingTopups } = useQuery(fetchAdminTopupsQueryOptions(undefined, topupsPage))
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'payout-numbers'] })
@@ -288,6 +297,77 @@ export default function AdminWithdrawalsPage() {
                         ))}
                       </TableBody>
                     </Table>
+                  )}
+        </CardContent>
+      </Card>
+
+      {/* Buyer wallet topups */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('admin.withdrawals.topupsTitle')}</CardTitle>
+          <p className="text-muted-foreground text-sm">{t('admin.withdrawals.topupsHint')}</p>
+        </CardHeader>
+        <CardContent>
+          {isLoadingTopups
+            ? <Skeleton className="h-24 w-full" />
+            : (topups?.items.length ?? 0) === 0
+                ? <p className="text-muted-foreground py-4 text-center text-sm">{t('admin.withdrawals.topupsEmpty')}</p>
+                : (
+                    <>
+                      <Table>
+                        <TableHeader>
+                          <TableRow>
+                            <TableHead>{t('admin.withdrawals.columns.date')}</TableHead>
+                            <TableHead>{t('admin.withdrawals.columns.user')}</TableHead>
+                            <TableHead>{t('admin.withdrawals.columns.reference')}</TableHead>
+                            <TableHead className="text-right">{t('admin.withdrawals.columns.amount')}</TableHead>
+                            <TableHead>{t('admin.withdrawals.columns.status')}</TableHead>
+                          </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                          {topups?.items.map((topup: AdminTopup) => (
+                            <TableRow key={topup.id}>
+                              <TableCell>{new Date(topup.createdAt).toLocaleString(i18n.language)}</TableCell>
+                              <TableCell>
+                                <span className="font-medium">{topup.userName}</span>
+                                {topup.userEmail && (
+                                  <span className="text-muted-foreground ml-2 text-xs">{topup.userEmail}</span>
+                                )}
+                              </TableCell>
+                              <TableCell className="text-muted-foreground font-mono text-xs">
+                                {topup.fedapayTransactionId ?? '—'}
+                              </TableCell>
+                              <TableCell className="text-right font-medium">{formatAmount(topup.amount)}</TableCell>
+                              <TableCell>
+                                <Badge variant={TOPUP_VARIANTS[topup.status] ?? 'secondary'}>
+                                  {t(`admin.withdrawals.topupStatus.${topup.status}`)}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          ))}
+                        </TableBody>
+                      </Table>
+                      {(topups?.total ?? 0) > (topups?.limit ?? 20) && (
+                        <div className="mt-3 flex items-center justify-end gap-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={topupsPage <= 1}
+                            onClick={() => setTopupsPage(page => page - 1)}
+                          >
+                            {t('dataTable.previous')}
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={topupsPage * (topups?.limit ?? 20) >= (topups?.total ?? 0)}
+                            onClick={() => setTopupsPage(page => page + 1)}
+                          >
+                            {t('dataTable.next')}
+                          </Button>
+                        </div>
+                      )}
+                    </>
                   )}
         </CardContent>
       </Card>

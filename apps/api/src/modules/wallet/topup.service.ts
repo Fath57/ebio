@@ -47,6 +47,49 @@ export class TopupService {
     return { topupId: topup.id, redirectUrl: result.redirectUrl }
   }
 
+  async listForUser(userId: string, page: number, limit: number) {
+    const [rows, total] = await this.em.findAndCount(
+      WalletTopup,
+      { user: { id: userId } },
+      { orderBy: { createdAt: 'DESC' }, limit, offset: (page - 1) * limit },
+    )
+    return {
+      items: rows.map(topup => ({
+        id: topup.id,
+        amount: Number(topup.amount),
+        status: topup.status,
+        createdAt: topup.createdAt.toISOString(),
+      })),
+      total,
+      page,
+      limit,
+    }
+  }
+
+  async adminList(status: string | undefined, page: number, limit: number) {
+    const where = status ? { status: status as TopupStatus } : {}
+    const [rows, total] = await this.em.findAndCount(WalletTopup, where, {
+      populate: ['user'],
+      orderBy: { createdAt: 'DESC' },
+      limit,
+      offset: (page - 1) * limit,
+    })
+    return {
+      items: rows.map(topup => ({
+        id: topup.id,
+        amount: Number(topup.amount),
+        status: topup.status,
+        createdAt: topup.createdAt.toISOString(),
+        userName: topup.user.name ?? '',
+        userEmail: topup.user.email ?? null,
+        fedapayTransactionId: topup.fedapayTransactionId ?? null,
+      })),
+      total,
+      page,
+      limit,
+    }
+  }
+
   /**
    * Called by the FedaPay webhook when the transaction is not an order
    * payment. Idempotent: the PENDING → COMPLETED conditional update is the

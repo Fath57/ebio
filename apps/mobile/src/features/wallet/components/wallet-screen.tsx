@@ -32,6 +32,25 @@ interface WalletData {
   }
 }
 
+interface Topup {
+  id: string
+  amount: number
+  status: 'PENDING' | 'COMPLETED' | 'FAILED'
+  createdAt: string
+}
+
+const TOPUP_STATUS_LABELS: Record<Topup['status'], string> = {
+  PENDING: 'En attente',
+  COMPLETED: 'Créditée',
+  FAILED: 'Échouée',
+}
+
+const TOPUP_STATUS_COLORS: Record<Topup['status'], string> = {
+  PENDING: colors.earth[600],
+  COMPLETED: colors.green[600],
+  FAILED: colors.coral[600],
+}
+
 const TOPUP_PRESETS = [1000, 2000, 5000, 10000]
 
 function formatAmount(value: number): string {
@@ -45,6 +64,7 @@ interface WalletScreenProps {
 export function WalletScreen({ onGoBack }: WalletScreenProps) {
   const { semantic } = useTheme()
   const [wallet, setWallet] = useState<WalletData | null>(null)
+  const [topups, setTopups] = useState<Topup[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [isToppingUp, setIsToppingUp] = useState(false)
@@ -55,9 +75,16 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
 
   const load = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/wallet/me')
-      if (res.ok) {
-        setWallet(await res.json())
+      const [walletRes, topupsRes] = await Promise.all([
+        apiFetch('/api/wallet/me'),
+        apiFetch('/api/wallet/me/topups'),
+      ])
+      if (walletRes.ok) {
+        setWallet(await walletRes.json())
+      }
+      if (topupsRes.ok) {
+        const data = await topupsRes.json() as { items: Topup[] }
+        setTopups(data.items)
       }
     }
     catch {
@@ -159,6 +186,35 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
             Rechargez par Mobile Money et payez vos commandes en un geste, sans frais.
           </Text>
         </View>
+
+        {topups.length > 0 && (
+          <>
+            <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>MES RECHARGES</Text>
+            <View style={[styles.ledgerCard, { backgroundColor: semantic.bgCard }]}>
+              {topups.map((topup, index) => (
+                <View
+                  key={topup.id}
+                  style={[
+                    styles.ledgerRow,
+                    index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
+                  ]}
+                >
+                  <View style={{ flex: 1 }}>
+                    <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]}>
+                      {formatAmount(topup.amount)}
+                    </Text>
+                    <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
+                      {new Date(topup.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                    </Text>
+                  </View>
+                  <Text style={[styles.topupStatus, { color: TOPUP_STATUS_COLORS[topup.status] }]}>
+                    {TOPUP_STATUS_LABELS[topup.status]}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
+        )}
 
         <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>HISTORIQUE</Text>
         {(wallet?.transactions.items.length ?? 0) === 0
@@ -311,6 +367,7 @@ const styles = StyleSheet.create({
   ledgerLabel: { ...typography.bodyS },
   ledgerDate: { ...typography.caption },
   ledgerAmount: { ...typography.bodyL, fontFamily: fonts.sansSb },
+  topupStatus: { ...typography.caption, fontFamily: fonts.sansSb },
 
   modalOverlay: {
     flex: 1,

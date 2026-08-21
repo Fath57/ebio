@@ -392,10 +392,14 @@ import type {
   WalletAdminControllerActOnWithdrawalResponses,
   WalletAdminControllerListNumbersData,
   WalletAdminControllerListNumbersResponses,
+  WalletAdminControllerListTopupsData,
+  WalletAdminControllerListTopupsResponses,
   WalletAdminControllerListWithdrawalsData,
   WalletAdminControllerListWithdrawalsResponses,
   WalletAdminControllerWalletsOverviewData,
   WalletAdminControllerWalletsOverviewResponses,
+  WalletControllerGetMyTopupsData,
+  WalletControllerGetMyTopupsResponses,
   WalletControllerGetMyWalletData,
   WalletControllerGetMyWalletResponses,
   WalletControllerTopupData,
@@ -1688,6 +1692,17 @@ export const walletControllerGetMyWallet = <
     ThrowOnError
   >({ url: "/api/wallet/me", ...options });
 
+export const walletControllerGetMyTopups = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletControllerGetMyTopupsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletControllerGetMyTopupsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/wallet/me/topups", ...options });
+
 export const walletControllerTopup = <ThrowOnError extends boolean = false>(
   options: Options<WalletControllerTopupData, ThrowOnError>,
 ) =>
@@ -1852,6 +1867,17 @@ export const walletAdminControllerActOnWithdrawal = <
       ...options.headers,
     },
   });
+
+export const walletAdminControllerListTopups = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerListTopupsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerListTopupsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/wallet-topups", ...options });
 
 export const walletAdminControllerWalletsOverview = <
   ThrowOnError extends boolean = false,

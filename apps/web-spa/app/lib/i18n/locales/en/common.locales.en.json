@@ -1166,7 +1166,17 @@
         "holder": "Holder",
         "date": "Date",
         "amount": "Amount",
-        "status": "Status"
+        "status": "Status",
+        "user": "User",
+        "reference": "FedaPay ref."
+      },
+      "topupsTitle": "Wallet topups",
+      "topupsHint": "Buyer topups through FedaPay. A pending topup has not been confirmed by FedaPay yet; a failed one credited nothing.",
+      "topupsEmpty": "No topup yet",
+      "topupStatus": {
+        "PENDING": "Pending",
+        "COMPLETED": "Credited",
+        "FAILED": "Failed"
       }
     }
   },

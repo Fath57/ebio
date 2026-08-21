@@ -2,6 +2,7 @@ import {
   walletAdminControllerActOnNumber,
   walletAdminControllerActOnWithdrawal,
   walletAdminControllerListNumbers,
+  walletAdminControllerListTopups,
   walletAdminControllerListWithdrawals,
   walletAdminControllerWalletsOverview,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
@@ -90,6 +91,30 @@ export function fetchWalletsOverviewQueryOptions() {
         totalOwed: number
         totalDebt: number
       }
+    },
+  }
+}
+
+export interface AdminTopup {
+  id: string
+  amount: number
+  status: 'PENDING' | 'COMPLETED' | 'FAILED'
+  createdAt: string
+  userName: string
+  userEmail: string | null
+  fedapayTransactionId: string | null
+}
+
+export function fetchAdminTopupsQueryOptions(status: string | undefined, page: number) {
+  return {
+    queryKey: ['admin', 'wallet-topups', status, page],
+    queryFn: async () => {
+      const response = await walletAdminControllerListTopups({
+        query: { status: status ?? '', page: String(page), limit: '20' },
+      })
+      if (response.error)
+        throw new Error('Failed to load topups')
+      return response.data as unknown as Paged<AdminTopup>
     },
   }
 }

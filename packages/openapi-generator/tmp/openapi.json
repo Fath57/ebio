@@ -4917,6 +4917,37 @@
         }
       }
     },
+    "/api/wallet/me/topups": {
+      "get": {
+        "operationId": "WalletController_getMyTopups",
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/wallet/topup": {
       "post": {
         "operationId": "WalletController_topup",
@@ -5340,6 +5371,45 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/wallet-topups": {
+      "get": {
+        "operationId": "WalletAdminController_listTopups",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""

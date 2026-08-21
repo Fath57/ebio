@@ -4313,6 +4313,20 @@ export type WalletControllerGetMyWalletResponses = {
   200: unknown;
 };
 
+export type WalletControllerGetMyTopupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/wallet/me/topups";
+};
+
+export type WalletControllerGetMyTopupsResponses = {
+  200: unknown;
+};
+
 export type WalletControllerTopupData = {
   /**
    * WalletTopup
@@ -4503,6 +4517,21 @@ export type WalletAdminControllerActOnWithdrawalData = {
 };
 
 export type WalletAdminControllerActOnWithdrawalResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerListTopupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/wallet-topups";
+};
+
+export type WalletAdminControllerListTopupsResponses = {
   200: unknown;
 };
 

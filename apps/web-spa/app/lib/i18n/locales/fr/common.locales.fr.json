@@ -1166,7 +1166,17 @@
         "holder": "Titulaire",
         "date": "Date",
         "amount": "Montant",
-        "status": "Statut"
+        "status": "Statut",
+        "user": "Utilisateur",
+        "reference": "Réf. FedaPay"
+      },
+      "topupsTitle": "Recharges des portefeuilles",
+      "topupsHint": "Les recharges des acheteurs via FedaPay. Une recharge en attente n’a pas encore été confirmée par FedaPay ; une recharge échouée n’a rien crédité.",
+      "topupsEmpty": "Aucune recharge pour le moment",
+      "topupStatus": {
+        "PENDING": "En attente",
+        "COMPLETED": "Créditée",
+        "FAILED": "Échouée"
       }
     }
   },
