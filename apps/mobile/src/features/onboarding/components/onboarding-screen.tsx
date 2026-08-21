@@ -91,7 +91,9 @@ export function OnboardingScreen({ onFinish }: OnboardingScreenProps) {
         onMomentumScrollEnd={handleScroll}
         renderItem={({ item }) => (
           <View style={styles.slide}>
-            <Image source={item.image} style={styles.illustration} resizeMode="contain" />
+            <View style={styles.illustrationWrap}>
+              <Image source={item.image} style={styles.illustration} resizeMode="cover" />
+            </View>
             <Text style={[styles.title, { color: semantic.textPrimary }]}>{item.title}</Text>
             <Text style={[styles.body, { color: semantic.textSecondary }]}>{item.body}</Text>
           </View>
@@ -135,13 +137,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing[6],
   },
-  illustration: {
+  illustrationWrap: {
     width: width * 0.78,
-    // Portrait artwork: leave room for the copy below on small screens.
-    flex: 1,
+    // Portrait artwork (2:3): leave room for the copy on small screens.
+    aspectRatio: 2 / 3,
     maxHeight: '62%',
-    borderRadius: radius.xl,
+    borderRadius: 28,
     overflow: 'hidden',
+  },
+  illustration: {
+    width: '100%',
+    height: '100%',
   },
   title: {
     ...typography.h1,
