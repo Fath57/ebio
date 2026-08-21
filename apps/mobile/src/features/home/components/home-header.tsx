@@ -143,12 +143,11 @@ export function HomeHeader({
 const styles = StyleSheet.create({
   badge: {
     position: 'absolute',
-    top: -2,
-    right: -4,
-    minWidth: 16,
-    height: 16,
-    borderRadius: 8,
-    paddingHorizontal: 3,
+    top: -1,
+    right: -2,
+    width: 17,
+    height: 17,
+    borderRadius: 8.5,
     backgroundColor: colors.coral[400],
     alignItems: 'center',
     justifyContent: 'center',
@@ -191,8 +190,8 @@ const styles = StyleSheet.create({
     gap: spacing[2],
   },
   iconButton: {
-    width: 32,
-    height: 32,
+    width: 34,
+    height: 34,
     justifyContent: 'center',
     alignItems: 'center',
   },
