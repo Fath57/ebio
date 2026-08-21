@@ -10,6 +10,8 @@ import { config } from '../../config/env.config'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, PaymentMethod as OrderPaymentMethod } from '../orders/entities/order.entity'
+import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
+import { WalletService } from '../wallet/wallet.service'
 import { CommissionService } from './commission.service'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
@@ -24,6 +26,7 @@ export class PaymentsService {
     private readonly notificationsService: NotificationsService,
     private readonly commissionService: CommissionService,
     private readonly gatewayFactory: PaymentGatewayFactory,
+    private readonly walletService: WalletService,
   ) {}
 
   /**
@@ -366,11 +369,17 @@ export class PaymentsService {
 
     const supplierAmount = payment.amount - payment.order.commissionAmount
 
-    await this.transferToSupplier(
-      payment.order.supplier.mobileMoneyNumber ?? payment.phoneNumber ?? '',
-      supplierAmount,
-      payment,
-    )
+    // The money already sits on the platform account: releasing the escrow is
+    // an internal credit to the shop wallet. The supplier withdraws it later
+    // through a payout request.
+    const wallet = await this.walletService.getOrCreate({ supplierId: payment.order.supplier.id })
+    await this.walletService.credit(wallet.id, {
+      type: WalletTransactionType.SALE_CREDIT,
+      amount: supplierAmount,
+      description: `Vente ${payment.order.orderNumber}`,
+      orderId: payment.order.id,
+      paymentId: payment.id,
+    })
 
     payment.status = PaymentStatus.RELEASED
     payment.releasedAt = new Date()
@@ -382,7 +391,7 @@ export class PaymentsService {
       user: payment.order.supplier.user,
       type: NotificationType.PAYMENT_RELEASED,
       title: 'Paiement libéré',
-      body: `${supplierAmount} FCFA ont été transférés sur votre compte`,
+      body: `${supplierAmount} FCFA ont été crédités sur votre portefeuille boutique`,
       data: { orderId: payment.order.id, paymentId: payment.id, amount: supplierAmount },
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })
@@ -431,14 +440,5 @@ export class PaymentsService {
 
   async findByOrderId(orderId: string): Promise<Payment | null> {
     return this.em.findOne(Payment, { order: { id: orderId } })
-  }
-
-  private async transferToSupplier(phoneNumber: string, amount: number, payment: Payment): Promise<void> {
-    if (config.payments.fedapay.environment === 'sandbox') {
-      this.logger.debug(`[SANDBOX] Transfer ${amount} FCFA to ${phoneNumber}`)
-      return
-    }
-    // TODO: Implement actual payout via gateway
-    this.logger.warn(`Production transfer not yet implemented for provider ${payment.provider}`)
   }
 }

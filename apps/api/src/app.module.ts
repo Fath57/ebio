@@ -28,6 +28,7 @@ import { SearchModule } from './modules/search/search.module'
 import { SuppliersModule } from './modules/suppliers/suppliers.module'
 import { TrainingModule } from './modules/training/training.module'
 import { UsersModule } from './modules/users/users.module'
+import { WalletModule } from './modules/wallet/wallet.module'
 
 // Interface étendue pour les requêtes Express
 interface ExpressRequest extends IncomingMessage {
@@ -118,6 +119,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     LandingModule,
     GeocodingModule,
     SuppliersModule,
+    WalletModule,
     ProductsModule,
     OrdersModule,
     PaymentsModule,

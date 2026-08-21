@@ -15,10 +15,12 @@ import { User } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
-import { Payment, PaymentStatus } from '../payments/payment.entity'
+import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
 import { Product } from '../products/entities/product.entity'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
+import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
+import { WalletService } from '../wallet/wallet.service'
 import { Dispute } from './entities/dispute.entity'
 import { OrderItem } from './entities/order-item.entity'
 import { Order, OrderStatus, PaymentMethod, PickupMode } from './entities/order.entity'
@@ -48,6 +50,7 @@ export class OrdersService {
     private readonly em: EntityManager,
     private readonly notificationsService: NotificationsService,
     private readonly commissionService: CommissionService,
+    private readonly walletService: WalletService,
   ) {}
 
   async create(buyerId: string, data: CreateOrder): Promise<Order> {
@@ -135,9 +138,39 @@ export class OrdersService {
 
     await this.em.flush()
 
+    // Wallet checkout: the buyer's money is already on the platform account,
+    // so the debit is immediate and the payment starts straight in escrow.
+    if (order.paymentMethod === PaymentMethod.WALLET) {
+      const wallet = await this.walletService.getOrCreate({ userId: buyer.id })
+      try {
+        await this.walletService.debit(wallet.id, {
+          type: WalletTransactionType.ORDER_PAYMENT,
+          amount: order.totalAmount,
+          description: `Commande ${order.orderNumber}`,
+          orderId: order.id,
+        })
+      }
+      catch (error) {
+        // Insufficient balance: the order must not survive its failed
+        // payment. Items first — they hold the FK.
+        await this.em.nativeDelete(OrderItem, { order: order.id })
+        await this.em.nativeDelete(Order, { id: order.id })
+        throw error
+      }
+      this.em.create(Payment, {
+        order,
+        amount: order.totalAmount,
+        provider: PaymentProvider.FEDAPAY,
+        paymentMethod: 'WALLET',
+        status: PaymentStatus.ESCROW,
+        paidAt: new Date(),
+      })
+      await this.em.flush()
+    }
+
     // For online payments (FedaPay), notifications are sent after payment confirmation.
-    // For cash on delivery, notify immediately since there's no payment step.
-    if (order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
+    // Cash and wallet orders have no pending payment step: notify at once.
+    if (order.paymentMethod !== PaymentMethod.FEDAPAY) {
       await this.sendOrderPlacedNotifications(order)
     }
 
@@ -320,6 +353,30 @@ export class OrdersService {
     }
 
     await this.em.flush()
+
+    // Cash order: eBio never touches the money, so its commission is
+    // collected as a wallet debit — the shop balance may go negative and the
+    // debt is absorbed by future sale credits.
+    if (
+      newStatus === OrderStatus.DELIVERED
+      && order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY
+      && order.commissionAmount > 0
+    ) {
+      const alreadyDebited = await this.em.getConnection().execute(
+        `SELECT 1 FROM wallet_transactions WHERE order_id = ? AND type = 'COMMISSION_DEBIT' LIMIT 1`,
+        [order.id],
+      )
+      if (alreadyDebited.length === 0) {
+        const wallet = await this.walletService.getOrCreate({ supplierId: order.supplier.id })
+        await this.walletService.debit(wallet.id, {
+          type: WalletTransactionType.COMMISSION_DEBIT,
+          amount: order.commissionAmount,
+          description: `Commission eBio — commande ${order.orderNumber} (espèces)`,
+          orderId: order.id,
+          allowNegative: true,
+        })
+      }
+    }
 
     if (newStatus === OrderStatus.READY) {
       await this.notificationsService.send({

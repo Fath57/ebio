@@ -7,7 +7,7 @@ import type {
   WebhookResult,
 } from './payment-gateway.interface'
 import { Logger } from '@nestjs/common'
-import { FedaPay, Transaction } from 'fedapay'
+import { FedaPay, Payout, Transaction } from 'fedapay'
 import { config } from '../../../config/env.config'
 
 const FEDAPAY_STATUS_MAP: Record<string, string> = {
@@ -90,6 +90,68 @@ export class FedaPayGateway implements PaymentGatewayInterface {
       providerTransactionId: transactionId,
       status: mappedStatus,
       paidAt: mappedStatus === 'completed' ? new Date() : undefined,
+    }
+  }
+
+  /**
+   * Two-step payout, as in FedaPay's own flow: create, then send. Returns the
+   * provider ids; the caller tracks completion via webhook + polling since
+   * the money leaves asynchronously (pending → started → sent | failed).
+   */
+  async createPayout(params: {
+    amount: number
+    phoneNumber: string
+    /** FedaPay mode: mtn_open | moov | sbin, derived from the number's prefix. */
+    mode: string
+    firstname: string
+    lastname: string
+    email?: string
+    withdrawalId: string
+  }): Promise<{ payoutId: string, reference: string | null }> {
+    const payout = await Payout.create({
+      amount: params.amount,
+      currency: { iso: 'XOF' },
+      mode: params.mode,
+      customer: {
+        firstname: params.firstname,
+        lastname: params.lastname,
+        // FedaPay requires an email; fall back to a technical one.
+        email: params.email ?? `${params.phoneNumber}@email.com`,
+        phone_number: {
+          number: `229${params.phoneNumber}`,
+          country: 'bj',
+        },
+      },
+      custom_metadata: { withdrawal_id: params.withdrawalId },
+    })
+
+    await payout.sendNow()
+
+    return {
+      payoutId: String(payout.id),
+      reference: (payout as unknown as { reference?: string }).reference ?? null,
+    }
+  }
+
+  async checkPayoutStatus(payoutId: string): Promise<{
+    status: 'pending' | 'sent' | 'failed'
+    reference: string | null
+    errorMessage: string | null
+  }> {
+    const payout = await Payout.retrieve(Number(payoutId))
+    const raw = payout as unknown as {
+      status?: string
+      reference?: string
+      last_error_message?: string
+    }
+    const status = raw.status === 'sent'
+      ? 'sent' as const
+      : raw.status === 'failed' ? 'failed' as const : 'pending' as const
+
+    return {
+      status,
+      reference: raw.reference ?? null,
+      errorMessage: raw.last_error_message ?? null,
     }
   }
 }

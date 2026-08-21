@@ -2,6 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { Order } from '../orders/entities/order.entity'
+import { WalletModule } from '../wallet/wallet.module'
 import { CommissionService } from './commission.service'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { EscrowSchedulerService } from './escrow-scheduler.service'
@@ -19,6 +20,7 @@ import { ReceiptService } from './receipt.service'
   imports: [
     MikroOrmModule.forFeature([Payment, PaymentMethod, Order]),
     NotificationsModule,
+    WalletModule,
   ],
   controllers: [
     PaymentsController,

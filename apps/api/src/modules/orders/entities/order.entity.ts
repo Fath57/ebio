@@ -23,6 +23,7 @@ export enum PickupMode {
 export enum PaymentMethod {
   FEDAPAY = 'FEDAPAY',
   CASH_ON_DELIVERY = 'CASH_ON_DELIVERY',
+  WALLET = 'WALLET',
 }
 
 @Entity({ tableName: 'orders' })
