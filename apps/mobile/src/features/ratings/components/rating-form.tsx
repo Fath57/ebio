@@ -1,6 +1,6 @@
 import * as React from 'react'
 import { useState } from 'react'
-import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -71,49 +71,54 @@ export function RatingForm({ supplierId, orderId, transactionType, onComplete }:
   }
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: semantic.bgPage }]} contentContainerStyle={styles.content}>
-      <Text style={[styles.title, { color: semantic.textPrimary }]}>Notez votre expérience</Text>
+    <KeyboardAvoidingView
+      style={{ flex: 1 }}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView style={[styles.container, { backgroundColor: semantic.bgPage }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <Text style={[styles.title, { color: semantic.textPrimary }]}>Notez votre expérience</Text>
 
-      {CRITERIA.map(({ key, label }) => (
-        <View key={key} style={[styles.criterionRow, { borderBottomColor: semantic.borderLight }]}>
-          <Text style={[styles.criterionLabel, { color: semantic.textPrimary }]}>{label}</Text>
-          <StarRating
-            value={ratings[key]}
-            readOnly={false}
-            size={28}
-            onChange={val => setRatings(prev => ({ ...prev, [key]: val }))}
-          />
-        </View>
-      ))}
+        {CRITERIA.map(({ key, label }) => (
+          <View key={key} style={[styles.criterionRow, { borderBottomColor: semantic.borderLight }]}>
+            <Text style={[styles.criterionLabel, { color: semantic.textPrimary }]}>{label}</Text>
+            <StarRating
+              value={ratings[key]}
+              readOnly={false}
+              size={28}
+              onChange={val => setRatings(prev => ({ ...prev, [key]: val }))}
+            />
+          </View>
+        ))}
 
-      <Text style={[styles.commentLabel, { color: semantic.textSecondary }]}>Commentaire (optionnel)</Text>
-      <TextInput
-        style={[styles.commentInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary }]}
-        placeholder="Partagez votre expérience..."
-        placeholderTextColor={semantic.textTertiary}
-        value={comment}
-        onChangeText={setComment}
-        multiline
-        maxLength={500}
-        textAlignVertical="top"
-      />
-      <Text style={[styles.charCount, { color: semantic.textTertiary }]}>
-        {comment.length}
-        /500
-      </Text>
-
-      <TouchableOpacity
-        style={[styles.submitButton, !allRated && styles.submitDisabled]}
-        onPress={handleSubmit}
-        disabled={!allRated || submitting}
-        accessibilityLabel="Envoyer mon avis"
-        accessibilityRole="button"
-      >
-        <Text style={styles.submitText}>
-          {submitting ? 'Envoi...' : 'Envoyer mon avis'}
+        <Text style={[styles.commentLabel, { color: semantic.textSecondary }]}>Commentaire (optionnel)</Text>
+        <TextInput
+          style={[styles.commentInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary }]}
+          placeholder="Partagez votre expérience..."
+          placeholderTextColor={semantic.textTertiary}
+          value={comment}
+          onChangeText={setComment}
+          multiline
+          maxLength={500}
+          textAlignVertical="top"
+        />
+        <Text style={[styles.charCount, { color: semantic.textTertiary }]}>
+          {comment.length}
+          /500
         </Text>
-      </TouchableOpacity>
-    </ScrollView>
+
+        <TouchableOpacity
+          style={[styles.submitButton, !allRated && styles.submitDisabled]}
+          onPress={handleSubmit}
+          disabled={!allRated || submitting}
+          accessibilityLabel="Envoyer mon avis"
+          accessibilityRole="button"
+        >
+          <Text style={styles.submitText}>
+            {submitting ? 'Envoi...' : 'Envoyer mon avis'}
+          </Text>
+        </TouchableOpacity>
+      </ScrollView>
+    </KeyboardAvoidingView>
   )
 }
 

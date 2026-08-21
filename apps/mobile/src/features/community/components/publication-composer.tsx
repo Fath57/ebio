@@ -3,6 +3,8 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -89,7 +91,10 @@ export function PublicationComposer({
   }
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
       <View style={styles.header}>
         <Text style={styles.title}>Nouvelle publication</Text>
         <TouchableOpacity
@@ -183,7 +188,7 @@ export function PublicationComposer({
               <Text style={styles.publishButtonText}>Publier</Text>
             )}
       </TouchableOpacity>
-    </View>
+    </KeyboardAvoidingView>
   )
 }
 

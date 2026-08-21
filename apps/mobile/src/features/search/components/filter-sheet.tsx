@@ -3,7 +3,7 @@ import Star from 'lucide-react-native/dist/esm/icons/star'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import * as React from 'react'
 import { useCallback, useRef, useState } from 'react'
-import { Animated, Dimensions, Image, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Animated, Dimensions, Image, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -289,286 +289,291 @@ export function FilterSheet({
       statusBarTranslucent
       onRequestClose={close}
     >
-      {/* Backdrop */}
-      <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
-        <Pressable style={StyleSheet.absoluteFill} onPress={close} />
-      </Animated.View>
-
-      {/* Sheet */}
-      <Animated.View
-        style={[
-          styles.sheet,
-          {
-            height: SHEET_HEIGHT,
-            paddingBottom: insets.bottom,
-            transform: [{ translateY }],
-            backgroundColor: semantic.bgCard,
-          },
-        ]}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        {/* Handle bar */}
-        <View style={styles.handleContainer} {...panResponder.panHandlers}>
-          <View style={[styles.handle, { backgroundColor: semantic.borderNormal }]} />
-        </View>
+        {/* Backdrop */}
+        <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
+          <Pressable style={StyleSheet.absoluteFill} onPress={close} />
+        </Animated.View>
 
-        {/* Header */}
-        <View style={[styles.header, { borderBottomColor: semantic.borderNormal }]}>
-          <Text style={[styles.title, { color: semantic.textPrimary }]}>Filtres</Text>
-          <TouchableOpacity
-            style={styles.closeButton}
-            onPress={close}
-            accessibilityLabel="Fermer les filtres"
-          >
-            <X size={20} color={semantic.textSecondary} />
-          </TouchableOpacity>
-        </View>
-
-        <ScrollView
-          style={styles.scrollContent}
-          contentContainerStyle={styles.scrollInner}
-          showsVerticalScrollIndicator={false}
-          bounces={false}
+        {/* Sheet */}
+        <Animated.View
+          style={[
+            styles.sheet,
+            {
+              height: SHEET_HEIGHT,
+              paddingBottom: insets.bottom,
+              transform: [{ translateY }],
+              backgroundColor: semantic.bgCard,
+            },
+          ]}
         >
-          {/* Distance */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
-              Distance
-              {filters.radius !== undefined ? ` : ${filters.radius} km` : ''}
-            </Text>
-            {filters.radius !== undefined
-              ? (
-                  <DistanceSlider
-                    value={filters.radius}
-                    min={1}
-                    max={50}
-                    onChange={val => setFilters(p => ({ ...p, radius: val }))}
-                    semantic={semantic}
-                  />
-                )
-              : (
-                  <Text style={[styles.distanceHint, { color: semantic.textTertiary }]}>
-                    Aucune limite. Appuyez sur une distance pour filtrer.
-                  </Text>
-                )}
-            <View style={styles.distanceButtons}>
-              {filters.radius !== undefined && (
-                <TouchableOpacity
-                  style={[
-                    styles.distanceChip,
-                    { borderColor: colors.coral[200], backgroundColor: colors.coral[50] },
-                  ]}
-                  onPress={() => setFilters(p => ({ ...p, radius: undefined }))}
-                  accessibilityLabel="Désactiver le filtre distance"
-                >
-                  <Text style={[styles.distanceChipText, { color: colors.coral[600] }]}>
-                    Tout
-                  </Text>
-                </TouchableOpacity>
-              )}
-              {[5, 10, 20, 50].map(km => (
-                <TouchableOpacity
-                  key={km}
-                  style={[
-                    styles.distanceChip,
-                    { borderColor: semantic.borderNormal },
-                    filters.radius === km && styles.distanceChipActive,
-                  ]}
-                  onPress={() => setFilters(p => ({ ...p, radius: km }))}
-                  accessibilityLabel={`${km} kilomètres`}
-                >
-                  <Text
-                    style={[
-                      styles.distanceChipText,
-                      { color: semantic.textSecondary },
-                      filters.radius === km && styles.distanceChipTextActive,
-                    ]}
-                  >
-                    {km}
-                    {' '}
-                    km
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          {/* Handle bar */}
+          <View style={styles.handleContainer} {...panResponder.panHandlers}>
+            <View style={[styles.handle, { backgroundColor: semantic.borderNormal }]} />
           </View>
 
-          {/* Categories */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Catégories</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipsRow}
+          {/* Header */}
+          <View style={[styles.header, { borderBottomColor: semantic.borderNormal }]}>
+            <Text style={[styles.title, { color: semantic.textPrimary }]}>Filtres</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={close}
+              accessibilityLabel="Fermer les filtres"
             >
-              {categoryOptions.map((cat) => {
-                const isSelected = filters.categories.includes(cat.slug)
-                return (
+              <X size={20} color={semantic.textSecondary} />
+            </TouchableOpacity>
+          </View>
+
+          <ScrollView
+            style={styles.scrollContent}
+            contentContainerStyle={styles.scrollInner}
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+          >
+            {/* Distance */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
+                Distance
+                {filters.radius !== undefined ? ` : ${filters.radius} km` : ''}
+              </Text>
+              {filters.radius !== undefined
+                ? (
+                    <DistanceSlider
+                      value={filters.radius}
+                      min={1}
+                      max={50}
+                      onChange={val => setFilters(p => ({ ...p, radius: val }))}
+                      semantic={semantic}
+                    />
+                  )
+                : (
+                    <Text style={[styles.distanceHint, { color: semantic.textTertiary }]}>
+                      Aucune limite. Appuyez sur une distance pour filtrer.
+                    </Text>
+                  )}
+              <View style={styles.distanceButtons}>
+                {filters.radius !== undefined && (
                   <TouchableOpacity
-                    key={cat.id}
                     style={[
-                      styles.categoryChip,
-                      { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal },
-                      isSelected && styles.categoryChipActive,
+                      styles.distanceChip,
+                      { borderColor: colors.coral[200], backgroundColor: colors.coral[50] },
                     ]}
-                    onPress={() => handleToggleCategory(cat.slug)}
-                    accessibilityRole="checkbox"
-                    accessibilityState={{ checked: isSelected }}
-                    accessibilityLabel={cat.label}
+                    onPress={() => setFilters(p => ({ ...p, radius: undefined }))}
+                    accessibilityLabel="Désactiver le filtre distance"
                   >
-                    {cat.imageUrl
-                      ? <Image source={{ uri: cat.imageUrl }} style={{ width: 16, height: 16, borderRadius: 4 }} />
-                      : <cat.fallbackIcon size={16} color={isSelected ? colors.green[800] : semantic.textSecondary} />}
-                    <Text
-                      style={[
-                        styles.categoryLabel,
-                        { color: semantic.textSecondary },
-                        isSelected && styles.categoryLabelActive,
-                      ]}
-                    >
-                      {cat.label}
+                    <Text style={[styles.distanceChipText, { color: colors.coral[600] }]}>
+                      Tout
                     </Text>
                   </TouchableOpacity>
-                )
-              })}
-            </ScrollView>
-          </View>
-
-          {/* Max price */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Prix maximum (FCFA)</Text>
-            <TextInput
-              style={[styles.priceInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary }]}
-              keyboardType="numeric"
-              placeholder="Ex : 5 000"
-              placeholderTextColor={semantic.textTertiary}
-              value={filters.maxPrice?.toString() ?? ''}
-              onChangeText={(text) => {
-                const num = Number.parseInt(text.replace(/\s/g, ''), 10)
-                setFilters(p => ({
-                  ...p,
-                  maxPrice: Number.isNaN(num) ? undefined : num,
-                }))
-              }}
-              accessibilityLabel="Prix maximum en FCFA"
-            />
-          </View>
-
-          {/* In stock toggle */}
-          <View style={styles.section}>
-            <View style={styles.toggleRow}>
-              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>En stock uniquement</Text>
-              <Switch
-                value={filters.inStockOnly}
-                onValueChange={val =>
-                  setFilters(p => ({ ...p, inStockOnly: val }))}
-                trackColor={{
-                  false: colors.neutral[200],
-                  true: colors.green[200],
-                }}
-                thumbColor={
-                  filters.inStockOnly
-                    ? colors.green[400]
-                    : colors.neutral[400]
-                }
-                accessibilityLabel="En stock uniquement"
-              />
-            </View>
-          </View>
-
-          {/* Min rating */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Note minimum</Text>
-            <View style={styles.ratingRow}>
-              {[1, 2, 3, 4, 5].map(star => (
-                <TouchableOpacity
-                  key={star}
-                  style={styles.starButton}
-                  onPress={() => handleSetRating(star)}
-                  accessibilityLabel={`${star} étoile${star > 1 ? 's' : ''} minimum`}
-                >
-                  <Star
-                    size={28}
-                    color={star <= filters.minRating ? colors.earth[400] : semantic.borderNormal}
-                    fill={star <= filters.minRating ? colors.earth[400] : 'none'}
-                    strokeWidth={star <= filters.minRating ? 0 : 1.5}
-                  />
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          {/* Mode */}
-          <View style={styles.section}>
-            <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Mode de livraison</Text>
-            <View style={styles.modeRow}>
-              {MODE_OPTIONS.map((opt) => {
-                const isActive = filters.mode === opt.value
-                return (
+                )}
+                {[5, 10, 20, 50].map(km => (
                   <TouchableOpacity
-                    key={opt.value}
-                    style={[styles.modeChip, { borderColor: semantic.borderNormal }, isActive && styles.modeChipActive]}
-                    onPress={() =>
-                      setFilters(p => ({ ...p, mode: opt.value }))}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: isActive }}
-                    accessibilityLabel={opt.label}
+                    key={km}
+                    style={[
+                      styles.distanceChip,
+                      { borderColor: semantic.borderNormal },
+                      filters.radius === km && styles.distanceChipActive,
+                    ]}
+                    onPress={() => setFilters(p => ({ ...p, radius: km }))}
+                    accessibilityLabel={`${km} kilomètres`}
                   >
                     <Text
                       style={[
-                        styles.modeChipText,
+                        styles.distanceChipText,
                         { color: semantic.textSecondary },
-                        isActive && styles.modeChipTextActive,
+                        filters.radius === km && styles.distanceChipTextActive,
                       ]}
                     >
-                      {opt.label}
+                      {km}
+                      {' '}
+                      km
                     </Text>
                   </TouchableOpacity>
-                )
-              })}
+                ))}
+              </View>
             </View>
-          </View>
 
-          {/* Validated only toggle */}
-          <View style={styles.section}>
-            <View style={styles.toggleRow}>
-              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Validé eBio uniquement</Text>
-              <Switch
-                value={filters.validatedOnly}
-                onValueChange={val =>
-                  setFilters(p => ({ ...p, validatedOnly: val }))}
-                trackColor={{
-                  false: colors.neutral[200],
-                  true: colors.green[200],
+            {/* Categories */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Catégories</Text>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.chipsRow}
+              >
+                {categoryOptions.map((cat) => {
+                  const isSelected = filters.categories.includes(cat.slug)
+                  return (
+                    <TouchableOpacity
+                      key={cat.id}
+                      style={[
+                        styles.categoryChip,
+                        { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal },
+                        isSelected && styles.categoryChipActive,
+                      ]}
+                      onPress={() => handleToggleCategory(cat.slug)}
+                      accessibilityRole="checkbox"
+                      accessibilityState={{ checked: isSelected }}
+                      accessibilityLabel={cat.label}
+                    >
+                      {cat.imageUrl
+                        ? <Image source={{ uri: cat.imageUrl }} style={{ width: 16, height: 16, borderRadius: 4 }} />
+                        : <cat.fallbackIcon size={16} color={isSelected ? colors.green[800] : semantic.textSecondary} />}
+                      <Text
+                        style={[
+                          styles.categoryLabel,
+                          { color: semantic.textSecondary },
+                          isSelected && styles.categoryLabelActive,
+                        ]}
+                      >
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </ScrollView>
+            </View>
+
+            {/* Max price */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Prix maximum (FCFA)</Text>
+              <TextInput
+                style={[styles.priceInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary }]}
+                keyboardType="numeric"
+                placeholder="Ex : 5 000"
+                placeholderTextColor={semantic.textTertiary}
+                value={filters.maxPrice?.toString() ?? ''}
+                onChangeText={(text) => {
+                  const num = Number.parseInt(text.replace(/\s/g, ''), 10)
+                  setFilters(p => ({
+                    ...p,
+                    maxPrice: Number.isNaN(num) ? undefined : num,
+                  }))
                 }}
-                thumbColor={
-                  filters.validatedOnly
-                    ? colors.green[400]
-                    : colors.neutral[400]
-                }
-                accessibilityLabel="Validé eBio uniquement"
+                accessibilityLabel="Prix maximum en FCFA"
               />
             </View>
-          </View>
-        </ScrollView>
 
-        {/* Sticky footer */}
-        <View style={[styles.footer, { borderTopColor: semantic.borderNormal }]}>
-          <TouchableOpacity
-            style={[styles.resetButton, { borderColor: semantic.borderNormal }]}
-            onPress={handleReset}
-            accessibilityLabel="Réinitialiser les filtres"
-          >
-            <Text style={[styles.resetText, { color: semantic.textSecondary }]}>Réinitialiser</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.applyButton}
-            onPress={handleApply}
-            accessibilityLabel="Appliquer les filtres"
-          >
-            <Text style={styles.applyText}>Appliquer</Text>
-          </TouchableOpacity>
-        </View>
-      </Animated.View>
+            {/* In stock toggle */}
+            <View style={styles.section}>
+              <View style={styles.toggleRow}>
+                <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>En stock uniquement</Text>
+                <Switch
+                  value={filters.inStockOnly}
+                  onValueChange={val =>
+                    setFilters(p => ({ ...p, inStockOnly: val }))}
+                  trackColor={{
+                    false: colors.neutral[200],
+                    true: colors.green[200],
+                  }}
+                  thumbColor={
+                    filters.inStockOnly
+                      ? colors.green[400]
+                      : colors.neutral[400]
+                  }
+                  accessibilityLabel="En stock uniquement"
+                />
+              </View>
+            </View>
+
+            {/* Min rating */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Note minimum</Text>
+              <View style={styles.ratingRow}>
+                {[1, 2, 3, 4, 5].map(star => (
+                  <TouchableOpacity
+                    key={star}
+                    style={styles.starButton}
+                    onPress={() => handleSetRating(star)}
+                    accessibilityLabel={`${star} étoile${star > 1 ? 's' : ''} minimum`}
+                  >
+                    <Star
+                      size={28}
+                      color={star <= filters.minRating ? colors.earth[400] : semantic.borderNormal}
+                      fill={star <= filters.minRating ? colors.earth[400] : 'none'}
+                      strokeWidth={star <= filters.minRating ? 0 : 1.5}
+                    />
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+
+            {/* Mode */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Mode de livraison</Text>
+              <View style={styles.modeRow}>
+                {MODE_OPTIONS.map((opt) => {
+                  const isActive = filters.mode === opt.value
+                  return (
+                    <TouchableOpacity
+                      key={opt.value}
+                      style={[styles.modeChip, { borderColor: semantic.borderNormal }, isActive && styles.modeChipActive]}
+                      onPress={() =>
+                        setFilters(p => ({ ...p, mode: opt.value }))}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: isActive }}
+                      accessibilityLabel={opt.label}
+                    >
+                      <Text
+                        style={[
+                          styles.modeChipText,
+                          { color: semantic.textSecondary },
+                          isActive && styles.modeChipTextActive,
+                        ]}
+                      >
+                        {opt.label}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+            </View>
+
+            {/* Validated only toggle */}
+            <View style={styles.section}>
+              <View style={styles.toggleRow}>
+                <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Validé eBio uniquement</Text>
+                <Switch
+                  value={filters.validatedOnly}
+                  onValueChange={val =>
+                    setFilters(p => ({ ...p, validatedOnly: val }))}
+                  trackColor={{
+                    false: colors.neutral[200],
+                    true: colors.green[200],
+                  }}
+                  thumbColor={
+                    filters.validatedOnly
+                      ? colors.green[400]
+                      : colors.neutral[400]
+                  }
+                  accessibilityLabel="Validé eBio uniquement"
+                />
+              </View>
+            </View>
+          </ScrollView>
+
+          {/* Sticky footer */}
+          <View style={[styles.footer, { borderTopColor: semantic.borderNormal }]}>
+            <TouchableOpacity
+              style={[styles.resetButton, { borderColor: semantic.borderNormal }]}
+              onPress={handleReset}
+              accessibilityLabel="Réinitialiser les filtres"
+            >
+              <Text style={[styles.resetText, { color: semantic.textSecondary }]}>Réinitialiser</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.applyButton}
+              onPress={handleApply}
+              accessibilityLabel="Appliquer les filtres"
+            >
+              <Text style={styles.applyText}>Appliquer</Text>
+            </TouchableOpacity>
+          </View>
+        </Animated.View>
+      </KeyboardAvoidingView>
     </Modal>
   )
 }

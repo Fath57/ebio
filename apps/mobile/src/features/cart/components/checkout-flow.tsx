@@ -9,6 +9,7 @@ import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Platform,
   ScrollView,
   StyleSheet,
@@ -346,7 +347,10 @@ export function CheckoutFlow({
 
   if (currentStep === 'SUMMARY') {
     return (
-      <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
+      <KeyboardAvoidingView
+        style={[styles.container, { backgroundColor: semantic.bgPage }]}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
         <ScreenHeader title="Validation de la commande" onBack={onCancel} />
         <ScrollView
           style={styles.scrollView}
@@ -583,7 +587,7 @@ export function CheckoutFlow({
                 )}
           </TouchableOpacity>
         </View>
-      </View>
+      </KeyboardAvoidingView>
     )
   }
 
