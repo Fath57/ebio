@@ -18,6 +18,7 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { FadeInView } from '../../../utils/animations'
 import { ScreenHeader } from '../../common/components/screen-header'
 
@@ -261,7 +262,7 @@ export function CartScreen({
                         {' '}
                         FCFA /
                         {' '}
-                        {item.unit}
+                        {unitShortLabel(item.unit)}
                       </Text>
 
                       {item.availableVariants.length > 0 && (

@@ -14,6 +14,7 @@ import {
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { ScalePressable } from '../../../utils/animations'
 import { useCart } from '../../cart/cart-context'
+import { unitShortLabel } from '../hooks/use-product-units'
 
 interface ProductCardProps {
   id: string
@@ -96,7 +97,7 @@ export function ProductCard({
       style={styles.card}
       onPress={() => onPress(id)}
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${formatPrice(displayPrice)} FCFA par ${unit}`}
+      accessibilityLabel={`${name}, ${formatPrice(displayPrice)} FCFA par ${unitShortLabel(unit)}`}
     >
       {/* ─── Image ────────────────────────────────────────────────────────── */}
       <View style={styles.imageWrap}>
@@ -161,7 +162,7 @@ export function ProductCard({
             </Text>
             <Text style={styles.unitLabel}>
               /
-              {unit}
+              {unitShortLabel(unit)}
               {hasPromo && (
                 <Text style={styles.originalPrice}>
                   {'  '}

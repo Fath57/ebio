@@ -21,6 +21,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -393,7 +394,7 @@ export function CheckoutFlow({
                     {formatPrice(item.pricePerUnit)}
                     {' '}
                     FCFA /
-                    {item.unit}
+                    {unitShortLabel(item.unit)}
                   </Text>
                 </View>
                 <Text style={[styles.itemTotal, { color: semantic.textPrimary }]}>

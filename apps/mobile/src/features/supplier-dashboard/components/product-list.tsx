@@ -18,6 +18,7 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -205,7 +206,7 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
               {formatPrice(item.price)}
               {' '}
               FCFA /
-              {item.unit}
+              {unitShortLabel(item.unit)}
             </Text>
 
             <View style={styles.cardFooter}>

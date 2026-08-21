@@ -26,6 +26,16 @@ const FALLBACK_UNITS: ProductUnit[] = [
  */
 let cachedUnits: ProductUnit[] | null = null
 
+/**
+ * Display form of a unit code (« KG » → « kg »), usable outside hooks. Reads
+ * the same cache as the hook; the fallback list covers the seeded codes until
+ * the reference list is fetched.
+ */
+export function unitShortLabel(code: string): string {
+  const list = cachedUnits ?? FALLBACK_UNITS
+  return list.find(unit => unit.code === code)?.shortLabel ?? code.toLowerCase()
+}
+
 /** Units of sale, as managed from the backoffice. */
 export function useProductUnits() {
   const [units, setUnits] = useState<ProductUnit[]>(cachedUnits ?? FALLBACK_UNITS)

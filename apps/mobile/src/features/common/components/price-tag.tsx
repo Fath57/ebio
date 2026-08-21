@@ -2,6 +2,7 @@ import type { TextStyle } from 'react-native'
 import * as React from 'react'
 import { StyleSheet, Text } from 'react-native'
 import { colors, fonts } from '../../../theme/theme'
+import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 
 interface PriceTagProps {
   amount: number
@@ -28,7 +29,7 @@ export function PriceTag({ amount, unit, size = 'md', promotional = false, style
       {formatted}
       {' '}
       FCFA /
-      {unit}
+      {unitShortLabel(unit)}
     </Text>
   )
 }

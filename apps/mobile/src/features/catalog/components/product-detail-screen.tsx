@@ -447,7 +447,7 @@ export function ProductDetailScreen({
                       {quantity}
                     </Text>
                     <Text style={styles.stepperUnit}>
-                      {product.unit}
+                      {unitLabel}
                     </Text>
                   </View>
                   <StepperButton
