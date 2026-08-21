@@ -13,6 +13,7 @@ const PAGE_SIZE = 20
 
 /** Statuts de commande, dans l'ordre du cycle de vie. */
 const STATUS_OPTIONS = [
+  'PENDING_PAYMENT',
   'PLACED',
   'ACCEPTED',
   'PREPARING',

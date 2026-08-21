@@ -567,7 +567,7 @@ export class AdminService {
 
   /** WHERE fragment + params shared by the commission queries. */
   private commissionFilter(filters: { from?: string, to?: string, supplierId?: string }) {
-    const conditions: string[] = [`o.status <> 'CANCELLED'`]
+    const conditions: string[] = [`o.status NOT IN ('CANCELLED', 'PENDING_PAYMENT')`]
     const params: unknown[] = []
     if (filters.from) {
       conditions.push(`o."createdAt" >= ?`)

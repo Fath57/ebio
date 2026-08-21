@@ -115,6 +115,11 @@ export class OrdersService {
       orderNumber,
       buyer,
       supplier,
+      // An online payment may never come: until FedaPay confirms it, the
+      // order stays PENDING_PAYMENT and the shop does not see it.
+      status: data.paymentMethod === PaymentMethod.FEDAPAY
+        ? OrderStatus.PENDING_PAYMENT
+        : OrderStatus.PLACED,
       pickupMode: data.pickupMode as PickupMode,
       paymentMethod: data.paymentMethod as PaymentMethod,
       deliveryAddress: data.deliveryAddress,
@@ -484,7 +489,7 @@ export class OrdersService {
     const cutoff = new Date(Date.now() - TWENTY_FOUR_HOURS_MS)
 
     const staleOrders = await this.em.find(Order, {
-      status: OrderStatus.PLACED,
+      status: { $in: [OrderStatus.PLACED, OrderStatus.PENDING_PAYMENT] },
       createdAt: { $lt: cutoff },
     }, { populate: ['buyer', 'supplier', 'supplier.user'] })
 
@@ -553,7 +558,7 @@ export class OrdersService {
       buyer: { id: buyerId },
       supplier: { id: supplierId },
       createdAt: { $gte: twoMinutesAgo },
-      status: OrderStatus.PLACED,
+      status: { $in: [OrderStatus.PLACED, OrderStatus.PENDING_PAYMENT] },
     }, { populate: ['items'] })
 
     for (const recent of recentOrders) {

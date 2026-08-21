@@ -95,6 +95,7 @@ export function fetchAdminOrderQueryOptions(orderId: string) {
 
 /** Every status an admin can force on an order. */
 export const ADMIN_ORDER_STATUSES = [
+  'PENDING_PAYMENT',
   'PLACED',
   'ACCEPTED',
   'PREPARING',

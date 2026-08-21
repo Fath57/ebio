@@ -9,7 +9,7 @@ import {
 import { config } from '../../config/env.config'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
-import { Order, PaymentMethod as OrderPaymentMethod } from '../orders/entities/order.entity'
+import { Order, PaymentMethod as OrderPaymentMethod, OrderStatus } from '../orders/entities/order.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { CommissionService } from './commission.service'
@@ -225,6 +225,10 @@ export class PaymentsService {
     payment.providerPaymentMethodId = checkResult.providerPaymentMethodId
     payment.status = PaymentStatus.CAPTURED
     payment.paidAt = checkResult.paidAt ?? new Date()
+    // Payment confirmed: the order becomes real for the shop.
+    if (order.status === OrderStatus.PENDING_PAYMENT) {
+      order.status = OrderStatus.PLACED
+    }
 
     await this.em.flush()
 
@@ -303,6 +307,9 @@ export class PaymentsService {
     if (webhookResult.status === 'completed') {
       payment.status = PaymentStatus.CAPTURED
       payment.paidAt = webhookResult.paidAt ?? new Date()
+      if (payment.order.status === OrderStatus.PENDING_PAYMENT) {
+        payment.order.status = OrderStatus.PLACED
+      }
 
       await this.notificationsService.send({
         user: payment.order.buyer,

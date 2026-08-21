@@ -297,6 +297,7 @@
       "actions": "Actions"
     },
     "status": {
+      "PENDING_PAYMENT": "En attente de paiement",
       "all": "Toutes",
       "PLACED": "Passée",
       "ACCEPTED": "Acceptée",
@@ -668,6 +669,7 @@
         "commission": "Commission"
       },
       "status": {
+        "PENDING_PAYMENT": "En attente de paiement",
         "PLACED": "Passée",
         "ACCEPTED": "Acceptée",
         "PREPARING": "En préparation",

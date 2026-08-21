@@ -5,6 +5,8 @@ import { Supplier } from '../../suppliers/supplier.entity'
 import { OrderItem } from './order-item.entity'
 
 export enum OrderStatus {
+  /** Online payment started but not confirmed — invisible to the supplier. */
+  PENDING_PAYMENT = 'PENDING_PAYMENT',
   PLACED = 'PLACED',
   ACCEPTED = 'ACCEPTED',
   PREPARING = 'PREPARING',

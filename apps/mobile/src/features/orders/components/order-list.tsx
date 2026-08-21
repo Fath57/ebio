@@ -19,7 +19,7 @@ import { ScalePressable, StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
 import { ScreenHeader } from '../../common/components/screen-header'
 
-type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
+type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type FilterTab = 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
 
 interface OrderItem {
@@ -43,6 +43,7 @@ interface OrderListProps {
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
+  PENDING_PAYMENT: 'En attente de paiement',
   PLACED: 'Passée',
   ACCEPTED: 'Acceptée',
   PREPARING: 'En préparation',
@@ -53,6 +54,7 @@ const STATUS_LABELS: Record<OrderStatus, string> = {
 }
 
 const STATUS_COLORS: Record<OrderStatus, { bg: string, text: string, dot: string }> = {
+  PENDING_PAYMENT: { bg: colors.earth[50], text: colors.earth[600], dot: colors.earth[400] },
   PLACED: { bg: colors.neutral[100], text: colors.neutral[600], dot: colors.neutral[400] },
   ACCEPTED: { bg: colors.blue[50], text: colors.blue[800], dot: colors.blue[400] },
   PREPARING: { bg: colors.earth[50], text: colors.earth[800], dot: colors.earth[400] },
@@ -62,7 +64,7 @@ const STATUS_COLORS: Record<OrderStatus, { bg: string, text: string, dot: string
   CANCELLED: { bg: colors.coral[50], text: colors.coral[600], dot: colors.coral[400] },
 }
 
-const ACTIVE_STATUSES: OrderStatus[] = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY']
+const ACTIVE_STATUSES: OrderStatus[] = ['PENDING_PAYMENT', 'PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY']
 
 const FILTER_TABS: Array<{ key: FilterTab, label: string }> = [
   { key: 'ALL', label: 'Toutes' },

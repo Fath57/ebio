@@ -27,9 +27,9 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ScreenHeader } from '../../common/components/screen-header'
 
-type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
+type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type PickupMode = 'ON_SITE' | 'DELIVERY'
-type PaymentMethod = 'FEDAPAY' | 'CASH_ON_DELIVERY'
+type PaymentMethod = 'FEDAPAY' | 'CASH_ON_DELIVERY' | 'WALLET'
 
 interface OrderItemDetail {
   productName: string
@@ -72,6 +72,7 @@ const STATUS_ORDER: OrderStatus[] = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY',
 const STATUS_ICON_SIZE = 20
 
 const STATUS_CONFIG: Record<OrderStatus, { label: string, heroLabel: string }> = {
+  PENDING_PAYMENT: { label: 'Paiement en attente de confirmation', heroLabel: 'En attente de paiement' },
   PLACED: { label: 'Commande passée', heroLabel: 'Commande passée' },
   ACCEPTED: { label: 'Acceptée par le fournisseur', heroLabel: 'Commande acceptée' },
   PREPARING: { label: 'En cours de préparation', heroLabel: 'En préparation' },
@@ -84,6 +85,7 @@ const STATUS_CONFIG: Record<OrderStatus, { label: string, heroLabel: string }> =
 function getStatusIcon(status: OrderStatus, color: string): React.ReactNode {
   const size = STATUS_ICON_SIZE
   switch (status) {
+    case 'PENDING_PAYMENT': return <ClipboardList size={size} color={color} />
     case 'PLACED': return <ClipboardList size={size} color={color} />
     case 'ACCEPTED': return <CircleCheck size={size} color={color} />
     case 'PREPARING': return <Package size={size} color={color} />

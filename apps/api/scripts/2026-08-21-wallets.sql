@@ -88,3 +88,8 @@ CREATE INDEX IF NOT EXISTS wallet_topups_fedapay_idx ON wallet_topups (fedapay_t
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_payment_method_check;
 ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check
   CHECK (payment_method = ANY (ARRAY['FEDAPAY'::text, 'CASH_ON_DELIVERY'::text, 'WALLET'::text]));
+
+-- Orders whose online payment never completed must not look like real orders.
+ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
+ALTER TABLE orders ADD CONSTRAINT orders_status_check
+  CHECK (status = ANY (ARRAY['PENDING_PAYMENT','PLACED','ACCEPTED','PREPARING','READY','IN_DELIVERY','DELIVERED','CANCELLED','DISPUTED']::text[]));

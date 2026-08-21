@@ -211,11 +211,14 @@ export function CheckoutFlow({
         order = await orderRes.json()
       }
       else if (orderRes.status === 409) {
-        // Duplicate — find the existing pending order
-        const listRes = await apiFetch('/api/orders?status=PLACED&view=buyer')
+        // Duplicate — find the existing order still waiting (placed, or an
+        // online payment that never completed and can be retried).
+        const listRes = await apiFetch('/api/orders?view=buyer')
         const orders = listRes.ok ? await listRes.json() : []
         const existing = (orders.data ?? orders)
-          .find((o: { supplierId: string }) => o.supplierId === orderSummary.supplierId)
+          .find((o: { supplierId: string, status?: string }) =>
+            o.supplierId === orderSummary.supplierId
+            && (o.status === 'PLACED' || o.status === 'PENDING_PAYMENT'))
         if (!existing) {
           appAlert('Erreur', 'Commande existante introuvable. Veuillez réessayer dans 2 minutes.')
           return
