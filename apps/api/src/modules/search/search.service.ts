@@ -203,15 +203,15 @@ export class SearchService {
         WHERE p.status = 'ACTIVE'
           AND s.validation_status <> 'SUSPENDED'
           AND s.location IS NOT NULL
-          AND ST_DWithin(s.location, ST_MakePoint($1, $2)::geography, 50000)
-          AND p.name ILIKE $3
+          AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)
+          AND p.name ILIKE ?
         LIMIT 5
       )
       UNION ALL
       (
         SELECT c.name as text, 'category' as type, c.id::text as id
         FROM categories c
-        WHERE c.name ILIKE $3
+        WHERE c.name ILIKE ?
         LIMIT 3
       )
       UNION ALL
@@ -219,15 +219,16 @@ export class SearchService {
         SELECT s.shop_name as text, 'supplier' as type, s.id::text as id
         FROM suppliers s
         WHERE s.location IS NOT NULL
-          AND ST_DWithin(s.location, ST_MakePoint($1, $2)::geography, 50000)
-          AND s.shop_name ILIKE $3
+          AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)
+          AND s.shop_name ILIKE ?
           AND s.validation_status = 'VALIDATED'
         LIMIT 3
       )
     `
 
     const connection = this.em.getConnection()
-    const rows = await connection.execute(sql, [longitude, latitude, pattern]) as RawAutocompleteRow[]
+    // One binding per ? in order of appearance — knex has no numbered params.
+    const rows = await connection.execute(sql, [longitude, latitude, pattern, pattern, longitude, latitude, pattern]) as RawAutocompleteRow[]
 
     return {
       suggestions: rows.map(row => ({
