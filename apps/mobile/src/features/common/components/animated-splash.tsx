@@ -10,7 +10,85 @@ import {
 } from 'react-native'
 import { colors, fonts } from '../../../theme/theme'
 
-const { width } = Dimensions.get('window')
+const { width, height } = Dimensions.get('window')
+
+/**
+ * The three leaves drift in from off-screen while the logo lands, each on its
+ * own delay and trajectory, then keep a slow float until the global fade.
+ * Artwork generated in the brand style (gpt-image), layered here — an
+ * animation no still asset could carry by itself.
+ */
+const LEAVES = [
+  {
+    source: require('../../../../assets/splash/splash-leaf-1.png'),
+    size: width * 0.20,
+    to: { x: width * 0.13, y: height * 0.20 },
+    rotate: ['-40deg', '-12deg'] as [string, string],
+    delay: 0,
+  },
+  {
+    source: require('../../../../assets/splash/splash-leaf-2.png'),
+    size: width * 0.15,
+    to: { x: width * 0.72, y: height * 0.26 },
+    rotate: ['35deg', '10deg'] as [string, string],
+    delay: 140,
+  },
+  {
+    source: require('../../../../assets/splash/splash-leaf-3.png'),
+    size: width * 0.17,
+    to: { x: width * 0.60, y: height * 0.68 },
+    rotate: ['-25deg', '18deg'] as [string, string],
+    delay: 260,
+  },
+]
+
+function FloatingLeaf({ leaf }: { leaf: (typeof LEAVES)[number] }) {
+  const progress = useRef(new Animated.Value(0)).current
+  const float = useRef(new Animated.Value(0)).current
+
+  useEffect(() => {
+    Animated.sequence([
+      Animated.delay(leaf.delay),
+      Animated.spring(progress, {
+        toValue: 1,
+        tension: 26,
+        friction: 7,
+        useNativeDriver: true,
+      }),
+    ]).start()
+    // Gentle endless float; unmount stops it with the splash.
+    Animated.loop(
+      Animated.sequence([
+        Animated.timing(float, { toValue: 1, duration: 1600, useNativeDriver: true }),
+        Animated.timing(float, { toValue: 0, duration: 1600, useNativeDriver: true }),
+      ]),
+    ).start()
+  }, [progress, float, leaf.delay])
+
+  const translateY = Animated.add(
+    progress.interpolate({ inputRange: [0, 1], outputRange: [-60, 0] }),
+    float.interpolate({ inputRange: [0, 1], outputRange: [0, 8] }),
+  )
+
+  return (
+    <Animated.Image
+      source={leaf.source}
+      resizeMode="contain"
+      style={{
+        position: 'absolute',
+        left: leaf.to.x - leaf.size / 2,
+        top: leaf.to.y - leaf.size / 2,
+        width: leaf.size,
+        height: leaf.size,
+        opacity: progress,
+        transform: [
+          { translateY },
+          { rotate: progress.interpolate({ inputRange: [0, 1], outputRange: leaf.rotate }) },
+        ],
+      }}
+    />
+  )
+}
 
 interface AnimatedSplashProps {
   onFinish: () => void
@@ -69,6 +147,10 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
 
   return (
     <Animated.View style={[styles.container, { opacity: screenOpacity }]}>
+      {LEAVES.map(leaf => (
+        <FloatingLeaf key={leaf.to.x} leaf={leaf} />
+      ))}
+
       {/* Logo */}
       <Animated.View
         style={[
@@ -151,6 +233,6 @@ const styles = StyleSheet.create({
     bottom: 40,
     fontFamily: fonts.sansMd,
     fontSize: 12,
-    color: colors.neutral[300],
+    color: colors.neutral[200],
   },
 })
