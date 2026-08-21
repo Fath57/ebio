@@ -789,7 +789,62 @@
         "title": "Taux de commission",
         "description": "Un taux par catégorie de produits, appliqué à chaque commande sauf taux négocié",
         "category": "Catégorie",
-        "rate": "Taux (%)"
+        "rate": "Taux (%)",
+        "howTitle": "Comment les commissions fonctionnent",
+        "how1": "À chaque commande, chaque article paie le taux de sa catégorie. Le montant est figé au moment de la commande : modifier la grille ne change pas les commandes passées.",
+        "how2": "Un taux négocié avec une boutique remplace la grille pour toutes ses commandes. Il se règle depuis",
+        "how2Link": "sa fiche fournisseur",
+        "how3": "La commission porte sur les articles uniquement. Les frais de livraison reviennent intégralement à la boutique.",
+        "how4": "Le suivi des montants prélevés et à venir se fait sur la page",
+        "how4Link": "Ventes → Commissions"
+      },
+      "tabs": {
+        "commissions": "Commissions",
+        "payments": "Paiements"
+      },
+      "paymentMethods": {
+        "title": "Moyens de paiement",
+        "description": "Les moyens proposés aux acheteurs au moment de payer, par pays. Désactiver un moyen le retire du paiement sans le supprimer.",
+        "add": "Ajouter un moyen",
+        "empty": "Aucun moyen de paiement configuré. Les acheteurs ne voient que le paiement à la livraison tant que rien n’est ajouté ici.",
+        "createTitle": "Nouveau moyen de paiement",
+        "editTitle": "Modifier le moyen de paiement",
+        "formHint": "Le nom est affiché à l’acheteur ; le code et l’opérateur servent au traitement technique du paiement.",
+        "deleteTitle": "Supprimer ce moyen de paiement ?",
+        "deleteBody": "« {{name}} » ne sera plus proposé aux acheteurs. Préférez le désactiver si c’est temporaire.",
+        "types": {
+          "mobile": "Mobile Money",
+          "card": "Carte bancaire"
+        },
+        "columns": {
+          "name": "Nom",
+          "type": "Type",
+          "provider": "Opérateur",
+          "country": "Pays",
+          "fee": "Frais",
+          "active": "Actif"
+        },
+        "fields": {
+          "name": "Nom affiché",
+          "nameHint": "Tel que l’acheteur le verra au paiement.",
+          "code": "Code technique",
+          "codeHint": "Identifiant unique côté opérateur, sans espaces.",
+          "type": "Type",
+          "provider": "Opérateur de paiement",
+          "country": "Code pays",
+          "fee": "Frais opérateur (%)",
+          "feeHint": "Frais prélevés par l’opérateur, à titre indicatif.",
+          "priority": "Ordre d’affichage",
+          "priorityHint": "Le plus petit nombre s’affiche en premier.",
+          "active": "Actif",
+          "activeHint": "Visible et utilisable par les acheteurs.",
+          "useFedapayCheckout": "Checkout FedaPay",
+          "useFedapayCheckoutHint": "Ouvre la page de paiement hébergée par FedaPay.",
+          "supportsPayout": "Reversements possibles",
+          "supportsPayoutHint": "Permet de reverser les gains aux boutiques par ce moyen.",
+          "supportsRefund": "Remboursements possibles",
+          "supportsRefundHint": "Permet de rembourser un acheteur par ce moyen."
+        }
       }
     },
     "site": {

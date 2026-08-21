@@ -789,7 +789,62 @@
         "title": "Commission rates",
         "description": "One rate per product category, applied to every order unless a negotiated rate exists",
         "category": "Category",
-        "rate": "Rate (%)"
+        "rate": "Rate (%)",
+        "howTitle": "How commissions work",
+        "how1": "On every order, each item pays its category rate. The amount is frozen at order time: changing the grid never rewrites past orders.",
+        "how2": "A rate negotiated with a shop replaces the grid for all its orders. It is set from",
+        "how2Link": "its supplier page",
+        "how3": "The commission applies to items only. Delivery fees go to the shop in full.",
+        "how4": "Collected and upcoming amounts are tracked on",
+        "how4Link": "Sales → Commissions"
+      },
+      "tabs": {
+        "commissions": "Commissions",
+        "payments": "Payments"
+      },
+      "paymentMethods": {
+        "title": "Payment methods",
+        "description": "The methods offered to buyers at checkout, per country. Deactivating a method removes it from checkout without deleting it.",
+        "add": "Add a method",
+        "empty": "No payment method configured. Buyers only see cash on delivery until something is added here.",
+        "createTitle": "New payment method",
+        "editTitle": "Edit payment method",
+        "formHint": "The name is shown to the buyer; the code and provider drive the technical processing.",
+        "deleteTitle": "Delete this payment method?",
+        "deleteBody": "“{{name}}” will no longer be offered to buyers. Prefer deactivating it if temporary.",
+        "types": {
+          "mobile": "Mobile Money",
+          "card": "Bank card"
+        },
+        "columns": {
+          "name": "Name",
+          "type": "Type",
+          "provider": "Provider",
+          "country": "Country",
+          "fee": "Fees",
+          "active": "Active"
+        },
+        "fields": {
+          "name": "Display name",
+          "nameHint": "As the buyer will see it at checkout.",
+          "code": "Technical code",
+          "codeHint": "Unique provider-side identifier, no spaces.",
+          "type": "Type",
+          "provider": "Payment provider",
+          "country": "Country code",
+          "fee": "Provider fees (%)",
+          "feeHint": "Fees charged by the provider, indicative.",
+          "priority": "Display order",
+          "priorityHint": "The smallest number shows first.",
+          "active": "Active",
+          "activeHint": "Visible and usable by buyers.",
+          "useFedapayCheckout": "FedaPay checkout",
+          "useFedapayCheckoutHint": "Opens the FedaPay-hosted payment page.",
+          "supportsPayout": "Payouts supported",
+          "supportsPayoutHint": "Allows paying shops out through this method.",
+          "supportsRefund": "Refunds supported",
+          "supportsRefundHint": "Allows refunding a buyer through this method."
+        }
       }
     },
     "site": {
