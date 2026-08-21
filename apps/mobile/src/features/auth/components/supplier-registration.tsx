@@ -24,6 +24,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { storage } from '../../../utils/offline-storage'
+import { appAlert } from '../../common/components/app-alert'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
@@ -105,10 +106,10 @@ export function SupplierRegistration({
   const { pickAndUpload: pickShopPhoto } = useMediaUpload({
     context: 'SUPPLIER_PROFILE',
   })
-  const { pickAndUpload: pickIdentityDoc } = useMediaUpload({
+  const { pickAndUpload: pickIdentityDoc, pickDocumentAndUpload: pickIdentityFile } = useMediaUpload({
     context: 'IDENTITY_DOCUMENT',
   })
-  const { pickAndUpload: pickBusinessProof } = useMediaUpload({
+  const { pickAndUpload: pickBusinessProof, pickDocumentAndUpload: pickBusinessFile } = useMediaUpload({
     context: 'BUSINESS_PROOF',
   })
 
@@ -185,10 +186,10 @@ export function SupplierRegistration({
     }
   }
 
-  async function handlePickDocument(
+  async function pickWith(
     field: 'identityDocUri' | 'businessProofUri',
+    picker: () => Promise<{ mediaId: string, publicUrl: string | null } | null>,
   ): Promise<void> {
-    const picker = field === 'identityDocUri' ? pickIdentityDoc : pickBusinessProof
     const result = await picker()
     if (result) {
       if (field === 'identityDocUri') {
@@ -197,8 +198,19 @@ export function SupplierRegistration({
       else {
         setBusinessProofMediaId(result.mediaId)
       }
-      updateDraft({ [field]: result.publicUrl })
+      updateDraft({ [field]: result.publicUrl ?? 'uploaded' })
     }
+  }
+
+  /** These documents are often PDFs (scans), not photos: offer both sources. */
+  function handlePickDocument(field: 'identityDocUri' | 'businessProofUri'): void {
+    const photoPicker = field === 'identityDocUri' ? pickIdentityDoc : pickBusinessProof
+    const filePicker = field === 'identityDocUri' ? pickIdentityFile : pickBusinessFile
+    appAlert('Ajouter un justificatif', 'D\'où vient votre document ?', [
+      { text: 'Galerie photos', onPress: () => { pickWith(field, photoPicker) } },
+      { text: 'Fichier (PDF ou image)', onPress: () => { pickWith(field, filePicker) } },
+      { text: 'Annuler', style: 'cancel' },
+    ])
   }
 
   async function handleSubmit(): Promise<void> {

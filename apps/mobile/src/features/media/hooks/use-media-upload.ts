@@ -1,3 +1,4 @@
+import * as DocumentPicker from 'expo-document-picker'
 import * as FileSystem from 'expo-file-system/legacy'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useState } from 'react'
@@ -56,6 +57,38 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
 
     const asset = result.assets[0]
     return uploadFile(asset.uri, asset.fileName ?? 'photo.jpg', asset.mimeType ?? 'image/jpeg', asset.fileSize ?? 0)
+  }, [options])
+
+  /**
+   * Pick a real file — PDF or image — through the system file picker, for
+   * supporting documents that are rarely photos (scanned ID cards, RCCM…).
+   */
+  const pickDocumentAndUpload = useCallback(async (): Promise<UploadedMedia | null> => {
+    let result: DocumentPicker.DocumentPickerResult
+    try {
+      result = await DocumentPicker.getDocumentAsync({
+        type: ['application/pdf', 'image/*'],
+        copyToCacheDirectory: true,
+        multiple: false,
+      })
+    }
+    catch {
+      // Native module absent from this build (older dev APK): the photo
+      // picker keeps working, only the file option needs a rebuilt app.
+      appAlert('Indisponible', 'La sélection de fichiers nécessite une mise à jour de l\'application. Vous pouvez ajouter une photo en attendant.')
+      return null
+    }
+
+    if (result.canceled || !result.assets?.[0])
+      return null
+
+    const asset = result.assets[0]
+    return uploadFile(
+      asset.uri,
+      asset.name ?? 'document.pdf',
+      asset.mimeType ?? 'application/pdf',
+      asset.size ?? 0,
+    )
   }, [options])
 
   /**
@@ -199,6 +232,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     progress,
     uploadedMedia,
     pickAndUpload,
+    pickDocumentAndUpload,
     takePhotoAndUpload,
     uploadFile,
     removeMedia,
