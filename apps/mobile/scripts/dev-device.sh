@@ -5,12 +5,13 @@ set -euo pipefail
 # open the app on the device once Metro answers.
 # Usage (depuis apps/mobile): pnpm dev:device [--clear]
 #
-# The app always calls http://localhost:3000 from the phone. On the host, the
-# API may run on 3000 or, when another project holds that port (DEMCRM), on
-# 3010 — the reverse below bridges the phone's 3000 to wherever the eBio API
-# actually answers. Override with API_HOST_PORT=xxxx if needed.
+# The phone-side port the app calls is whatever EXPO_PUBLIC_API_URL says in
+# .env (3010 today). On the host, the API may run on 3000 or 3010 — the
+# reverse below bridges the phone-side port to wherever the eBio API actually
+# answers. Override with API_HOST_PORT=xxxx if needed.
 
-APP_PORT=3000
+# Read the phone-side port from .env so the bridge always matches the app.
+APP_PORT=$(grep -oP 'EXPO_PUBLIC_API_URL=http://localhost:\K[0-9]+' .env 2>/dev/null || echo 3000)
 METRO_PORT=8081
 DEEP_LINK="exp+ebio-mobile://expo-development-client/?url=http%3A%2F%2Flocalhost%3A8081"
 
@@ -54,8 +55,12 @@ if [ -z "$API_HOST_PORT" ]; then
   exit 1
 fi
 
-echo "🔌 Mapping des ports localhost → device (API hôte: ${API_HOST_PORT})..."
+echo "🔌 Mapping des ports localhost → device (app: ${APP_PORT} → API hôte: ${API_HOST_PORT})..."
 adb reverse "tcp:${APP_PORT}" "tcp:${API_HOST_PORT}"
+# Older bundles (store build) still call 3000: keep that bridge too.
+if [ "$APP_PORT" != "3000" ]; then
+  adb reverse "tcp:3000" "tcp:${API_HOST_PORT}"
+fi
 adb reverse "tcp:${METRO_PORT}" "tcp:${METRO_PORT}"
 adb reverse --list
 
