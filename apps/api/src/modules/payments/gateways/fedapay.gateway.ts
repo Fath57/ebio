@@ -30,17 +30,17 @@ export class FedaPayGateway implements PaymentGatewayInterface {
   }
 
   async initiatePayment(params: InitiatePaymentParams): Promise<InitiatePaymentResult> {
+    // An empty phone_number makes FedaPay reject the transaction: the
+    // customer block is only sent when a phone actually exists (Google
+    // sign-ups have none), and FedaPay collects it on its payment page.
     const transaction = await Transaction.create({
       description: `Order payment ${params.orderId}`,
       amount: params.amount,
       currency: { iso: params.currency },
       callback_url: params.callbackUrl,
-      customer: {
-        phone_number: {
-          number: params.phoneNumber ?? '',
-          country: 'BJ',
-        },
-      },
+      ...(params.phoneNumber
+        ? { customer: { phone_number: { number: params.phoneNumber, country: 'BJ' } } }
+        : {}),
     })
 
     const token = await (transaction as unknown as { generateToken: () => Promise<{ url: string }> }).generateToken()

@@ -1,5 +1,5 @@
 import { EntityManager } from '@mikro-orm/postgresql'
-import { Injectable, Logger } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { config } from '../../config/env.config'
 import { User } from '../auth/auth.entity'
 import { FedaPayGateway } from '../payments/gateways/fedapay.gateway'
@@ -29,14 +29,24 @@ export class TopupService {
     })
     await this.em.flush()
 
-    const result = await this.fedapay.initiatePayment({
-      orderId: `topup-${topup.id}`,
-      amount,
-      currency: 'XOF',
-      paymentMethod: 'FEDAPAY',
-      phoneNumber: user.phone ?? undefined,
-      callbackUrl: `${config.api.baseUrl}/api/payments/webhook/fedapay`,
-    })
+    let result
+    try {
+      result = await this.fedapay.initiatePayment({
+        orderId: `topup-${topup.id}`,
+        amount,
+        currency: 'XOF',
+        paymentMethod: 'FEDAPAY',
+        phoneNumber: user.phone ?? undefined,
+        callbackUrl: `${config.api.baseUrl}/api/payments/webhook/fedapay`,
+      })
+    }
+    catch (error) {
+      // The pending row must not survive a payment that never started.
+      await this.em.removeAndFlush(topup)
+      const raw = error as { message?: unknown } | null
+      this.logger.error(`Topup initiation failed for user ${userId}: ${String(raw?.message ?? error)}`)
+      throw new BadRequestException('Le paiement FedaPay n’a pas pu démarrer. Réessayez dans un instant.')
+    }
 
     topup.fedapayTransactionId = result.providerTransactionId
     if (!result.redirectUrl) {
