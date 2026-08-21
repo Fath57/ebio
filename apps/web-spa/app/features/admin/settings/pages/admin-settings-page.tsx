@@ -2,32 +2,14 @@ import type { CommissionFormData } from '../forms/commission-form'
 import { client } from '@boilerstone/openapi-generator'
 import { adminControllerUpdateCommissions } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
-import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { Can } from '@/lib/casl/can'
 import { CommissionForm } from '../forms/commission-form'
 
-interface PlanItem {
-  id: string
-  name: string
-  price: number
-  features: string[]
-}
-
 interface AdminSettingsData {
   commissions: Partial<CommissionFormData>
-  plans: PlanItem[]
 }
 
 function fetchAdminSettingsQueryOptions() {
@@ -98,48 +80,6 @@ export default function AdminSettingsPage() {
         </Card>
       </Can>
 
-      <Separator />
-
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.settings.plans.title')}</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('admin.settings.plans.name')}</TableHead>
-                <TableHead>{t('admin.settings.plans.price')}</TableHead>
-                <TableHead>{t('admin.settings.plans.features')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {settings?.plans?.map(plan => (
-                <TableRow key={plan.id}>
-                  <TableCell className="font-medium">{plan.name}</TableCell>
-                  <TableCell>
-                    {plan.price}
-                    {' '}
-                    {t('admin.settings.currency')}
-                    /
-                    {t('admin.settings.month')}
-                  </TableCell>
-                  <TableCell>
-                    <ul className="space-y-1">
-                      {plan.features?.map((feature, i) => (
-                        <li key={i} className="flex items-center gap-1 text-sm">
-                          <Check className="h-3 w-3 text-green-600" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
     </div>
   )
 }

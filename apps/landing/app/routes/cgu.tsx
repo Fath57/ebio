@@ -88,7 +88,7 @@ export default function Cgu({ loaderData }: Route.ComponentProps) {
         <li>Ne proposer que des produits que vous êtes en droit de vendre.</li>
         <li>Décrire les produits de façon exacte, photos comprises.</li>
         <li>Honorer les commandes acceptées et respecter les horaires annoncés.</li>
-        <li>eBio prélève une commission sur les produits vendus, jamais sur les frais de livraison. Des abonnements payants donnent accès à des catalogues plus grands.</li>
+        <li>eBio prélève une commission sur les produits vendus, jamais sur les frais de livraison. Aucun abonnement : l’inscription et l’usage de la plateforme sont gratuits.</li>
       </ul>
 
       <h2>9. Responsabilité</h2>

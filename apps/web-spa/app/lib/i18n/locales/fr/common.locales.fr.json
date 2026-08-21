@@ -167,7 +167,6 @@
     "roles": "Rôles",
     "settings": "Paramètres",
     "site": "Site vitrine",
-    "subscription": "Abonnement",
     "suppliers": "Fournisseurs",
     "themeDark": "Mode sombre",
     "themeLight": "Mode clair",
@@ -375,23 +374,6 @@
     "reviews": "Avis",
     "title": "Statistiques",
     "topProducts": "Produits les plus vendus"
-  },
-  "subscriptions": {
-    "title": "Mon Abonnement",
-    "description": "Gérez votre plan d'abonnement eBio",
-    "currentPlan": "Plan actuel",
-    "current": "Actuel",
-    "renewalDate": "Date de renouvellement",
-    "availablePlans": "Plans disponibles",
-    "upgrade": "Passer à ce plan",
-    "cancelPlan": "Résilier",
-    "confirmUpgrade": "Confirmer la mise à niveau",
-    "confirmUpgradeDescription": "Vous allez passer au plan sélectionné.",
-    "confirmCancel": "Confirmer la résiliation",
-    "confirmCancelDescription": "Votre abonnement sera annulé à la fin de la période en cours.",
-    "price": "Prix",
-    "currency": "FCFA",
-    "month": "/mois"
   },
   "profile": {
     "title": "Mon profil",
@@ -807,12 +789,6 @@
         "commande": "Commander",
         "plan": "Plan",
         "premium": "Premium"
-      },
-      "plans": {
-        "title": "Plans d'abonnement",
-        "name": "Nom du plan",
-        "price": "Prix",
-        "features": "Fonctionnalités"
       }
     },
     "site": {

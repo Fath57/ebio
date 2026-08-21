@@ -3,7 +3,6 @@ import type { Dictionary } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
 import { Category } from '../modules/products/entities/category.entity'
-import { SubscriptionPlan } from '../modules/subscriptions/entities/subscription-plan.entity'
 
 export class EbioSeeder extends Seeder {
   async run(em: EntityManager, context: Dictionary): Promise<void> {
@@ -43,28 +42,6 @@ export class EbioSeeder extends Seeder {
     }
     await em.flush()
     console.info(`Seeded ${categoriesData.length} product categories`)
-
-    // ===== SUBSCRIPTION PLANS =====
-    const plansData = [
-      { name: 'FREE', priceMonthly: 0, maxProducts: 5, orderModeEnabled: false, advancedAnalytics: false, freeCommissionOrders: 0, maxMembers: 1 },
-      { name: 'ESSENTIAL', priceMonthly: 2000, maxProducts: 20, orderModeEnabled: true, advancedAnalytics: false, freeCommissionOrders: 0, maxMembers: 1 },
-      { name: 'PRO', priceMonthly: 5000, maxProducts: null, orderModeEnabled: true, advancedAnalytics: true, freeCommissionOrders: 10, maxMembers: 1 },
-      { name: 'COOPERATIVE', priceMonthly: 10000, maxProducts: null, orderModeEnabled: true, advancedAnalytics: true, freeCommissionOrders: 10, maxMembers: 5 },
-    ]
-
-    context.plans = {}
-    for (const data of plansData) {
-      const existing = await em.findOne(SubscriptionPlan, { name: data.name })
-      if (!existing) {
-        const plan = em.create(SubscriptionPlan, data)
-        context.plans[data.name] = plan
-      }
-      else {
-        context.plans[data.name] = existing
-      }
-    }
-    await em.flush()
-    console.info(`Seeded ${plansData.length} subscription plans`)
 
     // ===== COMMISSION RATES (raw SQL — no entity) =====
     const db = em.getConnection()

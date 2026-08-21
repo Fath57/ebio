@@ -78,7 +78,7 @@ SELECT * FROM (VALUES
   ('Dans quelles villes eBio est-il disponible ?', 'eBio démarre à Cotonou et s’étend au Bénin. La carte vous montre ce qui existe réellement autour de vous : plus les producteurs et transformateurs rejoignent la plateforme, plus elle se remplit.', 0),
   ('Comment les boutiques sont-elles validées ?', 'Chaque fournisseur soumet sa fiche boutique et ses pièces. L’équipe eBio vérifie avant de rendre la boutique visible : c’est le badge « Validé eBio ». Une boutique qui ne respecte plus les règles est suspendue et disparaît du catalogue.', 1),
   ('Comment se passe le paiement ?', 'Par Mobile Money (MTN, Moov) directement dans l’app, ou en espèces à la remise selon la boutique. Le total des produits et de la livraison est affiché avant que vous confirmiez la commande.', 2),
-  ('Combien ça coûte pour un fournisseur ?', 'L’inscription est gratuite et le plan de départ permet déjà de vendre. Des plans payants existent pour les catalogues plus grands. eBio prélève une commission sur les produits vendus, jamais sur vos frais de livraison.', 3)
+  ('Combien ça coûte pour un fournisseur ?', 'L’inscription est gratuite et vous pouvez vendre dès la validation de votre boutique, sans limite de catalogue. eBio prélève une petite commission sur les produits vendus, jamais sur vos frais de livraison.', 3)
 ) AS seed(question, answer, sort_order)
 WHERE NOT EXISTS (SELECT 1 FROM landing_faqs);
 

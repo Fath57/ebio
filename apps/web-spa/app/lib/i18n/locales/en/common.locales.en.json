@@ -167,7 +167,6 @@
     "roles": "Roles",
     "settings": "Settings",
     "site": "Landing site",
-    "subscription": "Subscription",
     "suppliers": "Suppliers",
     "themeDark": "Dark mode",
     "themeLight": "Light mode",
@@ -375,23 +374,6 @@
     "reviews": "Reviews",
     "title": "Analytics",
     "topProducts": "Top selling products"
-  },
-  "subscriptions": {
-    "title": "My Subscription",
-    "description": "Manage your eBio subscription plan",
-    "currentPlan": "Current plan",
-    "current": "Current",
-    "renewalDate": "Renewal date",
-    "availablePlans": "Available plans",
-    "upgrade": "Upgrade",
-    "cancelPlan": "Cancel plan",
-    "confirmUpgrade": "Confirm upgrade",
-    "confirmUpgradeDescription": "You are about to upgrade to the selected plan.",
-    "confirmCancel": "Confirm cancellation",
-    "confirmCancelDescription": "Your subscription will be cancelled at the end of the current period.",
-    "price": "Price",
-    "currency": "FCFA",
-    "month": "/month"
   },
   "profile": {
     "title": "My Profile",
@@ -807,12 +789,6 @@
         "commande": "Order mode",
         "plan": "Plan",
         "premium": "Premium"
-      },
-      "plans": {
-        "title": "Subscription plans",
-        "name": "Plan name",
-        "price": "Price",
-        "features": "Features"
       }
     },
     "site": {

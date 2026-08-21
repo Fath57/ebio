@@ -22,7 +22,7 @@ interface PermissionsGridProps {
   onChange: (ids: string[]) => void
 }
 
-const SUBJECTS = ['Product', 'Order', 'User', 'Supplier', 'Rating', 'Report', 'Subscription', 'Settings']
+const SUBJECTS = ['Product', 'Order', 'User', 'Supplier', 'Rating', 'Report', 'Settings']
 const ACTIONS = ['create', 'read', 'update', 'delete', 'manage']
 
 export const PermissionsGrid: React.FC<PermissionsGridProps> = ({

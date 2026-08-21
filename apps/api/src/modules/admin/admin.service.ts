@@ -532,11 +532,7 @@ export class AdminService {
     const commissions = await this.em.getConnection().execute(
       `SELECT category_slug AS category, rate FROM commission_rates ORDER BY category_slug`,
     )
-    const plans = await this.em.getConnection().execute(
-      `SELECT name, price_monthly, max_products, order_mode_enabled, advanced_analytics, free_commission_orders, max_members
-       FROM subscription_plans ORDER BY price_monthly`,
-    )
-    return { commissions, plans }
+    return { commissions }
   }
 
   async updateCommissionRates(input: CommissionRates): Promise<void> {

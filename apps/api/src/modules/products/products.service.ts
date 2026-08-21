@@ -15,13 +15,6 @@ import { ProductVariant } from './entities/product-variant.entity'
 import { Product, ProductStatus } from './entities/product.entity'
 import { ProductUnitsService } from './product-units.service'
 
-const PLAN_PRODUCT_LIMITS: Record<string, number> = {
-  FREE: 5,
-  ESSENTIAL: 20,
-  PRO: Infinity,
-  COOP: Infinity,
-}
-
 @Injectable()
 export class ProductsService {
   constructor(
@@ -264,38 +257,6 @@ export class ProductsService {
       throw new ForbiddenException('You do not own this product')
     }
     return product
-  }
-
-  private async checkPlanLimit(supplierId: string): Promise<void> {
-    const count = await this.em.count(Product, {
-      supplier: { id: supplierId },
-      status: { $ne: ProductStatus.HIDDEN },
-    })
-
-    // Look up the supplier's active subscription plan
-    const subscription = await this.em.getConnection().execute(
-      `SELECT sp.name, sp.max_products
-       FROM subscriptions s
-       JOIN subscription_plans sp ON s.plan_id = sp.id
-       WHERE s.supplier_id = ? AND s.status = 'ACTIVE'
-       ORDER BY s.end_date DESC LIMIT 1`,
-      [supplierId],
-    )
-
-    const planName = subscription[0]?.name ?? 'FREE'
-    const maxProducts = subscription[0]?.max_products
-
-    // null means unlimited (PRO/COOP plans)
-    if (maxProducts === null)
-      return
-
-    const limit = maxProducts ?? PLAN_PRODUCT_LIMITS[planName] ?? 5
-
-    if (count >= limit) {
-      throw new ForbiddenException(
-        `Product limit reached for your plan (${limit}). Upgrade to add more products.`,
-      )
-    }
   }
 
   private async checkStockThreshold(product: Product): Promise<void> {

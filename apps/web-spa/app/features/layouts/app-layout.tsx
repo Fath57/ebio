@@ -22,7 +22,6 @@ import {
   ShieldCheck,
   ShoppingCart,
   Store,
-  Subscript,
   Sun,
   Users,
 } from 'lucide-react'
@@ -91,7 +90,6 @@ export default function AppLayout() {
     { to: '/catalogue', label: t('nav.catalogue'), icon: <Package className="h-4 w-4" /> },
     { to: '/commandes', label: t('nav.orders'), icon: <ShoppingCart className="h-4 w-4" /> },
     { to: '/analytics', label: t('nav.analytics'), icon: <BarChart3 className="h-4 w-4" /> },
-    { to: '/abonnement', label: t('nav.subscription'), icon: <Subscript className="h-4 w-4" /> },
     { to: '/notifications', label: t('nav.notifications'), icon: <Bell className="h-4 w-4" /> },
     { to: '/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
   ]

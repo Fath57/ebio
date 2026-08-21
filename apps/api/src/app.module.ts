@@ -25,7 +25,6 @@ import { PaymentsModule } from './modules/payments/payments.module'
 import { ProductsModule } from './modules/products/products.module'
 import { RatingsModule } from './modules/ratings/ratings.module'
 import { SearchModule } from './modules/search/search.module'
-import { SubscriptionsModule } from './modules/subscriptions/subscriptions.module'
 import { SuppliersModule } from './modules/suppliers/suppliers.module'
 import { TrainingModule } from './modules/training/training.module'
 import { UsersModule } from './modules/users/users.module'
@@ -126,7 +125,6 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     RatingsModule,
     CommunityModule,
     TrainingModule,
-    SubscriptionsModule,
     AdminModule,
     RolesModule,
     UsersModule,

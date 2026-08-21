@@ -20,8 +20,6 @@ import { ProductVariant } from '../modules/products/entities/product-variant.ent
 import { Product, ProductStatus } from '../modules/products/entities/product.entity'
 import { Badge, BadgeType } from '../modules/ratings/entities/badge.entity'
 import { Review, TransactionType } from '../modules/ratings/entities/review.entity'
-import { SubscriptionPlan } from '../modules/subscriptions/entities/subscription-plan.entity'
-import { Subscription } from '../modules/subscriptions/entities/subscription.entity'
 import { Supplier, SupplierMode, SupplierType, ValidationStatus } from '../modules/suppliers/supplier.entity'
 import { TrainingFormat, TrainingModule } from '../modules/training/entities/training-module.entity'
 
@@ -332,18 +330,6 @@ export class DemoSeeder extends Seeder {
     em.create(ProductVariant, { product: p3, label: '500 ml', pricePerUnit: 2500, stock: 20 })
     em.create(ProductVariant, { product: p3, label: '1 L', pricePerUnit: 4000, stock: 10 })
     await em.flush()
-
-    // ===== SUBSCRIPTIONS =====
-    console.info('Creating subscriptions...')
-    const proPlan = await em.findOne(SubscriptionPlan, { name: 'PRO' })
-    const essentialPlan = await em.findOne(SubscriptionPlan, { name: 'ESSENTIAL' })
-    if (proPlan && essentialPlan) {
-      const in30days = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-      em.create(Subscription, { supplier: s1, plan: proPlan, endDate: in30days })
-      em.create(Subscription, { supplier: s2, plan: essentialPlan, endDate: in30days })
-      em.create(Subscription, { supplier: s3, plan: proPlan, endDate: in30days })
-      await em.flush()
-    }
 
     // ===== ORDERS =====
     console.info('Creating orders...')

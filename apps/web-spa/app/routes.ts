@@ -35,7 +35,6 @@ export default [
     route('notifications', 'features/notifications/pages/notifications-page.tsx'),
     route('profil', 'features/settings/pages/profile-page.tsx'),
     route('parametres', 'features/settings/pages/settings-page.tsx'),
-    route('abonnement', 'features/subscriptions/pages/subscription-page.tsx'),
 
     // Admin routes nested in admin layout
     layout('features/layouts/admin-layout.tsx', [

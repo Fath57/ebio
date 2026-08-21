@@ -138,7 +138,7 @@ export const DEFAULT_CONTENT: LandingContent = {
     },
     {
       question: 'Combien ça coûte pour un fournisseur ?',
-      answer: 'L’inscription est gratuite et le plan de départ permet déjà de vendre. Des plans payants existent pour les catalogues plus grands. eBio prélève une commission sur les produits vendus, jamais sur vos frais de livraison.',
+      answer: 'L’inscription est gratuite et vous pouvez vendre dès la validation de votre boutique, sans limite de catalogue. eBio prélève une petite commission sur les produits vendus, jamais sur vos frais de livraison.',
     },
   ],
 }

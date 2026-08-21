@@ -14,7 +14,6 @@ export type Subjects
     | 'CommunityGroup'
     | 'Publication'
     | 'TrainingModule'
-    | 'Subscription'
     | 'Notification'
     | 'ContentReport'
     | 'Badge'
@@ -47,9 +46,6 @@ export function createAbilityForRole(role: UserRole): AppAbility {
       can('create', 'Publication')
       can('read', 'Publication')
       can('read', 'TrainingModule')
-      can('read', 'Subscription')
-      can('create', 'Subscription')
-      can('update', 'Subscription')
       can('read', 'Notification')
       can('read', 'Category')
       break
