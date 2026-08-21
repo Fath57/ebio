@@ -264,7 +264,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, deliveryAddress, deliverySlot, fedapayPublicKey, orderNumber, onComplete])
+  }, [orderSummary, deliveryAddress, deliverySlot, fedapayPublicKey, payWithWallet, orderNumber, onComplete])
 
   const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
