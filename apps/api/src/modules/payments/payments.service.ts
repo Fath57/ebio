@@ -388,6 +388,17 @@ export class PaymentsService {
       paymentId: payment.id,
     })
 
+    // A platform promo is eBio's marketing cost, not the shop's: pay the
+    // discounted difference back so the shop nets as if full price.
+    if (payment.order.discountFundedBy === 'PLATFORM' && payment.order.discountAmount > 0) {
+      await this.walletService.credit(wallet.id, {
+        type: WalletTransactionType.PROMO_COMPENSATION,
+        amount: payment.order.discountAmount,
+        description: `Compensation code promo — ${payment.order.orderNumber}`,
+        orderId: payment.order.id,
+      })
+    }
+
     payment.status = PaymentStatus.RELEASED
     payment.releasedAt = new Date()
     payment.order.escrowReleasedAt = new Date()

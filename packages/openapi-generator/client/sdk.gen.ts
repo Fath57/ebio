@@ -52,6 +52,14 @@ import type {
   AdminControllerUpdateSupplierCommissionRateResponses,
   AdminControllerValidateSupplierData,
   AdminControllerValidateSupplierResponses,
+  AdminPromoCodesControllerCreateData,
+  AdminPromoCodesControllerCreateResponses,
+  AdminPromoCodesControllerListData,
+  AdminPromoCodesControllerListResponses,
+  AdminPromoCodesControllerRemoveData,
+  AdminPromoCodesControllerRemoveResponses,
+  AdminPromoCodesControllerUpdateData,
+  AdminPromoCodesControllerUpdateResponses,
   AiExampleControllerChatData,
   AiExampleControllerChatResponses,
   AiExampleControllerGenerateObjectData,
@@ -288,6 +296,8 @@ import type {
   ProductUnitsControllerRemoveResponses,
   ProductUnitsControllerUpdateData,
   ProductUnitsControllerUpdateResponses,
+  PromoCodesControllerValidateData,
+  PromoCodesControllerValidateResponses,
   PublicPostControllerGetPostData,
   PublicPostControllerGetPostResponses,
   PublicPostControllerGetPostsData,
@@ -330,6 +340,14 @@ import type {
   SearchControllerGetCategoriesResponses,
   SearchControllerSearchProductsData,
   SearchControllerSearchProductsResponses,
+  SupplierPromoCodesControllerCreateData,
+  SupplierPromoCodesControllerCreateResponses,
+  SupplierPromoCodesControllerListData,
+  SupplierPromoCodesControllerListResponses,
+  SupplierPromoCodesControllerRemoveData,
+  SupplierPromoCodesControllerRemoveResponses,
+  SupplierPromoCodesControllerUpdateData,
+  SupplierPromoCodesControllerUpdateResponses,
   SuppliersControllerCreateDeliveryZoneData,
   SuppliersControllerCreateDeliveryZoneResponses,
   SuppliersControllerDeleteDeliveryZoneData,
@@ -404,6 +422,8 @@ import type {
   WalletControllerGetMyWalletResponses,
   WalletControllerTopupData,
   WalletControllerTopupResponses,
+  WalletControllerVerifyTopupData,
+  WalletControllerVerifyTopupResponses,
 } from "./types.gen";
 
 export type Options<
@@ -1229,6 +1249,140 @@ export const geocodingControllerResolvePlace = <
     ThrowOnError
   >({ url: "/api/geocoding/place", ...options });
 
+export const promoCodesControllerValidate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PromoCodesControllerValidateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PromoCodesControllerValidateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/promo-codes/validate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierPromoCodesControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierPromoCodesControllerListData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SupplierPromoCodesControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/promo-codes", ...options });
+
+export const supplierPromoCodesControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierPromoCodesControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SupplierPromoCodesControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/promo-codes",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierPromoCodesControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierPromoCodesControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    SupplierPromoCodesControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/promo-codes/{id}", ...options });
+
+export const supplierPromoCodesControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierPromoCodesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SupplierPromoCodesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/promo-codes/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminPromoCodesControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminPromoCodesControllerListData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminPromoCodesControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/promo-codes", ...options });
+
+export const adminPromoCodesControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminPromoCodesControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminPromoCodesControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/promo-codes",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminPromoCodesControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminPromoCodesControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    AdminPromoCodesControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/promo-codes/{id}", ...options });
+
+export const adminPromoCodesControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminPromoCodesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminPromoCodesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/promo-codes/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const suppliersControllerRegister = <
   ThrowOnError extends boolean = false,
 >(
@@ -1702,6 +1856,24 @@ export const walletControllerGetMyTopups = <
     unknown,
     ThrowOnError
   >({ url: "/api/wallet/me/topups", ...options });
+
+export const walletControllerVerifyTopup = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletControllerVerifyTopupData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    WalletControllerVerifyTopupResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/wallet/me/topups/{id}/verify",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const walletControllerTopup = <ThrowOnError extends boolean = false>(
   options: Options<WalletControllerTopupData, ThrowOnError>,

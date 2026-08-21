@@ -113,6 +113,15 @@ export const zAdminWithdrawalAction = z.object({
 });
 
 /**
+ * VerifyTopup
+ *
+ * FedaPay transaction id reported by the checkout widget; the server re-checks it
+ */
+export const zVerifyTopup = z.object({
+  fedapayTransactionId: z.string().min(1).max(64),
+});
+
+/**
  * WalletTopup
  *
  * Amount to add to the wallet, paid through FedaPay
@@ -212,6 +221,21 @@ export const zVerifyCheckoutInput = z.object({
 });
 
 /**
+ * ValidatePromo
+ *
+ * Pre-checkout check: is this code usable on this cart?
+ */
+export const zValidatePromo = z.object({
+  code: z.string().min(1).max(30),
+  supplierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  itemsTotal: z.number().gt(0),
+});
+
+/**
  * RejectOrder
  *
  * Reason for rejecting an order
@@ -263,6 +287,7 @@ export const zSupplierCommissionRate = z.object({
  */
 export const zAdminOrderStatus = z.object({
   status: z.enum([
+    "PENDING_PAYMENT",
     "PLACED",
     "ACCEPTED",
     "PREPARING",
@@ -1423,6 +1448,87 @@ export const zUpdateSupplier = z.object({
 });
 
 /**
+ * PromoType
+ *
+ * Discount type: percentage of the items subtotal, or fixed amount
+ */
+export const zPromoType = z.enum(["PERCENT", "FIXED"]);
+
+/**
+ * CreatePromoCode
+ *
+ * New promo code; supplier scope comes from the route, never the body
+ */
+export const zCreatePromoCode = z.object({
+  code: z
+    .string()
+    .min(3)
+    .max(30)
+    .regex(/^[A-Z0-9-]+$/),
+  type: zPromoType,
+  value: z.number().gt(0),
+  maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+  minOrderAmount: z.number().gte(0).default(0),
+  startsAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  expiresAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  maxUses: z.optional(z.union([z.int().gt(0).lte(9007199254740991), z.null()])),
+  maxUsesPerUser: z.int().gt(0).lte(9007199254740991).default(1),
+});
+
+/**
+ * UpdatePromoCode
+ *
+ * Editable fields — the code itself is immutable once created
+ */
+export const zUpdatePromoCode = z.object({
+  type: z.optional(zPromoType),
+  value: z.optional(z.number().gt(0)),
+  maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+  minOrderAmount: z.optional(z.number().gte(0)).default(0),
+  startsAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  expiresAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  maxUses: z.optional(z.union([z.int().gt(0).lte(9007199254740991), z.null()])),
+  maxUsesPerUser: z.optional(z.int().gt(0).lte(9007199254740991)).default(1),
+  isActive: z.optional(z.boolean()),
+});
+
+/**
  * PickupMode
  *
  * How the buyer will receive the order
@@ -1472,6 +1578,7 @@ export const zCreateOrder = z.object({
   paymentMethod: zPaymentMethod,
   deliveryAddress: z.optional(z.string().min(5).max(500)),
   deliverySlot: z.optional(z.string().max(200)),
+  promoCode: z.optional(z.string().min(1).max(30)),
   items: z.array(zOrderItemInput).min(1),
 });
 
@@ -3228,6 +3335,211 @@ export const zGeocodingControllerResolvePlaceData = z.object({
   }),
 });
 
+export const zPromoCodesControllerValidateData = z.object({
+  body: z.object({
+    code: z.string().min(1).max(30),
+    supplierId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    itemsTotal: z.number().gt(0),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierPromoCodesControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zSupplierPromoCodesControllerCreateData = z.object({
+  body: z.object({
+    code: z
+      .string()
+      .min(3)
+      .max(30)
+      .regex(/^[A-Z0-9-]+$/),
+    type: z.enum(["PERCENT", "FIXED"]),
+    value: z.number().gt(0),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.number().gte(0).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.int().gt(0).lte(9007199254740991).default(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierPromoCodesControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierPromoCodesControllerUpdateData = z.object({
+  body: z.object({
+    type: z.optional(z.enum(["PERCENT", "FIXED"])),
+    value: z.optional(z.number().gt(0)),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.optional(z.number().gte(0)).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.optional(z.int().gt(0).lte(9007199254740991)).default(1),
+    isActive: z.optional(z.boolean()),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminPromoCodesControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    scope: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zAdminPromoCodesControllerCreateData = z.object({
+  body: z.object({
+    code: z
+      .string()
+      .min(3)
+      .max(30)
+      .regex(/^[A-Z0-9-]+$/),
+    type: z.enum(["PERCENT", "FIXED"]),
+    value: z.number().gt(0),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.number().gte(0).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.int().gt(0).lte(9007199254740991).default(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminPromoCodesControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminPromoCodesControllerUpdateData = z.object({
+  body: z.object({
+    type: z.optional(z.enum(["PERCENT", "FIXED"])),
+    value: z.optional(z.number().gt(0)),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.optional(z.number().gte(0)).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.optional(z.int().gt(0).lte(9007199254740991)).default(1),
+    isActive: z.optional(z.boolean()),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -3292,7 +3604,10 @@ export const zSuppliersControllerFindByIdData = z.object({
   path: z.object({
     id: z.string(),
   }),
-  query: z.optional(z.never()),
+  query: z.object({
+    latitude: z.string(),
+    longitude: z.string(),
+  }),
 });
 
 export const zSuppliersControllerUpdateMeData = z.object({
@@ -3686,6 +4001,16 @@ export const zWalletControllerGetMyTopupsData = z.object({
   }),
 });
 
+export const zWalletControllerVerifyTopupData = z.object({
+  body: z.object({
+    fedapayTransactionId: z.string().min(1).max(64),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zWalletControllerTopupData = z.object({
   body: z.object({
     amount: z.int().gte(100).lte(1000000),
@@ -4077,6 +4402,7 @@ export const zOrdersControllerCreateData = z.object({
     paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
     deliveryAddress: z.optional(z.string().min(5).max(500)),
     deliverySlot: z.optional(z.string().max(200)),
+    promoCode: z.optional(z.string().min(1).max(30)),
     items: z
       .array(
         z.object({
@@ -4798,6 +5124,7 @@ export const zAdminControllerGetOrderByIdData = z.object({
 export const zAdminControllerUpdateOrderStatusData = z.object({
   body: z.object({
     status: z.enum([
+      "PENDING_PAYMENT",
       "PLACED",
       "ACCEPTED",
       "PREPARING",

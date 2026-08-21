@@ -193,6 +193,15 @@ export type AdminWithdrawalAction = {
 };
 
 /**
+ * VerifyTopup
+ *
+ * FedaPay transaction id reported by the checkout widget; the server re-checks it
+ */
+export type VerifyTopup = {
+  fedapayTransactionId: string;
+};
+
+/**
  * WalletTopup
  *
  * Amount to add to the wallet, paid through FedaPay
@@ -272,6 +281,51 @@ export type VerifyCheckoutInput = {
 };
 
 /**
+ * ValidatePromo
+ *
+ * Pre-checkout check: is this code usable on this cart?
+ */
+export type ValidatePromo = {
+  code: string;
+  supplierId: string;
+  itemsTotal: number;
+};
+
+/**
+ * CreatePromoCode
+ *
+ * New promo code; supplier scope comes from the route, never the body
+ */
+export type CreatePromoCode = {
+  code: string;
+  type: PromoType;
+  value: number;
+  maxDiscount?: number | null;
+  minOrderAmount: number;
+  startsAt?: Date | null;
+  expiresAt?: Date | null;
+  maxUses?: number | null;
+  maxUsesPerUser: number;
+};
+
+/**
+ * UpdatePromoCode
+ *
+ * Editable fields — the code itself is immutable once created
+ */
+export type UpdatePromoCode = {
+  type?: PromoType;
+  value?: number;
+  maxDiscount?: number | null;
+  minOrderAmount?: number;
+  startsAt?: Date | null;
+  expiresAt?: Date | null;
+  maxUses?: number | null;
+  maxUsesPerUser?: number;
+  isActive?: boolean;
+};
+
+/**
  * CreateOrder
  *
  * Data required to place a new order
@@ -282,6 +336,7 @@ export type CreateOrder = {
   paymentMethod: PaymentMethod;
   deliveryAddress?: string;
   deliverySlot?: string;
+  promoCode?: string;
   items: Array<OrderItemInput>;
 };
 
@@ -368,6 +423,7 @@ export type SupplierCommissionRate = {
  */
 export type AdminOrderStatus = {
   status:
+    | "PENDING_PAYMENT"
     | "PLACED"
     | "ACCEPTED"
     | "PREPARING"
@@ -1494,6 +1550,20 @@ export type SupplierMode = (typeof SupplierMode)[keyof typeof SupplierMode];
  * IANA timezone the opening hours are expressed in
  */
 export type Timezone = string;
+
+/**
+ * PromoType
+ *
+ * Discount type: percentage of the items subtotal, or fixed amount
+ */
+export const PromoType = { PERCENT: "PERCENT", FIXED: "FIXED" } as const;
+
+/**
+ * PromoType
+ *
+ * Discount type: percentage of the items subtotal, or fixed amount
+ */
+export type PromoType = (typeof PromoType)[keyof typeof PromoType];
 
 /**
  * PickupMode
@@ -3652,6 +3722,209 @@ export type GeocodingControllerResolvePlaceResponses = {
   200: unknown;
 };
 
+export type PromoCodesControllerValidateData = {
+  /**
+   * ValidatePromo
+   *
+   * Pre-checkout check: is this code usable on this cart?
+   */
+  body: {
+    code: string;
+    supplierId: string;
+    itemsTotal: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/promo-codes/validate";
+};
+
+export type PromoCodesControllerValidateResponses = {
+  201: unknown;
+};
+
+export type SupplierPromoCodesControllerListData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/suppliers/me/promo-codes";
+};
+
+export type SupplierPromoCodesControllerListResponses = {
+  200: unknown;
+};
+
+export type SupplierPromoCodesControllerCreateData = {
+  /**
+   * CreatePromoCode
+   *
+   * New promo code; supplier scope comes from the route, never the body
+   */
+  body: {
+    code: string;
+    /**
+     * PromoType
+     *
+     * Discount type: percentage of the items subtotal, or fixed amount
+     */
+    type: "PERCENT" | "FIXED";
+    value: number;
+    maxDiscount?: number | null;
+    minOrderAmount: number;
+    startsAt?: Date | null;
+    expiresAt?: Date | null;
+    maxUses?: number | null;
+    maxUsesPerUser: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/promo-codes";
+};
+
+export type SupplierPromoCodesControllerCreateResponses = {
+  201: unknown;
+};
+
+export type SupplierPromoCodesControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/promo-codes/{id}";
+};
+
+export type SupplierPromoCodesControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type SupplierPromoCodesControllerUpdateData = {
+  /**
+   * UpdatePromoCode
+   *
+   * Editable fields — the code itself is immutable once created
+   */
+  body: {
+    /**
+     * PromoType
+     *
+     * Discount type: percentage of the items subtotal, or fixed amount
+     */
+    type?: "PERCENT" | "FIXED";
+    value?: number;
+    maxDiscount?: number | null;
+    minOrderAmount?: number;
+    startsAt?: Date | null;
+    expiresAt?: Date | null;
+    maxUses?: number | null;
+    maxUsesPerUser?: number;
+    isActive?: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/promo-codes/{id}";
+};
+
+export type SupplierPromoCodesControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type AdminPromoCodesControllerListData = {
+  body?: never;
+  path?: never;
+  query: {
+    scope: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/promo-codes";
+};
+
+export type AdminPromoCodesControllerListResponses = {
+  200: unknown;
+};
+
+export type AdminPromoCodesControllerCreateData = {
+  /**
+   * CreatePromoCode
+   *
+   * New promo code; supplier scope comes from the route, never the body
+   */
+  body: {
+    code: string;
+    /**
+     * PromoType
+     *
+     * Discount type: percentage of the items subtotal, or fixed amount
+     */
+    type: "PERCENT" | "FIXED";
+    value: number;
+    maxDiscount?: number | null;
+    minOrderAmount: number;
+    startsAt?: Date | null;
+    expiresAt?: Date | null;
+    maxUses?: number | null;
+    maxUsesPerUser: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/promo-codes";
+};
+
+export type AdminPromoCodesControllerCreateResponses = {
+  201: unknown;
+};
+
+export type AdminPromoCodesControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/promo-codes/{id}";
+};
+
+export type AdminPromoCodesControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type AdminPromoCodesControllerUpdateData = {
+  /**
+   * UpdatePromoCode
+   *
+   * Editable fields — the code itself is immutable once created
+   */
+  body: {
+    /**
+     * PromoType
+     *
+     * Discount type: percentage of the items subtotal, or fixed amount
+     */
+    type?: "PERCENT" | "FIXED";
+    value?: number;
+    maxDiscount?: number | null;
+    minOrderAmount?: number;
+    startsAt?: Date | null;
+    expiresAt?: Date | null;
+    maxUses?: number | null;
+    maxUsesPerUser?: number;
+    isActive?: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/promo-codes/{id}";
+};
+
+export type AdminPromoCodesControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -3730,7 +4003,10 @@ export type SuppliersControllerFindByIdData = {
   path: {
     id: string;
   };
-  query?: never;
+  query: {
+    latitude: string;
+    longitude: string;
+  };
   url: "/api/suppliers/{id}";
 };
 
@@ -4325,6 +4601,26 @@ export type WalletControllerGetMyTopupsData = {
 
 export type WalletControllerGetMyTopupsResponses = {
   200: unknown;
+};
+
+export type WalletControllerVerifyTopupData = {
+  /**
+   * VerifyTopup
+   *
+   * FedaPay transaction id reported by the checkout widget; the server re-checks it
+   */
+  body: {
+    fedapayTransactionId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/wallet/me/topups/{id}/verify";
+};
+
+export type WalletControllerVerifyTopupResponses = {
+  201: unknown;
 };
 
 export type WalletControllerTopupData = {
@@ -4937,6 +5233,7 @@ export type OrdersControllerCreateData = {
     paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
     deliveryAddress?: string;
     deliverySlot?: string;
+    promoCode?: string;
     items: Array<{
       productId: string;
       variantId?: string;
@@ -5979,6 +6276,7 @@ export type AdminControllerUpdateOrderStatusData = {
    */
   body: {
     status:
+      | "PENDING_PAYMENT"
       | "PLACED"
       | "ACCEPTED"
       | "PREPARING"

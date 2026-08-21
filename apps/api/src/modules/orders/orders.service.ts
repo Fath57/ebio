@@ -18,6 +18,7 @@ import { CommissionService } from '../payments/commission.service'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
 import { Product } from '../products/entities/product.entity'
+import { PromoCodesService } from '../promo-codes/promo-codes.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { WalletService } from '../wallet/wallet.service'
@@ -51,6 +52,7 @@ export class OrdersService {
     private readonly notificationsService: NotificationsService,
     private readonly commissionService: CommissionService,
     private readonly walletService: WalletService,
+    private readonly promoCodesService: PromoCodesService,
   ) {}
 
   async create(buyerId: string, data: CreateOrder): Promise<Order> {
@@ -97,12 +99,32 @@ export class OrdersService {
       itemEntities.push({ product, variant, quantity: itemInput.quantity, unitPrice, totalPrice })
     }
 
+    // Promo code, checked against the items subtotal. Refused = the order
+    // fails loudly; a silently dropped discount would be worse.
+    let appliedPromo = null
+    let discount = 0
+    if (data.promoCode) {
+      const promoCheck = await this.promoCodesService.check(
+        data.promoCode,
+        supplier.id,
+        totalAmount,
+        buyer.id,
+      )
+      if (!promoCheck.valid) {
+        throw new BadRequestException(promoCheck.message)
+      }
+      appliedPromo = promoCheck.promo
+      discount = promoCheck.discount
+    }
+    const discountedItemsTotal = Math.round((totalAmount - discount) * 100) / 100
+
     // Each item pays its own category's rate, unless the shop negotiated a
-    // flat rate. The base is the items only. Delivery is the shop's own cost,
-    // passed through to it in full, and the platform takes no cut of it.
+    // flat rate. The base is the discounted items only. Delivery is the
+    // shop's own cost, passed through in full, and the platform takes no cut.
     const commissionItems = await Promise.all(itemEntities.map(async item => ({
       categorySlug: await this.getCategorySlug(item.product),
-      totalPrice: item.totalPrice,
+      // The discount spreads proportionally over the items for the rate mix.
+      totalPrice: totalAmount > 0 ? item.totalPrice * (discountedItemsTotal / totalAmount) : 0,
     })))
     const commission = await this.commissionService.calculateForItems(
       commissionItems,
@@ -125,9 +147,12 @@ export class OrdersService {
       deliveryAddress: data.deliveryAddress,
       deliverySlot: data.deliverySlot || undefined,
       deliveryFee,
-      totalAmount: totalAmount + deliveryFee,
+      totalAmount: discountedItemsTotal + deliveryFee,
       commissionRate: commission.rate,
       commissionAmount: commission.commissionAmount,
+      promoCodeId: appliedPromo?.id ?? null,
+      discountAmount: discount,
+      discountFundedBy: appliedPromo ? (appliedPromo.supplier ? 'SUPPLIER' : 'PLATFORM') : null,
     })
 
     for (const itemData of itemEntities) {
@@ -142,6 +167,19 @@ export class OrdersService {
     }
 
     await this.em.flush()
+
+    if (appliedPromo) {
+      try {
+        await this.promoCodesService.redeem(appliedPromo, order.id, buyer.id, discount)
+      }
+      catch (error) {
+        // Lost the last slot to a concurrent buyer: the order must not keep
+        // a discount that was never granted.
+        await this.em.nativeDelete(OrderItem, { order: order.id })
+        await this.em.nativeDelete(Order, { id: order.id })
+        throw error
+      }
+    }
 
     // Wallet checkout: the buyer's money is already on the platform account,
     // so the debit is immediate and the payment starts straight in escrow.
@@ -305,11 +343,12 @@ export class OrdersService {
     order.status = OrderStatus.CANCELLED
 
     const payment = await this.em.findOne(Payment, { order: { id: orderId } })
-    if (payment && payment.status === PaymentStatus.CAPTURED) {
+    if (payment && payment.status === PaymentStatus.CAPTURED && order.paymentMethod !== PaymentMethod.WALLET) {
       payment.status = PaymentStatus.REFUNDED
     }
 
     await this.em.flush()
+    await this.onOrderCancelled(order)
 
     await this.notificationsService.send({
       user: order.buyer,
@@ -359,6 +398,10 @@ export class OrdersService {
 
     await this.em.flush()
 
+    if (newStatus === OrderStatus.CANCELLED) {
+      await this.onOrderCancelled(order)
+    }
+
     // Cash order: eBio never touches the money, so its commission is
     // collected as a wallet debit — the shop balance may go negative and the
     // debt is absorbed by future sale credits.
@@ -380,6 +423,16 @@ export class OrdersService {
           orderId: order.id,
           allowNegative: true,
         })
+        // Cash + platform promo: the buyer paid less in hand, eBio owes the
+        // shop the difference.
+        if (order.discountFundedBy === 'PLATFORM' && order.discountAmount > 0) {
+          await this.walletService.credit(wallet.id, {
+            type: WalletTransactionType.PROMO_COMPENSATION,
+            amount: order.discountAmount,
+            description: `Compensation code promo — ${order.orderNumber}`,
+            orderId: order.id,
+          })
+        }
       }
     }
 
@@ -495,9 +548,10 @@ export class OrdersService {
 
     for (const order of staleOrders) {
       order.status = OrderStatus.CANCELLED
+      await this.onOrderCancelled(order)
 
       const payment = await this.em.findOne(Payment, { order: { id: order.id } })
-      if (payment && payment.status === PaymentStatus.CAPTURED) {
+      if (payment && payment.status === PaymentStatus.CAPTURED && order.paymentMethod !== PaymentMethod.WALLET) {
         payment.status = PaymentStatus.REFUNDED
       }
 
@@ -592,6 +646,35 @@ export class OrdersService {
 
     const seq = (Number(result[0]?.count ?? 0) + 1).toString().padStart(3, '0')
     return `${prefix}${seq}`
+  }
+
+  /**
+   * Whatever cancels an order (supplier reject, admin, auto-cancel), the
+   * promo use returns to the pool and a wallet payment goes back to the
+   * buyer — money held in escrow must never die with the order.
+   */
+  private async onOrderCancelled(order: Order): Promise<void> {
+    await this.promoCodesService.release(order.id)
+
+    if (order.paymentMethod === PaymentMethod.WALLET) {
+      const payment = await this.em.findOne(Payment, {
+        order: { id: order.id },
+        status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
+      })
+      if (payment) {
+        const wallet = await this.walletService.getOrCreate({ userId: order.buyer.id })
+        await this.walletService.credit(wallet.id, {
+          type: WalletTransactionType.REFUND,
+          amount: payment.amount,
+          description: `Remboursement — commande ${order.orderNumber} annulée`,
+          orderId: order.id,
+          paymentId: payment.id,
+        })
+        payment.status = PaymentStatus.REFUNDED
+        payment.refundedAt = new Date()
+        await this.em.flush()
+      }
+    }
   }
 
   private verifySupplierOwnership(order: Order, supplierId: string): void {

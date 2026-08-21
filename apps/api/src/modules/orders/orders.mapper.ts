@@ -18,6 +18,7 @@ export class OrderMapper {
       deliverySlot: order.deliverySlot ?? null,
       deliveryFee: order.deliveryFee,
       totalAmount: order.totalAmount,
+      discountAmount: order.discountAmount ?? 0,
       commissionRate: order.commissionRate,
       commissionAmount: order.commissionAmount,
       deliveryConfirmedByBuyer: order.deliveryConfirmedByBuyer,

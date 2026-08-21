@@ -13,6 +13,8 @@ export enum WalletTransactionType {
   WITHDRAWAL_REFUND = 'WITHDRAWAL_REFUND',
   REFUND = 'REFUND',
   ADJUSTMENT = 'ADJUSTMENT',
+  /** eBio pays the shop back for a platform-funded promo discount. */
+  PROMO_COMPENSATION = 'PROMO_COMPENSATION',
 }
 
 /**

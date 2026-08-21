@@ -45,6 +45,7 @@ export const createOrderSchema = z.object({
   paymentMethod: paymentMethodEnum,
   deliveryAddress: z.string().min(5).max(500).optional(),
   deliverySlot: z.string().max(200).optional(),
+  promoCode: z.string().min(1).max(30).optional(),
   items: z.array(orderItemInputSchema).min(1),
 }).meta({
   title: 'CreateOrder',
@@ -112,6 +113,7 @@ export const orderResponseSchema = z.object({
   deliverySlot: z.string().nullable(),
   deliveryFee: z.number(),
   totalAmount: z.number(),
+  discountAmount: z.number(),
   commissionRate: z.number(),
   commissionAmount: z.number(),
   deliveryConfirmedByBuyer: z.boolean(),

@@ -30,7 +30,7 @@ export enum PaymentMethod {
 
 @Entity({ tableName: 'orders' })
 export class Order {
-  [OptionalProps]?: 'id' | 'status' | 'deliveryFee' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'deliveryFee' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt' | 'discountAmount'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -76,6 +76,16 @@ export class Order {
 
   @Property({ fieldName: 'commission_amount', type: 'float', default: 0 })
   commissionAmount: number = 0
+
+  @Property({ fieldName: 'promo_code_id', type: 'uuid', nullable: true })
+  promoCodeId?: string | null
+
+  @Property({ fieldName: 'discount_amount', type: 'float', default: 0 })
+  discountAmount: number = 0
+
+  /** SUPPLIER absorbs its own code; PLATFORM pays the shop back. */
+  @Property({ fieldName: 'discount_funded_by', nullable: true })
+  discountFundedBy?: 'SUPPLIER' | 'PLATFORM' | null
 
   @Property({ fieldName: 'delivery_confirmed_by_buyer', default: false })
   deliveryConfirmedByBuyer: boolean = false
