@@ -31,6 +31,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { FadeInView, ScalePressable } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
+import { useLocation } from '../../common/location-context'
 import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -77,7 +78,8 @@ interface SupplierProfile {
   coverPhotoUrl: string | null
   profilePhotoUrl: string | null
   address: string
-  distance: number
+  /** Meters to the nearest active place; null when the shop has no position. */
+  distance: number | null
   rating: number | null
   reviewCount: number
   badges: BadgeType[]
@@ -307,6 +309,7 @@ export function SupplierProfileScreen({
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
 
+  const { latitude: buyerLat, longitude: buyerLng } = useLocation()
   const [supplier, setSupplier] = useState<SupplierProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isContactSheetVisible, setIsContactSheetVisible] = useState(false)
@@ -318,7 +321,7 @@ export function SupplierProfileScreen({
     async function fetchProfile(): Promise<void> {
       try {
         const [profileRes, productsRes, salesPointsRes] = await Promise.all([
-          apiFetch(`/api/suppliers/${supplierId}`),
+          apiFetch(`/api/suppliers/${supplierId}?latitude=${buyerLat}&longitude=${buyerLng}`),
           apiFetch(`/api/suppliers/${supplierId}/products`),
           apiFetch(`/api/suppliers/${supplierId}/sales-points`),
         ])
@@ -386,7 +389,7 @@ export function SupplierProfileScreen({
             coverPhotoUrl: raw.coverPhoto ?? null,
             profilePhotoUrl: raw.profilePhoto ?? null,
             address: raw.address ?? '',
-            distance: raw.distance ?? 0,
+            distance: typeof raw.distance === 'number' ? raw.distance * 1000 : null,
             rating: raw.globalRating ?? null,
             reviewCount: raw.totalReviews ?? 0,
             badges,
@@ -412,7 +415,7 @@ export function SupplierProfileScreen({
       }
     }
     fetchProfile()
-  }, [supplierId])
+  }, [supplierId, buyerLat, buyerLng])
 
   const handleOpenChat = useCallback(() => {
     onNavigateToChat(supplierId)
@@ -426,7 +429,7 @@ export function SupplierProfileScreen({
       id: supplier.id,
       shopName: supplier.shopName,
       rating: supplier.rating,
-      distance: supplier.distance,
+      distance: supplier.distance ?? 0,
       mode: supplier.mode,
       isValidated: (supplier.badges ?? []).includes('VALIDATED'),
     }
@@ -605,9 +608,7 @@ export function SupplierProfileScreen({
             <MapPin size={14} color={semantic.textTertiary} strokeWidth={2} />
             <Text style={[styles.addressText, { color: semantic.textTertiary }]} numberOfLines={1}>
               {supplier.address}
-              {' '}
-              ·
-              {formatDistance(supplier.distance)}
+              {supplier.distance !== null && ` · ${formatDistance(supplier.distance)}`}
             </Text>
           </View>
 

@@ -61,10 +61,24 @@ export class SuppliersController {
 
   @Get(':id')
   @Public()
-  async findById(@Param('id') id: string) {
+  async findById(
+    @Param('id') id: string,
+    @Query('latitude') latitude?: string,
+    @Query('longitude') longitude?: string,
+  ) {
     const supplier = await this.suppliersService.findById(id)
     const coordinates = await this.suppliersService.findCoordinates(supplier.id)
-    return SupplierMapper.toResponse(supplier, coordinates)
+    const response = SupplierMapper.toResponse(supplier, coordinates)
+
+    // With the buyer's position, the profile can say how far the shop is —
+    // measured to its nearest active place, like the map pin.
+    const lat = Number(latitude)
+    const lng = Number(longitude)
+    if (latitude && longitude && Number.isFinite(lat) && Number.isFinite(lng)) {
+      const distance = await this.suppliersService.distanceForBuyer(id, lat, lng)
+      return { ...response, distance }
+    }
+    return response
   }
 
   @Put('me')

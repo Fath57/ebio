@@ -372,6 +372,24 @@ export class SuppliersService {
     return { openingHours: supplier.openingHours }
   }
 
+  /**
+   * Distance (km) from the buyer to this shop's nearest active place — its
+   * own address or one of its sales points — matching what the map pin says.
+   */
+  async distanceForBuyer(supplierId: string, latitude: number, longitude: number): Promise<number | null> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT ROUND(MIN(ST_Distance(l.location, ST_MakePoint(?, ?)::geography))::numeric / 1000, 2) AS distance
+       FROM (
+         SELECT location FROM suppliers WHERE id = ? AND location IS NOT NULL
+         UNION ALL
+         SELECT location FROM sales_points WHERE supplier_id = ? AND is_active = true AND location IS NOT NULL
+       ) l`,
+      [longitude, latitude, supplierId, supplierId],
+    )
+    const distance = rows[0]?.distance
+    return distance !== null && distance !== undefined ? Number(distance) : null
+  }
+
   async updateMode(supplierId: string, mode: string) {
     const supplier = await this.findById(supplierId)
     supplier.mode = mode as SupplierMode
