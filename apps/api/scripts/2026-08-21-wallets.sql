@@ -93,3 +93,11 @@ ALTER TABLE orders ADD CONSTRAINT orders_payment_method_check
 ALTER TABLE orders DROP CONSTRAINT IF EXISTS orders_status_check;
 ALTER TABLE orders ADD CONSTRAINT orders_status_check
   CHECK (status = ANY (ARRAY['PENDING_PAYMENT','PLACED','ACCEPTED','PREPARING','READY','IN_DELIVERY','DELIVERED','CANCELLED','DISPUTED']::text[]));
+
+-- Backfill: online orders whose payment never completed are not real orders.
+UPDATE orders SET status = 'PENDING_PAYMENT'
+WHERE status = 'PLACED' AND payment_method = 'FEDAPAY'
+  AND NOT EXISTS (
+    SELECT 1 FROM payments p
+    WHERE p.order_id = orders.id AND p.status IN ('CAPTURED', 'ESCROW', 'RELEASED')
+  );
