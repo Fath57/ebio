@@ -110,8 +110,8 @@ export class RatingsService {
       `SELECT COALESCE(
         SUM(
           (quality_rating + delay_rating + communication_rating + conformity_rating) / 4.0
-          * CASE WHEN created_at >= NOW() - INTERVAL '90 days' THEN 2 ELSE 1 END
-        ) / NULLIF(SUM(CASE WHEN created_at >= NOW() - INTERVAL '90 days' THEN 2 ELSE 1 END), 0),
+          * CASE WHEN "createdAt" >= NOW() - INTERVAL '90 days' THEN 2 ELSE 1 END
+        ) / NULLIF(SUM(CASE WHEN "createdAt" >= NOW() - INTERVAL '90 days' THEN 2 ELSE 1 END), 0),
         0
       ) as weighted_avg,
       COUNT(*)::int as total
@@ -137,7 +137,7 @@ export class RatingsService {
     // Count transactions in last 90 days
     const rows = await this.em.getConnection().execute(
       `SELECT COUNT(*)::int as count FROM reviews
-       WHERE supplier_id = ? AND created_at >= NOW() - INTERVAL '${TOP_SELLER_WINDOW_DAYS} days'`,
+       WHERE supplier_id = ? AND "createdAt" >= NOW() - INTERVAL '${TOP_SELLER_WINDOW_DAYS} days'`,
       [supplierId],
     )
 
