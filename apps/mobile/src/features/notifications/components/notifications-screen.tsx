@@ -20,6 +20,7 @@ import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
+import { handleNotificationTap } from '../hooks/use-notifications'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 interface NotificationItem {
@@ -143,6 +144,9 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
           onPress={() => {
             if (isUnread)
               markAsRead(item.id)
+            // Same routing as a push tap: an order notification opens the
+            // order, ready for the delivery confirmation.
+            handleNotificationTap({ type: item.type, ...(item.data ?? {}) })
           }}
         >
           <View style={[styles.iconWrap, { backgroundColor: isUnread ? `${colors.green[400]}15` : semantic.bgSurface }]}>

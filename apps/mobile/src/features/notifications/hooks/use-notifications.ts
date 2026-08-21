@@ -83,7 +83,7 @@ async function registerForPush(): Promise<string | null> {
   }
 }
 
-function handleNotificationTap(data: Record<string, unknown>) {
+export function handleNotificationTap(data: Record<string, unknown>) {
   if (!navigationRef.isReady())
     return
 
@@ -96,8 +96,10 @@ function handleNotificationTap(data: Record<string, unknown>) {
     case 'ORDER_READY':
     case 'ORDER_DELIVERED':
     case 'ORDER_CANCELLED':
+      // OrderTracking lives in the Commandes stack, where the buyer can
+      // confirm the delivery right away.
       if (data.orderId) {
-        navigationRef.navigate('Profil' as never, {
+        navigationRef.navigate('Commandes' as never, {
           screen: 'OrderTracking',
           params: { orderId: data.orderId },
         } as never)
