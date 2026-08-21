@@ -96,23 +96,58 @@ export default function AppLayout() {
     { to: '/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
   ]
 
-  const adminNavItems = [
-    { to: '/admin', label: t('nav.dashboard'), icon: <LayoutDashboard className="h-4 w-4" /> },
-    { to: '/admin/validations', label: t('nav.validations'), icon: <CheckCircle className="h-4 w-4" /> },
-    { to: '/admin/commandes', label: t('nav.orders'), icon: <ClipboardList className="h-4 w-4" /> },
-    { to: '/admin/fournisseurs', label: t('nav.suppliers'), icon: <Store className="h-4 w-4" /> },
-    { to: '/admin/utilisateurs', label: t('nav.users'), icon: <Users className="h-4 w-4" /> },
-    { to: '/admin/bannieres', label: t('nav.banners'), icon: <Images className="h-4 w-4" /> },
-    { to: '/admin/moderation', label: t('nav.moderation'), icon: <ShieldCheck className="h-4 w-4" /> },
-    { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
-    { to: '/admin/categories', label: t('nav.categories'), icon: <FolderTree className="h-4 w-4" /> },
-    { to: '/admin/unites', label: t('nav.productUnits'), icon: <Ruler className="h-4 w-4" /> },
-    { to: '/admin/site', label: t('nav.site'), icon: <Globe className="h-4 w-4" /> },
-    { to: '/admin/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
-    { to: '/admin/roles', label: t('nav.roles'), icon: <Shield className="h-4 w-4" /> },
+  /**
+   * Thirteen admin pages don't fit a flat bar: they fold into groups, each a
+   * dropdown in the horizontal menu, a collapsible block in the mobile sheet.
+   */
+  const adminNavSections = [
+    {
+      items: [
+        { to: '/admin', label: t('nav.dashboard'), icon: <LayoutDashboard className="h-4 w-4" />, end: true },
+      ],
+    },
+    {
+      group: { label: t('nav.groups.sales'), icon: <ShoppingCart className="h-4 w-4" /> },
+      items: [
+        { to: '/admin/commandes', label: t('nav.orders'), icon: <ClipboardList className="h-4 w-4" /> },
+        { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
+      ],
+    },
+    {
+      group: { label: t('nav.groups.catalog'), icon: <Package className="h-4 w-4" /> },
+      items: [
+        { to: '/admin/categories', label: t('nav.categories'), icon: <FolderTree className="h-4 w-4" /> },
+        { to: '/admin/unites', label: t('nav.productUnits'), icon: <Ruler className="h-4 w-4" /> },
+        { to: '/admin/bannieres', label: t('nav.banners'), icon: <Images className="h-4 w-4" /> },
+      ],
+    },
+    {
+      group: { label: t('nav.groups.suppliers'), icon: <Store className="h-4 w-4" /> },
+      items: [
+        { to: '/admin/fournisseurs', label: t('nav.suppliers'), icon: <Store className="h-4 w-4" /> },
+        { to: '/admin/validations', label: t('nav.validations'), icon: <CheckCircle className="h-4 w-4" /> },
+      ],
+    },
+    {
+      group: { label: t('nav.groups.community'), icon: <Users className="h-4 w-4" /> },
+      items: [
+        { to: '/admin/utilisateurs', label: t('nav.users'), icon: <Users className="h-4 w-4" /> },
+        { to: '/admin/moderation', label: t('nav.moderation'), icon: <ShieldCheck className="h-4 w-4" /> },
+      ],
+    },
+    {
+      group: { label: t('nav.groups.config'), icon: <Settings className="h-4 w-4" /> },
+      items: [
+        { to: '/admin/site', label: t('nav.site'), icon: <Globe className="h-4 w-4" /> },
+        { to: '/admin/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
+        { to: '/admin/roles', label: t('nav.roles'), icon: <Shield className="h-4 w-4" /> },
+      ],
+    },
   ]
 
-  const navItems = isAdmin ? adminNavItems : supplierNavItems
+  const navSections = isAdmin
+    ? adminNavSections
+    : [{ items: supplierNavItems }]
 
   return (
     <div className="flex min-h-screen flex-col bg-white dark:bg-[#141410]">
@@ -127,9 +162,7 @@ export default function AppLayout() {
             </Link>
           )}
           sections={[
-            {
-              items: navItems,
-            },
+            ...navSections,
             {
               separator: true,
               dropdown: {

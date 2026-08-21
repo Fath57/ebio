@@ -83,7 +83,9 @@ export function MapScreen({ onNavigateToSupplier }: MapScreenProps) {
     }, 350)
   }, [])
 
-  const selected = suppliers.find(s => s.id === selectedId) ?? null
+  // Un fournisseur peut avoir plusieurs pins (boutique + points de vente) :
+  // la sélection se fait par lieu, pas par fournisseur.
+  const selected = suppliers.find(s => (s.salesPointId ?? s.id) === selectedId) ?? null
 
   const initialRegion = {
     latitude,
@@ -106,26 +108,28 @@ export function MapScreen({ onNavigateToSupplier }: MapScreenProps) {
         mapPadding={{ top: 0, right: 0, bottom: TAB_BAR_CLEARANCE, left: 0 }}
         onPress={() => setSelectedId(null)}
       >
-        {suppliers.map(supplier => (
-          <Marker
-            key={supplier.id}
-            coordinate={{
-              latitude: supplier.latitude,
-              longitude: supplier.longitude,
-            }}
-            anchor={{ x: 0.5, y: 1 }}
-            zIndex={supplier.id === selectedId ? 2 : 1}
-            tracksViewChanges={tracksChanges}
-            onPress={() => handleMarkerPress(supplier.id, supplier.latitude, supplier.longitude)}
-            accessibilityLabel={supplier.shopName}
-          >
-            <SupplierMarker
-              isValidated={supplier.isValidated}
-              isOpen={supplier.isOpen}
-              isSelected={supplier.id === selectedId}
-            />
-          </Marker>
-        ))}
+        {suppliers.map((supplier) => {
+          const placeId = supplier.salesPointId ?? supplier.id
+          return (
+            <Marker
+              key={placeId}
+              coordinate={{
+                latitude: supplier.latitude,
+                longitude: supplier.longitude,
+              }}
+              anchor={{ x: 0.5, y: 1 }}
+              zIndex={placeId === selectedId ? 2 : 1}
+              tracksViewChanges={tracksChanges}
+              onPress={() => handleMarkerPress(placeId, supplier.latitude, supplier.longitude)}
+              accessibilityLabel={supplier.salesPointName ? `${supplier.shopName} — ${supplier.salesPointName}` : supplier.shopName}
+            >
+              <SupplierMarker
+                isValidated={supplier.isValidated}
+                isSelected={placeId === selectedId}
+              />
+            </Marker>
+          )
+        })}
       </MapView>
 
       {/* Compteur */}

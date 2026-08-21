@@ -4,6 +4,9 @@ import { useLocation } from '../../common/location-context'
 
 export interface NearbySupplier {
   id: string
+  /** Identifiant et nom du point de vente quand le pin n'est pas la boutique. */
+  salesPointId: string | null
+  salesPointName: string | null
   shopName: string
   /** Photo de couverture de la boutique — `null` si le fournisseur n'en a pas. */
   coverPhoto: string | null

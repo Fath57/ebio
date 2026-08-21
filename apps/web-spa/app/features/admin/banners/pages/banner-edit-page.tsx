@@ -1,4 +1,4 @@
-import type { BannerFormData } from '../forms/banner-form'
+import type { BannerInput } from '../utils/banners-queries'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card } from '@boilerstone/ui/components/primitives/card'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
@@ -21,7 +21,7 @@ export default function BannerEditPage() {
   })
 
   const { mutate, isPending } = useMutation({
-    mutationFn: (data: BannerFormData) => updateBanner(bannerId ?? '', data),
+    mutationFn: (data: BannerInput) => updateBanner(bannerId ?? '', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'banners'] })
       navigate('/admin/bannieres')
@@ -50,14 +50,15 @@ export default function BannerEditPage() {
       </div>
       <Card className="p-6">
         <BannerForm
-          onSubmit={data => mutate(data)}
+          onSubmit={data => mutate({ ...data, targetId: data.targetId || null, targetUrl: data.targetUrl || null })}
           isPending={isPending}
           initialData={{
             title: banner.title,
             subtitle: banner.subtitle ?? '',
             imageUrl: banner.imageUrl,
             targetType: banner.targetType,
-            targetId: banner.targetId,
+            targetId: banner.targetId ?? '',
+            targetUrl: banner.targetUrl ?? '',
             isActive: banner.isActive,
             position: banner.position,
           }}

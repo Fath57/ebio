@@ -118,9 +118,18 @@ export function SupplierSheet({ supplier, onClose, onOpenSupplier, bottomInset }
           )}
 
       <View style={styles.titleRow}>
-        <Text style={[styles.name, { color: semantic.textPrimary }]} numberOfLines={1}>
-          {supplier.shopName}
-        </Text>
+        <View style={styles.titleText}>
+          <Text style={[styles.name, { color: semantic.textPrimary }]} numberOfLines={1}>
+            {supplier.shopName}
+          </Text>
+          {supplier.salesPointName
+            ? (
+                <Text style={[styles.salesPointName, { color: semantic.textTertiary }]} numberOfLines={1}>
+                  {supplier.salesPointName}
+                </Text>
+              )
+            : null}
+        </View>
         <Pressable
           onPress={() => dismiss.current()}
           hitSlop={10}
@@ -220,6 +229,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
+  },
+  salesPointName: {
+    fontFamily: fonts.sansMd,
+    fontSize: 12,
+    marginTop: 1,
+  },
+  titleText: {
+    flex: 1,
   },
   name: {
     flex: 1,

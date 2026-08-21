@@ -304,6 +304,16 @@ import type {
   RolesControllerGetAllPermissionsResponses,
   RolesControllerUpdateData,
   RolesControllerUpdateResponses,
+  SalesPointsControllerCreateData,
+  SalesPointsControllerCreateResponses,
+  SalesPointsControllerFindBySupplierData,
+  SalesPointsControllerFindBySupplierResponses,
+  SalesPointsControllerFindMineData,
+  SalesPointsControllerFindMineResponses,
+  SalesPointsControllerRemoveData,
+  SalesPointsControllerRemoveResponses,
+  SalesPointsControllerUpdateData,
+  SalesPointsControllerUpdateResponses,
   SearchControllerAutocompleteData,
   SearchControllerAutocompleteResponses,
   SearchControllerGetCategoriesData,
@@ -1375,6 +1385,75 @@ export const suppliersControllerGetRatingsOverview = <
     unknown,
     ThrowOnError
   >({ url: "/api/suppliers/me/analytics/ratings", ...options });
+
+export const salesPointsControllerFindMine = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SalesPointsControllerFindMineData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SalesPointsControllerFindMineResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/sales-points", ...options });
+
+export const salesPointsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SalesPointsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/sales-points",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const salesPointsControllerFindBySupplier = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerFindBySupplierData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SalesPointsControllerFindBySupplierResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/{supplierId}/sales-points", ...options });
+
+export const salesPointsControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    SalesPointsControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/sales-points/{id}", ...options });
+
+export const salesPointsControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SalesPointsControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/sales-points/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const usersControllerGetMe = <ThrowOnError extends boolean = false>(
   options?: Options<UsersControllerGetMeData, ThrowOnError>,

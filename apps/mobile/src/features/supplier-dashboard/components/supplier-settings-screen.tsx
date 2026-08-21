@@ -1,6 +1,7 @@
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import MapPinned from 'lucide-react-native/dist/esm/icons/map-pinned'
 import Pencil from 'lucide-react-native/dist/esm/icons/pencil'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import {
@@ -18,6 +19,7 @@ interface SupplierSettingsScreenProps {
   onGoBack: () => void
   onNavigateToShopProfile: () => void
   onNavigateToOpeningHours: () => void
+  onNavigateToSalesPoints: () => void
   onNavigateToDeliveryZones: () => void
   onNavigateToMode: () => void
 }
@@ -26,6 +28,7 @@ export function SupplierSettingsScreen({
   onGoBack,
   onNavigateToShopProfile,
   onNavigateToOpeningHours,
+  onNavigateToSalesPoints,
   onNavigateToDeliveryZones,
   onNavigateToMode,
 }: SupplierSettingsScreenProps) {
@@ -59,6 +62,19 @@ export function SupplierSettingsScreen({
           <View style={styles.menuTextContainer}>
             <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Horaires d'ouverture</Text>
             <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Définir vos jours et heures</Text>
+          </View>
+          <ChevronRight size={18} color={semantic.textTertiary} />
+        </TouchableOpacity>
+
+        <View style={styles.menuDivider} />
+
+        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToSalesPoints} activeOpacity={0.6}>
+          <View style={[styles.menuIcon, { backgroundColor: colors.green[50] }]}>
+            <MapPinned size={18} color={colors.green[600]} />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Points de vente</Text>
+            <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Étals, kiosques et autres lieux</Text>
           </View>
           <ChevronRight size={18} color={semantic.textTertiary} />
         </TouchableOpacity>

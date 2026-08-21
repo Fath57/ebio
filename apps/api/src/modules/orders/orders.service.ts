@@ -289,6 +289,23 @@ export class OrdersService {
       )
     }
 
+    await this.applyStatus(order, newStatus)
+    return order
+  }
+
+  /**
+   * The back-office path: an admin resolves stuck orders, so every status is
+   * reachable, without the supplier-side transition rules. The buyer gets the
+   * same notifications as when the supplier moves the order.
+   */
+  async adminUpdateStatus(orderId: string, newStatus: OrderStatus): Promise<Order> {
+    const order = await this.findById(orderId)
+    await this.applyStatus(order, newStatus)
+    return order
+  }
+
+  /** Writes the status and sends the buyer-facing notifications it triggers. */
+  private async applyStatus(order: Order, newStatus: OrderStatus): Promise<void> {
     order.status = newStatus
 
     if (newStatus === OrderStatus.DELIVERED) {
@@ -313,13 +330,11 @@ export class OrdersService {
         user: order.buyer,
         type: NotificationType.ORDER_DELIVERED,
         title: 'Commande livrée',
-        body: `Votre commande ${order.orderNumber} a été marquée comme livrée`,
+        body: `Votre commande ${order.orderNumber} a été livrée. Confirmez la réception dans l'app.`,
         data: { orderId: order.id },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
     }
-
-    return order
   }
 
   async confirmDelivery(orderId: string, userId: string): Promise<Order> {

@@ -26,7 +26,14 @@ export class BannersService {
     const labels = await this.resolveTargetLabels(banners)
 
     return banners
-      .filter(banner => labels.get(banner.targetId) !== undefined)
+      .filter((banner) => {
+        // Seules les cibles en base peuvent disparaître ; une bannière URL ou
+        // publicitaire n'a rien à vérifier.
+        if (banner.targetType === BannerTargetType.SUPPLIER || banner.targetType === BannerTargetType.PRODUCT) {
+          return banner.targetId !== undefined && labels.get(banner.targetId) !== undefined
+        }
+        return true
+      })
       .slice(0, PUBLIC_LIMIT)
       .map(banner => this.toResponse(banner, labels))
   }
@@ -55,10 +62,14 @@ export class BannersService {
   }
 
   async create(input: CreateBanner): Promise<BannerResponse> {
-    await this.assertTargetExists(input.targetType as BannerTargetType, input.targetId)
+    const targetType = input.targetType as BannerTargetType
+    const { targetId, targetUrl } = this.normalizeTarget(targetType, input.targetId, input.targetUrl)
+    await this.assertTargetExists(targetType, targetId)
     const banner = this.em.create(Banner, {
       ...input,
-      targetType: input.targetType as BannerTargetType,
+      targetType,
+      targetId: targetId ?? undefined,
+      targetUrl: targetUrl ?? undefined,
     })
     await this.em.flush()
     return this.findById(banner.id)
@@ -70,14 +81,18 @@ export class BannersService {
       throw new NotFoundException('Bannière introuvable')
     }
 
-    // La cible n'est vérifiée que si l'un des deux champs bouge.
+    // La cible n'est vérifiée que si l'un des champs de destination bouge.
     const targetType = (input.targetType as BannerTargetType) ?? banner.targetType
-    const targetId = input.targetId ?? banner.targetId
-    if (input.targetType !== undefined || input.targetId !== undefined) {
+    const { targetId, targetUrl } = this.normalizeTarget(
+      targetType,
+      input.targetId !== undefined ? input.targetId : banner.targetId ?? null,
+      input.targetUrl !== undefined ? input.targetUrl : banner.targetUrl ?? null,
+    )
+    if (input.targetType !== undefined || input.targetId !== undefined || input.targetUrl !== undefined) {
       await this.assertTargetExists(targetType, targetId)
     }
 
-    this.em.assign(banner, { ...input, targetType, targetId })
+    this.em.assign(banner, { ...input, targetType, targetId, targetUrl })
     await this.em.flush()
     return this.findById(banner.id)
   }
@@ -90,8 +105,30 @@ export class BannersService {
     await this.em.removeAndFlush(banner)
   }
 
+  /**
+   * Chaque type ne garde que son champ de destination : l'identifiant pour les
+   * cibles en base, le lien pour URL, rien pour la publicité simple.
+   */
+  private normalizeTarget(
+    targetType: BannerTargetType,
+    targetId: string | null | undefined,
+    targetUrl: string | null | undefined,
+  ): { targetId: string | null, targetUrl: string | null } {
+    const isEntity = targetType === BannerTargetType.SUPPLIER || targetType === BannerTargetType.PRODUCT
+    return {
+      targetId: isEntity ? targetId ?? null : null,
+      targetUrl: targetType === BannerTargetType.URL ? targetUrl ?? null : null,
+    }
+  }
+
   /** Refuse une bannière pointant vers une cible inexistante, dès la création. */
-  private async assertTargetExists(targetType: BannerTargetType, targetId: string): Promise<void> {
+  private async assertTargetExists(targetType: BannerTargetType, targetId: string | null): Promise<void> {
+    if (targetType !== BannerTargetType.SUPPLIER && targetType !== BannerTargetType.PRODUCT) {
+      return
+    }
+    if (!targetId) {
+      throw new BadRequestException('La cible est requise pour ce type')
+    }
     const found = targetType === BannerTargetType.SUPPLIER
       ? await this.em.findOne(Supplier, { id: targetId })
       : await this.em.findOne(Product, { id: targetId })
@@ -112,8 +149,12 @@ export class BannersService {
       return labels
     }
 
-    const supplierIds = banners.filter(b => b.targetType === BannerTargetType.SUPPLIER).map(b => b.targetId)
-    const productIds = banners.filter(b => b.targetType === BannerTargetType.PRODUCT).map(b => b.targetId)
+    const supplierIds = banners
+      .filter(b => b.targetType === BannerTargetType.SUPPLIER && b.targetId)
+      .map(b => b.targetId as string)
+    const productIds = banners
+      .filter(b => b.targetType === BannerTargetType.PRODUCT && b.targetId)
+      .map(b => b.targetId as string)
 
     if (supplierIds.length > 0) {
       const suppliers = await this.em.find(Supplier, { id: { $in: supplierIds } })
@@ -134,8 +175,9 @@ export class BannersService {
       subtitle: banner.subtitle ?? null,
       imageUrl: banner.imageUrl,
       targetType: banner.targetType,
-      targetId: banner.targetId,
-      targetLabel: labels.get(banner.targetId) ?? null,
+      targetId: banner.targetId ?? null,
+      targetUrl: banner.targetUrl ?? null,
+      targetLabel: banner.targetId ? labels.get(banner.targetId) ?? null : null,
       isActive: banner.isActive,
       position: banner.position,
       createdAt: banner.createdAt.toISOString(),

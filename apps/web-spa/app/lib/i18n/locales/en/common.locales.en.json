@@ -152,6 +152,13 @@
     "catalogue": "Catalogue",
     "categories": "Categories",
     "dashboard": "Dashboard",
+    "groups": {
+      "sales": "Sales",
+      "catalog": "Catalog",
+      "suppliers": "Suppliers",
+      "community": "Community",
+      "config": "Settings"
+    },
     "logout": "Log out",
     "moderation": "Moderation",
     "notifications": "Notifications",
@@ -494,6 +501,23 @@
       "longitude": "Longitude",
       "preview": "View on Google Maps",
       "noPosition": "No position recorded: your shop will not appear on the map."
+    },
+    "salesPoints": {
+      "title": "Sales points",
+      "description": "Your other selling places: market stall, kiosk, depot. Each appears on the buyers' map.",
+      "empty": "No sales point yet. Your shop stays your main address.",
+      "add": "Add a sales point",
+      "edit": "Edit sales point",
+      "name": "Name",
+      "namePlaceholder": "Dantokpa market stall",
+      "address": "Address",
+      "phone": "Phone at this place",
+      "searchPosition": "Position",
+      "searchPlaceholder": "Search an address…",
+      "noPosition": "No position",
+      "noPositionYet": "No position: the point will not appear on the map.",
+      "visible": "Visible on the map",
+      "saveError": "Saving failed. Check the fields and try again."
     }
   },
   "notifications": {
@@ -531,7 +555,9 @@
       },
       "targetType": {
         "SUPPLIER": "Supplier",
-        "PRODUCT": "Product"
+        "PRODUCT": "Product",
+        "URL": "External link",
+        "NONE": "Ad only"
       },
       "form": {
         "title": "Title",
@@ -561,8 +587,14 @@
           "SUPPLIER": "Search a shop…",
           "PRODUCT": "Search a product…"
         },
-        "uploadError": "The image could not be uploaded. Try again or check the console."
-      }
+        "uploadError": "The image could not be uploaded. Try again or check the console.",
+        "targetUrl": "Link",
+        "targetUrlHint": "Opens in the phone browser.",
+        "noneHint": "Purely visual banner: tapping leads nowhere."
+      },
+      "noTarget": "No link",
+      "deleteConfirm": "Delete this banner?",
+      "deleteWarning": "It will immediately leave the home carousel."
     },
     "categories": {
       "title": "Categories management",
@@ -674,7 +706,8 @@
         "product": "Product",
         "quantity": "Qty",
         "unitPrice": "Unit price",
-        "commissionDetail": "Commission ({{rate}}%)"
+        "commissionDetail": "Commission ({{rate}}%)",
+        "applyStatus": "Apply"
       }
     },
     "productUnits": {

@@ -81,6 +81,7 @@ export function HomeScreen({
         imageUrl: item.product.photo ?? '',
         targetType: 'SUPPLIER' as const,
         targetId: item.supplier.id,
+        targetUrl: null,
       }))
 
   return (

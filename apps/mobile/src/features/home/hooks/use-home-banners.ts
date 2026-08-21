@@ -6,8 +6,9 @@ export interface HomeBanner {
   title: string
   subtitle: string | null
   imageUrl: string
-  targetType: 'SUPPLIER' | 'PRODUCT'
-  targetId: string
+  targetType: 'SUPPLIER' | 'PRODUCT' | 'URL' | 'NONE'
+  targetId: string | null
+  targetUrl: string | null
 }
 
 /**

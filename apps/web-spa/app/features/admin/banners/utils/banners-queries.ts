@@ -6,7 +6,7 @@ import {
   bannersControllerUpdate,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
-export type BannerTargetType = 'SUPPLIER' | 'PRODUCT'
+export type BannerTargetType = 'SUPPLIER' | 'PRODUCT' | 'URL' | 'NONE'
 
 export interface Banner {
   id: string
@@ -14,7 +14,8 @@ export interface Banner {
   subtitle: string | null
   imageUrl: string
   targetType: BannerTargetType
-  targetId: string
+  targetId: string | null
+  targetUrl: string | null
   /** Nom de la cible, résolu par l'API — `null` si elle a été supprimée. */
   targetLabel: string | null
   isActive: boolean
@@ -32,7 +33,8 @@ export interface BannerInput {
   subtitle?: string
   imageUrl: string
   targetType: BannerTargetType
-  targetId: string
+  targetId: string | null
+  targetUrl: string | null
   isActive: boolean
   position: number
 }

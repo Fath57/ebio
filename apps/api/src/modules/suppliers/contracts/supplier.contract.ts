@@ -35,7 +35,9 @@ export const timezoneSchema = z.string().min(1).max(64).refine(
   { message: 'Fuseau horaire IANA invalide (ex. Africa/Porto-Novo)' },
 ).meta({ title: 'Timezone', description: 'IANA timezone the opening hours are expressed in' })
 
-export const openingHoursSchema = z.record(
+// Partial on purpose: a market stall declares only its market days, and the
+// shop editors always send the seven anyway.
+export const openingHoursSchema = z.partialRecord(
   z.enum(['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']),
   z.object({
     open: z.string().regex(/^\d{2}:\d{2}$/, 'Format HH:MM expected'),
@@ -72,6 +74,10 @@ export const registerSupplierSchema = z.object({
   freeDeliveryFrom: z.number().min(0).nullable().optional(),
   openingHours: openingHoursSchema.optional(),
   timezone: timezoneSchema.optional(),
+  /** Media uploaded during registration, linked to the profile here. */
+  shopPhotoMediaId: z.string().uuid().optional(),
+  identityDocMediaId: z.string().uuid().optional(),
+  businessProofMediaId: z.string().uuid().optional(),
 }).meta({
   title: 'RegisterSupplier',
   description: 'Data required to register as a supplier',

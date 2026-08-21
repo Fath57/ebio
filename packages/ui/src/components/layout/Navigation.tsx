@@ -10,9 +10,9 @@ import {
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@boilerstone/ui/components/primitives/sheet'
 import { cn } from '@boilerstone/ui/lib/utils'
-import { Menu } from 'lucide-react'
+import { ChevronDown, Menu } from 'lucide-react'
 import * as React from 'react'
-import { Link, NavLink } from 'react-router'
+import { Link, NavLink, useLocation } from 'react-router'
 
 export interface NavigationItem {
   to: string
@@ -23,6 +23,8 @@ export interface NavigationItem {
   separator?: boolean
   hideOnMobile?: boolean
   hideOnDesktop?: boolean
+  /** Match the route exactly instead of by prefix (for index routes like /admin). */
+  end?: boolean
 }
 
 export interface NavigationSection {
@@ -34,6 +36,20 @@ export interface NavigationSection {
     label?: string
     header?: React.ReactNode
   }
+  /**
+   * Renders the section as a collapsible group: a dropdown in the horizontal
+   * bar, a collapsible block in the mobile sheet. The trigger is highlighted
+   * whenever one of the section's routes is active.
+   */
+  group?: {
+    label: string
+    icon?: React.ReactNode
+  }
+}
+
+/** Route match used for group highlighting: exact, or a deeper segment. */
+function isRouteActive(pathname: string, to: string): boolean {
+  return pathname === to || pathname.startsWith(`${to}/`)
 }
 
 interface NavigationItemProps {
@@ -46,7 +62,7 @@ interface NavigationItemProps {
 function NavigationItemComponent({ item, className, isMobile = false, onItemClick }: NavigationItemProps) {
   const baseClassName = cn(
     className,
-    'flex items-center gap-2 transition-colors',
+    'flex cursor-pointer items-center gap-2 transition-colors',
     isMobile && 'w-full text-left px-3 py-2.5 rounded-lg',
     !isMobile && 'relative text-sm font-medium px-1 py-1 text-muted-foreground',
     isMobile && item.variant === 'destructive' && 'text-destructive hover:bg-destructive/10',
@@ -87,6 +103,7 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
   return (
     <NavLink
       to={item.to}
+      end={item.end}
       className={({ isActive }) => cn(
         baseClassName,
         isActive && 'text-foreground after:absolute after:bottom-[-13px] after:left-0 after:right-0 after:h-[2px] after:bg-primary after:rounded-full',
@@ -195,6 +212,55 @@ function NavigationDropdown({ section }: NavigationDropdownProps) {
 }
 NavigationDropdown.displayName = 'NavigationDropdown'
 
+interface NavigationGroupDropdownProps {
+  section: NavigationSection
+}
+
+function NavigationGroupDropdown({ section }: NavigationGroupDropdownProps) {
+  const location = useLocation()
+  const visibleItems = section.items.filter(item => !item.hideOnDesktop)
+
+  if (!section.group || visibleItems.length === 0) {
+    return null
+  }
+
+  const isActive = visibleItems.some(item => isRouteActive(location.pathname, item.to))
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger
+        className={cn(
+          'relative flex cursor-pointer items-center gap-1.5 px-1 py-1 text-sm font-medium outline-none transition-colors',
+          isActive
+            ? 'text-foreground after:absolute after:bottom-[-13px] after:left-0 after:right-0 after:h-[2px] after:bg-primary after:rounded-full'
+            : 'text-muted-foreground hover:text-foreground',
+        )}
+      >
+        {section.group.icon}
+        <span>{section.group.label}</span>
+        <ChevronDown className="h-3.5 w-3.5 opacity-60" />
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="start" className="w-56">
+        {visibleItems.map(item => (
+          <DropdownMenuItem key={item.to} asChild>
+            <Link
+              to={item.to}
+              className={cn(
+                'flex w-full items-center gap-2',
+                isRouteActive(location.pathname, item.to) && 'bg-accent font-medium',
+              )}
+            >
+              {item.icon}
+              <span>{item.label}</span>
+            </Link>
+          </DropdownMenuItem>
+        ))}
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
+NavigationGroupDropdown.displayName = 'NavigationGroupDropdown'
+
 interface NavigationBrandProps {
   children: React.ReactNode
 }
@@ -222,6 +288,10 @@ function NavigationDesktopSection({ section }: { section: NavigationSection }) {
 
   if (section.dropdown) {
     return <NavigationDropdown key={sectionKey} section={section} />
+  }
+
+  if (section.group) {
+    return <NavigationGroupDropdown key={sectionKey} section={section} />
   }
 
   return (
@@ -276,6 +346,55 @@ interface NavigationMobileProps {
   sections: NavigationSection[]
 }
 
+interface NavigationMobileGroupProps {
+  section: NavigationSection
+  onItemClick: () => void
+}
+
+function NavigationMobileGroup({ section, onItemClick }: NavigationMobileGroupProps) {
+  const location = useLocation()
+  const visibleItems = section.items.filter(item => !item.hideOnMobile)
+  const containsActive = visibleItems.some(item => isRouteActive(location.pathname, item.to))
+  // The group holding the current page starts open; the rest stay folded.
+  const [isOpen, setIsOpen] = React.useState(containsActive)
+
+  if (!section.group || visibleItems.length === 0) {
+    return null
+  }
+
+  return (
+    <div>
+      <button
+        type="button"
+        onClick={() => setIsOpen(current => !current)}
+        className={cn(
+          'flex w-full cursor-pointer items-center justify-between gap-2 rounded-lg px-3 py-2.5 text-left transition-colors hover:bg-accent',
+          containsActive ? 'font-semibold text-foreground' : 'text-muted-foreground',
+        )}
+      >
+        <span className="flex items-center gap-2">
+          {section.group.icon}
+          {section.group.label}
+        </span>
+        <ChevronDown className={cn('h-4 w-4 transition-transform', isOpen && 'rotate-180')} />
+      </button>
+      {isOpen && (
+        <div className="ml-3 border-l pl-2">
+          {visibleItems.map(item => (
+            <NavigationItemComponent
+              key={item.to}
+              item={item}
+              isMobile
+              onItemClick={onItemClick}
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+NavigationMobileGroup.displayName = 'NavigationMobileGroup'
+
 function NavigationMobile({ brand, sections }: NavigationMobileProps) {
   const [isOpen, setIsOpen] = React.useState(false)
 
@@ -308,11 +427,20 @@ function NavigationMobile({ brand, sections }: NavigationMobileProps) {
                     {section.dropdown.header}
                   </div>
                 )}
-                <NavigationSectionComponent
-                  section={section}
-                  isMobile
-                  onItemClick={closeMenu}
-                />
+                {section.group
+                  ? (
+                      <NavigationMobileGroup
+                        section={section}
+                        onItemClick={closeMenu}
+                      />
+                    )
+                  : (
+                      <NavigationSectionComponent
+                        section={section}
+                        isMobile
+                        onItemClick={closeMenu}
+                      />
+                    )}
               </React.Fragment>
             )
           })}

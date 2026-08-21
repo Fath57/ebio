@@ -51,6 +51,7 @@ interface OrderDetail {
   supplierName: string
   supplierId: string
   currentStatus: OrderStatus
+  deliveryConfirmedByBuyer: boolean
   steps: StatusStep[]
   items: OrderItemDetail[]
   total: number
@@ -64,7 +65,6 @@ interface OrderTrackingProps {
   orderId: string
   onBack?: () => void
   onOpenChat: (supplierId: string) => void
-  onConfirmReception: (orderId: string) => void
 }
 
 const STATUS_ORDER: OrderStatus[] = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED']
@@ -120,7 +120,6 @@ export function OrderTracking({
   orderId,
   onBack,
   onOpenChat,
-  onConfirmReception,
 }: OrderTrackingProps) {
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -141,6 +140,7 @@ export function OrderTracking({
           supplierName: raw.supplierName,
           supplierId: raw.supplierId,
           currentStatus: raw.status,
+          deliveryConfirmedByBuyer: raw.deliveryConfirmedByBuyer === true,
           total: raw.totalAmount ?? raw.total ?? 0,
           pickupMode: raw.pickupMode ?? 'ON_SITE',
           paymentMethod: raw.paymentMethod ?? 'CASH_ON_DELIVERY',
@@ -191,10 +191,12 @@ export function OrderTracking({
     setIsConfirming(true)
     try {
       const res = await apiFetch(`/api/orders/${orderId}/confirm-delivery`, {
-        method: 'POST',
+        method: 'PATCH',
       })
       if (res.ok) {
-        onConfirmReception(orderId)
+        // The confirmation lives on this screen: the banner below replaces the
+        // button, no navigation jump.
+        setOrder(current => (current ? { ...current, deliveryConfirmedByBuyer: true } : current))
       }
     }
     catch {
@@ -203,7 +205,7 @@ export function OrderTracking({
     finally {
       setIsConfirming(false)
     }
-  }, [orderId, onConfirmReception])
+  }, [orderId])
 
   if (isLoading) {
     return (
@@ -539,27 +541,38 @@ export function OrderTracking({
       {/* Bottom action bar */}
       {isDelivered && (
         <View style={[styles.actionBar, { backgroundColor: semantic.bgPage, borderTopColor: semantic.borderLight, paddingBottom: tabBarHeight + spacing[3] }]}>
-          <TouchableOpacity
-            style={[styles.confirmButton, isConfirming && styles.buttonDisabled]}
-            onPress={handleConfirm}
-            disabled={isConfirming}
-            activeOpacity={0.8}
-            accessibilityRole="button"
-            accessibilityLabel="Confirmer la réception"
-          >
-            {isConfirming
-              ? (
-                  <ActivityIndicator size="small" color={colors.neutral[0]} />
-                )
-              : (
-                  <>
-                    <CircleCheck size={18} color={colors.neutral[0]} />
-                    <Text style={styles.confirmButtonText}>
-                      Confirmer la réception
-                    </Text>
-                  </>
-                )}
-          </TouchableOpacity>
+          {order.deliveryConfirmedByBuyer
+            ? (
+                <View style={styles.confirmedBanner}>
+                  <CircleCheck size={18} color={colors.green[800]} />
+                  <Text style={styles.confirmedBannerText}>
+                    Réception confirmée. Merci !
+                  </Text>
+                </View>
+              )
+            : (
+                <TouchableOpacity
+                  style={[styles.confirmButton, isConfirming && styles.buttonDisabled]}
+                  onPress={handleConfirm}
+                  disabled={isConfirming}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Confirmer la réception"
+                >
+                  {isConfirming
+                    ? (
+                        <ActivityIndicator size="small" color={colors.neutral[0]} />
+                      )
+                    : (
+                        <>
+                          <CircleCheck size={18} color={colors.neutral[0]} />
+                          <Text style={styles.confirmButtonText}>
+                            J'ai bien reçu ma commande
+                          </Text>
+                        </>
+                      )}
+                </TouchableOpacity>
+              )}
         </View>
       )}
     </View>
@@ -870,6 +883,20 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
     paddingBottom: spacing[5],
     borderTopWidth: 1,
+  },
+  confirmedBanner: {
+    alignItems: 'center',
+    backgroundColor: colors.green[50],
+    borderRadius: radius.xl,
+    flexDirection: 'row',
+    gap: spacing[2],
+    justifyContent: 'center',
+    paddingVertical: spacing[4],
+  },
+  confirmedBannerText: {
+    color: colors.green[800],
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
   },
   confirmButton: {
     flexDirection: 'row',

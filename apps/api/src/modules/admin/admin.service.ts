@@ -17,6 +17,7 @@ import {
 import { config } from '../../config/env.config'
 import { User, UserRole } from '../auth/auth.entity'
 import { EmailService } from '../email/email.service'
+import { MediaService } from '../media/media.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Dispute, DisputeStatus } from '../orders/entities/dispute.entity'
@@ -58,6 +59,7 @@ export class AdminService {
     private readonly em: EntityManager,
     private readonly notificationsService: NotificationsService,
     private readonly emailService: EmailService,
+    private readonly mediaService: MediaService,
   ) {}
 
   async getDashboardKpis(): Promise<DashboardKpi> {
@@ -139,7 +141,7 @@ export class AdminService {
       (productCounts as Array<{ supplier_id: string, count: string }>).map(r => [r.supplier_id, Number(r.count)]),
     )
 
-    const items = suppliers.map(s => ({
+    const items = await Promise.all(suppliers.map(async s => ({
       id: s.id,
       fullName: s.user?.name ?? '',
       email: s.user?.email ?? null,
@@ -150,12 +152,33 @@ export class AdminService {
       submittedAt: s.createdAt.toISOString(),
       validationStatus: s.validationStatus,
       productCount: countMap.get(s.id) ?? 0,
-      identityDocumentUrl: s.identityDocument ?? null,
-      businessProofUrl: s.businessProof ?? null,
+      identityDocumentUrl: await this.resolveDocumentUrl(s.identityDocument),
+      businessProofUrl: await this.resolveDocumentUrl(s.businessProof),
       profilePhoto: s.profilePhoto ?? null,
-    }))
+    })))
 
     return { items, total, page: params.page, limit: params.limit }
+  }
+
+  /**
+   * The documents live in a private S3 prefix, referenced by their media id.
+   * The reviewer gets a short-lived signed URL; a legacy full URL, if any,
+   * passes through untouched.
+   */
+  private async resolveDocumentUrl(value: string | undefined | null): Promise<string | null> {
+    if (!value) {
+      return null
+    }
+    if (value.startsWith('http')) {
+      return value
+    }
+    try {
+      return await this.mediaService.getSignedUrl(value, 3600)
+    }
+    catch {
+      // The media row is gone: the reviewer sees no link rather than a 500.
+      return null
+    }
   }
 
   async validateSupplier(

@@ -25,6 +25,7 @@ import { useMediaUpload } from '@/features/media/hooks/use-media-upload'
 import { Can } from '@/lib/casl/can'
 import { DeliveryZones } from '../components/delivery-zones'
 import { ModeSelector } from '../components/mode-selector'
+import { SalesPointsManager } from '../components/sales-points-manager'
 import { OpeningHoursForm } from '../forms/opening-hours-form'
 import { ProfileForm } from '../forms/profile-form'
 import { ShopInfoForm } from '../forms/shop-info-form'
@@ -440,6 +441,18 @@ export default function SettingsPage() {
                     longitude: settings?.longitude ?? null,
                   }}
                 />
+              </CardContent>
+            </Card>
+
+            <Separator />
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('settings.salesPoints.title')}</CardTitle>
+                <CardDescription>{t('settings.salesPoints.description')}</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <SalesPointsManager />
               </CardContent>
             </Card>
 

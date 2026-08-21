@@ -14,7 +14,7 @@ import {
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Package, Store } from 'lucide-react'
+import { Link as LinkIcon, Megaphone, Package, Store } from 'lucide-react'
 import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
@@ -28,10 +28,19 @@ const bannerSchema = z.object({
   title: z.string().min(1),
   subtitle: z.string().optional(),
   imageUrl: z.string().min(1),
-  targetType: z.enum(['SUPPLIER', 'PRODUCT']),
-  targetId: z.string().uuid(),
+  targetType: z.enum(['SUPPLIER', 'PRODUCT', 'URL', 'NONE']),
+  targetId: z.string(),
+  targetUrl: z.string(),
   isActive: z.boolean(),
   position: z.coerce.number().int().min(0),
+}).superRefine((data, ctx) => {
+  // Each type carries its own destination field.
+  if ((data.targetType === 'SUPPLIER' || data.targetType === 'PRODUCT') && !data.targetId) {
+    ctx.addIssue({ code: 'custom', path: ['targetId'], message: 'Choisissez une destination' })
+  }
+  if (data.targetType === 'URL' && !/^https?:\/\/.+/.test(data.targetUrl)) {
+    ctx.addIssue({ code: 'custom', path: ['targetUrl'], message: 'Entrez un lien complet, en https://' })
+  }
 })
 
 export type BannerFormData = z.infer<typeof bannerSchema>
@@ -47,6 +56,8 @@ interface BannerFormProps {
 const TARGET_TYPES: Array<{ value: BannerTargetType, icon: typeof Store }> = [
   { value: 'SUPPLIER', icon: Store },
   { value: 'PRODUCT', icon: Package },
+  { value: 'URL', icon: LinkIcon },
+  { value: 'NONE', icon: Megaphone },
 ]
 
 export const BannerForm: React.FC<BannerFormProps> = ({
@@ -66,6 +77,7 @@ export const BannerForm: React.FC<BannerFormProps> = ({
       imageUrl: initialData?.imageUrl ?? '',
       targetType: initialData?.targetType ?? 'SUPPLIER',
       targetId: initialData?.targetId ?? '',
+      targetUrl: initialData?.targetUrl ?? '',
       isActive: initialData?.isActive ?? true,
       position: initialData?.position ?? 0,
     },
@@ -114,8 +126,9 @@ export const BannerForm: React.FC<BannerFormProps> = ({
                         type="button"
                         onClick={() => {
                           field.onChange(value)
-                          // The previous target belongs to the other type.
+                          // The previous destination belongs to the other type.
                           form.setValue('targetId', '')
+                          form.setValue('targetUrl', '')
                           setTarget(null)
                         }}
                         className={`flex items-center gap-3 rounded-lg border p-3 text-left transition-colors ${
@@ -137,27 +150,52 @@ export const BannerForm: React.FC<BannerFormProps> = ({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="targetId"
-            render={() => (
-              <FormItem>
-                <FormLabel>{t('admin.banners.form.target')}</FormLabel>
-                <FormControl>
-                  <EntityPicker
-                    value={targetId}
-                    selected={target}
-                    placeholder={t(`admin.banners.form.pick.${targetType}`)}
-                    searchPlaceholder={t(`admin.banners.form.search.${targetType}`)}
-                    emptyLabel={t('admin.banners.form.noResult')}
-                    onSearch={handleSearch}
-                    onSelect={handleSelectTarget}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {(targetType === 'SUPPLIER' || targetType === 'PRODUCT') && (
+            <FormField
+              control={form.control}
+              name="targetId"
+              render={() => (
+                <FormItem>
+                  <FormLabel>{t('admin.banners.form.target')}</FormLabel>
+                  <FormControl>
+                    <EntityPicker
+                      value={targetId}
+                      selected={target}
+                      placeholder={t(`admin.banners.form.pick.${targetType}`)}
+                      searchPlaceholder={t(`admin.banners.form.search.${targetType}`)}
+                      emptyLabel={t('admin.banners.form.noResult')}
+                      onSearch={handleSearch}
+                      onSelect={handleSelectTarget}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {targetType === 'URL' && (
+            <FormField
+              control={form.control}
+              name="targetUrl"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('admin.banners.form.targetUrl')}</FormLabel>
+                  <FormControl>
+                    <Input {...field} type="url" placeholder="https://…" />
+                  </FormControl>
+                  <FormDescription>{t('admin.banners.form.targetUrlHint')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
+
+          {targetType === 'NONE' && (
+            <p className="text-muted-foreground rounded-lg border border-dashed px-4 py-3 text-sm">
+              {t('admin.banners.form.noneHint')}
+            </p>
+          )}
 
           <FormField
             control={form.control}

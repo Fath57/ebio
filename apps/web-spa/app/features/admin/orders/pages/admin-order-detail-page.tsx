@@ -1,6 +1,13 @@
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@boilerstone/ui/components/primitives/select'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import {
@@ -11,11 +18,16 @@ import {
   TableHeader,
   TableRow,
 } from '@boilerstone/ui/components/primitives/table'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
-import { fetchAdminOrderQueryOptions } from '../utils/orders-queries'
+import {
+  ADMIN_ORDER_STATUSES,
+  fetchAdminOrderQueryOptions,
+  updateAdminOrderStatus,
+} from '../utils/orders-queries'
 
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
@@ -33,9 +45,20 @@ function InfoRow({ label, value }: { label: string, value: string | null }) {
 export default function AdminOrderDetailPage() {
   const { t, i18n } = useTranslation()
   const { orderId } = useParams()
+  const queryClient = useQueryClient()
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null)
   const { data: order, isLoading } = useQuery({
     ...fetchAdminOrderQueryOptions(orderId ?? ''),
     enabled: Boolean(orderId),
+  })
+
+  const statusMutation = useMutation({
+    mutationFn: (status: string) => updateAdminOrderStatus(orderId ?? '', status),
+    onSuccess: () => {
+      setPendingStatus(null)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders', orderId] })
+    },
   })
 
   if (isLoading) {
@@ -65,6 +88,33 @@ export default function AdminOrderDetailPage() {
         </Button>
         <h2 className="text-2xl font-bold">{order.orderNumber}</h2>
         <Badge>{t(`admin.orders.status.${order.status}`)}</Badge>
+        {/* Every status is reachable here: the admin's job is unblocking. */}
+        <div className="ml-auto flex items-center gap-2">
+          <Select
+            value={pendingStatus ?? order.status}
+            onValueChange={setPendingStatus}
+          >
+            <SelectTrigger className="w-44">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {ADMIN_ORDER_STATUSES.map(status => (
+                <SelectItem key={status} value={status}>
+                  {t(`admin.orders.status.${status}`)}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {pendingStatus && pendingStatus !== order.status && (
+            <Button
+              size="sm"
+              disabled={statusMutation.isPending}
+              onClick={() => statusMutation.mutate(pendingStatus)}
+            >
+              {statusMutation.isPending ? t('common.saving') : t('admin.orders.detail.applyStatus')}
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">

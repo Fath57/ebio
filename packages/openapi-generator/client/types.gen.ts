@@ -5,6 +5,35 @@ export type ClientOptions = {
 };
 
 /**
+ * InitiateUpload
+ *
+ * Demande d'URL signée(s) pour upload direct vers S3
+ */
+export type InitiateUpload = {
+  fileName: string;
+  mimeType: string;
+  fileSize: number;
+  context: MediaContext;
+  entityType?: string;
+  entityId?: string;
+  parts: number;
+};
+
+/**
+ * CompleteUpload
+ *
+ * Finalise un upload multipart et déclenche l'optimisation
+ */
+export type CompleteUpload = {
+  mediaId: string;
+  uploadId?: string;
+  parts?: Array<{
+    partNumber: number;
+    etag: string;
+  }>;
+};
+
+/**
  * ValidationActionInput
  *
  * Action to perform on a supplier validation
@@ -124,7 +153,8 @@ export type CreateBanner = {
   subtitle?: string;
   imageUrl: string;
   targetType: BannerTargetType;
-  targetId: string;
+  targetId?: string | null;
+  targetUrl?: string | null;
   isActive: boolean;
   position: number;
 };
@@ -139,7 +169,8 @@ export type UpdateBanner = {
   subtitle?: string;
   imageUrl?: string;
   targetType?: BannerTargetType;
-  targetId?: string;
+  targetId?: string | null;
+  targetUrl?: string | null;
   isActive?: boolean;
   position?: number;
 };
@@ -376,8 +407,11 @@ export type UpdatePostSchema = {
 export type ContactMessage = {
   name: string;
   email: string;
+  phone?: string | "";
+  reason: ContactReason;
   message: string;
   company?: string;
+  startedAt: number;
 };
 
 /**
@@ -398,35 +432,6 @@ export type UpdateLandingFaq = {
   answer?: string;
   isActive?: boolean;
   sortOrder?: number;
-};
-
-/**
- * InitiateUpload
- *
- * Demande d'URL signée(s) pour upload direct vers S3
- */
-export type InitiateUpload = {
-  fileName: string;
-  mimeType: string;
-  fileSize: number;
-  context: MediaContext;
-  entityType?: string;
-  entityId?: string;
-  parts: number;
-};
-
-/**
- * CompleteUpload
- *
- * Finalise un upload multipart et déclenche l'optimisation
- */
-export type CompleteUpload = {
-  mediaId: string;
-  uploadId?: string;
-  parts?: Array<{
-    partNumber: number;
-    etag: string;
-  }>;
 };
 
 /**
@@ -513,6 +518,36 @@ export type UpdateUser = {
 };
 
 /**
+ * CreateSalesPoint
+ *
+ * A place where the supplier sells besides the main shop
+ */
+export type CreateSalesPoint = {
+  name: string;
+  address?: string;
+  phone?: string;
+  latitude?: number;
+  longitude?: number;
+  openingHours?: OpeningHours;
+  isActive: boolean;
+};
+
+/**
+ * UpdateSalesPoint
+ *
+ * Update a sales point — every field optional
+ */
+export type UpdateSalesPoint = {
+  name?: string;
+  address?: string;
+  phone?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  openingHours?: OpeningHours;
+  isActive?: boolean;
+};
+
+/**
  * RegisterSupplier
  *
  * Data required to register as a supplier
@@ -530,6 +565,9 @@ export type RegisterSupplier = {
   freeDeliveryFrom?: number | null;
   openingHours?: OpeningHours;
   timezone?: Timezone;
+  shopPhotoMediaId?: string;
+  identityDocMediaId?: string;
+  businessProofMediaId?: string;
 };
 
 /**
@@ -550,6 +588,9 @@ export type UpdateSupplier = {
   freeDeliveryFrom?: number | null;
   openingHours?: OpeningHours;
   timezone?: Timezone;
+  shopPhotoMediaId?: string;
+  identityDocMediaId?: string;
+  businessProofMediaId?: string;
   coverPhoto?: string;
   profilePhoto?: string;
 };
@@ -1321,6 +1362,34 @@ export type CategoriesResponse = {
 };
 
 /**
+ * MediaContext
+ *
+ * Contexte d'utilisation du média
+ */
+export const MediaContext = {
+  PRODUCT_PHOTO: "PRODUCT_PHOTO",
+  SUPPLIER_COVER: "SUPPLIER_COVER",
+  SUPPLIER_PROFILE: "SUPPLIER_PROFILE",
+  IDENTITY_DOCUMENT: "IDENTITY_DOCUMENT",
+  BUSINESS_PROOF: "BUSINESS_PROOF",
+  CHAT_ATTACHMENT: "CHAT_ATTACHMENT",
+  VOICE_NOTE: "VOICE_NOTE",
+  VOICE_DESCRIPTION: "VOICE_DESCRIPTION",
+  TRAINING_CONTENT: "TRAINING_CONTENT",
+  TRAINING_THUMBNAIL: "TRAINING_THUMBNAIL",
+  COMMUNITY_MEDIA: "COMMUNITY_MEDIA",
+  CATEGORY_IMAGE: "CATEGORY_IMAGE",
+  BANNER_IMAGE: "BANNER_IMAGE",
+} as const;
+
+/**
+ * MediaContext
+ *
+ * Contexte d'utilisation du média
+ */
+export type MediaContext = (typeof MediaContext)[keyof typeof MediaContext];
+
+/**
  * ValidationAction
  *
  * Action to take on a supplier validation request
@@ -1385,6 +1454,8 @@ export type DisputeResolution =
 export const BannerTargetType = {
   SUPPLIER: "SUPPLIER",
   PRODUCT: "PRODUCT",
+  URL: "URL",
+  NONE: "NONE",
 } as const;
 
 /**
@@ -1611,32 +1682,36 @@ export type FilterQueryStringSchema = string;
 export type CommentsControllerPostSlug = string;
 
 /**
- * MediaContext
+ * ContactReason
  *
- * Contexte d'utilisation du média
+ * Why the visitor is writing
  */
-export const MediaContext = {
-  PRODUCT_PHOTO: "PRODUCT_PHOTO",
-  SUPPLIER_COVER: "SUPPLIER_COVER",
-  SUPPLIER_PROFILE: "SUPPLIER_PROFILE",
-  IDENTITY_DOCUMENT: "IDENTITY_DOCUMENT",
-  BUSINESS_PROOF: "BUSINESS_PROOF",
-  CHAT_ATTACHMENT: "CHAT_ATTACHMENT",
-  VOICE_NOTE: "VOICE_NOTE",
-  VOICE_DESCRIPTION: "VOICE_DESCRIPTION",
-  TRAINING_CONTENT: "TRAINING_CONTENT",
-  TRAINING_THUMBNAIL: "TRAINING_THUMBNAIL",
-  COMMUNITY_MEDIA: "COMMUNITY_MEDIA",
-  CATEGORY_IMAGE: "CATEGORY_IMAGE",
-  BANNER_IMAGE: "BANNER_IMAGE",
+export const ContactReason = {
+  ACHETEUR: "ACHETEUR",
+  FOURNISSEUR: "FOURNISSEUR",
+  PARTENARIAT: "PARTENARIAT",
+  AUTRE: "AUTRE",
 } as const;
 
 /**
- * MediaContext
+ * ContactReason
  *
- * Contexte d'utilisation du média
+ * Why the visitor is writing
  */
-export type MediaContext = (typeof MediaContext)[keyof typeof MediaContext];
+export type ContactReason = (typeof ContactReason)[keyof typeof ContactReason];
+
+/**
+ * OpeningHours
+ *
+ * Weekly opening hours with days as keys
+ */
+export type OpeningHours = {
+  [key: string]: {
+    open: string;
+    close: string;
+    closed?: boolean;
+  };
+};
 
 /**
  * SupplierType
@@ -1668,19 +1743,6 @@ export const SupplierMode = { CONTACT: "CONTACT", ORDER: "ORDER" } as const;
  * How buyers interact with this supplier
  */
 export type SupplierMode = (typeof SupplierMode)[keyof typeof SupplierMode];
-
-/**
- * OpeningHours
- *
- * Weekly opening hours with days as keys
- */
-export type OpeningHours = {
-  [key: string]: {
-    open: string;
-    close: string;
-    closed?: boolean;
-  };
-};
 
 /**
  * Timezone
@@ -3304,8 +3366,9 @@ export type BannersControllerCreateData = {
      *
      * What the banner points to when tapped
      */
-    targetType: "SUPPLIER" | "PRODUCT";
-    targetId: string;
+    targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+    targetId?: string | null;
+    targetUrl?: string | null;
     isActive: boolean;
     position: number;
   };
@@ -3359,8 +3422,9 @@ export type BannersControllerUpdateData = {
      *
      * What the banner points to when tapped
      */
-    targetType?: "SUPPLIER" | "PRODUCT";
-    targetId?: string;
+    targetType?: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+    targetId?: string | null;
+    targetUrl?: string | null;
     isActive?: boolean;
     position?: number;
   };
@@ -3395,8 +3459,16 @@ export type LandingControllerSendContactMessageData = {
   body: {
     name: string;
     email: string;
+    phone?: string | "";
+    /**
+     * ContactReason
+     *
+     * Why the visitor is writing
+     */
+    reason: "ACHETEUR" | "FOURNISSEUR" | "PARTENARIAT" | "AUTRE";
     message: string;
     company?: string;
+    startedAt: number;
   };
   path?: never;
   query?: never;
@@ -3569,6 +3641,9 @@ export type SuppliersControllerRegisterData = {
      * IANA timezone the opening hours are expressed in
      */
     timezone?: string;
+    shopPhotoMediaId?: string;
+    identityDocMediaId?: string;
+    businessProofMediaId?: string;
   };
   path?: never;
   query?: never;
@@ -3652,6 +3727,9 @@ export type SuppliersControllerUpdateMeData = {
      * IANA timezone the opening hours are expressed in
      */
     timezone?: string;
+    shopPhotoMediaId?: string;
+    identityDocMediaId?: string;
+    businessProofMediaId?: string;
     coverPhoto?: string;
     profilePhoto?: string;
   };
@@ -3810,6 +3888,115 @@ export type SuppliersControllerGetRatingsOverviewData = {
 };
 
 export type SuppliersControllerGetRatingsOverviewResponses = {
+  200: unknown;
+};
+
+export type SalesPointsControllerFindMineData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/sales-points";
+};
+
+export type SalesPointsControllerFindMineResponses = {
+  200: unknown;
+};
+
+export type SalesPointsControllerCreateData = {
+  /**
+   * CreateSalesPoint
+   *
+   * A place where the supplier sells besides the main shop
+   */
+  body: {
+    name: string;
+    address?: string;
+    phone?: string;
+    latitude?: number;
+    longitude?: number;
+    /**
+     * OpeningHours
+     *
+     * Weekly opening hours with days as keys
+     */
+    openingHours?: {
+      [key: string]: {
+        open: string;
+        close: string;
+        closed?: boolean;
+      };
+    };
+    isActive: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/sales-points";
+};
+
+export type SalesPointsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type SalesPointsControllerFindBySupplierData = {
+  body?: never;
+  path: {
+    supplierId: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/sales-points";
+};
+
+export type SalesPointsControllerFindBySupplierResponses = {
+  200: unknown;
+};
+
+export type SalesPointsControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/sales-points/{id}";
+};
+
+export type SalesPointsControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type SalesPointsControllerUpdateData = {
+  /**
+   * UpdateSalesPoint
+   *
+   * Update a sales point — every field optional
+   */
+  body: {
+    name?: string;
+    address?: string;
+    phone?: string;
+    latitude?: number | null;
+    longitude?: number | null;
+    /**
+     * OpeningHours
+     *
+     * Weekly opening hours with days as keys
+     */
+    openingHours?: {
+      [key: string]: {
+        open: string;
+        close: string;
+        closed?: boolean;
+      };
+    };
+    isActive?: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/sales-points/{id}";
+};
+
+export type SalesPointsControllerUpdateResponses = {
   200: unknown;
 };
 

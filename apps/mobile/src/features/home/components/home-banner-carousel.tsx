@@ -2,7 +2,7 @@ import type { NativeScrollEvent, NativeSyntheticEvent } from 'react-native'
 import type { HomeBanner } from '../hooks/use-home-banners'
 import { LinearGradient } from 'expo-linear-gradient'
 import { useEffect, useRef, useState } from 'react'
-import { AccessibilityInfo, Image, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
+import { AccessibilityInfo, Image, Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 
@@ -27,6 +27,21 @@ const RESUME_AFTER_TOUCH_MS = 8000
  * preference for reduced motion.
  */
 export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: HomeBannerCarouselProps) {
+  /** A banner leads where its type says: a screen, the browser, or nowhere. */
+  function handleBannerPress(banner: HomeBanner): void {
+    if (banner.targetType === 'SUPPLIER' && banner.targetId) {
+      onOpenSupplier(banner.targetId)
+    }
+    else if (banner.targetType === 'PRODUCT' && banner.targetId) {
+      onOpenProduct(banner.targetId)
+    }
+    else if (banner.targetType === 'URL' && banner.targetUrl) {
+      Linking.openURL(banner.targetUrl).catch(() => {
+        // A malformed link must not crash the home screen.
+      })
+    }
+  }
+
   const { width } = useWindowDimensions()
   const { semantic } = useTheme()
   const scrollRef = useRef<ScrollView>(null)
@@ -103,9 +118,7 @@ export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: Hom
           <Pressable
             key={banner.id}
             style={[styles.card, { width: cardWidth, backgroundColor: semantic.bgSurface }]}
-            onPress={() => banner.targetType === 'SUPPLIER'
-              ? onOpenSupplier(banner.targetId)
-              : onOpenProduct(banner.targetId)}
+            onPress={() => handleBannerPress(banner)}
             accessibilityRole="button"
             accessibilityLabel={banner.subtitle ? `${banner.title} — ${banner.subtitle}` : banner.title}
           >

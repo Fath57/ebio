@@ -145,6 +145,21 @@ export class OrdersController {
     return OrderMapper.toResponse(order)
   }
 
+  /**
+   * Verb alias: the mobile app shipped calling POST while the route was PATCH,
+   * so the button never worked. Both verbs answer now, published builds included.
+   */
+  @Post(':id/confirm-delivery')
+  @UseGuards(CaslGuard)
+  @CanUpdate('Order')
+  async confirmDeliveryPost(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+  ) {
+    const order = await this.ordersService.confirmDelivery(id, session.user.id)
+    return OrderMapper.toResponse(order)
+  }
+
   @Post(':id/dispute')
   @UseGuards(CaslGuard)
   @CanCreate('Order')

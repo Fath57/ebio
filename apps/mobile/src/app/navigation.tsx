@@ -41,6 +41,7 @@ import { OrderManagement } from '../features/supplier-dashboard/components/order
 import { ProductDetailScreen as SupplierProductDetail } from '../features/supplier-dashboard/components/product-detail-screen'
 import { ProductForm } from '../features/supplier-dashboard/components/product-form'
 import { ProductList } from '../features/supplier-dashboard/components/product-list'
+import { SalesPointsScreen } from '../features/supplier-dashboard/components/sales-points-screen'
 import { ShopProfileEditor } from '../features/supplier-dashboard/components/shop-profile-editor'
 import { SupplierReviewsScreen } from '../features/supplier-dashboard/components/supplier-reviews-screen'
 import { SupplierSettingsScreen } from '../features/supplier-dashboard/components/supplier-settings-screen'
@@ -478,6 +479,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="SupplierShopProfile" component={SupplierShopProfileWrapper} />
       <ProfileStack.Screen name="SupplierReviews" component={SupplierReviewsWrapper} />
       <ProfileStack.Screen name="SupplierOpeningHours" component={SupplierOpeningHoursWrapper} />
+      <ProfileStack.Screen name="SupplierSalesPoints" component={SupplierSalesPointsWrapper} />
       <ProfileStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
       <ProfileStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
       <ProfileStack.Screen name="SupplierRegistration" component={SupplierRegistrationWrapper} />
@@ -693,6 +695,7 @@ function SupplierSettingsWrapper({ navigation }: any) {
         onGoBack={() => navigation.goBack()}
         onNavigateToShopProfile={() => navigation.navigate('SupplierShopProfile')}
         onNavigateToOpeningHours={() => navigation.navigate('SupplierOpeningHours')}
+        onNavigateToSalesPoints={() => navigation.navigate('SupplierSalesPoints')}
         onNavigateToDeliveryZones={() => navigation.navigate('SupplierDeliveryZones')}
         onNavigateToMode={() => navigation.navigate('SupplierMode')}
       />
@@ -707,6 +710,14 @@ function SupplierShopProfileWrapper({ navigation }: any) {
         onGoBack={() => navigation.goBack()}
         onSaved={() => navigation.goBack()}
       />
+    </SafeScreen>
+  )
+}
+
+function SupplierSalesPointsWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <SalesPointsScreen onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }
@@ -792,7 +803,6 @@ function OrderTrackingWrapper({ route, navigation }: any) {
       <OrderTracking
         orderId={orderId}
         onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId, undefined, orderId)}
-        onConfirmReception={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
       />
     </SafeScreen>

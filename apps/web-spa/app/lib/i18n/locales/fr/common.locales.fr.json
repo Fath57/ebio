@@ -152,6 +152,13 @@
     "catalogue": "Catalogue",
     "categories": "Catégories",
     "dashboard": "Tableau de bord",
+    "groups": {
+      "sales": "Ventes",
+      "catalog": "Catalogue",
+      "suppliers": "Fournisseurs",
+      "community": "Communauté",
+      "config": "Configuration"
+    },
     "logout": "Déconnexion",
     "moderation": "Modération",
     "notifications": "Notifications",
@@ -494,6 +501,23 @@
       "longitude": "Longitude",
       "preview": "Voir sur Google Maps",
       "noPosition": "Aucune position enregistrée : votre boutique n'apparaîtra pas sur la carte."
+    },
+    "salesPoints": {
+      "title": "Points de vente",
+      "description": "Vos autres lieux de vente : étal de marché, kiosque, dépôt. Chacun apparaît sur la carte des acheteurs.",
+      "empty": "Aucun point de vente. Votre boutique reste votre adresse principale.",
+      "add": "Ajouter un point de vente",
+      "edit": "Modifier le point de vente",
+      "name": "Nom",
+      "namePlaceholder": "Étal marché Dantokpa",
+      "address": "Adresse",
+      "phone": "Téléphone du lieu",
+      "searchPosition": "Position",
+      "searchPlaceholder": "Rechercher une adresse…",
+      "noPosition": "Sans position",
+      "noPositionYet": "Aucune position : le point n'apparaîtra pas sur la carte.",
+      "visible": "Visible sur la carte",
+      "saveError": "L'enregistrement a échoué. Vérifiez les champs et réessayez."
     }
   },
   "notifications": {
@@ -531,7 +555,9 @@
       },
       "targetType": {
         "SUPPLIER": "Fournisseur",
-        "PRODUCT": "Produit"
+        "PRODUCT": "Produit",
+        "URL": "Lien externe",
+        "NONE": "Publicité"
       },
       "form": {
         "title": "Titre",
@@ -561,8 +587,14 @@
           "SUPPLIER": "Rechercher une boutique…",
           "PRODUCT": "Rechercher un produit…"
         },
-        "uploadError": "L'image n'a pas pu être envoyée. Réessayez ou vérifiez la console."
-      }
+        "uploadError": "L'image n'a pas pu être envoyée. Réessayez ou vérifiez la console.",
+        "targetUrl": "Lien",
+        "targetUrlHint": "Ouvert dans le navigateur du téléphone.",
+        "noneHint": "Bannière purement visuelle : toucher ne mène nulle part."
+      },
+      "noTarget": "Sans lien",
+      "deleteConfirm": "Supprimer cette bannière ?",
+      "deleteWarning": "Elle disparaîtra immédiatement du carrousel de l’accueil."
     },
     "categories": {
       "title": "Gestion des catégories",
@@ -674,7 +706,8 @@
         "product": "Produit",
         "quantity": "Qté",
         "unitPrice": "Prix unitaire",
-        "commissionDetail": "Commission ({{rate}} %)"
+        "commissionDetail": "Commission ({{rate}} %)",
+        "applyStatus": "Appliquer"
       }
     },
     "productUnits": {

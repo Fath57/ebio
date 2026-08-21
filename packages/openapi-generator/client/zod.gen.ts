@@ -3,6 +3,28 @@
 import { z } from "zod";
 
 /**
+ * CompleteUpload
+ *
+ * Finalise un upload multipart et déclenche l'optimisation
+ */
+export const zCompleteUpload = z.object({
+  mediaId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  uploadId: z.optional(z.string()),
+  parts: z.optional(
+    z.array(
+      z.object({
+        partNumber: z.number(),
+        etag: z.string(),
+      }),
+    ),
+  ),
+});
+
+/**
  * SuspendSupplier
  *
  * Reason for suspending a supplier
@@ -220,23 +242,6 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
- * ContactMessage
- *
- * Message sent from the landing contact form
- */
-export const zContactMessage = z.object({
-  name: z.string().min(1).max(120),
-  email: z
-    .email()
-    .max(200)
-    .regex(
-      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
-    ),
-  message: z.string().min(10).max(3000),
-  company: z.optional(z.string().max(0)),
-});
-
-/**
  * CreateLandingFaq
  */
 export const zCreateLandingFaq = z.object({
@@ -254,28 +259,6 @@ export const zUpdateLandingFaq = z.object({
   answer: z.optional(z.string().min(1).max(2000)),
   isActive: z.optional(z.boolean()).default(true),
   sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
-});
-
-/**
- * CompleteUpload
- *
- * Finalise un upload multipart et déclenche l'optimisation
- */
-export const zCompleteUpload = z.object({
-  mediaId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  uploadId: z.optional(z.string()),
-  parts: z.optional(
-    z.array(
-      z.object({
-        partNumber: z.number(),
-        etag: z.string(),
-      }),
-    ),
-  ),
 });
 
 /**
@@ -1190,6 +1173,48 @@ export const zCategoriesResponse = z.object({
 });
 
 /**
+ * MediaContext
+ *
+ * Contexte d'utilisation du média
+ */
+export const zMediaContext = z.enum([
+  "PRODUCT_PHOTO",
+  "SUPPLIER_COVER",
+  "SUPPLIER_PROFILE",
+  "IDENTITY_DOCUMENT",
+  "BUSINESS_PROOF",
+  "CHAT_ATTACHMENT",
+  "VOICE_NOTE",
+  "VOICE_DESCRIPTION",
+  "TRAINING_CONTENT",
+  "TRAINING_THUMBNAIL",
+  "COMMUNITY_MEDIA",
+  "CATEGORY_IMAGE",
+  "BANNER_IMAGE",
+]);
+
+/**
+ * InitiateUpload
+ *
+ * Demande d'URL signée(s) pour upload direct vers S3
+ */
+export const zInitiateUpload = z.object({
+  fileName: z.string().min(1),
+  mimeType: z.string().regex(/^(image|audio|video|application)\//),
+  fileSize: z.int().gt(0).lte(9007199254740991),
+  context: zMediaContext,
+  entityType: z.optional(z.string()),
+  entityId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  parts: z.int().gte(1).lte(100).default(1),
+});
+
+/**
  * ValidationAction
  *
  * Action to take on a supplier validation request
@@ -1258,7 +1283,7 @@ export const zDisputeResolutionInput = z.object({
  *
  * What the banner points to when tapped
  */
-export const zBannerTargetType = z.enum(["SUPPLIER", "PRODUCT"]);
+export const zBannerTargetType = z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]);
 
 /**
  * CreateBanner
@@ -1270,11 +1295,17 @@ export const zCreateBanner = z.object({
   subtitle: z.optional(z.string().max(255)),
   imageUrl: z.url().max(1024),
   targetType: zBannerTargetType,
-  targetId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
+  targetId: z.optional(
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
   isActive: z.boolean().default(true),
   position: z.int().gte(0).lte(9007199254740991).default(0),
 });
@@ -1290,12 +1321,16 @@ export const zUpdateBanner = z.object({
   imageUrl: z.optional(z.url().max(1024)),
   targetType: z.optional(zBannerTargetType),
   targetId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
+    z.union([
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      z.null(),
+    ]),
   ),
+  targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
   isActive: z.optional(z.boolean()).default(true),
   position: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
 });
@@ -1624,60 +1659,38 @@ export const zFilterQueryStringSchema = z.string();
 export const zCommentsControllerPostSlug = z.string();
 
 /**
- * MediaContext
+ * ContactReason
  *
- * Contexte d'utilisation du média
+ * Why the visitor is writing
  */
-export const zMediaContext = z.enum([
-  "PRODUCT_PHOTO",
-  "SUPPLIER_COVER",
-  "SUPPLIER_PROFILE",
-  "IDENTITY_DOCUMENT",
-  "BUSINESS_PROOF",
-  "CHAT_ATTACHMENT",
-  "VOICE_NOTE",
-  "VOICE_DESCRIPTION",
-  "TRAINING_CONTENT",
-  "TRAINING_THUMBNAIL",
-  "COMMUNITY_MEDIA",
-  "CATEGORY_IMAGE",
-  "BANNER_IMAGE",
+export const zContactReason = z.enum([
+  "ACHETEUR",
+  "FOURNISSEUR",
+  "PARTENARIAT",
+  "AUTRE",
 ]);
 
 /**
- * InitiateUpload
+ * ContactMessage
  *
- * Demande d'URL signée(s) pour upload direct vers S3
+ * Message sent from the landing contact form
  */
-export const zInitiateUpload = z.object({
-  fileName: z.string().min(1),
-  mimeType: z.string().regex(/^(image|audio|video|application)\//),
-  fileSize: z.int().gt(0).lte(9007199254740991),
-  context: zMediaContext,
-  entityType: z.optional(z.string()),
-  entityId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
+export const zContactMessage = z.object({
+  name: z.string().min(2).max(120),
+  email: z
+    .email()
+    .max(200)
+    .regex(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+    ),
+  phone: z.optional(
+    z.union([z.string().regex(/^[+0-9 ().-]{6,25}$/), z.literal("")]),
   ),
-  parts: z.int().gte(1).lte(100).default(1),
+  reason: zContactReason,
+  message: z.string().min(10).max(3000),
+  company: z.optional(z.string().max(0)),
+  startedAt: z.int().gt(0).lte(9007199254740991),
 });
-
-/**
- * SupplierType
- *
- * Type of supplier activity
- */
-export const zSupplierType = z.enum(["INPUTS", "TRANSFORMER"]);
-
-/**
- * SupplierMode
- *
- * How buyers interact with this supplier
- */
-export const zSupplierMode = z.enum(["CONTACT", "ORDER"]);
 
 /**
  * OpeningHours
@@ -1694,11 +1707,55 @@ export const zOpeningHours = z.record(
 );
 
 /**
+ * CreateSalesPoint
+ *
+ * A place where the supplier sells besides the main shop
+ */
+export const zCreateSalesPoint = z.object({
+  name: z.string().min(2).max(100),
+  address: z.optional(z.string().min(2).max(255)),
+  phone: z.optional(z.string().min(8).max(20)),
+  latitude: z.optional(z.number().gte(-90).lte(90)),
+  longitude: z.optional(z.number().gte(-180).lte(180)),
+  openingHours: z.optional(zOpeningHours),
+  isActive: z.boolean().default(true),
+});
+
+/**
+ * UpdateSalesPoint
+ *
+ * Update a sales point — every field optional
+ */
+export const zUpdateSalesPoint = z.object({
+  name: z.optional(z.string().min(2).max(100)),
+  address: z.optional(z.string().min(2).max(255)),
+  phone: z.optional(z.string().min(8).max(20)),
+  latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+  longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+  openingHours: z.optional(zOpeningHours),
+  isActive: z.optional(z.boolean()).default(true),
+});
+
+/**
  * UpdateOpeningHours
  */
 export const zUpdateOpeningHours = z.object({
   openingHours: zOpeningHours,
 });
+
+/**
+ * SupplierType
+ *
+ * Type of supplier activity
+ */
+export const zSupplierType = z.enum(["INPUTS", "TRANSFORMER"]);
+
+/**
+ * SupplierMode
+ *
+ * How buyers interact with this supplier
+ */
+export const zSupplierMode = z.enum(["CONTACT", "ORDER"]);
 
 /**
  * Timezone
@@ -1725,6 +1782,27 @@ export const zRegisterSupplier = z.object({
   freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
   openingHours: z.optional(zOpeningHours),
   timezone: z.optional(zTimezone),
+  shopPhotoMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  identityDocMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  businessProofMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
 });
 
 /**
@@ -1745,6 +1823,27 @@ export const zUpdateSupplier = z.object({
   freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
   openingHours: z.optional(zOpeningHours),
   timezone: z.optional(zTimezone),
+  shopPhotoMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  identityDocMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  businessProofMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
   coverPhoto: z.optional(z.url()),
   profilePhoto: z.optional(z.url()),
 });
@@ -2918,12 +3017,18 @@ export const zBannersControllerCreateData = z.object({
     title: z.string().min(1).max(255),
     subtitle: z.optional(z.string().max(255)),
     imageUrl: z.url().max(1024),
-    targetType: z.enum(["SUPPLIER", "PRODUCT"]),
-    targetId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
+    targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
+    targetId: z.optional(
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
     isActive: z.boolean().default(true),
     position: z.int().gte(0).lte(9007199254740991).default(0),
   }),
@@ -2952,14 +3057,18 @@ export const zBannersControllerUpdateData = z.object({
     title: z.optional(z.string().min(1).max(255)),
     subtitle: z.optional(z.string().max(255)),
     imageUrl: z.optional(z.url().max(1024)),
-    targetType: z.optional(z.enum(["SUPPLIER", "PRODUCT"])),
+    targetType: z.optional(z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"])),
     targetId: z.optional(
-      z
-        .uuid()
-        .regex(
-          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-        ),
+      z.union([
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        z.null(),
+      ]),
     ),
+    targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
     isActive: z.optional(z.boolean()).default(true),
     position: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
   }),
@@ -2977,15 +3086,20 @@ export const zLandingControllerGetContentData = z.object({
 
 export const zLandingControllerSendContactMessageData = z.object({
   body: z.object({
-    name: z.string().min(1).max(120),
+    name: z.string().min(2).max(120),
     email: z
       .email()
       .max(200)
       .regex(
         /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
       ),
+    phone: z.optional(
+      z.union([z.string().regex(/^[+0-9 ().-]{6,25}$/), z.literal("")]),
+    ),
+    reason: z.enum(["ACHETEUR", "FOURNISSEUR", "PARTENARIAT", "AUTRE"]),
     message: z.string().min(10).max(3000),
     company: z.optional(z.string().max(0)),
+    startedAt: z.int().gt(0).lte(9007199254740991),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -3085,6 +3199,27 @@ export const zSuppliersControllerRegisterData = z.object({
       ),
     ),
     timezone: z.optional(z.string().min(1).max(64)),
+    shopPhotoMediaId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    identityDocMediaId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    businessProofMediaId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -3131,6 +3266,27 @@ export const zSuppliersControllerUpdateMeData = z.object({
       ),
     ),
     timezone: z.optional(z.string().min(1).max(64)),
+    shopPhotoMediaId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    identityDocMediaId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    businessProofMediaId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
     coverPhoto: z.optional(z.url()),
     profilePhoto: z.optional(z.url()),
   }),
@@ -3223,6 +3379,76 @@ export const zSuppliersControllerGetTopProductsData = z.object({
 export const zSuppliersControllerGetRatingsOverviewData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSalesPointsControllerFindMineData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSalesPointsControllerCreateData = z.object({
+  body: z.object({
+    name: z.string().min(2).max(100),
+    address: z.optional(z.string().min(2).max(255)),
+    phone: z.optional(z.string().min(8).max(20)),
+    latitude: z.optional(z.number().gte(-90).lte(90)),
+    longitude: z.optional(z.number().gte(-180).lte(180)),
+    openingHours: z.optional(
+      z.record(
+        z.string(),
+        z.object({
+          open: z.string().regex(/^\d{2}:\d{2}$/),
+          close: z.string().regex(/^\d{2}:\d{2}$/),
+          closed: z.optional(z.boolean()),
+        }),
+      ),
+    ),
+    isActive: z.boolean().default(true),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSalesPointsControllerFindBySupplierData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    supplierId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSalesPointsControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSalesPointsControllerUpdateData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(2).max(100)),
+    address: z.optional(z.string().min(2).max(255)),
+    phone: z.optional(z.string().min(8).max(20)),
+    latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+    longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+    openingHours: z.optional(
+      z.record(
+        z.string(),
+        z.object({
+          open: z.string().regex(/^\d{2}:\d{2}$/),
+          close: z.string().regex(/^\d{2}:\d{2}$/),
+          closed: z.optional(z.boolean()),
+        }),
+      ),
+    ),
+    isActive: z.optional(z.boolean()).default(true),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 

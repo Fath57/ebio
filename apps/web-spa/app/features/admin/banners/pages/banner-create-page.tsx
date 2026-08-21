@@ -22,7 +22,11 @@ export default function BannerCreatePage() {
   })
 
   function handleSubmit(data: BannerFormData) {
-    mutate(data)
+    mutate({
+      ...data,
+      targetId: data.targetId || null,
+      targetUrl: data.targetUrl || null,
+    })
   }
 
   return (

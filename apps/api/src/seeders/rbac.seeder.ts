@@ -62,6 +62,7 @@ const ROLES = [
       'read:Category',
       'create:Order',
       'read:Order',
+      'update:Order',
       'create:Payment',
       'read:Payment',
       'create:Conversation',

@@ -1,3 +1,4 @@
+import { client } from '@boilerstone/openapi-generator'
 import {
   adminControllerGetOrderById,
   adminControllerGetOrders,
@@ -90,4 +91,26 @@ export function fetchAdminOrderQueryOptions(orderId: string) {
       return response.data as AdminOrderDetail
     },
   }
+}
+
+/** Every status an admin can force on an order. */
+export const ADMIN_ORDER_STATUSES = [
+  'PLACED',
+  'ACCEPTED',
+  'PREPARING',
+  'READY',
+  'IN_DELIVERY',
+  'DELIVERED',
+  'CANCELLED',
+  'DISPUTED',
+] as const
+
+export async function updateAdminOrderStatus(orderId: string, status: string): Promise<void> {
+  const response = await client.patch({
+    url: '/api/admin/orders/{id}/status',
+    path: { id: orderId },
+    body: { status },
+  })
+  if (response.error)
+    throw new Error('Failed to update order status')
 }

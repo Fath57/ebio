@@ -217,3 +217,12 @@ export type BroadcastNotification = z.infer<typeof broadcastNotificationSchema>
 export type CommissionRates = z.infer<typeof commissionRateSchema>
 export type SuspendSupplierInput = z.infer<typeof suspendSupplierSchema>
 export type TransactionList = z.infer<typeof transactionListSchema>
+
+export const adminOrderStatusSchema = z.object({
+  status: z.enum(['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED', 'CANCELLED', 'DISPUTED']),
+}).meta({
+  title: 'AdminOrderStatus',
+  description: 'Status forced by an admin, without the supplier-side transition rules',
+})
+
+export type AdminOrderStatusInput = z.infer<typeof adminOrderStatusSchema>

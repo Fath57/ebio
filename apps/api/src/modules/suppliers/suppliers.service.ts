@@ -4,6 +4,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { isOpenNow } from '../../common/opening-hours'
 import { User, UserRole } from '../auth/auth.entity'
+import { Media } from '../media/media.entity'
 import { DeliveryZone } from './entities/delivery-zone.entity'
 import { Supplier, SupplierMode, SupplierType } from './supplier.entity'
 
@@ -36,6 +37,31 @@ export class SuppliersService {
     })
 
     user.role = UserRole.SUPPLIER
+
+    // The app uploads the shop photo and the documents before submitting the
+    // form, then sends their media ids here. The photo is public, its URL goes
+    // straight on the profile. The documents live in a private S3 prefix: the
+    // media id is stored instead, and the validation screen asks for a signed
+    // URL at read time.
+    if (data.shopPhotoMediaId) {
+      const media = await this.em.findOne(Media, { id: data.shopPhotoMediaId })
+      if (media?.publicUrl) {
+        supplier.profilePhoto = media.publicUrl
+      }
+    }
+    if (data.identityDocMediaId) {
+      const media = await this.em.findOne(Media, { id: data.identityDocMediaId })
+      if (media) {
+        supplier.identityDocument = media.id
+      }
+    }
+    if (data.businessProofMediaId) {
+      const media = await this.em.findOne(Media, { id: data.businessProofMediaId })
+      if (media) {
+        supplier.businessProof = media.id
+      }
+    }
+
     await this.em.flush()
 
     if (data.latitude !== undefined && data.longitude !== undefined) {
@@ -104,36 +130,60 @@ export class SuppliersService {
     // carte remontait des fournisseurs à 4 500 km.
     const radiusMeters = (radiusKm !== undefined && radiusKm > 0 ? radiusKm : DEFAULT_RADIUS_KM) * 1000
 
-    const distanceSelect = hasLocation
-      ? `ROUND(ST_Distance(s.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2)`
-      : `NULL`
-
-    const whereClause = hasLocation
-      ? `WHERE s.location IS NOT NULL
-        AND s.validation_status = 'VALIDATED'
-        AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)`
-      : `WHERE s.validation_status = 'VALIDATED'`
-
-    const orderClause = hasLocation
-      ? 'ORDER BY distance ASC'
-      : 'ORDER BY s.global_rating DESC NULLS LAST'
-
-    const query = `SELECT
-        s.id,
-        s.shop_name AS "shopName",
-        ST_Y(s.location::geometry) AS latitude,
-        ST_X(s.location::geometry) AS longitude,
-        s.global_rating AS "rating",
-        s.mode,
-        s.validation_status AS "validationStatus",
-        s.opening_hours AS "openingHours",
-        s.timezone,
-        s.cover_photo AS "coverPhoto",
-        ${distanceSelect} AS distance,
-        (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
-      FROM suppliers s
-      ${whereClause}
-      ${orderClause}`
+    // Chaque lieu de vente est un pin : la boutique principale et chacun de
+    // ses points de vente actifs. Un fournisseur présent au marché ET à sa
+    // boutique apparaît donc deux fois, chacun à sa vraie position.
+    const query = hasLocation
+      ? `WITH lieux AS (
+          SELECT s.id AS supplier_id, NULL::uuid AS sales_point_id, NULL::varchar AS point_name,
+                 s.location, s.opening_hours AS point_hours
+          FROM suppliers s
+          WHERE s.location IS NOT NULL
+          UNION ALL
+          SELECT sp.supplier_id, sp.id, sp.name,
+                 sp.location, COALESCE(sp.opening_hours, sup.opening_hours)
+          FROM sales_points sp
+          JOIN suppliers sup ON sup.id = sp.supplier_id
+          WHERE sp.is_active AND sp.location IS NOT NULL
+        )
+        SELECT
+          s.id,
+          l.sales_point_id AS "salesPointId",
+          l.point_name AS "salesPointName",
+          s.shop_name AS "shopName",
+          ST_Y(l.location::geometry) AS latitude,
+          ST_X(l.location::geometry) AS longitude,
+          s.global_rating AS "rating",
+          s.mode,
+          s.validation_status AS "validationStatus",
+          l.point_hours AS "openingHours",
+          s.timezone,
+          s.cover_photo AS "coverPhoto",
+          ROUND(ST_Distance(l.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2) AS distance,
+          (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
+        FROM lieux l
+        JOIN suppliers s ON s.id = l.supplier_id
+        WHERE s.validation_status = 'VALIDATED'
+          AND ST_DWithin(l.location, ST_MakePoint(?, ?)::geography, ?)
+        ORDER BY distance ASC`
+      : `SELECT
+          s.id,
+          NULL::uuid AS "salesPointId",
+          NULL::varchar AS "salesPointName",
+          s.shop_name AS "shopName",
+          ST_Y(s.location::geometry) AS latitude,
+          ST_X(s.location::geometry) AS longitude,
+          s.global_rating AS "rating",
+          s.mode,
+          s.validation_status AS "validationStatus",
+          s.opening_hours AS "openingHours",
+          s.timezone,
+          s.cover_photo AS "coverPhoto",
+          NULL AS distance,
+          (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
+        FROM suppliers s
+        WHERE s.validation_status = 'VALIDATED'
+        ORDER BY s.global_rating DESC NULLS LAST`
 
     const params = hasLocation
       ? [longitude, latitude, longitude, latitude, radiusMeters]
@@ -146,6 +196,8 @@ export class SuppliersService {
 
       return {
         id: row.id,
+        salesPointId: row.salesPointId ?? null,
+        salesPointName: row.salesPointName ?? null,
         shopName: row.shopName,
         coverPhoto: row.coverPhoto ?? null,
         latitude: Number(row.latitude),

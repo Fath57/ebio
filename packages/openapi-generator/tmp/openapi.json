@@ -2930,15 +2930,36 @@
                     "type": "string",
                     "enum": [
                       "SUPPLIER",
-                      "PRODUCT"
+                      "PRODUCT",
+                      "URL",
+                      "NONE"
                     ],
                     "title": "BannerTargetType",
                     "description": "What the banner points to when tapped"
                   },
                   "targetId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "targetUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1024,
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "isActive": {
                     "default": true,
@@ -2955,7 +2976,6 @@
                   "title",
                   "imageUrl",
                   "targetType",
-                  "targetId",
                   "isActive",
                   "position"
                 ],
@@ -3036,15 +3056,36 @@
                     "type": "string",
                     "enum": [
                       "SUPPLIER",
-                      "PRODUCT"
+                      "PRODUCT",
+                      "URL",
+                      "NONE"
                     ],
                     "title": "BannerTargetType",
                     "description": "What the banner points to when tapped"
                   },
                   "targetId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "targetUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1024,
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "isActive": {
                     "default": true,
@@ -3123,7 +3164,7 @@
                 "properties": {
                   "name": {
                     "type": "string",
-                    "minLength": 1,
+                    "minLength": 2,
                     "maxLength": 120
                   },
                   "email": {
@@ -3131,6 +3172,29 @@
                     "maxLength": 200,
                     "format": "email",
                     "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "phone": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[+0-9 ().-]{6,25}$"
+                      },
+                      {
+                        "type": "string",
+                        "const": ""
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "ACHETEUR",
+                      "FOURNISSEUR",
+                      "PARTENARIAT",
+                      "AUTRE"
+                    ],
+                    "title": "ContactReason",
+                    "description": "Why the visitor is writing"
                   },
                   "message": {
                     "type": "string",
@@ -3140,12 +3204,19 @@
                   "company": {
                     "type": "string",
                     "maxLength": 0
+                  },
+                  "startedAt": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
                   }
                 },
                 "required": [
                   "name",
                   "email",
-                  "message"
+                  "reason",
+                  "message",
+                  "startedAt"
                 ],
                 "additionalProperties": false,
                 "title": "ContactMessage",
@@ -3526,15 +3597,6 @@
                       ],
                       "additionalProperties": false
                     },
-                    "required": [
-                      "monday",
-                      "tuesday",
-                      "wednesday",
-                      "thursday",
-                      "friday",
-                      "saturday",
-                      "sunday"
-                    ],
                     "title": "OpeningHours",
                     "description": "Weekly opening hours with days as keys"
                   },
@@ -3544,6 +3606,21 @@
                     "maxLength": 64,
                     "title": "Timezone",
                     "description": "IANA timezone the opening hours are expressed in"
+                  },
+                  "shopPhotoMediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "identityDocMediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "businessProofMediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   }
                 },
                 "required": [
@@ -3742,15 +3819,6 @@
                       ],
                       "additionalProperties": false
                     },
-                    "required": [
-                      "monday",
-                      "tuesday",
-                      "wednesday",
-                      "thursday",
-                      "friday",
-                      "saturday",
-                      "sunday"
-                    ],
                     "title": "OpeningHours",
                     "description": "Weekly opening hours with days as keys"
                   },
@@ -3760,6 +3828,21 @@
                     "maxLength": 64,
                     "title": "Timezone",
                     "description": "IANA timezone the opening hours are expressed in"
+                  },
+                  "shopPhotoMediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "identityDocMediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "businessProofMediaId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "coverPhoto": {
                     "type": "string",
@@ -3966,15 +4049,6 @@
                       ],
                       "additionalProperties": false
                     },
-                    "required": [
-                      "monday",
-                      "tuesday",
-                      "wednesday",
-                      "thursday",
-                      "friday",
-                      "saturday",
-                      "sunday"
-                    ],
                     "title": "OpeningHours",
                     "description": "Weekly opening hours with days as keys"
                   }
@@ -4086,6 +4160,283 @@
           "Suppliers"
         ],
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/sales-points": {
+      "get": {
+        "operationId": "SalesPointsController_findMine",
+        "tags": [
+          "SalesPoints"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "SalesPointsController_create",
+        "tags": [
+          "SalesPoints"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "A place where the supplier sells besides the main shop",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "openingHours": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "open": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "close": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "open",
+                        "close"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "title": "OpeningHours",
+                    "description": "Weekly opening hours with days as keys"
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name",
+                  "isActive"
+                ],
+                "additionalProperties": false,
+                "title": "CreateSalesPoint",
+                "description": "A place where the supplier sells besides the main shop"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{supplierId}/sales-points": {
+      "get": {
+        "operationId": "SalesPointsController_findBySupplier",
+        "tags": [
+          "SalesPoints"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/sales-points/{id}": {
+      "patch": {
+        "operationId": "SalesPointsController_update",
+        "tags": [
+          "SalesPoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Update a sales point — every field optional",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "phone": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "latitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "openingHours": {
+                    "type": "object",
+                    "propertyNames": {
+                      "type": "string",
+                      "enum": [
+                        "monday",
+                        "tuesday",
+                        "wednesday",
+                        "thursday",
+                        "friday",
+                        "saturday",
+                        "sunday"
+                      ]
+                    },
+                    "additionalProperties": {
+                      "type": "object",
+                      "properties": {
+                        "open": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "close": {
+                          "type": "string",
+                          "pattern": "^\\d{2}:\\d{2}$"
+                        },
+                        "closed": {
+                          "type": "boolean"
+                        }
+                      },
+                      "required": [
+                        "open",
+                        "close"
+                      ],
+                      "additionalProperties": false
+                    },
+                    "title": "OpeningHours",
+                    "description": "Weekly opening hours with days as keys"
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateSalesPoint",
+                "description": "Update a sales point — every field optional"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "SalesPointsController_remove",
+        "tags": [
+          "SalesPoints"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -8302,6 +8653,98 @@
   },
   "components": {
     "schemas": {
+      "InitiateUpload": {
+        "type": "object",
+        "properties": {
+          "fileName": {
+            "type": "string",
+            "minLength": 1
+          },
+          "mimeType": {
+            "type": "string",
+            "pattern": "^(image|audio|video|application)\\/"
+          },
+          "fileSize": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "context": {
+            "$ref": "#/components/schemas/MediaContext"
+          },
+          "entityType": {
+            "type": "string"
+          },
+          "entityId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "parts": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "fileName",
+          "mimeType",
+          "fileSize",
+          "context",
+          "parts"
+        ],
+        "additionalProperties": false,
+        "title": "InitiateUpload",
+        "description": "Demande d'URL signée(s) pour upload direct vers S3",
+        "examples": [
+          {
+            "fileName": "huile-palme.jpg",
+            "mimeType": "image/jpeg",
+            "fileSize": 524288,
+            "context": "PRODUCT_PHOTO",
+            "parts": 1
+          }
+        ]
+      },
+      "CompleteUpload": {
+        "type": "object",
+        "properties": {
+          "mediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "uploadId": {
+            "type": "string"
+          },
+          "parts": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "partNumber": {
+                  "type": "number"
+                },
+                "etag": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "partNumber",
+                "etag"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "mediaId"
+        ],
+        "additionalProperties": false,
+        "title": "CompleteUpload",
+        "description": "Finalise un upload multipart et déclenche l'optimisation"
+      },
       "ValidationActionInput": {
         "type": "object",
         "properties": {
@@ -8574,9 +9017,28 @@
             "$ref": "#/components/schemas/BannerTargetType"
           },
           "targetId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "isActive": {
             "default": true,
@@ -8593,7 +9055,6 @@
           "title",
           "imageUrl",
           "targetType",
-          "targetId",
           "isActive",
           "position"
         ],
@@ -8622,9 +9083,28 @@
             "$ref": "#/components/schemas/BannerTargetType"
           },
           "targetId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "targetUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024,
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "isActive": {
             "default": true,
@@ -9084,7 +9564,7 @@
         "properties": {
           "name": {
             "type": "string",
-            "minLength": 1,
+            "minLength": 2,
             "maxLength": 120
           },
           "email": {
@@ -9092,6 +9572,21 @@
             "maxLength": 200,
             "format": "email",
             "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^[+0-9 ().-]{6,25}$"
+              },
+              {
+                "type": "string",
+                "const": ""
+              }
+            ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/ContactReason"
           },
           "message": {
             "type": "string",
@@ -9101,12 +9596,19 @@
           "company": {
             "type": "string",
             "maxLength": 0
+          },
+          "startedAt": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
           }
         },
         "required": [
           "name",
           "email",
-          "message"
+          "reason",
+          "message",
+          "startedAt"
         ],
         "additionalProperties": false,
         "title": "ContactMessage",
@@ -9171,98 +9673,6 @@
         },
         "additionalProperties": false,
         "title": "UpdateLandingFaq"
-      },
-      "InitiateUpload": {
-        "type": "object",
-        "properties": {
-          "fileName": {
-            "type": "string",
-            "minLength": 1
-          },
-          "mimeType": {
-            "type": "string",
-            "pattern": "^(image|audio|video|application)\\/"
-          },
-          "fileSize": {
-            "type": "integer",
-            "exclusiveMinimum": 0,
-            "maximum": 9007199254740991
-          },
-          "context": {
-            "$ref": "#/components/schemas/MediaContext"
-          },
-          "entityType": {
-            "type": "string"
-          },
-          "entityId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "parts": {
-            "default": 1,
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100
-          }
-        },
-        "required": [
-          "fileName",
-          "mimeType",
-          "fileSize",
-          "context",
-          "parts"
-        ],
-        "additionalProperties": false,
-        "title": "InitiateUpload",
-        "description": "Demande d'URL signée(s) pour upload direct vers S3",
-        "examples": [
-          {
-            "fileName": "huile-palme.jpg",
-            "mimeType": "image/jpeg",
-            "fileSize": 524288,
-            "context": "PRODUCT_PHOTO",
-            "parts": 1
-          }
-        ]
-      },
-      "CompleteUpload": {
-        "type": "object",
-        "properties": {
-          "mediaId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "uploadId": {
-            "type": "string"
-          },
-          "parts": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "partNumber": {
-                  "type": "number"
-                },
-                "etag": {
-                  "type": "string"
-                }
-              },
-              "required": [
-                "partNumber",
-                "etag"
-              ],
-              "additionalProperties": false
-            }
-          }
-        },
-        "required": [
-          "mediaId"
-        ],
-        "additionalProperties": false,
-        "title": "CompleteUpload",
-        "description": "Finalise un upload multipart et déclenche l'optimisation"
       },
       "CreatePaymentMethodInput": {
         "type": "object",
@@ -9504,6 +9914,104 @@
         "title": "UpdateUser",
         "description": "Update user profile"
       },
+      "CreateSalesPoint": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "isActive"
+        ],
+        "additionalProperties": false,
+        "title": "CreateSalesPoint",
+        "description": "A place where the supplier sells besides the main shop"
+      },
+      "UpdateSalesPoint": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateSalesPoint",
+        "description": "Update a sales point — every field optional"
+      },
       "RegisterSupplier": {
         "type": "object",
         "properties": {
@@ -9563,6 +10071,21 @@
           },
           "timezone": {
             "$ref": "#/components/schemas/Timezone"
+          },
+          "shopPhotoMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "identityDocMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "businessProofMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           }
         },
         "required": [
@@ -9634,6 +10157,21 @@
           },
           "timezone": {
             "$ref": "#/components/schemas/Timezone"
+          },
+          "shopPhotoMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "identityDocMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "businessProofMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "coverPhoto": {
             "type": "string",
@@ -11759,6 +12297,26 @@
         "additionalProperties": false,
         "title": "CategoriesResponse"
       },
+      "MediaContext": {
+        "type": "string",
+        "enum": [
+          "PRODUCT_PHOTO",
+          "SUPPLIER_COVER",
+          "SUPPLIER_PROFILE",
+          "IDENTITY_DOCUMENT",
+          "BUSINESS_PROOF",
+          "CHAT_ATTACHMENT",
+          "VOICE_NOTE",
+          "VOICE_DESCRIPTION",
+          "TRAINING_CONTENT",
+          "TRAINING_THUMBNAIL",
+          "COMMUNITY_MEDIA",
+          "CATEGORY_IMAGE",
+          "BANNER_IMAGE"
+        ],
+        "title": "MediaContext",
+        "description": "Contexte d'utilisation du média"
+      },
       "ValidationAction": {
         "type": "string",
         "enum": [
@@ -11793,7 +12351,9 @@
         "type": "string",
         "enum": [
           "SUPPLIER",
-          "PRODUCT"
+          "PRODUCT",
+          "URL",
+          "NONE"
         ],
         "title": "BannerTargetType",
         "description": "What the banner points to when tapped"
@@ -12379,44 +12939,16 @@
       "CommentsController_postSlug": {
         "type": "string"
       },
-      "MediaContext": {
+      "ContactReason": {
         "type": "string",
         "enum": [
-          "PRODUCT_PHOTO",
-          "SUPPLIER_COVER",
-          "SUPPLIER_PROFILE",
-          "IDENTITY_DOCUMENT",
-          "BUSINESS_PROOF",
-          "CHAT_ATTACHMENT",
-          "VOICE_NOTE",
-          "VOICE_DESCRIPTION",
-          "TRAINING_CONTENT",
-          "TRAINING_THUMBNAIL",
-          "COMMUNITY_MEDIA",
-          "CATEGORY_IMAGE",
-          "BANNER_IMAGE"
+          "ACHETEUR",
+          "FOURNISSEUR",
+          "PARTENARIAT",
+          "AUTRE"
         ],
-        "title": "MediaContext",
-        "description": "Contexte d'utilisation du média"
-      },
-      "SupplierType": {
-        "type": "string",
-        "enum": [
-          "INPUTS",
-          "TRANSFORMER"
-        ],
-        "title": "SupplierType",
-        "description": "Type of supplier activity"
-      },
-      "SupplierMode": {
-        "default": "ORDER",
-        "type": "string",
-        "enum": [
-          "CONTACT",
-          "ORDER"
-        ],
-        "title": "SupplierMode",
-        "description": "How buyers interact with this supplier"
+        "title": "ContactReason",
+        "description": "Why the visitor is writing"
       },
       "OpeningHours": {
         "type": "object",
@@ -12453,17 +12985,27 @@
           ],
           "additionalProperties": false
         },
-        "required": [
-          "monday",
-          "tuesday",
-          "wednesday",
-          "thursday",
-          "friday",
-          "saturday",
-          "sunday"
-        ],
         "title": "OpeningHours",
         "description": "Weekly opening hours with days as keys"
+      },
+      "SupplierType": {
+        "type": "string",
+        "enum": [
+          "INPUTS",
+          "TRANSFORMER"
+        ],
+        "title": "SupplierType",
+        "description": "Type of supplier activity"
+      },
+      "SupplierMode": {
+        "default": "ORDER",
+        "type": "string",
+        "enum": [
+          "CONTACT",
+          "ORDER"
+        ],
+        "title": "SupplierMode",
+        "description": "How buyers interact with this supplier"
       },
       "Timezone": {
         "type": "string",

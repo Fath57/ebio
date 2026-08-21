@@ -4,11 +4,15 @@ import { Entity, Enum, OptionalProps, PrimaryKey, Property } from '@mikro-orm/co
 export enum BannerTargetType {
   SUPPLIER = 'SUPPLIER',
   PRODUCT = 'PRODUCT',
+  /** Lien externe, ouvert dans le navigateur. */
+  URL = 'URL',
+  /** Simple visuel publicitaire : toucher ne mène nulle part. */
+  NONE = 'NONE',
 }
 
 @Entity({ tableName: 'banners' })
 export class Banner {
-  [OptionalProps]?: 'id' | 'subtitle' | 'isActive' | 'position' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'subtitle' | 'targetId' | 'targetUrl' | 'isActive' | 'position' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -26,12 +30,16 @@ export class Banner {
   targetType!: BannerTargetType
 
   /**
-   * Identifiant de la cible. Pas de clé étrangère : la cible change de table
-   * selon `targetType`, et une bannière doit survivre à la suppression de sa
-   * cible — le service se charge d'écarter les bannières devenues orphelines.
+   * Identifiant de la cible pour SUPPLIER et PRODUCT. Pas de clé étrangère :
+   * la cible change de table selon `targetType`, et une bannière doit survivre
+   * à la suppression de sa cible — le service écarte les orphelines.
    */
-  @Property({ fieldName: 'target_id', type: 'uuid' })
-  targetId!: string
+  @Property({ fieldName: 'target_id', type: 'uuid', nullable: true })
+  targetId?: string
+
+  /** Lien ouvert au toucher, pour le type URL uniquement. */
+  @Property({ fieldName: 'target_url', nullable: true })
+  targetUrl?: string
 
   @Property({ fieldName: 'is_active', default: true })
   isActive: boolean = true

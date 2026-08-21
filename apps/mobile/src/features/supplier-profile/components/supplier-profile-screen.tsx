@@ -54,6 +54,16 @@ interface Product {
   isInStock: boolean
 }
 
+interface SalesPointItem {
+  id: string
+  name: string
+  address: string | null
+  phone: string | null
+  latitude: number | null
+  longitude: number | null
+  isOpen: boolean | null
+}
+
 interface OpeningHour {
   day: string
   openTime: string
@@ -301,15 +311,22 @@ export function SupplierProfileScreen({
   const [isLoading, setIsLoading] = useState(true)
   const [isContactSheetVisible, setIsContactSheetVisible] = useState(false)
   const [isHoursExpanded, setIsHoursExpanded] = useState(false)
+  const [salesPoints, setSalesPoints] = useState<SalesPointItem[]>([])
   const [showAllProducts, setShowAllProducts] = useState(false)
 
   useEffect(() => {
     async function fetchProfile(): Promise<void> {
       try {
-        const [profileRes, productsRes] = await Promise.all([
+        const [profileRes, productsRes, salesPointsRes] = await Promise.all([
           apiFetch(`/api/suppliers/${supplierId}`),
           apiFetch(`/api/suppliers/${supplierId}/products`),
+          apiFetch(`/api/suppliers/${supplierId}/sales-points`),
         ])
+
+        if (salesPointsRes.ok) {
+          const data = await salesPointsRes.json() as { items?: SalesPointItem[] }
+          setSalesPoints(data.items ?? [])
+        }
 
         if (profileRes.ok) {
           const raw = await profileRes.json()
@@ -422,19 +439,24 @@ export function SupplierProfileScreen({
     }
   }, [supplier?.phoneNumber])
 
+  const openDirections = useCallback((latitude: number, longitude: number, label?: string) => {
+    const query = label ? `${latitude},${longitude}(${encodeURIComponent(label)})` : `${latitude},${longitude}`
+    const url = Platform.select({
+      ios: `maps:0,0?q=${query}`,
+      android: `geo:${latitude},${longitude}?q=${query}`,
+    })
+    if (url)
+      Linking.openURL(url)
+  }, [])
+
   const handleNavigate = useCallback(() => {
     if (!supplier)
       return
     const { latitude, longitude } = supplier
     if (latitude === null || longitude === null)
       return
-    const url = Platform.select({
-      ios: `maps:0,0?q=${latitude},${longitude}`,
-      android: `geo:${latitude},${longitude}?q=${latitude},${longitude}`,
-    })
-    if (url)
-      Linking.openURL(url)
-  }, [supplier])
+    openDirections(latitude, longitude, supplier.shopName)
+  }, [supplier, openDirections])
 
   const handleShare = useCallback(async () => {
     if (!supplier)
@@ -737,6 +759,59 @@ export function SupplierProfileScreen({
         <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
 
         {/* ================================================================= */}
+        {/* POINTS DE VENTE                                                     */}
+        {/* ================================================================= */}
+        {salesPoints.length > 0 && (
+          <>
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
+                Points de vente
+              </Text>
+              {salesPoints.map(point => (
+                <View
+                  key={point.id}
+                  style={[styles.salesPointRow, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}
+                >
+                  <View style={styles.salesPointText}>
+                    <View style={styles.salesPointNameRow}>
+                      <Text style={[styles.salesPointName, { color: semantic.textPrimary }]} numberOfLines={1}>
+                        {point.name}
+                      </Text>
+                      {point.isOpen !== null && (
+                        <View style={[styles.salesPointStatus, { backgroundColor: point.isOpen ? colors.green[50] : colors.coral[50] }]}>
+                          <Text style={[styles.salesPointStatusText, { color: point.isOpen ? colors.green[800] : colors.coral[600] }]}>
+                            {point.isOpen ? 'Ouvert' : 'Fermé'}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                    {point.address
+                      ? (
+                          <Text style={[styles.salesPointAddress, { color: semantic.textTertiary }]} numberOfLines={1}>
+                            {point.address}
+                          </Text>
+                        )
+                      : null}
+                  </View>
+                  {point.latitude !== null && point.longitude !== null && (
+                    <TouchableOpacity
+                      onPress={() => openDirections(point.latitude as number, point.longitude as number, point.name)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Itinéraire vers ${point.name}`}
+                      style={[styles.salesPointDirections, { borderColor: semantic.borderNormal }]}
+                    >
+                      <Navigation size={15} color={semantic.colorPrimary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              ))}
+            </View>
+
+            <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
+          </>
+        )}
+
+        {/* ================================================================= */}
         {/* PRODUITS SECTION                                                    */}
         {/* ================================================================= */}
         <View style={styles.section}>
@@ -927,6 +1002,50 @@ const styles = StyleSheet.create({
   section: {
     paddingHorizontal: spacing[4],
     gap: spacing[3],
+  },
+  salesPointAddress: {
+    ...typography.caption,
+    marginTop: 2,
+  },
+  salesPointDirections: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    height: 36,
+    justifyContent: 'center',
+    width: 36,
+  },
+  salesPointName: {
+    flexShrink: 1,
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
+  },
+  salesPointNameRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    gap: spacing[2],
+  },
+  salesPointRow: {
+    alignItems: 'center',
+    borderRadius: radius.md,
+    borderWidth: 1,
+    flexDirection: 'row',
+    gap: spacing[3],
+    marginTop: spacing[2],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+  },
+  salesPointStatus: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  salesPointStatusText: {
+    fontFamily: fonts.sansMd,
+    fontSize: 11,
+  },
+  salesPointText: {
+    flex: 1,
   },
   sectionTitle: {
     ...typography.h2,

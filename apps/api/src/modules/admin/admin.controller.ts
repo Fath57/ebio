@@ -1,6 +1,8 @@
 import type { Response } from 'express'
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
+import type { OrderStatus } from '../orders/entities/order.entity'
 import type {
+  AdminOrderStatusInput,
   BroadcastNotification,
   CommissionRates,
   DisputeResolutionInput,
@@ -26,8 +28,10 @@ import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
+import { OrdersService } from '../orders/orders.service'
 import { AdminService } from './admin.service'
 import {
+  adminOrderStatusSchema,
   broadcastNotificationSchema,
   commissionRateSchema,
   disputeResolutionSchema,
@@ -41,7 +45,10 @@ import {
 @Roles('ADMIN')
 @CanManage('all')
 export class AdminController {
-  constructor(private readonly adminService: AdminService) {}
+  constructor(
+    private readonly adminService: AdminService,
+    private readonly ordersService: OrdersService,
+  ) {}
 
   @Get('dashboard')
   async getDashboard() {
@@ -186,6 +193,16 @@ export class AdminController {
   @Get('orders/:id')
   async getOrderById(@Param('id') id: string) {
     return this.adminService.getOrderById(id)
+  }
+
+  /** Admins can set any status: their job is unblocking real-world messes. */
+  @Patch('orders/:id/status')
+  async updateOrderStatus(
+    @Param('id') id: string,
+    @TypedBody(adminOrderStatusSchema) body: AdminOrderStatusInput,
+  ) {
+    await this.ordersService.adminUpdateStatus(id, body.status as OrderStatus)
+    return { success: true }
   }
 
   @Get('suppliers')

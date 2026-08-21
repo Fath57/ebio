@@ -5,7 +5,6 @@ import { colors } from '../../../theme/theme'
 
 interface SupplierMarkerProps {
   isValidated: boolean
-  isOpen: boolean
   /** Pin agrandi et assombri quand la fiche du fournisseur est ouverte. */
   isSelected?: boolean
 }
@@ -19,15 +18,13 @@ const WIDTH_SELECTED = 40
 
 /**
  * Marqueur fournisseur : goutte pleine à contour blanc, pastille centrale
- * blanche, coche verte pour les fournisseurs validés. La couleur porte
- * l'ouverture (vert = ouvert, gris = fermé), la taille porte la sélection.
+ * blanche, coche verte pour les fournisseurs validés. Toujours vert — la
+ * marque — l'ouverture se lit dans la fiche ; la taille porte la sélection.
  */
-export function SupplierMarker({ isValidated, isOpen, isSelected = false }: SupplierMarkerProps) {
+export function SupplierMarker({ isValidated, isSelected = false }: SupplierMarkerProps) {
   const width = isSelected ? WIDTH_SELECTED : WIDTH_DEFAULT
   const height = width * PIN_RATIO
-  const fill = isSelected
-    ? colors.green[600]
-    : isOpen ? colors.green[400] : colors.neutral[400]
+  const fill = isSelected ? colors.green[800] : colors.green[400]
 
   // Centre de la tête du pin : (12/24, 12/34) du viewBox.
   const headSize = width * 0.34
