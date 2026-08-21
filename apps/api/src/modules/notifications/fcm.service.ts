@@ -1,4 +1,5 @@
 import type { Message } from 'firebase-admin/messaging'
+import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import * as admin from 'firebase-admin'
 import { config } from '../../config/env.config'
@@ -7,6 +8,8 @@ import { config } from '../../config/env.config'
 export class FcmService implements OnModuleInit {
   private readonly logger = new Logger(FcmService.name)
   private initialized = false
+
+  constructor(private readonly em: EntityManager) {}
 
   onModuleInit() {
     if (!config.fcm.projectId || !config.fcm.clientEmail || !config.fcm.privateKey) {
@@ -69,8 +72,14 @@ export class FcmService implements OnModuleInit {
     }
     catch (error: unknown) {
       const fcmError = error as { code?: string }
-      if (fcmError.code === 'messaging/registration-token-not-registered') {
-        this.logger.warn(`Stale token: ${token.slice(0, 20)}...`)
+      if (fcmError.code === 'messaging/registration-token-not-registered'
+        || fcmError.code === 'messaging/invalid-registration-token') {
+        // Each reinstall registers a new token; the dead ones would deliver
+        // duplicates forever if left behind.
+        this.logger.warn(`Stale token pruned: ${token.slice(0, 20)}...`)
+        await this.em.getConnection()
+          .execute(`DELETE FROM device_tokens WHERE token = ?`, [token])
+          .catch(() => this.logger.warn('Token pruning failed'))
       }
       else {
         this.logger.error(`Push failed → ${token.slice(0, 20)}...`, error)
