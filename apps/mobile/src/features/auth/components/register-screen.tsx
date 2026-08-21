@@ -1,3 +1,4 @@
+import Check from 'lucide-react-native/dist/esm/icons/check'
 import Eye from 'lucide-react-native/dist/esm/icons/eye'
 import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
 import Lock from 'lucide-react-native/dist/esm/icons/lock'
@@ -6,10 +7,10 @@ import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import { useState } from 'react'
 import {
-  Linking,
   ActivityIndicator,
   Image,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -29,7 +30,6 @@ import {
 } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import Check from 'lucide-react-native/dist/esm/icons/check'
 import { GoogleSignInButton } from './google-sign-in-button'
 import { OtpInput, ResendTimer } from './otp-input'
 

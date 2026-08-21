@@ -25,6 +25,7 @@ import {
   ShoppingCart,
   Store,
   Sun,
+  TicketPercent,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -94,6 +95,7 @@ export default function AppLayout() {
     { to: '/commandes', label: t('nav.orders'), icon: <ShoppingCart className="h-4 w-4" /> },
     { to: '/analytics', label: t('nav.analytics'), icon: <BarChart3 className="h-4 w-4" /> },
     { to: '/portefeuille', label: t('nav.wallet'), icon: <Wallet className="h-4 w-4" /> },
+    { to: '/codes-promo', label: t('nav.promoCodes'), icon: <TicketPercent className="h-4 w-4" /> },
     { to: '/notifications', label: t('nav.notifications'), icon: <Bell className="h-4 w-4" /> },
     { to: '/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
   ]
@@ -115,6 +117,7 @@ export default function AppLayout() {
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
         { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" /> },
         { to: '/admin/reversements', label: t('nav.withdrawals'), icon: <Banknote className="h-4 w-4" /> },
+        { to: '/admin/codes-promo', label: t('nav.promoCodes'), icon: <TicketPercent className="h-4 w-4" /> },
       ],
     },
     {

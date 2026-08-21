@@ -33,6 +33,7 @@ export default [
     // Supplier — Analytics, Notifications & Settings
     route('analytics', 'features/analytics/pages/analytics-page.tsx'),
     route('portefeuille', 'features/wallet/pages/wallet-page.tsx'),
+    route('codes-promo', 'features/promo-codes/pages/supplier-promo-codes-page.tsx'),
     route('notifications', 'features/notifications/pages/notifications-page.tsx'),
     route('profil', 'features/settings/pages/profile-page.tsx'),
     route('parametres', 'features/settings/pages/settings-page.tsx'),
@@ -70,6 +71,7 @@ export default [
 
       route('admin/commissions', 'features/admin/commissions/pages/admin-commissions-page.tsx'),
       route('admin/reversements', 'features/admin/withdrawals/pages/admin-withdrawals-page.tsx'),
+      route('admin/codes-promo', 'features/admin/promo-codes/pages/admin-promo-codes-page.tsx'),
 
       // Admin — Categories
       route('admin/categories', 'features/admin/categories/pages/categories-page.tsx'),

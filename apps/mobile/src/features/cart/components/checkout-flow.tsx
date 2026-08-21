@@ -154,6 +154,11 @@ export function CheckoutFlow({
   // Wallet checkout: the balance decides whether the option is even offered.
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [payWithWallet, setPayWithWallet] = useState(false)
+  // Promo code: server-checked before the order, re-checked at creation.
+  const [promoInput, setPromoInput] = useState('')
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string, discount: number } | null>(null)
+  const [promoError, setPromoError] = useState<string | null>(null)
+  const [checkingPromo, setCheckingPromo] = useState(false)
   const [pendingPaymentId, setPendingPaymentId] = useState<string | null>(null)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
@@ -181,6 +186,35 @@ export function CheckoutFlow({
     }
   }, [])
 
+  const handleApplyPromo = useCallback(async () => {
+    const code = promoInput.trim()
+    if (!code) {
+      return
+    }
+    setCheckingPromo(true)
+    setPromoError(null)
+    try {
+      const res = await apiFetch('/api/promo-codes/validate', {
+        method: 'POST',
+        body: JSON.stringify({ code, supplierId: orderSummary.supplierId, itemsTotal: orderSummary.total }),
+      })
+      const data = await res.json().catch(() => null) as { valid?: boolean, discount?: number, message?: string | null } | null
+      if (res.ok && data?.valid) {
+        setAppliedPromo({ code, discount: data.discount ?? 0 })
+      }
+      else {
+        setAppliedPromo(null)
+        setPromoError(data?.message ?? 'Code invalide')
+      }
+    }
+    catch {
+      setPromoError('Vérification impossible. Réessayez.')
+    }
+    finally {
+      setCheckingPromo(false)
+    }
+  }, [promoInput, orderSummary.supplierId, orderSummary.total])
+
   const handleProceedToPayment = useCallback(async () => {
     if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryAddress.trim()) {
       appAlert('Adresse requise', 'Veuillez saisir une adresse de livraison.')
@@ -196,6 +230,7 @@ export function CheckoutFlow({
           supplierId: orderSummary.supplierId,
           pickupMode: orderSummary.deliveryMode === 'PICKUP' ? 'ON_SITE' : 'DELIVERY',
           paymentMethod: payWithWallet ? 'WALLET' : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
+          promoCode: appliedPromo?.code,
           deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? deliveryAddress : undefined,
           deliverySlot: deliverySlot || undefined,
           items: orderSummary.items.map(item => ({
@@ -268,7 +303,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, deliveryAddress, deliverySlot, fedapayPublicKey, payWithWallet, orderNumber, onComplete])
+  }, [orderSummary, deliveryAddress, deliverySlot, fedapayPublicKey, payWithWallet, appliedPromo, orderNumber, onComplete])
 
   const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
@@ -405,6 +440,64 @@ export function CheckoutFlow({
               </View>
             ))}
 
+            {/* Promo code */}
+            <View style={styles.promoRow}>
+              <TextInput
+                style={[styles.promoInput, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
+                placeholder="Code promo"
+                placeholderTextColor={semantic.textTertiary}
+                autoCapitalize="characters"
+                autoCorrect={false}
+                value={promoInput}
+                editable={!appliedPromo}
+                onChangeText={(text) => {
+                  setPromoInput(text)
+                  setPromoError(null)
+                }}
+              />
+              {appliedPromo
+                ? (
+                    <TouchableOpacity
+                      style={[styles.promoButton, { backgroundColor: semantic.bgSurface, borderWidth: 1, borderColor: semantic.borderNormal }]}
+                      onPress={() => {
+                        setAppliedPromo(null)
+                        setPromoInput('')
+                      }}
+                    >
+                      <Text style={[styles.promoButtonText, { color: semantic.textSecondary }]}>Retirer</Text>
+                    </TouchableOpacity>
+                  )
+                : (
+                    <TouchableOpacity
+                      style={[styles.promoButton, { backgroundColor: colors.green[400] }, (checkingPromo || !promoInput.trim()) && { opacity: 0.5 }]}
+                      disabled={checkingPromo || !promoInput.trim()}
+                      onPress={handleApplyPromo}
+                    >
+                      {checkingPromo
+                        ? <ActivityIndicator size="small" color={colors.neutral[0]} />
+                        : <Text style={[styles.promoButtonText, { color: colors.neutral[0] }]}>Appliquer</Text>}
+                    </TouchableOpacity>
+                  )}
+            </View>
+            {promoError && (
+              <Text style={styles.promoError}>{promoError}</Text>
+            )}
+            {appliedPromo && (
+              <View style={styles.feeRow}>
+                <Text style={[styles.feeLabel, { color: colors.green[600] }]}>
+                  Code
+                  {' '}
+                  {appliedPromo.code}
+                </Text>
+                <Text style={[styles.feeValue, { color: colors.green[600] }]}>
+                  −
+                  {formatPrice(appliedPromo.discount)}
+                  {' '}
+                  FCFA
+                </Text>
+              </View>
+            )}
+
             {orderSummary.deliveryMode === 'DELIVERY' && (
               <View style={styles.feeRow}>
                 <Text style={[styles.feeLabel, { color: semantic.textSecondary }]}>Livraison</Text>
@@ -417,7 +510,7 @@ export function CheckoutFlow({
             <View style={[styles.totalRow, { borderTopColor: semantic.borderNormal }]}>
               <Text style={[styles.totalLabel, { color: semantic.textPrimary }]}>Total</Text>
               <Text style={styles.totalValue}>
-                {formatPrice(orderSummary.total + deliveryFee)}
+                {formatPrice(orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee)}
                 {' '}
                 FCFA
               </Text>
@@ -425,7 +518,7 @@ export function CheckoutFlow({
           </View>
 
           {/* Payment method */}
-          {walletBalance !== null && walletBalance >= orderSummary.total + deliveryFee && (
+          {walletBalance !== null && walletBalance >= orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee && (
             <TouchableOpacity
               style={[
                 styles.card,
@@ -467,7 +560,7 @@ export function CheckoutFlow({
           <View style={styles.bottomPriceCol}>
             <Text style={[styles.bottomPriceLabel, { color: semantic.textTertiary }]}>Total</Text>
             <Text style={[styles.bottomPriceValue, { color: semantic.textPrimary }]}>
-              {formatPrice(orderSummary.total)}
+              {formatPrice(orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee)}
               {' '}
               FCFA
             </Text>
@@ -711,6 +804,29 @@ const styles = StyleSheet.create({
   },
 
   // Payment info
+  promoRow: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginTop: spacing[3],
+  },
+  promoInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    ...typography.bodyL,
+  },
+  promoButton: {
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[4],
+    justifyContent: 'center',
+    minWidth: 96,
+    alignItems: 'center',
+  },
+  promoButtonText: { ...typography.bodyS, fontFamily: fonts.sansSb },
+  promoError: { ...typography.caption, color: colors.coral[600], marginTop: spacing[1] },
+
   walletOption: {
     flexDirection: 'row',
     alignItems: 'center',

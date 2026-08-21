@@ -41,6 +41,7 @@ import { OrderManagement } from '../features/supplier-dashboard/components/order
 import { ProductDetailScreen as SupplierProductDetail } from '../features/supplier-dashboard/components/product-detail-screen'
 import { ProductForm } from '../features/supplier-dashboard/components/product-form'
 import { ProductList } from '../features/supplier-dashboard/components/product-list'
+import { PromoCodesScreen } from '../features/supplier-dashboard/components/promo-codes-screen'
 import { SalesPointsScreen } from '../features/supplier-dashboard/components/sales-points-screen'
 import { ShopProfileEditor } from '../features/supplier-dashboard/components/shop-profile-editor'
 import { SupplierReviewsScreen } from '../features/supplier-dashboard/components/supplier-reviews-screen'
@@ -483,6 +484,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="SupplierOpeningHours" component={SupplierOpeningHoursWrapper} />
       <ProfileStack.Screen name="SupplierSalesPoints" component={SupplierSalesPointsWrapper} />
       <ProfileStack.Screen name="SupplierWallet" component={SupplierWalletWrapper} />
+      <ProfileStack.Screen name="SupplierPromoCodes" component={SupplierPromoCodesWrapper} />
       <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <ProfileStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
       <ProfileStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
@@ -702,6 +704,7 @@ function SupplierSettingsWrapper({ navigation }: any) {
         onNavigateToShopProfile={() => navigation.navigate('SupplierShopProfile')}
         onNavigateToOpeningHours={() => navigation.navigate('SupplierOpeningHours')}
         onNavigateToSalesPoints={() => navigation.navigate('SupplierSalesPoints')}
+        onNavigateToPromoCodes={() => navigation.navigate('SupplierPromoCodes')}
         onNavigateToDeliveryZones={() => navigation.navigate('SupplierDeliveryZones')}
         onNavigateToMode={() => navigation.navigate('SupplierMode')}
       />
@@ -732,6 +735,14 @@ function SupplierWalletWrapper({ navigation }: any) {
   return (
     <SafeScreen>
       <SupplierWalletScreen onGoBack={() => navigation.goBack()} />
+    </SafeScreen>
+  )
+}
+
+function SupplierPromoCodesWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <PromoCodesScreen onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }

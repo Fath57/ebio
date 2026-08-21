@@ -176,7 +176,8 @@
     "validations": "Validations",
     "commissions": "Commissions",
     "withdrawals": "Reversements",
-    "wallet": "Portefeuille"
+    "wallet": "Portefeuille",
+    "promoCodes": "Codes promo"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -1250,6 +1251,52 @@
       "toNumber": "Verser sur",
       "amount": "Montant (FCFA)",
       "amountHint": "Entre {{min}} et {{balance}} FCFA."
+    }
+  },
+  "promoCodes": {
+    "title": "Codes promo",
+    "supplierDescription": "Vos remises, valables uniquement sur les commandes de votre boutique",
+    "adminDescription": "Les remises de la plateforme et celles des boutiques",
+    "listTitle": "Codes",
+    "supplierHint": "La remise porte sur les articles, jamais sur la livraison, et vient de votre marge. Un code utilisé ne peut plus être supprimé, seulement désactivé.",
+    "adminHint": "Un code créé ici vaut sur toutes les boutiques : eBio compense la boutique du montant remisé, versé sur son portefeuille. Les codes des boutiques restent à leur charge — vous pouvez les désactiver.",
+    "add": "Nouveau code",
+    "empty": "Aucun code promo. Créez-en un pour animer vos ventes.",
+    "createTitle": "Nouveau code promo",
+    "editTitle": "Modifier le code",
+    "formHint": "La remise s’applique au sous-total des articles, hors frais de livraison.",
+    "platform": "Plateforme",
+    "minShort": "dès {{amount}} FCFA",
+    "untilShort": "jusqu’au {{date}}",
+    "types": {
+      "PERCENT": "Pourcentage",
+      "FIXED": "Montant fixe"
+    },
+    "columns": {
+      "code": "Code",
+      "scope": "Portée",
+      "discount": "Remise",
+      "conditions": "Conditions",
+      "uses": "Utilisations",
+      "active": "Actif"
+    },
+    "fields": {
+      "code": "Code",
+      "codeHint": "Lettres, chiffres et tirets. Les acheteurs le saisiront tel quel.",
+      "codeLocked": "Le code ne se modifie pas après création.",
+      "type": "Type de remise",
+      "percent": "Pourcentage (%)",
+      "amount": "Montant (FCFA)",
+      "maxDiscount": "Remise maximum (FCFA)",
+      "minOrder": "Minimum d’articles (FCFA)",
+      "minOrderHint": "Sous-total d’articles requis pour utiliser le code.",
+      "maxUses": "Utilisations maximum",
+      "maxUsesHint": "Budget global du code, toutes commandes confondues.",
+      "maxUsesPerUser": "Par client",
+      "startsAt": "Début (optionnel)",
+      "expiresAt": "Fin (optionnel)",
+      "expiresAtHint": "Sans dates, le code vaut immédiatement et sans limite.",
+      "unlimited": "Illimité"
     }
   }
 }

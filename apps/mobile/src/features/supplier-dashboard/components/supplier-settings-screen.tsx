@@ -4,6 +4,7 @@ import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinned from 'lucide-react-native/dist/esm/icons/map-pinned'
 import Pencil from 'lucide-react-native/dist/esm/icons/pencil'
 import Store from 'lucide-react-native/dist/esm/icons/store'
+import TicketPercent from 'lucide-react-native/dist/esm/icons/ticket-percent'
 import {
   ScrollView,
   StyleSheet,
@@ -20,6 +21,7 @@ interface SupplierSettingsScreenProps {
   onNavigateToShopProfile: () => void
   onNavigateToOpeningHours: () => void
   onNavigateToSalesPoints: () => void
+  onNavigateToPromoCodes: () => void
   onNavigateToDeliveryZones: () => void
   onNavigateToMode: () => void
 }
@@ -29,6 +31,7 @@ export function SupplierSettingsScreen({
   onNavigateToShopProfile,
   onNavigateToOpeningHours,
   onNavigateToSalesPoints,
+  onNavigateToPromoCodes,
   onNavigateToDeliveryZones,
   onNavigateToMode,
 }: SupplierSettingsScreenProps) {
@@ -75,6 +78,19 @@ export function SupplierSettingsScreen({
           <View style={styles.menuTextContainer}>
             <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Points de vente</Text>
             <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Étals, kiosques et autres lieux</Text>
+          </View>
+          <ChevronRight size={18} color={semantic.textTertiary} />
+        </TouchableOpacity>
+
+        <View style={styles.menuDivider} />
+
+        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToPromoCodes} activeOpacity={0.6}>
+          <View style={[styles.menuIcon, { backgroundColor: colors.earth[50] }]}>
+            <TicketPercent size={18} color={colors.earth[600]} />
+          </View>
+          <View style={styles.menuTextContainer}>
+            <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Codes promo</Text>
+            <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Remises sur vos produits</Text>
           </View>
           <ChevronRight size={18} color={semantic.textTertiary} />
         </TouchableOpacity>

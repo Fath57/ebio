@@ -176,7 +176,8 @@
     "validations": "Validations",
     "commissions": "Commissions",
     "withdrawals": "Payouts",
-    "wallet": "Wallet"
+    "wallet": "Wallet",
+    "promoCodes": "Promo codes"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -1250,6 +1251,52 @@
       "toNumber": "Send to",
       "amount": "Amount (FCFA)",
       "amountHint": "Between {{min}} and {{balance}} FCFA."
+    }
+  },
+  "promoCodes": {
+    "title": "Promo codes",
+    "supplierDescription": "Your discounts, valid only on your shop’s orders",
+    "adminDescription": "Platform discounts and shop discounts",
+    "listTitle": "Codes",
+    "supplierHint": "The discount applies to items, never delivery, and comes from your margin. A used code can no longer be deleted, only deactivated.",
+    "adminHint": "A code created here works on every shop: eBio pays the shop back for the discount, credited to its wallet. Shop codes stay on their own margin — you can deactivate them.",
+    "add": "New code",
+    "empty": "No promo code yet. Create one to drive sales.",
+    "createTitle": "New promo code",
+    "editTitle": "Edit code",
+    "formHint": "The discount applies to the items subtotal, delivery excluded.",
+    "platform": "Platform",
+    "minShort": "from {{amount}} FCFA",
+    "untilShort": "until {{date}}",
+    "types": {
+      "PERCENT": "Percentage",
+      "FIXED": "Fixed amount"
+    },
+    "columns": {
+      "code": "Code",
+      "scope": "Scope",
+      "discount": "Discount",
+      "conditions": "Conditions",
+      "uses": "Uses",
+      "active": "Active"
+    },
+    "fields": {
+      "code": "Code",
+      "codeHint": "Letters, digits and dashes. Buyers type it as-is.",
+      "codeLocked": "The code cannot change after creation.",
+      "type": "Discount type",
+      "percent": "Percentage (%)",
+      "amount": "Amount (FCFA)",
+      "maxDiscount": "Maximum discount (FCFA)",
+      "minOrder": "Items minimum (FCFA)",
+      "minOrderHint": "Items subtotal required to use the code.",
+      "maxUses": "Maximum uses",
+      "maxUsesHint": "Global budget across all orders.",
+      "maxUsesPerUser": "Per customer",
+      "startsAt": "Start (optional)",
+      "expiresAt": "End (optional)",
+      "expiresAtHint": "Without dates the code works immediately, indefinitely.",
+      "unlimited": "Unlimited"
     }
   }
 }
