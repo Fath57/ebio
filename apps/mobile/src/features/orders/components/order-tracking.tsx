@@ -8,6 +8,7 @@ import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
+import Star from 'lucide-react-native/dist/esm/icons/star'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
@@ -65,6 +66,7 @@ interface OrderTrackingProps {
   orderId: string
   onBack?: () => void
   onOpenChat: (supplierId: string) => void
+  onRate: (supplierId: string) => void
 }
 
 const STATUS_ORDER: OrderStatus[] = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED']
@@ -122,6 +124,7 @@ export function OrderTracking({
   orderId,
   onBack,
   onOpenChat,
+  onRate,
 }: OrderTrackingProps) {
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -545,11 +548,23 @@ export function OrderTracking({
         <View style={[styles.actionBar, { backgroundColor: semantic.bgPage, borderTopColor: semantic.borderLight, paddingBottom: tabBarHeight + spacing[3] }]}>
           {order.deliveryConfirmedByBuyer
             ? (
-                <View style={styles.confirmedBanner}>
-                  <CircleCheck size={18} color={colors.green[800]} />
-                  <Text style={styles.confirmedBannerText}>
-                    Réception confirmée. Merci !
-                  </Text>
+                <View style={styles.confirmedZone}>
+                  <View style={styles.confirmedBanner}>
+                    <CircleCheck size={18} color={colors.green[800]} />
+                    <Text style={styles.confirmedBannerText}>
+                      Réception confirmée. Merci !
+                    </Text>
+                  </View>
+                  <TouchableOpacity
+                    style={styles.rateButton}
+                    onPress={() => onRate(order.supplierId)}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel="Noter la boutique"
+                  >
+                    <Star size={16} color={colors.neutral[0]} />
+                    <Text style={styles.rateButtonText}>Noter la boutique</Text>
+                  </TouchableOpacity>
                 </View>
               )
             : (
@@ -895,6 +910,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingVertical: spacing[4],
   },
+  confirmedZone: { gap: spacing[2] },
+  rateButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    backgroundColor: colors.earth[400],
+    borderRadius: radius.pill,
+    paddingVertical: spacing[3],
+  },
+  rateButtonText: { ...typography.h3, color: colors.neutral[0] },
   confirmedBannerText: {
     color: colors.green[800],
     fontFamily: fonts.sansSb,

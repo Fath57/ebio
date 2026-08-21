@@ -21,6 +21,7 @@ import { CheckoutFlow } from '../features/cart/components/checkout-flow'
 import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
 import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
 import { ConversationList } from '../features/chat/components/conversation-list'
+import { ScreenHeader } from '../features/common/components/screen-header'
 import { useLocation } from '../features/common/location-context'
 import { HomeScreen } from '../features/home/components/home-screen'
 import { LocationPickerScreen } from '../features/map/components/location-picker-screen'
@@ -31,6 +32,7 @@ import { OrderList } from '../features/orders/components/order-list'
 import { OrderTracking } from '../features/orders/components/order-tracking'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
 import { ProfileScreen } from '../features/profile/components/profile-screen'
+import { RatingForm } from '../features/ratings/components/rating-form'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
 import { DeliveryZoneEditor } from '../features/supplier-dashboard/components/delivery-zone-editor'
@@ -462,6 +464,7 @@ function OrdersStackScreen() {
     <OrdersStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <OrdersStack.Screen name="MyOrders" component={MyOrdersWrapper} />
       <OrdersStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
+      <OrdersStack.Screen name="RateOrder" component={RateOrderWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -836,7 +839,23 @@ function OrderTrackingWrapper({ route, navigation }: any) {
       <OrderTracking
         orderId={orderId}
         onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId, undefined, orderId)}
+        onRate={supplierId => navigation.navigate('RateOrder', { supplierId, orderId })}
         onBack={() => navigation.goBack()}
+      />
+    </SafeScreen>
+  )
+}
+
+function RateOrderWrapper({ route, navigation }: any) {
+  const { supplierId, orderId } = route.params
+  return (
+    <SafeScreen>
+      <ScreenHeader title="Votre avis" onBack={() => navigation.goBack()} />
+      <RatingForm
+        supplierId={supplierId}
+        orderId={orderId}
+        transactionType="ORDER"
+        onComplete={() => navigation.goBack()}
       />
     </SafeScreen>
   )
