@@ -243,7 +243,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + spacing[12], paddingBottom: insets.bottom + spacing[8] },
+          { paddingTop: insets.top + spacing[5], paddingBottom: insets.bottom + spacing[6] },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
@@ -278,43 +278,6 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
 
         {/* Form */}
         <View style={styles.form}>
-          {/* Terms gate — required before any of the three signup paths */}
-          {(step === 'phone-input' || step === 'email-form') && (
-            <Pressable
-              style={styles.termsRow}
-              onPress={() => setAcceptedTerms(v => !v)}
-              accessibilityRole="checkbox"
-              accessibilityState={{ checked: acceptedTerms }}
-            >
-              <View style={[
-                styles.checkbox,
-                { borderColor: acceptedTerms ? colors.green[400] : semantic.borderNormal },
-                acceptedTerms && { backgroundColor: colors.green[400] },
-              ]}
-              >
-                {acceptedTerms && <Check size={13} color={colors.neutral[0]} strokeWidth={3} />}
-              </View>
-              <Text style={[styles.termsText, { color: semantic.textSecondary }]}>
-                J'accepte les
-                {' '}
-                <Text
-                  style={[styles.termsLink, { color: semantic.textPrimaryColor }]}
-                  onPress={() => Linking.openURL('https://e-bio.org/cgu')}
-                >
-                  conditions générales
-                </Text>
-                {' '}
-                et la
-                {' '}
-                <Text
-                  style={[styles.termsLink, { color: semantic.textPrimaryColor }]}
-                  onPress={() => Linking.openURL('https://e-bio.org/confidentialite')}
-                >
-                  politique de confidentialité
-                </Text>
-              </Text>
-            </Pressable>
-          )}
           {/* ─── Phone input step ─── */}
           {step === 'phone-input' && (
             <>
@@ -550,6 +513,44 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
             </>
           )}
 
+          {/* Terms gate — required before any of the three signup paths */}
+          {(step === 'phone-input' || step === 'email-form') && (
+            <Pressable
+              style={styles.termsRow}
+              onPress={() => setAcceptedTerms(v => !v)}
+              accessibilityRole="checkbox"
+              accessibilityState={{ checked: acceptedTerms }}
+            >
+              <View style={[
+                styles.checkbox,
+                { borderColor: acceptedTerms ? colors.green[400] : semantic.borderNormal },
+                acceptedTerms && { backgroundColor: colors.green[400] },
+              ]}
+              >
+                {acceptedTerms && <Check size={13} color={colors.neutral[0]} strokeWidth={3} />}
+              </View>
+              <Text style={[styles.termsText, { color: semantic.textSecondary }]}>
+                J'accepte les
+                {' '}
+                <Text
+                  style={[styles.termsLink, { color: semantic.textPrimaryColor }]}
+                  onPress={() => Linking.openURL('https://e-bio.org/cgu')}
+                >
+                  conditions générales
+                </Text>
+                {' '}
+                et la
+                {' '}
+                <Text
+                  style={[styles.termsLink, { color: semantic.textPrimaryColor }]}
+                  onPress={() => Linking.openURL('https://e-bio.org/confidentialite')}
+                >
+                  politique de confidentialité
+                </Text>
+              </Text>
+            </Pressable>
+          )}
+
           {/* Toggle to login */}
           <View style={styles.toggleRow}>
             <Text style={[styles.toggleLabel, { color: semantic.textSecondary }]}>
@@ -572,7 +573,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing[3],
-    marginBottom: spacing[4],
+    marginTop: spacing[5],
   },
   checkbox: {
     width: 20,
@@ -589,11 +590,11 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: spacing[6] },
 
-  brandContainer: { alignItems: 'center', marginBottom: spacing[8] },
-  logo: { width: 120, height: 78 },
+  brandContainer: { alignItems: 'center', marginBottom: spacing[5] },
+  logo: { width: 96, height: 62 },
 
   title: { ...typography.h1, marginBottom: spacing[1] },
-  subtitle: { ...typography.bodyL, marginBottom: spacing[6] },
+  subtitle: { ...typography.bodyL, marginBottom: spacing[5] },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
   dividerLine: { flex: 1, height: 1 },
