@@ -34,76 +34,6 @@ export type CompleteUpload = {
 };
 
 /**
- * CreatePaymentMethodInput
- *
- * Input for creating a payment method
- */
-export type CreatePaymentMethodInput = {
-  name: string;
-  code: string;
-  type: "mobile" | "card";
-  provider: "fedapay" | "stripe" | "pawerpayer";
-  countryCode: string;
-  commission: number;
-  priority: number;
-  active: boolean;
-  useFedapayCheckout: boolean;
-  supportsPayout: boolean;
-  supportsRefund: boolean;
-};
-
-/**
- * UpdatePaymentMethodInput
- *
- * Input for updating a payment method
- */
-export type UpdatePaymentMethodInput = {
-  name?: string;
-  code?: string;
-  type?: "mobile" | "card";
-  provider?: "fedapay" | "stripe" | "pawerpayer";
-  countryCode?: string;
-  commission?: number;
-  priority?: number;
-  active?: boolean;
-  useFedapayCheckout?: boolean;
-  supportsPayout?: boolean;
-  supportsRefund?: boolean;
-  icon?: string;
-};
-
-/**
- * InitiatePayment
- *
- * Input for initiating a no-redirect (USSD) payment
- */
-export type InitiatePayment = {
-  orderId: string;
-  paymentMethodId: string;
-  phoneNumber?: string;
-};
-
-/**
- * InitiateCheckoutInput
- *
- * Input for creating a pending payment before opening Checkout.js
- */
-export type InitiateCheckoutInput = {
-  orderId: string;
-};
-
-/**
- * VerifyCheckoutInput
- *
- * Input for verifying a payment made via Checkout.js
- */
-export type VerifyCheckoutInput = {
-  orderId: string;
-  paymentId: string;
-  fedapayTransactionId: string;
-};
-
-/**
  * UpdateUser
  *
  * Update user profile
@@ -220,6 +150,125 @@ export type UpdateOpeningHours = {
  */
 export type UpdateMode = {
   mode: "CONTACT" | "ORDER";
+};
+
+/**
+ * CreatePayoutNumber
+ *
+ * Mobile Money number to receive withdrawals; operator is derived from the prefix
+ */
+export type CreatePayoutNumber = {
+  phoneNumber: string;
+  holderName: string;
+};
+
+/**
+ * CreateWithdrawal
+ *
+ * Withdrawal request; funds are reserved immediately
+ */
+export type CreateWithdrawal = {
+  payoutNumberId: string;
+  amount: number;
+};
+
+/**
+ * AdminPayoutNumberAction
+ *
+ * Validate or reject a supplier payout number
+ */
+export type AdminPayoutNumberAction = {
+  action: "validate" | "reject";
+  rejectionReason?: string;
+};
+
+/**
+ * AdminWithdrawalAction
+ *
+ * Approve triggers the FedaPay payout; reject re-credits the wallet
+ */
+export type AdminWithdrawalAction = {
+  action: "approve" | "reject";
+  rejectionReason?: string;
+};
+
+/**
+ * WalletTopup
+ *
+ * Amount to add to the wallet, paid through FedaPay
+ */
+export type WalletTopup = {
+  amount: number;
+};
+
+/**
+ * CreatePaymentMethodInput
+ *
+ * Input for creating a payment method
+ */
+export type CreatePaymentMethodInput = {
+  name: string;
+  code: string;
+  type: "mobile" | "card";
+  provider: "fedapay" | "stripe" | "pawerpayer";
+  countryCode: string;
+  commission: number;
+  priority: number;
+  active: boolean;
+  useFedapayCheckout: boolean;
+  supportsPayout: boolean;
+  supportsRefund: boolean;
+};
+
+/**
+ * UpdatePaymentMethodInput
+ *
+ * Input for updating a payment method
+ */
+export type UpdatePaymentMethodInput = {
+  name?: string;
+  code?: string;
+  type?: "mobile" | "card";
+  provider?: "fedapay" | "stripe" | "pawerpayer";
+  countryCode?: string;
+  commission?: number;
+  priority?: number;
+  active?: boolean;
+  useFedapayCheckout?: boolean;
+  supportsPayout?: boolean;
+  supportsRefund?: boolean;
+  icon?: string;
+};
+
+/**
+ * InitiatePayment
+ *
+ * Input for initiating a no-redirect (USSD) payment
+ */
+export type InitiatePayment = {
+  orderId: string;
+  paymentMethodId: string;
+  phoneNumber?: string;
+};
+
+/**
+ * InitiateCheckoutInput
+ *
+ * Input for creating a pending payment before opening Checkout.js
+ */
+export type InitiateCheckoutInput = {
+  orderId: string;
+};
+
+/**
+ * VerifyCheckoutInput
+ *
+ * Input for verifying a payment made via Checkout.js
+ */
+export type VerifyCheckoutInput = {
+  orderId: string;
+  paymentId: string;
+  fedapayTransactionId: string;
 };
 
 /**
@@ -1468,6 +1517,7 @@ export type PickupMode = (typeof PickupMode)[keyof typeof PickupMode];
 export const PaymentMethod = {
   FEDAPAY: "FEDAPAY",
   CASH_ON_DELIVERY: "CASH_ON_DELIVERY",
+  WALLET: "WALLET",
 } as const;
 
 /**
@@ -4249,6 +4299,224 @@ export type NotificationsControllerSendTestNotificationResponses = {
   201: unknown;
 };
 
+export type WalletControllerGetMyWalletData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/wallet/me";
+};
+
+export type WalletControllerGetMyWalletResponses = {
+  200: unknown;
+};
+
+export type WalletControllerTopupData = {
+  /**
+   * WalletTopup
+   *
+   * Amount to add to the wallet, paid through FedaPay
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/wallet/topup";
+};
+
+export type WalletControllerTopupResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerGetWalletData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/suppliers/me/wallet";
+};
+
+export type SupplierWalletControllerGetWalletResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerListNumbersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/wallet/payout-numbers";
+};
+
+export type SupplierWalletControllerListNumbersResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerAddNumberData = {
+  /**
+   * CreatePayoutNumber
+   *
+   * Mobile Money number to receive withdrawals; operator is derived from the prefix
+   */
+  body: {
+    phoneNumber: string;
+    holderName: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/wallet/payout-numbers";
+};
+
+export type SupplierWalletControllerAddNumberResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerRemoveNumberData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/wallet/payout-numbers/{id}";
+};
+
+export type SupplierWalletControllerRemoveNumberResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerListWithdrawalsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/suppliers/me/wallet/withdrawals";
+};
+
+export type SupplierWalletControllerListWithdrawalsResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerRequestWithdrawalData = {
+  /**
+   * CreateWithdrawal
+   *
+   * Withdrawal request; funds are reserved immediately
+   */
+  body: {
+    payoutNumberId: string;
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/wallet/withdrawals";
+};
+
+export type SupplierWalletControllerRequestWithdrawalResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerCancelWithdrawalData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/wallet/withdrawals/{id}/cancel";
+};
+
+export type SupplierWalletControllerCancelWithdrawalResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerListNumbersData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/payout-numbers";
+};
+
+export type WalletAdminControllerListNumbersResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerActOnNumberData = {
+  /**
+   * AdminPayoutNumberAction
+   *
+   * Validate or reject a supplier payout number
+   */
+  body: {
+    action: "validate" | "reject";
+    rejectionReason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payout-numbers/{id}";
+};
+
+export type WalletAdminControllerActOnNumberResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerListWithdrawalsData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/withdrawals";
+};
+
+export type WalletAdminControllerListWithdrawalsResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerActOnWithdrawalData = {
+  /**
+   * AdminWithdrawalAction
+   *
+   * Approve triggers the FedaPay payout; reject re-credits the wallet
+   */
+  body: {
+    action: "approve" | "reject";
+    rejectionReason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/withdrawals/{id}";
+};
+
+export type WalletAdminControllerActOnWithdrawalResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerWalletsOverviewData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/wallets";
+};
+
+export type WalletAdminControllerWalletsOverviewResponses = {
+  200: unknown;
+};
+
 export type ProductsControllerFindBySupplierData = {
   body?: never;
   path: {
@@ -4637,7 +4905,7 @@ export type OrdersControllerCreateData = {
      *
      * Payment method for the order
      */
-    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY";
+    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
     deliveryAddress?: string;
     deliverySlot?: string;
     items: Array<{

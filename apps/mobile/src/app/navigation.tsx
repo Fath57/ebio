@@ -45,7 +45,9 @@ import { SalesPointsScreen } from '../features/supplier-dashboard/components/sal
 import { ShopProfileEditor } from '../features/supplier-dashboard/components/shop-profile-editor'
 import { SupplierReviewsScreen } from '../features/supplier-dashboard/components/supplier-reviews-screen'
 import { SupplierSettingsScreen } from '../features/supplier-dashboard/components/supplier-settings-screen'
+import { SupplierWalletScreen } from '../features/supplier-dashboard/components/supplier-wallet-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
+import { WalletScreen } from '../features/wallet/components/wallet-screen'
 import { useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
@@ -480,6 +482,8 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="SupplierReviews" component={SupplierReviewsWrapper} />
       <ProfileStack.Screen name="SupplierOpeningHours" component={SupplierOpeningHoursWrapper} />
       <ProfileStack.Screen name="SupplierSalesPoints" component={SupplierSalesPointsWrapper} />
+      <ProfileStack.Screen name="SupplierWallet" component={SupplierWalletWrapper} />
+      <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <ProfileStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
       <ProfileStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
       <ProfileStack.Screen name="SupplierRegistration" component={SupplierRegistrationWrapper} />
@@ -505,6 +509,7 @@ function ProfileHomeWrapper({ navigation }: any) {
     <SafeScreen>
       <ProfileScreen
         onNavigateToOrders={() => navigation.navigate('Commandes', { screen: 'MyOrders' })}
+        onNavigateToWallet={() => navigation.navigate('BuyerWallet')}
         onNavigateToNotifications={() => navigation.navigate('Notifications')}
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
@@ -545,6 +550,7 @@ function SupplierDashboardWrapper({ navigation }: any) {
         onNavigateToOrders={() => navigation.navigate('SupplierOrders')}
         onNavigateToSettings={() => navigation.navigate('SupplierSettings')}
         onNavigateToReviews={() => navigation.navigate('SupplierReviews')}
+        onNavigateToWallet={() => navigation.navigate('SupplierWallet')}
         onSwitchToBuyer={() => navigation.popToTop()}
       />
     </SafeScreen>
@@ -718,6 +724,22 @@ function SupplierSalesPointsWrapper({ navigation }: any) {
   return (
     <SafeScreen>
       <SalesPointsScreen onGoBack={() => navigation.goBack()} />
+    </SafeScreen>
+  )
+}
+
+function SupplierWalletWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <SupplierWalletScreen onGoBack={() => navigation.goBack()} />
+    </SafeScreen>
+  )
+}
+
+function BuyerWalletWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <WalletScreen onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }

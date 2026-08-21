@@ -3,6 +3,7 @@ import { Navigation } from '@boilerstone/ui/components/layout/Navigation'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import {
+  Banknote,
   BarChart3,
   Bell,
   CheckCircle,
@@ -25,6 +26,7 @@ import {
   Store,
   Sun,
   Users,
+  Wallet,
 } from 'lucide-react'
 import { useRef } from 'react'
 import { useTranslation } from 'react-i18next'
@@ -91,6 +93,7 @@ export default function AppLayout() {
     { to: '/catalogue', label: t('nav.catalogue'), icon: <Package className="h-4 w-4" /> },
     { to: '/commandes', label: t('nav.orders'), icon: <ShoppingCart className="h-4 w-4" /> },
     { to: '/analytics', label: t('nav.analytics'), icon: <BarChart3 className="h-4 w-4" /> },
+    { to: '/portefeuille', label: t('nav.wallet'), icon: <Wallet className="h-4 w-4" /> },
     { to: '/notifications', label: t('nav.notifications'), icon: <Bell className="h-4 w-4" /> },
     { to: '/parametres', label: t('nav.settings'), icon: <Settings className="h-4 w-4" /> },
   ]
@@ -111,6 +114,7 @@ export default function AppLayout() {
         { to: '/admin/commandes', label: t('nav.orders'), icon: <ClipboardList className="h-4 w-4" /> },
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
         { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" /> },
+        { to: '/admin/reversements', label: t('nav.withdrawals'), icon: <Banknote className="h-4 w-4" /> },
       ],
     },
     {

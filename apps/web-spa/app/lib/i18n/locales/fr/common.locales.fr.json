@@ -174,7 +174,9 @@
     "transactions": "Transactions",
     "users": "Utilisateurs",
     "validations": "Validations",
-    "commissions": "Commissions"
+    "commissions": "Commissions",
+    "withdrawals": "Reversements",
+    "wallet": "Portefeuille"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -1129,6 +1131,43 @@
         "rate": "Taux",
         "commission": "Commission"
       }
+    },
+    "withdrawals": {
+      "title": "Reversements",
+      "description": "L’argent des boutiques : numéros à valider, demandes de reversement, soldes",
+      "totalOwed": "Dû aux boutiques",
+      "totalOwedHint": "Somme des soldes positifs de tous les portefeuilles",
+      "totalDebt": "Dettes envers eBio",
+      "totalDebtHint": "Commissions sur ventes en espèces non encore absorbées",
+      "numbersTitle": "Numéros à valider",
+      "numbersHint": "Vérifiez que le numéro Mobile Money appartient bien au titulaire de la boutique avant de valider. Un numéro validé peut recevoir des reversements.",
+      "numbersEmpty": "Aucun numéro en attente de validation",
+      "requestsTitle": "Demandes de reversement",
+      "requestsHint": "Approuver déclenche immédiatement le versement Mobile Money via FedaPay. Le montant a déjà été réservé sur le portefeuille de la boutique.",
+      "requestsEmpty": "Aucune demande de reversement",
+      "validate": "Valider",
+      "reject": "Refuser",
+      "approve": "Approuver et verser",
+      "rejectTitle": "Refuser",
+      "rejectBody": "Le refus de « {{label}} » sera notifié à la boutique avec votre motif. Pour une demande de reversement, le solde est rétabli automatiquement.",
+      "rejectPlaceholder": "Motif communiqué à la boutique…",
+      "status": {
+        "PENDING": "En attente",
+        "PROCESSING": "Versement en cours",
+        "PAID": "Versée",
+        "FAILED": "Échouée",
+        "REJECTED": "Refusée",
+        "CANCELLED": "Annulée"
+      },
+      "columns": {
+        "shop": "Boutique",
+        "number": "Numéro",
+        "operator": "Opérateur",
+        "holder": "Titulaire",
+        "date": "Date",
+        "amount": "Montant",
+        "status": "Statut"
+      }
     }
   },
   "errorCodes": {
@@ -1147,6 +1186,58 @@
       "description": "Déplacez et zoomez pour choisir la zone visible. Le cadre respecte le format 2:1 du carrousel.",
       "zoom": "Zoom",
       "confirm": "Valider le recadrage"
+    }
+  },
+  "wallet": {
+    "title": "Portefeuille boutique",
+    "description": "Vos ventes créditées ici, à reverser sur votre Mobile Money quand vous voulez",
+    "balance": "Solde disponible",
+    "negativeHint": "Solde négatif : commissions sur ventes en espèces, absorbées par vos prochaines ventes en ligne.",
+    "withdraw": "Demander un reversement",
+    "withdrawHint": "Minimum {{min}} FCFA par demande, sans frais. Le montant est réservé dès la demande.",
+    "activeWithdrawalHint": "Une demande est déjà en cours : attendez son traitement avant d’en faire une autre.",
+    "noValidatedNumberHint": "Ajoutez d’abord un numéro Mobile Money et attendez sa validation par eBio.",
+    "numbersTitle": "Mes numéros de reversement",
+    "numbersHint": "Chaque numéro est vérifié par eBio avant de pouvoir recevoir vos reversements.",
+    "numbersEmpty": "Aucun numéro enregistré",
+    "addNumber": "Ajouter un numéro",
+    "addNumberTitle": "Nouveau numéro de reversement",
+    "addNumberHint": "L’opérateur est détecté automatiquement d’après le numéro. eBio vérifie ensuite que le numéro vous appartient.",
+    "withdrawalsTitle": "Mes demandes de reversement",
+    "movementsTitle": "Historique du portefeuille",
+    "movementsEmpty": "Aucun mouvement pour le moment. Vos ventes livrées apparaîtront ici.",
+    "withdrawTitle": "Demander un reversement",
+    "withdrawBody": "Le montant est réservé immédiatement et versé sur votre Mobile Money après approbation par eBio.",
+    "confirmWithdraw": "Confirmer la demande",
+    "numberStatus": {
+      "PENDING": "En vérification",
+      "VALIDATED": "Validé",
+      "REJECTED": "Refusé"
+    },
+    "withdrawalStatus": {
+      "PENDING": "En attente",
+      "PROCESSING": "Versement en cours",
+      "PAID": "Versée",
+      "FAILED": "Échouée",
+      "REJECTED": "Refusée",
+      "CANCELLED": "Annulée"
+    },
+    "columns": {
+      "date": "Date",
+      "number": "Numéro",
+      "amount": "Montant",
+      "status": "Statut",
+      "label": "Libellé",
+      "balance": "Solde"
+    },
+    "fields": {
+      "phoneNumber": "Numéro Mobile Money",
+      "phoneNumberHint": "10 chiffres, format béninois (MTN, Moov ou Celtiis).",
+      "holderName": "Nom du titulaire",
+      "holderNameHint": "Tel qu’enregistré chez l’opérateur — il sert à la vérification.",
+      "toNumber": "Verser sur",
+      "amount": "Montant (FCFA)",
+      "amountHint": "Entre {{min}} et {{balance}} FCFA."
     }
   }
 }

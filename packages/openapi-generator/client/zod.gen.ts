@@ -25,6 +25,103 @@ export const zCompleteUpload = z.object({
 });
 
 /**
+ * UpdateUser
+ *
+ * Update user profile
+ */
+export const zUpdateUser = z.object({
+  name: z.optional(z.string().min(2).max(100)),
+  email: z.optional(
+    z
+      .email()
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+  ),
+  phone: z.optional(z.string()),
+  image: z.optional(z.url()),
+  deviceId: z.optional(z.string()),
+});
+
+/**
+ * DeliveryZone
+ *
+ * Delivery zone defined by a polygon with fee and estimated time
+ */
+export const zDeliveryZone = z.object({
+  polygon: z
+    .array(
+      z.object({
+        latitude: z.number().gte(-90).lte(90),
+        longitude: z.number().gte(-180).lte(180),
+      }),
+    )
+    .min(3),
+  deliveryFee: z.number().gte(0),
+  estimatedMinutes: z.int().gte(0).lte(9007199254740991),
+});
+
+/**
+ * UpdateMode
+ */
+export const zUpdateMode = z.object({
+  mode: z.enum(["CONTACT", "ORDER"]),
+});
+
+/**
+ * CreatePayoutNumber
+ *
+ * Mobile Money number to receive withdrawals; operator is derived from the prefix
+ */
+export const zCreatePayoutNumber = z.object({
+  phoneNumber: z.string().min(8).max(20),
+  holderName: z.string().min(2).max(100),
+});
+
+/**
+ * CreateWithdrawal
+ *
+ * Withdrawal request; funds are reserved immediately
+ */
+export const zCreateWithdrawal = z.object({
+  payoutNumberId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  amount: z.int().gte(1000).lte(9007199254740991),
+});
+
+/**
+ * AdminPayoutNumberAction
+ *
+ * Validate or reject a supplier payout number
+ */
+export const zAdminPayoutNumberAction = z.object({
+  action: z.enum(["validate", "reject"]),
+  rejectionReason: z.optional(z.string().min(3).max(255)),
+});
+
+/**
+ * AdminWithdrawalAction
+ *
+ * Approve triggers the FedaPay payout; reject re-credits the wallet
+ */
+export const zAdminWithdrawalAction = z.object({
+  action: z.enum(["approve", "reject"]),
+  rejectionReason: z.optional(z.string().min(3).max(255)),
+});
+
+/**
+ * WalletTopup
+ *
+ * Amount to add to the wallet, paid through FedaPay
+ */
+export const zWalletTopup = z.object({
+  amount: z.int().gte(100).lte(1000000),
+});
+
+/**
  * CreatePaymentMethodInput
  *
  * Input for creating a payment method
@@ -112,50 +209,6 @@ export const zVerifyCheckoutInput = z.object({
       /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
     ),
   fedapayTransactionId: z.string().min(1),
-});
-
-/**
- * UpdateUser
- *
- * Update user profile
- */
-export const zUpdateUser = z.object({
-  name: z.optional(z.string().min(2).max(100)),
-  email: z.optional(
-    z
-      .email()
-      .regex(
-        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
-      ),
-  ),
-  phone: z.optional(z.string()),
-  image: z.optional(z.url()),
-  deviceId: z.optional(z.string()),
-});
-
-/**
- * DeliveryZone
- *
- * Delivery zone defined by a polygon with fee and estimated time
- */
-export const zDeliveryZone = z.object({
-  polygon: z
-    .array(
-      z.object({
-        latitude: z.number().gte(-90).lte(90),
-        longitude: z.number().gte(-180).lte(180),
-      }),
-    )
-    .min(3),
-  deliveryFee: z.number().gte(0),
-  estimatedMinutes: z.int().gte(0).lte(9007199254740991),
-});
-
-/**
- * UpdateMode
- */
-export const zUpdateMode = z.object({
-  mode: z.enum(["CONTACT", "ORDER"]),
 });
 
 /**
@@ -1381,7 +1434,7 @@ export const zPickupMode = z.enum(["ON_SITE", "DELIVERY"]);
  *
  * Payment method for the order
  */
-export const zPaymentMethod = z.enum(["FEDAPAY", "CASH_ON_DELIVERY"]);
+export const zPaymentMethod = z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]);
 
 /**
  * OrderItemInput
@@ -3615,6 +3668,133 @@ export const zNotificationsControllerSendTestNotificationData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zWalletControllerGetMyWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(1000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerGetWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zSupplierWalletControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerAddNumberData = z.object({
+  body: z.object({
+    phoneNumber: z.string().min(8).max(20),
+    holderName: z.string().min(2).max(100),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerRemoveNumberData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zSupplierWalletControllerRequestWithdrawalData = z.object({
+  body: z.object({
+    payoutNumberId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    amount: z.int().gte(1000).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerCancelWithdrawalData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerActOnNumberData = z.object({
+  body: z.object({
+    action: z.enum(["validate", "reject"]),
+    rejectionReason: z.optional(z.string().min(3).max(255)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerActOnWithdrawalData = z.object({
+  body: z.object({
+    action: z.enum(["approve", "reject"]),
+    rejectionReason: z.optional(z.string().min(3).max(255)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerWalletsOverviewData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zProductsControllerFindBySupplierData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -3875,7 +4055,7 @@ export const zOrdersControllerCreateData = z.object({
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
     pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
-    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY"]),
+    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
     deliveryAddress: z.optional(z.string().min(5).max(500)),
     deliverySlot: z.optional(z.string().max(200)),
     items: z

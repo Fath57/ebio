@@ -5,6 +5,7 @@ import Settings from 'lucide-react-native/dist/esm/icons/settings'
 import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up'
+import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
@@ -36,10 +37,11 @@ interface DashboardScreenProps {
   onNavigateToOrders: () => void
   onNavigateToSettings: () => void
   onNavigateToReviews: () => void
+  onNavigateToWallet: () => void
   onSwitchToBuyer: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onSwitchToBuyer }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onSwitchToBuyer }: DashboardScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
@@ -153,9 +155,14 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         </View>
       </View>
 
-      {/* Earnings breakdown: gross, eBio commission, net — last 30 days */}
+      {/* Earnings breakdown: gross, eBio commission, net — last 30 days.
+          Tapping opens the shop wallet where the money actually lives. */}
       {(data?.revenue ?? 0) > 0 && (
-        <View style={[styles.earningsCard, { backgroundColor: semantic.bgCard }]}>
+        <TouchableOpacity
+          style={[styles.earningsCard, { backgroundColor: semantic.bgCard }]}
+          onPress={onNavigateToWallet}
+          activeOpacity={0.7}
+        >
           <View style={styles.earningsRow}>
             <Text style={[styles.earningsLabel, { color: semantic.textSecondary }]}>
               Ventes livrées (30 j)
@@ -187,7 +194,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
               FCFA
             </Text>
           </View>
-        </View>
+        </TouchableOpacity>
       )}
 
       {/* Pending orders */}
@@ -220,6 +227,13 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
       </Text>
 
       <View style={[styles.actionGroup, { backgroundColor: semantic.bgCard }]}>
+        <TouchableOpacity style={styles.actionItem} onPress={onNavigateToWallet} activeOpacity={0.6}>
+          <View style={[styles.actionIcon, { backgroundColor: colors.green[50] }]}>
+            <WalletIcon size={18} color={colors.green[600]} />
+          </View>
+          <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Mon portefeuille</Text>
+        </TouchableOpacity>
+
         <TouchableOpacity style={styles.actionItem} onPress={onNavigateToProducts} activeOpacity={0.6}>
           <View style={[styles.actionIcon, { backgroundColor: colors.green[50] }]}>
             <Package size={18} color={colors.green[600]} />

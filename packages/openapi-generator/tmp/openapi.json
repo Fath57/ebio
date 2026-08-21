@@ -4886,6 +4886,481 @@
         }
       }
     },
+    "/api/wallet/me": {
+      "get": {
+        "operationId": "WalletController_getMyWallet",
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/wallet/topup": {
+      "post": {
+        "operationId": "WalletController_topup",
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Amount to add to the wallet, paid through FedaPay",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "WalletTopup",
+                "description": "Amount to add to the wallet, paid through FedaPay"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet": {
+      "get": {
+        "operationId": "SupplierWalletController_getWallet",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/payout-numbers": {
+      "get": {
+        "operationId": "SupplierWalletController_listNumbers",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "SupplierWalletController_addNumber",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "holderName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "phoneNumber",
+                  "holderName"
+                ],
+                "additionalProperties": false,
+                "title": "CreatePayoutNumber",
+                "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/payout-numbers/{id}": {
+      "delete": {
+        "operationId": "SupplierWalletController_removeNumber",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/withdrawals": {
+      "get": {
+        "operationId": "SupplierWalletController_listWithdrawals",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "SupplierWalletController_requestWithdrawal",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Withdrawal request; funds are reserved immediately",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payoutNumberId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "payoutNumberId",
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "CreateWithdrawal",
+                "description": "Withdrawal request; funds are reserved immediately"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/withdrawals/{id}/cancel": {
+      "patch": {
+        "operationId": "SupplierWalletController_cancelWithdrawal",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/payout-numbers": {
+      "get": {
+        "operationId": "WalletAdminController_listNumbers",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/payout-numbers/{id}": {
+      "patch": {
+        "operationId": "WalletAdminController_actOnNumber",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Validate or reject a supplier payout number",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "validate",
+                      "reject"
+                    ]
+                  },
+                  "rejectionReason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false,
+                "title": "AdminPayoutNumberAction",
+                "description": "Validate or reject a supplier payout number"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/withdrawals": {
+      "get": {
+        "operationId": "WalletAdminController_listWithdrawals",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/withdrawals/{id}": {
+      "patch": {
+        "operationId": "WalletAdminController_actOnWithdrawal",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Approve triggers the FedaPay payout; reject re-credits the wallet",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject"
+                    ]
+                  },
+                  "rejectionReason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false,
+                "title": "AdminWithdrawalAction",
+                "description": "Approve triggers the FedaPay payout; reject re-credits the wallet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/wallets": {
+      "get": {
+        "operationId": "WalletAdminController_walletsOverview",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/{supplierId}/products": {
       "get": {
         "operationId": "ProductsController_findBySupplier",
@@ -5749,7 +6224,8 @@
                     "type": "string",
                     "enum": [
                       "FEDAPAY",
-                      "CASH_ON_DELIVERY"
+                      "CASH_ON_DELIVERY",
+                      "WALLET"
                     ],
                     "title": "PaymentMethod",
                     "description": "Payment method for the order"
@@ -8867,218 +9343,6 @@
         "title": "CompleteUpload",
         "description": "Finalise un upload multipart et déclenche l'optimisation"
       },
-      "CreatePaymentMethodInput": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "mobile",
-              "card"
-            ]
-          },
-          "provider": {
-            "type": "string",
-            "enum": [
-              "fedapay",
-              "stripe",
-              "pawerpayer"
-            ]
-          },
-          "countryCode": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 3
-          },
-          "commission": {
-            "default": 0,
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "priority": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "active": {
-            "default": true,
-            "type": "boolean"
-          },
-          "useFedapayCheckout": {
-            "default": false,
-            "type": "boolean"
-          },
-          "supportsPayout": {
-            "default": false,
-            "type": "boolean"
-          },
-          "supportsRefund": {
-            "default": false,
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "name",
-          "code",
-          "type",
-          "provider",
-          "countryCode",
-          "commission",
-          "priority",
-          "active",
-          "useFedapayCheckout",
-          "supportsPayout",
-          "supportsRefund"
-        ],
-        "additionalProperties": false,
-        "title": "CreatePaymentMethodInput",
-        "description": "Input for creating a payment method"
-      },
-      "UpdatePaymentMethodInput": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "mobile",
-              "card"
-            ]
-          },
-          "provider": {
-            "type": "string",
-            "enum": [
-              "fedapay",
-              "stripe",
-              "pawerpayer"
-            ]
-          },
-          "countryCode": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 3
-          },
-          "commission": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "priority": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "useFedapayCheckout": {
-            "type": "boolean"
-          },
-          "supportsPayout": {
-            "type": "boolean"
-          },
-          "supportsRefund": {
-            "type": "boolean"
-          },
-          "icon": {
-            "type": "string",
-            "maxLength": 500
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdatePaymentMethodInput",
-        "description": "Input for updating a payment method"
-      },
-      "InitiatePayment": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "paymentMethodId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "phoneNumber": {
-            "type": "string",
-            "minLength": 8
-          }
-        },
-        "required": [
-          "orderId",
-          "paymentMethodId"
-        ],
-        "additionalProperties": false,
-        "title": "InitiatePayment",
-        "description": "Input for initiating a no-redirect (USSD) payment"
-      },
-      "InitiateCheckoutInput": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          }
-        },
-        "required": [
-          "orderId"
-        ],
-        "additionalProperties": false,
-        "title": "InitiateCheckoutInput",
-        "description": "Input for creating a pending payment before opening Checkout.js"
-      },
-      "VerifyCheckoutInput": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "paymentId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "fedapayTransactionId": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "orderId",
-          "paymentId",
-          "fedapayTransactionId"
-        ],
-        "additionalProperties": false,
-        "title": "VerifyCheckoutInput",
-        "description": "Input for verifying a payment made via Checkout.js"
-      },
       "UpdateUser": {
         "type": "object",
         "properties": {
@@ -9454,6 +9718,324 @@
         ],
         "additionalProperties": false,
         "title": "UpdateMode"
+      },
+      "CreatePayoutNumber": {
+        "type": "object",
+        "properties": {
+          "phoneNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "holderName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          }
+        },
+        "required": [
+          "phoneNumber",
+          "holderName"
+        ],
+        "additionalProperties": false,
+        "title": "CreatePayoutNumber",
+        "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix"
+      },
+      "CreateWithdrawal": {
+        "type": "object",
+        "properties": {
+          "payoutNumberId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "amount": {
+            "type": "integer",
+            "minimum": 1000,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "payoutNumberId",
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "CreateWithdrawal",
+        "description": "Withdrawal request; funds are reserved immediately"
+      },
+      "AdminPayoutNumberAction": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "validate",
+              "reject"
+            ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "title": "AdminPayoutNumberAction",
+        "description": "Validate or reject a supplier payout number"
+      },
+      "AdminWithdrawalAction": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject"
+            ]
+          },
+          "rejectionReason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "title": "AdminWithdrawalAction",
+        "description": "Approve triggers the FedaPay payout; reject re-credits the wallet"
+      },
+      "WalletTopup": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "WalletTopup",
+        "description": "Amount to add to the wallet, paid through FedaPay"
+      },
+      "CreatePaymentMethodInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3
+          },
+          "commission": {
+            "default": 0,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "priority": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "default": true,
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "default": false,
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "default": false,
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "type",
+          "provider",
+          "countryCode",
+          "commission",
+          "priority",
+          "active",
+          "useFedapayCheckout",
+          "supportsPayout",
+          "supportsRefund"
+        ],
+        "additionalProperties": false,
+        "title": "CreatePaymentMethodInput",
+        "description": "Input for creating a payment method"
+      },
+      "UpdatePaymentMethodInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3
+          },
+          "commission": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdatePaymentMethodInput",
+        "description": "Input for updating a payment method"
+      },
+      "InitiatePayment": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "paymentMethodId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "orderId",
+          "paymentMethodId"
+        ],
+        "additionalProperties": false,
+        "title": "InitiatePayment",
+        "description": "Input for initiating a no-redirect (USSD) payment"
+      },
+      "InitiateCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "orderId"
+        ],
+        "additionalProperties": false,
+        "title": "InitiateCheckoutInput",
+        "description": "Input for creating a pending payment before opening Checkout.js"
+      },
+      "VerifyCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "fedapayTransactionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "orderId",
+          "paymentId",
+          "fedapayTransactionId"
+        ],
+        "additionalProperties": false,
+        "title": "VerifyCheckoutInput",
+        "description": "Input for verifying a payment made via Checkout.js"
       },
       "CreateOrder": {
         "type": "object",
@@ -12523,7 +13105,8 @@
         "type": "string",
         "enum": [
           "FEDAPAY",
-          "CASH_ON_DELIVERY"
+          "CASH_ON_DELIVERY",
+          "WALLET"
         ],
         "title": "PaymentMethod",
         "description": "Payment method for the order"

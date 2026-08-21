@@ -358,6 +358,20 @@ import type {
   SuppliersControllerUpdateModeResponses,
   SuppliersControllerUpdateOpeningHoursData,
   SuppliersControllerUpdateOpeningHoursResponses,
+  SupplierWalletControllerAddNumberData,
+  SupplierWalletControllerAddNumberResponses,
+  SupplierWalletControllerCancelWithdrawalData,
+  SupplierWalletControllerCancelWithdrawalResponses,
+  SupplierWalletControllerGetWalletData,
+  SupplierWalletControllerGetWalletResponses,
+  SupplierWalletControllerListNumbersData,
+  SupplierWalletControllerListNumbersResponses,
+  SupplierWalletControllerListWithdrawalsData,
+  SupplierWalletControllerListWithdrawalsResponses,
+  SupplierWalletControllerRemoveNumberData,
+  SupplierWalletControllerRemoveNumberResponses,
+  SupplierWalletControllerRequestWithdrawalData,
+  SupplierWalletControllerRequestWithdrawalResponses,
   TrainingControllerCompleteModuleData,
   TrainingControllerCompleteModuleResponses,
   TrainingControllerGetDownloadUrlData,
@@ -372,6 +386,20 @@ import type {
   UsersControllerGetMeResponses,
   UsersControllerUpdateMeData,
   UsersControllerUpdateMeResponses,
+  WalletAdminControllerActOnNumberData,
+  WalletAdminControllerActOnNumberResponses,
+  WalletAdminControllerActOnWithdrawalData,
+  WalletAdminControllerActOnWithdrawalResponses,
+  WalletAdminControllerListNumbersData,
+  WalletAdminControllerListNumbersResponses,
+  WalletAdminControllerListWithdrawalsData,
+  WalletAdminControllerListWithdrawalsResponses,
+  WalletAdminControllerWalletsOverviewData,
+  WalletAdminControllerWalletsOverviewResponses,
+  WalletControllerGetMyWalletData,
+  WalletControllerGetMyWalletResponses,
+  WalletControllerTopupData,
+  WalletControllerTopupResponses,
 } from "./types.gen";
 
 export type Options<
@@ -1648,6 +1676,193 @@ export const notificationsControllerSendTestNotification = <
     unknown,
     ThrowOnError
   >({ url: "/api/notifications/test", ...options });
+
+export const walletControllerGetMyWallet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletControllerGetMyWalletData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletControllerGetMyWalletResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/wallet/me", ...options });
+
+export const walletControllerTopup = <ThrowOnError extends boolean = false>(
+  options: Options<WalletControllerTopupData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    WalletControllerTopupResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/wallet/topup",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierWalletControllerGetWallet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierWalletControllerGetWalletData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SupplierWalletControllerGetWalletResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/wallet", ...options });
+
+export const supplierWalletControllerListNumbers = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SupplierWalletControllerListNumbersData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SupplierWalletControllerListNumbersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/wallet/payout-numbers", ...options });
+
+export const supplierWalletControllerAddNumber = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierWalletControllerAddNumberData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SupplierWalletControllerAddNumberResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/wallet/payout-numbers",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierWalletControllerRemoveNumber = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierWalletControllerRemoveNumberData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    SupplierWalletControllerRemoveNumberResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/wallet/payout-numbers/{id}", ...options });
+
+export const supplierWalletControllerListWithdrawals = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierWalletControllerListWithdrawalsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SupplierWalletControllerListWithdrawalsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/wallet/withdrawals", ...options });
+
+export const supplierWalletControllerRequestWithdrawal = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierWalletControllerRequestWithdrawalData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SupplierWalletControllerRequestWithdrawalResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/wallet/withdrawals",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierWalletControllerCancelWithdrawal = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierWalletControllerCancelWithdrawalData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SupplierWalletControllerCancelWithdrawalResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/wallet/withdrawals/{id}/cancel", ...options });
+
+export const walletAdminControllerListNumbers = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerListNumbersData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerListNumbersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payout-numbers", ...options });
+
+export const walletAdminControllerActOnNumber = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerActOnNumberData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    WalletAdminControllerActOnNumberResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/payout-numbers/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const walletAdminControllerListWithdrawals = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerListWithdrawalsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerListWithdrawalsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/withdrawals", ...options });
+
+export const walletAdminControllerActOnWithdrawal = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerActOnWithdrawalData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    WalletAdminControllerActOnWithdrawalResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/withdrawals/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const walletAdminControllerWalletsOverview = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<WalletAdminControllerWalletsOverviewData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    WalletAdminControllerWalletsOverviewResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/wallets", ...options });
 
 export const productsControllerFindBySupplier = <
   ThrowOnError extends boolean = false,

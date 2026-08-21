@@ -14,6 +14,7 @@ import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Sun from 'lucide-react-native/dist/esm/icons/sun'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
+import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import * as React from 'react'
 import { useEffect, useState } from 'react'
 import {
@@ -60,6 +61,7 @@ const ROLE_LABELS: Record<string, string> = {
 
 interface ProfileScreenProps {
   onNavigateToOrders?: () => void
+  onNavigateToWallet?: () => void
   onNavigateToNotifications?: () => void
   onNavigateToLogin?: () => void
   onNavigateToEditProfile?: () => void
@@ -68,7 +70,7 @@ interface ProfileScreenProps {
   refreshTrigger?: number
 }
 
-export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToSupplierRegistration, onNavigateToDashboard, refreshTrigger }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToSupplierRegistration, onNavigateToDashboard, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
   const tabBarHeight = useBottomTabBarHeight()
@@ -410,6 +412,19 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToNotifications, o
                 label="Mes commandes"
                 sublabel="Historique et suivi"
                 onPress={() => onNavigateToOrders?.()}
+                semantic={semantic}
+                grouped
+              />
+
+              <View style={styles.menuDivider} />
+
+              <MenuItem
+                icon={WalletIcon}
+                iconBg={colors.green[50]}
+                iconColor={colors.green[600]}
+                label="Mon portefeuille"
+                sublabel="Recharger et payer sans frais"
+                onPress={() => onNavigateToWallet?.()}
                 semantic={semantic}
                 grouped
               />

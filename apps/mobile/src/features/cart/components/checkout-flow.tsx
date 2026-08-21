@@ -4,8 +4,9 @@ import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
+import Wallet from 'lucide-react-native/dist/esm/icons/wallet'
 import * as React from 'react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Platform,
@@ -149,12 +150,35 @@ export function CheckoutFlow({
   const [deliverySlot, setDeliverySlot] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
+  // Wallet checkout: the balance decides whether the option is even offered.
+  const [walletBalance, setWalletBalance] = useState<number | null>(null)
+  const [payWithWallet, setPayWithWallet] = useState(false)
   const [pendingPaymentId, setPendingPaymentId] = useState<string | null>(null)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   // Amount as the server settled it, delivery fee included. The payment widget
   // must charge that, never a total recomputed on the phone.
   const [amountDue, setAmountDue] = useState<number | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadBalance() {
+      try {
+        const res = await apiFetch('/api/wallet/me')
+        if (res.ok && !cancelled) {
+          const data = await res.json() as { balance?: number }
+          setWalletBalance(typeof data.balance === 'number' ? data.balance : 0)
+        }
+      }
+      catch {
+        // wallet stays unavailable; FedaPay/cash path is unaffected
+      }
+    }
+    loadBalance()
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const handleProceedToPayment = useCallback(async () => {
     if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryAddress.trim()) {
@@ -170,7 +194,7 @@ export function CheckoutFlow({
         body: JSON.stringify({
           supplierId: orderSummary.supplierId,
           pickupMode: orderSummary.deliveryMode === 'PICKUP' ? 'ON_SITE' : 'DELIVERY',
-          paymentMethod: fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
+          paymentMethod: payWithWallet ? 'WALLET' : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
           deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? deliveryAddress : undefined,
           deliverySlot: deliverySlot || undefined,
           items: orderSummary.items.map(item => ({
@@ -213,7 +237,7 @@ export function CheckoutFlow({
       }
       setPendingOrderId(order.id)
 
-      if (!fedapayPublicKey) {
+      if (payWithWallet || !fedapayPublicKey) {
         onComplete(order.orderNumber ?? order.id, order.id)
         return
       }
@@ -396,13 +420,42 @@ export function CheckoutFlow({
             </View>
           </View>
 
-          {/* Payment info */}
-          <View style={[styles.paymentInfo, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}>
-            <CircleCheck size={16} color={colors.green[400]} strokeWidth={2} />
-            <Text style={[styles.paymentInfoText, { color: semantic.textSecondary }]}>
-              Paiement sécurisé via FedaPay (Mobile Money, Visa, Mastercard)
-            </Text>
-          </View>
+          {/* Payment method */}
+          {walletBalance !== null && walletBalance >= orderSummary.total + deliveryFee && (
+            <TouchableOpacity
+              style={[
+                styles.card,
+                styles.walletOption,
+                { backgroundColor: semantic.bgCard, borderColor: payWithWallet ? colors.green[400] : semantic.borderLight },
+              ]}
+              onPress={() => setPayWithWallet(previous => !previous)}
+              activeOpacity={0.7}
+            >
+              <Wallet size={18} color={payWithWallet ? colors.green[600] : semantic.textSecondary} strokeWidth={2} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.walletOptionTitle, { color: semantic.textPrimary }]}>
+                  Payer avec mon portefeuille
+                </Text>
+                <Text style={[styles.walletOptionHint, { color: semantic.textSecondary }]}>
+                  Solde :
+                  {' '}
+                  {formatPrice(walletBalance)}
+                  {' '}
+                  FCFA — débit immédiat, sans frais
+                </Text>
+              </View>
+              {payWithWallet && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
+            </TouchableOpacity>
+          )}
+
+          {!payWithWallet && (
+            <View style={[styles.paymentInfo, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}>
+              <CircleCheck size={16} color={colors.green[400]} strokeWidth={2} />
+              <Text style={[styles.paymentInfoText, { color: semantic.textSecondary }]}>
+                Paiement sécurisé via FedaPay (Mobile Money, Visa, Mastercard)
+              </Text>
+            </View>
+          )}
         </ScrollView>
 
         {/* Bottom bar */}
@@ -425,7 +478,9 @@ export function CheckoutFlow({
               ? <ActivityIndicator size="small" color={colors.neutral[0]} />
               : (
                   <>
-                    <Text style={styles.confirmButtonText}>Payer maintenant</Text>
+                    <Text style={styles.confirmButtonText}>
+                      {payWithWallet ? 'Payer avec le portefeuille' : 'Payer maintenant'}
+                    </Text>
                     <ArrowRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />
                   </>
                 )}
@@ -652,6 +707,14 @@ const styles = StyleSheet.create({
   },
 
   // Payment info
+  walletOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  walletOptionTitle: { ...typography.h3 },
+  walletOptionHint: { ...typography.bodyS, marginTop: 2 },
+
   paymentInfo: {
     flexDirection: 'row',
     alignItems: 'center',
