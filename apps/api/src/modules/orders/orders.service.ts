@@ -677,6 +677,15 @@ export class OrdersService {
     }
   }
 
+  /** The rate button disappears once the order carries a review. */
+  async hasReview(orderId: string): Promise<boolean> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT 1 FROM reviews WHERE order_id = ? LIMIT 1`,
+      [orderId],
+    )
+    return rows.length > 0
+  }
+
   private verifySupplierOwnership(order: Order, supplierId: string): void {
     if (order.supplier.id !== supplierId) {
       throw new ForbiddenException('This order does not belong to your shop')

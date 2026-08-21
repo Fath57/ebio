@@ -90,7 +90,8 @@ export class OrdersController {
     @Param('id') id: string,
   ) {
     const order = await this.ordersService.findById(id)
-    return OrderMapper.toResponse(order)
+    const hasReview = await this.ordersService.hasReview(id)
+    return { ...OrderMapper.toResponse(order), hasReview }
   }
 
   @Patch(':id/accept')

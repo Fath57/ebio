@@ -1,4 +1,5 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -51,6 +52,7 @@ interface OrderDetail {
   orderNumber: string
   supplierName: string
   supplierId: string
+  hasReview: boolean
   currentStatus: OrderStatus
   deliveryConfirmedByBuyer: boolean
   steps: StatusStep[]
@@ -144,6 +146,7 @@ export function OrderTracking({
           orderNumber: raw.orderNumber,
           supplierName: raw.supplierName,
           supplierId: raw.supplierId,
+          hasReview: raw.hasReview === true,
           currentStatus: raw.status,
           deliveryConfirmedByBuyer: raw.deliveryConfirmedByBuyer === true,
           total: raw.totalAmount ?? raw.total ?? 0,
@@ -186,6 +189,13 @@ export function OrderTracking({
   useEffect(() => {
     fetchOrder()
   }, [fetchOrder])
+
+  // Back from the rating form: the button must reflect the new review.
+  useFocusEffect(
+    useCallback(() => {
+      fetchOrder()
+    }, [fetchOrder]),
+  )
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true)
@@ -555,16 +565,18 @@ export function OrderTracking({
                       Réception confirmée. Merci !
                     </Text>
                   </View>
-                  <TouchableOpacity
-                    style={styles.rateButton}
-                    onPress={() => onRate(order.supplierId)}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel="Noter la boutique"
-                  >
-                    <Star size={16} color={colors.neutral[0]} />
-                    <Text style={styles.rateButtonText}>Noter la boutique</Text>
-                  </TouchableOpacity>
+                  {!order.hasReview && (
+                    <TouchableOpacity
+                      style={styles.rateButton}
+                      onPress={() => onRate(order.supplierId)}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Noter la boutique"
+                    >
+                      <Star size={16} color={colors.neutral[0]} />
+                      <Text style={styles.rateButtonText}>Noter la boutique</Text>
+                    </TouchableOpacity>
+                  )}
                 </View>
               )
             : (
