@@ -3,7 +3,8 @@ import Locate from 'lucide-react-native/dist/esm/icons/locate'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Search from 'lucide-react-native/dist/esm/icons/search'
 import X from 'lucide-react-native/dist/esm/icons/x'
-import { useRef, useState } from 'react'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { useContext, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Keyboard,
@@ -30,6 +31,10 @@ interface LocationPickerScreenProps {
 }
 
 export function LocationPickerScreen({ initialLatitude, initialLongitude, onConfirm, onGoBack }: LocationPickerScreenProps) {
+  // The bottom tab bar overlays these stack screens: without this offset the
+  // confirm button hides behind it. Context (not the hook) so the picker also
+  // works outside any tab navigator.
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0
   const { semantic } = useTheme()
   const mapRef = useRef<MapView>(null)
   const [center, setCenter] = useState({ latitude: initialLatitude, longitude: initialLongitude })
@@ -172,7 +177,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
         </TouchableOpacity>
       </View>
 
-      <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight }]}>
+      <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: tabBarHeight + spacing[5] }]}>
         <TouchableOpacity
           style={styles.confirmButton}
           onPress={() => onConfirm(center)}
