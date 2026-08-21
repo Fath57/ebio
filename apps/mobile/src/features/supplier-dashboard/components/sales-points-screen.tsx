@@ -7,7 +7,8 @@ import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { useCallback, useEffect, useState } from 'react'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { useCallback, useContext, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
@@ -51,6 +52,8 @@ interface SalesPointsScreenProps {
  * visible sur la carte des acheteurs à sa vraie position.
  */
 export function SalesPointsScreen({ onGoBack }: SalesPointsScreenProps) {
+  // The tab bar overlays the bottom of these screens.
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0
   const { semantic } = useTheme()
   const [points, setPoints] = useState<SalesPoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -139,7 +142,7 @@ export function SalesPointsScreen({ onGoBack }: SalesPointsScreenProps) {
             </View>
           )
         : (
-            <ScrollView contentContainerStyle={styles.content}>
+            <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[10] }]}>
               <Text style={[styles.intro, { color: semantic.textTertiary }]}>
                 Votre boutique reste votre adresse principale. Ajoutez ici vos autres
                 lieux de vente : étal de marché, kiosque, dépôt… Chacun apparaît sur
@@ -252,6 +255,7 @@ interface SalesPointFormProps {
 }
 
 function SalesPointForm({ point, onDone }: SalesPointFormProps) {
+  const tabBarHeight = useContext(BottomTabBarHeightContext) ?? 0
   const { semantic } = useTheme()
   const [name, setName] = useState(point?.name ?? '')
   const [address, setAddress] = useState(point?.address ?? '')
@@ -344,7 +348,7 @@ function SalesPointForm({ point, onDone }: SalesPointFormProps) {
         title={point ? 'Modifier le point de vente' : 'Nouveau point de vente'}
         onBack={() => onDone(false)}
       />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[10] }]} keyboardShouldPersistTaps="handled">
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Nom *</Text>
         <TextInput
           style={[styles.input, { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal, color: semantic.textPrimary }]}
