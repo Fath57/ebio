@@ -173,7 +173,8 @@
     "themeSystem": "System theme",
     "transactions": "Transactions",
     "users": "Users",
-    "validations": "Validations"
+    "validations": "Validations",
+    "commissions": "Commissions"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -373,7 +374,9 @@
     "revenue": "Revenue",
     "reviews": "Reviews",
     "title": "Analytics",
-    "topProducts": "Top selling products"
+    "topProducts": "Top selling products",
+    "commission": "eBio commission",
+    "netRevenue": "Net: {{amount}} FCFA"
   },
   "profile": {
     "title": "My Profile",
@@ -784,11 +787,9 @@
       "month": "/month",
       "commission": {
         "title": "Commission rates",
-        "rate": "Rate (%)",
-        "miseEnRelation": "Contact mode",
-        "commande": "Order mode",
-        "plan": "Plan",
-        "premium": "Premium"
+        "description": "One rate per product category, applied to every order unless a negotiated rate exists",
+        "category": "Category",
+        "rate": "Rate (%)"
       }
     },
     "site": {
@@ -896,7 +897,15 @@
         "timezone": "Timezone",
         "mode": "Mode",
         "closed": "Closed",
-        "noOpeningHours": "No opening hours set."
+        "noOpeningHours": "No opening hours set.",
+        "commission": {
+          "title": "Commission",
+          "currentRate": "Applied rate",
+          "categoryGrid": "Category grid",
+          "edit": "Negotiate a rate",
+          "reset": "Back to the grid",
+          "hint": "This rate replaces the category grid for every order of this shop."
+        }
       },
       "empty": "No suppliers.",
       "notFound": "Supplier not found.",
@@ -1030,6 +1039,40 @@
         "identityDocument": "Identity document",
         "businessDocument": "Business document",
         "viewDocument": "View document"
+      }
+    },
+    "commissions": {
+      "title": "Commissions",
+      "description": "What the platform takes on sales",
+      "exportCsv": "Export CSV",
+      "bySupplier": "By shop",
+      "orderDetail": "Order detail",
+      "empty": "No commission over this period",
+      "categoryGrid": "Category grid",
+      "filterOrders": "View orders",
+      "clearFilter": "Clear shop filter",
+      "totals": {
+        "realized": "Realized commission",
+        "realizedHint": "On delivered orders in the period",
+        "pending": "Pending commission",
+        "pendingHint": "{{count}} orders in progress",
+        "base": "Delivered sales",
+        "baseHint": "Commission base, delivery fees excluded",
+        "deliveredOrders": "Delivered orders",
+        "deliveredOrdersHint": "Over the filtered period"
+      },
+      "columns": {
+        "shop": "Shop",
+        "negotiatedRate": "Negotiated rate",
+        "deliveredOrders": "Delivered",
+        "base": "Base",
+        "realized": "Realized commission",
+        "pending": "Pending",
+        "date": "Date",
+        "order": "Order",
+        "status": "Status",
+        "rate": "Rate",
+        "commission": "Commission"
       }
     }
   },

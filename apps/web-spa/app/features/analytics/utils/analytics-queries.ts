@@ -2,10 +2,12 @@ import { client } from '@boilerstone/openapi-generator'
 
 export interface AnalyticsData {
   revenue: number
-  revenueTrend: number
+  revenueTrend: number | null
   ordersCount: number
-  ordersTrend: number
+  ordersTrend: number | null
   averageOrder: number
+  commission: number
+  netRevenue: number
 }
 
 export interface TopProductItem {

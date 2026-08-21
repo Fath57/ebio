@@ -23,6 +23,8 @@ import { ScreenHeader } from '../../common/components/screen-header'
 interface DashboardData {
   pendingOrders: number
   revenue: number
+  commission: number
+  netRevenue: number
   criticalStockProducts: number
   unreadMessages: number
   averageRating: number | null
@@ -151,6 +153,43 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         </View>
       </View>
 
+      {/* Earnings breakdown: gross, eBio commission, net — last 30 days */}
+      {(data?.revenue ?? 0) > 0 && (
+        <View style={[styles.earningsCard, { backgroundColor: semantic.bgCard }]}>
+          <View style={styles.earningsRow}>
+            <Text style={[styles.earningsLabel, { color: semantic.textSecondary }]}>
+              Ventes livrées (30 j)
+            </Text>
+            <Text style={[styles.earningsValue, { color: semantic.textPrimary }]}>
+              {(data?.revenue ?? 0).toLocaleString('fr-FR')}
+              {' '}
+              FCFA
+            </Text>
+          </View>
+          <View style={styles.earningsRow}>
+            <Text style={[styles.earningsLabel, { color: semantic.textSecondary }]}>
+              Commission eBio
+            </Text>
+            <Text style={[styles.earningsValue, { color: semantic.textSecondary }]}>
+              −
+              {(data?.commission ?? 0).toLocaleString('fr-FR')}
+              {' '}
+              FCFA
+            </Text>
+          </View>
+          <View style={[styles.earningsRow, styles.earningsTotalRow, { borderTopColor: semantic.borderLight }]}>
+            <Text style={[styles.earningsLabel, { color: semantic.textPrimary, fontFamily: fonts.sansSb }]}>
+              Net pour vous
+            </Text>
+            <Text style={[styles.earningsValue, { color: colors.green[600] }]}>
+              {(data?.netRevenue ?? 0).toLocaleString('fr-FR')}
+              {' '}
+              FCFA
+            </Text>
+          </View>
+        </View>
+      )}
+
       {/* Pending orders */}
       {(data?.pendingOrders ?? 0) > 0 && (
         <TouchableOpacity
@@ -252,6 +291,26 @@ const styles = StyleSheet.create({
   },
   kpiValue: { ...typography.h1 },
   kpiLabel: { ...typography.caption },
+
+  earningsCard: {
+    marginHorizontal: spacing[4],
+    marginTop: spacing[3],
+    padding: spacing[4],
+    borderRadius: radius.lg,
+    gap: spacing[2],
+  },
+  earningsRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  earningsTotalRow: {
+    borderTopWidth: 1,
+    paddingTop: spacing[2],
+    marginTop: spacing[1],
+  },
+  earningsLabel: { ...typography.bodyS },
+  earningsValue: { ...typography.bodyS, fontFamily: fonts.sansSb },
 
   alertCard: {
     flexDirection: 'row',

@@ -16,6 +16,7 @@ import {
   Monitor,
   Moon,
   Package,
+  Percent,
   Ruler,
   Settings,
   Shield,
@@ -109,6 +110,7 @@ export default function AppLayout() {
       items: [
         { to: '/admin/commandes', label: t('nav.orders'), icon: <ClipboardList className="h-4 w-4" /> },
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
+        { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" /> },
       ],
     },
     {

@@ -1,6 +1,7 @@
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
@@ -13,6 +14,7 @@ import {
   fetchAdminSupplierQueryOptions,
   reinstateSupplier,
   suspendSupplier,
+  updateSupplierCommissionRate,
 } from '../utils/suppliers-queries'
 
 const DAY_KEYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -53,6 +55,19 @@ export default function AdminSupplierDetailPage() {
   const reinstate = useMutation({
     mutationFn: () => reinstateSupplier(supplierId ?? ''),
     onSuccess: invalidate,
+  })
+
+  // Percent in the field, fraction in the API — humans negotiate in percent.
+  const [ratePercent, setRatePercent] = useState('')
+  const [isEditingRate, setIsEditingRate] = useState(false)
+
+  const saveRate = useMutation({
+    mutationFn: (rate: number | null) => updateSupplierCommissionRate(supplierId ?? '', rate),
+    onSuccess: () => {
+      setIsEditingRate(false)
+      invalidate()
+      queryClient.invalidateQueries({ queryKey: ['admin', 'commissions'] })
+    },
   })
 
   if (isLoading) {
@@ -105,6 +120,84 @@ export default function AdminSupplierDetailPage() {
                 ? `${supplier.rating.toFixed(1)} (${supplier.reviewCount})`
                 : null}
             />
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>{t('admin.suppliers.detail.commission.title')}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {!isEditingRate
+              ? (
+                  <>
+                    <InfoRow
+                      label={t('admin.suppliers.detail.commission.currentRate')}
+                      value={supplier.commissionRate != null
+                        ? `${(supplier.commissionRate * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %`
+                        : t('admin.suppliers.detail.commission.categoryGrid')}
+                    />
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => {
+                          setRatePercent(supplier.commissionRate != null
+                            ? String(supplier.commissionRate * 100)
+                            : '')
+                          setIsEditingRate(true)
+                        }}
+                      >
+                        {t('admin.suppliers.detail.commission.edit')}
+                      </Button>
+                      {supplier.commissionRate != null && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          disabled={saveRate.isPending}
+                          onClick={() => saveRate.mutate(null)}
+                        >
+                          {t('admin.suppliers.detail.commission.reset')}
+                        </Button>
+                      )}
+                    </div>
+                  </>
+                )
+              : (
+                  <>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={50}
+                        step={0.1}
+                        className="w-28"
+                        value={ratePercent}
+                        onChange={event => setRatePercent(event.target.value)}
+                      />
+                      <span className="text-muted-foreground text-sm">%</span>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        disabled={saveRate.isPending || ratePercent === ''}
+                        onClick={() => {
+                          const percent = Number(ratePercent)
+                          if (!Number.isNaN(percent) && percent >= 0 && percent <= 50)
+                            saveRate.mutate(percent / 100)
+                        }}
+                      >
+                        {t('common.save')}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => setIsEditingRate(false)}>
+                        {t('common.cancel')}
+                      </Button>
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      {t('admin.suppliers.detail.commission.hint')}
+                    </p>
+                  </>
+                )}
           </CardContent>
         </Card>
 

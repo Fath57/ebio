@@ -4,6 +4,7 @@ import { EmailModule } from '../email/email.module'
 import { MediaModule } from '../media/media.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { OrdersModule } from '../orders/orders.module'
+import { PaymentsModule } from '../payments/payments.module'
 import { AdminController } from './admin.controller'
 import { AdminService } from './admin.service'
 import { ContentReport } from './entities/content-report.entity'
@@ -15,6 +16,7 @@ import { ContentReport } from './entities/content-report.entity'
     MediaModule,
     NotificationsModule,
     OrdersModule,
+    PaymentsModule,
   ],
   controllers: [AdminController],
   providers: [AdminService],

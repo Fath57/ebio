@@ -67,6 +67,8 @@ export default [
       // Admin — Transactions
       route('admin/transactions', 'features/admin/transactions/pages/transactions-page.tsx'),
 
+      route('admin/commissions', 'features/admin/commissions/pages/admin-commissions-page.tsx'),
+
       // Admin — Categories
       route('admin/categories', 'features/admin/categories/pages/categories-page.tsx'),
       route('admin/categories/nouveau', 'features/admin/categories/pages/category-create-page.tsx'),

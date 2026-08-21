@@ -141,6 +141,8 @@ export const supplierDashboardSchema = z.object({
   unreadMessages: z.number().int(),
   criticalStockProducts: z.number().int(),
   revenue: z.number(),
+  commission: z.number(),
+  netRevenue: z.number(),
   pendingEscrow: z.number(),
   averageRating: z.number().nullable(),
 }).meta({

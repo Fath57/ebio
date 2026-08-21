@@ -94,10 +94,17 @@ export class OrdersService {
       itemEntities.push({ product, variant, quantity: itemInput.quantity, unitPrice, totalPrice })
     }
 
-    const categorySlug = await this.getCategorySlug(itemEntities[0].product)
-    // The commission base is the items only. Delivery is the shop's own cost,
+    // Each item pays its own category's rate, unless the shop negotiated a
+    // flat rate. The base is the items only. Delivery is the shop's own cost,
     // passed through to it in full, and the platform takes no cut of it.
-    const commission = this.commissionService.calculate(totalAmount, categorySlug)
+    const commissionItems = await Promise.all(itemEntities.map(async item => ({
+      categorySlug: await this.getCategorySlug(item.product),
+      totalPrice: item.totalPrice,
+    })))
+    const commission = await this.commissionService.calculateForItems(
+      commissionItems,
+      supplier.commissionRate,
+    )
 
     const deliveryFee = computeDeliveryFee(supplier, data.pickupMode === PickupMode.DELIVERY, totalAmount)
 

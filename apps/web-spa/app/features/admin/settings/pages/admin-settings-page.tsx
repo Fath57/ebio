@@ -1,4 +1,4 @@
-import type { CommissionFormData } from '../forms/commission-form'
+import type { CommissionCategoryRate } from '../forms/commission-form'
 import { client } from '@boilerstone/openapi-generator'
 import { adminControllerUpdateCommissions } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
@@ -9,7 +9,7 @@ import { Can } from '@/lib/casl/can'
 import { CommissionForm } from '../forms/commission-form'
 
 interface AdminSettingsData {
-  commissions: Partial<CommissionFormData>
+  commissions: CommissionCategoryRate[]
 }
 
 function fetchAdminSettingsQueryOptions() {
@@ -30,22 +30,15 @@ export default function AdminSettingsPage() {
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
-    mutationFn: async (data: CommissionFormData) => {
-      const response = await adminControllerUpdateCommissions({
-        body: {
-          rates: [
-            { category: 'miseEnRelation', rate: data.miseEnRelationRate },
-            { category: 'commande', rate: data.commandeRate },
-            { category: 'premium', rate: data.premiumRate },
-          ],
-        },
-      })
+    mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
+      const response = await adminControllerUpdateCommissions({ body: { rates } })
       if (response.error)
         throw new Error('Failed to update commissions')
       return response.data
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'commissions'] })
     },
   })
 
@@ -69,17 +62,17 @@ export default function AdminSettingsPage() {
         <Card>
           <CardHeader>
             <CardTitle>{t('admin.settings.commission.title')}</CardTitle>
+            <p className="text-muted-foreground text-sm">{t('admin.settings.commission.description')}</p>
           </CardHeader>
           <CardContent>
             <CommissionForm
+              categories={settings?.commissions ?? []}
               onSubmit={updateCommissions}
               isPending={isPending}
-              initialData={settings?.commissions}
             />
           </CardContent>
         </Card>
       </Can>
-
     </div>
   )
 }

@@ -6,6 +6,10 @@ import { aiExampleControllerChatResponseTransformer } from "./transformers.gen";
 import type {
   AdminControllerBroadcastNotificationData,
   AdminControllerBroadcastNotificationResponses,
+  AdminControllerGetCommissionOrdersData,
+  AdminControllerGetCommissionOrdersResponses,
+  AdminControllerGetCommissionsData,
+  AdminControllerGetCommissionsResponses,
   AdminControllerGetDashboardData,
   AdminControllerGetDashboardResponses,
   AdminControllerGetDisputesData,
@@ -42,6 +46,10 @@ import type {
   AdminControllerSuspendSupplierResponses,
   AdminControllerUpdateCommissionsData,
   AdminControllerUpdateCommissionsResponses,
+  AdminControllerUpdateOrderStatusData,
+  AdminControllerUpdateOrderStatusResponses,
+  AdminControllerUpdateSupplierCommissionRateData,
+  AdminControllerUpdateSupplierCommissionRateResponses,
   AdminControllerValidateSupplierData,
   AdminControllerValidateSupplierResponses,
   AiExampleControllerChatData,
@@ -173,6 +181,8 @@ import type {
   OrdersControllerAcceptData,
   OrdersControllerAcceptResponses,
   OrdersControllerConfirmDeliveryData,
+  OrdersControllerConfirmDeliveryPostData,
+  OrdersControllerConfirmDeliveryPostResponses,
   OrdersControllerConfirmDeliveryResponses,
   OrdersControllerCreateData,
   OrdersControllerCreateDisputeData,
@@ -320,16 +330,6 @@ import type {
   SearchControllerGetCategoriesResponses,
   SearchControllerSearchProductsData,
   SearchControllerSearchProductsResponses,
-  SubscriptionsControllerCancelSubscriptionData,
-  SubscriptionsControllerCancelSubscriptionResponses,
-  SubscriptionsControllerGetCurrentSubscriptionData,
-  SubscriptionsControllerGetCurrentSubscriptionResponses,
-  SubscriptionsControllerGetPlansData,
-  SubscriptionsControllerGetPlansResponses,
-  SubscriptionsControllerSubscribeData,
-  SubscriptionsControllerSubscribeResponses,
-  SubscriptionsControllerUpgradeSubscriptionData,
-  SubscriptionsControllerUpgradeSubscriptionResponses,
   SuppliersControllerCreateDeliveryZoneData,
   SuppliersControllerCreateDeliveryZoneResponses,
   SuppliersControllerDeleteDeliveryZoneData,
@@ -1987,6 +1987,17 @@ export const ordersControllerConfirmDelivery = <
     ThrowOnError
   >({ url: "/api/orders/{id}/confirm-delivery", ...options });
 
+export const ordersControllerConfirmDeliveryPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerConfirmDeliveryPostData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerConfirmDeliveryPostResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/{id}/confirm-delivery", ...options });
+
 export const ordersControllerCreateDispute = <
   ThrowOnError extends boolean = false,
 >(
@@ -2491,84 +2502,6 @@ export const trainingControllerGetMyProgress = <
     ThrowOnError
   >({ url: "/api/training/my-progress", ...options });
 
-export const subscriptionsControllerGetPlans = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<SubscriptionsControllerGetPlansData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    SubscriptionsControllerGetPlansResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/subscriptions/plans", ...options });
-
-export const subscriptionsControllerSubscribe = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SubscriptionsControllerSubscribeData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    SubscriptionsControllerSubscribeResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/subscriptions",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const subscriptionsControllerGetCurrentSubscription = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<
-    SubscriptionsControllerGetCurrentSubscriptionData,
-    ThrowOnError
-  >,
-) =>
-  (options?.client ?? client).get<
-    SubscriptionsControllerGetCurrentSubscriptionResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/subscriptions/me", ...options });
-
-export const subscriptionsControllerCancelSubscription = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<
-    SubscriptionsControllerCancelSubscriptionData,
-    ThrowOnError
-  >,
-) =>
-  (options?.client ?? client).patch<
-    SubscriptionsControllerCancelSubscriptionResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/subscriptions/me/cancel", ...options });
-
-export const subscriptionsControllerUpgradeSubscription = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<
-    SubscriptionsControllerUpgradeSubscriptionData,
-    ThrowOnError
-  >,
-) =>
-  (options.client ?? client).post<
-    SubscriptionsControllerUpgradeSubscriptionResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/subscriptions/me/upgrade",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
 export const adminControllerGetDashboard = <
   ThrowOnError extends boolean = false,
 >(
@@ -2683,6 +2616,27 @@ export const adminControllerSuspendSupplier = <
     },
   });
 
+export const adminControllerUpdateSupplierCommissionRate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    AdminControllerUpdateSupplierCommissionRateData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).patch<
+    AdminControllerUpdateSupplierCommissionRateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/suppliers/{id}/commission-rate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const adminControllerReinstateSupplier = <
   ThrowOnError extends boolean = false,
 >(
@@ -2705,6 +2659,28 @@ export const adminControllerGetTransactions = <
     ThrowOnError
   >({ url: "/api/admin/transactions", ...options });
 
+export const adminControllerGetCommissions = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetCommissionsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetCommissionsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/commissions", ...options });
+
+export const adminControllerGetCommissionOrders = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetCommissionOrdersData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetCommissionOrdersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/commissions/orders", ...options });
+
 export const adminControllerGetOrders = <ThrowOnError extends boolean = false>(
   options: Options<AdminControllerGetOrdersData, ThrowOnError>,
 ) =>
@@ -2724,6 +2700,24 @@ export const adminControllerGetOrderById = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/orders/{id}", ...options });
+
+export const adminControllerUpdateOrderStatus = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerUpdateOrderStatusData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminControllerUpdateOrderStatusResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/orders/{id}/status",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const adminControllerGetSuppliers = <
   ThrowOnError extends boolean = false,

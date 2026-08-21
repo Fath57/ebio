@@ -102,6 +102,10 @@ export class Supplier {
   @Property({ fieldName: 'total_reviews', default: 0 })
   totalReviews: number = 0
 
+  /** Negotiated commission rate (fraction, e.g. 0.03). Null = category grid applies. */
+  @Property({ fieldName: 'commission_rate', type: 'float', nullable: true })
+  commissionRate?: number | null
+
   @Property({ fieldName: 'identity_document', nullable: true })
   identityDocument?: string
 

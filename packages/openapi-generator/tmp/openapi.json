@@ -6038,6 +6038,27 @@
             "description": ""
           }
         }
+      },
+      "post": {
+        "operationId": "OrdersController_confirmDeliveryPost",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
       }
     },
     "/api/orders/{id}/dispute": {
@@ -7408,132 +7429,6 @@
         }
       }
     },
-    "/api/subscriptions/plans": {
-      "get": {
-        "operationId": "SubscriptionsController_getPlans",
-        "tags": [
-          "Subscriptions"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/subscriptions": {
-      "post": {
-        "operationId": "SubscriptionsController_subscribe",
-        "tags": [
-          "Subscriptions"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Data to subscribe to a plan",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "planId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                  },
-                  "paymentMethod": {
-                    "type": "string",
-                    "minLength": 1
-                  },
-                  "paymentReference": {
-                    "type": "string"
-                  }
-                },
-                "required": [
-                  "planId",
-                  "paymentMethod"
-                ],
-                "additionalProperties": false,
-                "title": "CreateSubscription",
-                "description": "Data to subscribe to a plan"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/subscriptions/me": {
-      "get": {
-        "operationId": "SubscriptionsController_getCurrentSubscription",
-        "tags": [
-          "Subscriptions"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/subscriptions/me/cancel": {
-      "patch": {
-        "operationId": "SubscriptionsController_cancelSubscription",
-        "tags": [
-          "Subscriptions"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/subscriptions/me/upgrade": {
-      "post": {
-        "operationId": "SubscriptionsController_upgradeSubscription",
-        "tags": [
-          "Subscriptions"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Upgrade to a new plan",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "newPlanId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-                  }
-                },
-                "required": [
-                  "newPlanId"
-                ],
-                "additionalProperties": false,
-                "title": "UpgradeSubscription",
-                "description": "Upgrade to a new plan"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/admin/dashboard": {
       "get": {
         "operationId": "AdminController_getDashboard",
@@ -7887,6 +7782,60 @@
         }
       }
     },
+    "/api/admin/suppliers/{id}/commission-rate": {
+      "patch": {
+        "operationId": "AdminController_updateSupplierCommissionRate",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Negotiated commission rate for one supplier; null falls back to the category grid",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rate": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 0.5
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "rate"
+                ],
+                "additionalProperties": false,
+                "title": "SupplierCommissionRate",
+                "description": "Negotiated commission rate for one supplier; null falls back to the category grid"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/suppliers/{id}/reinstate": {
       "patch": {
         "operationId": "AdminController_reinstateSupplier",
@@ -7927,6 +7876,124 @@
           },
           {
             "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "format",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/commissions": {
+      "get": {
+        "operationId": "AdminController_getCommissions",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/commissions/orders": {
+      "get": {
+        "operationId": "AdminController_getCommissionOrders",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "supplierId",
             "required": true,
             "in": "query",
             "schema": {
@@ -8052,6 +8119,61 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/orders/{id}/status": {
+      "patch": {
+        "operationId": "AdminController_updateOrderStatus",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Status forced by an admin, without the supplier-side transition rules",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "PLACED",
+                      "ACCEPTED",
+                      "PREPARING",
+                      "READY",
+                      "IN_DELIVERY",
+                      "DELIVERED",
+                      "CANCELLED",
+                      "DISPUTED"
+                    ]
+                  }
+                },
+                "required": [
+                  "status"
+                ],
+                "additionalProperties": false,
+                "title": "AdminOrderStatus",
+                "description": "Status forced by an admin, without the supplier-side transition rules"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -8349,7 +8471,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Commission rates per product category",
+          "description": "Commission rates per product category, as fractions",
           "content": {
             "application/json": {
               "schema": {
@@ -8366,7 +8488,7 @@
                         "rate": {
                           "type": "number",
                           "minimum": 0,
-                          "maximum": 100
+                          "maximum": 1
                         }
                       },
                       "required": [
@@ -8382,7 +8504,7 @@
                 ],
                 "additionalProperties": false,
                 "title": "CommissionRates",
-                "description": "Commission rates per product category"
+                "description": "Commission rates per product category, as fractions"
               }
             }
           }
@@ -8745,6 +8867,700 @@
         "title": "CompleteUpload",
         "description": "Finalise un upload multipart et déclenche l'optimisation"
       },
+      "CreatePaymentMethodInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3
+          },
+          "commission": {
+            "default": 0,
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "priority": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "default": true,
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "default": false,
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "default": false,
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "default": false,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "code",
+          "type",
+          "provider",
+          "countryCode",
+          "commission",
+          "priority",
+          "active",
+          "useFedapayCheckout",
+          "supportsPayout",
+          "supportsRefund"
+        ],
+        "additionalProperties": false,
+        "title": "CreatePaymentMethodInput",
+        "description": "Input for creating a payment method"
+      },
+      "UpdatePaymentMethodInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 255
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 3
+          },
+          "commission": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "type": "boolean"
+          },
+          "icon": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdatePaymentMethodInput",
+        "description": "Input for updating a payment method"
+      },
+      "InitiatePayment": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "paymentMethodId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "phoneNumber": {
+            "type": "string",
+            "minLength": 8
+          }
+        },
+        "required": [
+          "orderId",
+          "paymentMethodId"
+        ],
+        "additionalProperties": false,
+        "title": "InitiatePayment",
+        "description": "Input for initiating a no-redirect (USSD) payment"
+      },
+      "InitiateCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "orderId"
+        ],
+        "additionalProperties": false,
+        "title": "InitiateCheckoutInput",
+        "description": "Input for creating a pending payment before opening Checkout.js"
+      },
+      "VerifyCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "fedapayTransactionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "orderId",
+          "paymentId",
+          "fedapayTransactionId"
+        ],
+        "additionalProperties": false,
+        "title": "VerifyCheckoutInput",
+        "description": "Input for verifying a payment made via Checkout.js"
+      },
+      "UpdateUser": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "image": {
+            "type": "string",
+            "format": "uri"
+          },
+          "deviceId": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateUser",
+        "description": "Update user profile"
+      },
+      "CreateSalesPoint": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "isActive"
+        ],
+        "additionalProperties": false,
+        "title": "CreateSalesPoint",
+        "description": "A place where the supplier sells besides the main shop"
+      },
+      "UpdateSalesPoint": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateSalesPoint",
+        "description": "Update a sales point — every field optional"
+      },
+      "RegisterSupplier": {
+        "type": "object",
+        "properties": {
+          "shopName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "type": {
+            "$ref": "#/components/schemas/SupplierType"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "neighborhood": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "mobileMoneyNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SupplierMode"
+          },
+          "deliveryFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "freeDeliveryFrom": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/Timezone"
+          },
+          "shopPhotoMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "identityDocMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "businessProofMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "shopName",
+          "type",
+          "mobileMoneyNumber",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "title": "RegisterSupplier",
+        "description": "Data required to register as a supplier"
+      },
+      "UpdateSupplier": {
+        "type": "object",
+        "properties": {
+          "shopName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "type": {
+            "$ref": "#/components/schemas/SupplierType"
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "address": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "neighborhood": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 100
+          },
+          "mobileMoneyNumber": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 20
+          },
+          "mode": {
+            "$ref": "#/components/schemas/SupplierMode"
+          },
+          "deliveryFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "freeDeliveryFrom": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          },
+          "timezone": {
+            "$ref": "#/components/schemas/Timezone"
+          },
+          "shopPhotoMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "identityDocMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "businessProofMediaId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "coverPhoto": {
+            "type": "string",
+            "format": "uri"
+          },
+          "profilePhoto": {
+            "type": "string",
+            "format": "uri"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateSupplier",
+        "description": "Update supplier profile — all fields optional"
+      },
+      "DeliveryZone": {
+        "type": "object",
+        "properties": {
+          "polygon": {
+            "minItems": 3,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "latitude": {
+                  "type": "number",
+                  "minimum": -90,
+                  "maximum": 90
+                },
+                "longitude": {
+                  "type": "number",
+                  "minimum": -180,
+                  "maximum": 180
+                }
+              },
+              "required": [
+                "latitude",
+                "longitude"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "deliveryFee": {
+            "type": "number",
+            "minimum": 0
+          },
+          "estimatedMinutes": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "polygon",
+          "deliveryFee",
+          "estimatedMinutes"
+        ],
+        "additionalProperties": false,
+        "title": "DeliveryZone",
+        "description": "Delivery zone defined by a polygon with fee and estimated time"
+      },
+      "UpdateOpeningHours": {
+        "type": "object",
+        "properties": {
+          "openingHours": {
+            "$ref": "#/components/schemas/OpeningHours"
+          }
+        },
+        "required": [
+          "openingHours"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateOpeningHours"
+      },
+      "UpdateMode": {
+        "type": "object",
+        "properties": {
+          "mode": {
+            "type": "string",
+            "enum": [
+              "CONTACT",
+              "ORDER"
+            ]
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateMode"
+      },
+      "CreateOrder": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "pickupMode": {
+            "$ref": "#/components/schemas/PickupMode"
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "deliveryAddress": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          },
+          "deliverySlot": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            }
+          }
+        },
+        "required": [
+          "supplierId",
+          "pickupMode",
+          "paymentMethod",
+          "items"
+        ],
+        "additionalProperties": false,
+        "title": "CreateOrder",
+        "description": "Data required to place a new order",
+        "examples": [
+          {
+            "supplierId": "550e8400-e29b-41d4-a716-446655440000",
+            "pickupMode": "DELIVERY",
+            "paymentMethod": "FEDAPAY",
+            "deliveryAddress": "123 Rue de Cotonou",
+            "items": [
+              {
+                "productId": "550e8400-e29b-41d4-a716-446655440001",
+                "quantity": 2
+              }
+            ]
+          }
+        ]
+      },
+      "RejectOrder": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "RejectOrder",
+        "description": "Reason for rejecting an order"
+      },
+      "UpdateOrderStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PREPARING",
+              "READY",
+              "IN_DELIVERY"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateOrderStatus",
+        "description": "Update order status (supplier only)"
+      },
+      "CreateDispute": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "CreateDispute",
+        "description": "Open a dispute on an order"
+      },
       "ValidationActionInput": {
         "type": "object",
         "properties": {
@@ -8814,6 +9630,53 @@
         "title": "SuspendSupplier",
         "description": "Reason for suspending a supplier"
       },
+      "SupplierCommissionRate": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 0.5
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "rate"
+        ],
+        "additionalProperties": false,
+        "title": "SupplierCommissionRate",
+        "description": "Negotiated commission rate for one supplier; null falls back to the category grid"
+      },
+      "AdminOrderStatus": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "PLACED",
+              "ACCEPTED",
+              "PREPARING",
+              "READY",
+              "IN_DELIVERY",
+              "DELIVERED",
+              "CANCELLED",
+              "DISPUTED"
+            ]
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "AdminOrderStatus",
+        "description": "Status forced by an admin, without the supplier-side transition rules"
+      },
       "CommissionRates": {
         "type": "object",
         "properties": {
@@ -8828,7 +9691,7 @@
                 "rate": {
                   "type": "number",
                   "minimum": 0,
-                  "maximum": 100
+                  "maximum": 1
                 }
               },
               "required": [
@@ -8844,7 +9707,7 @@
         ],
         "additionalProperties": false,
         "title": "CommissionRates",
-        "description": "Commission rates per product category"
+        "description": "Commission rates per product category, as fractions"
       },
       "BroadcastNotification": {
         "type": "object",
@@ -9674,700 +10537,6 @@
         "additionalProperties": false,
         "title": "UpdateLandingFaq"
       },
-      "CreatePaymentMethodInput": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "mobile",
-              "card"
-            ]
-          },
-          "provider": {
-            "type": "string",
-            "enum": [
-              "fedapay",
-              "stripe",
-              "pawerpayer"
-            ]
-          },
-          "countryCode": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 3
-          },
-          "commission": {
-            "default": 0,
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "priority": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "active": {
-            "default": true,
-            "type": "boolean"
-          },
-          "useFedapayCheckout": {
-            "default": false,
-            "type": "boolean"
-          },
-          "supportsPayout": {
-            "default": false,
-            "type": "boolean"
-          },
-          "supportsRefund": {
-            "default": false,
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "name",
-          "code",
-          "type",
-          "provider",
-          "countryCode",
-          "commission",
-          "priority",
-          "active",
-          "useFedapayCheckout",
-          "supportsPayout",
-          "supportsRefund"
-        ],
-        "additionalProperties": false,
-        "title": "CreatePaymentMethodInput",
-        "description": "Input for creating a payment method"
-      },
-      "UpdatePaymentMethodInput": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 255
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "mobile",
-              "card"
-            ]
-          },
-          "provider": {
-            "type": "string",
-            "enum": [
-              "fedapay",
-              "stripe",
-              "pawerpayer"
-            ]
-          },
-          "countryCode": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 3
-          },
-          "commission": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "priority": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "useFedapayCheckout": {
-            "type": "boolean"
-          },
-          "supportsPayout": {
-            "type": "boolean"
-          },
-          "supportsRefund": {
-            "type": "boolean"
-          },
-          "icon": {
-            "type": "string",
-            "maxLength": 500
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdatePaymentMethodInput",
-        "description": "Input for updating a payment method"
-      },
-      "InitiatePayment": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "paymentMethodId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "phoneNumber": {
-            "type": "string",
-            "minLength": 8
-          }
-        },
-        "required": [
-          "orderId",
-          "paymentMethodId"
-        ],
-        "additionalProperties": false,
-        "title": "InitiatePayment",
-        "description": "Input for initiating a no-redirect (USSD) payment"
-      },
-      "InitiateCheckoutInput": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          }
-        },
-        "required": [
-          "orderId"
-        ],
-        "additionalProperties": false,
-        "title": "InitiateCheckoutInput",
-        "description": "Input for creating a pending payment before opening Checkout.js"
-      },
-      "VerifyCheckoutInput": {
-        "type": "object",
-        "properties": {
-          "orderId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "paymentId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "fedapayTransactionId": {
-            "type": "string",
-            "minLength": 1
-          }
-        },
-        "required": [
-          "orderId",
-          "paymentId",
-          "fedapayTransactionId"
-        ],
-        "additionalProperties": false,
-        "title": "VerifyCheckoutInput",
-        "description": "Input for verifying a payment made via Checkout.js"
-      },
-      "UpdateUser": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 100
-          },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
-          },
-          "phone": {
-            "type": "string"
-          },
-          "image": {
-            "type": "string",
-            "format": "uri"
-          },
-          "deviceId": {
-            "type": "string"
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateUser",
-        "description": "Update user profile"
-      },
-      "CreateSalesPoint": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 100
-          },
-          "address": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "phone": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 20
-          },
-          "latitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "longitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "openingHours": {
-            "$ref": "#/components/schemas/OpeningHours"
-          },
-          "isActive": {
-            "default": true,
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "name",
-          "isActive"
-        ],
-        "additionalProperties": false,
-        "title": "CreateSalesPoint",
-        "description": "A place where the supplier sells besides the main shop"
-      },
-      "UpdateSalesPoint": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 100
-          },
-          "address": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "phone": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 20
-          },
-          "latitude": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": -90,
-                "maximum": 90
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "longitude": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": -180,
-                "maximum": 180
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "openingHours": {
-            "$ref": "#/components/schemas/OpeningHours"
-          },
-          "isActive": {
-            "default": true,
-            "type": "boolean"
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateSalesPoint",
-        "description": "Update a sales point — every field optional"
-      },
-      "RegisterSupplier": {
-        "type": "object",
-        "properties": {
-          "shopName": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 100
-          },
-          "type": {
-            "$ref": "#/components/schemas/SupplierType"
-          },
-          "latitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "longitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "address": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "neighborhood": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 100
-          },
-          "mobileMoneyNumber": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 20
-          },
-          "mode": {
-            "$ref": "#/components/schemas/SupplierMode"
-          },
-          "deliveryFee": {
-            "type": "number",
-            "minimum": 0
-          },
-          "freeDeliveryFrom": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "openingHours": {
-            "$ref": "#/components/schemas/OpeningHours"
-          },
-          "timezone": {
-            "$ref": "#/components/schemas/Timezone"
-          },
-          "shopPhotoMediaId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "identityDocMediaId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "businessProofMediaId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          }
-        },
-        "required": [
-          "shopName",
-          "type",
-          "mobileMoneyNumber",
-          "mode"
-        ],
-        "additionalProperties": false,
-        "title": "RegisterSupplier",
-        "description": "Data required to register as a supplier"
-      },
-      "UpdateSupplier": {
-        "type": "object",
-        "properties": {
-          "shopName": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 100
-          },
-          "type": {
-            "$ref": "#/components/schemas/SupplierType"
-          },
-          "latitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "longitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "address": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "neighborhood": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 100
-          },
-          "mobileMoneyNumber": {
-            "type": "string",
-            "minLength": 8,
-            "maxLength": 20
-          },
-          "mode": {
-            "$ref": "#/components/schemas/SupplierMode"
-          },
-          "deliveryFee": {
-            "type": "number",
-            "minimum": 0
-          },
-          "freeDeliveryFrom": {
-            "anyOf": [
-              {
-                "type": "number",
-                "minimum": 0
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "openingHours": {
-            "$ref": "#/components/schemas/OpeningHours"
-          },
-          "timezone": {
-            "$ref": "#/components/schemas/Timezone"
-          },
-          "shopPhotoMediaId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "identityDocMediaId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "businessProofMediaId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "coverPhoto": {
-            "type": "string",
-            "format": "uri"
-          },
-          "profilePhoto": {
-            "type": "string",
-            "format": "uri"
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateSupplier",
-        "description": "Update supplier profile — all fields optional"
-      },
-      "DeliveryZone": {
-        "type": "object",
-        "properties": {
-          "polygon": {
-            "minItems": 3,
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "latitude": {
-                  "type": "number",
-                  "minimum": -90,
-                  "maximum": 90
-                },
-                "longitude": {
-                  "type": "number",
-                  "minimum": -180,
-                  "maximum": 180
-                }
-              },
-              "required": [
-                "latitude",
-                "longitude"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "deliveryFee": {
-            "type": "number",
-            "minimum": 0
-          },
-          "estimatedMinutes": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "polygon",
-          "deliveryFee",
-          "estimatedMinutes"
-        ],
-        "additionalProperties": false,
-        "title": "DeliveryZone",
-        "description": "Delivery zone defined by a polygon with fee and estimated time"
-      },
-      "UpdateOpeningHours": {
-        "type": "object",
-        "properties": {
-          "openingHours": {
-            "$ref": "#/components/schemas/OpeningHours"
-          }
-        },
-        "required": [
-          "openingHours"
-        ],
-        "additionalProperties": false,
-        "title": "UpdateOpeningHours"
-      },
-      "UpdateMode": {
-        "type": "object",
-        "properties": {
-          "mode": {
-            "type": "string",
-            "enum": [
-              "CONTACT",
-              "ORDER"
-            ]
-          }
-        },
-        "required": [
-          "mode"
-        ],
-        "additionalProperties": false,
-        "title": "UpdateMode"
-      },
-      "CreateOrder": {
-        "type": "object",
-        "properties": {
-          "supplierId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "pickupMode": {
-            "$ref": "#/components/schemas/PickupMode"
-          },
-          "paymentMethod": {
-            "$ref": "#/components/schemas/PaymentMethod"
-          },
-          "deliveryAddress": {
-            "type": "string",
-            "minLength": 5,
-            "maxLength": 500
-          },
-          "deliverySlot": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "items": {
-            "minItems": 1,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/OrderItemInput"
-            }
-          }
-        },
-        "required": [
-          "supplierId",
-          "pickupMode",
-          "paymentMethod",
-          "items"
-        ],
-        "additionalProperties": false,
-        "title": "CreateOrder",
-        "description": "Data required to place a new order",
-        "examples": [
-          {
-            "supplierId": "550e8400-e29b-41d4-a716-446655440000",
-            "pickupMode": "DELIVERY",
-            "paymentMethod": "FEDAPAY",
-            "deliveryAddress": "123 Rue de Cotonou",
-            "items": [
-              {
-                "productId": "550e8400-e29b-41d4-a716-446655440001",
-                "quantity": 2
-              }
-            ]
-          }
-        ]
-      },
-      "RejectOrder": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "minLength": 5,
-            "maxLength": 500
-          }
-        },
-        "required": [
-          "reason"
-        ],
-        "additionalProperties": false,
-        "title": "RejectOrder",
-        "description": "Reason for rejecting an order"
-      },
-      "UpdateOrderStatus": {
-        "type": "object",
-        "properties": {
-          "status": {
-            "type": "string",
-            "enum": [
-              "PREPARING",
-              "READY",
-              "IN_DELIVERY"
-            ]
-          }
-        },
-        "required": [
-          "status"
-        ],
-        "additionalProperties": false,
-        "title": "UpdateOrderStatus",
-        "description": "Update order status (supplier only)"
-      },
-      "CreateDispute": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 2000
-          }
-        },
-        "required": [
-          "reason"
-        ],
-        "additionalProperties": false,
-        "title": "CreateDispute",
-        "description": "Open a dispute on an order"
-      },
       "CreateCategory": {
         "type": "object",
         "properties": {
@@ -10770,46 +10939,6 @@
         "title": "CreateReview",
         "description": "Submit a review for a supplier"
       },
-      "CreateSubscription": {
-        "type": "object",
-        "properties": {
-          "planId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "paymentMethod": {
-            "type": "string",
-            "minLength": 1
-          },
-          "paymentReference": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "planId",
-          "paymentMethod"
-        ],
-        "additionalProperties": false,
-        "title": "CreateSubscription",
-        "description": "Data to subscribe to a plan"
-      },
-      "UpgradeSubscription": {
-        "type": "object",
-        "properties": {
-          "newPlanId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          }
-        },
-        "required": [
-          "newPlanId"
-        ],
-        "additionalProperties": false,
-        "title": "UpgradeSubscription",
-        "description": "Upgrade to a new plan"
-      },
       "CompleteModule": {
         "type": "object",
         "properties": {
@@ -10830,6 +10959,366 @@
         "additionalProperties": false,
         "title": "CompleteModule",
         "description": "Answers submitted to complete a training module quiz"
+      },
+      "PaymentMethodList": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PaymentMethodOutput"
+            }
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PaginationMeta"
+          }
+        },
+        "required": [
+          "data",
+          "meta"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentMethodList",
+        "description": "Paginated list of payment methods"
+      },
+      "PaymentMethodOutput": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "provider": {
+            "type": "string",
+            "enum": [
+              "fedapay",
+              "stripe",
+              "pawerpayer"
+            ]
+          },
+          "countryCode": {
+            "type": "string"
+          },
+          "commission": {
+            "type": "number"
+          },
+          "priority": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "useFedapayCheckout": {
+            "type": "boolean"
+          },
+          "supportsPayout": {
+            "type": "boolean"
+          },
+          "supportsRefund": {
+            "type": "boolean"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "type",
+          "provider",
+          "countryCode",
+          "commission",
+          "priority",
+          "active",
+          "useFedapayCheckout",
+          "supportsPayout",
+          "supportsRefund",
+          "createdAt",
+          "updatedAt"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentMethodOutput",
+        "description": "Payment method details (admin view)"
+      },
+      "PaginationMeta": {
+        "type": "object",
+        "properties": {
+          "itemCount": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "pageSize": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "offset": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "hasMore": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "itemCount",
+          "pageSize",
+          "offset",
+          "hasMore"
+        ],
+        "additionalProperties": false,
+        "title": "PaginationMeta",
+        "description": "Pagination metadata"
+      },
+      "MessageResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "message"
+        ],
+        "additionalProperties": false,
+        "title": "MessageResponse",
+        "description": "Simple message response"
+      },
+      "AvailablePaymentMethods": {
+        "type": "object",
+        "properties": {
+          "methods": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailablePaymentMethod"
+            }
+          }
+        },
+        "required": [
+          "methods"
+        ],
+        "additionalProperties": false,
+        "title": "AvailablePaymentMethods",
+        "description": "List of available payment methods for a country"
+      },
+      "AvailablePaymentMethod": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "name": {
+            "type": "string"
+          },
+          "code": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "mobile",
+              "card"
+            ]
+          },
+          "useFedapayCheckout": {
+            "type": "boolean"
+          },
+          "requiresPhone": {
+            "type": "boolean"
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "code",
+          "type",
+          "useFedapayCheckout",
+          "requiresPhone"
+        ],
+        "additionalProperties": false,
+        "title": "AvailablePaymentMethod",
+        "description": "Payment method visible to the user (no provider details)"
+      },
+      "PaymentInfo": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "fedapayPublicKey": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "amount",
+          "currency",
+          "fedapayPublicKey"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentInfo",
+        "description": "Payment info for the frontend to display and init Checkout.js"
+      },
+      "NoRedirectPaymentResult": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "type": "string",
+            "const": "pending"
+          }
+        },
+        "required": [
+          "paymentId",
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "NoRedirectPaymentResult",
+        "description": "Result after initiating a no-redirect payment"
+      },
+      "CheckoutVerifyResult": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "type": "string",
+            "const": "completed"
+          }
+        },
+        "required": [
+          "paymentId",
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "CheckoutVerifyResult",
+        "description": "Result after verifying a Checkout.js payment"
+      },
+      "PaymentStatusResponse": {
+        "type": "object",
+        "properties": {
+          "paymentId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PaymentStatus"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paidAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider": {
+            "$ref": "#/components/schemas/PaymentProvider"
+          }
+        },
+        "required": [
+          "paymentId",
+          "status",
+          "amount",
+          "currency",
+          "paidAt",
+          "provider"
+        ],
+        "additionalProperties": false,
+        "title": "PaymentStatusResponse",
+        "description": "Current payment status for an order"
+      },
+      "PaymentStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING",
+          "CAPTURED",
+          "ESCROW",
+          "RELEASED",
+          "REFUNDED",
+          "FAILED"
+        ],
+        "title": "PaymentStatus",
+        "description": "Current status of a payment"
+      },
+      "PaymentProvider": {
+        "type": "string",
+        "enum": [
+          "fedapay",
+          "stripe",
+          "pawerpayer"
+        ],
+        "title": "PaymentProvider",
+        "description": "Payment gateway provider"
       },
       "GenerateTextResponse": {
         "type": "object",
@@ -11674,366 +12163,6 @@
         "title": "PublicPostsSchema",
         "description": "A list of public posts"
       },
-      "PaymentMethodList": {
-        "type": "object",
-        "properties": {
-          "data": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/PaymentMethodOutput"
-            }
-          },
-          "meta": {
-            "$ref": "#/components/schemas/PaginationMeta"
-          }
-        },
-        "required": [
-          "data",
-          "meta"
-        ],
-        "additionalProperties": false,
-        "title": "PaymentMethodList",
-        "description": "Paginated list of payment methods"
-      },
-      "PaymentMethodOutput": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "mobile",
-              "card"
-            ]
-          },
-          "provider": {
-            "type": "string",
-            "enum": [
-              "fedapay",
-              "stripe",
-              "pawerpayer"
-            ]
-          },
-          "countryCode": {
-            "type": "string"
-          },
-          "commission": {
-            "type": "number"
-          },
-          "priority": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "active": {
-            "type": "boolean"
-          },
-          "useFedapayCheckout": {
-            "type": "boolean"
-          },
-          "supportsPayout": {
-            "type": "boolean"
-          },
-          "supportsRefund": {
-            "type": "boolean"
-          },
-          "icon": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "createdAt": {
-            "type": "string"
-          },
-          "updatedAt": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "code",
-          "type",
-          "provider",
-          "countryCode",
-          "commission",
-          "priority",
-          "active",
-          "useFedapayCheckout",
-          "supportsPayout",
-          "supportsRefund",
-          "createdAt",
-          "updatedAt"
-        ],
-        "additionalProperties": false,
-        "title": "PaymentMethodOutput",
-        "description": "Payment method details (admin view)"
-      },
-      "PaginationMeta": {
-        "type": "object",
-        "properties": {
-          "itemCount": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "pageSize": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "offset": {
-            "type": "integer",
-            "minimum": -9007199254740991,
-            "maximum": 9007199254740991
-          },
-          "hasMore": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "itemCount",
-          "pageSize",
-          "offset",
-          "hasMore"
-        ],
-        "additionalProperties": false,
-        "title": "PaginationMeta",
-        "description": "Pagination metadata"
-      },
-      "MessageResponse": {
-        "type": "object",
-        "properties": {
-          "message": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "message"
-        ],
-        "additionalProperties": false,
-        "title": "MessageResponse",
-        "description": "Simple message response"
-      },
-      "AvailablePaymentMethods": {
-        "type": "object",
-        "properties": {
-          "methods": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AvailablePaymentMethod"
-            }
-          }
-        },
-        "required": [
-          "methods"
-        ],
-        "additionalProperties": false,
-        "title": "AvailablePaymentMethods",
-        "description": "List of available payment methods for a country"
-      },
-      "AvailablePaymentMethod": {
-        "type": "object",
-        "properties": {
-          "id": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "name": {
-            "type": "string"
-          },
-          "code": {
-            "type": "string"
-          },
-          "type": {
-            "type": "string",
-            "enum": [
-              "mobile",
-              "card"
-            ]
-          },
-          "useFedapayCheckout": {
-            "type": "boolean"
-          },
-          "requiresPhone": {
-            "type": "boolean"
-          },
-          "icon": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "code",
-          "type",
-          "useFedapayCheckout",
-          "requiresPhone"
-        ],
-        "additionalProperties": false,
-        "title": "AvailablePaymentMethod",
-        "description": "Payment method visible to the user (no provider details)"
-      },
-      "PaymentInfo": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "currency": {
-            "type": "string"
-          },
-          "fedapayPublicKey": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          }
-        },
-        "required": [
-          "amount",
-          "currency",
-          "fedapayPublicKey"
-        ],
-        "additionalProperties": false,
-        "title": "PaymentInfo",
-        "description": "Payment info for the frontend to display and init Checkout.js"
-      },
-      "NoRedirectPaymentResult": {
-        "type": "object",
-        "properties": {
-          "paymentId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "status": {
-            "type": "string",
-            "const": "pending"
-          }
-        },
-        "required": [
-          "paymentId",
-          "status"
-        ],
-        "additionalProperties": false,
-        "title": "NoRedirectPaymentResult",
-        "description": "Result after initiating a no-redirect payment"
-      },
-      "CheckoutVerifyResult": {
-        "type": "object",
-        "properties": {
-          "paymentId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "status": {
-            "type": "string",
-            "const": "completed"
-          }
-        },
-        "required": [
-          "paymentId",
-          "status"
-        ],
-        "additionalProperties": false,
-        "title": "CheckoutVerifyResult",
-        "description": "Result after verifying a Checkout.js payment"
-      },
-      "PaymentStatusResponse": {
-        "type": "object",
-        "properties": {
-          "paymentId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "status": {
-            "$ref": "#/components/schemas/PaymentStatus"
-          },
-          "amount": {
-            "type": "number"
-          },
-          "currency": {
-            "type": "string"
-          },
-          "paidAt": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "provider": {
-            "$ref": "#/components/schemas/PaymentProvider"
-          }
-        },
-        "required": [
-          "paymentId",
-          "status",
-          "amount",
-          "currency",
-          "paidAt",
-          "provider"
-        ],
-        "additionalProperties": false,
-        "title": "PaymentStatusResponse",
-        "description": "Current payment status for an order"
-      },
-      "PaymentStatus": {
-        "type": "string",
-        "enum": [
-          "PENDING",
-          "CAPTURED",
-          "ESCROW",
-          "RELEASED",
-          "REFUNDED",
-          "FAILED"
-        ],
-        "title": "PaymentStatus",
-        "description": "Current status of a payment"
-      },
-      "PaymentProvider": {
-        "type": "string",
-        "enum": [
-          "fedapay",
-          "stripe",
-          "pawerpayer"
-        ],
-        "title": "PaymentProvider",
-        "description": "Payment gateway provider"
-      },
       "SearchResponse": {
         "type": "object",
         "properties": {
@@ -12316,6 +12445,115 @@
         ],
         "title": "MediaContext",
         "description": "Contexte d'utilisation du média"
+      },
+      "OpeningHours": {
+        "type": "object",
+        "propertyNames": {
+          "type": "string",
+          "enum": [
+            "monday",
+            "tuesday",
+            "wednesday",
+            "thursday",
+            "friday",
+            "saturday",
+            "sunday"
+          ]
+        },
+        "additionalProperties": {
+          "type": "object",
+          "properties": {
+            "open": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$"
+            },
+            "close": {
+              "type": "string",
+              "pattern": "^\\d{2}:\\d{2}$"
+            },
+            "closed": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "open",
+            "close"
+          ],
+          "additionalProperties": false
+        },
+        "title": "OpeningHours",
+        "description": "Weekly opening hours with days as keys"
+      },
+      "SupplierType": {
+        "type": "string",
+        "enum": [
+          "INPUTS",
+          "TRANSFORMER"
+        ],
+        "title": "SupplierType",
+        "description": "Type of supplier activity"
+      },
+      "SupplierMode": {
+        "default": "ORDER",
+        "type": "string",
+        "enum": [
+          "CONTACT",
+          "ORDER"
+        ],
+        "title": "SupplierMode",
+        "description": "How buyers interact with this supplier"
+      },
+      "Timezone": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 64,
+        "title": "Timezone",
+        "description": "IANA timezone the opening hours are expressed in"
+      },
+      "PickupMode": {
+        "type": "string",
+        "enum": [
+          "ON_SITE",
+          "DELIVERY"
+        ],
+        "title": "PickupMode",
+        "description": "How the buyer will receive the order"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "FEDAPAY",
+          "CASH_ON_DELIVERY"
+        ],
+        "title": "PaymentMethod",
+        "description": "Payment method for the order"
+      },
+      "OrderItemInput": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "variantId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "quantity": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "productId",
+          "quantity"
+        ],
+        "additionalProperties": false,
+        "title": "OrderItemInput",
+        "description": "A single item in the order"
       },
       "ValidationAction": {
         "type": "string",
@@ -12949,115 +13187,6 @@
         ],
         "title": "ContactReason",
         "description": "Why the visitor is writing"
-      },
-      "OpeningHours": {
-        "type": "object",
-        "propertyNames": {
-          "type": "string",
-          "enum": [
-            "monday",
-            "tuesday",
-            "wednesday",
-            "thursday",
-            "friday",
-            "saturday",
-            "sunday"
-          ]
-        },
-        "additionalProperties": {
-          "type": "object",
-          "properties": {
-            "open": {
-              "type": "string",
-              "pattern": "^\\d{2}:\\d{2}$"
-            },
-            "close": {
-              "type": "string",
-              "pattern": "^\\d{2}:\\d{2}$"
-            },
-            "closed": {
-              "type": "boolean"
-            }
-          },
-          "required": [
-            "open",
-            "close"
-          ],
-          "additionalProperties": false
-        },
-        "title": "OpeningHours",
-        "description": "Weekly opening hours with days as keys"
-      },
-      "SupplierType": {
-        "type": "string",
-        "enum": [
-          "INPUTS",
-          "TRANSFORMER"
-        ],
-        "title": "SupplierType",
-        "description": "Type of supplier activity"
-      },
-      "SupplierMode": {
-        "default": "ORDER",
-        "type": "string",
-        "enum": [
-          "CONTACT",
-          "ORDER"
-        ],
-        "title": "SupplierMode",
-        "description": "How buyers interact with this supplier"
-      },
-      "Timezone": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 64,
-        "title": "Timezone",
-        "description": "IANA timezone the opening hours are expressed in"
-      },
-      "PickupMode": {
-        "type": "string",
-        "enum": [
-          "ON_SITE",
-          "DELIVERY"
-        ],
-        "title": "PickupMode",
-        "description": "How the buyer will receive the order"
-      },
-      "PaymentMethod": {
-        "type": "string",
-        "enum": [
-          "FEDAPAY",
-          "CASH_ON_DELIVERY"
-        ],
-        "title": "PaymentMethod",
-        "description": "Payment method for the order"
-      },
-      "OrderItemInput": {
-        "type": "object",
-        "properties": {
-          "productId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "variantId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "quantity": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "productId",
-          "quantity"
-        ],
-        "additionalProperties": false,
-        "title": "OrderItemInput",
-        "description": "A single item in the order"
       },
       "ProductUnitCode": {
         "type": "string",

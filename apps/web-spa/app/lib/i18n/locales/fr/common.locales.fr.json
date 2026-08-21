@@ -173,7 +173,8 @@
     "themeSystem": "Thème système",
     "transactions": "Transactions",
     "users": "Utilisateurs",
-    "validations": "Validations"
+    "validations": "Validations",
+    "commissions": "Commissions"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -373,7 +374,9 @@
     "revenue": "Chiffre d'affaires",
     "reviews": "Avis",
     "title": "Statistiques",
-    "topProducts": "Produits les plus vendus"
+    "topProducts": "Produits les plus vendus",
+    "commission": "Commission eBio",
+    "netRevenue": "Net : {{amount}} FCFA"
   },
   "profile": {
     "title": "Mon profil",
@@ -784,11 +787,9 @@
       "month": "/mois",
       "commission": {
         "title": "Taux de commission",
-        "rate": "Taux (%)",
-        "miseEnRelation": "Mise en relation",
-        "commande": "Commander",
-        "plan": "Plan",
-        "premium": "Premium"
+        "description": "Un taux par catégorie de produits, appliqué à chaque commande sauf taux négocié",
+        "category": "Catégorie",
+        "rate": "Taux (%)"
       }
     },
     "site": {
@@ -896,7 +897,15 @@
         "timezone": "Fuseau",
         "mode": "Mode",
         "closed": "Fermé",
-        "noOpeningHours": "Aucun horaire renseigné."
+        "noOpeningHours": "Aucun horaire renseigné.",
+        "commission": {
+          "title": "Commission",
+          "currentRate": "Taux appliqué",
+          "categoryGrid": "Grille par catégorie",
+          "edit": "Négocier un taux",
+          "reset": "Revenir à la grille",
+          "hint": "Ce taux remplace la grille par catégorie pour toutes les commandes de cette boutique."
+        }
       },
       "empty": "Aucun fournisseur.",
       "notFound": "Fournisseur introuvable.",
@@ -1030,6 +1039,40 @@
         "identityDocument": "Pièce d'identité",
         "businessDocument": "Document professionnel",
         "viewDocument": "Voir le document"
+      }
+    },
+    "commissions": {
+      "title": "Commissions",
+      "description": "Ce que la plateforme prélève sur les ventes",
+      "exportCsv": "Exporter CSV",
+      "bySupplier": "Par boutique",
+      "orderDetail": "Détail des commandes",
+      "empty": "Aucune commission sur cette période",
+      "categoryGrid": "Grille par catégorie",
+      "filterOrders": "Voir les commandes",
+      "clearFilter": "Retirer le filtre boutique",
+      "totals": {
+        "realized": "Commission réalisée",
+        "realizedHint": "Sur les commandes livrées de la période",
+        "pending": "Commission en attente",
+        "pendingHint": "{{count}} commandes en cours",
+        "base": "Ventes livrées",
+        "baseHint": "Base de calcul, hors frais de livraison",
+        "deliveredOrders": "Commandes livrées",
+        "deliveredOrdersHint": "Sur la période filtrée"
+      },
+      "columns": {
+        "shop": "Boutique",
+        "negotiatedRate": "Taux négocié",
+        "deliveredOrders": "Livrées",
+        "base": "Base",
+        "realized": "Commission réalisée",
+        "pending": "En attente",
+        "date": "Date",
+        "order": "Commande",
+        "status": "Statut",
+        "rate": "Taux",
+        "commission": "Commission"
       }
     }
   },

@@ -167,14 +167,66 @@ export const broadcastNotificationSchema = z.object({
   description: 'Send a notification to a group of users',
 })
 
+// Rates are fractions (0.04 = 4%), matching what orders store.
 export const commissionRateSchema = z.object({
   rates: z.array(z.object({
     category: z.string(),
-    rate: z.number().min(0).max(100),
+    rate: z.number().min(0).max(1),
   })),
 }).meta({
   title: 'CommissionRates',
-  description: 'Commission rates per product category',
+  description: 'Commission rates per product category, as fractions',
+})
+
+export const supplierCommissionRateSchema = z.object({
+  rate: z.number().min(0).max(0.5).nullable(),
+}).meta({
+  title: 'SupplierCommissionRate',
+  description: 'Negotiated commission rate for one supplier; null falls back to the category grid',
+})
+
+export const commissionSummarySchema = z.object({
+  totals: z.object({
+    realizedCommission: z.number(),
+    realizedBase: z.number(),
+    deliveredOrders: z.number().int(),
+    pendingCommission: z.number(),
+    pendingOrders: z.number().int(),
+  }),
+  suppliers: z.array(z.object({
+    supplierId: z.string().uuid(),
+    shopName: z.string(),
+    negotiatedRate: z.number().nullable(),
+    deliveredOrders: z.number().int(),
+    realizedBase: z.number(),
+    realizedCommission: z.number(),
+    pendingCommission: z.number(),
+  })),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+}).meta({
+  title: 'CommissionSummary',
+  description: 'Commission KPIs and per-supplier totals for a period',
+})
+
+export const commissionOrderListSchema = z.object({
+  items: z.array(z.object({
+    id: z.string().uuid(),
+    date: z.string().datetime(),
+    orderNumber: z.string(),
+    supplierName: z.string(),
+    status: z.string(),
+    base: z.number(),
+    rate: z.number(),
+    commission: z.number(),
+  })),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+}).meta({
+  title: 'CommissionOrderList',
+  description: 'Paginated commission detail per order',
 })
 
 export const suspendSupplierSchema = z.object({
@@ -215,6 +267,9 @@ export type DisputeList = z.infer<typeof disputeListSchema>
 export type DisputeResolutionInput = z.infer<typeof disputeResolutionSchema>
 export type BroadcastNotification = z.infer<typeof broadcastNotificationSchema>
 export type CommissionRates = z.infer<typeof commissionRateSchema>
+export type SupplierCommissionRateInput = z.infer<typeof supplierCommissionRateSchema>
+export type CommissionSummary = z.infer<typeof commissionSummarySchema>
+export type CommissionOrderList = z.infer<typeof commissionOrderListSchema>
 export type SuspendSupplierInput = z.infer<typeof suspendSupplierSchema>
 export type TransactionList = z.infer<typeof transactionListSchema>
 

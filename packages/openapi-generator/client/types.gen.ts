@@ -34,6 +34,236 @@ export type CompleteUpload = {
 };
 
 /**
+ * CreatePaymentMethodInput
+ *
+ * Input for creating a payment method
+ */
+export type CreatePaymentMethodInput = {
+  name: string;
+  code: string;
+  type: "mobile" | "card";
+  provider: "fedapay" | "stripe" | "pawerpayer";
+  countryCode: string;
+  commission: number;
+  priority: number;
+  active: boolean;
+  useFedapayCheckout: boolean;
+  supportsPayout: boolean;
+  supportsRefund: boolean;
+};
+
+/**
+ * UpdatePaymentMethodInput
+ *
+ * Input for updating a payment method
+ */
+export type UpdatePaymentMethodInput = {
+  name?: string;
+  code?: string;
+  type?: "mobile" | "card";
+  provider?: "fedapay" | "stripe" | "pawerpayer";
+  countryCode?: string;
+  commission?: number;
+  priority?: number;
+  active?: boolean;
+  useFedapayCheckout?: boolean;
+  supportsPayout?: boolean;
+  supportsRefund?: boolean;
+  icon?: string;
+};
+
+/**
+ * InitiatePayment
+ *
+ * Input for initiating a no-redirect (USSD) payment
+ */
+export type InitiatePayment = {
+  orderId: string;
+  paymentMethodId: string;
+  phoneNumber?: string;
+};
+
+/**
+ * InitiateCheckoutInput
+ *
+ * Input for creating a pending payment before opening Checkout.js
+ */
+export type InitiateCheckoutInput = {
+  orderId: string;
+};
+
+/**
+ * VerifyCheckoutInput
+ *
+ * Input for verifying a payment made via Checkout.js
+ */
+export type VerifyCheckoutInput = {
+  orderId: string;
+  paymentId: string;
+  fedapayTransactionId: string;
+};
+
+/**
+ * UpdateUser
+ *
+ * Update user profile
+ */
+export type UpdateUser = {
+  name?: string;
+  email?: string;
+  phone?: string;
+  image?: string;
+  deviceId?: string;
+};
+
+/**
+ * CreateSalesPoint
+ *
+ * A place where the supplier sells besides the main shop
+ */
+export type CreateSalesPoint = {
+  name: string;
+  address?: string;
+  phone?: string;
+  latitude?: number;
+  longitude?: number;
+  openingHours?: OpeningHours;
+  isActive: boolean;
+};
+
+/**
+ * UpdateSalesPoint
+ *
+ * Update a sales point — every field optional
+ */
+export type UpdateSalesPoint = {
+  name?: string;
+  address?: string;
+  phone?: string;
+  latitude?: number | null;
+  longitude?: number | null;
+  openingHours?: OpeningHours;
+  isActive?: boolean;
+};
+
+/**
+ * RegisterSupplier
+ *
+ * Data required to register as a supplier
+ */
+export type RegisterSupplier = {
+  shopName: string;
+  type: SupplierType;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  neighborhood?: string;
+  mobileMoneyNumber: string;
+  mode: SupplierMode;
+  deliveryFee?: number;
+  freeDeliveryFrom?: number | null;
+  openingHours?: OpeningHours;
+  timezone?: Timezone;
+  shopPhotoMediaId?: string;
+  identityDocMediaId?: string;
+  businessProofMediaId?: string;
+};
+
+/**
+ * UpdateSupplier
+ *
+ * Update supplier profile — all fields optional
+ */
+export type UpdateSupplier = {
+  shopName?: string;
+  type?: SupplierType;
+  latitude?: number;
+  longitude?: number;
+  address?: string;
+  neighborhood?: string;
+  mobileMoneyNumber?: string;
+  mode?: SupplierMode;
+  deliveryFee?: number;
+  freeDeliveryFrom?: number | null;
+  openingHours?: OpeningHours;
+  timezone?: Timezone;
+  shopPhotoMediaId?: string;
+  identityDocMediaId?: string;
+  businessProofMediaId?: string;
+  coverPhoto?: string;
+  profilePhoto?: string;
+};
+
+/**
+ * DeliveryZone
+ *
+ * Delivery zone defined by a polygon with fee and estimated time
+ */
+export type DeliveryZone = {
+  polygon: Array<{
+    latitude: number;
+    longitude: number;
+  }>;
+  deliveryFee: number;
+  estimatedMinutes: number;
+};
+
+/**
+ * UpdateOpeningHours
+ */
+export type UpdateOpeningHours = {
+  openingHours: OpeningHours;
+};
+
+/**
+ * UpdateMode
+ */
+export type UpdateMode = {
+  mode: "CONTACT" | "ORDER";
+};
+
+/**
+ * CreateOrder
+ *
+ * Data required to place a new order
+ */
+export type CreateOrder = {
+  supplierId: string;
+  pickupMode: PickupMode;
+  paymentMethod: PaymentMethod;
+  deliveryAddress?: string;
+  deliverySlot?: string;
+  items: Array<OrderItemInput>;
+};
+
+/**
+ * RejectOrder
+ *
+ * Reason for rejecting an order
+ */
+export type RejectOrder = {
+  reason: string;
+};
+
+/**
+ * UpdateOrderStatus
+ *
+ * Update order status (supplier only)
+ */
+export type UpdateOrderStatus = {
+  status: "PREPARING" | "READY" | "IN_DELIVERY";
+};
+
+/**
+ * CreateDispute
+ *
+ * Open a dispute on an order
+ */
+export type CreateDispute = {
+  reason: string;
+};
+
+/**
  * ValidationActionInput
  *
  * Action to perform on a supplier validation
@@ -74,9 +304,35 @@ export type SuspendSupplier = {
 };
 
 /**
+ * SupplierCommissionRate
+ *
+ * Negotiated commission rate for one supplier; null falls back to the category grid
+ */
+export type SupplierCommissionRate = {
+  rate: number | null;
+};
+
+/**
+ * AdminOrderStatus
+ *
+ * Status forced by an admin, without the supplier-side transition rules
+ */
+export type AdminOrderStatus = {
+  status:
+    | "PLACED"
+    | "ACCEPTED"
+    | "PREPARING"
+    | "READY"
+    | "IN_DELIVERY"
+    | "DELIVERED"
+    | "CANCELLED"
+    | "DISPUTED";
+};
+
+/**
  * CommissionRates
  *
- * Commission rates per product category
+ * Commission rates per product category, as fractions
  */
 export type CommissionRates = {
   rates: Array<{
@@ -435,236 +691,6 @@ export type UpdateLandingFaq = {
 };
 
 /**
- * CreatePaymentMethodInput
- *
- * Input for creating a payment method
- */
-export type CreatePaymentMethodInput = {
-  name: string;
-  code: string;
-  type: "mobile" | "card";
-  provider: "fedapay" | "stripe" | "pawerpayer";
-  countryCode: string;
-  commission: number;
-  priority: number;
-  active: boolean;
-  useFedapayCheckout: boolean;
-  supportsPayout: boolean;
-  supportsRefund: boolean;
-};
-
-/**
- * UpdatePaymentMethodInput
- *
- * Input for updating a payment method
- */
-export type UpdatePaymentMethodInput = {
-  name?: string;
-  code?: string;
-  type?: "mobile" | "card";
-  provider?: "fedapay" | "stripe" | "pawerpayer";
-  countryCode?: string;
-  commission?: number;
-  priority?: number;
-  active?: boolean;
-  useFedapayCheckout?: boolean;
-  supportsPayout?: boolean;
-  supportsRefund?: boolean;
-  icon?: string;
-};
-
-/**
- * InitiatePayment
- *
- * Input for initiating a no-redirect (USSD) payment
- */
-export type InitiatePayment = {
-  orderId: string;
-  paymentMethodId: string;
-  phoneNumber?: string;
-};
-
-/**
- * InitiateCheckoutInput
- *
- * Input for creating a pending payment before opening Checkout.js
- */
-export type InitiateCheckoutInput = {
-  orderId: string;
-};
-
-/**
- * VerifyCheckoutInput
- *
- * Input for verifying a payment made via Checkout.js
- */
-export type VerifyCheckoutInput = {
-  orderId: string;
-  paymentId: string;
-  fedapayTransactionId: string;
-};
-
-/**
- * UpdateUser
- *
- * Update user profile
- */
-export type UpdateUser = {
-  name?: string;
-  email?: string;
-  phone?: string;
-  image?: string;
-  deviceId?: string;
-};
-
-/**
- * CreateSalesPoint
- *
- * A place where the supplier sells besides the main shop
- */
-export type CreateSalesPoint = {
-  name: string;
-  address?: string;
-  phone?: string;
-  latitude?: number;
-  longitude?: number;
-  openingHours?: OpeningHours;
-  isActive: boolean;
-};
-
-/**
- * UpdateSalesPoint
- *
- * Update a sales point — every field optional
- */
-export type UpdateSalesPoint = {
-  name?: string;
-  address?: string;
-  phone?: string;
-  latitude?: number | null;
-  longitude?: number | null;
-  openingHours?: OpeningHours;
-  isActive?: boolean;
-};
-
-/**
- * RegisterSupplier
- *
- * Data required to register as a supplier
- */
-export type RegisterSupplier = {
-  shopName: string;
-  type: SupplierType;
-  latitude?: number;
-  longitude?: number;
-  address?: string;
-  neighborhood?: string;
-  mobileMoneyNumber: string;
-  mode: SupplierMode;
-  deliveryFee?: number;
-  freeDeliveryFrom?: number | null;
-  openingHours?: OpeningHours;
-  timezone?: Timezone;
-  shopPhotoMediaId?: string;
-  identityDocMediaId?: string;
-  businessProofMediaId?: string;
-};
-
-/**
- * UpdateSupplier
- *
- * Update supplier profile — all fields optional
- */
-export type UpdateSupplier = {
-  shopName?: string;
-  type?: SupplierType;
-  latitude?: number;
-  longitude?: number;
-  address?: string;
-  neighborhood?: string;
-  mobileMoneyNumber?: string;
-  mode?: SupplierMode;
-  deliveryFee?: number;
-  freeDeliveryFrom?: number | null;
-  openingHours?: OpeningHours;
-  timezone?: Timezone;
-  shopPhotoMediaId?: string;
-  identityDocMediaId?: string;
-  businessProofMediaId?: string;
-  coverPhoto?: string;
-  profilePhoto?: string;
-};
-
-/**
- * DeliveryZone
- *
- * Delivery zone defined by a polygon with fee and estimated time
- */
-export type DeliveryZone = {
-  polygon: Array<{
-    latitude: number;
-    longitude: number;
-  }>;
-  deliveryFee: number;
-  estimatedMinutes: number;
-};
-
-/**
- * UpdateOpeningHours
- */
-export type UpdateOpeningHours = {
-  openingHours: OpeningHours;
-};
-
-/**
- * UpdateMode
- */
-export type UpdateMode = {
-  mode: "CONTACT" | "ORDER";
-};
-
-/**
- * CreateOrder
- *
- * Data required to place a new order
- */
-export type CreateOrder = {
-  supplierId: string;
-  pickupMode: PickupMode;
-  paymentMethod: PaymentMethod;
-  deliveryAddress?: string;
-  deliverySlot?: string;
-  items: Array<OrderItemInput>;
-};
-
-/**
- * RejectOrder
- *
- * Reason for rejecting an order
- */
-export type RejectOrder = {
-  reason: string;
-};
-
-/**
- * UpdateOrderStatus
- *
- * Update order status (supplier only)
- */
-export type UpdateOrderStatus = {
-  status: "PREPARING" | "READY" | "IN_DELIVERY";
-};
-
-/**
- * CreateDispute
- *
- * Open a dispute on an order
- */
-export type CreateDispute = {
-  reason: string;
-};
-
-/**
  * CreateCategory
  *
  * Data required to create a new category
@@ -795,26 +821,6 @@ export type CreateReview = {
 };
 
 /**
- * CreateSubscription
- *
- * Data to subscribe to a plan
- */
-export type CreateSubscription = {
-  planId: string;
-  paymentMethod: string;
-  paymentReference?: string;
-};
-
-/**
- * UpgradeSubscription
- *
- * Upgrade to a new plan
- */
-export type UpgradeSubscription = {
-  newPlanId: string;
-};
-
-/**
  * CompleteModule
  *
  * Answers submitted to complete a training module quiz
@@ -824,6 +830,169 @@ export type CompleteModule = {
     [key: string]: unknown;
   }>;
 };
+
+/**
+ * PaymentMethodList
+ *
+ * Paginated list of payment methods
+ */
+export type PaymentMethodList = {
+  data: Array<PaymentMethodOutput>;
+  meta: PaginationMeta;
+};
+
+/**
+ * PaymentMethodOutput
+ *
+ * Payment method details (admin view)
+ */
+export type PaymentMethodOutput = {
+  id: string;
+  name: string;
+  code: string;
+  type: "mobile" | "card";
+  provider: "fedapay" | "stripe" | "pawerpayer";
+  countryCode: string;
+  commission: number;
+  priority: number;
+  active: boolean;
+  useFedapayCheckout: boolean;
+  supportsPayout: boolean;
+  supportsRefund: boolean;
+  icon?: string | null;
+  createdAt: string;
+  updatedAt: string;
+};
+
+/**
+ * PaginationMeta
+ *
+ * Pagination metadata
+ */
+export type PaginationMeta = {
+  itemCount: number;
+  pageSize: number;
+  offset: number;
+  hasMore: boolean;
+};
+
+/**
+ * MessageResponse
+ *
+ * Simple message response
+ */
+export type MessageResponse = {
+  message: string;
+};
+
+/**
+ * AvailablePaymentMethods
+ *
+ * List of available payment methods for a country
+ */
+export type AvailablePaymentMethods = {
+  methods: Array<AvailablePaymentMethod>;
+};
+
+/**
+ * AvailablePaymentMethod
+ *
+ * Payment method visible to the user (no provider details)
+ */
+export type AvailablePaymentMethod = {
+  id: string;
+  name: string;
+  code: string;
+  type: "mobile" | "card";
+  useFedapayCheckout: boolean;
+  requiresPhone: boolean;
+  icon?: string | null;
+};
+
+/**
+ * PaymentInfo
+ *
+ * Payment info for the frontend to display and init Checkout.js
+ */
+export type PaymentInfo = {
+  amount: number;
+  currency: string;
+  fedapayPublicKey: string | null;
+};
+
+/**
+ * NoRedirectPaymentResult
+ *
+ * Result after initiating a no-redirect payment
+ */
+export type NoRedirectPaymentResult = {
+  paymentId: string;
+  status: "pending";
+};
+
+/**
+ * CheckoutVerifyResult
+ *
+ * Result after verifying a Checkout.js payment
+ */
+export type CheckoutVerifyResult = {
+  paymentId: string;
+  status: "completed";
+};
+
+/**
+ * PaymentStatusResponse
+ *
+ * Current payment status for an order
+ */
+export type PaymentStatusResponse = {
+  paymentId: string;
+  status: PaymentStatus;
+  amount: number;
+  currency: string;
+  paidAt: string | null;
+  provider: PaymentProvider;
+};
+
+/**
+ * PaymentStatus
+ *
+ * Current status of a payment
+ */
+export const PaymentStatus = {
+  PENDING: "PENDING",
+  CAPTURED: "CAPTURED",
+  ESCROW: "ESCROW",
+  RELEASED: "RELEASED",
+  REFUNDED: "REFUNDED",
+  FAILED: "FAILED",
+} as const;
+
+/**
+ * PaymentStatus
+ *
+ * Current status of a payment
+ */
+export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
+
+/**
+ * PaymentProvider
+ *
+ * Payment gateway provider
+ */
+export const PaymentProvider = {
+  FEDAPAY: "fedapay",
+  STRIPE: "stripe",
+  PAWERPAYER: "pawerpayer",
+} as const;
+
+/**
+ * PaymentProvider
+ *
+ * Payment gateway provider
+ */
+export type PaymentProvider =
+  (typeof PaymentProvider)[keyof typeof PaymentProvider];
 
 /**
  * GenerateTextResponse
@@ -1138,169 +1307,6 @@ export type PublicPostsSchema = {
 };
 
 /**
- * PaymentMethodList
- *
- * Paginated list of payment methods
- */
-export type PaymentMethodList = {
-  data: Array<PaymentMethodOutput>;
-  meta: PaginationMeta;
-};
-
-/**
- * PaymentMethodOutput
- *
- * Payment method details (admin view)
- */
-export type PaymentMethodOutput = {
-  id: string;
-  name: string;
-  code: string;
-  type: "mobile" | "card";
-  provider: "fedapay" | "stripe" | "pawerpayer";
-  countryCode: string;
-  commission: number;
-  priority: number;
-  active: boolean;
-  useFedapayCheckout: boolean;
-  supportsPayout: boolean;
-  supportsRefund: boolean;
-  icon?: string | null;
-  createdAt: string;
-  updatedAt: string;
-};
-
-/**
- * PaginationMeta
- *
- * Pagination metadata
- */
-export type PaginationMeta = {
-  itemCount: number;
-  pageSize: number;
-  offset: number;
-  hasMore: boolean;
-};
-
-/**
- * MessageResponse
- *
- * Simple message response
- */
-export type MessageResponse = {
-  message: string;
-};
-
-/**
- * AvailablePaymentMethods
- *
- * List of available payment methods for a country
- */
-export type AvailablePaymentMethods = {
-  methods: Array<AvailablePaymentMethod>;
-};
-
-/**
- * AvailablePaymentMethod
- *
- * Payment method visible to the user (no provider details)
- */
-export type AvailablePaymentMethod = {
-  id: string;
-  name: string;
-  code: string;
-  type: "mobile" | "card";
-  useFedapayCheckout: boolean;
-  requiresPhone: boolean;
-  icon?: string | null;
-};
-
-/**
- * PaymentInfo
- *
- * Payment info for the frontend to display and init Checkout.js
- */
-export type PaymentInfo = {
-  amount: number;
-  currency: string;
-  fedapayPublicKey: string | null;
-};
-
-/**
- * NoRedirectPaymentResult
- *
- * Result after initiating a no-redirect payment
- */
-export type NoRedirectPaymentResult = {
-  paymentId: string;
-  status: "pending";
-};
-
-/**
- * CheckoutVerifyResult
- *
- * Result after verifying a Checkout.js payment
- */
-export type CheckoutVerifyResult = {
-  paymentId: string;
-  status: "completed";
-};
-
-/**
- * PaymentStatusResponse
- *
- * Current payment status for an order
- */
-export type PaymentStatusResponse = {
-  paymentId: string;
-  status: PaymentStatus;
-  amount: number;
-  currency: string;
-  paidAt: string | null;
-  provider: PaymentProvider;
-};
-
-/**
- * PaymentStatus
- *
- * Current status of a payment
- */
-export const PaymentStatus = {
-  PENDING: "PENDING",
-  CAPTURED: "CAPTURED",
-  ESCROW: "ESCROW",
-  RELEASED: "RELEASED",
-  REFUNDED: "REFUNDED",
-  FAILED: "FAILED",
-} as const;
-
-/**
- * PaymentStatus
- *
- * Current status of a payment
- */
-export type PaymentStatus = (typeof PaymentStatus)[keyof typeof PaymentStatus];
-
-/**
- * PaymentProvider
- *
- * Payment gateway provider
- */
-export const PaymentProvider = {
-  FEDAPAY: "fedapay",
-  STRIPE: "stripe",
-  PAWERPAYER: "pawerpayer",
-} as const;
-
-/**
- * PaymentProvider
- *
- * Payment gateway provider
- */
-export type PaymentProvider =
-  (typeof PaymentProvider)[keyof typeof PaymentProvider];
-
-/**
  * SearchResponse
  */
 export type SearchResponse = {
@@ -1388,6 +1394,99 @@ export const MediaContext = {
  * Contexte d'utilisation du média
  */
 export type MediaContext = (typeof MediaContext)[keyof typeof MediaContext];
+
+/**
+ * OpeningHours
+ *
+ * Weekly opening hours with days as keys
+ */
+export type OpeningHours = {
+  [key: string]: {
+    open: string;
+    close: string;
+    closed?: boolean;
+  };
+};
+
+/**
+ * SupplierType
+ *
+ * Type of supplier activity
+ */
+export const SupplierType = {
+  INPUTS: "INPUTS",
+  TRANSFORMER: "TRANSFORMER",
+} as const;
+
+/**
+ * SupplierType
+ *
+ * Type of supplier activity
+ */
+export type SupplierType = (typeof SupplierType)[keyof typeof SupplierType];
+
+/**
+ * SupplierMode
+ *
+ * How buyers interact with this supplier
+ */
+export const SupplierMode = { CONTACT: "CONTACT", ORDER: "ORDER" } as const;
+
+/**
+ * SupplierMode
+ *
+ * How buyers interact with this supplier
+ */
+export type SupplierMode = (typeof SupplierMode)[keyof typeof SupplierMode];
+
+/**
+ * Timezone
+ *
+ * IANA timezone the opening hours are expressed in
+ */
+export type Timezone = string;
+
+/**
+ * PickupMode
+ *
+ * How the buyer will receive the order
+ */
+export const PickupMode = { ON_SITE: "ON_SITE", DELIVERY: "DELIVERY" } as const;
+
+/**
+ * PickupMode
+ *
+ * How the buyer will receive the order
+ */
+export type PickupMode = (typeof PickupMode)[keyof typeof PickupMode];
+
+/**
+ * PaymentMethod
+ *
+ * Payment method for the order
+ */
+export const PaymentMethod = {
+  FEDAPAY: "FEDAPAY",
+  CASH_ON_DELIVERY: "CASH_ON_DELIVERY",
+} as const;
+
+/**
+ * PaymentMethod
+ *
+ * Payment method for the order
+ */
+export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
+
+/**
+ * OrderItemInput
+ *
+ * A single item in the order
+ */
+export type OrderItemInput = {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+};
 
 /**
  * ValidationAction
@@ -1699,99 +1798,6 @@ export const ContactReason = {
  * Why the visitor is writing
  */
 export type ContactReason = (typeof ContactReason)[keyof typeof ContactReason];
-
-/**
- * OpeningHours
- *
- * Weekly opening hours with days as keys
- */
-export type OpeningHours = {
-  [key: string]: {
-    open: string;
-    close: string;
-    closed?: boolean;
-  };
-};
-
-/**
- * SupplierType
- *
- * Type of supplier activity
- */
-export const SupplierType = {
-  INPUTS: "INPUTS",
-  TRANSFORMER: "TRANSFORMER",
-} as const;
-
-/**
- * SupplierType
- *
- * Type of supplier activity
- */
-export type SupplierType = (typeof SupplierType)[keyof typeof SupplierType];
-
-/**
- * SupplierMode
- *
- * How buyers interact with this supplier
- */
-export const SupplierMode = { CONTACT: "CONTACT", ORDER: "ORDER" } as const;
-
-/**
- * SupplierMode
- *
- * How buyers interact with this supplier
- */
-export type SupplierMode = (typeof SupplierMode)[keyof typeof SupplierMode];
-
-/**
- * Timezone
- *
- * IANA timezone the opening hours are expressed in
- */
-export type Timezone = string;
-
-/**
- * PickupMode
- *
- * How the buyer will receive the order
- */
-export const PickupMode = { ON_SITE: "ON_SITE", DELIVERY: "DELIVERY" } as const;
-
-/**
- * PickupMode
- *
- * How the buyer will receive the order
- */
-export type PickupMode = (typeof PickupMode)[keyof typeof PickupMode];
-
-/**
- * PaymentMethod
- *
- * Payment method for the order
- */
-export const PaymentMethod = {
-  FEDAPAY: "FEDAPAY",
-  CASH_ON_DELIVERY: "CASH_ON_DELIVERY",
-} as const;
-
-/**
- * PaymentMethod
- *
- * Payment method for the order
- */
-export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
-
-/**
- * OrderItemInput
- *
- * A single item in the order
- */
-export type OrderItemInput = {
-  productId: string;
-  variantId?: string;
-  quantity: number;
-};
 
 /**
  * ProductUnitCode
@@ -4728,6 +4734,19 @@ export type OrdersControllerConfirmDeliveryResponses = {
   200: unknown;
 };
 
+export type OrdersControllerConfirmDeliveryPostData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/confirm-delivery";
+};
+
+export type OrdersControllerConfirmDeliveryPostResponses = {
+  201: unknown;
+};
+
 export type OrdersControllerCreateDisputeData = {
   /**
    * CreateDispute
@@ -5382,77 +5401,6 @@ export type TrainingControllerGetMyProgressResponses = {
   200: unknown;
 };
 
-export type SubscriptionsControllerGetPlansData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/subscriptions/plans";
-};
-
-export type SubscriptionsControllerGetPlansResponses = {
-  200: unknown;
-};
-
-export type SubscriptionsControllerSubscribeData = {
-  /**
-   * CreateSubscription
-   *
-   * Data to subscribe to a plan
-   */
-  body: {
-    planId: string;
-    paymentMethod: string;
-    paymentReference?: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/subscriptions";
-};
-
-export type SubscriptionsControllerSubscribeResponses = {
-  201: unknown;
-};
-
-export type SubscriptionsControllerGetCurrentSubscriptionData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/subscriptions/me";
-};
-
-export type SubscriptionsControllerGetCurrentSubscriptionResponses = {
-  200: unknown;
-};
-
-export type SubscriptionsControllerCancelSubscriptionData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/subscriptions/me/cancel";
-};
-
-export type SubscriptionsControllerCancelSubscriptionResponses = {
-  200: unknown;
-};
-
-export type SubscriptionsControllerUpgradeSubscriptionData = {
-  /**
-   * UpgradeSubscription
-   *
-   * Upgrade to a new plan
-   */
-  body: {
-    newPlanId: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/subscriptions/me/upgrade";
-};
-
-export type SubscriptionsControllerUpgradeSubscriptionResponses = {
-  201: unknown;
-};
-
 export type AdminControllerGetDashboardData = {
   body?: never;
   path?: never;
@@ -5609,6 +5557,26 @@ export type AdminControllerSuspendSupplierResponses = {
   200: unknown;
 };
 
+export type AdminControllerUpdateSupplierCommissionRateData = {
+  /**
+   * SupplierCommissionRate
+   *
+   * Negotiated commission rate for one supplier; null falls back to the category grid
+   */
+  body: {
+    rate: number | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/suppliers/{id}/commission-rate";
+};
+
+export type AdminControllerUpdateSupplierCommissionRateResponses = {
+  200: unknown;
+};
+
 export type AdminControllerReinstateSupplierData = {
   body?: never;
   path: {
@@ -5636,6 +5604,41 @@ export type AdminControllerGetTransactionsData = {
 };
 
 export type AdminControllerGetTransactionsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetCommissionsData = {
+  body?: never;
+  path?: never;
+  query: {
+    from: string;
+    to: string;
+    supplierId: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/commissions";
+};
+
+export type AdminControllerGetCommissionsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetCommissionOrdersData = {
+  body?: never;
+  path?: never;
+  query: {
+    from: string;
+    to: string;
+    supplierId: string;
+    format: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/commissions/orders";
+};
+
+export type AdminControllerGetCommissionOrdersResponses = {
   200: unknown;
 };
 
@@ -5668,6 +5671,34 @@ export type AdminControllerGetOrderByIdData = {
 };
 
 export type AdminControllerGetOrderByIdResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateOrderStatusData = {
+  /**
+   * AdminOrderStatus
+   *
+   * Status forced by an admin, without the supplier-side transition rules
+   */
+  body: {
+    status:
+      | "PLACED"
+      | "ACCEPTED"
+      | "PREPARING"
+      | "READY"
+      | "IN_DELIVERY"
+      | "DELIVERED"
+      | "CANCELLED"
+      | "DISPUTED";
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/orders/{id}/status";
+};
+
+export type AdminControllerUpdateOrderStatusResponses = {
   200: unknown;
 };
 
@@ -5770,7 +5801,7 @@ export type AdminControllerUpdateCommissionsData = {
   /**
    * CommissionRates
    *
-   * Commission rates per product category
+   * Commission rates per product category, as fractions
    */
   body: {
     rates: Array<{

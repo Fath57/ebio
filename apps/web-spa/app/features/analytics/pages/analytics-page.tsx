@@ -69,7 +69,7 @@ export default function AnalyticsPage() {
         </Select>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card>
           <CardHeader>
             <CardTitle className="text-sm font-medium text-muted-foreground">
@@ -89,6 +89,24 @@ export default function AnalyticsPage() {
                 %
               </p>
             )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              {t('analytics.commission')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-3xl font-bold">
+              {analytics?.commission ?? 0}
+              {' '}
+              {t('analytics.currency')}
+            </p>
+            <p className="text-sm text-muted-foreground">
+              {t('analytics.netRevenue', { amount: analytics?.netRevenue ?? 0 })}
+            </p>
           </CardContent>
         </Card>
 

@@ -3,6 +3,7 @@ import {
   adminControllerGetSuppliers,
   adminControllerReinstateSupplier,
   adminControllerSuspendSupplier,
+  adminControllerUpdateSupplierCommissionRate,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export interface AdminSupplierOwner {
@@ -36,6 +37,7 @@ export interface AdminSupplierDetail extends AdminSupplierListItem {
   coverPhoto: string | null
   profilePhoto: string | null
   mobileMoneyNumber: string | null
+  commissionRate: number | null
   revenue: number
 }
 
@@ -100,4 +102,14 @@ export async function reinstateSupplier(supplierId: string): Promise<void> {
   const response = await adminControllerReinstateSupplier({ path: { id: supplierId } })
   if (response.error)
     throw new Error('Failed to reinstate supplier')
+}
+
+/** Fraction (0.03 = 3 %) ; null revient à la grille par catégorie. */
+export async function updateSupplierCommissionRate(supplierId: string, rate: number | null): Promise<void> {
+  const response = await adminControllerUpdateSupplierCommissionRate({
+    path: { id: supplierId },
+    body: { rate },
+  })
+  if (response.error)
+    throw new Error('Failed to update commission rate')
 }

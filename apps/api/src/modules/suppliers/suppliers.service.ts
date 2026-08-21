@@ -270,22 +270,61 @@ export class SuppliersService {
     unreadMessages: number
     criticalStockProducts: number
     revenue: number
+    commission: number
+    netRevenue: number
     pendingEscrow: number
     averageRating: number | null
   }> {
     const supplier = await this.findById(supplierId)
+    const db = this.em.getConnection()
+    const monthStart = new Date(Date.now() - 30 * 86_400_000)
 
-    const criticalStockResult = await this.em.getConnection().execute(
-      `SELECT COUNT(*) as count FROM products WHERE supplier_id = ? AND stock <= stock_alert_threshold AND status = 'ACTIVE'`,
-      [supplierId],
-    )
+    const [criticalStockResult, [pending], [sales], [escrow], [unread]] = await Promise.all([
+      db.execute(
+        `SELECT COUNT(*) as count FROM products WHERE supplier_id = ? AND stock <= stock_alert_threshold AND status = 'ACTIVE'`,
+        [supplierId],
+      ),
+      db.execute(
+        `SELECT COUNT(*) AS count FROM orders
+         WHERE supplier_id = ? AND status IN ('PLACED', 'ACCEPTED', 'PREPARING', 'READY')`,
+        [supplierId],
+      ),
+      // Rolling 30 days of delivered sales, items only, with the commission
+      // alongside so the app can show the net.
+      db.execute(
+        `SELECT COALESCE(SUM(total_amount - delivery_fee), 0) AS revenue,
+                COALESCE(SUM(commission_amount), 0) AS commission
+         FROM orders
+         WHERE supplier_id = ? AND status = 'DELIVERED' AND "createdAt" >= ?`,
+        [supplierId, monthStart],
+      ),
+      // Delivered money not yet released: what the shop still waits for.
+      db.execute(
+        `SELECT COALESCE(SUM(total_amount - commission_amount), 0) AS amount
+         FROM orders
+         WHERE supplier_id = ? AND status = 'DELIVERED' AND escrow_released_at IS NULL`,
+        [supplierId],
+      ),
+      db.execute(
+        `SELECT COUNT(*) AS count
+         FROM messages m
+         JOIN conversations c ON c.id = m.conversation_id
+         WHERE c.supplier_id = ? AND m.read_at IS NULL AND m.sender_id <> ?`,
+        [supplierId, supplier.user.id],
+      ),
+    ])
+
+    const revenue = Number(sales.revenue)
+    const commission = Number(sales.commission)
 
     return {
-      pendingOrders: 0,
-      unreadMessages: 0,
+      pendingOrders: Number(pending.count),
+      unreadMessages: Number(unread.count),
       criticalStockProducts: Number(criticalStockResult[0]?.count ?? 0),
-      revenue: 0,
-      pendingEscrow: 0,
+      revenue,
+      commission,
+      netRevenue: Math.round((revenue - commission) * 100) / 100,
+      pendingEscrow: Number(escrow.amount),
       averageRating: supplier.globalRating ?? null,
     }
   }
@@ -340,30 +379,97 @@ export class SuppliersService {
     return { mode: supplier.mode }
   }
 
-  async getAnalytics(_supplierId: string, _period: string) {
-    // TODO: implement period-based aggregation
+  /** Days covered by each analytics period keyword. */
+  private static readonly PERIOD_DAYS: Record<string, number> = {
+    week: 7,
+    month: 30,
+    quarter: 90,
+  }
+
+  async getAnalytics(supplierId: string, period: string) {
+    const days = SuppliersService.PERIOD_DAYS[period] ?? 30
+    const now = Date.now()
+    const start = new Date(now - days * 86_400_000)
+    const previousStart = new Date(now - 2 * days * 86_400_000)
+    const db = this.em.getConnection()
+
+    // Delivered orders only: money the shop actually made. The commission is
+    // shown so the shop knows its net, not just its gross.
+    const query = `
+      SELECT COUNT(*) AS orders,
+             COALESCE(SUM(total_amount - delivery_fee), 0) AS revenue,
+             COALESCE(SUM(commission_amount), 0) AS commission
+      FROM orders
+      WHERE supplier_id = ? AND status = 'DELIVERED' AND "createdAt" >= ? AND "createdAt" < ?`
+    const [[current], [previous]] = await Promise.all([
+      db.execute(query, [supplierId, start, new Date(now)]),
+      db.execute(query, [supplierId, previousStart, start]),
+    ])
+
+    const revenue = Number(current.revenue)
+    const ordersCount = Number(current.orders)
+    const commission = Number(current.commission)
+    const previousRevenue = Number(previous.revenue)
+    const previousOrders = Number(previous.orders)
+
+    const trend = (value: number, before: number): number | null =>
+      before > 0 ? Math.round(((value - before) / before) * 100) : null
+
     return {
-      revenue: 0,
-      orders: 0,
-      averageOrderValue: 0,
+      revenue,
+      ordersCount,
+      averageOrder: ordersCount > 0 ? Math.round((revenue / ordersCount) * 100) / 100 : 0,
+      commission,
+      netRevenue: Math.round((revenue - commission) * 100) / 100,
+      revenueTrend: trend(revenue, previousRevenue),
+      ordersTrend: trend(ordersCount, previousOrders),
     }
   }
 
-  async getTopProducts(supplierId: string, _period: string) {
+  async getTopProducts(supplierId: string, period: string) {
+    const days = SuppliersService.PERIOD_DAYS[period] ?? 30
+    const start = new Date(Date.now() - days * 86_400_000)
     const rows = await this.em.getConnection().execute(
-      `SELECT p.id, p.name, p.stock, p.price_per_unit as "pricePerUnit"
-       FROM products p WHERE p.supplier_id = ? AND p.status = 'ACTIVE'
-       ORDER BY p.stock DESC LIMIT 10`,
-      [supplierId],
+      `SELECT p.id, p.name,
+              COALESCE(SUM(oi.quantity), 0) AS "quantitySold",
+              COALESCE(SUM(oi.total_price), 0) AS revenue
+       FROM order_items oi
+       JOIN orders o ON o.id = oi.order_id
+       JOIN products p ON p.id = oi.product_id
+       WHERE o.supplier_id = ? AND o.status = 'DELIVERED' AND o."createdAt" >= ?
+       GROUP BY p.id, p.name
+       ORDER BY revenue DESC
+       LIMIT 10`,
+      [supplierId, start],
     )
-    return { products: rows }
+    return {
+      data: rows.map((r: Record<string, unknown>) => ({
+        id: r.id as string,
+        name: r.name as string,
+        quantitySold: Number(r.quantitySold),
+        revenue: Number(r.revenue),
+      })),
+    }
   }
 
   async getRatingsOverview(supplierId: string) {
     const supplier = await this.findById(supplierId)
+    // Star distribution from each review's four-criteria average.
+    const rows = await this.em.getConnection().execute(
+      `SELECT ROUND((quality_rating + delay_rating + communication_rating + conformity_rating) / 4.0) AS star,
+              COUNT(*) AS count
+       FROM reviews WHERE supplier_id = ?
+       GROUP BY star`,
+      [supplierId],
+    )
+    const distribution: Record<number, number> = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
+    for (const row of rows as Array<{ star: number, count: number }>) {
+      distribution[Number(row.star)] = Number(row.count)
+    }
     return {
-      averageRating: supplier.globalRating,
-      totalReviews: supplier.totalReviews,
+      average: supplier.globalRating ?? 0,
+      totalCount: supplier.totalReviews,
+      distribution,
     }
   }
 }

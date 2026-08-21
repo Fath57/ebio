@@ -25,6 +25,167 @@ export const zCompleteUpload = z.object({
 });
 
 /**
+ * CreatePaymentMethodInput
+ *
+ * Input for creating a payment method
+ */
+export const zCreatePaymentMethodInput = z.object({
+  name: z.string().min(1).max(255),
+  code: z.string().min(1).max(255),
+  type: z.enum(["mobile", "card"]),
+  provider: z.enum(["fedapay", "stripe", "pawerpayer"]),
+  countryCode: z.string().min(2).max(3),
+  commission: z.number().gte(0).lte(100).default(0),
+  priority: z.int().gte(0).lte(9007199254740991).default(0),
+  active: z.boolean().default(true),
+  useFedapayCheckout: z.boolean().default(false),
+  supportsPayout: z.boolean().default(false),
+  supportsRefund: z.boolean().default(false),
+});
+
+/**
+ * UpdatePaymentMethodInput
+ *
+ * Input for updating a payment method
+ */
+export const zUpdatePaymentMethodInput = z.object({
+  name: z.optional(z.string().min(1).max(255)),
+  code: z.optional(z.string().min(1).max(255)),
+  type: z.optional(z.enum(["mobile", "card"])),
+  provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer"])),
+  countryCode: z.optional(z.string().min(2).max(3)),
+  commission: z.optional(z.number().gte(0).lte(100)),
+  priority: z.optional(z.int().gte(0).lte(9007199254740991)),
+  active: z.optional(z.boolean()),
+  useFedapayCheckout: z.optional(z.boolean()),
+  supportsPayout: z.optional(z.boolean()),
+  supportsRefund: z.optional(z.boolean()),
+  icon: z.optional(z.string().max(500)),
+});
+
+/**
+ * InitiatePayment
+ *
+ * Input for initiating a no-redirect (USSD) payment
+ */
+export const zInitiatePayment = z.object({
+  orderId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  paymentMethodId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  phoneNumber: z.optional(z.string().min(8)),
+});
+
+/**
+ * InitiateCheckoutInput
+ *
+ * Input for creating a pending payment before opening Checkout.js
+ */
+export const zInitiateCheckoutInput = z.object({
+  orderId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+});
+
+/**
+ * VerifyCheckoutInput
+ *
+ * Input for verifying a payment made via Checkout.js
+ */
+export const zVerifyCheckoutInput = z.object({
+  orderId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  paymentId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  fedapayTransactionId: z.string().min(1),
+});
+
+/**
+ * UpdateUser
+ *
+ * Update user profile
+ */
+export const zUpdateUser = z.object({
+  name: z.optional(z.string().min(2).max(100)),
+  email: z.optional(
+    z
+      .email()
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+  ),
+  phone: z.optional(z.string()),
+  image: z.optional(z.url()),
+  deviceId: z.optional(z.string()),
+});
+
+/**
+ * DeliveryZone
+ *
+ * Delivery zone defined by a polygon with fee and estimated time
+ */
+export const zDeliveryZone = z.object({
+  polygon: z
+    .array(
+      z.object({
+        latitude: z.number().gte(-90).lte(90),
+        longitude: z.number().gte(-180).lte(180),
+      }),
+    )
+    .min(3),
+  deliveryFee: z.number().gte(0),
+  estimatedMinutes: z.int().gte(0).lte(9007199254740991),
+});
+
+/**
+ * UpdateMode
+ */
+export const zUpdateMode = z.object({
+  mode: z.enum(["CONTACT", "ORDER"]),
+});
+
+/**
+ * RejectOrder
+ *
+ * Reason for rejecting an order
+ */
+export const zRejectOrder = z.object({
+  reason: z.string().min(5).max(500),
+});
+
+/**
+ * UpdateOrderStatus
+ *
+ * Update order status (supplier only)
+ */
+export const zUpdateOrderStatus = z.object({
+  status: z.enum(["PREPARING", "READY", "IN_DELIVERY"]),
+});
+
+/**
+ * CreateDispute
+ *
+ * Open a dispute on an order
+ */
+export const zCreateDispute = z.object({
+  reason: z.string().min(10).max(2000),
+});
+
+/**
  * SuspendSupplier
  *
  * Reason for suspending a supplier
@@ -34,15 +195,42 @@ export const zSuspendSupplier = z.object({
 });
 
 /**
+ * SupplierCommissionRate
+ *
+ * Negotiated commission rate for one supplier; null falls back to the category grid
+ */
+export const zSupplierCommissionRate = z.object({
+  rate: z.union([z.number().gte(0).lte(0.5), z.null()]),
+});
+
+/**
+ * AdminOrderStatus
+ *
+ * Status forced by an admin, without the supplier-side transition rules
+ */
+export const zAdminOrderStatus = z.object({
+  status: z.enum([
+    "PLACED",
+    "ACCEPTED",
+    "PREPARING",
+    "READY",
+    "IN_DELIVERY",
+    "DELIVERED",
+    "CANCELLED",
+    "DISPUTED",
+  ]),
+});
+
+/**
  * CommissionRates
  *
- * Commission rates per product category
+ * Commission rates per product category, as fractions
  */
 export const zCommissionRates = z.object({
   rates: z.array(
     z.object({
       category: z.string(),
-      rate: z.number().gte(0).lte(100),
+      rate: z.number().gte(0).lte(1),
     }),
   ),
 });
@@ -262,167 +450,6 @@ export const zUpdateLandingFaq = z.object({
 });
 
 /**
- * CreatePaymentMethodInput
- *
- * Input for creating a payment method
- */
-export const zCreatePaymentMethodInput = z.object({
-  name: z.string().min(1).max(255),
-  code: z.string().min(1).max(255),
-  type: z.enum(["mobile", "card"]),
-  provider: z.enum(["fedapay", "stripe", "pawerpayer"]),
-  countryCode: z.string().min(2).max(3),
-  commission: z.number().gte(0).lte(100).default(0),
-  priority: z.int().gte(0).lte(9007199254740991).default(0),
-  active: z.boolean().default(true),
-  useFedapayCheckout: z.boolean().default(false),
-  supportsPayout: z.boolean().default(false),
-  supportsRefund: z.boolean().default(false),
-});
-
-/**
- * UpdatePaymentMethodInput
- *
- * Input for updating a payment method
- */
-export const zUpdatePaymentMethodInput = z.object({
-  name: z.optional(z.string().min(1).max(255)),
-  code: z.optional(z.string().min(1).max(255)),
-  type: z.optional(z.enum(["mobile", "card"])),
-  provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer"])),
-  countryCode: z.optional(z.string().min(2).max(3)),
-  commission: z.optional(z.number().gte(0).lte(100)),
-  priority: z.optional(z.int().gte(0).lte(9007199254740991)),
-  active: z.optional(z.boolean()),
-  useFedapayCheckout: z.optional(z.boolean()),
-  supportsPayout: z.optional(z.boolean()),
-  supportsRefund: z.optional(z.boolean()),
-  icon: z.optional(z.string().max(500)),
-});
-
-/**
- * InitiatePayment
- *
- * Input for initiating a no-redirect (USSD) payment
- */
-export const zInitiatePayment = z.object({
-  orderId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  paymentMethodId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  phoneNumber: z.optional(z.string().min(8)),
-});
-
-/**
- * InitiateCheckoutInput
- *
- * Input for creating a pending payment before opening Checkout.js
- */
-export const zInitiateCheckoutInput = z.object({
-  orderId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-});
-
-/**
- * VerifyCheckoutInput
- *
- * Input for verifying a payment made via Checkout.js
- */
-export const zVerifyCheckoutInput = z.object({
-  orderId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  paymentId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  fedapayTransactionId: z.string().min(1),
-});
-
-/**
- * UpdateUser
- *
- * Update user profile
- */
-export const zUpdateUser = z.object({
-  name: z.optional(z.string().min(2).max(100)),
-  email: z.optional(
-    z
-      .email()
-      .regex(
-        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
-      ),
-  ),
-  phone: z.optional(z.string()),
-  image: z.optional(z.url()),
-  deviceId: z.optional(z.string()),
-});
-
-/**
- * DeliveryZone
- *
- * Delivery zone defined by a polygon with fee and estimated time
- */
-export const zDeliveryZone = z.object({
-  polygon: z
-    .array(
-      z.object({
-        latitude: z.number().gte(-90).lte(90),
-        longitude: z.number().gte(-180).lte(180),
-      }),
-    )
-    .min(3),
-  deliveryFee: z.number().gte(0),
-  estimatedMinutes: z.int().gte(0).lte(9007199254740991),
-});
-
-/**
- * UpdateMode
- */
-export const zUpdateMode = z.object({
-  mode: z.enum(["CONTACT", "ORDER"]),
-});
-
-/**
- * RejectOrder
- *
- * Reason for rejecting an order
- */
-export const zRejectOrder = z.object({
-  reason: z.string().min(5).max(500),
-});
-
-/**
- * UpdateOrderStatus
- *
- * Update order status (supplier only)
- */
-export const zUpdateOrderStatus = z.object({
-  status: z.enum(["PREPARING", "READY", "IN_DELIVERY"]),
-});
-
-/**
- * CreateDispute
- *
- * Open a dispute on an order
- */
-export const zCreateDispute = z.object({
-  reason: z.string().min(10).max(2000),
-});
-
-/**
  * CreateCategory
  *
  * Data required to create a new category
@@ -527,40 +554,176 @@ export const zCreateReview = z.object({
 });
 
 /**
- * CreateSubscription
- *
- * Data to subscribe to a plan
- */
-export const zCreateSubscription = z.object({
-  planId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  paymentMethod: z.string().min(1),
-  paymentReference: z.optional(z.string()),
-});
-
-/**
- * UpgradeSubscription
- *
- * Upgrade to a new plan
- */
-export const zUpgradeSubscription = z.object({
-  newPlanId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-});
-
-/**
  * CompleteModule
  *
  * Answers submitted to complete a training module quiz
  */
 export const zCompleteModule = z.object({
   answers: z.array(z.record(z.string(), z.unknown())),
+});
+
+/**
+ * PaymentMethodOutput
+ *
+ * Payment method details (admin view)
+ */
+export const zPaymentMethodOutput = z.object({
+  id: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  name: z.string(),
+  code: z.string(),
+  type: z.enum(["mobile", "card"]),
+  provider: z.enum(["fedapay", "stripe", "pawerpayer"]),
+  countryCode: z.string(),
+  commission: z.number(),
+  priority: z.int().gte(-9007199254740991).lte(9007199254740991),
+  active: z.boolean(),
+  useFedapayCheckout: z.boolean(),
+  supportsPayout: z.boolean(),
+  supportsRefund: z.boolean(),
+  icon: z.optional(z.union([z.string(), z.null()])),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+/**
+ * PaginationMeta
+ *
+ * Pagination metadata
+ */
+export const zPaginationMeta = z.object({
+  itemCount: z.int().gte(-9007199254740991).lte(9007199254740991),
+  pageSize: z.int().gte(-9007199254740991).lte(9007199254740991),
+  offset: z.int().gte(-9007199254740991).lte(9007199254740991),
+  hasMore: z.boolean(),
+});
+
+/**
+ * PaymentMethodList
+ *
+ * Paginated list of payment methods
+ */
+export const zPaymentMethodList = z.object({
+  data: z.array(zPaymentMethodOutput),
+  meta: zPaginationMeta,
+});
+
+/**
+ * MessageResponse
+ *
+ * Simple message response
+ */
+export const zMessageResponse = z.object({
+  message: z.string(),
+});
+
+/**
+ * AvailablePaymentMethod
+ *
+ * Payment method visible to the user (no provider details)
+ */
+export const zAvailablePaymentMethod = z.object({
+  id: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  name: z.string(),
+  code: z.string(),
+  type: z.enum(["mobile", "card"]),
+  useFedapayCheckout: z.boolean(),
+  requiresPhone: z.boolean(),
+  icon: z.optional(z.union([z.string(), z.null()])),
+});
+
+/**
+ * AvailablePaymentMethods
+ *
+ * List of available payment methods for a country
+ */
+export const zAvailablePaymentMethods = z.object({
+  methods: z.array(zAvailablePaymentMethod),
+});
+
+/**
+ * PaymentInfo
+ *
+ * Payment info for the frontend to display and init Checkout.js
+ */
+export const zPaymentInfo = z.object({
+  amount: z.number(),
+  currency: z.string(),
+  fedapayPublicKey: z.union([z.string(), z.null()]),
+});
+
+/**
+ * NoRedirectPaymentResult
+ *
+ * Result after initiating a no-redirect payment
+ */
+export const zNoRedirectPaymentResult = z.object({
+  paymentId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  status: z.literal("pending"),
+});
+
+/**
+ * CheckoutVerifyResult
+ *
+ * Result after verifying a Checkout.js payment
+ */
+export const zCheckoutVerifyResult = z.object({
+  paymentId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  status: z.literal("completed"),
+});
+
+/**
+ * PaymentStatus
+ *
+ * Current status of a payment
+ */
+export const zPaymentStatus = z.enum([
+  "PENDING",
+  "CAPTURED",
+  "ESCROW",
+  "RELEASED",
+  "REFUNDED",
+  "FAILED",
+]);
+
+/**
+ * PaymentProvider
+ *
+ * Payment gateway provider
+ */
+export const zPaymentProvider = z.enum(["fedapay", "stripe", "pawerpayer"]);
+
+/**
+ * PaymentStatusResponse
+ *
+ * Current payment status for an order
+ */
+export const zPaymentStatusResponse = z.object({
+  paymentId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  status: zPaymentStatus,
+  amount: z.number(),
+  currency: z.string(),
+  paidAt: z.union([z.string(), z.null()]),
+  provider: zPaymentProvider,
 });
 
 /**
@@ -926,170 +1089,6 @@ export const zPublicPostsSchema = z.object({
 });
 
 /**
- * PaymentMethodOutput
- *
- * Payment method details (admin view)
- */
-export const zPaymentMethodOutput = z.object({
-  id: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  name: z.string(),
-  code: z.string(),
-  type: z.enum(["mobile", "card"]),
-  provider: z.enum(["fedapay", "stripe", "pawerpayer"]),
-  countryCode: z.string(),
-  commission: z.number(),
-  priority: z.int().gte(-9007199254740991).lte(9007199254740991),
-  active: z.boolean(),
-  useFedapayCheckout: z.boolean(),
-  supportsPayout: z.boolean(),
-  supportsRefund: z.boolean(),
-  icon: z.optional(z.union([z.string(), z.null()])),
-  createdAt: z.string(),
-  updatedAt: z.string(),
-});
-
-/**
- * PaginationMeta
- *
- * Pagination metadata
- */
-export const zPaginationMeta = z.object({
-  itemCount: z.int().gte(-9007199254740991).lte(9007199254740991),
-  pageSize: z.int().gte(-9007199254740991).lte(9007199254740991),
-  offset: z.int().gte(-9007199254740991).lte(9007199254740991),
-  hasMore: z.boolean(),
-});
-
-/**
- * PaymentMethodList
- *
- * Paginated list of payment methods
- */
-export const zPaymentMethodList = z.object({
-  data: z.array(zPaymentMethodOutput),
-  meta: zPaginationMeta,
-});
-
-/**
- * MessageResponse
- *
- * Simple message response
- */
-export const zMessageResponse = z.object({
-  message: z.string(),
-});
-
-/**
- * AvailablePaymentMethod
- *
- * Payment method visible to the user (no provider details)
- */
-export const zAvailablePaymentMethod = z.object({
-  id: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  name: z.string(),
-  code: z.string(),
-  type: z.enum(["mobile", "card"]),
-  useFedapayCheckout: z.boolean(),
-  requiresPhone: z.boolean(),
-  icon: z.optional(z.union([z.string(), z.null()])),
-});
-
-/**
- * AvailablePaymentMethods
- *
- * List of available payment methods for a country
- */
-export const zAvailablePaymentMethods = z.object({
-  methods: z.array(zAvailablePaymentMethod),
-});
-
-/**
- * PaymentInfo
- *
- * Payment info for the frontend to display and init Checkout.js
- */
-export const zPaymentInfo = z.object({
-  amount: z.number(),
-  currency: z.string(),
-  fedapayPublicKey: z.union([z.string(), z.null()]),
-});
-
-/**
- * NoRedirectPaymentResult
- *
- * Result after initiating a no-redirect payment
- */
-export const zNoRedirectPaymentResult = z.object({
-  paymentId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  status: z.literal("pending"),
-});
-
-/**
- * CheckoutVerifyResult
- *
- * Result after verifying a Checkout.js payment
- */
-export const zCheckoutVerifyResult = z.object({
-  paymentId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  status: z.literal("completed"),
-});
-
-/**
- * PaymentStatus
- *
- * Current status of a payment
- */
-export const zPaymentStatus = z.enum([
-  "PENDING",
-  "CAPTURED",
-  "ESCROW",
-  "RELEASED",
-  "REFUNDED",
-  "FAILED",
-]);
-
-/**
- * PaymentProvider
- *
- * Payment gateway provider
- */
-export const zPaymentProvider = z.enum(["fedapay", "stripe", "pawerpayer"]);
-
-/**
- * PaymentStatusResponse
- *
- * Current payment status for an order
- */
-export const zPaymentStatusResponse = z.object({
-  paymentId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  status: zPaymentStatus,
-  amount: z.number(),
-  currency: z.string(),
-  paidAt: z.union([z.string(), z.null()]),
-  provider: zPaymentProvider,
-});
-
-/**
  * SearchResult
  */
 export const zSearchResult = z.object({
@@ -1212,6 +1211,215 @@ export const zInitiateUpload = z.object({
       ),
   ),
   parts: z.int().gte(1).lte(100).default(1),
+});
+
+/**
+ * OpeningHours
+ *
+ * Weekly opening hours with days as keys
+ */
+export const zOpeningHours = z.record(
+  z.string(),
+  z.object({
+    open: z.string().regex(/^\d{2}:\d{2}$/),
+    close: z.string().regex(/^\d{2}:\d{2}$/),
+    closed: z.optional(z.boolean()),
+  }),
+);
+
+/**
+ * CreateSalesPoint
+ *
+ * A place where the supplier sells besides the main shop
+ */
+export const zCreateSalesPoint = z.object({
+  name: z.string().min(2).max(100),
+  address: z.optional(z.string().min(2).max(255)),
+  phone: z.optional(z.string().min(8).max(20)),
+  latitude: z.optional(z.number().gte(-90).lte(90)),
+  longitude: z.optional(z.number().gte(-180).lte(180)),
+  openingHours: z.optional(zOpeningHours),
+  isActive: z.boolean().default(true),
+});
+
+/**
+ * UpdateSalesPoint
+ *
+ * Update a sales point — every field optional
+ */
+export const zUpdateSalesPoint = z.object({
+  name: z.optional(z.string().min(2).max(100)),
+  address: z.optional(z.string().min(2).max(255)),
+  phone: z.optional(z.string().min(8).max(20)),
+  latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+  longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+  openingHours: z.optional(zOpeningHours),
+  isActive: z.optional(z.boolean()).default(true),
+});
+
+/**
+ * UpdateOpeningHours
+ */
+export const zUpdateOpeningHours = z.object({
+  openingHours: zOpeningHours,
+});
+
+/**
+ * SupplierType
+ *
+ * Type of supplier activity
+ */
+export const zSupplierType = z.enum(["INPUTS", "TRANSFORMER"]);
+
+/**
+ * SupplierMode
+ *
+ * How buyers interact with this supplier
+ */
+export const zSupplierMode = z.enum(["CONTACT", "ORDER"]);
+
+/**
+ * Timezone
+ *
+ * IANA timezone the opening hours are expressed in
+ */
+export const zTimezone = z.string().min(1).max(64);
+
+/**
+ * RegisterSupplier
+ *
+ * Data required to register as a supplier
+ */
+export const zRegisterSupplier = z.object({
+  shopName: z.string().min(2).max(100),
+  type: zSupplierType,
+  latitude: z.optional(z.number().gte(-90).lte(90)),
+  longitude: z.optional(z.number().gte(-180).lte(180)),
+  address: z.optional(z.string().min(2).max(255)),
+  neighborhood: z.optional(z.string().min(2).max(100)),
+  mobileMoneyNumber: z.string().min(8).max(20),
+  mode: zSupplierMode,
+  deliveryFee: z.optional(z.number().gte(0)),
+  freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
+  openingHours: z.optional(zOpeningHours),
+  timezone: z.optional(zTimezone),
+  shopPhotoMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  identityDocMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  businessProofMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+});
+
+/**
+ * UpdateSupplier
+ *
+ * Update supplier profile — all fields optional
+ */
+export const zUpdateSupplier = z.object({
+  shopName: z.optional(z.string().min(2).max(100)),
+  type: z.optional(zSupplierType),
+  latitude: z.optional(z.number().gte(-90).lte(90)),
+  longitude: z.optional(z.number().gte(-180).lte(180)),
+  address: z.optional(z.string().min(2).max(255)),
+  neighborhood: z.optional(z.string().min(2).max(100)),
+  mobileMoneyNumber: z.optional(z.string().min(8).max(20)),
+  mode: z.optional(zSupplierMode),
+  deliveryFee: z.optional(z.number().gte(0)),
+  freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
+  openingHours: z.optional(zOpeningHours),
+  timezone: z.optional(zTimezone),
+  shopPhotoMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  identityDocMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  businessProofMediaId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  coverPhoto: z.optional(z.url()),
+  profilePhoto: z.optional(z.url()),
+});
+
+/**
+ * PickupMode
+ *
+ * How the buyer will receive the order
+ */
+export const zPickupMode = z.enum(["ON_SITE", "DELIVERY"]);
+
+/**
+ * PaymentMethod
+ *
+ * Payment method for the order
+ */
+export const zPaymentMethod = z.enum(["FEDAPAY", "CASH_ON_DELIVERY"]);
+
+/**
+ * OrderItemInput
+ *
+ * A single item in the order
+ */
+export const zOrderItemInput = z.object({
+  productId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  variantId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  quantity: z.int().gte(1).lte(9007199254740991),
+});
+
+/**
+ * CreateOrder
+ *
+ * Data required to place a new order
+ */
+export const zCreateOrder = z.object({
+  supplierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  pickupMode: zPickupMode,
+  paymentMethod: zPaymentMethod,
+  deliveryAddress: z.optional(z.string().min(5).max(500)),
+  deliverySlot: z.optional(z.string().max(200)),
+  items: z.array(zOrderItemInput).min(1),
 });
 
 /**
@@ -1690,215 +1898,6 @@ export const zContactMessage = z.object({
   message: z.string().min(10).max(3000),
   company: z.optional(z.string().max(0)),
   startedAt: z.int().gt(0).lte(9007199254740991),
-});
-
-/**
- * OpeningHours
- *
- * Weekly opening hours with days as keys
- */
-export const zOpeningHours = z.record(
-  z.string(),
-  z.object({
-    open: z.string().regex(/^\d{2}:\d{2}$/),
-    close: z.string().regex(/^\d{2}:\d{2}$/),
-    closed: z.optional(z.boolean()),
-  }),
-);
-
-/**
- * CreateSalesPoint
- *
- * A place where the supplier sells besides the main shop
- */
-export const zCreateSalesPoint = z.object({
-  name: z.string().min(2).max(100),
-  address: z.optional(z.string().min(2).max(255)),
-  phone: z.optional(z.string().min(8).max(20)),
-  latitude: z.optional(z.number().gte(-90).lte(90)),
-  longitude: z.optional(z.number().gte(-180).lte(180)),
-  openingHours: z.optional(zOpeningHours),
-  isActive: z.boolean().default(true),
-});
-
-/**
- * UpdateSalesPoint
- *
- * Update a sales point — every field optional
- */
-export const zUpdateSalesPoint = z.object({
-  name: z.optional(z.string().min(2).max(100)),
-  address: z.optional(z.string().min(2).max(255)),
-  phone: z.optional(z.string().min(8).max(20)),
-  latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
-  longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
-  openingHours: z.optional(zOpeningHours),
-  isActive: z.optional(z.boolean()).default(true),
-});
-
-/**
- * UpdateOpeningHours
- */
-export const zUpdateOpeningHours = z.object({
-  openingHours: zOpeningHours,
-});
-
-/**
- * SupplierType
- *
- * Type of supplier activity
- */
-export const zSupplierType = z.enum(["INPUTS", "TRANSFORMER"]);
-
-/**
- * SupplierMode
- *
- * How buyers interact with this supplier
- */
-export const zSupplierMode = z.enum(["CONTACT", "ORDER"]);
-
-/**
- * Timezone
- *
- * IANA timezone the opening hours are expressed in
- */
-export const zTimezone = z.string().min(1).max(64);
-
-/**
- * RegisterSupplier
- *
- * Data required to register as a supplier
- */
-export const zRegisterSupplier = z.object({
-  shopName: z.string().min(2).max(100),
-  type: zSupplierType,
-  latitude: z.optional(z.number().gte(-90).lte(90)),
-  longitude: z.optional(z.number().gte(-180).lte(180)),
-  address: z.optional(z.string().min(2).max(255)),
-  neighborhood: z.optional(z.string().min(2).max(100)),
-  mobileMoneyNumber: z.string().min(8).max(20),
-  mode: zSupplierMode,
-  deliveryFee: z.optional(z.number().gte(0)),
-  freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
-  openingHours: z.optional(zOpeningHours),
-  timezone: z.optional(zTimezone),
-  shopPhotoMediaId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-  identityDocMediaId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-  businessProofMediaId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-});
-
-/**
- * UpdateSupplier
- *
- * Update supplier profile — all fields optional
- */
-export const zUpdateSupplier = z.object({
-  shopName: z.optional(z.string().min(2).max(100)),
-  type: z.optional(zSupplierType),
-  latitude: z.optional(z.number().gte(-90).lte(90)),
-  longitude: z.optional(z.number().gte(-180).lte(180)),
-  address: z.optional(z.string().min(2).max(255)),
-  neighborhood: z.optional(z.string().min(2).max(100)),
-  mobileMoneyNumber: z.optional(z.string().min(8).max(20)),
-  mode: z.optional(zSupplierMode),
-  deliveryFee: z.optional(z.number().gte(0)),
-  freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
-  openingHours: z.optional(zOpeningHours),
-  timezone: z.optional(zTimezone),
-  shopPhotoMediaId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-  identityDocMediaId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-  businessProofMediaId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-  coverPhoto: z.optional(z.url()),
-  profilePhoto: z.optional(z.url()),
-});
-
-/**
- * PickupMode
- *
- * How the buyer will receive the order
- */
-export const zPickupMode = z.enum(["ON_SITE", "DELIVERY"]);
-
-/**
- * PaymentMethod
- *
- * Payment method for the order
- */
-export const zPaymentMethod = z.enum(["FEDAPAY", "CASH_ON_DELIVERY"]);
-
-/**
- * OrderItemInput
- *
- * A single item in the order
- */
-export const zOrderItemInput = z.object({
-  productId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  variantId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-  quantity: z.int().gte(1).lte(9007199254740991),
-});
-
-/**
- * CreateOrder
- *
- * Data required to place a new order
- */
-export const zCreateOrder = z.object({
-  supplierId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  pickupMode: zPickupMode,
-  paymentMethod: zPaymentMethod,
-  deliveryAddress: z.optional(z.string().min(5).max(500)),
-  deliverySlot: z.optional(z.string().max(200)),
-  items: z.array(zOrderItemInput).min(1),
 });
 
 /**
@@ -3947,6 +3946,14 @@ export const zOrdersControllerConfirmDeliveryData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zOrdersControllerConfirmDeliveryPostData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zOrdersControllerCreateDisputeData = z.object({
   body: z.object({
     reason: z.string().min(10).max(2000),
@@ -4431,50 +4438,6 @@ export const zTrainingControllerGetMyProgressData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zSubscriptionsControllerGetPlansData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSubscriptionsControllerSubscribeData = z.object({
-  body: z.object({
-    planId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    paymentMethod: z.string().min(1),
-    paymentReference: z.optional(z.string()),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSubscriptionsControllerGetCurrentSubscriptionData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSubscriptionsControllerCancelSubscriptionData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSubscriptionsControllerUpgradeSubscriptionData = z.object({
-  body: z.object({
-    newPlanId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
 export const zAdminControllerGetDashboardData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -4556,6 +4519,16 @@ export const zAdminControllerSuspendSupplierData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminControllerUpdateSupplierCommissionRateData = z.object({
+  body: z.object({
+    rate: z.union([z.number().gte(0).lte(0.5), z.null()]),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zAdminControllerReinstateSupplierData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -4570,6 +4543,31 @@ export const zAdminControllerGetTransactionsData = z.object({
   query: z.object({
     from: z.string(),
     to: z.string(),
+    format: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zAdminControllerGetCommissionsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    from: z.string(),
+    to: z.string(),
+    supplierId: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zAdminControllerGetCommissionOrdersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    from: z.string(),
+    to: z.string(),
+    supplierId: z.string(),
     format: z.string(),
     page: z.string(),
     limit: z.string(),
@@ -4592,6 +4590,25 @@ export const zAdminControllerGetOrdersData = z.object({
 
 export const zAdminControllerGetOrderByIdData = z.object({
   body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminControllerUpdateOrderStatusData = z.object({
+  body: z.object({
+    status: z.enum([
+      "PLACED",
+      "ACCEPTED",
+      "PREPARING",
+      "READY",
+      "IN_DELIVERY",
+      "DELIVERED",
+      "CANCELLED",
+      "DISPUTED",
+    ]),
+  }),
   path: z.object({
     id: z.string(),
   }),
@@ -4668,7 +4685,7 @@ export const zAdminControllerUpdateCommissionsData = z.object({
     rates: z.array(
       z.object({
         category: z.string(),
-        rate: z.number().gte(0).lte(100),
+        rate: z.number().gte(0).lte(1),
       }),
     ),
   }),

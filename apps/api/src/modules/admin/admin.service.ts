@@ -1,7 +1,9 @@
 import type { TemplateName } from '../email/email-template.service'
 import type {
   BroadcastNotification,
+  CommissionOrderList,
   CommissionRates,
+  CommissionSummary,
   DashboardKpi,
   DisputeResolutionInput,
   ResolveReportInput,
@@ -21,6 +23,7 @@ import { MediaService } from '../media/media.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Dispute, DisputeStatus } from '../orders/entities/dispute.entity'
+import { CommissionService } from '../payments/commission.service'
 import { Supplier, ValidationStatus } from '../suppliers/supplier.entity'
 import { ContentReport, ReportStatus, ReportTargetType } from './entities/content-report.entity'
 
@@ -60,6 +63,7 @@ export class AdminService {
     private readonly notificationsService: NotificationsService,
     private readonly emailService: EmailService,
     private readonly mediaService: MediaService,
+    private readonly commissionService: CommissionService,
   ) {}
 
   async getDashboardKpis(): Promise<DashboardKpi> {
@@ -529,8 +533,13 @@ export class AdminService {
   }
 
   async getSettings() {
+    // Driven by the categories table so a freshly created category shows up
+    // immediately, at the default rate, instead of silently missing.
     const commissions = await this.em.getConnection().execute(
-      `SELECT category_slug AS category, rate FROM commission_rates ORDER BY category_slug`,
+      `SELECT c.slug AS category, c.name AS label, COALESCE(cr.rate, 0.04) AS rate
+       FROM categories c
+       LEFT JOIN commission_rates cr ON cr.category_slug = c.slug
+       ORDER BY c.name`,
     )
     return { commissions }
   }
@@ -544,6 +553,158 @@ export class AdminService {
         [category, rate],
       )
     }
+    this.commissionService.invalidateCache()
+  }
+
+  async updateSupplierCommissionRate(supplierId: string, rate: number | null): Promise<void> {
+    const supplier = await this.em.findOne(Supplier, { id: supplierId })
+    if (!supplier) {
+      throw new NotFoundException('Fournisseur introuvable')
+    }
+    supplier.commissionRate = rate
+    await this.em.flush()
+  }
+
+  /** WHERE fragment + params shared by the commission queries. */
+  private commissionFilter(filters: { from?: string, to?: string, supplierId?: string }) {
+    const conditions: string[] = [`o.status <> 'CANCELLED'`]
+    const params: unknown[] = []
+    if (filters.from) {
+      conditions.push(`o."createdAt" >= ?`)
+      params.push(filters.from)
+    }
+    if (filters.to) {
+      conditions.push(`o."createdAt" < ?`)
+      params.push(filters.to)
+    }
+    if (filters.supplierId) {
+      conditions.push(`o.supplier_id = ?`)
+      params.push(filters.supplierId)
+    }
+    return { where: conditions.join(' AND '), params }
+  }
+
+  async getCommissions(filters: {
+    from?: string
+    to?: string
+    supplierId?: string
+    page: number
+    limit: number
+  }): Promise<CommissionSummary> {
+    const db = this.em.getConnection()
+    const { where, params } = this.commissionFilter(filters)
+
+    // Realized = delivered orders; pending = everything still in flight.
+    const [totals] = await db.execute(
+      `SELECT
+         COALESCE(SUM(o.commission_amount) FILTER (WHERE o.status = 'DELIVERED'), 0) AS realized_commission,
+         COALESCE(SUM(o.total_amount - o.delivery_fee) FILTER (WHERE o.status = 'DELIVERED'), 0) AS realized_base,
+         COUNT(*) FILTER (WHERE o.status = 'DELIVERED') AS delivered_orders,
+         COALESCE(SUM(o.commission_amount) FILTER (WHERE o.status <> 'DELIVERED'), 0) AS pending_commission,
+         COUNT(*) FILTER (WHERE o.status <> 'DELIVERED') AS pending_orders
+       FROM orders o WHERE ${where}`,
+      params,
+    )
+
+    const offset = (filters.page - 1) * filters.limit
+    const rows = await db.execute(
+      `SELECT s.id AS supplier_id, s.shop_name, s.commission_rate,
+              COUNT(*) FILTER (WHERE o.status = 'DELIVERED') AS delivered_orders,
+              COALESCE(SUM(o.total_amount - o.delivery_fee) FILTER (WHERE o.status = 'DELIVERED'), 0) AS realized_base,
+              COALESCE(SUM(o.commission_amount) FILTER (WHERE o.status = 'DELIVERED'), 0) AS realized_commission,
+              COALESCE(SUM(o.commission_amount) FILTER (WHERE o.status <> 'DELIVERED'), 0) AS pending_commission,
+              COUNT(*) OVER () AS full_count
+       FROM orders o
+       JOIN suppliers s ON s.id = o.supplier_id
+       WHERE ${where}
+       GROUP BY s.id, s.shop_name, s.commission_rate
+       ORDER BY realized_commission DESC, s.shop_name
+       LIMIT ? OFFSET ?`,
+      [...params, filters.limit, offset],
+    )
+
+    return {
+      totals: {
+        realizedCommission: Number(totals.realized_commission),
+        realizedBase: Number(totals.realized_base),
+        deliveredOrders: Number(totals.delivered_orders),
+        pendingCommission: Number(totals.pending_commission),
+        pendingOrders: Number(totals.pending_orders),
+      },
+      suppliers: rows.map((r: Record<string, unknown>) => ({
+        supplierId: r.supplier_id as string,
+        shopName: r.shop_name as string,
+        negotiatedRate: r.commission_rate !== null ? Number(r.commission_rate) : null,
+        deliveredOrders: Number(r.delivered_orders),
+        realizedBase: Number(r.realized_base),
+        realizedCommission: Number(r.realized_commission),
+        pendingCommission: Number(r.pending_commission),
+      })),
+      total: rows.length > 0 ? Number((rows[0] as Record<string, unknown>).full_count) : 0,
+      page: filters.page,
+      limit: filters.limit,
+    }
+  }
+
+  private commissionOrdersQuery(filters: { from?: string, to?: string, supplierId?: string }) {
+    const { where, params } = this.commissionFilter(filters)
+    const sql = `SELECT o.id, o."createdAt" AS date, o.order_number, s.shop_name,
+              o.status, o.total_amount - o.delivery_fee AS base,
+              o.commission_rate, o.commission_amount
+       FROM orders o
+       JOIN suppliers s ON s.id = o.supplier_id
+       WHERE ${where}
+       ORDER BY o."createdAt" DESC`
+    return { sql, params }
+  }
+
+  async getCommissionOrders(filters: {
+    from?: string
+    to?: string
+    supplierId?: string
+    page: number
+    limit: number
+  }): Promise<CommissionOrderList> {
+    const { sql, params } = this.commissionOrdersQuery(filters)
+    const offset = (filters.page - 1) * filters.limit
+    const rows = await this.em.getConnection().execute(
+      `SELECT q.*, COUNT(*) OVER () AS full_count FROM (${sql}) q LIMIT ? OFFSET ?`,
+      [...params, filters.limit, offset],
+    )
+
+    return {
+      items: rows.map((r: Record<string, unknown>) => ({
+        id: r.id as string,
+        date: this.toIso(r.date) ?? '',
+        orderNumber: r.order_number as string,
+        supplierName: r.shop_name as string,
+        status: r.status as string,
+        base: Number(r.base),
+        rate: Number(r.commission_rate),
+        commission: Number(r.commission_amount),
+      })),
+      total: rows.length > 0 ? Number((rows[0] as Record<string, unknown>).full_count) : 0,
+      page: filters.page,
+      limit: filters.limit,
+    }
+  }
+
+  async exportCommissionsCsv(filters: { from?: string, to?: string, supplierId?: string }): Promise<string> {
+    const { sql, params } = this.commissionOrdersQuery(filters)
+    const rows = await this.em.getConnection().execute(sql, params)
+
+    const header = 'Date;Commande;Boutique;Statut;Base;Taux;Commission'
+    const lines = rows.map((r: Record<string, unknown>) => [
+      this.toIso(r.date) ?? '',
+      r.order_number,
+      `"${String(r.shop_name).replaceAll('"', '""')}"`,
+      r.status,
+      Number(r.base).toFixed(2),
+      Number(r.commission_rate).toFixed(4),
+      Number(r.commission_amount).toFixed(2),
+    ].join(';'))
+
+    return [header, ...lines].join('\n')
   }
 
   async broadcastNotification(input: BroadcastNotification): Promise<{ sent: number }> {
@@ -839,7 +1000,7 @@ export class AdminService {
       `SELECT s.id, s.shop_name, s.type, s.mode, s.validation_status, s.timezone,
               s.address, s.neighborhood, s.global_rating, s.total_reviews,
               s.opening_hours, s.cover_photo, s.profile_photo,
-              s.mobile_money_number, s."createdAt" as created_at,
+              s.mobile_money_number, s.commission_rate, s."createdAt" as created_at,
               ST_Y(s.location::geometry) as latitude,
               ST_X(s.location::geometry) as longitude,
               u.id as user_id, u.name as owner_name, u.email as owner_email,
@@ -864,6 +1025,7 @@ export class AdminService {
       coverPhoto: (row.cover_photo as string) ?? null,
       profilePhoto: (row.profile_photo as string) ?? null,
       mobileMoneyNumber: (row.mobile_money_number as string) ?? null,
+      commissionRate: row.commission_rate !== null ? Number(row.commission_rate) : null,
       revenue: Number(row.revenue ?? 0),
     }
   }

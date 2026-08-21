@@ -7,6 +7,7 @@ import type {
   CommissionRates,
   DisputeResolutionInput,
   ResolveReportInput,
+  SupplierCommissionRateInput,
   SuspendSupplierInput,
   ValidationActionInput,
 } from './contracts/admin.contract'
@@ -36,6 +37,7 @@ import {
   commissionRateSchema,
   disputeResolutionSchema,
   resolveReportSchema,
+  supplierCommissionRateSchema,
   suspendSupplierSchema,
   validationActionSchema,
 } from './contracts/admin.contract'
@@ -136,6 +138,16 @@ export class AdminController {
     return { success: true }
   }
 
+  /** Negotiated rate (fraction); null goes back to the category grid. */
+  @Patch('suppliers/:id/commission-rate')
+  async updateSupplierCommissionRate(
+    @Param('id') id: string,
+    @TypedBody(supplierCommissionRateSchema) body: SupplierCommissionRateInput,
+  ) {
+    await this.adminService.updateSupplierCommissionRate(id, body.rate)
+    return { success: true }
+  }
+
   @Patch('suppliers/:id/reinstate')
   async reinstateSupplier(
     @Param('id') id: string,
@@ -164,6 +176,49 @@ export class AdminController {
     return this.adminService.getTransactions({
       from,
       to,
+      page: Number(page),
+      limit: Number(limit),
+    })
+  }
+
+  @Get('commissions')
+  async getCommissions(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('supplierId') supplierId?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminService.getCommissions({
+      from,
+      to,
+      supplierId,
+      page: Number(page),
+      limit: Number(limit),
+    })
+  }
+
+  @Get('commissions/orders')
+  async getCommissionOrders(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('supplierId') supplierId?: string,
+    @Query('format') format: string = 'json',
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+    @Res({ passthrough: true }) res?: Response,
+  ) {
+    if (format === 'csv') {
+      const csv = await this.adminService.exportCommissionsCsv({ from, to, supplierId })
+      res!.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res!.setHeader('Content-Disposition', 'attachment; filename=commissions.csv')
+      return csv
+    }
+
+    return this.adminService.getCommissionOrders({
+      from,
+      to,
+      supplierId,
       page: Number(page),
       limit: Number(limit),
     })
