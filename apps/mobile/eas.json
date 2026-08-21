@@ -23,8 +23,8 @@
       },
       "distribution": "internal",
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://ebio-api.31.220.73.143.sslip.io",
-        "EXPO_PUBLIC_WS_URL": "wss://ebio-api.31.220.73.143.sslip.io",
+        "EXPO_PUBLIC_API_URL": "https://api.e-bio.org",
+        "EXPO_PUBLIC_WS_URL": "wss://api.e-bio.org",
         "EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY": "pk_sandbox_ezRCQ6w2dT3RPlQ-C4_GOQn6",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
       }
@@ -35,8 +35,8 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://ebio-api.31.220.73.143.sslip.io",
-        "EXPO_PUBLIC_WS_URL": "wss://ebio-api.31.220.73.143.sslip.io",
+        "EXPO_PUBLIC_API_URL": "https://api.e-bio.org",
+        "EXPO_PUBLIC_WS_URL": "wss://api.e-bio.org",
         "EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY": "pk_sandbox_ezRCQ6w2dT3RPlQ-C4_GOQn6",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
       }
