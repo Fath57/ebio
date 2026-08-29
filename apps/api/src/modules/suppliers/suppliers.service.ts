@@ -122,13 +122,25 @@ export class SuppliersService {
     return supplier
   }
 
-  async findNearby(latitude?: number, longitude?: number, radiusKm?: number) {
+  async findNearby(latitude?: number, longitude?: number, radiusKm?: number, categorySlugs?: string[]) {
     const hasLocation = latitude !== undefined && longitude !== undefined
       && !Number.isNaN(latitude) && !Number.isNaN(longitude)
 
     // Une requête géolocalisée est toujours bornée : sans rayon explicite, la
     // carte remontait des fournisseurs à 4 500 km.
     const radiusMeters = (radiusKm !== undefined && radiusKm > 0 ? radiusKm : DEFAULT_RADIUS_KM) * 1000
+
+    // Map filter: keep only suppliers with at least one active product in the
+    // requested categories. Empty list = no restriction.
+    const slugs = (categorySlugs ?? []).filter(Boolean)
+    const categoryClause = slugs.length > 0
+      ? ` AND EXISTS (
+            SELECT 1 FROM products p
+            JOIN categories c ON c.id = p.category_id
+            WHERE p.supplier_id = s.id AND p.status = 'ACTIVE'
+              AND c.slug IN (${slugs.map(() => '?').join(', ')})
+          )`
+      : ''
 
     // Chaque lieu de vente est un pin : la boutique principale et chacun de
     // ses points de vente actifs. Un fournisseur présent au marché ET à sa
@@ -164,7 +176,7 @@ export class SuppliersService {
         FROM lieux l
         JOIN suppliers s ON s.id = l.supplier_id
         WHERE s.validation_status = 'VALIDATED'
-          AND ST_DWithin(l.location, ST_MakePoint(?, ?)::geography, ?)
+          AND ST_DWithin(l.location, ST_MakePoint(?, ?)::geography, ?)${categoryClause}
         ORDER BY distance ASC`
       : `SELECT
           s.id,
@@ -182,12 +194,12 @@ export class SuppliersService {
           NULL AS distance,
           (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
         FROM suppliers s
-        WHERE s.validation_status = 'VALIDATED'
+        WHERE s.validation_status = 'VALIDATED'${categoryClause}
         ORDER BY s.global_rating DESC NULLS LAST`
 
     const params = hasLocation
-      ? [longitude, latitude, longitude, latitude, radiusMeters]
-      : []
+      ? [longitude, latitude, longitude, latitude, radiusMeters, ...slugs]
+      : [...slugs]
 
     const rows = await this.em.getConnection().execute(query, params)
 

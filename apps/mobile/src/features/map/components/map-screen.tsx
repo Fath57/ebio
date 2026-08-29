@@ -19,6 +19,10 @@ import { SupplierSheet } from './supplier-sheet'
 
 interface MapScreenProps {
   onNavigateToSupplier?: (supplierId: string) => void
+  /** Rayon de recherche en km — sans valeur, le rayon par défaut de l'API. */
+  radiusKm?: number
+  /** Slugs de catégories : seuls les fournisseurs qui en vendent sont affichés. */
+  categories?: string[]
 }
 
 /** Niveau de zoom d'ouverture — environ un quart d'agglomération. */
@@ -32,10 +36,10 @@ const TAB_BAR_CLEARANCE = 64
  */
 const TRACK_CHANGES_MS = 600
 
-export function MapScreen({ onNavigateToSupplier }: MapScreenProps) {
+export function MapScreen({ onNavigateToSupplier, radiusKm, categories }: MapScreenProps) {
   const { semantic } = useTheme()
   const mapRef = useRef<MapView>(null)
-  const { suppliers, loading, error, refresh } = useNearbySuppliers()
+  const { suppliers, loading, error, refresh } = useNearbySuppliers(radiusKm, categories)
   // Position de référence de l'app : GPS ou choix manuel de l'utilisateur.
   const { latitude, longitude, loading: locationLoading } = useLocation()
   const [selectedId, setSelectedId] = useState<string | null>(null)

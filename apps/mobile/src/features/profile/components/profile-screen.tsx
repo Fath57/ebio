@@ -311,7 +311,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
 
         {/* Edit profile */}
         <View>
-          <View style={styles.section}>
+          <View style={[styles.section, styles.stackedGroup]}>
             <MenuItem
               icon={Pen}
               iconBg={colors.blue[50]}
@@ -729,6 +729,10 @@ const styles = StyleSheet.create({
   },
   section: {
     marginTop: spacing[5],
+  },
+  // Two standalone cards in a row need breathing room between them.
+  stackedGroup: {
+    gap: spacing[3],
   },
   modeSwitchWrap: {
     marginTop: spacing[4],

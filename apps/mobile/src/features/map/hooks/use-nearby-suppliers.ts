@@ -33,11 +33,13 @@ interface UseNearbyResult {
  * seconde géolocalisation : sinon la carte se centre à un endroit et affiche
  * les marqueurs d'un autre.
  */
-export function useNearbySuppliers(radiusKm?: number): UseNearbyResult {
+export function useNearbySuppliers(radiusKm?: number, categories?: string[]): UseNearbyResult {
   const { latitude, longitude, loading: locationLoading } = useLocation()
   const [suppliers, setSuppliers] = useState<NearbySupplier[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  // Joined once so the callback identity only changes when the selection does.
+  const categoryParam = categories && categories.length > 0 ? categories.join(',') : ''
 
   const fetchSuppliers = useCallback(async (lat: number, lng: number) => {
     setLoading(true)
@@ -46,6 +48,8 @@ export function useNearbySuppliers(radiusKm?: number): UseNearbyResult {
       const params = new URLSearchParams({ latitude: String(lat), longitude: String(lng) })
       if (radiusKm)
         params.set('radius', String(radiusKm))
+      if (categoryParam)
+        params.set('category', categoryParam)
       const res = await apiFetch(`/api/suppliers/nearby?${params}`)
       if (res.ok) {
         const data = (await res.json()) as NearbySupplier[]
@@ -58,7 +62,7 @@ export function useNearbySuppliers(radiusKm?: number): UseNearbyResult {
     finally {
       setLoading(false)
     }
-  }, [radiusKm])
+  }, [radiusKm, categoryParam])
 
   useEffect(() => {
     if (locationLoading)

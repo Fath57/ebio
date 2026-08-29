@@ -51,12 +51,15 @@ export class SuppliersController {
     @Query('latitude') latitude?: string,
     @Query('longitude') longitude?: string,
     @Query('radius') radiusParam?: string,
+    @Query('category') category?: string,
   ) {
     const lat = latitude ? Number(latitude) : undefined
     const lng = longitude ? Number(longitude) : undefined
     const radiusKm = radiusParam ? Number(radiusParam) : undefined
+    // Comma-separated category slugs, e.g. `category=fruits,legumes`
+    const categorySlugs = category ? category.split(',').map(c => c.trim()).filter(Boolean) : undefined
 
-    return this.suppliersService.findNearby(lat, lng, radiusKm)
+    return this.suppliersService.findNearby(lat, lng, radiusKm, categorySlugs)
   }
 
   @Get(':id')

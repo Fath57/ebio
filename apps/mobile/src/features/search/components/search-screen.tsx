@@ -74,9 +74,6 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
     categories: [] as string[],
     maxPrice: undefined as number | undefined,
     inStockOnly: true,
-    minRating: 0,
-    mode: 'ALL' as 'ALL' | 'CONTACT' | 'ORDER',
-    validatedOnly: initialValidatedOnly ?? false,
   })
 
   const { latitude, longitude } = useLocation()
@@ -98,13 +95,11 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
         category,
         maxPrice: appliedFilters.maxPrice,
         inStockOnly: appliedFilters.inStockOnly,
-        minRating: appliedFilters.minRating > 0 ? appliedFilters.minRating : undefined,
-        mode: appliedFilters.mode !== 'ALL' ? appliedFilters.mode : undefined,
-        validatedOnly: appliedFilters.validatedOnly || undefined,
+        validatedOnly: initialValidatedOnly || undefined,
         promoOnly: initialPromoOnly || undefined,
       })
     },
-    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialPromoOnly],
+    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialValidatedOnly, initialPromoOnly],
   )
 
   useEffect(() => {
@@ -148,11 +143,11 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
     categories: string[]
     maxPrice: number | undefined
     inStockOnly: boolean
-    minRating: number
-    mode: 'ALL' | 'CONTACT' | 'ORDER'
-    validatedOnly: boolean
   }) {
     setAppliedFilters(filters)
+    // En mode carte, les filtres alimentent directement `MapScreen` via ses props.
+    if (viewMode === 'map')
+      return
     const category = filters.categories.length > 0 ? filters.categories[0] : selectedCategory
     if (filters.categories.length > 0) {
       setSelectedCategory(filters.categories[0])
@@ -166,9 +161,7 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
       category,
       maxPrice: filters.maxPrice,
       inStockOnly: filters.inStockOnly,
-      minRating: filters.minRating > 0 ? filters.minRating : undefined,
-      mode: filters.mode !== 'ALL' ? filters.mode : undefined,
-      validatedOnly: filters.validatedOnly || undefined,
+      validatedOnly: initialValidatedOnly || undefined,
       promoOnly: initialPromoOnly || undefined,
     })
   }
@@ -182,12 +175,8 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
   // vaut true par défaut : c'est le décocher qui constitue un filtre.
   const hasActiveFilters
     = appliedFilters.radius !== undefined
-      || appliedFilters.maxPrice !== undefined
-      || appliedFilters.minRating > 0
-      || appliedFilters.mode !== 'ALL'
-      || appliedFilters.validatedOnly
-      || !appliedFilters.inStockOnly
       || appliedFilters.categories.length > 0
+      || (viewMode === 'list' && (appliedFilters.maxPrice !== undefined || !appliedFilters.inStockOnly))
 
   function renderSearchResultItem({ item, index }: { item: SearchResult, index: number }) {
     return (
@@ -307,21 +296,19 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       {/* Back header — shown when used as a pushed results screen.
           Les filtres vivent dans son rightSlot : action de niveau écran, comme
-          « Tout marquer lu » sur les notifications. Absents en mode carte, où
-          ils ne s'appliquent pas aux points de vente affichés. */}
+          « Tout marquer lu » sur les notifications. En mode carte, seuls la
+          distance et les catégories restent proposés. */}
       {onGoBack && (
         <ScreenHeader
           title={headerTitle ?? 'Recherche'}
           onBack={onGoBack}
-          rightSlot={viewMode === 'list'
-            ? (
-                <FilterButton
-                  onPress={() => setIsFilterVisible(true)}
-                  isActive={hasActiveFilters}
-                  color={semantic.textSecondary}
-                />
-              )
-            : undefined}
+          rightSlot={(
+            <FilterButton
+              onPress={() => setIsFilterVisible(true)}
+              isActive={hasActiveFilters}
+              color={semantic.textSecondary}
+            />
+          )}
         />
       )}
 
@@ -455,7 +442,11 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
             />
           )
         : (
-            <MapScreen onNavigateToSupplier={handleCardPress} />
+            <MapScreen
+              onNavigateToSupplier={handleCardPress}
+              radiusKm={appliedFilters.radius}
+              categories={appliedFilters.categories}
+            />
           )}
 
       {/* Loading indicator */}
@@ -472,6 +463,7 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
         onApply={handleApplyFilters}
         initialValues={appliedFilters}
         categoryOptions={categories}
+        scope={viewMode === 'map' ? 'suppliers' : 'products'}
       />
     </View>
   )
