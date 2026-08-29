@@ -1,4 +1,5 @@
 import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
+import type { EmailAttachment } from '../email/email.service'
 import type { CreateDispute, CreateOrder, OrderDeliverySummary } from './contracts/order.contract'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
@@ -13,9 +14,13 @@ import {
 } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { computeDeliveryFee } from '../../common/delivery-fee'
-import { User } from '../auth/auth.entity'
+import { thumbnailUrlFor } from '../../common/media-urls'
+import { User, UserRole } from '../auth/auth.entity'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
-import { Delivery } from '../deliveries/entities/delivery.entity'
+import { VehicleType } from '../deliveries/entities/courier-profile.entity'
+import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
+import { EmailService } from '../email/email.service'
+import { RouteMapService } from '../email/route-map.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
@@ -47,6 +52,76 @@ const TWO_MINUTES_MS = 2 * 60 * 1000
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 const _FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000
 
+const ROUTE_MAP_CID = 'route-map'
+const INVOICE_TIME_ZONE = 'Africa/Porto-Novo'
+
+const PAYMENT_LABELS: Record<PaymentMethod, string> = {
+  [PaymentMethod.FEDAPAY]: 'FedaPay (paiement en ligne)',
+  [PaymentMethod.WALLET]: 'Portefeuille eBio',
+  [PaymentMethod.CASH_ON_DELIVERY]: 'Espèces à la livraison',
+}
+
+const VEHICLE_LABELS: Record<VehicleType, string> = {
+  [VehicleType.MOTO]: 'Moto',
+  [VehicleType.BICYCLE]: 'Vélo',
+  [VehicleType.CAR]: 'Voiture',
+  [VehicleType.ON_FOOT]: 'À pied',
+}
+
+/** `1 200 FCFA` — fr-FR grouping with non-breaking spaces, no decimals. */
+function formatFcfa(amount: number): string {
+  const grouped = Math.round(amount).toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, '\u00A0')
+  return `${grouped}\u00A0FCFA`
+}
+
+function formatInvoiceDate(date: Date): string {
+  return new Intl.DateTimeFormat('fr-FR', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+    timeZone: INVOICE_TIME_ZONE,
+  }).format(date)
+}
+
+/** What the `order-invoice` template consumes. Prices are pre-formatted. */
+export interface InvoiceItemData {
+  name: string
+  variant: string | null
+  quantity: number
+  unitPrice: string
+  totalPrice: string
+  thumbnailUrl: string | null
+}
+
+export interface InvoiceData extends Record<string, unknown> {
+  invoiceNumber: string
+  orderNumber: string
+  orderDate: string
+  deliveryDate: string
+  buyer: { name: string, email: string | null }
+  seller: { shopName: string, address: string | null }
+  items: InvoiceItemData[]
+  subtotal: string
+  discount: string | null
+  deliveryFee: string | null
+  total: string
+  paymentLabel: string
+  isDelivery: boolean
+  deliveryAddress: string | null
+  deliverySlot: string | null
+  courier: { name: string, vehicleLabel: string } | null
+  mapSrc: string | null
+  orderUrl: string
+  legalLine: string
+}
+
+interface RenderedInvoice {
+  subject: string
+  html: string
+  text: string
+  attachments: EmailAttachment[]
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
@@ -57,6 +132,8 @@ export class OrdersService {
     private readonly commissionService: CommissionService,
     private readonly walletService: WalletService,
     private readonly promoCodesService: PromoCodesService,
+    private readonly emailService: EmailService,
+    private readonly routeMapService: RouteMapService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -442,6 +519,8 @@ export class OrdersService {
    * `silent` skips the buyer notification when the buyer is the actor.
    */
   private async applyStatus(order: Order, newStatus: OrderStatus, options: { silent?: boolean } = {}): Promise<void> {
+    // The invoice goes out once: only when this call is the actual move to DELIVERED.
+    const becomesDelivered = newStatus === OrderStatus.DELIVERED && order.status !== OrderStatus.DELIVERED
     order.status = newStatus
 
     if (newStatus === OrderStatus.DELIVERED) {
@@ -521,6 +600,162 @@ export class OrdersService {
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
     }
+
+    if (becomesDelivered) {
+      // Fire-and-forget: the e-mail must never delay or fail the transition.
+      void this.sendInvoiceEmail(order.id)
+    }
+  }
+
+  /**
+   * E-mails the buyer their invoice for a delivered order, with the route map
+   * attached inline. Never throws: failures are logged and the order flow
+   * carries on.
+   */
+  private async sendInvoiceEmail(orderId: string): Promise<void> {
+    try {
+      const em = this.em.fork()
+      const order = await em.findOneOrFail(Order, { id: orderId }, {
+        populate: ['buyer', 'supplier', 'items', 'items.product', 'items.variant'],
+      })
+      if (!order.buyer.email) {
+        this.logger.debug(`Invoice for ${order.orderNumber} skipped: buyer has no e-mail`)
+        return
+      }
+
+      const invoice = await this.renderInvoice(em, order, { inlineMap: true })
+      await this.emailService.sendEmail({
+        to: order.buyer.email,
+        subject: invoice.subject,
+        content: invoice.text,
+        html: invoice.html,
+        attachments: invoice.attachments,
+      })
+    }
+    catch (error) {
+      this.logger.error(`Failed to send the invoice e-mail for order ${orderId}`, error)
+    }
+  }
+
+  /**
+   * Invoice HTML for the buyer or the shop of the order (and admins), used to
+   * re-open the invoice later. The map is embedded as a data URI here since
+   * there is no mail to attach it to.
+   */
+  async renderInvoiceHtml(orderId: string, userId: string, role: string): Promise<string> {
+    const order = await this.em.findOne(Order, { id: orderId }, {
+      populate: ['buyer', 'supplier', 'supplier.user', 'items', 'items.product', 'items.variant'],
+    })
+    if (!order) {
+      throw new NotFoundException('Order not found')
+    }
+    const isBuyer = order.buyer.id === userId
+    const isSupplier = order.supplier.user.id === userId
+    if (!isBuyer && !isSupplier && role !== UserRole.ADMIN) {
+      throw new ForbiddenException('You cannot access this invoice')
+    }
+    if (order.status !== OrderStatus.DELIVERED) {
+      throw new BadRequestException('The invoice is only available once the order is delivered')
+    }
+    const invoice = await this.renderInvoice(this.em, order, { inlineMap: false })
+    return invoice.html
+  }
+
+  /**
+   * Builds the invoice (subject, HTML, plain-text fallback, attachments) from
+   * a fully populated order. `inlineMap` attaches the route snapshot as a
+   * `cid:` part for e-mails; otherwise it is embedded as a data URI.
+   */
+  private async renderInvoice(em: EntityManager, order: Order, options: { inlineMap: boolean }): Promise<RenderedInvoice> {
+    const delivery = order.pickupMode === PickupMode.DELIVERY
+      ? await em.findOne(Delivery, { order: order.id }, { populate: ['courier'] })
+      : null
+    const courier = delivery?.courier && delivery.status === DeliveryStatus.DELIVERED ? delivery.courier : null
+
+    const attachments: EmailAttachment[] = []
+    let mapSrc: string | null = null
+    if (delivery) {
+      const pickup = delivery.pickupLatitude != null && delivery.pickupLongitude != null
+        ? { latitude: delivery.pickupLatitude, longitude: delivery.pickupLongitude }
+        : null
+      const dropoff = order.deliveryLatitude != null && order.deliveryLongitude != null
+        ? { latitude: order.deliveryLatitude, longitude: order.deliveryLongitude }
+        : null
+      const png = await this.routeMapService.render(pickup, dropoff)
+      if (png) {
+        if (options.inlineMap) {
+          attachments.push({ filename: 'trajet-livraison.png', content: png, contentType: 'image/png', cid: ROUTE_MAP_CID })
+          mapSrc = `cid:${ROUTE_MAP_CID}`
+        }
+        else {
+          mapSrc = `data:image/png;base64,${png.toString('base64')}`
+        }
+      }
+    }
+
+    const items: InvoiceItemData[] = order.items.getItems().map((item) => {
+      const photo = item.product.photos[0] ?? null
+      return {
+        name: item.product.name,
+        variant: item.variant?.label ?? null,
+        quantity: item.quantity,
+        unitPrice: formatFcfa(item.unitPrice),
+        totalPrice: formatFcfa(item.totalPrice),
+        thumbnailUrl: thumbnailUrlFor(photo) ?? photo,
+      }
+    })
+    const subtotal = order.items.getItems().reduce((sum, item) => sum + item.totalPrice, 0)
+
+    const data: InvoiceData = {
+      invoiceNumber: `FAC-${order.orderNumber}`,
+      orderNumber: order.orderNumber,
+      orderDate: formatInvoiceDate(order.createdAt),
+      deliveryDate: formatInvoiceDate(order.deliveredAt ?? new Date()),
+      buyer: { name: order.buyer.name, email: order.buyer.email ?? null },
+      seller: { shopName: order.supplier.shopName, address: order.supplier.address ?? null },
+      items,
+      subtotal: formatFcfa(subtotal),
+      discount: order.discountAmount > 0 ? formatFcfa(order.discountAmount) : null,
+      deliveryFee: order.deliveryFee > 0 ? formatFcfa(order.deliveryFee) : null,
+      total: formatFcfa(order.totalAmount),
+      paymentLabel: PAYMENT_LABELS[order.paymentMethod],
+      isDelivery: order.pickupMode === PickupMode.DELIVERY,
+      deliveryAddress: order.deliveryAddress ?? delivery?.dropoffAddress ?? null,
+      deliverySlot: order.deliverySlot ?? null,
+      courier: courier ? { name: courier.fullName, vehicleLabel: VEHICLE_LABELS[courier.vehicleType] } : null,
+      mapSrc,
+      // The web app only has supplier/admin order pages: the buyer lands in the mobile app.
+      orderUrl: `ebio-mobile://orders/${order.id}`,
+      legalLine: 'eBio — facture émise pour le compte du vendeur ; TVA non applicable.',
+    }
+
+    const subject = `Votre facture eBio — commande ${order.orderNumber}`
+    const html = await this.emailService.renderTemplate('order-invoice', data, subject)
+    const text = this.invoicePlainText(data)
+    return { subject, html, text, attachments }
+  }
+
+  private invoicePlainText(data: InvoiceData): string {
+    const lines = [
+      `Votre facture eBio ${data.invoiceNumber}`,
+      `Commande ${data.orderNumber} — commandée le ${data.orderDate}, livrée le ${data.deliveryDate}`,
+      `Vendeur : ${data.seller.shopName}${data.seller.address ? ` — ${data.seller.address}` : ''}`,
+      '',
+      ...data.items.map(item => `- ${item.name}${item.variant ? ` (${item.variant})` : ''} × ${item.quantity} : ${item.totalPrice}`),
+      '',
+      `Sous-total : ${data.subtotal}`,
+      ...(data.discount ? [`Remise : − ${data.discount}`] : []),
+      ...(data.deliveryFee ? [`Livraison : ${data.deliveryFee}`] : []),
+      `Total TTC : ${data.total}`,
+      `Paiement : ${data.paymentLabel}`,
+      data.isDelivery
+        ? `Livraison à domicile${data.deliveryAddress ? ` : ${data.deliveryAddress}` : ''}${data.deliverySlot ? ` (${data.deliverySlot})` : ''}`
+        : `Retrait sur place : ${data.seller.shopName}`,
+      ...(data.courier ? [`Livreur : ${data.courier.name} (${data.courier.vehicleLabel})`] : []),
+      '',
+      data.legalLine,
+    ]
+    return lines.join('\n')
   }
 
   async confirmDelivery(orderId: string, userId: string): Promise<Order> {

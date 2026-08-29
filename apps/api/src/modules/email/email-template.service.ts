@@ -11,6 +11,7 @@ export type TemplateName
     | 'supplier-suspended'
     | 'supplier-reinstated'
     | 'contact-message'
+    | 'order-invoice'
 
 @Injectable()
 export class EmailTemplateService {

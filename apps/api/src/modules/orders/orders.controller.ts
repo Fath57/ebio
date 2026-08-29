@@ -3,6 +3,7 @@ import { TypedBody } from '@lonestone/nzoth/server'
 import {
   Controller,
   Get,
+  Header,
   Param,
   Patch,
   Post,
@@ -95,6 +96,18 @@ export class OrdersController {
     const hasReview = await this.ordersService.hasReview(id)
     const deliveries = await this.ordersService.deliverySummaries([id])
     return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null), hasReview }
+  }
+
+  /** Rendered invoice of a delivered order, for the buyer or the shop. */
+  @Get(':id/invoice')
+  @UseGuards(CaslGuard)
+  @CanRead('Order')
+  @Header('Content-Type', 'text/html; charset=utf-8')
+  async invoice(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+  ): Promise<string> {
+    return this.ordersService.renderInvoiceHtml(id, session.user.id, session.user.role)
   }
 
   @Patch(':id/accept')

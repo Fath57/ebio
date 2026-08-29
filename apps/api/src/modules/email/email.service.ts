@@ -1,7 +1,19 @@
+import type { Buffer } from 'node:buffer'
 import { Injectable, Logger } from '@nestjs/common'
 import { createTransport, Transporter } from 'nodemailer'
 import { config } from '../../config/env.config'
 import { EmailTemplateService, TemplateName } from './email-template.service'
+
+/**
+ * File attached to an e-mail. Set `cid` to reference the attachment inline
+ * from the HTML body (`<img src="cid:...">`), e.g. a map snapshot.
+ */
+export interface EmailAttachment {
+  filename: string
+  content: Buffer
+  contentType?: string
+  cid?: string
+}
 
 export interface EmailOptions {
   to: string
@@ -10,6 +22,7 @@ export interface EmailOptions {
   html?: string
   /** Address a reply should go to when it differs from the sender. */
   replyTo?: string
+  attachments?: EmailAttachment[]
 }
 
 export interface TemplatedEmailOptions {
@@ -17,6 +30,7 @@ export interface TemplatedEmailOptions {
   subject: string
   template: TemplateName
   data: Record<string, unknown>
+  attachments?: EmailAttachment[]
 }
 
 interface SmtpConfig {
@@ -60,6 +74,7 @@ export class EmailService {
     content,
     html,
     replyTo,
+    attachments,
   }: EmailOptions): Promise<void> {
     try {
       const mailOptions = {
@@ -69,6 +84,7 @@ export class EmailService {
         text: content,
         html: html || content,
         ...(replyTo ? { replyTo } : {}),
+        ...(attachments && attachments.length > 0 ? { attachments } : {}),
       }
 
       const info = await this.transporter.sendMail(mailOptions)
@@ -91,6 +107,7 @@ export class EmailService {
     subject,
     template,
     data,
+    attachments,
   }: TemplatedEmailOptions): Promise<void> {
     const html = await this.templateService.render(template, data, subject)
 
@@ -99,6 +116,7 @@ export class EmailService {
       subject,
       content: subject,
       html,
+      attachments,
     })
   }
 

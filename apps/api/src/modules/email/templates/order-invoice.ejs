@@ -1,0 +1,170 @@
+<!--
+  Order invoice — sent to the buyer once the order is DELIVERED.
+  Variables (all prices are pre-formatted strings, e.g. « 1 200 FCFA »):
+    invoiceNumber, orderNumber, orderDate, deliveryDate,
+    buyer { name, email }, seller { shopName, address? },
+    items [{ name, variant?, quantity, unitPrice, totalPrice, thumbnailUrl? }],
+    subtotal, discount?, deliveryFee?, total,
+    paymentLabel, isDelivery, deliveryAddress?, deliverySlot?,
+    courier? { name, vehicleLabel }, mapSrc?, orderUrl, legalLine
+-->
+<% const font = "'Plus Jakarta Sans', Arial, sans-serif" %>
+<% const cell = `font-family: ${font}; font-size: 14px; color: #2A2924; line-height: 1.5;` %>
+<% const muted = `font-family: ${font}; font-size: 12px; color: #9B9890; line-height: 1.5;` %>
+<% const label = `font-family: ${font}; font-size: 11px; font-weight: 700; color: #1e7a37; text-transform: uppercase; letter-spacing: 0.08em; line-height: 1.4;` %>
+
+<!-- Title row: heading + invoice number badge -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+  <tr>
+    <td valign="top">
+      <%- include('partials/heading', { text: 'Votre facture eBio', level: 1 }) %>
+    </td>
+    <td valign="top" align="right" style="padding-left: 12px; white-space: nowrap;">
+      <span style="display: inline-block; padding: 6px 12px; border-radius: 999px; background-color: #E8F4EB; <%= label %>"><%= invoiceNumber %></span>
+    </td>
+  </tr>
+</table>
+
+<p>Bonjour <strong><%= buyer.name %></strong>,</p>
+
+<p>
+  Votre commande <strong><%= orderNumber %></strong> a bien été livrée. Vous trouverez ci-dessous
+  le récapitulatif de votre achat, qui tient lieu de facture. Merci de votre confiance !
+</p>
+
+<!-- Dates -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 8px 0 24px 0; background-color: #F7F6F2; border-radius: 10px;">
+  <tr>
+    <td width="50%" style="padding: 14px 16px;">
+      <div style="<%= label %>">Date de commande</div>
+      <div style="<%= cell %>"><%= orderDate %></div>
+    </td>
+    <td width="50%" style="padding: 14px 16px; border-left: 1px solid #EDECEA;">
+      <div style="<%= label %>">Date de livraison</div>
+      <div style="<%= cell %>"><%= deliveryDate %></div>
+    </td>
+  </tr>
+</table>
+
+<!-- Parties -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 0 0 24px 0;">
+  <tr>
+    <td width="50%" valign="top" style="padding: 0 8px 0 0;">
+      <div style="<%= label %> margin-bottom: 6px;">Client</div>
+      <div style="<%= cell %>"><strong><%= buyer.name %></strong></div>
+      <% if (buyer.email) { %><div style="<%= muted %>"><%= buyer.email %></div><% } %>
+    </td>
+    <td width="50%" valign="top" style="padding: 0 0 0 8px;">
+      <div style="<%= label %> margin-bottom: 6px;">Vendeur</div>
+      <div style="<%= cell %>"><strong><%= seller.shopName %></strong></div>
+      <% if (seller.address) { %><div style="<%= muted %>"><%= seller.address %></div><% } %>
+    </td>
+  </tr>
+</table>
+
+<!-- Items -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="border: 1px solid #EDECEA; border-radius: 10px; border-collapse: separate; overflow: hidden;">
+  <tr style="background-color: #1e7a37;">
+    <td colspan="2" style="padding: 10px 14px; font-family: <%= font %>; font-size: 12px; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.06em;">Article</td>
+    <td align="center" style="padding: 10px 8px; font-family: <%= font %>; font-size: 12px; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;">Qté</td>
+    <td align="right" style="padding: 10px 14px; font-family: <%= font %>; font-size: 12px; font-weight: 700; color: #FFFFFF; text-transform: uppercase; letter-spacing: 0.06em; white-space: nowrap;">Montant</td>
+  </tr>
+  <% items.forEach((item, index) => { %>
+  <tr>
+    <td width="56" style="padding: 12px 0 12px 14px; border-top: <%= index === 0 ? '0' : '1px solid #EDECEA' %>;">
+      <% if (item.thumbnailUrl) { %>
+        <img src="<%= item.thumbnailUrl %>" alt="" width="56" height="56" style="display: block; width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background-color: #F7F6F2;" />
+      <% } else { %>
+        <div style="width: 56px; height: 56px; border-radius: 8px; background-color: #E8F4EB;"></div>
+      <% } %>
+    </td>
+    <td valign="middle" style="padding: 12px 8px 12px 12px; border-top: <%= index === 0 ? '0' : '1px solid #EDECEA' %>;">
+      <div style="<%= cell %> font-weight: 600;"><%= item.name %></div>
+      <% if (item.variant) { %><div style="<%= muted %>"><%= item.variant %></div><% } %>
+      <div style="<%= muted %>"><%= item.quantity %> &times; <%= item.unitPrice %></div>
+    </td>
+    <td align="center" valign="middle" style="padding: 12px 8px; border-top: <%= index === 0 ? '0' : '1px solid #EDECEA' %>; <%= cell %>"><%= item.quantity %></td>
+    <td align="right" valign="middle" style="padding: 12px 14px; border-top: <%= index === 0 ? '0' : '1px solid #EDECEA' %>; <%= cell %> font-weight: 600; white-space: nowrap;"><%= item.totalPrice %></td>
+  </tr>
+  <% }) %>
+</table>
+
+<!-- Totals -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 16px 0 24px 0;">
+  <tr>
+    <td width="55%"></td>
+    <td>
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%">
+        <tr>
+          <td style="padding: 4px 0; <%= cell %>">Sous-total</td>
+          <td align="right" style="padding: 4px 0; <%= cell %> white-space: nowrap;"><%= subtotal %></td>
+        </tr>
+        <% if (discount) { %>
+        <tr>
+          <td style="padding: 4px 0; <%= cell %>">Remise</td>
+          <td align="right" style="padding: 4px 0; <%= cell %> color: #1e7a37; white-space: nowrap;">&minus; <%= discount %></td>
+        </tr>
+        <% } %>
+        <% if (deliveryFee) { %>
+        <tr>
+          <td style="padding: 4px 0; <%= cell %>">Livraison</td>
+          <td align="right" style="padding: 4px 0; <%= cell %> white-space: nowrap;"><%= deliveryFee %></td>
+        </tr>
+        <% } %>
+        <tr>
+          <td style="padding: 10px 0 0 0; border-top: 2px solid #1e7a37; font-family: 'DM Serif Display', Georgia, serif; font-size: 18px; color: #2A2924;">Total TTC</td>
+          <td align="right" style="padding: 10px 0 0 0; border-top: 2px solid #1e7a37; font-family: 'DM Serif Display', Georgia, serif; font-size: 18px; color: #1e7a37; white-space: nowrap;"><%= total %></td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>
+
+<!-- Payment & delivery -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 0 0 24px 0; background-color: #F7F6F2; border-radius: 10px;">
+  <tr>
+    <td style="padding: 14px 16px; border-bottom: 1px solid #EDECEA;">
+      <div style="<%= label %>">Paiement</div>
+      <div style="<%= cell %>"><%= paymentLabel %></div>
+    </td>
+  </tr>
+  <tr>
+    <td style="padding: 14px 16px;<%= courier ? ' border-bottom: 1px solid #EDECEA;' : '' %>">
+      <div style="<%= label %>"><%= isDelivery ? 'Livraison à domicile' : 'Retrait sur place' %></div>
+      <% if (isDelivery) { %>
+        <% if (deliveryAddress) { %><div style="<%= cell %>"><%= deliveryAddress %></div><% } %>
+        <% if (deliverySlot) { %><div style="<%= muted %>">Créneau : <%= deliverySlot %></div><% } %>
+      <% } else { %>
+        <div style="<%= cell %>"><%= seller.shopName %></div>
+        <% if (seller.address) { %><div style="<%= muted %>"><%= seller.address %></div><% } %>
+      <% } %>
+    </td>
+  </tr>
+  <% if (courier) { %>
+  <tr>
+    <td style="padding: 14px 16px;">
+      <div style="<%= label %>">Livreur</div>
+      <div style="<%= cell %>"><%= courier.name %> <span style="color: #9B9890;">&middot; <%= courier.vehicleLabel %></span></div>
+    </td>
+  </tr>
+  <% } %>
+</table>
+
+<% if (mapSrc) { %>
+<!-- Route map -->
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin: 0 0 24px 0;">
+  <tr>
+    <td>
+      <div style="<%= label %> margin-bottom: 8px;">Trajet de livraison</div>
+      <img src="<%= mapSrc %>" alt="Carte du trajet entre la boutique et votre adresse" width="536" style="display: block; width: 100%; max-width: 536px; height: auto; border-radius: 10px; border: 1px solid #EDECEA;" />
+      <div style="<%= muted %> margin-top: 6px;">B&nbsp;: boutique &middot; C&nbsp;: votre adresse</div>
+    </td>
+  </tr>
+</table>
+<% } %>
+
+<%- include('partials/button', { href: orderUrl, label: 'Voir ma commande', variant: 'primary' }) %>
+
+<p style="font-size: 12px; color: #9B9890;"><%= legalLine %></p>
+
+<p>L'équipe eBio</p>
