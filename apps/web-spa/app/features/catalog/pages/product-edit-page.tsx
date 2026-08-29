@@ -1,3 +1,4 @@
+import type { UpdateProduct } from '@boilerstone/openapi-generator/client/types.gen'
 import type { ProductFormData } from '../forms/product-form'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card } from '@boilerstone/ui/components/primitives/card'
@@ -8,7 +9,12 @@ import { ArrowLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { ProductForm } from '../forms/product-form'
-import { fetchProductByIdQueryOptions, updateProductMutationOptions } from '../utils/catalog-queries'
+import {
+  clearProductPromotion,
+  fetchProductByIdQueryOptions,
+  setProductPromotion,
+  updateProductMutationOptions,
+} from '../utils/catalog-queries'
 
 export default function ProductEditPage() {
   const { t } = useTranslation()
@@ -17,9 +23,23 @@ export default function ProductEditPage() {
   const { productId } = useParams()
 
   const { data: product, isLoading } = useQuery(fetchProductByIdQueryOptions(productId!))
+  const hadPromotion = (product as { promotionalPrice?: number | null } | undefined)?.promotionalPrice != null
 
   const { mutate, isPending } = useMutation({
-    ...updateProductMutationOptions,
+    mutationFn: async (data: ProductFormData) => {
+      // Promotion goes through its own endpoint. `photos` carries the kept
+      // existing URLs so an edit no longer wipes photos not re-uploaded.
+      const { hasPromotion, promotionalPrice, promotionExpiresAt, ...body } = data
+      const updated = await updateProductMutationOptions.mutationFn({
+        id: productId!,
+        ...(body as unknown as UpdateProduct),
+      })
+      if (hasPromotion && promotionalPrice && promotionExpiresAt)
+        await setProductPromotion(productId!, promotionalPrice, promotionExpiresAt)
+      else if (!hasPromotion && hadPromotion)
+        await clearProductPromotion(productId!)
+      return updated
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['products', productId] })
@@ -32,7 +52,7 @@ export default function ProductEditPage() {
   })
 
   function handleSubmit(data: ProductFormData) {
-    mutate({ id: productId!, ...data } as Record<string, unknown> & { id: string })
+    mutate(data)
   }
 
   if (isLoading) {
@@ -45,7 +65,7 @@ export default function ProductEditPage() {
   }
 
   const initialData = product
-    ? (product as unknown as Partial<ProductFormData> & { photos?: string[] })
+    ? (product as unknown as Partial<ProductFormData>)
     : undefined
 
   return (

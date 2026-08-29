@@ -7,7 +7,21 @@ import {
   walletAdminControllerWalletsOverview,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
-export interface AdminPayoutNumber {
+export type WalletOwnerType = 'SUPPLIER' | 'COURIER' | 'USER'
+
+/** Fields shared by payout numbers and withdrawals: who the money goes to. */
+export interface PayoutOwner {
+  ownerType: Exclude<WalletOwnerType, 'USER'>
+  ownerName: string
+  /** Null for courier rows. */
+  supplierId: string | null
+  /** Null for supplier rows. */
+  courierId: string | null
+  /** @deprecated Kept for older rows; prefer `ownerName`. Null for couriers. */
+  shopName: string | null
+}
+
+export interface AdminPayoutNumber extends PayoutOwner {
   id: string
   phoneNumber: string
   operator: string
@@ -16,11 +30,9 @@ export interface AdminPayoutNumber {
   status: 'PENDING' | 'VALIDATED' | 'REJECTED'
   rejectionReason: string | null
   createdAt: string
-  supplierId: string
-  shopName: string
 }
 
-export interface AdminWithdrawal {
+export interface AdminWithdrawal extends PayoutOwner {
   id: string
   amount: number
   status: 'PENDING' | 'PROCESSING' | 'PAID' | 'FAILED' | 'REJECTED' | 'CANCELLED'
@@ -31,16 +43,15 @@ export interface AdminWithdrawal {
   providerReference: string | null
   createdAt: string
   processedAt: string | null
-  supplierId: string
-  shopName: string
 }
 
 export interface AdminWalletRow {
   id: string
   balance: number
-  ownerType: 'SUPPLIER' | 'USER'
+  ownerType: WalletOwnerType
   ownerName: string
   supplierId: string | null
+  courierId: string | null
   updatedAt: string
 }
 

@@ -23,14 +23,25 @@ import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Check, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Plus, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 import { fetchActiveProductUnitsQueryOptions } from '@/features/admin/product-units/utils/product-units-queries'
-import { ImageUpload } from '@/features/media/components/image-upload'
+import { ChipMultiSelect } from '../components/chip-multi-select'
+import { ProductPhotoManager } from '../components/product-photo-manager'
+import {
+  ALLERGEN_CODES,
+  allergenName,
+  basisName,
+  DEFAULT_NUTRITION_BASIS,
+  LABEL_CODES,
+  labelName,
+  NUTRITION_BASES,
+  nutritionPerBasis,
+} from '../utils/composition'
 
 // ---------- Schema ----------
 
@@ -38,6 +49,27 @@ const variantSchema = z.object({
   label: z.string().min(1),
   pricePerUnit: z.coerce.number().min(0),
   stock: z.coerce.number().int().min(0),
+})
+
+// Empty numeric inputs must resolve to undefined, not 0 (coerce turns '' into 0)
+function optionalAmount(max: number) {
+  return z.preprocess(
+    value => (value === '' || value === null || value === undefined ? undefined : value),
+    z.coerce.number().min(0).max(max).optional(),
+  )
+}
+
+// Bounds mirror the API contract: kcal per 100 g/ml, grams per 100 g/ml
+const nutritionalValuesSchema = z.object({
+  basis: z.enum(NUTRITION_BASES).default(DEFAULT_NUTRITION_BASIS),
+  energyKcal: optionalAmount(900),
+  fat: optionalAmount(100),
+  saturatedFat: optionalAmount(100),
+  carbohydrates: optionalAmount(100),
+  sugars: optionalAmount(100),
+  fiber: optionalAmount(100),
+  protein: optionalAmount(100),
+  salt: optionalAmount(100),
 })
 
 const productSchema = z.object({
@@ -54,31 +86,79 @@ const productSchema = z.object({
   promotionalPrice: z.coerce.number().min(0).optional(),
   promotionExpiresAt: z.string().optional(),
   mediaIds: z.array(z.string()).optional(),
+  // Existing photo URLs kept on the product, in display order (edit mode)
+  photos: z.array(z.string()).optional(),
+  // Composition & product sheet
+  ingredients: z.string().max(4000).optional(),
+  allergens: z.array(z.enum(ALLERGEN_CODES)).max(20).optional(),
+  labels: z.array(z.enum(LABEL_CODES)).max(10).optional(),
+  origin: z.string().max(200).optional(),
+  conservation: z.string().max(1000).optional(),
+  nutritionalValues: nutritionalValuesSchema.optional(),
 })
 
 export type ProductFormData = z.infer<typeof productSchema>
 
-const STEPS = ['info', 'pricing', 'extras'] as const
+// Cross-field rules validated with translated messages so the inline errors
+// are localized: nutrition sub-totals cannot exceed their parent, and
+// promotion fields are only meaningful when the switch is on.
+function buildProductSchema(t: (key: string) => string) {
+  return productSchema.superRefine((data, ctx) => {
+    const nutrition = data.nutritionalValues
+    if (nutrition?.saturatedFat != null && nutrition.fat != null && nutrition.saturatedFat > nutrition.fat)
+      ctx.addIssue({ code: 'custom', path: ['nutritionalValues', 'saturatedFat'], message: t('catalog.composition.validation.saturatedFat') })
+    if (nutrition?.sugars != null && nutrition.carbohydrates != null && nutrition.sugars > nutrition.carbohydrates)
+      ctx.addIssue({ code: 'custom', path: ['nutritionalValues', 'sugars'], message: t('catalog.composition.validation.sugars') })
+
+    if (!data.hasPromotion)
+      return
+    if (!data.promotionalPrice || data.promotionalPrice <= 0) {
+      ctx.addIssue({ code: 'custom', path: ['promotionalPrice'], message: t('catalog.form.promotionPriceRequired') })
+    }
+    else if (data.pricePerUnit > 0 && data.promotionalPrice >= data.pricePerUnit) {
+      ctx.addIssue({ code: 'custom', path: ['promotionalPrice'], message: t('catalog.form.promotionPriceTooHigh') })
+    }
+    if (!data.promotionExpiresAt)
+      ctx.addIssue({ code: 'custom', path: ['promotionExpiresAt'], message: t('catalog.form.promotionExpiryRequired') })
+  })
+}
+
+const STEPS = ['essentials', 'photos', 'composition', 'extras'] as const
 type Step = typeof STEPS[number]
 
-// Fields to validate per step
+// Fields to validate per step — essentials first: name, category, price, unit, stock
 const STEP_FIELDS: Record<Step, (keyof ProductFormData)[]> = {
-  info: ['name', 'categoryId'],
-  pricing: ['pricePerUnit', 'unit', 'stock'],
+  essentials: ['name', 'categoryId', 'pricePerUnit', 'unit', 'stock', 'stockAlertThreshold'],
+  photos: [],
+  composition: ['ingredients', 'allergens', 'labels', 'origin', 'conservation', 'nutritionalValues'],
   extras: [],
 }
+
+const NUTRITION_FIELDS = [
+  { key: 'energyKcal', unit: 'kcal' },
+  { key: 'fat', unit: 'g' },
+  { key: 'saturatedFat', unit: 'g' },
+  { key: 'carbohydrates', unit: 'g' },
+  { key: 'sugars', unit: 'g' },
+  { key: 'fiber', unit: 'g' },
+  { key: 'protein', unit: 'g' },
+  { key: 'salt', unit: 'g' },
+] as const
 
 // ---------- Component ----------
 
 interface ProductFormProps {
   onSubmit: (data: ProductFormData) => void
   isPending: boolean
-  initialData?: Partial<ProductFormData> & { photos?: string[] }
+  initialData?: Partial<ProductFormData>
 }
 
 export function ProductForm({ onSubmit, isPending, initialData }: ProductFormProps) {
   const { t } = useTranslation()
   const [currentStep, setCurrentStep] = useState<number>(0)
+  const [nutritionOpen, setNutritionOpen] = useState<boolean>(
+    NUTRITION_FIELDS.some(f => initialData?.nutritionalValues?.[f.key] != null),
+  )
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -93,7 +173,7 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
   const units = unitsData?.items ?? []
 
   const form = useForm<ProductFormData>({
-    resolver: zodResolver(productSchema) as Resolver<ProductFormData>,
+    resolver: zodResolver(buildProductSchema(t)) as Resolver<ProductFormData>,
     defaultValues: {
       name: initialData?.name ?? '',
       categoryId: initialData?.categoryId ?? '',
@@ -106,8 +186,27 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
       variants: initialData?.variants ?? [],
       hasPromotion: !!initialData?.promotionalPrice,
       promotionalPrice: initialData?.promotionalPrice ?? 0,
-      promotionExpiresAt: initialData?.promotionExpiresAt ?? '',
+      promotionExpiresAt: initialData?.promotionExpiresAt
+        ? new Date(initialData.promotionExpiresAt).toISOString().split('T')[0]
+        : '',
       mediaIds: initialData?.mediaIds ?? [],
+      photos: initialData?.photos ?? [],
+      ingredients: initialData?.ingredients ?? '',
+      allergens: initialData?.allergens ?? [],
+      labels: initialData?.labels ?? [],
+      origin: initialData?.origin ?? '',
+      conservation: initialData?.conservation ?? '',
+      nutritionalValues: {
+        basis: initialData?.nutritionalValues?.basis ?? DEFAULT_NUTRITION_BASIS,
+        energyKcal: initialData?.nutritionalValues?.energyKcal ?? undefined,
+        fat: initialData?.nutritionalValues?.fat ?? undefined,
+        saturatedFat: initialData?.nutritionalValues?.saturatedFat ?? undefined,
+        carbohydrates: initialData?.nutritionalValues?.carbohydrates ?? undefined,
+        sugars: initialData?.nutritionalValues?.sugars ?? undefined,
+        fiber: initialData?.nutritionalValues?.fiber ?? undefined,
+        protein: initialData?.nutritionalValues?.protein ?? undefined,
+        salt: initialData?.nutritionalValues?.salt ?? undefined,
+      },
     },
   })
 
@@ -118,7 +217,13 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
 
   const hasPromotion = form.watch('hasPromotion')
   const pricePerUnit = form.watch('pricePerUnit')
+  const keptPhotos = form.watch('photos') ?? []
+  const nutritionBasis = form.watch('nutritionalValues.basis') ?? DEFAULT_NUTRITION_BASIS
   const step = STEPS[currentStep]
+
+  // Closed vocabularies: the API only accepts canonical codes
+  const allergenOptions = ALLERGEN_CODES.map(code => ({ value: code, label: allergenName(t, code) }))
+  const labelOptions = LABEL_CODES.map(code => ({ value: code, label: labelName(t, code) }))
 
   async function handleNext() {
     const fields = STEP_FIELDS[step]
@@ -139,8 +244,9 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
   }
 
   const stepLabels = [
-    t('catalog.form.stepInfo'),
-    t('catalog.form.stepPricing'),
+    t('catalog.form.stepEssentials'),
+    t('catalog.form.stepPhotos'),
+    t('catalog.form.stepComposition'),
     t('catalog.form.stepExtras'),
   ]
 
@@ -176,21 +282,11 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
           ))}
         </div>
 
-        {/* ===== Step 1: Info & Photos ===== */}
-        {step === 'info' && (
+        {/* ===== Step 1: Essentials (name, category, price, unit, stock) ===== */}
+        {step === 'essentials' && (
           <div className="space-y-6">
-            {/* Photos */}
             <div>
-              <FormLabel>{t('catalog.form.photos')}</FormLabel>
-              <FormDescription>{t('catalog.form.photosDescription')}</FormDescription>
-              <div className="mt-2">
-                <ImageUpload
-                  context="PRODUCT_PHOTO"
-                  max={3}
-                  existingUrls={initialData?.photos}
-                  onMediaIdsChange={ids => form.setValue('mediaIds', ids)}
-                />
-              </div>
+              <h3 className="text-base font-semibold">{t('catalog.form.stepInfo')}</h3>
             </div>
 
             {/* Name */}
@@ -257,12 +353,11 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
                 </FormItem>
               )}
             />
-          </div>
-        )}
 
-        {/* ===== Step 2: Pricing & Stock ===== */}
-        {step === 'pricing' && (
-          <div className="space-y-6">
+            <div className="pt-2">
+              <h3 className="text-base font-semibold">{t('catalog.form.stepPricing')}</h3>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <FormField
                 control={form.control}
@@ -331,7 +426,212 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
               />
             </div>
             <p className="text-sm text-muted-foreground">{t('catalog.form.stockAlertDescription')}</p>
+          </div>
+        )}
 
+        {/* ===== Step 2: Photos ===== */}
+        {step === 'photos' && (
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-base font-semibold">{t('catalog.form.photos')}</h3>
+              <p className="text-sm text-muted-foreground">{t('catalog.form.photosDescription')}</p>
+            </div>
+            <ProductPhotoManager
+              keptUrls={keptPhotos}
+              onKeptUrlsChange={urls => form.setValue('photos', urls, { shouldDirty: true })}
+              onMediaIdsChange={ids => form.setValue('mediaIds', ids, { shouldDirty: true })}
+              max={3}
+            />
+          </div>
+        )}
+
+        {/* ===== Step 3: Composition & product sheet ===== */}
+        {step === 'composition' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-base font-semibold">{t('catalog.composition.title')}</h3>
+              <p className="text-sm text-muted-foreground">{t('catalog.composition.sectionDescription')}</p>
+            </div>
+
+            {/* Ingredients */}
+            <FormField
+              control={form.control}
+              name="ingredients"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('catalog.composition.ingredients')}</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder={t('catalog.composition.ingredientsPlaceholder')} rows={3} maxLength={4000} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Allergens */}
+            <FormField
+              control={form.control}
+              name="allergens"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('catalog.composition.allergens')}</FormLabel>
+                  <FormDescription>{t('catalog.composition.allergensDescription')}</FormDescription>
+                  <FormControl>
+                    <ChipMultiSelect
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      options={allergenOptions}
+                      allowCustom={false}
+                      maxItems={20}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Labels */}
+            <FormField
+              control={form.control}
+              name="labels"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('catalog.composition.labels')}</FormLabel>
+                  <FormDescription>{t('catalog.composition.labelsDescription')}</FormDescription>
+                  <FormControl>
+                    <ChipMultiSelect
+                      value={field.value ?? []}
+                      onChange={field.onChange}
+                      options={labelOptions}
+                      allowCustom={false}
+                      maxItems={10}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Origin */}
+            <FormField
+              control={form.control}
+              name="origin"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('catalog.composition.origin')}</FormLabel>
+                  <FormControl>
+                    <Input {...field} placeholder={t('catalog.composition.originPlaceholder')} maxLength={200} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Conservation */}
+            <FormField
+              control={form.control}
+              name="conservation"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('catalog.composition.conservation')}</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} placeholder={t('catalog.composition.conservationPlaceholder')} rows={2} maxLength={1000} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            {/* Nutritional values (collapsible) */}
+            <div className="rounded-lg border">
+              <button
+                type="button"
+                onClick={() => setNutritionOpen(open => !open)}
+                className="flex w-full items-center justify-between px-4 py-3 text-left"
+              >
+                <span>
+                  <span className="block text-sm font-semibold">{t('catalog.composition.nutrition.title')}</span>
+                  <span className="block text-xs text-muted-foreground">{nutritionPerBasis(t, nutritionBasis)}</span>
+                </span>
+                <ChevronDown className={`h-4 w-4 text-muted-foreground transition-transform ${nutritionOpen ? 'rotate-180' : ''}`} />
+              </button>
+              {nutritionOpen && (
+                <div className="grid grid-cols-2 gap-4 border-t p-4 sm:grid-cols-4">
+                  <FormField
+                    control={form.control}
+                    name="nutritionalValues.basis"
+                    render={({ field }) => (
+                      <FormItem className="col-span-2 sm:col-span-4">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <FormLabel className="text-xs">{t('catalog.composition.basis.label')}</FormLabel>
+                          <FormControl>
+                            <div role="radiogroup" className="inline-flex rounded-lg border p-0.5">
+                              {NUTRITION_BASES.map((basis) => {
+                                const selected = field.value === basis
+                                return (
+                                  <button
+                                    key={basis}
+                                    type="button"
+                                    role="radio"
+                                    aria-checked={selected}
+                                    onClick={() => field.onChange(basis)}
+                                    className={`rounded-md px-3 py-1 text-sm font-medium transition-colors ${
+                                      selected
+                                        ? 'bg-primary text-primary-foreground'
+                                        : 'text-muted-foreground hover:text-foreground'
+                                    }`}
+                                  >
+                                    {basisName(t, basis)}
+                                  </button>
+                                )
+                              })}
+                            </div>
+                          </FormControl>
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  {NUTRITION_FIELDS.map(({ key, unit }) => (
+                    <FormField
+                      key={key}
+                      control={form.control}
+                      name={`nutritionalValues.${key}`}
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-xs">{t(`catalog.composition.nutrition.${key}`)}</FormLabel>
+                          <FormControl>
+                            <div className="relative">
+                              <Input
+                                {...field}
+                                value={field.value ?? ''}
+                                type="number"
+                                min="0"
+                                step="any"
+                                className="pr-10"
+                              />
+                              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">{unit}</span>
+                            </div>
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ===== Step 4: Options (status, variants, promotion) ===== */}
+        {step === 'extras' && (
+          <div className="space-y-6">
+            <div>
+              <h3 className="text-base font-semibold">{t('catalog.form.stepExtras')}</h3>
+            </div>
+
+            {/* Status */}
             <FormField
               control={form.control}
               name="status"
@@ -358,12 +658,7 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
                 </FormItem>
               )}
             />
-          </div>
-        )}
 
-        {/* ===== Step 3: Variants & Promotion ===== */}
-        {step === 'extras' && (
-          <div className="space-y-6">
             {/* Variants */}
             <div>
               <div className="flex items-center justify-between">

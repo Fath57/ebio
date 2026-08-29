@@ -1,3 +1,4 @@
+import type { NutritionalValues } from '@boilerstone/openapi-generator/client/types.gen'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
@@ -8,6 +9,7 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { fetchActiveProductUnitsQueryOptions } from '@/features/admin/product-units/utils/product-units-queries'
+import { ProductCompositionSection } from '../components/product-composition-section'
 import { fetchProductByIdQueryOptions } from '../utils/catalog-queries'
 
 interface Variant { id: string, label: string, pricePerUnit: number, stock: number }
@@ -35,6 +37,12 @@ interface ProductDetail {
   promotionExpiresAt: string | null
   variants: Variant[]
   stats?: ProductStats
+  ingredients?: string | null
+  allergens?: string[] | null
+  labels?: string[] | null
+  origin?: string | null
+  conservation?: string | null
+  nutritionalValues?: NutritionalValues | null
   createdAt: string
   updatedAt: string
 }
@@ -342,6 +350,16 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
+
+      {/* ===== Composition & product sheet ===== */}
+      <ProductCompositionSection
+        ingredients={product.ingredients}
+        allergens={product.allergens}
+        labels={product.labels}
+        origin={product.origin}
+        conservation={product.conservation}
+        nutritionalValues={product.nutritionalValues}
+      />
     </div>
   )
 }

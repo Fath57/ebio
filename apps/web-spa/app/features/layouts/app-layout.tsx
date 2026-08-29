@@ -6,6 +6,7 @@ import {
   Banknote,
   BarChart3,
   Bell,
+  Bike,
   CheckCircle,
   ClipboardList,
   CreditCard,
@@ -133,6 +134,7 @@ export default function AppLayout() {
       items: [
         { to: '/admin/fournisseurs', label: t('nav.suppliers'), icon: <Store className="h-4 w-4" /> },
         { to: '/admin/validations', label: t('nav.validations'), icon: <CheckCircle className="h-4 w-4" /> },
+        { to: '/admin/livreurs', label: t('nav.couriers'), icon: <Bike className="h-4 w-4" /> },
       ],
     },
     {

@@ -8,7 +8,7 @@ import { ArrowLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { ProductForm } from '../forms/product-form'
-import { createProductMutationOptions } from '../utils/catalog-queries'
+import { createProductMutationOptions, setProductPromotion } from '../utils/catalog-queries'
 
 export default function ProductCreatePage() {
   const { t } = useTranslation()
@@ -16,7 +16,15 @@ export default function ProductCreatePage() {
   const queryClient = useQueryClient()
 
   const { mutate, isPending } = useMutation({
-    ...createProductMutationOptions,
+    mutationFn: async (data: ProductFormData) => {
+      // Promotion goes through its own endpoint; photos only exist on edit
+      const { hasPromotion, promotionalPrice, promotionExpiresAt, photos: _photos, ...body } = data
+      const product = await createProductMutationOptions.mutationFn(body as unknown as CreateProduct)
+      const productId = (product as { id?: string } | undefined)?.id
+      if (productId && hasPromotion && promotionalPrice && promotionExpiresAt)
+        await setProductPromotion(productId, promotionalPrice, promotionExpiresAt)
+      return product
+    },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success(t('catalog.form.createSuccess'))
@@ -29,7 +37,7 @@ export default function ProductCreatePage() {
   })
 
   function handleSubmit(data: ProductFormData) {
-    mutate(data as unknown as CreateProduct)
+    mutate(data)
   }
 
   return (

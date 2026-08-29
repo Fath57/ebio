@@ -1,4 +1,4 @@
-import type { AdminPayoutNumber, AdminTopup, AdminWithdrawal } from '../utils/withdrawals-queries'
+import type { AdminPayoutNumber, AdminTopup, AdminWalletRow, AdminWithdrawal } from '../utils/withdrawals-queries'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
@@ -23,7 +23,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, XCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { BeneficiaryCell } from '../components/beneficiary-cell'
 import {
   actOnPayoutNumber,
   actOnWithdrawal,
@@ -177,7 +177,7 @@ export default function AdminWithdrawalsPage() {
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead>{t('admin.withdrawals.columns.shop')}</TableHead>
+                          <TableHead>{t('admin.withdrawals.columns.beneficiary')}</TableHead>
                           <TableHead>{t('admin.withdrawals.columns.number')}</TableHead>
                           <TableHead>{t('admin.withdrawals.columns.operator')}</TableHead>
                           <TableHead>{t('admin.withdrawals.columns.holder')}</TableHead>
@@ -188,9 +188,12 @@ export default function AdminWithdrawalsPage() {
                         {pendingNumbers?.items.map((number: AdminPayoutNumber) => (
                           <TableRow key={number.id}>
                             <TableCell>
-                              <Link to={`/admin/fournisseurs/${number.supplierId}`} className="font-medium hover:underline">
-                                {number.shopName}
-                              </Link>
+                              <BeneficiaryCell
+                                ownerType={number.ownerType}
+                                ownerName={number.ownerName}
+                                supplierId={number.supplierId}
+                                courierId={number.courierId}
+                              />
                             </TableCell>
                             <TableCell className="font-mono">{number.phoneNumber}</TableCell>
                             <TableCell>{number.operatorLabel}</TableCell>
@@ -239,7 +242,7 @@ export default function AdminWithdrawalsPage() {
                       <TableHeader>
                         <TableRow>
                           <TableHead>{t('admin.withdrawals.columns.date')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.shop')}</TableHead>
+                          <TableHead>{t('admin.withdrawals.columns.beneficiary')}</TableHead>
                           <TableHead>{t('admin.withdrawals.columns.number')}</TableHead>
                           <TableHead className="text-right">{t('admin.withdrawals.columns.amount')}</TableHead>
                           <TableHead>{t('admin.withdrawals.columns.status')}</TableHead>
@@ -251,9 +254,12 @@ export default function AdminWithdrawalsPage() {
                           <TableRow key={withdrawal.id}>
                             <TableCell>{new Date(withdrawal.createdAt).toLocaleDateString(i18n.language)}</TableCell>
                             <TableCell>
-                              <Link to={`/admin/fournisseurs/${withdrawal.supplierId}`} className="font-medium hover:underline">
-                                {withdrawal.shopName}
-                              </Link>
+                              <BeneficiaryCell
+                                ownerType={withdrawal.ownerType}
+                                ownerName={withdrawal.ownerName}
+                                supplierId={withdrawal.supplierId}
+                                courierId={withdrawal.courierId}
+                              />
                             </TableCell>
                             <TableCell>
                               <span className="font-mono">{withdrawal.phoneNumber}</span>
@@ -285,13 +291,58 @@ export default function AdminWithdrawalsPage() {
                                     onClick={() => setRejectTarget({
                                       kind: 'withdrawal',
                                       id: withdrawal.id,
-                                      label: `${formatAmount(withdrawal.amount)} — ${withdrawal.shopName}`,
+                                      label: `${formatAmount(withdrawal.amount)} — ${withdrawal.ownerName}`,
                                     })}
                                   >
                                     {t('admin.withdrawals.reject')}
                                   </Button>
                                 </>
                               )}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  )}
+        </CardContent>
+      </Card>
+
+      {/* Wallet balances per owner */}
+      <Card>
+        <CardHeader>
+          <CardTitle>{t('admin.withdrawals.walletsTitle')}</CardTitle>
+          <p className="text-muted-foreground text-sm">{t('admin.withdrawals.walletsHint')}</p>
+        </CardHeader>
+        <CardContent>
+          {isLoadingOverview
+            ? <Skeleton className="h-24 w-full" />
+            : (overview?.wallets.length ?? 0) === 0
+                ? <p className="text-muted-foreground py-4 text-center text-sm">{t('admin.withdrawals.walletsEmpty')}</p>
+                : (
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t('admin.withdrawals.columns.beneficiary')}</TableHead>
+                          <TableHead className="text-right">{t('admin.withdrawals.columns.balance')}</TableHead>
+                          <TableHead>{t('admin.withdrawals.columns.updatedAt')}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {overview?.wallets.map((wallet: AdminWalletRow) => (
+                          <TableRow key={wallet.id}>
+                            <TableCell>
+                              <BeneficiaryCell
+                                ownerType={wallet.ownerType}
+                                ownerName={wallet.ownerName}
+                                supplierId={wallet.supplierId}
+                                courierId={wallet.courierId}
+                              />
+                            </TableCell>
+                            <TableCell className={`text-right font-medium ${wallet.balance < 0 ? 'text-destructive' : ''}`}>
+                              {formatAmount(wallet.balance)}
+                            </TableCell>
+                            <TableCell className="text-muted-foreground">
+                              {new Date(wallet.updatedAt).toLocaleDateString(i18n.language)}
                             </TableCell>
                           </TableRow>
                         ))}

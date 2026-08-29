@@ -1,8 +1,10 @@
 import type { CreateProduct, UpdateProduct } from '@boilerstone/openapi-generator/client/types.gen'
 import { client } from '@boilerstone/openapi-generator'
 import {
+  productsControllerClearPromotion,
   productsControllerCreate,
   productsControllerFindBySupplier,
+  productsControllerSetPromotion,
   productsControllerSoftDelete,
   productsControllerUpdate,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
@@ -88,6 +90,25 @@ export const updateProductMutationOptions = {
       throw new Error('Failed to update product')
     return response.data
   },
+}
+
+export async function setProductPromotion(id: string, promotionalPrice: number, expiresAt: string) {
+  const response = await productsControllerSetPromotion({
+    path: { id },
+    body: { promotionalPrice, expiresAt: new Date(expiresAt) },
+  })
+  if (response.error)
+    throw new Error('Failed to set promotion')
+  return response.data
+}
+
+export async function clearProductPromotion(id: string) {
+  const response = await productsControllerClearPromotion({
+    path: { id },
+  })
+  if (response.error)
+    throw new Error('Failed to clear promotion')
+  return response.data
 }
 
 export const deleteProductMutationOptions = {

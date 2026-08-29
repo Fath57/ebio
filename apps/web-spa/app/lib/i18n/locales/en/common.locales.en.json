@@ -177,7 +177,8 @@
     "commissions": "Commissions",
     "withdrawals": "Payouts",
     "wallet": "Wallet",
-    "promoCodes": "Promo codes"
+    "promoCodes": "Promo codes",
+    "couriers": "Couriers"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -234,7 +235,7 @@
       "addPhoto": "Add",
       "stepInfo": "Information",
       "stepPricing": "Price & Stock",
-      "stepExtras": "Variants & Promo",
+      "stepExtras": "Options",
       "processing": "Processing...",
       "variants": "Variants",
       "variantsDescription": "Offer different packaging options (e.g. 0.5L, 1L, 5L)",
@@ -251,7 +252,16 @@
       "createError": "Failed to create product",
       "update": "Update",
       "updateSuccess": "Product updated successfully",
-      "updateError": "Failed to update product"
+      "updateError": "Failed to update product",
+      "stepEssentials": "Essentials",
+      "stepPhotos": "Photos",
+      "stepComposition": "Composition",
+      "photoRemove": "Remove photo",
+      "photoMoveLeft": "Move left",
+      "photoMoveRight": "Move right",
+      "promotionPriceRequired": "Please enter a valid promotional price",
+      "promotionPriceTooHigh": "The promotional price must be lower than the unit price",
+      "promotionExpiryRequired": "Please choose an expiry date"
     },
     "units": {
       "kg": "Kilogram",
@@ -278,6 +288,74 @@
       "orders": "Orders",
       "sold": "Sold",
       "revenue": "Revenue"
+    },
+    "composition": {
+      "title": "Composition & product sheet",
+      "sectionDescription": "Fill in the product sheet to better inform your customers. All fields are optional.",
+      "ingredients": "Ingredients",
+      "ingredientsPlaceholder": "List the ingredients, separated by commas…",
+      "allergens": "Allergens",
+      "allergensDescription": "Select the allergens present in the product",
+      "labels": "Labels & certifications",
+      "labelsDescription": "Select your product's quality labels",
+      "origin": "Origin",
+      "originPlaceholder": "E.g. Plateaux region, Togo",
+      "conservation": "Storage advice",
+      "conservationPlaceholder": "E.g. Keep refrigerated, away from light",
+      "addCustom": "Add",
+      "customPlaceholder": "Other…",
+      "removeItem": "Remove",
+      "nutrition": {
+        "title": "Nutritional values",
+        "per": "Per {{basis}}",
+        "energyKcal": "Energy",
+        "fat": "Fat",
+        "saturatedFat": "of which saturates",
+        "carbohydrates": "Carbohydrates",
+        "sugars": "of which sugars",
+        "fiber": "Fibre",
+        "protein": "Protein",
+        "salt": "Salt"
+      },
+      "allergenNames": {
+        "gluten": "Gluten",
+        "crustaceans": "Crustaceans",
+        "eggs": "Eggs",
+        "fish": "Fish",
+        "peanuts": "Peanuts",
+        "soy": "Soy",
+        "milk": "Milk",
+        "nuts": "Tree nuts",
+        "celery": "Celery",
+        "mustard": "Mustard",
+        "sesame": "Sesame",
+        "sulphites": "Sulphites",
+        "lupin": "Lupin",
+        "molluscs": "Molluscs"
+      },
+      "labelNames": {
+        "organic": "Organic",
+        "ecocert": "Ecocert",
+        "local": "Local farming",
+        "fair-trade": "Fair trade",
+        "gmo-free": "GMO-free",
+        "handmade": "Handmade",
+        "artisanal": "Artisanal",
+        "vegan": "Vegan",
+        "vegetarian": "Vegetarian",
+        "gluten-free": "Gluten-free",
+        "lactose-free": "Lactose-free",
+        "sugar-free": "No added sugar"
+      },
+      "basis": {
+        "label": "Values per",
+        "100g": "100 g",
+        "100ml": "100 ml"
+      },
+      "validation": {
+        "saturatedFat": "Saturates cannot exceed total fat",
+        "sugars": "Sugars cannot exceed total carbohydrates"
+      }
     }
   },
   "orders": {
@@ -799,7 +877,7 @@
         "how1": "On every order, each item pays its category rate. The amount is frozen at order time: changing the grid never rewrites past orders.",
         "how2": "A rate negotiated with a shop replaces the grid for all its orders. It is set from",
         "how2Link": "its supplier page",
-        "how3": "The commission applies to items only. Delivery fees go to the shop in full.",
+        "how3": "The commission applies to items only. Delivery fees go to the courier, minus the eBio share set below.",
         "how4": "Collected and upcoming amounts are tracked on",
         "how4Link": "Sales → Commissions"
       },
@@ -850,6 +928,14 @@
           "supportsRefund": "Refunds supported",
           "supportsRefundHint": "Allows refunding a buyer through this method."
         }
+      },
+      "deliveryCommission": {
+        "title": "eBio commission on delivery fees",
+        "description": "Share eBio takes on the delivery fee of every run; the rest goes to the courier. On cash-paid orders this share is debited from the courier wallet.",
+        "rate": "Rate (%)",
+        "rateHint": "Between 0 and 50 %. Applies to upcoming deliveries only.",
+        "saved": "Rate saved",
+        "error": "Could not save the rate. Try again."
       }
     },
     "site": {
@@ -1137,23 +1223,23 @@
     },
     "withdrawals": {
       "title": "Payouts",
-      "description": "Shop money: numbers to validate, payout requests, balances",
-      "totalOwed": "Owed to shops",
+      "description": "Shop and courier money: numbers to validate, payout requests, balances",
+      "totalOwed": "Owed to shops and couriers",
       "totalOwedHint": "Sum of all positive wallet balances",
       "totalDebt": "Debts to eBio",
-      "totalDebtHint": "Cash-sale commissions not yet absorbed",
+      "totalDebtHint": "Commissions on cash sales and cash deliveries not yet absorbed",
       "numbersTitle": "Numbers to validate",
-      "numbersHint": "Check the Mobile Money number really belongs to the shop owner before validating. A validated number can receive payouts.",
+      "numbersHint": "Check the Mobile Money number really belongs to the account holder (shop or courier) before validating. A validated number can receive payouts.",
       "numbersEmpty": "No number awaiting validation",
       "requestsTitle": "Payout requests",
-      "requestsHint": "Approving fires the Mobile Money transfer through FedaPay at once. The amount is already reserved on the shop wallet.",
+      "requestsHint": "Approving fires the Mobile Money transfer through FedaPay at once. The amount is already reserved on the beneficiary wallet.",
       "requestsEmpty": "No payout request",
       "validate": "Validate",
       "reject": "Reject",
       "approve": "Approve and pay",
       "rejectTitle": "Reject",
-      "rejectBody": "Rejecting “{{label}}” notifies the shop with your reason. For a payout request the balance is restored automatically.",
-      "rejectPlaceholder": "Reason sent to the shop…",
+      "rejectBody": "Rejecting “{{label}}” notifies the beneficiary with your reason. For a payout request the balance is restored automatically.",
+      "rejectPlaceholder": "Reason sent to the beneficiary…",
       "status": {
         "PENDING": "Pending",
         "PROCESSING": "Transfer in progress",
@@ -1163,7 +1249,6 @@
         "CANCELLED": "Cancelled"
       },
       "columns": {
-        "shop": "Shop",
         "number": "Number",
         "operator": "Operator",
         "holder": "Holder",
@@ -1171,7 +1256,10 @@
         "amount": "Amount",
         "status": "Status",
         "user": "User",
-        "reference": "FedaPay ref."
+        "reference": "FedaPay ref.",
+        "beneficiary": "Beneficiary",
+        "balance": "Balance",
+        "updatedAt": "Updated"
       },
       "topupsTitle": "Wallet topups",
       "topupsHint": "Buyer topups through FedaPay. A pending topup has not been confirmed by FedaPay yet; a failed one credited nothing.",
@@ -1180,6 +1268,75 @@
         "PENDING": "Pending",
         "COMPLETED": "Credited",
         "FAILED": "Failed"
+      },
+      "walletsTitle": "Wallet balances",
+      "walletsHint": "A positive balance is owed to the beneficiary; a negative one is a commission the beneficiary owes eBio (cash sales or cash deliveries).",
+      "walletsEmpty": "No wallet yet",
+      "ownerTypes": {
+        "SUPPLIER": "Supplier",
+        "COURIER": "Courier",
+        "USER": "Buyer"
+      }
+    },
+    "couriers": {
+      "title": "Couriers",
+      "description": "Applications and supervision of the eBio courier fleet",
+      "filterByStatus": "Filter by status",
+      "empty": "No courier for this filter",
+      "backToList": "Back to couriers",
+      "columns": {
+        "name": "Name",
+        "phone": "Phone",
+        "vehicle": "Vehicle",
+        "zone": "Zone",
+        "status": "Status",
+        "submittedAt": "Applied on"
+      },
+      "statuses": {
+        "all": "All statuses",
+        "pending": "Pending",
+        "validated": "Validated",
+        "rejected": "Rejected",
+        "suspended": "Suspended",
+        "complement_requested": "Complement requested"
+      },
+      "vehicles": {
+        "moto": "Motorbike",
+        "bicycle": "Bicycle",
+        "car": "Car",
+        "on_foot": "On foot"
+      },
+      "detail": {
+        "application": "Application",
+        "identityDocument": "Identity document",
+        "documentProvided": "Provided",
+        "documentMissing": "Not provided",
+        "viewDocument": "View document",
+        "documentUnavailable": "File unavailable",
+        "rejectionReason": "Rejection reason",
+        "stats": "Deliveries",
+        "delivered": "Delivered",
+        "failed": "Failed",
+        "active": "Active",
+        "wallet": "Wallet",
+        "walletDebtHint": "The courier owes this commission to eBio (cash-paid deliveries)",
+        "walletOwedHint": "Amount owed to the courier",
+        "walletEmpty": "No wallet yet: the courier has not completed a delivery.",
+        "walletLink": "View payouts"
+      },
+      "actions": {
+        "approve": "Approve",
+        "reject": "Reject",
+        "suspend": "Suspend",
+        "reactivate": "Reactivate"
+      },
+      "rejectDialog": {
+        "title": "Reject the application",
+        "placeholder": "Reason shown to the applicant…"
+      },
+      "pagination": {
+        "previous": "Previous",
+        "next": "Next"
       }
     }
   },

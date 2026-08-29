@@ -177,7 +177,8 @@
     "commissions": "Commissions",
     "withdrawals": "Reversements",
     "wallet": "Portefeuille",
-    "promoCodes": "Codes promo"
+    "promoCodes": "Codes promo",
+    "couriers": "Livreurs"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -234,7 +235,7 @@
       "addPhoto": "Ajouter",
       "stepInfo": "Informations",
       "stepPricing": "Prix & Stock",
-      "stepExtras": "Variantes & Promo",
+      "stepExtras": "Options",
       "processing": "Traitement...",
       "variants": "Variantes",
       "variantsDescription": "Proposez différents conditionnements (ex: 0,5L, 1L, 5L)",
@@ -251,7 +252,16 @@
       "createError": "Erreur lors de la création du produit",
       "update": "Mettre à jour",
       "updateSuccess": "Produit mis à jour avec succès",
-      "updateError": "Erreur lors de la mise à jour du produit"
+      "updateError": "Erreur lors de la mise à jour du produit",
+      "stepEssentials": "Essentiel",
+      "stepPhotos": "Photos",
+      "stepComposition": "Composition",
+      "photoRemove": "Retirer la photo",
+      "photoMoveLeft": "Déplacer vers la gauche",
+      "photoMoveRight": "Déplacer vers la droite",
+      "promotionPriceRequired": "Veuillez saisir un prix promotionnel valide",
+      "promotionPriceTooHigh": "Le prix promotionnel doit être inférieur au prix unitaire",
+      "promotionExpiryRequired": "Veuillez choisir une date d'expiration"
     },
     "units": {
       "kg": "Kilogramme",
@@ -278,6 +288,74 @@
       "orders": "Commandes",
       "sold": "Vendus",
       "revenue": "Revenu"
+    },
+    "composition": {
+      "title": "Composition & fiche produit",
+      "sectionDescription": "Renseignez la fiche produit pour mieux informer vos clients. Tous les champs sont facultatifs.",
+      "ingredients": "Ingrédients",
+      "ingredientsPlaceholder": "Listez les ingrédients, séparés par des virgules…",
+      "allergens": "Allergènes",
+      "allergensDescription": "Sélectionnez les allergènes présents dans le produit",
+      "labels": "Labels & certifications",
+      "labelsDescription": "Sélectionnez les labels de qualité de votre produit",
+      "origin": "Origine",
+      "originPlaceholder": "Ex: Région des Plateaux, Togo",
+      "conservation": "Conseils de conservation",
+      "conservationPlaceholder": "Ex: À conserver au frais et à l'abri de la lumière",
+      "addCustom": "Ajouter",
+      "customPlaceholder": "Autre…",
+      "removeItem": "Retirer",
+      "nutrition": {
+        "title": "Valeurs nutritionnelles",
+        "per": "Pour {{basis}}",
+        "energyKcal": "Énergie",
+        "fat": "Matières grasses",
+        "saturatedFat": "dont acides gras saturés",
+        "carbohydrates": "Glucides",
+        "sugars": "dont sucres",
+        "fiber": "Fibres",
+        "protein": "Protéines",
+        "salt": "Sel"
+      },
+      "allergenNames": {
+        "gluten": "Gluten",
+        "crustaceans": "Crustacés",
+        "eggs": "Œufs",
+        "fish": "Poissons",
+        "peanuts": "Arachides",
+        "soy": "Soja",
+        "milk": "Lait",
+        "nuts": "Fruits à coque",
+        "celery": "Céleri",
+        "mustard": "Moutarde",
+        "sesame": "Sésame",
+        "sulphites": "Sulfites",
+        "lupin": "Lupin",
+        "molluscs": "Mollusques"
+      },
+      "labelNames": {
+        "organic": "Bio",
+        "ecocert": "Ecocert",
+        "local": "Agriculture locale",
+        "fair-trade": "Commerce équitable",
+        "gmo-free": "Sans OGM",
+        "handmade": "Fait main",
+        "artisanal": "Artisanal",
+        "vegan": "Végan",
+        "vegetarian": "Végétarien",
+        "gluten-free": "Sans gluten",
+        "lactose-free": "Sans lactose",
+        "sugar-free": "Sans sucre ajouté"
+      },
+      "basis": {
+        "label": "Valeurs pour",
+        "100g": "100 g",
+        "100ml": "100 ml"
+      },
+      "validation": {
+        "saturatedFat": "Les acides gras saturés ne peuvent pas dépasser les matières grasses",
+        "sugars": "Les sucres ne peuvent pas dépasser les glucides"
+      }
     }
   },
   "orders": {
@@ -799,7 +877,7 @@
         "how1": "À chaque commande, chaque article paie le taux de sa catégorie. Le montant est figé au moment de la commande : modifier la grille ne change pas les commandes passées.",
         "how2": "Un taux négocié avec une boutique remplace la grille pour toutes ses commandes. Il se règle depuis",
         "how2Link": "sa fiche fournisseur",
-        "how3": "La commission porte sur les articles uniquement. Les frais de livraison reviennent intégralement à la boutique.",
+        "how3": "La commission porte sur les articles uniquement. Les frais de livraison reviennent au livreur, moins la part eBio réglée ci-dessous.",
         "how4": "Le suivi des montants prélevés et à venir se fait sur la page",
         "how4Link": "Ventes → Commissions"
       },
@@ -850,6 +928,14 @@
           "supportsRefund": "Remboursements possibles",
           "supportsRefundHint": "Permet de rembourser un acheteur par ce moyen."
         }
+      },
+      "deliveryCommission": {
+        "title": "Commission eBio sur les frais de livraison",
+        "description": "Part prélevée par eBio sur les frais de livraison de chaque course ; le reste revient au livreur. Sur les commandes payées en espèces, cette part est débitée du portefeuille du livreur.",
+        "rate": "Taux (%)",
+        "rateHint": "Entre 0 et 50 %. Appliqué aux courses à venir uniquement.",
+        "saved": "Taux enregistré",
+        "error": "Impossible d’enregistrer le taux. Réessayez."
       }
     },
     "site": {
@@ -1137,23 +1223,23 @@
     },
     "withdrawals": {
       "title": "Reversements",
-      "description": "L’argent des boutiques : numéros à valider, demandes de reversement, soldes",
-      "totalOwed": "Dû aux boutiques",
+      "description": "L’argent des boutiques et des livreurs : numéros à valider, demandes de reversement, soldes",
+      "totalOwed": "Dû aux boutiques et livreurs",
       "totalOwedHint": "Somme des soldes positifs de tous les portefeuilles",
       "totalDebt": "Dettes envers eBio",
-      "totalDebtHint": "Commissions sur ventes en espèces non encore absorbées",
+      "totalDebtHint": "Commissions sur ventes et courses en espèces non encore absorbées",
       "numbersTitle": "Numéros à valider",
-      "numbersHint": "Vérifiez que le numéro Mobile Money appartient bien au titulaire de la boutique avant de valider. Un numéro validé peut recevoir des reversements.",
+      "numbersHint": "Vérifiez que le numéro Mobile Money appartient bien au titulaire du compte (boutique ou livreur) avant de valider. Un numéro validé peut recevoir des reversements.",
       "numbersEmpty": "Aucun numéro en attente de validation",
       "requestsTitle": "Demandes de reversement",
-      "requestsHint": "Approuver déclenche immédiatement le versement Mobile Money via FedaPay. Le montant a déjà été réservé sur le portefeuille de la boutique.",
+      "requestsHint": "Approuver déclenche immédiatement le versement Mobile Money via FedaPay. Le montant a déjà été réservé sur le portefeuille du bénéficiaire.",
       "requestsEmpty": "Aucune demande de reversement",
       "validate": "Valider",
       "reject": "Refuser",
       "approve": "Approuver et verser",
       "rejectTitle": "Refuser",
-      "rejectBody": "Le refus de « {{label}} » sera notifié à la boutique avec votre motif. Pour une demande de reversement, le solde est rétabli automatiquement.",
-      "rejectPlaceholder": "Motif communiqué à la boutique…",
+      "rejectBody": "Le refus de « {{label}} » sera notifié au bénéficiaire avec votre motif. Pour une demande de reversement, le solde est rétabli automatiquement.",
+      "rejectPlaceholder": "Motif communiqué au bénéficiaire…",
       "status": {
         "PENDING": "En attente",
         "PROCESSING": "Versement en cours",
@@ -1163,7 +1249,6 @@
         "CANCELLED": "Annulée"
       },
       "columns": {
-        "shop": "Boutique",
         "number": "Numéro",
         "operator": "Opérateur",
         "holder": "Titulaire",
@@ -1171,7 +1256,10 @@
         "amount": "Montant",
         "status": "Statut",
         "user": "Utilisateur",
-        "reference": "Réf. FedaPay"
+        "reference": "Réf. FedaPay",
+        "beneficiary": "Bénéficiaire",
+        "balance": "Solde",
+        "updatedAt": "Mis à jour"
       },
       "topupsTitle": "Recharges des portefeuilles",
       "topupsHint": "Les recharges des acheteurs via FedaPay. Une recharge en attente n’a pas encore été confirmée par FedaPay ; une recharge échouée n’a rien crédité.",
@@ -1180,6 +1268,75 @@
         "PENDING": "En attente",
         "COMPLETED": "Créditée",
         "FAILED": "Échouée"
+      },
+      "walletsTitle": "Soldes des portefeuilles",
+      "walletsHint": "Un solde positif est dû au bénéficiaire ; un solde négatif est une commission que le bénéficiaire doit à eBio (ventes ou courses payées en espèces).",
+      "walletsEmpty": "Aucun portefeuille pour le moment",
+      "ownerTypes": {
+        "SUPPLIER": "Fournisseur",
+        "COURIER": "Livreur",
+        "USER": "Acheteur"
+      }
+    },
+    "couriers": {
+      "title": "Livreurs",
+      "description": "Candidatures et supervision de la flotte de livreurs eBio",
+      "filterByStatus": "Filtrer par statut",
+      "empty": "Aucun livreur pour ce filtre",
+      "backToList": "Retour aux livreurs",
+      "columns": {
+        "name": "Nom",
+        "phone": "Téléphone",
+        "vehicle": "Transport",
+        "zone": "Zone",
+        "status": "Statut",
+        "submittedAt": "Candidature"
+      },
+      "statuses": {
+        "all": "Tous les statuts",
+        "pending": "En attente",
+        "validated": "Validé",
+        "rejected": "Refusé",
+        "suspended": "Suspendu",
+        "complement_requested": "Complément demandé"
+      },
+      "vehicles": {
+        "moto": "Moto",
+        "bicycle": "Vélo",
+        "car": "Voiture",
+        "on_foot": "À pied"
+      },
+      "detail": {
+        "application": "Candidature",
+        "identityDocument": "Pièce d’identité",
+        "documentProvided": "Fournie",
+        "documentMissing": "Non fournie",
+        "viewDocument": "Voir le document",
+        "documentUnavailable": "Fichier introuvable",
+        "rejectionReason": "Motif du refus",
+        "stats": "Livraisons",
+        "delivered": "Livrées",
+        "failed": "Échecs",
+        "active": "En cours",
+        "wallet": "Portefeuille",
+        "walletDebtHint": "Le livreur doit cette commission à eBio (courses payées en espèces)",
+        "walletOwedHint": "Montant dû au livreur",
+        "walletEmpty": "Aucun portefeuille : le livreur n’a pas encore effectué de course.",
+        "walletLink": "Voir les reversements"
+      },
+      "actions": {
+        "approve": "Approuver",
+        "reject": "Refuser",
+        "suspend": "Suspendre",
+        "reactivate": "Réactiver"
+      },
+      "rejectDialog": {
+        "title": "Refuser la candidature",
+        "placeholder": "Motif communiqué au candidat…"
+      },
+      "pagination": {
+        "previous": "Précédent",
+        "next": "Suivant"
       }
     }
   },

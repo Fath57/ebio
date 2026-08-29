@@ -1,19 +1,26 @@
 import type { CommissionCategoryRate } from '../forms/commission-form'
 import { client } from '@boilerstone/openapi-generator'
-import { adminControllerUpdateCommissions } from '@boilerstone/openapi-generator/client/sdk.gen'
+import {
+  adminControllerUpdateCommissions,
+  adminControllerUpdateDeliveryCommission,
+} from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@boilerstone/ui/components/primitives/tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CreditCard, Percent } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { CommissionForm } from '../forms/commission-form'
+import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 
 interface AdminSettingsData {
   commissions: CommissionCategoryRate[]
+  /** eBio's share of the delivery fee as a fraction (0.10 = 10 %). */
+  deliveryCommissionRate: number
 }
 
 function fetchAdminSettingsQueryOptions() {
@@ -35,6 +42,7 @@ function fetchAdminSettingsQueryOptions() {
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
+  const [deliveryFeedback, setDeliveryFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
 
@@ -48,6 +56,25 @@ export default function AdminSettingsPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
       queryClient.invalidateQueries({ queryKey: ['admin', 'commissions'] })
+    },
+  })
+
+  const { mutate: updateDeliveryCommission, isPending: isDeliveryPending } = useMutation({
+    mutationFn: async (rate: number) => {
+      const response = await adminControllerUpdateDeliveryCommission({ body: { rate } })
+      if (response.error)
+        throw new Error('Failed to update delivery commission')
+      return response.data
+    },
+    onMutate: () => {
+      setDeliveryFeedback(null)
+    },
+    onSuccess: () => {
+      setDeliveryFeedback('saved')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
+    },
+    onError: () => {
+      setDeliveryFeedback('error')
     },
   })
 
@@ -118,6 +145,28 @@ export default function AdminSettingsPage() {
                   onSubmit={updateCommissions}
                   isPending={isPending}
                 />
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.deliveryCommission.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.deliveryCommission.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <DeliveryCommissionForm
+                  rate={settings?.deliveryCommissionRate ?? 0.1}
+                  onSubmit={updateDeliveryCommission}
+                  isPending={isDeliveryPending}
+                />
+                {deliveryFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.deliveryCommission.saved')}</p>
+                )}
+                {deliveryFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.deliveryCommission.error')}
+                  </p>
+                )}
               </CardContent>
             </Card>
           </Can>
