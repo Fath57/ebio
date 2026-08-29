@@ -14,6 +14,7 @@ import { BannersModule } from './modules/banners/banners.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { CommunityModule } from './modules/community/community.module'
 import { DbModule } from './modules/db/db.module'
+import { DeliveriesModule } from './modules/deliveries/deliveries.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
 import { GeocodingModule } from './modules/geocoding/geocoding.module'
@@ -26,6 +27,7 @@ import { ProductsModule } from './modules/products/products.module'
 import { PromoCodesModule } from './modules/promo-codes/promo-codes.module'
 import { RatingsModule } from './modules/ratings/ratings.module'
 import { SearchModule } from './modules/search/search.module'
+import { PlatformSettingsModule } from './modules/settings/platform-settings.module'
 import { SuppliersModule } from './modules/suppliers/suppliers.module'
 import { TrainingModule } from './modules/training/training.module'
 import { UsersModule } from './modules/users/users.module'
@@ -121,9 +123,11 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     GeocodingModule,
     PromoCodesModule,
     SuppliersModule,
+    PlatformSettingsModule,
     WalletModule,
     ProductsModule,
     OrdersModule,
+    DeliveriesModule,
     PaymentsModule,
     ChatModule,
     RatingsModule,

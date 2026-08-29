@@ -385,6 +385,45 @@
         }
       }
     },
+    "/api/otp-auth/change-password": {
+      "post": {
+        "operationId": "OtpAuthController_changePassword",
+        "tags": [
+          "OtpAuth"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 8
+                  }
+                },
+                "required": [
+                  "currentPassword",
+                  "newPassword"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/otp-auth/password-reset/reset": {
       "post": {
         "operationId": "OtpAuthController_resetPassword",
@@ -5176,7 +5215,8 @@
                       "TRAINING_THUMBNAIL",
                       "COMMUNITY_MEDIA",
                       "CATEGORY_IMAGE",
-                      "BANNER_IMAGE"
+                      "BANNER_IMAGE",
+                      "DELIVERY_PROOF"
                     ],
                     "title": "MediaContext",
                     "description": "Contexte d'utilisation du média"
@@ -5426,7 +5466,16 @@
         "tags": [
           "Notifications"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "audience",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -5440,7 +5489,16 @@
         "tags": [
           "Notifications"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "audience",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -5454,7 +5512,16 @@
         "tags": [
           "Notifications"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "audience",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -5866,6 +5933,328 @@
         }
       }
     },
+    "/api/couriers/me/wallet": {
+      "get": {
+        "operationId": "CourierWalletController_getWallet",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/payout-numbers": {
+      "get": {
+        "operationId": "CourierWalletController_listNumbers",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "CourierWalletController_addNumber",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "holderName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "phoneNumber",
+                  "holderName"
+                ],
+                "additionalProperties": false,
+                "title": "CreatePayoutNumber",
+                "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/payout-numbers/{id}": {
+      "delete": {
+        "operationId": "CourierWalletController_removeNumber",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/withdrawals": {
+      "get": {
+        "operationId": "CourierWalletController_listWithdrawals",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "CourierWalletController_requestWithdrawal",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Withdrawal request; funds are reserved immediately",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payoutNumberId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "payoutNumberId",
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "CreateWithdrawal",
+                "description": "Withdrawal request; funds are reserved immediately"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/withdrawals/{id}/cancel": {
+      "patch": {
+        "operationId": "CourierWalletController_cancelWithdrawal",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/topup": {
+      "post": {
+        "operationId": "CourierWalletController_topup",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Amount to add to the wallet, paid through FedaPay",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "WalletTopup",
+                "description": "Amount to add to the wallet, paid through FedaPay"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/topups": {
+      "get": {
+        "operationId": "CourierWalletController_listTopups",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/topups/{id}/verify": {
+      "post": {
+        "operationId": "CourierWalletController_verifyTopup",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fedapayTransactionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "fedapayTransactionId"
+                ],
+                "additionalProperties": false,
+                "title": "VerifyTopup",
+                "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/payout-numbers": {
       "get": {
         "operationId": "WalletAdminController_listNumbers",
@@ -5923,7 +6312,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Validate or reject a supplier payout number",
+          "description": "Validate or reject a supplier or courier payout number",
           "content": {
             "application/json": {
               "schema": {
@@ -5947,7 +6336,7 @@
                 ],
                 "additionalProperties": false,
                 "title": "AdminPayoutNumberAction",
-                "description": "Validate or reject a supplier payout number"
+                "description": "Validate or reject a supplier or courier payout number"
               }
             }
           }
@@ -6288,6 +6677,127 @@
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                     }
+                  },
+                  "ingredients": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "allergens": {
+                    "maxItems": 14,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "gluten",
+                        "crustaceans",
+                        "eggs",
+                        "fish",
+                        "peanuts",
+                        "soy",
+                        "milk",
+                        "nuts",
+                        "celery",
+                        "mustard",
+                        "sesame",
+                        "sulphites",
+                        "lupin",
+                        "molluscs"
+                      ],
+                      "title": "AllergenCode",
+                      "description": "One of the 14 EU-regulated allergens (canonical code)"
+                    }
+                  },
+                  "labels": {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "organic",
+                        "ecocert",
+                        "local",
+                        "fair-trade",
+                        "gmo-free",
+                        "handmade",
+                        "artisanal",
+                        "vegan",
+                        "vegetarian",
+                        "gluten-free",
+                        "lactose-free",
+                        "sugar-free"
+                      ],
+                      "title": "ProductLabelCode",
+                      "description": "Quality / certification label (canonical code)"
+                    }
+                  },
+                  "origin": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "conservation": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "nutritionalValues": {
+                    "type": "object",
+                    "properties": {
+                      "basis": {
+                        "default": "100g",
+                        "type": "string",
+                        "enum": [
+                          "100g",
+                          "100ml"
+                        ],
+                        "title": "NutritionBasis",
+                        "description": "Reference quantity the nutritional values are given for"
+                      },
+                      "energyKcal": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 900
+                      },
+                      "fat": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "saturatedFat": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "carbohydrates": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "sugars": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "fiber": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "protein": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "salt": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "required": [
+                      "basis"
+                    ],
+                    "additionalProperties": false,
+                    "title": "NutritionalValues",
+                    "description": "Valeurs nutritionnelles pour 100 g / 100 ml"
                   }
                 },
                 "required": [
@@ -6418,6 +6928,134 @@
                       "type": "string",
                       "format": "uuid",
                       "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "ingredients": {
+                    "type": "string",
+                    "maxLength": 4000
+                  },
+                  "allergens": {
+                    "maxItems": 14,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "gluten",
+                        "crustaceans",
+                        "eggs",
+                        "fish",
+                        "peanuts",
+                        "soy",
+                        "milk",
+                        "nuts",
+                        "celery",
+                        "mustard",
+                        "sesame",
+                        "sulphites",
+                        "lupin",
+                        "molluscs"
+                      ],
+                      "title": "AllergenCode",
+                      "description": "One of the 14 EU-regulated allergens (canonical code)"
+                    }
+                  },
+                  "labels": {
+                    "maxItems": 12,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "enum": [
+                        "organic",
+                        "ecocert",
+                        "local",
+                        "fair-trade",
+                        "gmo-free",
+                        "handmade",
+                        "artisanal",
+                        "vegan",
+                        "vegetarian",
+                        "gluten-free",
+                        "lactose-free",
+                        "sugar-free"
+                      ],
+                      "title": "ProductLabelCode",
+                      "description": "Quality / certification label (canonical code)"
+                    }
+                  },
+                  "origin": {
+                    "type": "string",
+                    "maxLength": 200
+                  },
+                  "conservation": {
+                    "type": "string",
+                    "maxLength": 1000
+                  },
+                  "nutritionalValues": {
+                    "type": "object",
+                    "properties": {
+                      "basis": {
+                        "default": "100g",
+                        "type": "string",
+                        "enum": [
+                          "100g",
+                          "100ml"
+                        ],
+                        "title": "NutritionBasis",
+                        "description": "Reference quantity the nutritional values are given for"
+                      },
+                      "energyKcal": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 900
+                      },
+                      "fat": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "saturatedFat": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "carbohydrates": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "sugars": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "fiber": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "protein": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      },
+                      "salt": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 100
+                      }
+                    },
+                    "required": [
+                      "basis"
+                    ],
+                    "additionalProperties": false,
+                    "title": "NutritionalValues",
+                    "description": "Valeurs nutritionnelles pour 100 g / 100 ml"
+                  },
+                  "photos": {
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "string"
                     }
                   }
                 },
@@ -6550,6 +7188,27 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "ProductsController_clearPromotion",
+        "tags": [
+          "Products"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": ""
           }
         }
@@ -6978,6 +7637,16 @@
                     "type": "string",
                     "minLength": 5,
                     "maxLength": 500
+                  },
+                  "deliveryLatitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "deliveryLongitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
                   },
                   "deliverySlot": {
                     "type": "string",
@@ -7948,6 +8617,849 @@
         }
       }
     },
+    "/api/couriers/register": {
+      "post": {
+        "operationId": "CouriersController_register",
+        "tags": [
+          "Couriers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Courier application data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  },
+                  "vehicleType": {
+                    "type": "string",
+                    "enum": [
+                      "MOTO",
+                      "BICYCLE",
+                      "CAR",
+                      "ON_FOOT"
+                    ],
+                    "title": "VehicleType",
+                    "description": "Vehicle used by the courier"
+                  },
+                  "zone": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "zoneLatitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "zoneLongitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "zoneRadiusKm": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "identityDocument": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "fullName",
+                  "phone",
+                  "vehicleType",
+                  "zone"
+                ],
+                "additionalProperties": false,
+                "title": "RegisterCourier",
+                "description": "Courier application data",
+                "examples": [
+                  {
+                    "fullName": "Jean Hounkpatin",
+                    "phone": "+2290197000000",
+                    "vehicleType": "MOTO",
+                    "zone": "Cotonou — Akpakpa"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me": {
+      "get": {
+        "operationId": "CouriersController_me",
+        "tags": [
+          "Couriers"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "operationId": "CouriersController_updateMe",
+        "tags": [
+          "Couriers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Editable courier profile fields",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fullName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  },
+                  "vehicleType": {
+                    "type": "string",
+                    "enum": [
+                      "MOTO",
+                      "BICYCLE",
+                      "CAR",
+                      "ON_FOOT"
+                    ],
+                    "title": "VehicleType",
+                    "description": "Vehicle used by the courier"
+                  },
+                  "zone": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 255
+                  },
+                  "zoneLatitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "zoneLongitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "zoneRadiusKm": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "identityDocument": {
+                    "type": "string",
+                    "maxLength": 255
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateCourier",
+                "description": "Editable courier profile fields"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/availability": {
+      "patch": {
+        "operationId": "CouriersController_setAvailability",
+        "tags": [
+          "Couriers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Toggle courier availability (online / offline)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "isAvailable": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "isAvailable"
+                ],
+                "additionalProperties": false,
+                "title": "UpdateCourierAvailability",
+                "description": "Toggle courier availability (online / offline)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/location": {
+      "patch": {
+        "operationId": "CouriersController_updateLocation",
+        "tags": [
+          "Couriers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Foreground position update",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "required": [
+                  "latitude",
+                  "longitude"
+                ],
+                "additionalProperties": false,
+                "title": "UpdateCourierLocation",
+                "description": "Foreground position update"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/offers": {
+      "get": {
+        "operationId": "DeliveriesController_offers",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/mine": {
+      "get": {
+        "operationId": "DeliveriesController_mine",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/by-order/{orderId}": {
+      "get": {
+        "operationId": "DeliveriesController_byOrder",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}": {
+      "get": {
+        "operationId": "DeliveriesController_byId",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/accept": {
+      "post": {
+        "operationId": "DeliveriesController_accept",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/pickup": {
+      "post": {
+        "operationId": "DeliveriesController_pickup",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Common payload for delivery step transitions",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "DeliveryTransition",
+                "description": "Common payload for delivery step transitions"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/start": {
+      "post": {
+        "operationId": "DeliveriesController_start",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Common payload for delivery step transitions",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "DeliveryTransition",
+                "description": "Common payload for delivery step transitions"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/complete": {
+      "post": {
+        "operationId": "DeliveriesController_complete",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Proof of delivery: buyer confirmation code or photo",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "proofType": {
+                        "type": "string",
+                        "const": "CODE"
+                      },
+                      "code": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "proofType",
+                      "code"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "proofType": {
+                        "type": "string",
+                        "const": "PHOTO"
+                      },
+                      "mediaId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                      },
+                      "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "proofType",
+                      "mediaId"
+                    ],
+                    "additionalProperties": false
+                  }
+                ],
+                "title": "CompleteDelivery",
+                "description": "Proof of delivery: buyer confirmation code or photo",
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/fail": {
+      "post": {
+        "operationId": "DeliveriesController_fail",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Report a failed delivery attempt",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "CUSTOMER_ABSENT",
+                      "ADDRESS_NOT_FOUND",
+                      "CUSTOMER_REFUSED",
+                      "OTHER"
+                    ],
+                    "title": "DeliveryFailReason",
+                    "description": "Why a delivery could not be completed"
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "occurredAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "FailDelivery",
+                "description": "Report a failed delivery attempt"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/rebroadcast": {
+      "post": {
+        "operationId": "DeliveriesController_rebroadcast",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/couriers": {
+      "get": {
+        "operationId": "AdminCouriersController_list",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/couriers/{id}": {
+      "get": {
+        "operationId": "AdminCouriersController_getById",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/couriers/{id}/approve": {
+      "post": {
+        "operationId": "AdminCouriersController_approve",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/couriers/{id}/reject": {
+      "post": {
+        "operationId": "AdminCouriersController_reject",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Reason shown to the rejected courier applicant",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "RejectCourier",
+                "description": "Reason shown to the rejected courier applicant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/couriers/{id}/suspend": {
+      "post": {
+        "operationId": "AdminCouriersController_suspend",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/couriers/{id}/reactivate": {
+      "post": {
+        "operationId": "AdminCouriersController_reactivate",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/deliveries": {
+      "get": {
+        "operationId": "AdminCouriersController_listDeliveries",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "courierId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/chat/conversations": {
       "post": {
         "operationId": "ChatController_createConversation",
@@ -8008,6 +9520,29 @@
         }
       }
     },
+    "/api/chat/conversations/delivery/{deliveryId}": {
+      "post": {
+        "operationId": "ChatController_createDeliveryConversation",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [
+          {
+            "name": "deliveryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/chat/conversations/{id}/messages": {
       "get": {
         "operationId": "ChatController_getMessages",
@@ -8040,6 +9575,20 @@
             }
           }
         ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/chat/unread-count": {
+      "get": {
+        "operationId": "ChatController_getUnreadCount",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -9742,6 +11291,44 @@
         }
       }
     },
+    "/api/admin/settings/delivery-commission": {
+      "put": {
+        "operationId": "AdminController_updateDeliveryCommission",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "eBio's share of the delivery fee, as a fraction (0.10 = 10 %); the rest goes to the courier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rate": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 0.5
+                  }
+                },
+                "required": [
+                  "rate"
+                ],
+                "additionalProperties": false,
+                "title": "DeliveryCommissionRate",
+                "description": "eBio's share of the delivery fee, as a fraction (0.10 = 10 %); the rest goes to the courier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/notifications/broadcast": {
       "post": {
         "operationId": "AdminController_broadcastNotification",
@@ -10513,6 +12100,38 @@
         "title": "CreateWithdrawal",
         "description": "Withdrawal request; funds are reserved immediately"
       },
+      "WalletTopup": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 1000000
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "WalletTopup",
+        "description": "Amount to add to the wallet, paid through FedaPay"
+      },
+      "VerifyTopup": {
+        "type": "object",
+        "properties": {
+          "fedapayTransactionId": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          }
+        },
+        "required": [
+          "fedapayTransactionId"
+        ],
+        "additionalProperties": false,
+        "title": "VerifyTopup",
+        "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
+      },
       "AdminPayoutNumberAction": {
         "type": "object",
         "properties": {
@@ -10534,7 +12153,7 @@
         ],
         "additionalProperties": false,
         "title": "AdminPayoutNumberAction",
-        "description": "Validate or reject a supplier payout number"
+        "description": "Validate or reject a supplier or courier payout number"
       },
       "AdminWithdrawalAction": {
         "type": "object",
@@ -10559,37 +12178,249 @@
         "title": "AdminWithdrawalAction",
         "description": "Approve triggers the FedaPay payout; reject re-credits the wallet"
       },
-      "VerifyTopup": {
+      "RejectCourier": {
         "type": "object",
         "properties": {
-          "fedapayTransactionId": {
+          "reason": {
             "type": "string",
-            "minLength": 1,
-            "maxLength": 64
+            "minLength": 5,
+            "maxLength": 500
           }
         },
         "required": [
-          "fedapayTransactionId"
+          "reason"
         ],
         "additionalProperties": false,
-        "title": "VerifyTopup",
-        "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
+        "title": "RejectCourier",
+        "description": "Reason shown to the rejected courier applicant"
       },
-      "WalletTopup": {
+      "RegisterCourier": {
         "type": "object",
         "properties": {
-          "amount": {
-            "type": "integer",
-            "minimum": 100,
-            "maximum": 1000000
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "vehicleType": {
+            "$ref": "#/components/schemas/VehicleType"
+          },
+          "zone": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "zoneLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "zoneLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "zoneRadiusKm": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "identityDocument": {
+            "type": "string",
+            "maxLength": 255
           }
         },
         "required": [
-          "amount"
+          "fullName",
+          "phone",
+          "vehicleType",
+          "zone"
         ],
         "additionalProperties": false,
-        "title": "WalletTopup",
-        "description": "Amount to add to the wallet, paid through FedaPay"
+        "title": "RegisterCourier",
+        "description": "Courier application data",
+        "examples": [
+          {
+            "fullName": "Jean Hounkpatin",
+            "phone": "+2290197000000",
+            "vehicleType": "MOTO",
+            "zone": "Cotonou — Akpakpa"
+          }
+        ]
+      },
+      "UpdateCourier": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "vehicleType": {
+            "$ref": "#/components/schemas/VehicleType"
+          },
+          "zone": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "zoneLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "zoneLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "zoneRadiusKm": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "identityDocument": {
+            "type": "string",
+            "maxLength": 255
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateCourier",
+        "description": "Editable courier profile fields"
+      },
+      "UpdateCourierAvailability": {
+        "type": "object",
+        "properties": {
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isAvailable"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateCourierAvailability",
+        "description": "Toggle courier availability (online / offline)"
+      },
+      "UpdateCourierLocation": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateCourierLocation",
+        "description": "Foreground position update"
+      },
+      "DeliveryTransition": {
+        "type": "object",
+        "properties": {
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "additionalProperties": false,
+        "title": "DeliveryTransition",
+        "description": "Common payload for delivery step transitions"
+      },
+      "CompleteDelivery": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "proofType": {
+                "type": "string",
+                "const": "CODE"
+              },
+              "code": {
+                "type": "string",
+                "pattern": "^\\d{4}$"
+              },
+              "occurredAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "proofType",
+              "code"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "proofType": {
+                "type": "string",
+                "const": "PHOTO"
+              },
+              "mediaId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "occurredAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "proofType",
+              "mediaId"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "title": "CompleteDelivery",
+        "description": "Proof of delivery: buyer confirmation code or photo",
+        "type": "object"
+      },
+      "FailDelivery": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/DeliveryFailReason"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "FailDelivery",
+        "description": "Report a failed delivery attempt"
       },
       "CreatePaymentMethodInput": {
         "type": "object",
@@ -11011,6 +12842,16 @@
             "minLength": 5,
             "maxLength": 500
           },
+          "deliveryLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "deliveryLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
           "deliverySlot": {
             "type": "string",
             "maxLength": 200
@@ -11251,6 +13092,22 @@
         "additionalProperties": false,
         "title": "CommissionRates",
         "description": "Commission rates per product category, as fractions"
+      },
+      "DeliveryCommissionRate": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 0.5
+          }
+        },
+        "required": [
+          "rate"
+        ],
+        "additionalProperties": false,
+        "title": "DeliveryCommissionRate",
+        "description": "eBio's share of the delivery fee, as a fraction (0.10 = 10 %); the rest goes to the courier"
       },
       "BroadcastNotification": {
         "type": "object",
@@ -12294,6 +14151,35 @@
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
             }
+          },
+          "ingredients": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "allergens": {
+            "maxItems": 14,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllergenCode"
+            }
+          },
+          "labels": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLabelCode"
+            }
+          },
+          "origin": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "conservation": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "nutritionalValues": {
+            "$ref": "#/components/schemas/NutritionalValues"
           }
         },
         "required": [
@@ -12381,6 +14267,42 @@
               "type": "string",
               "format": "uuid",
               "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "ingredients": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "allergens": {
+            "maxItems": 14,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllergenCode"
+            }
+          },
+          "labels": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLabelCode"
+            }
+          },
+          "origin": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "conservation": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "nutritionalValues": {
+            "$ref": "#/components/schemas/NutritionalValues"
+          },
+          "photos": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string"
             }
           }
         },
@@ -13841,6 +15763,16 @@
                   }
                 ]
               },
+              "thumbnail": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "pricePerUnit": {
                 "type": "number"
               },
@@ -13865,6 +15797,7 @@
               "id",
               "name",
               "photo",
+              "thumbnail",
               "pricePerUnit",
               "unit",
               "inStock",
@@ -13984,7 +15917,8 @@
           "TRAINING_THUMBNAIL",
           "COMMUNITY_MEDIA",
           "CATEGORY_IMAGE",
-          "BANNER_IMAGE"
+          "BANNER_IMAGE",
+          "DELIVERY_PROOF"
         ],
         "title": "MediaContext",
         "description": "Contexte d'utilisation du média"
@@ -14052,6 +15986,28 @@
         "maxLength": 64,
         "title": "Timezone",
         "description": "IANA timezone the opening hours are expressed in"
+      },
+      "VehicleType": {
+        "type": "string",
+        "enum": [
+          "MOTO",
+          "BICYCLE",
+          "CAR",
+          "ON_FOOT"
+        ],
+        "title": "VehicleType",
+        "description": "Vehicle used by the courier"
+      },
+      "DeliveryFailReason": {
+        "type": "string",
+        "enum": [
+          "CUSTOMER_ABSENT",
+          "ADDRESS_NOT_FOUND",
+          "CUSTOMER_REFUSED",
+          "OTHER"
+        ],
+        "title": "DeliveryFailReason",
+        "description": "Why a delivery could not be completed"
       },
       "PromoType": {
         "type": "string",
@@ -14758,6 +16714,107 @@
         ],
         "title": "ProductStatus",
         "description": "Product visibility and availability status"
+      },
+      "AllergenCode": {
+        "type": "string",
+        "enum": [
+          "gluten",
+          "crustaceans",
+          "eggs",
+          "fish",
+          "peanuts",
+          "soy",
+          "milk",
+          "nuts",
+          "celery",
+          "mustard",
+          "sesame",
+          "sulphites",
+          "lupin",
+          "molluscs"
+        ],
+        "title": "AllergenCode",
+        "description": "One of the 14 EU-regulated allergens (canonical code)"
+      },
+      "ProductLabelCode": {
+        "type": "string",
+        "enum": [
+          "organic",
+          "ecocert",
+          "local",
+          "fair-trade",
+          "gmo-free",
+          "handmade",
+          "artisanal",
+          "vegan",
+          "vegetarian",
+          "gluten-free",
+          "lactose-free",
+          "sugar-free"
+        ],
+        "title": "ProductLabelCode",
+        "description": "Quality / certification label (canonical code)"
+      },
+      "NutritionalValues": {
+        "type": "object",
+        "properties": {
+          "basis": {
+            "default": "100g",
+            "type": "string",
+            "enum": [
+              "100g",
+              "100ml"
+            ],
+            "title": "NutritionBasis",
+            "description": "Reference quantity the nutritional values are given for"
+          },
+          "energyKcal": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 900
+          },
+          "fat": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "saturatedFat": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "carbohydrates": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "sugars": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "fiber": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "protein": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "salt": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "basis"
+        ],
+        "additionalProperties": false,
+        "title": "NutritionalValues",
+        "description": "Valeurs nutritionnelles pour 100 g / 100 ml"
       },
       "SearchProductsQuery": {
         "type": "object",

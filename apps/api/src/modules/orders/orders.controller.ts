@@ -69,15 +69,17 @@ export class OrdersController {
     if (userRole === 'SUPPLIER' && view !== 'buyer') {
       const supplier = await this.suppliersService.findByUserId(session.user.id)
       const result = await this.ordersService.findBySupplier(supplier.id, filters)
+      const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
       return {
-        orders: result.orders.map(OrderMapper.toResponse),
+        orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null)),
         total: result.total,
       }
     }
 
     const result = await this.ordersService.findByBuyer(session.user.id, filters)
+    const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
     return {
-      orders: result.orders.map(OrderMapper.toResponse),
+      orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null)),
       total: result.total,
     }
   }
@@ -91,7 +93,8 @@ export class OrdersController {
   ) {
     const order = await this.ordersService.findById(id)
     const hasReview = await this.ordersService.hasReview(id)
-    return { ...OrderMapper.toResponse(order), hasReview }
+    const deliveries = await this.ordersService.deliverySummaries([id])
+    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null), hasReview }
   }
 
   @Patch(':id/accept')

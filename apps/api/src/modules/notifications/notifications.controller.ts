@@ -1,13 +1,20 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
+import type { NotificationAudience } from './notifications.service'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { Body, Controller, Delete, Get, Param, Patch, Post, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { config } from '../../config/env.config'
 import { Session } from '../auth/auth.decorator'
 import { User } from '../auth/auth.entity'
 import { AuthGuard } from '../auth/auth.guard'
 import { DeviceToken } from './device-token.entity'
 import { NotificationChannel, NotificationType } from './notification.entity'
-import { NotificationsService } from './notifications.service'
+import { NOTIFICATION_AUDIENCES, NotificationsService } from './notifications.service'
+
+const DEVICE_APPS: ReadonlySet<string> = new Set(['client', 'supplier', 'courier'])
+
+function parseAudience(value?: string): NotificationAudience | undefined {
+  return value && NOTIFICATION_AUDIENCES.has(value) ? value as NotificationAudience : undefined
+}
 
 @Controller('notifications')
 @UseGuards(AuthGuard)
@@ -20,21 +27,24 @@ export class NotificationsController {
   @Post('register-token')
   async registerToken(
     @Session() session: LoggedInBetterAuthSession,
-    @Body() body: { token: string, platform: string },
+    @Body() body: { token: string, platform: string, app?: string },
   ) {
     const user = this.em.getReference(User, session.user.id)
+    const app = body.app && DEVICE_APPS.has(body.app) ? body.app : undefined
 
     // Upsert: if token already exists, update user association
     const existing = await this.em.findOne(DeviceToken, { token: body.token })
     if (existing) {
       existing.user = user
       existing.platform = body.platform
+      existing.app = app
     }
     else {
       this.em.create(DeviceToken, {
         user,
         token: body.token,
         platform: body.platform,
+        app,
       })
     }
 
@@ -58,9 +68,13 @@ export class NotificationsController {
     return { unregistered: true }
   }
 
+  /** `audience` (buyer | supplier | courier) scopes the list to one app's types. */
   @Get('unread')
-  async getUnread(@Session() session: LoggedInBetterAuthSession) {
-    const notifications = await this.notificationsService.getUnread(session.user.id)
+  async getUnread(
+    @Session() session: LoggedInBetterAuthSession,
+    @Query('audience') audience?: string,
+  ) {
+    const notifications = await this.notificationsService.getUnread(session.user.id, parseAudience(audience))
     return notifications.map(n => ({
       id: n.id,
       type: n.type,
@@ -73,8 +87,11 @@ export class NotificationsController {
   }
 
   @Get('')
-  async getAll(@Session() session: LoggedInBetterAuthSession) {
-    const notifications = await this.notificationsService.getAll(session.user.id)
+  async getAll(
+    @Session() session: LoggedInBetterAuthSession,
+    @Query('audience') audience?: string,
+  ) {
+    const notifications = await this.notificationsService.getAll(session.user.id, parseAudience(audience))
     return notifications.map(n => ({
       id: n.id,
       type: n.type,
@@ -88,8 +105,11 @@ export class NotificationsController {
   }
 
   @Get('count')
-  async getUnreadCount(@Session() session: LoggedInBetterAuthSession) {
-    const notifications = await this.notificationsService.getUnread(session.user.id)
+  async getUnreadCount(
+    @Session() session: LoggedInBetterAuthSession,
+    @Query('audience') audience?: string,
+  ) {
+    const notifications = await this.notificationsService.getUnread(session.user.id, parseAudience(audience))
     return { count: notifications.length }
   }
 

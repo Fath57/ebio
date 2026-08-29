@@ -1,6 +1,8 @@
+import type { User } from '../auth/auth.entity'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { FedaPayGateway } from '../payments/gateways/fedapay.gateway'
@@ -16,6 +18,21 @@ export const WITHDRAWAL_MIN_AMOUNT = 1000
 /** A payout silent for this long is re-checked against FedaPay directly. */
 const STALE_PROCESSING_MS = 10 * 60 * 1000
 
+/** Who owns the payout numbers and withdrawals: a shop or a courier, never both. */
+export interface PayoutOwner {
+  supplierId?: string
+  courierId?: string
+}
+
+export type PayoutOwnerType = 'SUPPLIER' | 'COURIER'
+
+/** The person behind a payout number / withdrawal, whatever the owner type. */
+interface Payee {
+  user: User
+  displayName: string
+  ownerType: PayoutOwnerType
+}
+
 @Injectable()
 export class WithdrawalsService {
   private readonly logger = new Logger(WithdrawalsService.name)
@@ -29,14 +46,14 @@ export class WithdrawalsService {
 
   // ---------- Payout numbers ----------
 
-  async listNumbers(supplierId: string) {
-    const numbers = await this.em.find(PayoutNumber, { supplier: { id: supplierId } }, {
+  async listNumbers(owner: PayoutOwner) {
+    const numbers = await this.em.find(PayoutNumber, this.ownerWhere(owner), {
       orderBy: { createdAt: 'DESC' },
     })
     return { items: numbers.map(n => this.mapNumber(n)) }
   }
 
-  async addNumber(supplierId: string, input: { phoneNumber: string, holderName: string }) {
+  async addNumber(owner: PayoutOwner, input: { phoneNumber: string, holderName: string }) {
     const phoneNumber = normalizeBeninPhone(input.phoneNumber)
     const operator = detectOperator(phoneNumber)
     if (!operator) {
@@ -46,7 +63,7 @@ export class WithdrawalsService {
     }
 
     const existing = await this.em.findOne(PayoutNumber, {
-      supplier: { id: supplierId },
+      ...this.ownerWhere(owner),
       phoneNumber,
     })
     if (existing) {
@@ -54,7 +71,7 @@ export class WithdrawalsService {
     }
 
     const number = this.em.create(PayoutNumber, {
-      supplier: this.em.getReference(Supplier, supplierId),
+      ...this.ownerRefs(owner),
       phoneNumber,
       operator,
       holderName: input.holderName,
@@ -63,8 +80,8 @@ export class WithdrawalsService {
     return this.mapNumber(number)
   }
 
-  async removeNumber(supplierId: string, numberId: string): Promise<void> {
-    const number = await this.em.findOne(PayoutNumber, { id: numberId, supplier: { id: supplierId } })
+  async removeNumber(owner: PayoutOwner, numberId: string): Promise<void> {
+    const number = await this.em.findOne(PayoutNumber, { id: numberId, ...this.ownerWhere(owner) })
     if (!number) {
       throw new NotFoundException('Numéro introuvable')
     }
@@ -78,26 +95,26 @@ export class WithdrawalsService {
     await this.em.removeAndFlush(number)
   }
 
-  // ---------- Withdrawals (supplier side) ----------
+  // ---------- Withdrawals (owner side) ----------
 
-  async listWithdrawals(supplierId: string, page: number, limit: number) {
+  async listWithdrawals(owner: PayoutOwner, page: number, limit: number) {
     const [rows, total] = await this.em.findAndCount(
       WithdrawalRequest,
-      { supplier: { id: supplierId } },
+      this.ownerWhere(owner),
       { populate: ['payoutNumber'], orderBy: { createdAt: 'DESC' }, limit, offset: (page - 1) * limit },
     )
     return { items: rows.map(w => this.mapWithdrawal(w)), total, page, limit }
   }
 
   /** Debits the wallet at once: the money is reserved, not promised. */
-  async requestWithdrawal(supplierId: string, input: { payoutNumberId: string, amount: number }) {
+  async requestWithdrawal(owner: PayoutOwner, input: { payoutNumberId: string, amount: number }) {
     if (input.amount < WITHDRAWAL_MIN_AMOUNT) {
       throw new BadRequestException(`Le montant minimum est de ${WITHDRAWAL_MIN_AMOUNT} FCFA`)
     }
 
     const number = await this.em.findOne(PayoutNumber, {
       id: input.payoutNumberId,
-      supplier: { id: supplierId },
+      ...this.ownerWhere(owner),
       status: PayoutNumberStatus.VALIDATED,
     })
     if (!number) {
@@ -105,17 +122,17 @@ export class WithdrawalsService {
     }
 
     const active = await this.em.findOne(WithdrawalRequest, {
-      supplier: { id: supplierId },
+      ...this.ownerWhere(owner),
       status: { $in: [WithdrawalStatus.PENDING, WithdrawalStatus.PROCESSING] },
     })
     if (active) {
       throw new BadRequestException('Une demande est déjà en cours de traitement')
     }
 
-    const wallet = await this.walletService.getOrCreate({ supplierId })
+    const wallet = await this.walletService.getOrCreate(owner)
 
     const withdrawal = this.em.create(WithdrawalRequest, {
-      supplier: this.em.getReference(Supplier, supplierId),
+      ...this.ownerRefs(owner),
       wallet,
       payoutNumber: number,
       amount: input.amount.toFixed(2),
@@ -139,9 +156,9 @@ export class WithdrawalsService {
     return this.mapWithdrawal(withdrawal)
   }
 
-  async cancelWithdrawal(supplierId: string, withdrawalId: string) {
+  async cancelWithdrawal(owner: PayoutOwner, withdrawalId: string) {
     const reserved = await this.reserve(withdrawalId, WithdrawalStatus.PENDING, WithdrawalStatus.CANCELLED, {
-      supplierId,
+      owner,
     })
     await this.refund(reserved, 'Annulation de la demande de reversement')
     return this.mapWithdrawal(reserved)
@@ -152,7 +169,7 @@ export class WithdrawalsService {
   async adminList(status: string | undefined, page: number, limit: number) {
     const where = status ? { status: status as WithdrawalStatus } : {}
     const [rows, total] = await this.em.findAndCount(WithdrawalRequest, where, {
-      populate: ['payoutNumber', 'supplier'],
+      populate: ['payoutNumber', 'supplier', 'courier'],
       orderBy: { createdAt: 'DESC' },
       limit,
       offset: (page - 1) * limit,
@@ -160,8 +177,7 @@ export class WithdrawalsService {
     return {
       items: rows.map(w => ({
         ...this.mapWithdrawal(w),
-        supplierId: w.supplier.id,
-        shopName: w.supplier.shopName,
+        ...this.mapOwner(w),
         holderName: w.payoutNumber.holderName,
       })),
       total,
@@ -182,20 +198,18 @@ export class WithdrawalsService {
       processedBy: adminId,
     })
 
-    const supplier = await this.em.findOneOrFail(Supplier, { id: withdrawal.supplier.id }, {
-      populate: ['user'],
-    })
+    const payee = await this.resolvePayee(withdrawal)
     const number = withdrawal.payoutNumber
 
     try {
-      const [firstname, ...rest] = (number.holderName || supplier.shopName).split(' ')
+      const [firstname, ...rest] = (number.holderName || payee.displayName).split(' ')
       const result = await this.fedapay.createPayout({
         amount: Math.round(Number(withdrawal.amount)),
         phoneNumber: number.phoneNumber,
         mode: number.operator,
         firstname,
         lastname: rest.join(' ') || firstname,
-        email: supplier.user.email ?? undefined,
+        email: payee.user.email ?? undefined,
         withdrawalId: withdrawal.id,
       })
       withdrawal.fedapayPayoutId = result.payoutId
@@ -214,7 +228,7 @@ export class WithdrawalsService {
       withdrawal.processedAt = new Date()
       await this.em.flush()
       await this.refund(withdrawal, 'Échec du versement — solde rétabli')
-      throw new BadRequestException('Le versement FedaPay a échoué ; le solde du fournisseur est rétabli')
+      throw new BadRequestException('Le versement FedaPay a échoué ; le solde du bénéficiaire est rétabli')
     }
 
     return this.mapWithdrawal(withdrawal)
@@ -226,14 +240,14 @@ export class WithdrawalsService {
       rejectionReason: reason,
     })
     await this.refund(withdrawal, `Demande refusée : ${reason}`)
-    await this.notifySupplier(withdrawal, 'Reversement refusé', `Votre demande de reversement a été refusée : ${reason}. Votre solde est rétabli.`)
+    await this.notifyOwner(withdrawal, 'Reversement refusé', `Votre demande de reversement a été refusée : ${reason}. Votre solde est rétabli.`)
     return this.mapWithdrawal(withdrawal)
   }
 
   async adminListNumbers(status: string | undefined, page: number, limit: number) {
     const where = status ? { status: status as PayoutNumberStatus } : {}
     const [rows, total] = await this.em.findAndCount(PayoutNumber, where, {
-      populate: ['supplier'],
+      populate: ['supplier', 'courier'],
       orderBy: { createdAt: 'DESC' },
       limit,
       offset: (page - 1) * limit,
@@ -241,8 +255,7 @@ export class WithdrawalsService {
     return {
       items: rows.map(n => ({
         ...this.mapNumber(n),
-        supplierId: n.supplier.id,
-        shopName: n.supplier.shopName,
+        ...this.mapOwner(n),
       })),
       total,
       page,
@@ -251,7 +264,9 @@ export class WithdrawalsService {
   }
 
   async adminActOnNumber(numberId: string, adminId: string, action: 'validate' | 'reject', reason?: string) {
-    const number = await this.em.findOne(PayoutNumber, { id: numberId }, { populate: ['supplier', 'supplier.user'] })
+    const number = await this.em.findOne(PayoutNumber, { id: numberId }, {
+      populate: ['supplier', 'supplier.user', 'courier', 'courier.user'],
+    })
     if (!number) {
       throw new NotFoundException('Numéro introuvable')
     }
@@ -273,9 +288,10 @@ export class WithdrawalsService {
     number.validatedAt = new Date()
     await this.em.flush()
 
+    const payee = await this.resolvePayee(number)
     await this.notificationsService.send({
-      user: number.supplier.user,
-      type: NotificationType.PAYMENT_RELEASED,
+      user: payee.user,
+      type: this.payoutNotificationType(payee.ownerType),
       title: action === 'validate' ? 'Numéro de reversement validé' : 'Numéro de reversement refusé',
       body: action === 'validate'
         ? `Le numéro ${number.phoneNumber} est validé. Vous pouvez demander vos reversements.`
@@ -292,18 +308,21 @@ export class WithdrawalsService {
     const rows = await this.em.getConnection().execute(
       `SELECT w.id, w.balance, w."updatedAt",
               s.id AS supplier_id, s.shop_name,
+              cp.id AS courier_id, cp.full_name AS courier_name,
               u.id AS user_id, u.name AS user_name
        FROM wallets w
        LEFT JOIN suppliers s ON s.id = w.supplier_id
+       LEFT JOIN courier_profiles cp ON cp.id = w.courier_profile_id
        LEFT JOIN users u ON u.id = w.user_id
        ORDER BY w.balance DESC`,
     )
     const wallets = rows.map((r: Record<string, unknown>) => ({
       id: r.id as string,
       balance: Number(r.balance),
-      ownerType: r.supplier_id ? 'SUPPLIER' : 'USER',
-      ownerName: (r.shop_name ?? r.user_name ?? '') as string,
+      ownerType: r.supplier_id ? 'SUPPLIER' : r.courier_id ? 'COURIER' : 'USER',
+      ownerName: (r.shop_name ?? r.courier_name ?? r.user_name ?? '') as string,
       supplierId: (r.supplier_id as string) ?? null,
+      courierId: (r.courier_id as string) ?? null,
       updatedAt: r.updatedAt instanceof Date ? r.updatedAt.toISOString() : String(r.updatedAt),
     }))
     return {
@@ -322,7 +341,7 @@ export class WithdrawalsService {
     const withdrawal = await this.em.findOne(WithdrawalRequest, {
       fedapayPayoutId,
       status: WithdrawalStatus.PROCESSING,
-    }, { populate: ['payoutNumber', 'supplier', 'supplier.user'] })
+    }, { populate: ['payoutNumber', 'supplier', 'supplier.user', 'courier', 'courier.user'] })
     if (!withdrawal) {
       return
     }
@@ -344,12 +363,12 @@ export class WithdrawalsService {
     }
 
     if (target === WithdrawalStatus.PAID) {
-      await this.notifySupplier(withdrawal, 'Reversement effectué', `${Number(withdrawal.amount)} FCFA ont été envoyés au ${withdrawal.payoutNumber.phoneNumber}.`)
+      await this.notifyOwner(withdrawal, 'Reversement effectué', `${Number(withdrawal.amount)} FCFA ont été envoyés au ${withdrawal.payoutNumber.phoneNumber}.`)
     }
     else {
       this.logger.error(`Payout ${fedapayPayoutId} failed: ${check.errorMessage}`)
       await this.refund(withdrawal, 'Échec du versement — solde rétabli')
-      await this.notifySupplier(withdrawal, 'Reversement échoué', 'Le versement a échoué. Votre solde est rétabli, vous pouvez refaire une demande.')
+      await this.notifyOwner(withdrawal, 'Reversement échoué', 'Le versement a échoué. Votre solde est rétabli, vous pouvez refaire une demande.')
     }
   }
 
@@ -382,13 +401,17 @@ export class WithdrawalsService {
     withdrawalId: string,
     from: WithdrawalStatus,
     to: WithdrawalStatus,
-    extra: { supplierId?: string, processedBy?: string, rejectionReason?: string, providerReference?: string | null } = {},
+    extra: { owner?: PayoutOwner, processedBy?: string, rejectionReason?: string, providerReference?: string | null } = {},
   ): Promise<WithdrawalRequest> {
     const conditions = ['id = ?', 'status = ?']
     const params: unknown[] = [withdrawalId, from]
-    if (extra.supplierId) {
+    if (extra.owner?.supplierId) {
       conditions.push('supplier_id = ?')
-      params.push(extra.supplierId)
+      params.push(extra.owner.supplierId)
+    }
+    else if (extra.owner?.courierId) {
+      conditions.push('courier_profile_id = ?')
+      params.push(extra.owner.courierId)
     }
 
     // 'run' mode: pg's execute() otherwise returns rows, not affectedRows.
@@ -408,7 +431,7 @@ export class WithdrawalsService {
 
     this.em.clear()
     return this.em.findOneOrFail(WithdrawalRequest, { id: withdrawalId }, {
-      populate: ['payoutNumber', 'supplier', 'wallet'],
+      populate: ['payoutNumber', 'supplier', 'courier', 'wallet'],
     })
   }
 
@@ -421,12 +444,12 @@ export class WithdrawalsService {
     })
   }
 
-  private async notifySupplier(withdrawal: WithdrawalRequest, title: string, body: string): Promise<void> {
+  private async notifyOwner(withdrawal: WithdrawalRequest, title: string, body: string): Promise<void> {
     try {
-      const supplier = await this.em.findOneOrFail(Supplier, { id: withdrawal.supplier.id }, { populate: ['user'] })
+      const payee = await this.resolvePayee(withdrawal)
       await this.notificationsService.send({
-        user: supplier.user,
-        type: NotificationType.PAYMENT_RELEASED,
+        user: payee.user,
+        type: this.payoutNotificationType(payee.ownerType),
         title,
         body,
         data: { withdrawalId: withdrawal.id },
@@ -436,6 +459,55 @@ export class WithdrawalsService {
     catch (error) {
       this.logger.error(`Notification failed for withdrawal ${withdrawal.id}`, error)
     }
+  }
+
+  /** Loads the user behind the owner — fresh from the DB, the row may come from a cleared EM. */
+  private async resolvePayee(owned: { supplier?: { id: string } | null, courier?: { id: string } | null }): Promise<Payee> {
+    if (owned.supplier) {
+      const supplier = await this.em.findOneOrFail(Supplier, { id: owned.supplier.id }, { populate: ['user'] })
+      return { user: supplier.user, displayName: supplier.shopName, ownerType: 'SUPPLIER' }
+    }
+    if (owned.courier) {
+      const courier = await this.em.findOneOrFail(CourierProfile, { id: owned.courier.id }, { populate: ['user'] })
+      return { user: courier.user, displayName: courier.fullName, ownerType: 'COURIER' }
+    }
+    throw new BadRequestException('Bénéficiaire introuvable')
+  }
+
+  private payoutNotificationType(ownerType: PayoutOwnerType): NotificationType {
+    return ownerType === 'COURIER' ? NotificationType.COURIER_PAYOUT : NotificationType.PAYMENT_RELEASED
+  }
+
+  /** `supplierId` / `shopName` are kept (nullable) so existing BO screens keep working. */
+  private mapOwner(owned: { supplier?: Supplier | null, courier?: CourierProfile | null }) {
+    const ownerType: PayoutOwnerType = owned.courier ? 'COURIER' : 'SUPPLIER'
+    return {
+      ownerType,
+      ownerName: owned.supplier?.shopName ?? owned.courier?.fullName ?? '',
+      supplierId: owned.supplier?.id ?? null,
+      shopName: owned.supplier?.shopName ?? null,
+      courierId: owned.courier?.id ?? null,
+    }
+  }
+
+  private ownerWhere(owner: PayoutOwner): { supplier: { id: string } } | { courier: { id: string } } {
+    if (owner.supplierId) {
+      return { supplier: { id: owner.supplierId } }
+    }
+    if (owner.courierId) {
+      return { courier: { id: owner.courierId } }
+    }
+    throw new BadRequestException('Propriétaire du portefeuille introuvable')
+  }
+
+  private ownerRefs(owner: PayoutOwner): { supplier: Supplier } | { courier: CourierProfile } {
+    if (owner.supplierId) {
+      return { supplier: this.em.getReference(Supplier, owner.supplierId) }
+    }
+    if (owner.courierId) {
+      return { courier: this.em.getReference(CourierProfile, owner.courierId) }
+    }
+    throw new BadRequestException('Propriétaire du portefeuille introuvable')
   }
 
   /** Raw-SQL round-trips can hand dates back as strings. */

@@ -5,7 +5,7 @@ export const userResponseSchema = z.object({
   name: z.string(),
   email: z.string().email().nullable(),
   phone: z.string().nullable(),
-  role: z.enum(['BUYER', 'SUPPLIER', 'ADMIN']),
+  role: z.enum(['BUYER', 'SUPPLIER', 'COURIER', 'ADMIN']),
   image: z.string().url().nullable(),
   biometricEnabled: z.boolean(),
   createdAt: z.string().datetime(),

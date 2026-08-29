@@ -56,6 +56,12 @@ export class ProductsService {
       stock: data.stock ?? 0,
       stockAlertThreshold: data.stockAlertThreshold ?? 5,
       status: (data.status as ProductStatus) ?? ProductStatus.ACTIVE,
+      ingredients: data.ingredients,
+      allergens: data.allergens ?? [],
+      labels: data.labels ?? [],
+      origin: data.origin,
+      conservation: data.conservation,
+      nutritionalValues: data.nutritionalValues,
     })
 
     await this.em.flush()
@@ -172,6 +178,18 @@ export class ProductsService {
       product.stockAlertThreshold = data.stockAlertThreshold
     if (data.status !== undefined)
       product.status = data.status as ProductStatus
+    if (data.ingredients !== undefined)
+      product.ingredients = data.ingredients
+    if (data.allergens !== undefined)
+      product.allergens = data.allergens
+    if (data.labels !== undefined)
+      product.labels = data.labels
+    if (data.origin !== undefined)
+      product.origin = data.origin
+    if (data.conservation !== undefined)
+      product.conservation = data.conservation
+    if (data.nutritionalValues !== undefined)
+      product.nutritionalValues = data.nutritionalValues
 
     if (data.categoryId !== undefined) {
       const category = await this.em.findOne(Category, { id: data.categoryId })
@@ -181,21 +199,77 @@ export class ProductsService {
       product.category = category
     }
 
-    if (data.mediaIds?.length) {
-      const mediaRecords = await this.em.find(Media, {
-        id: { $in: data.mediaIds },
-        status: MediaStatus.READY,
-      })
-      product.photos = mediaRecords
-        .map(m => m.publicUrl)
-        .filter((url): url is string => !!url)
+    // Photos: `photos` lists the kept existing URLs (in order), `mediaIds`
+    // the freshly uploaded ones to append. Sending only mediaIds used to
+    // replace the whole array and destroy the other photos.
+    if (data.photos !== undefined || data.mediaIds?.length) {
+      const kept = data.photos ?? product.photos
+      let added: string[] = []
+      if (data.mediaIds?.length) {
+        const mediaRecords = await this.em.find(Media, {
+          id: { $in: data.mediaIds },
+          status: MediaStatus.READY,
+        })
+        added = mediaRecords
+          .map(m => m.publicUrl)
+          .filter((url): url is string => !!url)
 
-      await this.em.nativeUpdate(Media, { id: { $in: data.mediaIds } }, {
-        entityType: 'PRODUCT',
-        entityId: product.id,
-      })
+        await this.em.nativeUpdate(Media, { id: { $in: data.mediaIds } }, {
+          entityType: 'PRODUCT',
+          entityId: product.id,
+        })
+      }
+      product.photos = [...kept, ...added]
     }
 
+    // Variants: upsert by label. They were silently ignored on update before.
+    if (data.variants !== undefined) {
+      const existing = await this.em.find(ProductVariant, { product: product.id })
+      const byLabel = new Map(existing.map(v => [v.label, v]))
+      const keptLabels = new Set<string>()
+
+      for (const input of data.variants) {
+        keptLabels.add(input.label)
+        const match = byLabel.get(input.label)
+        if (match) {
+          match.pricePerUnit = input.pricePerUnit
+          if (input.stock !== undefined) {
+            match.stock = input.stock
+          }
+        }
+        else {
+          this.em.create(ProductVariant, {
+            product,
+            label: input.label,
+            pricePerUnit: input.pricePerUnit,
+            stock: input.stock ?? 0,
+          })
+        }
+      }
+
+      for (const variant of existing) {
+        if (!keptLabels.has(variant.label)) {
+          // Variants quoted by past orders keep their row (FK) — the supplier
+          // removing one from the form just stops offering it.
+          const rows = await this.em.getConnection().execute(
+            `SELECT COUNT(*)::int AS refs FROM order_items WHERE variant_id = ?`,
+            [variant.id],
+          )
+          if ((rows[0]?.refs ?? 0) === 0) {
+            this.em.remove(variant)
+          }
+        }
+      }
+    }
+
+    await this.em.flush()
+    return product
+  }
+
+  async clearPromotion(productId: string, supplierId: string): Promise<Product> {
+    const product = await this.findByIdAndVerifyOwnership(productId, supplierId)
+    product.promotionalPrice = undefined
+    product.promotionExpiresAt = undefined
     await this.em.flush()
     return product
   }

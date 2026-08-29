@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeDeliveryFee } from './delivery-fee'
+import { computeCourierFee, computeDeliveryFee } from './delivery-fee'
 
 describe('computeDeliveryFee', () => {
   const shop = { deliveryFee: 1000, freeDeliveryFrom: 10_000 }
@@ -36,5 +36,31 @@ describe('computeDeliveryFee', () => {
 
   it('ignores a negative fee rather than crediting the buyer', () => {
     expect(computeDeliveryFee({ deliveryFee: -500 }, true, 5000)).toBe(0)
+  })
+})
+
+describe('computeCourierFee', () => {
+  it('leaves the courier the fee minus the platform cut', () => {
+    expect(computeCourierFee(1000, 0.1)).toBe(900)
+    expect(computeCourierFee(1500, 0.1)).toBe(1350)
+  })
+
+  it('rounds to the FCFA', () => {
+    expect(computeCourierFee(1234, 0.1)).toBe(1111)
+    expect(computeCourierFee(1234, 0.15)).toBe(1049)
+  })
+
+  it('hands the whole fee over at a zero rate', () => {
+    expect(computeCourierFee(1000, 0)).toBe(1000)
+  })
+
+  it('pays nothing when delivery was free', () => {
+    expect(computeCourierFee(0, 0.1)).toBe(0)
+    expect(computeCourierFee(-500, 0.1)).toBe(0)
+  })
+
+  it('clamps an out-of-range rate instead of going negative', () => {
+    expect(computeCourierFee(1000, 1.5)).toBe(0)
+    expect(computeCourierFee(1000, -0.2)).toBe(1000)
   })
 })

@@ -67,8 +67,9 @@ export default antfu(
 
   // Navigation files use @ts-nocheck due to React Nav v6 / React 19 upstream
   // incompatibility. `any` is unavoidable here until the types are fixed upstream.
+  // The per-variant navigators (client/supplier/courier) share the constraint.
   {
-    files: ['apps/mobile/src/app/navigation.tsx', 'apps/mobile/src/app/navigation-ref.ts'],
+    files: ['apps/mobile/src/app/navigation*.tsx', 'apps/mobile/src/app/navigation-ref.ts'],
     rules: {
       'ts/no-explicit-any': 'off',
     },

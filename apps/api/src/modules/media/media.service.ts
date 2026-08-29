@@ -1,4 +1,5 @@
 import type { CompleteUpload, InitiateUpload } from './media.contract'
+import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import {
   CompleteMultipartUploadCommand,
@@ -11,6 +12,7 @@ import {
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger, NotFoundException } from '@nestjs/common'
+import sharp from 'sharp'
 import { createS3Client, s3Config } from '../../config/s3.config'
 import { User } from '../auth/auth.entity'
 import { Media, MediaContext, MediaStatus, MediaType } from './media.entity'
@@ -27,11 +29,11 @@ const MAX_SIZES: Record<string, number> = {
 // Chunk size for multipart: 5 Mo (S3 minimum)
 const CHUNK_SIZE = 5 * 1024 * 1024
 
-// Image optimization targets (used when sharp is enabled)
-// eslint-disable-next-line unused-imports/no-unused-vars
+// Image optimization targets
 const IMAGE_MAX_WIDTH = 1200
-// eslint-disable-next-line unused-imports/no-unused-vars
-const IMAGE_MAX_SIZE = 200 * 1024 // 200 Ko target for product images
+const IMAGE_WEBP_QUALITY = 80
+const THUMB_SIZE = 320
+const THUMB_WEBP_QUALITY = 70
 
 @Injectable()
 export class MediaService {
@@ -198,43 +200,69 @@ export class MediaService {
    * - Upload optimized version
    * - Generate thumbnail (200x200)
    */
-  private async optimizeImage(media: Media): Promise<void> {
-    // TODO: Implement with sharp library
-    // For now, use the original as-is and mark as ready
-    //
-    // const sharp = require('sharp')
-    // const { Body } = await this.s3.send(new GetObjectCommand({ Bucket: media.s3Bucket, Key: media.s3Key }))
-    // const buffer = await streamToBuffer(Body)
-    //
-    // const metadata = await sharp(buffer).metadata()
-    // media.width = metadata.width
-    // media.height = metadata.height
-    //
-    // // Resize + WebP
-    // const optimized = await sharp(buffer)
-    //   .resize(IMAGE_MAX_WIDTH, undefined, { withoutEnlargement: true })
-    //   .webp({ quality: 80 })
-    //   .toBuffer()
-    //
-    // const optimizedKey = media.s3Key.replace(/\.[^.]+$/, '.webp')
-    // await this.s3.send(new PutObjectCommand({
-    //   Bucket: media.s3Bucket, Key: optimizedKey,
-    //   Body: optimized, ContentType: 'image/webp',
-    // }))
-    //
-    // media.optimizedKey = optimizedKey
-    // media.optimizedSize = optimized.length
-    //
-    // // Thumbnail
-    // const thumb = await sharp(buffer).resize(200, 200, { fit: 'cover' }).webp({ quality: 70 }).toBuffer()
-    // const thumbKey = media.s3Key.replace(/\.[^.]+$/, '-thumb.webp')
-    // await this.s3.send(new PutObjectCommand({
-    //   Bucket: media.s3Bucket, Key: thumbKey, Body: thumb, ContentType: 'image/webp',
-    // }))
-    // media.thumbnailKey = thumbKey
+  async optimizeImage(media: Media): Promise<void> {
+    const { Body } = await this.s3.send(new GetObjectCommand({
+      Bucket: media.s3Bucket,
+      Key: media.s3Key,
+    }))
+    if (!Body) {
+      throw new NotFoundException(`Objet S3 introuvable pour le média ${media.id}`)
+    }
+    const buffer = Buffer.from(await Body.transformToByteArray())
 
-    media.optimizedKey = media.s3Key
-    media.optimizedSize = media.originalSize
+    try {
+      // .rotate() bakes in the EXIF orientation so resized output displays upright
+      const source = sharp(buffer, { failOn: 'none' }).rotate()
+      const metadata = await source.metadata()
+      media.width = metadata.width
+      media.height = metadata.height
+
+      const optimized = await source
+        .clone()
+        .resize(IMAGE_MAX_WIDTH, undefined, { withoutEnlargement: true })
+        .webp({ quality: IMAGE_WEBP_QUALITY })
+        .toBuffer()
+
+      // A tiny already-compressed original can beat the webp re-encode: keep the
+      // smaller of the two so optimization never inflates a file.
+      if (optimized.length < media.originalSize) {
+        const optimizedKey = media.s3Key.replace(/\.[^.]+$/, '.opt.webp')
+        await this.s3.send(new PutObjectCommand({
+          Bucket: media.s3Bucket,
+          Key: optimizedKey,
+          Body: optimized,
+          ContentType: 'image/webp',
+          CacheControl: 'public, max-age=31536000, immutable',
+        }))
+        media.optimizedKey = optimizedKey
+        media.optimizedSize = optimized.length
+      }
+      else {
+        media.optimizedKey = media.s3Key
+        media.optimizedSize = media.originalSize
+      }
+
+      const thumb = await source
+        .clone()
+        .resize(THUMB_SIZE, THUMB_SIZE, { fit: 'cover' })
+        .webp({ quality: THUMB_WEBP_QUALITY })
+        .toBuffer()
+      const thumbKey = media.s3Key.replace(/\.[^.]+$/, '.thumb.webp')
+      await this.s3.send(new PutObjectCommand({
+        Bucket: media.s3Bucket,
+        Key: thumbKey,
+        Body: thumb,
+        ContentType: 'image/webp',
+        CacheControl: 'public, max-age=31536000, immutable',
+      }))
+      media.thumbnailKey = thumbKey
+    }
+    catch (error) {
+      // Unsupported format (rare: exotic encodings): serve the original untouched
+      this.logger.warn(`Image optimization skipped for ${media.id}: ${(error as Error).message}`)
+      media.optimizedKey = media.s3Key
+      media.optimizedSize = media.originalSize
+    }
   }
 
   /**

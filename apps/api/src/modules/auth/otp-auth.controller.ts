@@ -24,6 +24,11 @@ const passwordResetSchema = z.object({
   newPassword: z.string().min(8),
 })
 
+const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1),
+  newPassword: z.string().min(8),
+})
+
 const registerWithTokenSchema = z.object({
   phone: z.string().regex(/^\+229\d{10}$/),
   registrationToken: z.string().uuid(),
@@ -232,6 +237,21 @@ export class OtpAuthController {
     }
 
     return { verified: true }
+  }
+
+  /** Logged-in password change (Bearer-compatible, unlike Better Auth's route). */
+  @Post('change-password')
+  @UseGuards(AuthGuard)
+  async changePassword(
+    @Req() req: AuthenticatedRequest,
+    @TypedBody(changePasswordSchema) body: z.infer<typeof changePasswordSchema>,
+  ) {
+    const userId = req.session?.user?.id
+    if (!userId) {
+      throw new UnauthorizedException()
+    }
+    await this.otpAuthService.changePassword(userId, body.currentPassword, body.newPassword)
+    return { message: 'Mot de passe modifié' }
   }
 
   @Post('password-reset/reset')

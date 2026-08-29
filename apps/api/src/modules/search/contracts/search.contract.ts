@@ -35,6 +35,7 @@ export const searchResultSchema = z.object({
     id: z.string().uuid(),
     name: z.string(),
     photo: z.string().nullable(),
+    thumbnail: z.string().nullable(),
     pricePerUnit: z.number(),
     unit: z.string(),
     inStock: z.boolean(),

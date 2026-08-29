@@ -1,10 +1,14 @@
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, Injectable, Logger } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
+import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { FedaPayGateway } from '../payments/gateways/fedapay.gateway'
 import { TopupStatus, WalletTopup } from './entities/wallet-topup.entity'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
 import { WalletService } from './wallet.service'
+
+/** Which of the user's wallets a topup lands on. */
+export type TopupTarget = 'personal' | 'courier'
 
 @Injectable()
 export class TopupService {
@@ -20,9 +24,12 @@ export class TopupService {
    * Same pattern as the order checkout: the FedaPay transaction is created
    * by the Checkout.js widget on the phone; here we only open the pending
    * topup the widget will settle through verify().
+   *
+   * A courier tops up their courier wallet (to cover the cash-commission
+   * debt), never their personal one.
    */
-  async initiate(userId: string, amount: number): Promise<{ topupId: string, amount: number }> {
-    const wallet = await this.walletService.getOrCreate({ userId })
+  async initiate(userId: string, amount: number, target: TopupTarget = 'personal'): Promise<{ topupId: string, amount: number }> {
+    const wallet = await this.walletService.getOrCreate(await this.resolveOwner(userId, target))
     const user = await this.em.findOneOrFail(User, { id: userId })
 
     const topup = this.em.create(WalletTopup, {
@@ -75,10 +82,11 @@ export class TopupService {
     return { status: fresh.status, balance: Number(fresh.wallet.balance) }
   }
 
-  async listForUser(userId: string, page: number, limit: number) {
+  /** `walletId` narrows the list to one of the user's wallets (courier vs personal). */
+  async listForUser(userId: string, page: number, limit: number, walletId?: string) {
     const [rows, total] = await this.em.findAndCount(
       WalletTopup,
-      { user: { id: userId } },
+      { user: { id: userId }, ...(walletId ? { wallet: { id: walletId } } : {}) },
       { orderBy: { createdAt: 'DESC' }, limit, offset: (page - 1) * limit },
     )
     return {
@@ -148,5 +156,16 @@ export class TopupService {
       this.logger.log(`Topup ${topup.id} credited (${topup.amount} FCFA)`)
     }
     return true
+  }
+
+  private async resolveOwner(userId: string, target: TopupTarget): Promise<{ userId?: string, courierId?: string }> {
+    if (target === 'personal') {
+      return { userId }
+    }
+    const profile = await this.em.findOne(CourierProfile, { user: { id: userId } })
+    if (!profile) {
+      throw new NotFoundException('Profil livreur introuvable')
+    }
+    return { courierId: profile.id }
   }
 }

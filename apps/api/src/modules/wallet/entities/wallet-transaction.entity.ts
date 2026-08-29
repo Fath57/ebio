@@ -15,6 +15,10 @@ export enum WalletTransactionType {
   ADJUSTMENT = 'ADJUSTMENT',
   /** eBio pays the shop back for a platform-funded promo discount. */
   PROMO_COMPENSATION = 'PROMO_COMPENSATION',
+  /** Courier's share of the delivery fee on an online-paid order. */
+  DELIVERY_EARNING = 'DELIVERY_EARNING',
+  /** eBio's cut on a cash delivery fee the courier kept in hand. */
+  DELIVERY_COMMISSION = 'DELIVERY_COMMISSION',
 }
 
 /**
@@ -51,6 +55,10 @@ export class WalletTransaction {
   /** Not a FK relation on purpose: avoids an import cycle with withdrawals. */
   @Property({ fieldName: 'withdrawal_id', type: 'uuid', nullable: true })
   withdrawalId?: string | null
+
+  /** Same rationale: plain uuid, no FK, so the wallet module never imports deliveries. */
+  @Property({ fieldName: 'delivery_id', type: 'uuid', nullable: true })
+  deliveryId?: string | null
 
   @Property()
   description!: string

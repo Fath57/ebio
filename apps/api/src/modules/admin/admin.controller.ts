@@ -5,6 +5,7 @@ import type {
   AdminOrderStatusInput,
   BroadcastNotification,
   CommissionRates,
+  DeliveryCommissionRateInput,
   DisputeResolutionInput,
   ResolveReportInput,
   SupplierCommissionRateInput,
@@ -35,6 +36,7 @@ import {
   adminOrderStatusSchema,
   broadcastNotificationSchema,
   commissionRateSchema,
+  deliveryCommissionSchema,
   disputeResolutionSchema,
   resolveReportSchema,
   supplierCommissionRateSchema,
@@ -357,6 +359,14 @@ export class AdminController {
     @TypedBody(commissionRateSchema) body: CommissionRates,
   ) {
     await this.adminService.updateCommissionRates(body)
+    return { success: true }
+  }
+
+  @Put('settings/delivery-commission')
+  async updateDeliveryCommission(
+    @TypedBody(deliveryCommissionSchema) body: DeliveryCommissionRateInput,
+  ) {
+    await this.adminService.updateDeliveryCommissionRate(body.rate)
     return { success: true }
   }
 

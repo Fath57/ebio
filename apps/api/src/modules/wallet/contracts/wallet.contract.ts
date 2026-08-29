@@ -2,11 +2,25 @@ import { z } from 'zod'
 
 export const walletTransactionSchema = z.object({
   id: z.string().uuid(),
-  type: z.enum(['TOPUP', 'ORDER_PAYMENT', 'SALE_CREDIT', 'COMMISSION_DEBIT', 'WITHDRAWAL', 'WITHDRAWAL_REFUND', 'REFUND', 'ADJUSTMENT']),
+  type: z.enum([
+    'TOPUP',
+    'ORDER_PAYMENT',
+    'SALE_CREDIT',
+    'COMMISSION_DEBIT',
+    'WITHDRAWAL',
+    'WITHDRAWAL_REFUND',
+    'REFUND',
+    'ADJUSTMENT',
+    'PROMO_COMPENSATION',
+    'DELIVERY_EARNING',
+    'DELIVERY_COMMISSION',
+  ]),
   amount: z.number(),
   balanceAfter: z.number(),
   description: z.string(),
   orderId: z.string().uuid().nullable(),
+  /** Set on courier movements (DELIVERY_EARNING / DELIVERY_COMMISSION). */
+  deliveryId: z.string().uuid().nullable(),
   createdAt: z.string().datetime(),
 }).meta({
   title: 'WalletTransaction',
@@ -83,7 +97,7 @@ export const withdrawalSchema = z.object({
   processedAt: z.string().datetime().nullable(),
 }).meta({
   title: 'Withdrawal',
-  description: 'A withdrawal request as the supplier sees it',
+  description: 'A withdrawal request as its owner (supplier or courier) sees it',
 })
 
 export const adminWithdrawalActionSchema = z.object({
@@ -99,7 +113,7 @@ export const adminPayoutNumberActionSchema = z.object({
   rejectionReason: z.string().min(3).max(255).optional(),
 }).meta({
   title: 'AdminPayoutNumberAction',
-  description: 'Validate or reject a supplier payout number',
+  description: 'Validate or reject a supplier or courier payout number',
 })
 
 export type WalletResponse = z.infer<typeof walletResponseSchema>

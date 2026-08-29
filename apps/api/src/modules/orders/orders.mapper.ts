@@ -1,9 +1,10 @@
-import type { DisputeResponse, OrderResponse } from './contracts/order.contract'
+import type { DisputeResponse, OrderDeliverySummary, OrderResponse } from './contracts/order.contract'
+import { thumbnailUrlFor } from '../../common/media-urls'
 import { Dispute } from './entities/dispute.entity'
 import { Order } from './entities/order.entity'
 
 export class OrderMapper {
-  static toResponse(order: Order): OrderResponse {
+  static toResponse(order: Order, delivery: OrderDeliverySummary | null = null): OrderResponse {
     return {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -15,6 +16,9 @@ export class OrderMapper {
       pickupMode: order.pickupMode,
       paymentMethod: order.paymentMethod,
       deliveryAddress: order.deliveryAddress ?? null,
+
+      deliveryLatitude: order.deliveryLatitude ?? null,
+      deliveryLongitude: order.deliveryLongitude ?? null,
       deliverySlot: order.deliverySlot ?? null,
       deliveryFee: order.deliveryFee,
       totalAmount: order.totalAmount,
@@ -32,6 +36,7 @@ export class OrderMapper {
             productId: item.product.id,
             productName: item.product.name,
             productPhoto: item.product.photos?.[0] ?? null,
+            productThumbnail: thumbnailUrlFor(item.product.photos?.[0]),
             variantId: item.variant?.id ?? null,
             variantLabel: item.variant?.label ?? null,
             quantity: item.quantity,
@@ -39,6 +44,7 @@ export class OrderMapper {
             totalPrice: item.totalPrice,
           }))
         : [],
+      delivery,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
     }

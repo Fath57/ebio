@@ -14,6 +14,7 @@ import { Role } from './entities/role.entity'
 export enum UserRole {
   BUYER = 'BUYER',
   SUPPLIER = 'SUPPLIER',
+  COURIER = 'COURIER',
   ADMIN = 'ADMIN',
 }
 

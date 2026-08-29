@@ -42,6 +42,10 @@ export class Message {
   @Property({ fieldName: 'media_url', nullable: true })
   mediaUrl?: string
 
+  /** Voice note length; without it history playback showed 0:00 forever. */
+  @Property({ fieldName: 'duration_ms', nullable: true })
+  durationMs?: number
+
   @Property({ type: 'float', nullable: true })
   latitude?: number
 

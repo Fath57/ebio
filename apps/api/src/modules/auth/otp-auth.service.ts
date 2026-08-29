@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { Injectable, Logger } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { hashPassword, verifyPassword } from 'better-auth/crypto'
 import { Account, Session, User, UserRole } from './auth.entity'
 
@@ -158,6 +158,32 @@ export class OtpAuthService {
     }
 
     this.logger.debug(`Password reset for user ${user.id}`)
+  }
+
+  /**
+   * Password change from inside the app: the current password proves the
+   * actor holds the account, then the credential account is rewritten.
+   * Social-only accounts have no credential row — they must go through the
+   * OTP reset flow, which creates one.
+   */
+  async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
+    const fork = this.em.fork()
+    const account = await fork.findOne(Account, { user: { id: userId }, providerId: 'credential' })
+    if (!account?.password) {
+      throw new BadRequestException(
+        'Aucun mot de passe n’est défini sur ce compte. Utilisez « Mot de passe oublié » pour en créer un.',
+      )
+    }
+    const valid = await this.verifyPwd(currentPassword, account.password)
+    if (!valid) {
+      throw new UnauthorizedException('Mot de passe actuel incorrect')
+    }
+    if (currentPassword === newPassword) {
+      throw new BadRequestException('Le nouveau mot de passe doit être différent de l’actuel')
+    }
+    account.password = await this.hashPwd(newPassword)
+    await fork.flush()
+    this.logger.debug(`Password changed for user ${userId}`)
   }
 
   private hashPwd(password: string): Promise<string> {

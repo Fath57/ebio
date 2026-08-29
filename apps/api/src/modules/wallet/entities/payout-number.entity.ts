@@ -1,5 +1,6 @@
 import type { Rel } from '@mikro-orm/core'
 import { Entity, Enum, ManyToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
+import { CourierProfile } from '../../deliveries/entities/courier-profile.entity'
 import { Supplier } from '../../suppliers/supplier.entity'
 
 export enum PayoutNumberStatus {
@@ -9,20 +10,25 @@ export enum PayoutNumberStatus {
 }
 
 /**
- * A Mobile Money number a supplier wants their money sent to. Every number
+ * A Mobile Money number a supplier or a courier wants their money sent to.
+ * Exactly one owner (DB CHECK `payout_numbers_single_owner`). Every number
  * goes through an admin validation (anti-fraud checkpoint); only a VALIDATED
  * number can carry a withdrawal.
  */
 @Entity({ tableName: 'payout_numbers' })
 @Unique({ properties: ['supplier', 'phoneNumber'] })
+@Unique({ properties: ['courier', 'phoneNumber'] })
 export class PayoutNumber {
   [OptionalProps]?: 'id' | 'status' | 'createdAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @ManyToOne(() => Supplier, { fieldName: 'supplier_id' })
-  supplier!: Rel<Supplier>
+  @ManyToOne(() => Supplier, { fieldName: 'supplier_id', nullable: true })
+  supplier?: Rel<Supplier> | null
+
+  @ManyToOne(() => CourierProfile, { fieldName: 'courier_profile_id', nullable: true })
+  courier?: Rel<CourierProfile> | null
 
   @Property({ fieldName: 'phone_number', length: 20 })
   phoneNumber!: string

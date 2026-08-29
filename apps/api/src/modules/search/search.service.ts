@@ -2,6 +2,7 @@ import type { OpeningHours } from '../../common/opening-hours'
 import type { SearchProductsQuery, SearchResponse, SearchResult } from './contracts/search.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable } from '@nestjs/common'
+import { thumbnailUrlFor } from '../../common/media-urls'
 import { isOpenNow } from '../../common/opening-hours'
 
 interface RawSearchRow {
@@ -301,6 +302,7 @@ export class SearchService {
         id: row.product_id,
         name: row.product_name,
         photo: photos[0] ?? null,
+        thumbnail: thumbnailUrlFor(photos[0]),
         pricePerUnit: row.price_per_unit,
         unit: row.unit,
         inStock: row.stock > 0,

@@ -206,6 +206,20 @@ export class ProductsController {
     return ProductMapper.toResponse(product, variants)
   }
 
+  @Delete('suppliers/me/products/:id/promotion')
+  @Roles('SUPPLIER')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanUpdate('Product')
+  async clearPromotion(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+  ) {
+    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    const product = await this.productsService.clearPromotion(id, supplier.id)
+    const variants = await this.productsService.getVariantsByProductId(product.id)
+    return ProductMapper.toResponse(product, variants)
+  }
+
   @Post('products/:id/stock-alert')
   async subscribeToStockAlert(
     @Session() session: LoggedInBetterAuthSession,

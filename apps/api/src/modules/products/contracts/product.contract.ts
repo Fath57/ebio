@@ -4,6 +4,7 @@ import {
   paginatedSchema,
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
+import { ALLERGEN_CODES, LABEL_CODES } from '../composition.constants'
 
 /**
  * Free-form code rather than an enum: the list of units is managed from the
@@ -26,6 +27,46 @@ const variantInputSchema = z.object({
   stock: z.number().int().min(0).optional(),
 })
 
+export const allergenCodeEnum = z.enum(ALLERGEN_CODES).meta({
+  title: 'AllergenCode',
+  description: 'One of the 14 EU-regulated allergens (canonical code)',
+})
+
+export const labelCodeEnum = z.enum(LABEL_CODES).meta({
+  title: 'ProductLabelCode',
+  description: 'Quality / certification label (canonical code)',
+})
+
+export const nutritionBasisEnum = z.enum(['100g', '100ml']).meta({
+  title: 'NutritionBasis',
+  description: 'Reference quantity the nutritional values are given for',
+})
+
+/** Per 100 g / 100 ml — grams are bounded by the reference quantity itself. */
+const gramsPer100 = z.number().min(0).max(100)
+
+export const nutritionalValuesSchema = z.object({
+  basis: nutritionBasisEnum.default('100g'),
+  energyKcal: z.number().min(0).max(900).optional(),
+  fat: gramsPer100.optional(),
+  saturatedFat: gramsPer100.optional(),
+  carbohydrates: gramsPer100.optional(),
+  sugars: gramsPer100.optional(),
+  fiber: gramsPer100.optional(),
+  protein: gramsPer100.optional(),
+  salt: gramsPer100.optional(),
+}).superRefine((values, ctx) => {
+  if (values.saturatedFat !== undefined && values.fat !== undefined && values.saturatedFat > values.fat) {
+    ctx.addIssue({ code: 'custom', path: ['saturatedFat'], message: 'Les acides gras saturés ne peuvent pas dépasser les matières grasses' })
+  }
+  if (values.sugars !== undefined && values.carbohydrates !== undefined && values.sugars > values.carbohydrates) {
+    ctx.addIssue({ code: 'custom', path: ['sugars'], message: 'Les sucres ne peuvent pas dépasser les glucides' })
+  }
+}).meta({
+  title: 'NutritionalValues',
+  description: 'Valeurs nutritionnelles pour 100 g / 100 ml',
+})
+
 export const createProductSchema = z.object({
   name: z.string().min(2).max(200),
   categoryId: z.string().uuid(),
@@ -37,12 +78,25 @@ export const createProductSchema = z.object({
   status: productStatusEnum.default('ACTIVE'),
   variants: z.array(variantInputSchema).optional(),
   mediaIds: z.array(z.string().uuid()).optional(),
+  // Composition / fiche produit
+  ingredients: z.string().max(4000).optional(),
+  allergens: z.array(allergenCodeEnum).max(ALLERGEN_CODES.length).optional(),
+  labels: z.array(labelCodeEnum).max(LABEL_CODES.length).optional(),
+  origin: z.string().max(200).optional(),
+  conservation: z.string().max(1000).optional(),
+  nutritionalValues: nutritionalValuesSchema.optional(),
 }).meta({
   title: 'CreateProduct',
   description: 'Data required to create a new product',
 })
 
-export const updateProductSchema = createProductSchema.partial().meta({
+export const updateProductSchema = createProductSchema.partial().extend({
+  /**
+   * URLs of EXISTING photos to keep, in display order. Without it, an edit
+   * sending only new mediaIds silently wiped the product's other photos.
+   */
+  photos: z.array(z.string()).max(10).optional(),
+}).meta({
   title: 'UpdateProduct',
   description: 'Update product — all fields optional',
 })
@@ -80,6 +134,8 @@ export const productResponseSchema = z.object({
   description: z.string().nullable(),
   voiceDescriptionUrl: z.string().nullable(),
   photos: z.array(z.string()),
+  /** 320 px thumbnail of the first photo when available (lists, carts). */
+  thumbnail: z.string().nullable(),
   pricePerUnit: z.number(),
   unit: productUnitCode,
   stock: z.number(),
@@ -87,6 +143,12 @@ export const productResponseSchema = z.object({
   status: productStatusEnum,
   promotionalPrice: z.number().nullable(),
   promotionExpiresAt: z.string().datetime().nullable(),
+  ingredients: z.string().nullable(),
+  allergens: z.array(z.string()),
+  labels: z.array(z.string()),
+  origin: z.string().nullable(),
+  conservation: z.string().nullable(),
+  nutritionalValues: nutritionalValuesSchema.nullable(),
   variants: z.array(variantResponseSchema),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
@@ -99,6 +161,7 @@ export const productSummarySchema = z.object({
   id: z.string().uuid(),
   name: z.string(),
   photo: z.string().nullable(),
+  thumbnail: z.string().nullable(),
   pricePerUnit: z.number(),
   unit: productUnitCode,
   stock: z.number(),

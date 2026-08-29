@@ -41,3 +41,17 @@ export function computeDeliveryFee(
 
   return fee
 }
+
+/**
+ * What the courier keeps out of the delivery fee. eBio takes `rate` of the
+ * fee (admin-tunable, 0.10 by default); the rest is the courier's earning.
+ * Rounded to the FCFA — there is no sub-unit in Mobile Money — and never
+ * negative, whatever a stray rate above 1 would suggest.
+ */
+export function computeCourierFee(deliveryFee: number, rate: number): number {
+  if (!(deliveryFee > 0)) {
+    return 0
+  }
+  const safeRate = Math.min(Math.max(rate, 0), 1)
+  return Math.round(deliveryFee * (1 - safeRate))
+}

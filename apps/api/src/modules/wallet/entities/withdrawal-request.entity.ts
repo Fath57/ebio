@@ -1,5 +1,6 @@
 import type { Rel } from '@mikro-orm/core'
 import { Entity, Enum, Index, ManyToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
+import { CourierProfile } from '../../deliveries/entities/courier-profile.entity'
 import { Supplier } from '../../suppliers/supplier.entity'
 import { PayoutNumber } from './payout-number.entity'
 import { Wallet } from './wallet.entity'
@@ -14,14 +15,15 @@ export enum WithdrawalStatus {
   FAILED = 'FAILED',
   /** Admin refused — the wallet was re-credited. */
   REJECTED = 'REJECTED',
-  /** Supplier cancelled while still PENDING — the wallet was re-credited. */
+  /** Owner cancelled while still PENDING — the wallet was re-credited. */
   CANCELLED = 'CANCELLED',
 }
 
 /**
- * A supplier's request to move wallet money to their validated Mobile Money
- * number. Creating the request debits the wallet at once (funds reservation);
- * every non-PAID terminal status credits it back.
+ * A supplier's or a courier's request to move wallet money to their validated
+ * Mobile Money number (exactly one owner, DB CHECK
+ * `withdrawal_requests_single_owner`). Creating the request debits the wallet
+ * at once (funds reservation); every non-PAID terminal status credits it back.
  */
 @Entity({ tableName: 'withdrawal_requests' })
 @Index({ properties: ['status'] })
@@ -31,8 +33,11 @@ export class WithdrawalRequest {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @ManyToOne(() => Supplier, { fieldName: 'supplier_id' })
-  supplier!: Rel<Supplier>
+  @ManyToOne(() => Supplier, { fieldName: 'supplier_id', nullable: true })
+  supplier?: Rel<Supplier> | null
+
+  @ManyToOne(() => CourierProfile, { fieldName: 'courier_profile_id', nullable: true })
+  courier?: Rel<CourierProfile> | null
 
   @ManyToOne(() => Wallet, { fieldName: 'wallet_id' })
   wallet!: Rel<Wallet>

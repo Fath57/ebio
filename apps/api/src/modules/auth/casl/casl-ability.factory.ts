@@ -25,6 +25,8 @@ export type Subjects
     | 'Category'
     | 'Banner'
     | 'LandingContent'
+    | 'Delivery'
+    | 'CourierProfile'
     | 'all'
 
 export type Actions = 'create' | 'read' | 'update' | 'delete' | 'manage'
@@ -93,6 +95,38 @@ export class CaslAbilityFactory {
         can('create', 'ContentReport')
         can('read', 'Category')
         can('create', 'Supplier')
+        can('read', 'Delivery')
+        can('update', 'Delivery')
+        break
+
+      case UserRole.COURIER:
+        // A courier is still a buyer in the client app: the whole buyer
+        // baseline applies, plus the fleet-specific abilities.
+        can('read', 'Product')
+        can('read', 'Supplier')
+        can('read', 'Category')
+        can('create', 'Order')
+        can('read', 'Order')
+        can('update', 'Order')
+        can('create', 'Payment')
+        can('read', 'Payment')
+        can('read', 'Conversation')
+        can('create', 'Conversation')
+        can('create', 'Message')
+        can('read', 'Message')
+        can('create', 'Review')
+        can('read', 'Review')
+        can('read', 'CommunityGroup')
+        can('create', 'Publication')
+        can('read', 'Publication')
+        can('read', 'TrainingModule')
+        can('read', 'Notification')
+        can('create', 'ContentReport')
+        can('create', 'Supplier')
+        can('read', 'Delivery')
+        can('update', 'Delivery')
+        can('read', 'CourierProfile')
+        can('update', 'CourierProfile')
         break
 
       case UserRole.BUYER:
@@ -118,6 +152,8 @@ export class CaslAbilityFactory {
         can('read', 'Notification')
         can('create', 'ContentReport')
         can('create', 'Supplier')
+        can('read', 'Delivery')
+        can('create', 'CourierProfile')
         break
     }
 

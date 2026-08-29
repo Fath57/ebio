@@ -1,10 +1,12 @@
-import type { CreateDispute, CreateOrder } from './contracts/order.contract'
+import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
+import type { CreateDispute, CreateOrder, OrderDeliverySummary } from './contracts/order.contract'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -12,6 +14,8 @@ import {
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { computeDeliveryFee } from '../../common/delivery-fee'
 import { User } from '../auth/auth.entity'
+import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
+import { Delivery } from '../deliveries/entities/delivery.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
@@ -53,6 +57,8 @@ export class OrdersService {
     private readonly commissionService: CommissionService,
     private readonly walletService: WalletService,
     private readonly promoCodesService: PromoCodesService,
+    @Inject(ORDER_DELIVERY_HOOKS)
+    private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
 
   async create(buyerId: string, data: CreateOrder): Promise<Order> {
@@ -146,6 +152,8 @@ export class OrdersService {
       paymentMethod: data.paymentMethod as PaymentMethod,
       deliveryAddress: data.deliveryAddress,
       deliverySlot: data.deliverySlot || undefined,
+      deliveryLatitude: data.deliveryLatitude,
+      deliveryLongitude: data.deliveryLongitude,
       deliveryFee,
       totalAmount: discountedItemsTotal + deliveryFee,
       commissionRate: commission.rate,
@@ -242,6 +250,27 @@ export class OrdersService {
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       }),
     ])
+  }
+
+  /**
+   * Live courier runs for a set of orders, keyed by order id — one query,
+   * entity-only access to the deliveries module (no service dependency).
+   */
+  async deliverySummaries(orderIds: string[]): Promise<Map<string, OrderDeliverySummary>> {
+    const summaries = new Map<string, OrderDeliverySummary>()
+    if (orderIds.length === 0) {
+      return summaries
+    }
+    const deliveries = await this.em.find(Delivery, { order: { $in: orderIds } }, { populate: ['courier'] })
+    for (const delivery of deliveries) {
+      summaries.set(delivery.order.id, {
+        status: delivery.status,
+        courierName: delivery.courier?.fullName ?? null,
+        courierVehicleType: delivery.courier?.vehicleType ?? null,
+        updatedAt: delivery.updatedAt.toISOString(),
+      })
+    }
+    return summaries
   }
 
   async findById(id: string): Promise<Order> {
@@ -373,7 +402,27 @@ export class OrdersService {
       )
     }
 
+    // Manual READY → IN_DELIVERY while a courier delivery exists means the
+    // supplier self-delivers: an unclaimed delivery is withdrawn, a claimed
+    // one blocks the move (a courier is already on it).
+    if (newStatus === OrderStatus.IN_DELIVERY && order.pickupMode === PickupMode.DELIVERY) {
+      await this.deliveriesService.handleSupplierTakeover(order)
+    }
+
     await this.applyStatus(order, newStatus)
+    return order
+  }
+
+  /**
+   * Delivery-driven transitions (pickup → IN_DELIVERY, proof → DELIVERED)
+   * bypass the supplier ownership check: the courier module already verified
+   * the actor, and the buyer notifications must stay identical.
+   */
+  async applyStatusFromDelivery(orderId: string, newStatus: OrderStatus): Promise<Order> {
+    const order = await this.findById(orderId)
+    if (order.status !== newStatus) {
+      await this.applyStatus(order, newStatus)
+    }
     return order
   }
 
@@ -388,8 +437,11 @@ export class OrdersService {
     return order
   }
 
-  /** Writes the status and sends the buyer-facing notifications it triggers. */
-  private async applyStatus(order: Order, newStatus: OrderStatus): Promise<void> {
+  /**
+   * Writes the status and sends the buyer-facing notifications it triggers.
+   * `silent` skips the buyer notification when the buyer is the actor.
+   */
+  private async applyStatus(order: Order, newStatus: OrderStatus, options: { silent?: boolean } = {}): Promise<void> {
     order.status = newStatus
 
     if (newStatus === OrderStatus.DELIVERED) {
@@ -398,8 +450,20 @@ export class OrdersService {
 
     await this.em.flush()
 
+    // Whoever marked the order delivered, an open courier run is closed and
+    // the courier paid; a run nobody claimed is withdrawn (self-delivery).
+    if (newStatus === OrderStatus.DELIVERED && order.pickupMode === PickupMode.DELIVERY) {
+      await this.deliveriesService.closeForOrder(order)
+    }
+
     if (newStatus === OrderStatus.CANCELLED) {
       await this.onOrderCancelled(order)
+      await this.deliveriesService.cancelForOrder(order)
+    }
+
+    // A DELIVERY order turning READY starts the courier dispatch.
+    if (newStatus === OrderStatus.READY && order.pickupMode === PickupMode.DELIVERY) {
+      await this.deliveriesService.createForOrder(order)
     }
 
     // Cash order: eBio never touches the money, so its commission is
@@ -447,7 +511,7 @@ export class OrdersService {
       })
     }
 
-    if (newStatus === OrderStatus.DELIVERED) {
+    if (newStatus === OrderStatus.DELIVERED && !options.silent) {
       await this.notificationsService.send({
         user: order.buyer,
         type: NotificationType.ORDER_DELIVERED,
@@ -481,12 +545,15 @@ export class OrdersService {
       order.deliveryConfirmedBySupplier = true
     }
 
+    // Same machinery as every other path to DELIVERED (cash commission,
+    // courier run closure and payout); the buyer confirming their own parcel
+    // does not need the « confirmez la réception » push.
     if (order.status !== OrderStatus.DELIVERED) {
-      order.status = OrderStatus.DELIVERED
-      order.deliveredAt = new Date()
+      await this.applyStatus(order, OrderStatus.DELIVERED, { silent: isBuyer })
     }
-
-    await this.em.flush()
+    else {
+      await this.em.flush()
+    }
 
     return order
   }

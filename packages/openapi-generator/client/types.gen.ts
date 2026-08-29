@@ -173,9 +173,27 @@ export type CreateWithdrawal = {
 };
 
 /**
+ * WalletTopup
+ *
+ * Amount to add to the wallet, paid through FedaPay
+ */
+export type WalletTopup = {
+  amount: number;
+};
+
+/**
+ * VerifyTopup
+ *
+ * FedaPay transaction id reported by the checkout widget; the server re-checks it
+ */
+export type VerifyTopup = {
+  fedapayTransactionId: string;
+};
+
+/**
  * AdminPayoutNumberAction
  *
- * Validate or reject a supplier payout number
+ * Validate or reject a supplier or courier payout number
  */
 export type AdminPayoutNumberAction = {
   action: "validate" | "reject";
@@ -193,21 +211,100 @@ export type AdminWithdrawalAction = {
 };
 
 /**
- * VerifyTopup
+ * RejectCourier
  *
- * FedaPay transaction id reported by the checkout widget; the server re-checks it
+ * Reason shown to the rejected courier applicant
  */
-export type VerifyTopup = {
-  fedapayTransactionId: string;
+export type RejectCourier = {
+  reason: string;
 };
 
 /**
- * WalletTopup
+ * RegisterCourier
  *
- * Amount to add to the wallet, paid through FedaPay
+ * Courier application data
  */
-export type WalletTopup = {
-  amount: number;
+export type RegisterCourier = {
+  fullName: string;
+  phone: string;
+  vehicleType: VehicleType;
+  zone: string;
+  zoneLatitude?: number;
+  zoneLongitude?: number;
+  zoneRadiusKm?: number;
+  identityDocument?: string;
+};
+
+/**
+ * UpdateCourier
+ *
+ * Editable courier profile fields
+ */
+export type UpdateCourier = {
+  fullName?: string;
+  phone?: string;
+  vehicleType?: VehicleType;
+  zone?: string;
+  zoneLatitude?: number;
+  zoneLongitude?: number;
+  zoneRadiusKm?: number;
+  identityDocument?: string;
+};
+
+/**
+ * UpdateCourierAvailability
+ *
+ * Toggle courier availability (online / offline)
+ */
+export type UpdateCourierAvailability = {
+  isAvailable: boolean;
+};
+
+/**
+ * UpdateCourierLocation
+ *
+ * Foreground position update
+ */
+export type UpdateCourierLocation = {
+  latitude: number;
+  longitude: number;
+};
+
+/**
+ * DeliveryTransition
+ *
+ * Common payload for delivery step transitions
+ */
+export type DeliveryTransition = {
+  occurredAt?: Date;
+};
+
+/**
+ * CompleteDelivery
+ *
+ * Proof of delivery: buyer confirmation code or photo
+ */
+export type CompleteDelivery =
+  | {
+      proofType: "CODE";
+      code: string;
+      occurredAt?: Date;
+    }
+  | {
+      proofType: "PHOTO";
+      mediaId: string;
+      occurredAt?: Date;
+    };
+
+/**
+ * FailDelivery
+ *
+ * Report a failed delivery attempt
+ */
+export type FailDelivery = {
+  reason: DeliveryFailReason;
+  comment?: string;
+  occurredAt?: Date;
 };
 
 /**
@@ -335,6 +432,8 @@ export type CreateOrder = {
   pickupMode: PickupMode;
   paymentMethod: PaymentMethod;
   deliveryAddress?: string;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
   deliverySlot?: string;
   promoCode?: string;
   items: Array<OrderItemInput>;
@@ -444,6 +543,15 @@ export type CommissionRates = {
     category: string;
     rate: number;
   }>;
+};
+
+/**
+ * DeliveryCommissionRate
+ *
+ * eBio's share of the delivery fee, as a fraction (0.10 = 10 %); the rest goes to the courier
+ */
+export type DeliveryCommissionRate = {
+  rate: number;
 };
 
 /**
@@ -866,6 +974,12 @@ export type CreateProduct = {
     stock?: number;
   }>;
   mediaIds?: Array<string>;
+  ingredients?: string;
+  allergens?: Array<AllergenCode>;
+  labels?: Array<ProductLabelCode>;
+  origin?: string;
+  conservation?: string;
+  nutritionalValues?: NutritionalValues;
 };
 
 /**
@@ -888,6 +1002,13 @@ export type UpdateProduct = {
     stock?: number;
   }>;
   mediaIds?: Array<string>;
+  ingredients?: string;
+  allergens?: Array<AllergenCode>;
+  labels?: Array<ProductLabelCode>;
+  origin?: string;
+  conservation?: string;
+  nutritionalValues?: NutritionalValues;
+  photos?: Array<string>;
 };
 
 /**
@@ -1441,6 +1562,7 @@ export type SearchResult = {
     id: string;
     name: string;
     photo: string | null;
+    thumbnail: string | null;
     pricePerUnit: number;
     unit: string;
     inStock: boolean;
@@ -1491,6 +1613,7 @@ export const MediaContext = {
   COMMUNITY_MEDIA: "COMMUNITY_MEDIA",
   CATEGORY_IMAGE: "CATEGORY_IMAGE",
   BANNER_IMAGE: "BANNER_IMAGE",
+  DELIVERY_PROOF: "DELIVERY_PROOF",
 } as const;
 
 /**
@@ -1550,6 +1673,45 @@ export type SupplierMode = (typeof SupplierMode)[keyof typeof SupplierMode];
  * IANA timezone the opening hours are expressed in
  */
 export type Timezone = string;
+
+/**
+ * VehicleType
+ *
+ * Vehicle used by the courier
+ */
+export const VehicleType = {
+  MOTO: "MOTO",
+  BICYCLE: "BICYCLE",
+  CAR: "CAR",
+  ON_FOOT: "ON_FOOT",
+} as const;
+
+/**
+ * VehicleType
+ *
+ * Vehicle used by the courier
+ */
+export type VehicleType = (typeof VehicleType)[keyof typeof VehicleType];
+
+/**
+ * DeliveryFailReason
+ *
+ * Why a delivery could not be completed
+ */
+export const DeliveryFailReason = {
+  CUSTOMER_ABSENT: "CUSTOMER_ABSENT",
+  ADDRESS_NOT_FOUND: "ADDRESS_NOT_FOUND",
+  CUSTOMER_REFUSED: "CUSTOMER_REFUSED",
+  OTHER: "OTHER",
+} as const;
+
+/**
+ * DeliveryFailReason
+ *
+ * Why a delivery could not be completed
+ */
+export type DeliveryFailReason =
+  (typeof DeliveryFailReason)[keyof typeof DeliveryFailReason];
 
 /**
  * PromoType
@@ -1945,6 +2107,85 @@ export const ProductStatus = {
 export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus];
 
 /**
+ * AllergenCode
+ *
+ * One of the 14 EU-regulated allergens (canonical code)
+ */
+export const AllergenCode = {
+  GLUTEN: "gluten",
+  CRUSTACEANS: "crustaceans",
+  EGGS: "eggs",
+  FISH: "fish",
+  PEANUTS: "peanuts",
+  SOY: "soy",
+  MILK: "milk",
+  NUTS: "nuts",
+  CELERY: "celery",
+  MUSTARD: "mustard",
+  SESAME: "sesame",
+  SULPHITES: "sulphites",
+  LUPIN: "lupin",
+  MOLLUSCS: "molluscs",
+} as const;
+
+/**
+ * AllergenCode
+ *
+ * One of the 14 EU-regulated allergens (canonical code)
+ */
+export type AllergenCode = (typeof AllergenCode)[keyof typeof AllergenCode];
+
+/**
+ * ProductLabelCode
+ *
+ * Quality / certification label (canonical code)
+ */
+export const ProductLabelCode = {
+  ORGANIC: "organic",
+  ECOCERT: "ecocert",
+  LOCAL: "local",
+  FAIR_TRADE: "fair-trade",
+  GMO_FREE: "gmo-free",
+  HANDMADE: "handmade",
+  ARTISANAL: "artisanal",
+  VEGAN: "vegan",
+  VEGETARIAN: "vegetarian",
+  GLUTEN_FREE: "gluten-free",
+  LACTOSE_FREE: "lactose-free",
+  SUGAR_FREE: "sugar-free",
+} as const;
+
+/**
+ * ProductLabelCode
+ *
+ * Quality / certification label (canonical code)
+ */
+export type ProductLabelCode =
+  (typeof ProductLabelCode)[keyof typeof ProductLabelCode];
+
+/**
+ * NutritionalValues
+ *
+ * Valeurs nutritionnelles pour 100 g / 100 ml
+ */
+export type NutritionalValues = {
+  /**
+   * NutritionBasis
+   *
+   * Reference quantity the nutritional values are given for
+   */
+  basis: "100g" | "100ml";
+  energyKcal?: number;
+  fat?: number;
+  saturatedFat?: number;
+  carbohydrates?: number;
+  sugars?: number;
+  fiber?: number;
+  protein?: number;
+  salt?: number;
+};
+
+/**
  * SearchProductsQuery
  *
  * Geolocation-based product search
@@ -2232,6 +2473,20 @@ export type OtpAuthControllerVerifyPasswordResetData = {
 };
 
 export type OtpAuthControllerVerifyPasswordResetResponses = {
+  201: unknown;
+};
+
+export type OtpAuthControllerChangePasswordData = {
+  body: {
+    currentPassword: string;
+    newPassword: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/change-password";
+};
+
+export type OtpAuthControllerChangePasswordResponses = {
   201: unknown;
 };
 
@@ -4393,7 +4648,8 @@ export type MediaControllerInitiateUploadData = {
       | "TRAINING_THUMBNAIL"
       | "COMMUNITY_MEDIA"
       | "CATEGORY_IMAGE"
-      | "BANNER_IMAGE";
+      | "BANNER_IMAGE"
+      | "DELIVERY_PROOF";
     entityType?: string;
     entityId?: string;
     parts: number;
@@ -4510,7 +4766,9 @@ export type NotificationsControllerUnregisterTokenResponses = {
 export type NotificationsControllerGetUnreadData = {
   body?: never;
   path?: never;
-  query?: never;
+  query: {
+    audience: string;
+  };
   url: "/api/notifications/unread";
 };
 
@@ -4521,7 +4779,9 @@ export type NotificationsControllerGetUnreadResponses = {
 export type NotificationsControllerGetAllData = {
   body?: never;
   path?: never;
-  query?: never;
+  query: {
+    audience: string;
+  };
   url: "/api/notifications";
 };
 
@@ -4532,7 +4792,9 @@ export type NotificationsControllerGetAllResponses = {
 export type NotificationsControllerGetUnreadCountData = {
   body?: never;
   path?: never;
-  query?: never;
+  query: {
+    audience: string;
+  };
   url: "/api/notifications/count";
 };
 
@@ -4744,6 +5006,161 @@ export type SupplierWalletControllerCancelWithdrawalResponses = {
   200: unknown;
 };
 
+export type CourierWalletControllerGetWalletData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/couriers/me/wallet";
+};
+
+export type CourierWalletControllerGetWalletResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerListNumbersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/payout-numbers";
+};
+
+export type CourierWalletControllerListNumbersResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerAddNumberData = {
+  /**
+   * CreatePayoutNumber
+   *
+   * Mobile Money number to receive withdrawals; operator is derived from the prefix
+   */
+  body: {
+    phoneNumber: string;
+    holderName: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/payout-numbers";
+};
+
+export type CourierWalletControllerAddNumberResponses = {
+  201: unknown;
+};
+
+export type CourierWalletControllerRemoveNumberData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/couriers/me/wallet/payout-numbers/{id}";
+};
+
+export type CourierWalletControllerRemoveNumberResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerListWithdrawalsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/couriers/me/wallet/withdrawals";
+};
+
+export type CourierWalletControllerListWithdrawalsResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerRequestWithdrawalData = {
+  /**
+   * CreateWithdrawal
+   *
+   * Withdrawal request; funds are reserved immediately
+   */
+  body: {
+    payoutNumberId: string;
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/withdrawals";
+};
+
+export type CourierWalletControllerRequestWithdrawalResponses = {
+  201: unknown;
+};
+
+export type CourierWalletControllerCancelWithdrawalData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/couriers/me/wallet/withdrawals/{id}/cancel";
+};
+
+export type CourierWalletControllerCancelWithdrawalResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerTopupData = {
+  /**
+   * WalletTopup
+   *
+   * Amount to add to the wallet, paid through FedaPay
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/topup";
+};
+
+export type CourierWalletControllerTopupResponses = {
+  201: unknown;
+};
+
+export type CourierWalletControllerListTopupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/couriers/me/wallet/topups";
+};
+
+export type CourierWalletControllerListTopupsResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerVerifyTopupData = {
+  /**
+   * VerifyTopup
+   *
+   * FedaPay transaction id reported by the checkout widget; the server re-checks it
+   */
+  body: {
+    fedapayTransactionId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/couriers/me/wallet/topups/{id}/verify";
+};
+
+export type CourierWalletControllerVerifyTopupResponses = {
+  201: unknown;
+};
+
 export type WalletAdminControllerListNumbersData = {
   body?: never;
   path?: never;
@@ -4763,7 +5180,7 @@ export type WalletAdminControllerActOnNumberData = {
   /**
    * AdminPayoutNumberAction
    *
-   * Validate or reject a supplier payout number
+   * Validate or reject a supplier or courier payout number
    */
   body: {
     action: "validate" | "reject";
@@ -4910,6 +5327,60 @@ export type ProductsControllerCreateData = {
       stock?: number;
     }>;
     mediaIds?: Array<string>;
+    ingredients?: string;
+    allergens?: Array<
+      | "gluten"
+      | "crustaceans"
+      | "eggs"
+      | "fish"
+      | "peanuts"
+      | "soy"
+      | "milk"
+      | "nuts"
+      | "celery"
+      | "mustard"
+      | "sesame"
+      | "sulphites"
+      | "lupin"
+      | "molluscs"
+    >;
+    labels?: Array<
+      | "organic"
+      | "ecocert"
+      | "local"
+      | "fair-trade"
+      | "gmo-free"
+      | "handmade"
+      | "artisanal"
+      | "vegan"
+      | "vegetarian"
+      | "gluten-free"
+      | "lactose-free"
+      | "sugar-free"
+    >;
+    origin?: string;
+    conservation?: string;
+    /**
+     * NutritionalValues
+     *
+     * Valeurs nutritionnelles pour 100 g / 100 ml
+     */
+    nutritionalValues?: {
+      /**
+       * NutritionBasis
+       *
+       * Reference quantity the nutritional values are given for
+       */
+      basis: "100g" | "100ml";
+      energyKcal?: number;
+      fat?: number;
+      saturatedFat?: number;
+      carbohydrates?: number;
+      sugars?: number;
+      fiber?: number;
+      protein?: number;
+      salt?: number;
+    };
   };
   path?: never;
   query?: never;
@@ -4964,6 +5435,61 @@ export type ProductsControllerUpdateData = {
       stock?: number;
     }>;
     mediaIds?: Array<string>;
+    ingredients?: string;
+    allergens?: Array<
+      | "gluten"
+      | "crustaceans"
+      | "eggs"
+      | "fish"
+      | "peanuts"
+      | "soy"
+      | "milk"
+      | "nuts"
+      | "celery"
+      | "mustard"
+      | "sesame"
+      | "sulphites"
+      | "lupin"
+      | "molluscs"
+    >;
+    labels?: Array<
+      | "organic"
+      | "ecocert"
+      | "local"
+      | "fair-trade"
+      | "gmo-free"
+      | "handmade"
+      | "artisanal"
+      | "vegan"
+      | "vegetarian"
+      | "gluten-free"
+      | "lactose-free"
+      | "sugar-free"
+    >;
+    origin?: string;
+    conservation?: string;
+    /**
+     * NutritionalValues
+     *
+     * Valeurs nutritionnelles pour 100 g / 100 ml
+     */
+    nutritionalValues?: {
+      /**
+       * NutritionBasis
+       *
+       * Reference quantity the nutritional values are given for
+       */
+      basis: "100g" | "100ml";
+      energyKcal?: number;
+      fat?: number;
+      saturatedFat?: number;
+      carbohydrates?: number;
+      sugars?: number;
+      fiber?: number;
+      protein?: number;
+      salt?: number;
+    };
+    photos?: Array<string>;
   };
   path: {
     id: string;
@@ -4993,6 +5519,19 @@ export type ProductsControllerUpdateStockData = {
 };
 
 export type ProductsControllerUpdateStockResponses = {
+  200: unknown;
+};
+
+export type ProductsControllerClearPromotionData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}/promotion";
+};
+
+export type ProductsControllerClearPromotionResponses = {
   200: unknown;
 };
 
@@ -5232,6 +5771,8 @@ export type OrdersControllerCreateData = {
      */
     paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
     deliveryAddress?: string;
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
     deliverySlot?: string;
     promoCode?: string;
     items: Array<{
@@ -5673,6 +6214,392 @@ export type PaymentMethodPublicControllerGetAvailableResponses = {
 export type PaymentMethodPublicControllerGetAvailableResponse =
   PaymentMethodPublicControllerGetAvailableResponses[keyof PaymentMethodPublicControllerGetAvailableResponses];
 
+export type CouriersControllerRegisterData = {
+  /**
+   * RegisterCourier
+   *
+   * Courier application data
+   */
+  body: {
+    fullName: string;
+    phone: string;
+    /**
+     * VehicleType
+     *
+     * Vehicle used by the courier
+     */
+    vehicleType: "MOTO" | "BICYCLE" | "CAR" | "ON_FOOT";
+    zone: string;
+    zoneLatitude?: number;
+    zoneLongitude?: number;
+    zoneRadiusKm?: number;
+    identityDocument?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/register";
+};
+
+export type CouriersControllerRegisterResponses = {
+  201: unknown;
+};
+
+export type CouriersControllerMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me";
+};
+
+export type CouriersControllerMeResponses = {
+  200: unknown;
+};
+
+export type CouriersControllerUpdateMeData = {
+  /**
+   * UpdateCourier
+   *
+   * Editable courier profile fields
+   */
+  body: {
+    fullName?: string;
+    phone?: string;
+    /**
+     * VehicleType
+     *
+     * Vehicle used by the courier
+     */
+    vehicleType?: "MOTO" | "BICYCLE" | "CAR" | "ON_FOOT";
+    zone?: string;
+    zoneLatitude?: number;
+    zoneLongitude?: number;
+    zoneRadiusKm?: number;
+    identityDocument?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me";
+};
+
+export type CouriersControllerUpdateMeResponses = {
+  200: unknown;
+};
+
+export type CouriersControllerSetAvailabilityData = {
+  /**
+   * UpdateCourierAvailability
+   *
+   * Toggle courier availability (online / offline)
+   */
+  body: {
+    isAvailable: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/availability";
+};
+
+export type CouriersControllerSetAvailabilityResponses = {
+  200: unknown;
+};
+
+export type CouriersControllerUpdateLocationData = {
+  /**
+   * UpdateCourierLocation
+   *
+   * Foreground position update
+   */
+  body: {
+    latitude: number;
+    longitude: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/location";
+};
+
+export type CouriersControllerUpdateLocationResponses = {
+  200: unknown;
+};
+
+export type DeliveriesControllerOffersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/deliveries/offers";
+};
+
+export type DeliveriesControllerOffersResponses = {
+  200: unknown;
+};
+
+export type DeliveriesControllerMineData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+  };
+  url: "/api/deliveries/mine";
+};
+
+export type DeliveriesControllerMineResponses = {
+  200: unknown;
+};
+
+export type DeliveriesControllerByOrderData = {
+  body?: never;
+  path: {
+    orderId: string;
+  };
+  query?: never;
+  url: "/api/deliveries/by-order/{orderId}";
+};
+
+export type DeliveriesControllerByOrderResponses = {
+  200: unknown;
+};
+
+export type DeliveriesControllerByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}";
+};
+
+export type DeliveriesControllerByIdResponses = {
+  200: unknown;
+};
+
+export type DeliveriesControllerAcceptData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/accept";
+};
+
+export type DeliveriesControllerAcceptResponses = {
+  201: unknown;
+};
+
+export type DeliveriesControllerPickupData = {
+  /**
+   * DeliveryTransition
+   *
+   * Common payload for delivery step transitions
+   */
+  body: {
+    occurredAt?: Date;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/pickup";
+};
+
+export type DeliveriesControllerPickupResponses = {
+  201: unknown;
+};
+
+export type DeliveriesControllerStartData = {
+  /**
+   * DeliveryTransition
+   *
+   * Common payload for delivery step transitions
+   */
+  body: {
+    occurredAt?: Date;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/start";
+};
+
+export type DeliveriesControllerStartResponses = {
+  201: unknown;
+};
+
+export type DeliveriesControllerCompleteData = {
+  /**
+   * CompleteDelivery
+   *
+   * Proof of delivery: buyer confirmation code or photo
+   */
+  body:
+    | {
+        proofType: "CODE";
+        code: string;
+        occurredAt?: Date;
+      }
+    | {
+        proofType: "PHOTO";
+        mediaId: string;
+        occurredAt?: Date;
+      };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/complete";
+};
+
+export type DeliveriesControllerCompleteResponses = {
+  201: unknown;
+};
+
+export type DeliveriesControllerFailData = {
+  /**
+   * FailDelivery
+   *
+   * Report a failed delivery attempt
+   */
+  body: {
+    /**
+     * DeliveryFailReason
+     *
+     * Why a delivery could not be completed
+     */
+    reason:
+      | "CUSTOMER_ABSENT"
+      | "ADDRESS_NOT_FOUND"
+      | "CUSTOMER_REFUSED"
+      | "OTHER";
+    comment?: string;
+    occurredAt?: Date;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/fail";
+};
+
+export type DeliveriesControllerFailResponses = {
+  201: unknown;
+};
+
+export type DeliveriesControllerRebroadcastData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/rebroadcast";
+};
+
+export type DeliveriesControllerRebroadcastResponses = {
+  201: unknown;
+};
+
+export type AdminCouriersControllerListData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/couriers";
+};
+
+export type AdminCouriersControllerListResponses = {
+  200: unknown;
+};
+
+export type AdminCouriersControllerGetByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/couriers/{id}";
+};
+
+export type AdminCouriersControllerGetByIdResponses = {
+  200: unknown;
+};
+
+export type AdminCouriersControllerApproveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/couriers/{id}/approve";
+};
+
+export type AdminCouriersControllerApproveResponses = {
+  201: unknown;
+};
+
+export type AdminCouriersControllerRejectData = {
+  /**
+   * RejectCourier
+   *
+   * Reason shown to the rejected courier applicant
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/couriers/{id}/reject";
+};
+
+export type AdminCouriersControllerRejectResponses = {
+  201: unknown;
+};
+
+export type AdminCouriersControllerSuspendData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/couriers/{id}/suspend";
+};
+
+export type AdminCouriersControllerSuspendResponses = {
+  201: unknown;
+};
+
+export type AdminCouriersControllerReactivateData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/couriers/{id}/reactivate";
+};
+
+export type AdminCouriersControllerReactivateResponses = {
+  201: unknown;
+};
+
+export type AdminCouriersControllerListDeliveriesData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    courierId: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/deliveries";
+};
+
+export type AdminCouriersControllerListDeliveriesResponses = {
+  200: unknown;
+};
+
 export type ChatControllerGetConversationsData = {
   body?: never;
   path?: never;
@@ -5704,6 +6631,19 @@ export type ChatControllerCreateConversationResponses = {
   201: unknown;
 };
 
+export type ChatControllerCreateDeliveryConversationData = {
+  body?: never;
+  path: {
+    deliveryId: string;
+  };
+  query?: never;
+  url: "/api/chat/conversations/delivery/{deliveryId}";
+};
+
+export type ChatControllerCreateDeliveryConversationResponses = {
+  201: unknown;
+};
+
 export type ChatControllerGetMessagesData = {
   body?: never;
   path: {
@@ -5717,6 +6657,17 @@ export type ChatControllerGetMessagesData = {
 };
 
 export type ChatControllerGetMessagesResponses = {
+  200: unknown;
+};
+
+export type ChatControllerGetUnreadCountData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/chat/unread-count";
+};
+
+export type ChatControllerGetUnreadCountResponses = {
   200: unknown;
 };
 
@@ -6410,6 +7361,24 @@ export type AdminControllerUpdateCommissionsData = {
 };
 
 export type AdminControllerUpdateCommissionsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateDeliveryCommissionData = {
+  /**
+   * DeliveryCommissionRate
+   *
+   * eBio's share of the delivery fee, as a fraction (0.10 = 10 %); the rest goes to the courier
+   */
+  body: {
+    rate: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings/delivery-commission";
+};
+
+export type AdminControllerUpdateDeliveryCommissionResponses = {
   200: unknown;
 };
 

@@ -56,6 +56,13 @@ export class Order {
   @Property({ fieldName: 'delivery_address', nullable: true })
   deliveryAddress?: string
 
+  // Drop-off point picked on the map at checkout — what the courier navigates to.
+  @Property({ fieldName: 'delivery_latitude', type: 'float', nullable: true })
+  deliveryLatitude?: number
+
+  @Property({ fieldName: 'delivery_longitude', type: 'float', nullable: true })
+  deliveryLongitude?: number
+
   @Property({ fieldName: 'delivery_slot', nullable: true, length: 200 })
   deliverySlot?: string
 

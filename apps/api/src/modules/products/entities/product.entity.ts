@@ -1,4 +1,5 @@
 import type { Rel } from '@mikro-orm/core'
+import type { AllergenCode, LabelCode } from '../composition.constants'
 import {
   Entity,
   Enum,
@@ -18,10 +19,24 @@ export enum ProductStatus {
   HIDDEN = 'HIDDEN',
 }
 
+/** Nutrition facts per 100 g / 100 ml, every entry optional. */
+export interface NutritionalValues {
+  /** Reference quantity; defaults to 100 g when absent (legacy rows). */
+  basis?: '100g' | '100ml'
+  energyKcal?: number
+  fat?: number
+  saturatedFat?: number
+  carbohydrates?: number
+  sugars?: number
+  fiber?: number
+  protein?: number
+  salt?: number
+}
+
 @Entity({ tableName: 'products' })
 @Index({ properties: ['supplier', 'category', 'status'] })
 export class Product {
-  [OptionalProps]?: 'id' | 'photos' | 'stock' | 'stockAlertThreshold' | 'status' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'photos' | 'stock' | 'stockAlertThreshold' | 'status' | 'allergens' | 'labels' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -63,6 +78,31 @@ export class Product {
 
   @Enum({ items: () => ProductStatus, default: ProductStatus.ACTIVE })
   status: ProductStatus = ProductStatus.ACTIVE
+
+  // ===== Composition / product sheet =====
+
+  /** Free-text ingredient list, as printed on the label. */
+  @Property({ type: 'text', nullable: true })
+  ingredients?: string
+
+  /** Canonical allergen codes (see composition.constants.ts), GIN-indexed. */
+  @Property({ type: 'jsonb', default: '[]' })
+  allergens: AllergenCode[] = []
+
+  /** Canonical label codes (e.g. `organic`, `ecocert`), GIN-indexed. */
+  @Property({ type: 'jsonb', default: '[]' })
+  labels: LabelCode[] = []
+
+  /** Provenance (e.g. « Bénin, Atacora »). */
+  @Property({ nullable: true })
+  origin?: string
+
+  /** Storage advice shown on the product page. */
+  @Property({ type: 'text', nullable: true })
+  conservation?: string
+
+  @Property({ type: 'jsonb', fieldName: 'nutritional_values', nullable: true })
+  nutritionalValues?: NutritionalValues
 
   @Property({ fieldName: 'promotional_price', type: 'float', nullable: true })
   promotionalPrice?: number

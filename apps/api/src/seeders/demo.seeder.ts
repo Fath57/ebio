@@ -22,6 +22,7 @@ import { Badge, BadgeType } from '../modules/ratings/entities/badge.entity'
 import { Review, TransactionType } from '../modules/ratings/entities/review.entity'
 import { Supplier, SupplierMode, SupplierType, ValidationStatus } from '../modules/suppliers/supplier.entity'
 import { TrainingFormat, TrainingModule } from '../modules/training/entities/training-module.entity'
+import { PRODUCT_COMPOSITION } from './data/product-composition'
 
 const DEMO_PASSWORD = 'Password123!'
 
@@ -543,11 +544,18 @@ export class DemoSeeder extends Seeder {
     promoDays?: number,
     status?: ProductStatus,
   ): Product {
+    const composition = PRODUCT_COMPOSITION[name]
     return em.create(Product, {
       supplier,
       category,
       name,
-      description,
+      description: composition?.description ?? description,
+      ingredients: composition?.ingredients,
+      allergens: composition?.allergens ?? [],
+      labels: composition?.labels ?? [],
+      origin: composition?.origin,
+      conservation: composition?.conservation,
+      nutritionalValues: composition?.nutritionalValues,
       pricePerUnit: price,
       unit,
       stock,

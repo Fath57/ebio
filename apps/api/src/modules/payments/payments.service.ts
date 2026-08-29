@@ -7,6 +7,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { config } from '../../config/env.config'
+import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, PaymentMethod as OrderPaymentMethod, OrderStatus } from '../orders/entities/order.entity'
@@ -374,7 +375,21 @@ export class PaymentsService {
       throw new BadRequestException(`Cannot release escrow for payment in status ${payment.status}`)
     }
 
-    const supplierAmount = payment.amount - payment.order.commissionAmount
+    // A platform courier delivered this order: the delivery fee the buyer paid
+    // was already split at completion between the courier (DELIVERY_EARNING)
+    // and eBio, so it is not the shop's money. Self-delivered orders keep the
+    // fee in the shop credit. Entity-only lookup: PaymentsModule must not
+    // depend on DeliveriesModule.
+    const courierDelivery = await this.em.findOne(Delivery, {
+      order: { id: payment.order.id },
+      status: DeliveryStatus.DELIVERED,
+      courier: { $ne: null },
+    })
+    const courierDeliveryFee = courierDelivery ? payment.order.deliveryFee : 0
+    const supplierAmount = Math.max(
+      0,
+      Math.round((payment.amount - payment.order.commissionAmount - courierDeliveryFee) * 100) / 100,
+    )
 
     // The money already sits on the platform account: releasing the escrow is
     // an internal credit to the shop wallet. The supplier withdraws it later

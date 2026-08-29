@@ -39,7 +39,7 @@ export class SupplierWalletController {
   @Get('payout-numbers')
   async listNumbers(@Session() session: LoggedInBetterAuthSession) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    return this.withdrawalsService.listNumbers(supplier.id)
+    return this.withdrawalsService.listNumbers({ supplierId: supplier.id })
   }
 
   @Post('payout-numbers')
@@ -48,7 +48,7 @@ export class SupplierWalletController {
     @TypedBody(createPayoutNumberSchema) body: CreatePayoutNumberInput,
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    return this.withdrawalsService.addNumber(supplier.id, body)
+    return this.withdrawalsService.addNumber({ supplierId: supplier.id }, body)
   }
 
   @Delete('payout-numbers/:id')
@@ -57,7 +57,7 @@ export class SupplierWalletController {
     @Param('id') id: string,
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    await this.withdrawalsService.removeNumber(supplier.id, id)
+    await this.withdrawalsService.removeNumber({ supplierId: supplier.id }, id)
     return { success: true }
   }
 
@@ -68,7 +68,7 @@ export class SupplierWalletController {
     @Query('limit') limit: string = '20',
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    return this.withdrawalsService.listWithdrawals(supplier.id, Number(page), Number(limit))
+    return this.withdrawalsService.listWithdrawals({ supplierId: supplier.id }, Number(page), Number(limit))
   }
 
   @Post('withdrawals')
@@ -77,7 +77,7 @@ export class SupplierWalletController {
     @TypedBody(createWithdrawalSchema) body: CreateWithdrawalInput,
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    return this.withdrawalsService.requestWithdrawal(supplier.id, body)
+    return this.withdrawalsService.requestWithdrawal({ supplierId: supplier.id }, body)
   }
 
   @Patch('withdrawals/:id/cancel')
@@ -86,6 +86,6 @@ export class SupplierWalletController {
     @Param('id') id: string,
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    return this.withdrawalsService.cancelWithdrawal(supplier.id, id)
+    return this.withdrawalsService.cancelWithdrawal({ supplierId: supplier.id }, id)
   }
 }

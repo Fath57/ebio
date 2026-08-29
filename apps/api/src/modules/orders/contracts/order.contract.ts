@@ -44,6 +44,8 @@ export const createOrderSchema = z.object({
   pickupMode: pickupModeEnum,
   paymentMethod: paymentMethodEnum,
   deliveryAddress: z.string().min(5).max(500).optional(),
+  deliveryLatitude: z.number().min(-90).max(90).optional(),
+  deliveryLongitude: z.number().min(-180).max(180).optional(),
   deliverySlot: z.string().max(200).optional(),
   promoCode: z.string().min(1).max(30).optional(),
   items: z.array(orderItemInputSchema).min(1),
@@ -89,6 +91,7 @@ export const orderItemSchema = z.object({
   productId: z.string().uuid(),
   productName: z.string(),
   productPhoto: z.string().url().nullable(),
+  productThumbnail: z.string().url().nullable(),
   variantId: z.string().uuid().nullable(),
   variantLabel: z.string().nullable(),
   quantity: z.number(),
@@ -97,6 +100,17 @@ export const orderItemSchema = z.object({
 }).meta({
   title: 'OrderItem',
   description: 'An item within an order response',
+})
+
+/** Live courier run attached to an order, for lists and cards (null = none). */
+export const orderDeliverySummarySchema = z.object({
+  status: z.enum(['AWAITING_COURIER', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'CANCELLED']),
+  courierName: z.string().nullable(),
+  courierVehicleType: z.enum(['MOTO', 'BICYCLE', 'CAR', 'ON_FOOT']).nullable(),
+  updatedAt: z.string().datetime(),
+}).meta({
+  title: 'OrderDeliverySummary',
+  description: 'Current delivery run of an order (shared fleet)',
 })
 
 export const orderResponseSchema = z.object({
@@ -110,6 +124,8 @@ export const orderResponseSchema = z.object({
   pickupMode: pickupModeEnum,
   paymentMethod: paymentMethodEnum,
   deliveryAddress: z.string().nullable(),
+  deliveryLatitude: z.number().nullable(),
+  deliveryLongitude: z.number().nullable(),
   deliverySlot: z.string().nullable(),
   deliveryFee: z.number(),
   totalAmount: z.number(),
@@ -122,6 +138,7 @@ export const orderResponseSchema = z.object({
   deliveredAt: z.string().datetime().nullable(),
   escrowReleasedAt: z.string().datetime().nullable(),
   items: z.array(orderItemSchema),
+  delivery: orderDeliverySummarySchema.nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({
@@ -149,4 +166,5 @@ export type RejectOrder = z.infer<typeof rejectOrderSchema>
 export type CreateDispute = z.infer<typeof createDisputeSchema>
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>
 export type OrderResponse = z.infer<typeof orderResponseSchema>
+export type OrderDeliverySummary = z.infer<typeof orderDeliverySummarySchema>
 export type DisputeResponse = z.infer<typeof disputeResponseSchema>

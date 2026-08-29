@@ -1,6 +1,7 @@
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
+import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { Supplier } from '../suppliers/supplier.entity'
 import { WalletTransaction, WalletTransactionType } from './entities/wallet-transaction.entity'
 import { Wallet } from './entities/wallet.entity'
@@ -13,13 +14,16 @@ export interface WalletMovement {
   orderId?: string
   paymentId?: string
   withdrawalId?: string
-  /** COMMISSION_DEBIT may push the balance below zero (cash-order debt). */
+  deliveryId?: string
+  /** COMMISSION_DEBIT / DELIVERY_COMMISSION may push the balance below zero (cash debt). */
   allowNegative?: boolean
 }
 
+/** Exactly one of the three ids: personal, shop or courier wallet. */
 export interface WalletOwner {
   userId?: string
   supplierId?: string
+  courierId?: string
 }
 
 /**
@@ -37,7 +41,9 @@ export class WalletService {
   async getOrCreate(owner: WalletOwner): Promise<Wallet> {
     const where = owner.supplierId
       ? { supplier: { id: owner.supplierId } }
-      : { user: { id: owner.userId } }
+      : owner.courierId
+        ? { courier: { id: owner.courierId } }
+        : { user: { id: owner.userId } }
 
     let wallet = await this.em.findOne(Wallet, where)
     if (!wallet) {
@@ -46,7 +52,9 @@ export class WalletService {
       try {
         wallet = this.em.create(Wallet, owner.supplierId
           ? { supplier: this.em.getReference(Supplier, owner.supplierId) }
-          : { user: this.em.getReference(User, owner.userId!) })
+          : owner.courierId
+            ? { courier: this.em.getReference(CourierProfile, owner.courierId) }
+            : { user: this.em.getReference(User, owner.userId!) })
         await this.em.persistAndFlush(wallet)
       }
       catch {
@@ -107,6 +115,7 @@ export class WalletService {
         order: movement.orderId ?? null,
         payment: movement.paymentId ?? null,
         withdrawalId: movement.withdrawalId ?? null,
+        deliveryId: movement.deliveryId ?? null,
         description: movement.description,
       })
 
@@ -122,6 +131,7 @@ export class WalletService {
       balanceAfter: number
       description: string
       orderId: string | null
+      deliveryId: string | null
       createdAt: string
     }>
     total: number
@@ -141,6 +151,7 @@ export class WalletService {
         balanceAfter: Number(row.balanceAfter),
         description: row.description,
         orderId: row.order?.id ?? null,
+        deliveryId: row.deliveryId ?? null,
         createdAt: row.createdAt.toISOString(),
       })),
       total,

@@ -25,6 +25,10 @@ export class DeviceToken {
   @Property()
   platform!: string
 
+  /** Which eBio app registered the token (client | supplier | courier); null for legacy rows. */
+  @Property({ nullable: true, length: 16 })
+  app?: string
+
   @Property({ fieldName: 'createdAt' })
   createdAt: Date = new Date()
 

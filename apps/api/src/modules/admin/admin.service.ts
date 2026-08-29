@@ -24,6 +24,7 @@ import { NotificationChannel, NotificationType } from '../notifications/notifica
 import { NotificationsService } from '../notifications/notifications.service'
 import { Dispute, DisputeStatus } from '../orders/entities/dispute.entity'
 import { CommissionService } from '../payments/commission.service'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, ValidationStatus } from '../suppliers/supplier.entity'
 import { ContentReport, ReportStatus, ReportTargetType } from './entities/content-report.entity'
 
@@ -64,6 +65,7 @@ export class AdminService {
     private readonly emailService: EmailService,
     private readonly mediaService: MediaService,
     private readonly commissionService: CommissionService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   async getDashboardKpis(): Promise<DashboardKpi> {
@@ -541,15 +543,20 @@ export class AdminService {
        LEFT JOIN commission_rates cr ON cr.category_slug = c.slug
        ORDER BY c.name`,
     )
-    return { commissions }
+    const deliveryCommissionRate = await this.platformSettings.getDeliveryCommissionRate()
+    return { commissions, deliveryCommissionRate }
+  }
+
+  async updateDeliveryCommissionRate(rate: number): Promise<void> {
+    await this.platformSettings.setDeliveryCommissionRate(rate)
   }
 
   async updateCommissionRates(input: CommissionRates): Promise<void> {
     for (const { category, rate } of input.rates) {
       await this.em.getConnection().execute(
-        `INSERT INTO commission_rates (category_slug, rate, "updatedAt")
+        `INSERT INTO commission_rates (category_slug, rate, updated_at)
          VALUES (?, ?, NOW())
-         ON CONFLICT (category_slug) DO UPDATE SET rate = EXCLUDED.rate, "updatedAt" = NOW()`,
+         ON CONFLICT (category_slug) DO UPDATE SET rate = EXCLUDED.rate, updated_at = NOW()`,
         [category, rate],
       )
     }

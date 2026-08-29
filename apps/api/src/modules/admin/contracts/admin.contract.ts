@@ -178,6 +178,13 @@ export const commissionRateSchema = z.object({
   description: 'Commission rates per product category, as fractions',
 })
 
+export const deliveryCommissionSchema = z.object({
+  rate: z.number().min(0).max(0.5),
+}).meta({
+  title: 'DeliveryCommissionRate',
+  description: 'eBio\'s share of the delivery fee, as a fraction (0.10 = 10 %); the rest goes to the courier',
+})
+
 export const supplierCommissionRateSchema = z.object({
   rate: z.number().min(0).max(0.5).nullable(),
 }).meta({
@@ -267,6 +274,7 @@ export type DisputeList = z.infer<typeof disputeListSchema>
 export type DisputeResolutionInput = z.infer<typeof disputeResolutionSchema>
 export type BroadcastNotification = z.infer<typeof broadcastNotificationSchema>
 export type CommissionRates = z.infer<typeof commissionRateSchema>
+export type DeliveryCommissionRateInput = z.infer<typeof deliveryCommissionSchema>
 export type SupplierCommissionRateInput = z.infer<typeof supplierCommissionRateSchema>
 export type CommissionSummary = z.infer<typeof commissionSummarySchema>
 export type CommissionOrderList = z.infer<typeof commissionOrderListSchema>

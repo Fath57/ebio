@@ -13,7 +13,10 @@ import {
 import * as jwt from 'jsonwebtoken'
 import { Server, Socket } from 'socket.io'
 import { config } from '../../config/env.config'
+import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
+import { NotificationsService } from '../notifications/notifications.service'
 import { ChatService } from './chat.service'
+import { wsSendMessageSchema } from './contracts/chat.contract'
 import { Conversation } from './entities/conversation.entity'
 import { MessageType } from './entities/message.entity'
 
@@ -40,6 +43,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   constructor(
     private readonly chatService: ChatService,
     private readonly em: EntityManager,
+    private readonly notificationsService: NotificationsService,
   ) {}
 
   async handleConnection(client: AuthenticatedSocket): Promise<void> {
@@ -75,31 +79,30 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
   @SubscribeMessage('chat:send')
   async handleSendMessage(
     @ConnectedSocket() client: AuthenticatedSocket,
-    @MessageBody() data: {
-      conversationId: string
-      type: string
-      content?: string
-      mediaUrl?: string
-      latitude?: number
-      longitude?: number
-    },
-  ): Promise<{ success: boolean, error?: string }> {
+    @MessageBody() raw: unknown,
+  ): Promise<{ success: boolean, message?: Record<string, unknown>, error?: string }> {
     try {
       const { userId } = client.data
 
-      const validTypes = Object.values(MessageType)
-      if (!validTypes.includes(data.type as MessageType)) {
-        return { success: false, error: 'Invalid message type' }
+      // The WS path bypasses nzoth, so the contract is applied by hand —
+      // unbounded content used to go straight to the database.
+      const parsed = wsSendMessageSchema.safeParse(raw)
+      if (!parsed.success) {
+        return { success: false, error: 'Message invalide' }
       }
+      const data = parsed.data
 
       const message = await this.chatService.sendMessage(
         data.conversationId,
         userId,
-        data.type as MessageType,
-        data.content,
-        data.mediaUrl,
-        data.latitude,
-        data.longitude,
+        {
+          type: data.type as MessageType,
+          content: data.content,
+          mediaUrl: data.mediaUrl,
+          durationMs: data.durationMs,
+          latitude: data.latitude,
+          longitude: data.longitude,
+        },
       )
 
       const messagePayload = {
@@ -110,6 +113,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         type: message.type,
         content: message.content ?? null,
         mediaUrl: message.mediaUrl ?? null,
+        durationMs: message.durationMs ?? null,
         latitude: message.latitude ?? null,
         longitude: message.longitude ?? null,
         readAt: null,
@@ -120,11 +124,90 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         .to(`conversation:${data.conversationId}`)
         .emit('chat:message', messagePayload)
 
-      return { success: true }
+      await this.pushToOfflineRecipient(data.conversationId, userId, message.sender.name, message.type, message.content)
+
+      // The ack carries the persisted message so the sender can reconcile its
+      // optimistic bubble (real id, server timestamp).
+      return { success: true, message: messagePayload }
     }
     catch (error) {
       this.logger.error(`chat:send error — ${error}`)
       return { success: false, error: 'Failed to send message' }
+    }
+  }
+
+  /**
+   * Push NEW_MESSAGE unless the recipient has a live socket in the room —
+   * being connected means the message just arrived over the socket.
+   */
+  private async pushToOfflineRecipient(
+    conversationId: string,
+    senderId: string,
+    senderName: string,
+    type: MessageType,
+    content?: string,
+  ): Promise<void> {
+    try {
+      const recipient = await this.chatService.getRecipientInfo(conversationId, senderId)
+      if (!recipient) {
+        return
+      }
+
+      const sockets = await this.server.in(`conversation:${conversationId}`).fetchSockets()
+      const recipientOnline = sockets.some(s => (s.data as { userId?: string }).userId === recipient.user.id)
+      if (recipientOnline) {
+        return
+      }
+
+      const preview = type === MessageType.PHOTO
+        ? '📷 Photo'
+        : type === MessageType.VOICE
+          ? '🎤 Note vocale'
+          : content ?? ''
+
+      await this.notificationsService.send({
+        user: recipient.user,
+        type: NotificationType.NEW_MESSAGE,
+        title: senderName,
+        body: preview.slice(0, 120),
+        // peerName lets the tap land directly on the thread with its header;
+        // kind + deliveryId let the courier/client apps open the right screen
+        data: {
+          conversationId,
+          peerName: senderName,
+          kind: recipient.kind,
+          deliveryId: recipient.deliveryId ?? '',
+        },
+        channels: [NotificationChannel.PUSH],
+        // Only the app matching the recipient's seat in this thread
+        apps: recipient.apps,
+      })
+    }
+    catch (error) {
+      // A failed push must never fail the message send
+      this.logger.warn(`NEW_MESSAGE push failed for conversation ${conversationId} — ${error}`)
+    }
+  }
+
+  /**
+   * Joins a conversation created after the socket connected (rooms are
+   * otherwise only joined at handshake). Membership is verified server-side.
+   */
+  @SubscribeMessage('chat:join')
+  async handleJoin(
+    @ConnectedSocket() client: AuthenticatedSocket,
+    @MessageBody() data: { conversationId?: string },
+  ): Promise<{ success: boolean, error?: string }> {
+    try {
+      if (!data?.conversationId) {
+        return { success: false, error: 'conversationId manquant' }
+      }
+      await this.chatService.assertParticipant(data.conversationId, client.data.userId)
+      await client.join(`conversation:${data.conversationId}`)
+      return { success: true }
+    }
+    catch {
+      return { success: false, error: 'Accès refusé' }
     }
   }
 
@@ -138,7 +221,9 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
       const count = await this.chatService.markAsRead(data.conversationId, userId)
 
-      this.server
+      // client.to() excludes the reader: echoing to the whole room made the
+      // reader's own outbound bubbles flip to « lu » the moment THEY read.
+      client
         .to(`conversation:${data.conversationId}`)
         .emit('chat:read', {
           conversationId: data.conversationId,
@@ -150,7 +235,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       return { success: true }
     }
     catch (error) {
-      this.logger.error(`chat:read error — ${error}`)
+      this.logger.error(`chat:read error — user ${client.data.userId} conversation ${data?.conversationId} — ${error}`)
       return { success: false, error: 'Failed to mark as read' }
     }
   }
@@ -160,6 +245,11 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     @ConnectedSocket() client: AuthenticatedSocket,
     @MessageBody() data: { conversationId: string, isTyping: boolean },
   ): void {
+    // Room membership is granted server-side only (handshake or chat:join),
+    // so it doubles as the participant check — no DB hit per keystroke.
+    if (!client.rooms.has(`conversation:${data.conversationId}`)) {
+      return
+    }
     client.to(`conversation:${data.conversationId}`).emit('chat:typing', {
       conversationId: data.conversationId,
       userId: client.data.userId,
@@ -172,10 +262,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const userId = client.data.userId
 
     const conversations = await em.find(Conversation, {
-      $or: [
-        { buyer: userId },
-        { supplier: { user: userId } },
-      ],
+      $or: this.chatService.participantFilter(userId),
       archivedAt: null,
     })
 
