@@ -2,8 +2,6 @@ import * as React from 'react'
 import { useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -13,6 +11,7 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 
 interface DisputeFormProps {
   orderId: string
@@ -76,10 +75,7 @@ export function DisputeForm({ orderId, onSuccess, onCancel }: DisputeFormProps) 
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={styles.screen}>
       <View style={styles.content}>
         <Text style={styles.title}>Ouvrir un litige</Text>
 
@@ -147,7 +143,7 @@ export function DisputeForm({ orderId, onSuccess, onCancel }: DisputeFormProps) 
           </TouchableOpacity>
         </View>
       </View>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

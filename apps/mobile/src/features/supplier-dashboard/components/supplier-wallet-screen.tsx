@@ -5,9 +5,7 @@ import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -20,6 +18,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 const MIN_WITHDRAWAL = 1000
@@ -403,10 +402,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
 
       {/* Add number modal */}
       <Modal visible={isAddingNumber} transparent animationType="slide" onRequestClose={() => setIsAddingNumber(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <KeyboardAwareView style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Nouveau numéro</Text>
             <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
@@ -444,15 +440,12 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardAwareView>
       </Modal>
 
       {/* Withdraw modal */}
       <Modal visible={isWithdrawing} transparent animationType="slide" onRequestClose={() => setIsWithdrawing(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <KeyboardAwareView style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Demander un reversement</Text>
             <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
@@ -499,7 +492,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardAwareView>
       </Modal>
     </View>
   )

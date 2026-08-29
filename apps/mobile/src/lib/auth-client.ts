@@ -1,5 +1,6 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
 import { useEffect, useState } from 'react'
+import { unregisterPushToken } from '../features/notifications/push-token'
 import { apiFetch, clearTokens, setSessionToken } from '../utils/api-client'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
@@ -370,7 +371,28 @@ export async function resetPasswordWithOtp(identifier: string, newPassword: stri
   }
 }
 
+/** Logged-in password change; the API checks the current password first. */
+export async function changePassword(currentPassword: string, newPassword: string): Promise<{ error: string | null }> {
+  try {
+    const res = await apiFetch('/api/otp-auth/change-password', {
+      method: 'POST',
+      body: JSON.stringify({ currentPassword, newPassword }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({})) as { message?: string, aggregateErrors?: { message?: string }[] }
+      return { error: data.aggregateErrors?.[0]?.message ?? data.message ?? 'Impossible de modifier le mot de passe' }
+    }
+    return { error: null }
+  }
+  catch {
+    return { error: 'Erreur de connexion. Vérifiez votre réseau.' }
+  }
+}
+
 export async function signOut(): Promise<void> {
+  // Before the session dies: otherwise the device keeps receiving the
+  // previous account's pushes until someone else logs in.
+  await unregisterPushToken()
   try {
     await apiFetch('/api/auth/sign-out', { method: 'POST' })
   }

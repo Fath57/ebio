@@ -14,6 +14,13 @@ interface ChatMessage {
   content: string
   type: 'TEXT' | 'IMAGE' | 'VOICE' | 'LOCATION'
   createdAt: string
+  durationMs?: number | null
+}
+
+interface SendMessageAck {
+  success: boolean
+  message?: ChatMessage
+  error?: string
 }
 
 interface ReadReceipt {
@@ -40,6 +47,7 @@ interface WebSocketClientOptions {
 const MAX_RETRIES = 10
 const BASE_DELAY_MS = 1000
 const MAX_DELAY_MS = 30000
+const ACK_TIMEOUT_MS = 5000
 
 /** Convertit le type interne mobile vers le type attendu par l'API (MessageType). */
 function toApiType(type: ChatMessage['type']): string {
@@ -55,6 +63,19 @@ function fromApiType(type: string): ChatMessage['type'] {
   return 'TEXT'
 }
 
+/** Maps a raw server message payload to the mobile ChatMessage shape. */
+function mapServerMessage(data: Record<string, unknown>): ChatMessage {
+  return {
+    id: data.id as string,
+    conversationId: data.conversationId as string,
+    senderId: data.senderId as string,
+    content: (data.content as string) ?? (data.mediaUrl as string) ?? '',
+    type: fromApiType((data.type as string) ?? 'TEXT'),
+    createdAt: data.createdAt as string,
+    durationMs: (data.durationMs as number | null | undefined) ?? null,
+  }
+}
+
 class WebSocketClient {
   private socket: Socket | null = null
   private connectionState: ConnectionState = 'disconnected'
@@ -68,13 +89,26 @@ class WebSocketClient {
   disconnect(): void {
     if (this.socket) {
       this.socket.removeAllListeners()
+      this.socket.io.removeAllListeners()
       this.socket.disconnect()
       this.socket = null
     }
     this.updateConnectionState('disconnected')
   }
 
-  sendMessage(conversationId: string, content: string, type: ChatMessage['type'] = 'TEXT'): void {
+  /**
+   * Sends a chat message and resolves with the server ack.
+   * Resolves { success: false } on timeout (ACK_TIMEOUT_MS) or when offline.
+   */
+  sendMessage(
+    conversationId: string,
+    content: string,
+    type: ChatMessage['type'] = 'TEXT',
+    durationMs?: number | null,
+  ): Promise<SendMessageAck> {
+    if (!this.socket?.connected)
+      return Promise.resolve({ success: false, error: 'NOT_CONNECTED' })
+
     const apiType = toApiType(type)
     const payload: Record<string, unknown> = { conversationId, type: apiType }
     if (apiType === 'TEXT') {
@@ -83,7 +117,35 @@ class WebSocketClient {
     else {
       payload.mediaUrl = content
     }
-    this.socket?.emit('chat:send', payload)
+    if (apiType === 'VOICE' && durationMs != null) {
+      payload.durationMs = durationMs
+    }
+
+    return new Promise((resolve) => {
+      this.socket?.timeout(ACK_TIMEOUT_MS).emit(
+        'chat:send',
+        payload,
+        (err: Error | null, ack?: Record<string, unknown>) => {
+          if (err || !ack) {
+            resolve({ success: false, error: 'TIMEOUT' })
+            return
+          }
+          if (!ack.success) {
+            resolve({ success: false, error: (ack.error as string) ?? 'SEND_FAILED' })
+            return
+          }
+          const raw = ack.message as Record<string, unknown> | undefined
+          resolve({ success: true, message: raw ? mapServerMessage(raw) : undefined })
+        },
+      )
+    })
+  }
+
+  /** Joins the socket room of a conversation (idempotent server-side). */
+  joinConversation(conversationId: string): void {
+    this.socket?.emit('chat:join', { conversationId }, (_ack: Record<string, unknown>) => {
+      // Idempotent join — nothing to do with the ack
+    })
   }
 
   sendReadReceipt(conversationId: string, _messageId?: string): void {
@@ -108,6 +170,7 @@ class WebSocketClient {
     // Déconnecte une éventuelle socket précédente
     if (this.socket) {
       this.socket.removeAllListeners()
+      this.socket.io.removeAllListeners()
       this.socket.disconnect()
     }
 
@@ -128,19 +191,22 @@ class WebSocketClient {
       this.updateConnectionState('disconnected')
     })
 
+    this.socket.on('connect_error', () => {
+      // The manager keeps retrying until reconnect_failed fires
+      this.updateConnectionState('reconnecting')
+    })
+
     this.socket.io.on('reconnect_attempt', () => {
       this.updateConnectionState('reconnecting')
     })
 
+    this.socket.io.on('reconnect_failed', () => {
+      // All retry attempts exhausted — surface a hard-disconnected state
+      this.updateConnectionState('disconnected')
+    })
+
     this.socket.on('chat:message', (data: Record<string, unknown>) => {
-      this.handlers.onMessage?.({
-        id: data.id as string,
-        conversationId: data.conversationId as string,
-        senderId: data.senderId as string,
-        content: (data.content as string) ?? (data.mediaUrl as string) ?? '',
-        type: fromApiType((data.type as string) ?? 'TEXT'),
-        createdAt: data.createdAt as string,
-      })
+      this.handlers.onMessage?.(mapServerMessage(data))
     })
 
     this.socket.on('chat:read', (data: Record<string, unknown>) => {
@@ -168,4 +234,4 @@ class WebSocketClient {
 
 export const websocketClient = new WebSocketClient()
 
-export type { ChatMessage, ConnectionState, ReadReceipt, TypingEvent, WebSocketClientOptions }
+export type { ChatMessage, ConnectionState, ReadReceipt, SendMessageAck, TypingEvent, WebSocketClientOptions }

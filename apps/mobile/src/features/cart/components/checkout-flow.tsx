@@ -2,14 +2,15 @@ import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import MapPinCheck from 'lucide-react-native/dist/esm/icons/map-pin-check'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import Wallet from 'lucide-react-native/dist/esm/icons/wallet'
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
+  Modal,
   Platform,
   ScrollView,
   StyleSheet,
@@ -25,7 +26,10 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useLocation } from '../../common/location-context'
+import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { useDeliveryFee } from '../hooks/use-delivery-fee'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
@@ -149,6 +153,11 @@ export function CheckoutFlow({
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('SUMMARY')
   const [deliveryAddress, setDeliveryAddress] = useState('')
+  // Drop-off point on the map: the single most useful thing for the courier.
+  const [deliveryPosition, setDeliveryPosition] = useState<{ latitude: number, longitude: number } | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const skipPositionRef = useRef(false)
+  const { latitude: currentLatitude, longitude: currentLongitude } = useLocation()
   const [deliverySlot, setDeliverySlot] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
@@ -221,6 +230,26 @@ export function CheckoutFlow({
       appAlert('Adresse requise', 'Veuillez saisir une adresse de livraison.')
       return
     }
+    // Insist on the map point without blocking: an address alone is often
+    // not enough for the courier to find the door.
+    if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryPosition && !skipPositionRef.current) {
+      appAlert(
+        'Position sur la carte',
+        'Sans repère sur la carte, le livreur risque de ne pas vous trouver. Placez le repère à votre porte : cela ne prend que quelques secondes.',
+        [
+          { text: 'Choisir sur la carte', onPress: () => setPickerOpen(true) },
+          {
+            text: 'Continuer sans',
+            style: 'cancel',
+            onPress: () => {
+              skipPositionRef.current = true
+              void handleProceedToPayment()
+            },
+          },
+        ],
+      )
+      return
+    }
 
     setIsSubmitting(true)
     try {
@@ -233,6 +262,8 @@ export function CheckoutFlow({
           paymentMethod: payWithWallet ? 'WALLET' : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
           promoCode: appliedPromo?.code,
           deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? deliveryAddress : undefined,
+          deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.latitude : undefined,
+          deliveryLongitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.longitude : undefined,
           deliverySlot: deliverySlot || undefined,
           items: orderSummary.items.map(item => ({
             productId: item.productId,
@@ -304,7 +335,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, deliveryAddress, deliverySlot, fedapayPublicKey, payWithWallet, appliedPromo, orderNumber, onComplete])
+  }, [orderSummary, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, payWithWallet, appliedPromo, orderNumber, onComplete])
 
   const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
@@ -347,10 +378,7 @@ export function CheckoutFlow({
 
   if (currentStep === 'SUMMARY') {
     return (
-      <KeyboardAvoidingView
-        style={[styles.container, { backgroundColor: semantic.bgPage }]}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
         <ScreenHeader title="Validation de la commande" onBack={onCancel} />
         <ScrollView
           style={styles.scrollView}
@@ -384,11 +412,40 @@ export function CheckoutFlow({
             {orderSummary.deliveryMode === 'DELIVERY' && (
               <View style={styles.addressSection}>
                 <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>
+                  Position de livraison
+                </Text>
+                <TouchableOpacity
+                  style={[
+                    styles.positionCard,
+                    deliveryPosition
+                      ? { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }
+                      : { backgroundColor: colors.green[400], borderColor: colors.green[400] },
+                  ]}
+                  onPress={() => setPickerOpen(true)}
+                  accessibilityRole="button"
+                  accessibilityLabel={deliveryPosition ? 'Modifier ma position sur la carte' : 'Choisir ma position sur la carte'}
+                >
+                  {deliveryPosition
+                    ? <MapPinCheck size={22} color={colors.green[800]} strokeWidth={2.2} />
+                    : <MapPin size={22} color={colors.neutral[0]} strokeWidth={2.2} />}
+                  <View style={styles.positionText}>
+                    <Text style={[styles.positionTitle, { color: deliveryPosition ? colors.green[800] : colors.neutral[0] }]}>
+                      {deliveryPosition ? 'Position enregistrée' : 'Choisir ma position sur la carte'}
+                    </Text>
+                    <Text style={[styles.positionHint, { color: deliveryPosition ? semantic.textSecondary : colors.green[50] }]}>
+                      {deliveryPosition
+                        ? `${deliveryPosition.latitude.toFixed(5)}, ${deliveryPosition.longitude.toFixed(5)} · Appuyez pour modifier`
+                        : 'Recommandé : placez le repère à votre porte pour guider le livreur'}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+
+                <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>
                   Adresse de livraison *
                 </Text>
                 <TextInput
                   style={[styles.textInput, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
-                  placeholder="Saisissez votre adresse complète"
+                  placeholder="Quartier, rue, repère (ex. en face de la pharmacie)"
                   placeholderTextColor={semantic.textTertiary}
                   value={deliveryAddress}
                   onChangeText={setDeliveryAddress}
@@ -587,7 +644,19 @@ export function CheckoutFlow({
                 )}
           </TouchableOpacity>
         </View>
-      </KeyboardAvoidingView>
+
+        <Modal visible={pickerOpen} animationType="slide" onRequestClose={() => setPickerOpen(false)}>
+          <LocationPickerScreen
+            initialLatitude={deliveryPosition?.latitude ?? currentLatitude}
+            initialLongitude={deliveryPosition?.longitude ?? currentLongitude}
+            onConfirm={(coords) => {
+              setDeliveryPosition(coords)
+              setPickerOpen(false)
+            }}
+            onGoBack={() => setPickerOpen(false)}
+          />
+        </Modal>
+      </KeyboardAwareView>
     )
   }
 
@@ -733,6 +802,27 @@ const styles = StyleSheet.create({
   },
   addressSection: {
     gap: spacing[2],
+  },
+  positionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    minHeight: 64,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+  },
+  positionText: {
+    flex: 1,
+  },
+  positionTitle: {
+    ...typography.bodyL,
+    fontFamily: fonts.sansSb,
+  },
+  positionHint: {
+    ...typography.caption,
+    marginTop: 2,
   },
   inputLabel: {
     ...typography.caption,

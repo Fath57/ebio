@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native'
 import { colors, fonts } from '../../../theme/theme'
+import { BRAND_LOGO } from '../../../utils/app-variant'
 
 const { width, height } = Dimensions.get('window')
 
@@ -162,7 +163,7 @@ export function AnimatedSplash({ onFinish }: AnimatedSplashProps) {
         ]}
       >
         <Image
-          source={require('../../../../assets/logo-transparent.png')}
+          source={BRAND_LOGO}
           style={styles.logo}
           resizeMode="contain"
         />

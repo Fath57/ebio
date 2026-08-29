@@ -2,7 +2,6 @@ import type { SearchResult } from '../../search/hooks/use-search'
 import type { HomeBanner } from '../hooks/use-home-banners'
 import BadgeCheck from 'lucide-react-native/dist/esm/icons/badge-check'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
-import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Tag from 'lucide-react-native/dist/esm/icons/tag'
 import { useEffect } from 'react'
@@ -15,7 +14,7 @@ import {
   View,
 } from 'react-native'
 import { useSession } from '../../../lib/auth-client'
-import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
+import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
@@ -38,6 +37,7 @@ interface HomeScreenProps {
   onPickLocation: () => void
   onOpenNotifications: () => void
   onOpenProfile: () => void
+  onOpenWallet: () => void
 }
 
 export function HomeScreen({
@@ -50,14 +50,10 @@ export function HomeScreen({
   onPickLocation,
   onOpenNotifications,
   onOpenProfile,
+  onOpenWallet,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
   const { data: session } = useSession()
-  const userName = session?.user?.name
-  const firstName = userName?.split(' ')[0]
-  const initials = userName
-    ? userName.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase()
-    : '?'
   const { latitude, longitude, label: locationLabel } = useLocation()
   const { categories, loadCategories } = useCategories()
   const { nearby, validated, promos, loading } = useHomeFeed(latitude, longitude)
@@ -78,7 +74,7 @@ export function HomeScreen({
         id: `${item.supplier.id}-${item.product.id}`,
         title: item.product.name,
         subtitle: item.supplier.shopName,
-        imageUrl: item.product.photo ?? '',
+        imageUrl: item.product.thumbnail ?? item.product.photo ?? '',
         targetType: 'SUPPLIER' as const,
         targetId: item.supplier.id,
         targetUrl: null,
@@ -88,12 +84,13 @@ export function HomeScreen({
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <HomeHeader
         locationLabel={locationLabel}
-        initials={initials}
         avatarUrl={session?.user?.image}
         onPickLocation={onPickLocation}
         onOpenSearch={onOpenSearch}
+        onOpenMap={onOpenMap}
         onOpenNotifications={onOpenNotifications}
         onOpenProfile={onOpenProfile}
+        onOpenWallet={onOpenWallet}
       />
 
       <ScrollView
@@ -101,32 +98,6 @@ export function HomeScreen({
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
       >
-        {/* Accroche */}
-        <View style={styles.intro}>
-          <Text style={[styles.greeting, { color: semantic.textTertiary }]}>
-            {firstName ? `Bonjour, ${firstName} 👋` : 'Bonjour 👋'}
-          </Text>
-          <Text style={[styles.tagline, { color: semantic.textSecondary }]}>
-            L'avenir d'une agriculture responsable commence ici.
-          </Text>
-        </View>
-
-        {/* Accès carte */}
-        <Pressable
-          style={[styles.mapCta, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}
-          onPress={onOpenMap}
-          accessibilityRole="button"
-          accessibilityLabel="Rechercher sur la carte"
-        >
-          <View style={[styles.mapCtaIcon, { backgroundColor: semantic.bgPrimaryLight }]}>
-            <MapIcon size={18} color={colors.green[400]} strokeWidth={2.2} />
-          </View>
-          <Text style={[styles.mapCtaLabel, { color: semantic.textPrimary }]}>
-            Rechercher sur la carte
-          </Text>
-          <ChevronRight size={18} color={semantic.textTertiary} strokeWidth={2.4} />
-        </Pressable>
-
         {/* Bannières */}
         <View style={styles.bannersBlock}>
           <HomeBannerCarousel
@@ -237,43 +208,6 @@ const styles = StyleSheet.create({
   },
   content: {
     paddingBottom: 96, // clear the floating tab bar (64px) + breathing room
-  },
-  intro: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[4],
-    gap: 2,
-  },
-  greeting: {
-    fontFamily: fonts.sansMd,
-    fontSize: 13,
-  },
-  tagline: {
-    fontFamily: fonts.display,
-    fontSize: 20,
-    lineHeight: 20 * 1.25,
-  },
-  mapCta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[3],
-    marginHorizontal: spacing[4],
-    marginTop: spacing[4],
-    paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
-    borderRadius: radius.lg,
-    borderWidth: 1,
-  },
-  mapCtaIcon: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  mapCtaLabel: {
-    flex: 1,
-    fontFamily: fonts.sansSb,
-    fontSize: 15,
   },
   bannersBlock: {
     marginTop: spacing[5],

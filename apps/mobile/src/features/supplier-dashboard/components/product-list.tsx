@@ -1,6 +1,7 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import Package from 'lucide-react-native/dist/esm/icons/package'
+import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Search from 'lucide-react-native/dist/esm/icons/search'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import X from 'lucide-react-native/dist/esm/icons/x'
@@ -97,14 +98,14 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
 
   const fetchProducts = useCallback(async (): Promise<void> => {
     try {
-      const res = await apiFetch('/api/suppliers/me/products')
+      const res = await apiFetch('/api/suppliers/me/products?pageSize=100&offset=0')
       if (res.ok) {
         const json = await res.json()
         const items = (json.data ?? json ?? []) as Array<Record<string, unknown>>
         setProducts(items.map((p): Product => ({
           id: p.id as string,
           name: p.name as string,
-          photoUri: (p.photo as string) ?? null,
+          photoUri: (p.thumbnail as string | null) ?? (p.photo as string | null) ?? null,
           price: (p.pricePerUnit as number) ?? 0,
           unit: (p.unit as string) ?? '',
           stock: (p.stock as number) ?? 0,
@@ -367,7 +368,7 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
         accessibilityRole="button"
         accessibilityLabel="Ajouter un nouveau produit"
       >
-        <Text style={styles.fabText}>+</Text>
+        <Plus size={28} color={colors.neutral[0]} strokeWidth={2.5} />
       </TouchableOpacity>
 
       <ConfirmModal
@@ -467,10 +468,14 @@ const styles = StyleSheet.create({
   },
   cardRow: {
     flexDirection: 'row',
+    alignItems: 'stretch',
   },
+  // Full-height edge-to-edge thumbnail: the card grows with its content
+  // (stock editing, status chip), so a fixed square left a gap under it.
   thumbnail: {
-    width: 80,
-    height: 80,
+    width: 96,
+    alignSelf: 'stretch',
+    minHeight: 96,
   },
   thumbnailPlaceholder: {
     justifyContent: 'center',
@@ -597,11 +602,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 6,
-  },
-  fabText: {
-    fontFamily: fonts.sansBd,
-    fontSize: 28,
-    color: colors.neutral[0],
-    marginTop: -2,
   },
 })

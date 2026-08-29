@@ -7,8 +7,6 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -21,6 +19,8 @@ import { notifyAuthChange, signInWithEmail } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { BRAND_LOGO } from '../../../utils/app-variant'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { GoogleSignInButton } from './google-sign-in-button'
 
 interface LoginScreenProps {
@@ -115,10 +115,7 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={[styles.flex, { backgroundColor: semantic.bgPage }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -130,7 +127,7 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
         {/* Brand */}
         <View style={styles.brandContainer}>
           <Image
-            source={require('../../../../assets/logo-transparent.png')}
+            source={BRAND_LOGO}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -332,7 +329,7 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

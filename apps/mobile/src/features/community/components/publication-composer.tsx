@@ -3,8 +3,6 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   StyleSheet,
   Text,
   TextInput,
@@ -14,6 +12,7 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 interface PublicationComposerProps {
@@ -91,10 +90,7 @@ export function PublicationComposer({
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={styles.container}>
       <View style={styles.header}>
         <Text style={styles.title}>Nouvelle publication</Text>
         <TouchableOpacity
@@ -188,7 +184,7 @@ export function PublicationComposer({
               <Text style={styles.publishButtonText}>Publier</Text>
             )}
       </TouchableOpacity>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

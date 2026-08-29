@@ -2,9 +2,7 @@ import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -19,7 +17,9 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { buildTopupCheckoutHtml, TOPUP_PRESETS } from '../utils/topup-checkout'
 
 interface WalletData {
   id: string
@@ -54,71 +54,8 @@ const TOPUP_STATUS_COLORS: Record<Topup['status'], string> = {
   FAILED: colors.coral[600],
 }
 
-const TOPUP_PRESETS = [1000, 2000, 5000, 10000]
-
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
-}
-
-function buildTopupCheckoutHtml(
-  publicKey: string,
-  amount: number,
-  topupId: string,
-  customerName: string,
-  customerEmail: string | null,
-): string {
-  const nameParts = customerName.trim().split(/\s+/)
-  const firstname = nameParts[0] ?? 'Client'
-  const lastname = nameParts.slice(1).join(' ') || firstname
-  const customerBlock = [
-    `firstname: '${firstname.replace(/'/g, '\\\'')}'`,
-    `lastname: '${lastname.replace(/'/g, '\\\'')}'`,
-    customerEmail ? `email: '${customerEmail.replace(/'/g, '\\\'')}'` : null,
-  ].filter(Boolean).join(',\n          ')
-
-  return `
-<!DOCTYPE html>
-<html><head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  body { margin: 0; padding: 20px; background: #F7F6F2; font-family: -apple-system, sans-serif;
-    display: flex; align-items: center; justify-content: center; min-height: 100vh; }
-  .loading { color: #5A5852; font-size: 16px; text-align: center; }
-</style>
-</head><body>
-<p class="loading">Chargement du paiement...</p>
-<script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
-<script>
-  FedaPay.init({
-    public_key: '${publicKey}',
-    transaction: {
-      amount: ${amount},
-      description: 'Recharge du portefeuille eBio',
-      custom_metadata: { topup_id: '${topupId}' }
-    },
-    customer: {
-      ${customerBlock}
-    },
-    currency: { iso: 'XOF' },
-    onComplete: function(resp) {
-      if (resp.reason === 'CHECKOUT_COMPLETED' || (resp.transaction && resp.transaction.status === 'approved')) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'completed',
-          transactionId: String(resp.transaction.id)
-        }));
-      } else {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'failed',
-          reason: resp.reason || 'Paiement échoué'
-        }));
-      }
-    },
-    onClose: function() {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'closed' }));
-    }
-  }).open();
-</script>
-</body></html>`
 }
 
 interface WalletScreenProps {
@@ -372,10 +309,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
 
       {/* Topup modal */}
       <Modal visible={isToppingUp} transparent animationType="slide" onRequestClose={() => setIsToppingUp(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <KeyboardAwareView style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Recharger mon portefeuille</Text>
             <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
@@ -423,7 +357,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardAwareView>
       </Modal>
     </View>
   )

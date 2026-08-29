@@ -156,7 +156,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[4],
   },
   headerTitle: { ...typography.h2 },
-  listContent: { paddingHorizontal: spacing[4], gap: spacing[3] },
+  listContent: { paddingHorizontal: spacing[4], paddingTop: spacing[3], gap: spacing[3] },
   card: {
     padding: spacing[4],
     borderRadius: radius.lg,

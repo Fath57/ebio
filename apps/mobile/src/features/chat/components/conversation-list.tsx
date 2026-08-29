@@ -1,5 +1,9 @@
+import type { ConversationKind } from '../delivery-chat'
+import { useFocusEffect } from '@react-navigation/native'
+import Bike from 'lucide-react-native/dist/esm/icons/bike'
+import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   FlatList,
   Image,
@@ -8,7 +12,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { colors, fonts, spacing, typography } from '../../../theme/theme'
+import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { chatFetch } from '../../../utils/api-client'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -22,11 +26,21 @@ interface Conversation {
   unreadCount: number
   isSupplier: boolean
   orderId: string | null
+  kind: ConversationKind
+  orderNumber: string | null
+  /** Role label of the peer on courier threads (« Livreur » for the buyer, « Client » for the courier). */
+  peerRole: 'Livreur' | 'Client' | null
 }
 
 interface ConversationListProps {
   currentUserId: string
-  onOpenConversation: (conversationId: string, participantName: string, isSupplier: boolean, orderId: string | null) => void
+  onOpenConversation: (
+    conversationId: string,
+    participantName: string,
+    isSupplier: boolean,
+    orderId: string | null,
+    kind: ConversationKind,
+  ) => void
 }
 
 function formatRelativeTime(iso: string): string {
@@ -53,6 +67,19 @@ function formatRelativeTime(iso: string): string {
   })
 }
 
+/** Aperçu typé du dernier message (📷 / 🎤 / 📍 au lieu de « [média] »). */
+function formatPreview(last: { content?: string | null, type?: string } | null): string | null {
+  if (!last)
+    return null
+  if (last.type === 'PHOTO' || last.type === 'IMAGE')
+    return '📷 Photo'
+  if (last.type === 'VOICE')
+    return '🎤 Note vocale'
+  if (last.type === 'LOCATION')
+    return '📍 Position'
+  return last.content ?? null
+}
+
 export function ConversationList({ currentUserId, onOpenConversation }: ConversationListProps) {
   const { semantic } = useTheme()
   const [conversations, setConversations] = useState<Conversation[]>([])
@@ -66,16 +93,32 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
         const raw = await res.json() as Array<Record<string, unknown>>
         const mapped: Conversation[] = raw.map((c) => {
           const isBuyer = currentUserId === (c.buyerId as string)
-          const last = c.lastMessage as { content?: string | null, type?: string } | null
+          const last = c.lastMessage as { content?: string | null, type?: string, senderId?: string } | null
+          const preview = formatPreview(last)
+          const isOwnLast = last?.senderId != null && last.senderId === currentUserId
+          const kind: ConversationKind = c.kind === 'COURIER' ? 'COURIER' : 'SUPPLIER'
+          // Server-computed peer fields take precedence; the buyer/supplier
+          // heuristics remain as a fallback for older payloads.
+          const peerName = typeof c.peerName === 'string' ? c.peerName : null
+          const peerImage = typeof c.peerImage === 'string' ? c.peerImage : null
+          const fallbackName = (isBuyer ? c.supplierShopName : c.buyerName) as string | null
+          const fallbackImage = (isBuyer ? c.supplierProfilePhoto : c.buyerImage) as string | null
+          let peerRole: Conversation['peerRole'] = null
+          if (kind === 'COURIER') {
+            peerRole = isBuyer ? 'Livreur' : 'Client'
+          }
           return {
             id: c.id as string,
-            participantName: (isBuyer ? c.supplierShopName : c.buyerName) as string ?? '',
-            participantAvatar: (isBuyer ? c.supplierProfilePhoto : c.buyerImage) as string ?? null,
-            lastMessage: last ? (last.content ?? '[média]') : null,
+            participantName: peerName ?? fallbackName ?? '',
+            participantAvatar: peerImage ?? fallbackImage ?? null,
+            lastMessage: preview != null && isOwnLast ? `Vous : ${preview}` : preview,
             lastMessageAt: (c.lastMessageAt as string) ?? null,
             unreadCount: (c.unreadCount as number) ?? 0,
             isSupplier: !isBuyer,
             orderId: (c.orderId as string) ?? null,
+            kind,
+            orderNumber: typeof c.orderNumber === 'string' ? c.orderNumber : null,
+            peerRole,
           }
         })
         const sorted = mapped.sort((a, b) => {
@@ -97,9 +140,10 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
     }
   }, [currentUserId])
 
-  useEffect(() => {
-    fetchConversations()
-  }, [fetchConversations])
+  // Refresh whenever the screen (re)gains focus — new messages while away
+  useFocusEffect(useCallback(() => {
+    void fetchConversations()
+  }, [fetchConversations]))
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true)
@@ -110,7 +154,7 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
     ({ item }: { item: Conversation }) => (
       <TouchableOpacity
         style={styles.row}
-        onPress={() => onOpenConversation(item.id, item.participantName, item.isSupplier, item.orderId)}
+        onPress={() => onOpenConversation(item.id, item.participantName, item.isSupplier, item.orderId, item.kind)}
         activeOpacity={0.7}
         accessibilityRole="button"
         accessibilityLabel={`Conversation avec ${item.participantName}`}
@@ -136,12 +180,25 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
             <Text style={[styles.name, { color: semantic.textPrimary }]} numberOfLines={1}>
               {item.participantName}
             </Text>
+            {item.peerRole && (
+              <View style={[styles.roleBadge, { backgroundColor: semantic.bgPrimaryLight }]}>
+                {item.peerRole === 'Livreur'
+                  ? <Bike size={12} color={colors.green[600]} strokeWidth={2.2} />
+                  : <UserIcon size={12} color={colors.green[600]} strokeWidth={2.2} />}
+                <Text style={styles.roleBadgeText}>{item.peerRole}</Text>
+              </View>
+            )}
             {item.lastMessageAt && (
               <Text style={[styles.time, { color: semantic.textTertiary }]}>
                 {formatRelativeTime(item.lastMessageAt)}
               </Text>
             )}
           </View>
+          {item.orderNumber && (
+            <Text style={[styles.orderNumber, { color: semantic.textSecondary }]} numberOfLines={1}>
+              {`Commande ${item.orderNumber}`}
+            </Text>
+          )}
           <View style={styles.bottomRow}>
             <Text style={[styles.preview, { color: semantic.textTertiary }]} numberOfLines={1}>
               {item.lastMessage ?? 'Aucun message'}
@@ -157,40 +214,32 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
         </View>
       </TouchableOpacity>
     ),
-    [onOpenConversation],
+    [onOpenConversation, semantic],
   )
 
   const keyExtractor = useCallback((item: Conversation) => item.id, [])
 
-  if (isLoading) {
-    return (
-      <View style={[styles.emptyContainer, { backgroundColor: semantic.bgPage }]}>
-        <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>Chargement...</Text>
-      </View>
-    )
-  }
-
   // Racine d'onglet : en-tête sans bouton retour, seulement le repère « où suis-je ».
+  // FlatList même à vide : le pull-to-refresh doit rester disponible.
   return (
     <View style={[styles.list, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Messages" />
-      {conversations.length === 0
-        ? (
-            <View style={[styles.emptyContainer, { backgroundColor: semantic.bgPage }]}>
-              <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>Aucune conversation</Text>
-            </View>
-          )
-        : (
-            <FlatList
-              data={conversations}
-              renderItem={renderItem}
-              keyExtractor={keyExtractor}
-              style={[styles.list, { backgroundColor: semantic.bgPage }]}
-              contentContainerStyle={styles.listContent}
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-            />
-          )}
+      <FlatList
+        data={conversations}
+        renderItem={renderItem}
+        keyExtractor={keyExtractor}
+        style={[styles.list, { backgroundColor: semantic.bgPage }]}
+        contentContainerStyle={[styles.listContent, conversations.length === 0 && styles.listContentEmpty]}
+        refreshing={isRefreshing}
+        onRefresh={handleRefresh}
+        ListEmptyComponent={(
+          <View style={styles.emptyContainer}>
+            <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>
+              {isLoading ? 'Chargement…' : 'Aucune conversation'}
+            </Text>
+          </View>
+        )}
+      />
     </View>
   )
 }
@@ -246,6 +295,23 @@ const styles = StyleSheet.create({
     color: colors.neutral[400],
     marginLeft: spacing[2],
   },
+  roleBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+    borderRadius: radius.pill,
+    marginLeft: spacing[2],
+  },
+  roleBadgeText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 11,
+    color: colors.green[600],
+  },
+  orderNumber: {
+    ...typography.caption,
+  },
   bottomRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -271,11 +337,13 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.neutral[0],
   },
-  emptyContainer: {
-    flex: 1,
+  listContentEmpty: {
+    flexGrow: 1,
     justifyContent: 'center',
+  },
+  emptyContainer: {
     alignItems: 'center',
-    backgroundColor: colors.neutral[0],
+    paddingVertical: spacing[8],
   },
   emptyText: {
     ...typography.bodyL,

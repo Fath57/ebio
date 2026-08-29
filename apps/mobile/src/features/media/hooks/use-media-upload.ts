@@ -16,6 +16,7 @@ export type MediaContext
     | 'VOICE_DESCRIPTION'
     | 'TRAINING_CONTENT'
     | 'COMMUNITY_MEDIA'
+    | 'DELIVERY_PROOF'
 
 interface UploadedMedia {
   mediaId: string

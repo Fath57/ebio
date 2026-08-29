@@ -341,7 +341,7 @@ export function SupplierProfileScreen({
             products = ((productsData.data ?? productsData ?? []) as Array<Record<string, unknown>>).map(p => ({
               id: p.id as string,
               name: p.name as string,
-              imageUrl: (p.photo ?? p.imageUrl ?? null) as string | null,
+              imageUrl: (p.thumbnail ?? p.photo ?? p.imageUrl ?? null) as string | null,
               pricePerUnit: p.pricePerUnit as number,
               promotionalPrice: (p.promotionalPrice ?? null) as number | null,
               unit: p.unit as string,

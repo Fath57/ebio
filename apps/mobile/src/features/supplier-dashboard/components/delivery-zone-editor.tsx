@@ -5,8 +5,6 @@ import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import {
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -19,6 +17,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 interface LatLng {
@@ -182,10 +181,7 @@ export function DeliveryZoneEditor({ onSave, onGoBack }: DeliveryZoneEditorProps
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Zones de livraison" onBack={onGoBack} />
 
       {/* Carte (enfant stable -> ne se remonte pas à chaque frappe) */}
@@ -314,7 +310,7 @@ export function DeliveryZoneEditor({ onSave, onGoBack }: DeliveryZoneEditorProps
         }}
         onCancel={() => setModal(prev => ({ ...prev, visible: false }))}
       />
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

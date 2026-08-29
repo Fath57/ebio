@@ -1,3 +1,4 @@
+import type { ConversationKind } from '../delivery-chat'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import { useEffect, useState } from 'react'
@@ -5,6 +6,7 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { APP_VARIANT } from '../../../utils/app-variant'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { ChatScreen } from './chat-screen'
 
@@ -14,34 +16,66 @@ interface ChatDetailScreenProps {
   peerName?: string
   isSupplier?: boolean
   orderId?: string | null
+  /** SUPPLIER (buyer <-> shop, default) or COURIER (buyer <-> courier of a delivery). */
+  kind?: ConversationKind
+  /** Known order number: skips the order lookup (couriers cannot read /api/orders). */
+  orderNumber?: string | null
   onGoBack: () => void
   onOpenOrder?: (orderId: string) => void
 }
 
-export function ChatDetailScreen({ conversationId, currentUserId, peerName, isSupplier = false, orderId, onGoBack, onOpenOrder }: ChatDetailScreenProps) {
+/** One-tap messages for a courier on the road — sent as-is. */
+const COURIER_QUICK_REPLIES = [
+  'Je suis en route vers vous 🛵',
+  'J’arrive dans 5 minutes',
+  'Je suis devant chez vous',
+  'Petit retard, j’arrive dans 10 minutes',
+  'Je ne trouve pas l’adresse, pouvez-vous m’indiquer un repère ?',
+  'Pouvez-vous me rappeler ?',
+]
+
+export function ChatDetailScreen({
+  conversationId,
+  currentUserId,
+  peerName,
+  isSupplier = false,
+  orderId,
+  kind = 'SUPPLIER',
+  orderNumber: knownOrderNumber = null,
+  onGoBack,
+  onOpenOrder,
+}: ChatDetailScreenProps) {
   const { semantic } = useTheme()
-  const [orderNumber, setOrderNumber] = useState<string | null>(null)
+  const [fetchedOrderNumber, setFetchedOrderNumber] = useState<string | null>(null)
+  const orderNumber = knownOrderNumber ?? fetchedOrderNumber
+  const isCourierThread = kind === 'COURIER'
+  // Courier threads: the peer is the courier for the buyer, the buyer for the courier.
+  let subtitle: string | undefined
+  if (isCourierThread) {
+    subtitle = APP_VARIANT === 'courier' ? 'Client' : 'Livreur'
+  }
 
   useEffect(() => {
-    if (!orderId)
+    if (!orderId || knownOrderNumber)
       return
     let cancelled = false
     apiFetch(`/api/orders/${orderId}`)
       .then(res => (res.ok ? res.json() : null))
       .then((o) => {
         if (!cancelled && o)
-          setOrderNumber((o.orderNumber as string) ?? null)
+          setFetchedOrderNumber((o.orderNumber as string) ?? null)
       })
       .catch(() => { /* ignore */ })
     return () => {
       cancelled = true
     }
-  }, [orderId])
+  }, [orderId, knownOrderNumber])
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader
         title={peerName ?? 'Conversation'}
+        subtitle={subtitle}
         onBack={onGoBack}
         leadingSlot={(
           <View style={styles.avatar}>
@@ -72,6 +106,7 @@ export function ChatDetailScreen({ conversationId, currentUserId, peerName, isSu
         conversationId={conversationId}
         currentUserId={currentUserId}
         isSupplier={isSupplier}
+        quickReplies={APP_VARIANT === 'courier' && kind === 'COURIER' ? COURIER_QUICK_REPLIES : undefined}
       />
     </View>
   )

@@ -20,6 +20,7 @@ import {
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'
 import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { usePlaceSearch } from '../hooks/use-place-search'
 
@@ -76,7 +77,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
   }
 
   return (
-    <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
+    <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Choisir ma position" onBack={onGoBack} />
 
       {/* Recherche de ville — évite de faire glisser la carte sur des centaines
@@ -188,7 +189,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
           <Text style={styles.confirmText}>Confirmer cette position</Text>
         </TouchableOpacity>
       </View>
-    </View>
+    </KeyboardAwareView>
   )
 }
 

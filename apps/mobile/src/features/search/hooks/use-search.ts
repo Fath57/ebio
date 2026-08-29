@@ -38,6 +38,7 @@ interface SearchResult {
     id: string
     name: string
     photo: string | null
+    thumbnail: string | null
     pricePerUnit: number
     unit: string
     inStock: boolean

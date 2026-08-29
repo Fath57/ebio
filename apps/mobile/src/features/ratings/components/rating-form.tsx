@@ -1,10 +1,11 @@
 import * as React from 'react'
 import { useState } from 'react'
-import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { StarRating } from '../../common/components/star-rating'
 
 interface RatingFormProps {
@@ -71,10 +72,7 @@ export function RatingForm({ supplierId, orderId, transactionType, onComplete }:
   }
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1 }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={{ flex: 1 }}>
       <ScrollView style={[styles.container, { backgroundColor: semantic.bgPage }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={[styles.title, { color: semantic.textPrimary }]}>Notez votre expérience</Text>
 
@@ -118,7 +116,7 @@ export function RatingForm({ supplierId, orderId, transactionType, onComplete }:
           </Text>
         </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

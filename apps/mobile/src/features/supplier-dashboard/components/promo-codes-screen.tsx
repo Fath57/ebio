@@ -2,12 +2,10 @@ import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import TicketPercent from 'lucide-react-native/dist/esm/icons/ticket-percent'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { useCallback, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
   Modal,
-  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -21,6 +19,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 interface PromoCodeItem {
@@ -215,10 +214,7 @@ export function PromoCodesScreen({ onGoBack }: PromoCodesScreenProps) {
       </ScrollView>
 
       <Modal visible={isCreating} transparent animationType="slide" onRequestClose={() => setIsCreating(false)}>
-        <KeyboardAvoidingView
-          style={styles.modalOverlay}
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-        >
+        <KeyboardAwareView style={styles.modalOverlay}>
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Nouveau code promo</Text>
             <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>Code</Text>
@@ -293,7 +289,7 @@ export function PromoCodesScreen({ onGoBack }: PromoCodesScreenProps) {
               </TouchableOpacity>
             </View>
           </View>
-        </KeyboardAvoidingView>
+        </KeyboardAwareView>
       </Modal>
     </View>
   )

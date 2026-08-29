@@ -3,11 +3,12 @@ import Star from 'lucide-react-native/dist/esm/icons/star'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import * as React from 'react'
 import { useCallback, useRef, useState } from 'react'
-import { Animated, Dimensions, Image, KeyboardAvoidingView, Modal, PanResponder, Platform, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
+import { Animated, Dimensions, Image, Modal, PanResponder, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { FALLBACK_CATEGORIES } from '../../../utils/category-icons'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 
 interface FilterValues {
   radius: number | undefined
@@ -289,10 +290,7 @@ export function FilterSheet({
       statusBarTranslucent
       onRequestClose={close}
     >
-      <KeyboardAvoidingView
-        style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      >
+      <KeyboardAwareView style={{ flex: 1 }}>
         {/* Backdrop */}
         <Animated.View style={[styles.backdrop, { opacity: backdropOpacity }]}>
           <Pressable style={StyleSheet.absoluteFill} onPress={close} />
@@ -573,7 +571,7 @@ export function FilterSheet({
             </TouchableOpacity>
           </View>
         </Animated.View>
-      </KeyboardAvoidingView>
+      </KeyboardAwareView>
     </Modal>
   )
 }

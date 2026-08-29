@@ -1,4 +1,8 @@
+import { useFocusEffect } from '@react-navigation/native'
+import Bike from 'lucide-react-native/dist/esm/icons/bike'
+import Car from 'lucide-react-native/dist/esm/icons/car'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
+import Footprints from 'lucide-react-native/dist/esm/icons/footprints'
 import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Store from 'lucide-react-native/dist/esm/icons/store'
@@ -21,6 +25,28 @@ import { ScreenHeader } from '../../common/components/screen-header'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type FilterTab = 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
+type DeliveryRunStatus = 'AWAITING_COURIER' | 'ACCEPTED' | 'PICKED_UP' | 'IN_TRANSIT' | 'DELIVERED' | 'FAILED' | 'CANCELLED'
+type VehicleType = 'MOTO' | 'BICYCLE' | 'CAR' | 'ON_FOOT'
+
+interface DeliveryRun {
+  status: DeliveryRunStatus
+  courierName: string | null
+  courierVehicleType: VehicleType | null
+}
+
+/** Buyer-facing wording of the courier run; null = nothing worth a line. */
+const RUN_LABELS: Record<DeliveryRunStatus, string | null> = {
+  AWAITING_COURIER: 'Recherche d’un livreur…',
+  ACCEPTED: 'Livreur en route vers la boutique',
+  PICKED_UP: 'Colis récupéré par le livreur',
+  IN_TRANSIT: 'Livreur en route vers vous',
+  DELIVERED: null,
+  FAILED: 'Livraison non aboutie — la boutique vous recontacte',
+  CANCELLED: null,
+}
+const LIVE_RUN_STATUSES: DeliveryRunStatus[] = ['AWAITING_COURIER', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT']
+const LIVE_REFRESH_MS = 15_000
+const VEHICLE_ICONS = { MOTO: Bike, BICYCLE: Bike, CAR: Car, ON_FOOT: Footprints } as const
 
 interface OrderItem {
   productName: string
@@ -36,6 +62,7 @@ interface OrderListItem {
   status: OrderStatus
   createdAt: string
   items: OrderItem[]
+  delivery: DeliveryRun | null
 }
 
 interface OrderListProps {
@@ -124,6 +151,7 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
             productPhoto: (item.productPhoto ?? null) as string | null,
             quantity: item.quantity as number,
           })),
+          delivery: (o.delivery ?? null) as DeliveryRun | null,
         }))
         setOrders(data)
       }
@@ -140,6 +168,23 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
   useEffect(() => {
     fetchOrders()
   }, [fetchOrders])
+
+  // Live delivery line: while a run is in progress and the screen is focused,
+  // re-fetch quietly so the courier's progress shows without pull-to-refresh.
+  const hasLiveRun = orders.some(o => o.delivery !== null && LIVE_RUN_STATUSES.includes(o.delivery.status))
+  useFocusEffect(
+    useCallback(() => {
+      if (!hasLiveRun) {
+        return undefined
+      }
+      const timer = setInterval(() => {
+        void fetchOrders()
+      }, LIVE_REFRESH_MS)
+      return () => {
+        clearInterval(timer)
+      }
+    }, [hasLiveRun, fetchOrders]),
+  )
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true)
@@ -212,6 +257,24 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
                     {item.supplierName}
                   </Text>
                 </View>
+
+                {/* Live delivery run */}
+                {item.delivery && RUN_LABELS[item.delivery.status] && (
+                  <View style={[styles.runRow, { backgroundColor: item.delivery.status === 'FAILED' ? colors.coral[50] : semantic.bgPrimaryLight }]}>
+                    {LIVE_RUN_STATUSES.includes(item.delivery.status) && <View style={styles.runDot} />}
+                    {(() => {
+                      const VehicleIcon = item.delivery.courierVehicleType ? VEHICLE_ICONS[item.delivery.courierVehicleType] : null
+                      return VehicleIcon ? <VehicleIcon size={13} color={colors.green[800]} strokeWidth={2.2} /> : null
+                    })()}
+                    <Text
+                      style={[styles.runText, { color: item.delivery.status === 'FAILED' ? colors.coral[600] : colors.green[800] }]}
+                      numberOfLines={1}
+                    >
+                      {RUN_LABELS[item.delivery.status]}
+                      {item.delivery.courierName && item.delivery.status !== 'AWAITING_COURIER' ? ` · ${item.delivery.courierName}` : ''}
+                    </Text>
+                  </View>
+                )}
 
                 {/* Items summary */}
                 {summary
@@ -452,6 +515,30 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSb,
     fontSize: 11,
     lineHeight: 14,
+  },
+
+  // Live delivery run
+  runRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    paddingHorizontal: spacing[2],
+    paddingVertical: 3,
+    borderRadius: radius.pill,
+    marginTop: 4,
+  },
+  runDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: colors.green[400],
+  },
+  runText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 11,
+    lineHeight: 14,
+    flexShrink: 1,
   },
 
   // Supplier row

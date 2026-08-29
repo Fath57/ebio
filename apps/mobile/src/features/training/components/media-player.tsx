@@ -1,12 +1,8 @@
-import type { AVPlaybackStatus } from 'expo-av'
-import { Audio, Video as ExpoVideo, ResizeMode } from 'expo-av'
-import * as React from 'react'
-import { useCallback, useRef, useState } from 'react'
+import { useAudioPlayer, useAudioPlayerStatus } from 'expo-audio'
+import { useEffect, useRef } from 'react'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { WebView } from 'react-native-webview'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
-
-// eslint-disable-next-line ts/no-explicit-any
-const Video = ExpoVideo as any
 
 interface MediaPlayerProps {
   format: 'VIDEO' | 'AUDIO'
@@ -15,124 +11,68 @@ interface MediaPlayerProps {
   onPlaybackComplete?: () => void
 }
 
-export function MediaPlayer({
-  format,
-  uri,
-  title,
-  onPlaybackComplete,
-}: MediaPlayerProps) {
-  const videoRef = useRef<typeof Video>(null)
-  const soundRef = useRef<Audio.Sound | null>(null)
-  const [isPlaying, setIsPlaying] = useState(false)
-  const [positionMs, setPositionMs] = useState(0)
-  const [durationMs, setDurationMs] = useState(0)
+const SEEK_STEP_SEC = 15
 
-  function formatTime(ms: number): string {
-    const totalSeconds = Math.floor(ms / 1000)
-    const min = Math.floor(totalSeconds / 60)
-    const sec = totalSeconds % 60
-    return `${min}:${sec.toString().padStart(2, '0')}`
+function formatTime(seconds: number): string {
+  const totalSeconds = Math.max(0, Math.floor(seconds))
+  const min = Math.floor(totalSeconds / 60)
+  const sec = totalSeconds % 60
+  return `${min}:${sec.toString().padStart(2, '0')}`
+}
+
+/** Audio branch: expo-audio player with play/pause and 15 s seek buttons. */
+function AudioPlayerView({ uri, title, onPlaybackComplete }: Omit<MediaPlayerProps, 'format'>) {
+  const player = useAudioPlayer({ uri }, { updateInterval: 500 })
+  const status = useAudioPlayerStatus(player)
+  const onCompleteRef = useRef(onPlaybackComplete)
+  onCompleteRef.current = onPlaybackComplete
+
+  useEffect(() => {
+    if (status.didJustFinish)
+      onCompleteRef.current?.()
+  }, [status.didJustFinish])
+
+  function handleTogglePlay(): void {
+    if (status.playing)
+      player.pause()
+    else
+      player.play()
   }
 
-  const handlePlaybackStatusUpdate = useCallback(
-    (status: AVPlaybackStatus) => {
-      if (!status.isLoaded)
-        return
-
-      setIsPlaying(status.isPlaying)
-      setPositionMs(status.positionMillis)
-      setDurationMs(status.durationMillis ?? 0)
-
-      if (status.didJustFinish) {
-        onPlaybackComplete?.()
-      }
-    },
-    [onPlaybackComplete],
-  )
-
-  async function handleTogglePlay(): Promise<void> {
-    if (format === 'VIDEO') {
-      if (!videoRef.current)
-        return
-      if (isPlaying) {
-        await videoRef.current.pauseAsync()
-      }
-      else {
-        await videoRef.current.playAsync()
-      }
-    }
-    else {
-      if (isPlaying && soundRef.current) {
-        await soundRef.current.pauseAsync()
-      }
-      else if (soundRef.current) {
-        await soundRef.current.playAsync()
-      }
-      else {
-        const { sound } = await Audio.Sound.createAsync(
-          { uri },
-          { shouldPlay: true },
-          handlePlaybackStatusUpdate,
-        )
-        soundRef.current = sound
-      }
-    }
+  function handleSeek(direction: 'forward' | 'backward'): void {
+    const delta = direction === 'forward' ? SEEK_STEP_SEC : -SEEK_STEP_SEC
+    const next = Math.max(0, Math.min(status.currentTime + delta, status.duration))
+    player.seekTo(next).catch(() => {
+      // Not loaded yet
+    })
   }
 
-  async function handleSeek(direction: 'forward' | 'backward'): Promise<void> {
-    const seekMs = direction === 'forward' ? 15000 : -15000
-    const newPosition = Math.max(0, Math.min(positionMs + seekMs, durationMs))
-
-    if (format === 'VIDEO' && videoRef.current) {
-      await videoRef.current.setPositionAsync(newPosition)
-    }
-    else if (soundRef.current) {
-      await soundRef.current.setPositionAsync(newPosition)
-    }
-  }
-
-  const progressPercent = durationMs > 0 ? (positionMs / durationMs) * 100 : 0
+  const progressPercent = status.duration > 0 ? (status.currentTime / status.duration) * 100 : 0
 
   return (
     <View style={styles.container}>
-      {format === 'VIDEO'
-        ? (
-            <Video
-              ref={videoRef}
-              source={{ uri }}
-              style={styles.video}
-              resizeMode={ResizeMode.CONTAIN}
-              onPlaybackStatusUpdate={handlePlaybackStatusUpdate}
-              useNativeControls={false}
-            />
-          )
-        : (
-            <View style={styles.audioVisual}>
-              <View style={styles.audioCircle}>
-                <Text style={styles.audioIcon}>A</Text>
-              </View>
-              <Text style={styles.audioTitle}>{title}</Text>
-            </View>
-          )}
+      <View style={styles.audioVisual}>
+        <View style={styles.audioCircle}>
+          <Text style={styles.audioIcon}>A</Text>
+        </View>
+        <Text style={styles.audioTitle}>{title}</Text>
+      </View>
 
-      {/* Progress bar */}
       <View style={styles.progressContainer}>
         <View style={styles.progressBar}>
-          <View
-            style={[styles.progressFill, { width: `${progressPercent}%` }]}
-          />
+          <View style={[styles.progressFill, { width: `${progressPercent}%` }]} />
         </View>
         <View style={styles.timeRow}>
-          <Text style={styles.timeText}>{formatTime(positionMs)}</Text>
-          <Text style={styles.timeText}>{formatTime(durationMs)}</Text>
+          <Text style={styles.timeText}>{formatTime(status.currentTime)}</Text>
+          <Text style={styles.timeText}>{formatTime(status.duration)}</Text>
         </View>
       </View>
 
-      {/* Controls */}
       <View style={styles.controlsRow}>
         <TouchableOpacity
           style={styles.seekButton}
           onPress={() => handleSeek('backward')}
+          accessibilityRole="button"
           accessibilityLabel="Reculer de 15 secondes"
         >
           <Text style={styles.seekText}>-15s</Text>
@@ -141,16 +81,16 @@ export function MediaPlayer({
         <TouchableOpacity
           style={styles.playButton}
           onPress={handleTogglePlay}
-          accessibilityLabel={isPlaying ? 'Pause' : 'Lecture'}
+          accessibilityRole="button"
+          accessibilityLabel={status.playing ? 'Pause' : 'Lecture'}
         >
-          <Text style={styles.playButtonText}>
-            {isPlaying ? 'II' : '|>'}
-          </Text>
+          <Text style={styles.playButtonText}>{status.playing ? 'II' : '|>'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity
           style={styles.seekButton}
           onPress={() => handleSeek('forward')}
+          accessibilityRole="button"
           accessibilityLabel="Avancer de 15 secondes"
         >
           <Text style={styles.seekText}>+15s</Text>
@@ -158,6 +98,31 @@ export function MediaPlayer({
       </View>
     </View>
   )
+}
+
+/**
+ * Video branch: the legacy AV video component is retired and `expo-video` is not part of the build,
+ * so the video plays inline through the system player inside a WebView.
+ */
+function VideoPlayerView({ uri, title }: Omit<MediaPlayerProps, 'format'>) {
+  return (
+    <View style={styles.container}>
+      <WebView
+        source={{ uri }}
+        style={styles.video}
+        allowsFullscreenVideo
+        allowsInlineMediaPlayback
+        mediaPlaybackRequiresUserAction
+        accessibilityLabel={`Vidéo : ${title}`}
+      />
+    </View>
+  )
+}
+
+export function MediaPlayer({ format, uri, title, onPlaybackComplete }: MediaPlayerProps) {
+  if (format === 'VIDEO')
+    return <VideoPlayerView uri={uri} title={title} />
+  return <AudioPlayerView uri={uri} title={title} onPlaybackComplete={onPlaybackComplete} />
 }
 
 const styles = StyleSheet.create({

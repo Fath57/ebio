@@ -20,6 +20,7 @@ import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
+import { NOTIFICATION_AUDIENCE } from '../../../utils/app-variant'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { handleNotificationTap } from '../hooks/use-notifications'
 
@@ -83,7 +84,7 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
 
   const fetchNotifications = React.useCallback(async () => {
     try {
-      const res = await apiFetch('/api/notifications')
+      const res = await apiFetch(`/api/notifications?audience=${NOTIFICATION_AUDIENCE}`)
       if (res.ok) {
         const data = await res.json()
         setNotifications(data)

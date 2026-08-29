@@ -9,8 +9,6 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -26,6 +24,8 @@ import {
 } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { BRAND_LOGO } from '../../../utils/app-variant'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { OtpInput, ResendTimer } from './otp-input'
 
 type Step = 'identifier' | 'otp' | 'new-password' | 'success'
@@ -138,10 +138,7 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
   const isIdentifierValid = method === 'phone' ? isPhoneValid : isEmailValid
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={[styles.flex, { backgroundColor: semantic.bgPage }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -160,7 +157,7 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
         {/* Brand */}
         <View style={styles.brandContainer}>
           <Image
-            source={require('../../../../assets/logo-transparent.png')}
+            source={BRAND_LOGO}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -367,7 +364,7 @@ export function ForgotPasswordScreen({ onGoBack, onNavigateToLogin }: ForgotPass
           )}
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

@@ -11,6 +11,7 @@ import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
 import { RegisterScreen } from '../features/auth/components/register-screen'
@@ -21,6 +22,8 @@ import { CheckoutFlow } from '../features/cart/components/checkout-flow'
 import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
 import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
 import { ConversationList } from '../features/chat/components/conversation-list'
+import { openDeliveryConversation } from '../features/chat/delivery-chat'
+import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { useLocation } from '../features/common/location-context'
 import { HomeScreen } from '../features/home/components/home-screen'
@@ -34,21 +37,6 @@ import { EditProfileScreen } from '../features/profile/components/edit-profile-s
 import { ProfileScreen } from '../features/profile/components/profile-screen'
 import { RatingForm } from '../features/ratings/components/rating-form'
 import { SearchScreen } from '../features/search/components/search-screen'
-import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
-import { DeliveryZoneEditor } from '../features/supplier-dashboard/components/delivery-zone-editor'
-import { ModeSelector } from '../features/supplier-dashboard/components/mode-selector'
-import { OpeningHoursEditor } from '../features/supplier-dashboard/components/opening-hours-editor'
-import { OrderDetailScreen } from '../features/supplier-dashboard/components/order-detail-screen'
-import { OrderManagement } from '../features/supplier-dashboard/components/order-management'
-import { ProductDetailScreen as SupplierProductDetail } from '../features/supplier-dashboard/components/product-detail-screen'
-import { ProductForm } from '../features/supplier-dashboard/components/product-form'
-import { ProductList } from '../features/supplier-dashboard/components/product-list'
-import { PromoCodesScreen } from '../features/supplier-dashboard/components/promo-codes-screen'
-import { SalesPointsScreen } from '../features/supplier-dashboard/components/sales-points-screen'
-import { ShopProfileEditor } from '../features/supplier-dashboard/components/shop-profile-editor'
-import { SupplierReviewsScreen } from '../features/supplier-dashboard/components/supplier-reviews-screen'
-import { SupplierSettingsScreen } from '../features/supplier-dashboard/components/supplier-settings-screen'
-import { SupplierWalletScreen } from '../features/supplier-dashboard/components/supplier-wallet-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
 import { useSession } from '../lib/auth-client'
@@ -81,8 +69,9 @@ function SearchStackScreen() {
 }
 
 function SearchHomeWrapper({ navigation }: any) {
+  // The green header paints the status-bar area itself (no SafeScreen strip).
   return (
-    <SafeScreen>
+    <View style={{ flex: 1 }}>
       <HomeScreen
         onOpenSearch={() => navigation.navigate('SearchResults', { autoFocus: true })}
         onSelectCategory={(slug: string) => navigation.navigate('SearchResults', { category: slug })}
@@ -91,6 +80,7 @@ function SearchHomeWrapper({ navigation }: any) {
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
+        onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
         onOpenProfile={() => navigation.navigate('Profil', { screen: 'ProfileHome' })}
         onSeeAll={(preset) => {
           if (preset === 'validated') {
@@ -104,7 +94,7 @@ function SearchHomeWrapper({ navigation }: any) {
           }
         }}
       />
-    </SafeScreen>
+    </View>
   )
 }
 
@@ -159,12 +149,33 @@ async function openChatWithSupplier(navigation: any, supplierId: string, peerNam
           peerName: peerName ?? conv.supplierShopName,
           isSupplier: false,
           orderId: conv.orderId ?? orderId ?? null,
+          kind: 'SUPPLIER',
         },
       })
     }
   }
   catch {
     // ignore
+  }
+}
+
+/** Buyer -> courier thread of a delivery (get-or-create), then the chat tab. */
+async function openChatWithCourier(navigation: any, deliveryId: string, peerName: string, orderId?: string) {
+  try {
+    const conv = await openDeliveryConversation(deliveryId)
+    navigation.navigate('Chat', {
+      screen: 'ChatDetail',
+      params: {
+        conversationId: conv.conversationId,
+        peerName: conv.peerName ?? peerName,
+        isSupplier: false,
+        orderId: conv.orderId ?? orderId ?? null,
+        kind: 'COURIER',
+      },
+    })
+  }
+  catch (error) {
+    appAlert('Discussion indisponible', error instanceof Error ? error.message : undefined)
   }
 }
 
@@ -265,8 +276,8 @@ function ChatStackScreen() {
           <SafeScreen>
             <ConversationList
               currentUserId={currentUserId}
-              onOpenConversation={(conversationId, peerName, isSupplier, orderId) =>
-                navigation.navigate('ChatDetail', { conversationId, peerName, isSupplier, orderId })}
+              onOpenConversation={(conversationId, peerName, isSupplier, orderId, kind) =>
+                navigation.navigate('ChatDetail', { conversationId, peerName, isSupplier, orderId, kind })}
             />
           </SafeScreen>
         )}
@@ -280,14 +291,10 @@ function ChatStackScreen() {
               peerName={route.params.peerName}
               isSupplier={route.params.isSupplier}
               orderId={route.params.orderId}
+              kind={route.params.kind ?? 'SUPPLIER'}
               onGoBack={() => navigation.goBack()}
               onOpenOrder={(oid) => {
-                if (route.params.isSupplier) {
-                  navigation.navigate('Profil', { screen: 'SupplierOrderDetail', params: { orderId: oid } })
-                }
-                else {
-                  navigation.navigate('Commandes', { screen: 'OrderTracking', params: { orderId: oid } })
-                }
+                navigation.navigate('Commandes', { screen: 'OrderTracking', params: { orderId: oid } })
               }}
             />
           </SafeScreen>
@@ -475,22 +482,8 @@ function ProfileStackScreen() {
     <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <ProfileStack.Screen name="ProfileHome" component={ProfileHomeWrapper} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileWrapper} />
-      <ProfileStack.Screen name="SupplierDashboard" component={SupplierDashboardWrapper} />
-      <ProfileStack.Screen name="SupplierProducts" component={SupplierProductsWrapper} />
-      <ProfileStack.Screen name="SupplierProductDetail" component={SupplierProductDetailWrapper} />
-      <ProfileStack.Screen name="SupplierProductForm" component={SupplierProductFormWrapper} />
-      <ProfileStack.Screen name="SupplierOrders" component={SupplierOrdersWrapper} />
-      <ProfileStack.Screen name="SupplierOrderDetail" component={SupplierOrderDetailWrapper} />
-      <ProfileStack.Screen name="SupplierSettings" component={SupplierSettingsWrapper} />
-      <ProfileStack.Screen name="SupplierShopProfile" component={SupplierShopProfileWrapper} />
-      <ProfileStack.Screen name="SupplierReviews" component={SupplierReviewsWrapper} />
-      <ProfileStack.Screen name="SupplierOpeningHours" component={SupplierOpeningHoursWrapper} />
-      <ProfileStack.Screen name="SupplierSalesPoints" component={SupplierSalesPointsWrapper} />
-      <ProfileStack.Screen name="SupplierWallet" component={SupplierWalletWrapper} />
-      <ProfileStack.Screen name="SupplierPromoCodes" component={SupplierPromoCodesWrapper} />
+      <ProfileStack.Screen name="ChangePassword" component={ChangePasswordWrapper} />
       <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
-      <ProfileStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
-      <ProfileStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
       <ProfileStack.Screen name="SupplierRegistration" component={SupplierRegistrationWrapper} />
       <ProfileStack.Screen name="ProfileLogin" component={ProfileLoginWrapper} />
       <ProfileStack.Screen name="ProfileRegister" component={ProfileRegisterWrapper} />
@@ -518,8 +511,8 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToNotifications={() => navigation.navigate('Notifications')}
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
+        onNavigateToChangePassword={() => navigation.navigate('ChangePassword')}
         onNavigateToSupplierRegistration={() => navigation.navigate('SupplierRegistration')}
-        onNavigateToDashboard={() => navigation.navigate('SupplierDashboard')}
         refreshTrigger={refreshTrigger}
       />
     </SafeScreen>
@@ -546,206 +539,11 @@ function EditProfileWrapper({ navigation }: any) {
   )
 }
 
-function SupplierDashboardWrapper({ navigation }: any) {
+function ChangePasswordWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <DashboardScreen
-        onGoBack={() => navigation.goBack()}
-        onNavigateToProducts={() => navigation.navigate('SupplierProducts')}
-        onNavigateToOrders={() => navigation.navigate('SupplierOrders')}
-        onNavigateToSettings={() => navigation.navigate('SupplierSettings')}
-        onNavigateToReviews={() => navigation.navigate('SupplierReviews')}
-        onNavigateToWallet={() => navigation.navigate('SupplierWallet')}
-        onSwitchToBuyer={() => navigation.popToTop()}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierReviewsWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <SupplierReviewsScreen onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
-function SupplierProductsWrapper({ navigation }: any) {
-  const [refreshKey, setRefreshKey] = React.useState(0)
-
-  React.useEffect(() => {
-    const unsubscribe = navigation.addListener('focus', () => {
-      setRefreshKey(k => k + 1)
-    })
-    return unsubscribe
-  }, [navigation])
-
-  return (
-    <SafeScreen>
-      <ProductList
-        key={refreshKey}
-        onAddProduct={() => navigation.navigate('SupplierProductForm')}
-        onEditProduct={productId => navigation.navigate('SupplierProductDetail', { productId })}
-        onGoBack={() => navigation.goBack()}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierProductDetailWrapper({ route, navigation }: any) {
-  const { productId } = route.params
-  return (
-    <SafeScreen>
-      <SupplierProductDetail
-        productId={productId}
-        onGoBack={() => navigation.goBack()}
-        onEdit={id => navigation.navigate('SupplierProductForm', { productId: id })}
-        onDeleted={() => navigation.navigate('SupplierProducts')}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierProductFormWrapper({ route, navigation }: any) {
-  const { productId } = route.params ?? {}
-  const [initialData, setInitialData] = React.useState(undefined)
-  const [loading, setLoading] = React.useState(Boolean(productId))
-
-  React.useEffect(() => {
-    if (!productId)
-      return
-    let cancelled = false
-    apiFetch(`/api/products/${productId}`)
-      .then(res => res.json())
-      .then((p) => {
-        if (cancelled || !p)
-          return
-        setInitialData({
-          id: p.id,
-          name: p.name ?? '',
-          description: p.description ?? '',
-          category: p.categoryId ?? '',
-          price: p.pricePerUnit != null ? String(p.pricePerUnit) : '',
-          unit: p.unit ?? 'KG',
-          stock: p.stock != null ? String(p.stock) : '',
-          alertThreshold: p.stockAlertThreshold != null ? String(p.stockAlertThreshold) : '',
-          photos: p.photos ?? [],
-          variants: (p.variants ?? []).map((v: any) => ({
-            id: v.id,
-            label: v.label,
-            price: String(v.pricePerUnit),
-            stock: String(v.stock),
-          })),
-          isActive: p.status !== 'HIDDEN',
-          voiceDescriptionUri: p.voiceDescriptionUrl ?? null,
-          promotionalPrice: p.promotionalPrice ?? null,
-        })
-        setLoading(false)
-      })
-      .catch(() => setLoading(false))
-    return () => {
-      cancelled = true
-    }
-  }, [productId])
-
-  if (loading) {
-    return (
-      <SafeScreen>
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-          <ActivityIndicator size="large" color={colors.green[400]} />
-        </View>
-      </SafeScreen>
-    )
-  }
-
-  return (
-    <SafeScreen>
-      <ProductForm
-        initialData={initialData}
-        onSave={() => {
-          if (productId) {
-            navigation.navigate('SupplierProductDetail', { productId })
-          }
-          else {
-            navigation.goBack()
-          }
-        }}
-        onCancel={() => navigation.goBack()}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierOrdersWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <OrderManagement
-        supplierId="me"
-        onOpenOrder={id => navigation.navigate('SupplierOrderDetail', { orderId: id })}
-        onGoBack={() => navigation.goBack()}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierOrderDetailWrapper({ route, navigation }: any) {
-  return (
-    <SafeScreen>
-      <OrderDetailScreen
-        orderId={route.params.orderId}
-        onGoBack={() => navigation.goBack()}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierSettingsWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <SupplierSettingsScreen
-        onGoBack={() => navigation.goBack()}
-        onNavigateToShopProfile={() => navigation.navigate('SupplierShopProfile')}
-        onNavigateToOpeningHours={() => navigation.navigate('SupplierOpeningHours')}
-        onNavigateToSalesPoints={() => navigation.navigate('SupplierSalesPoints')}
-        onNavigateToPromoCodes={() => navigation.navigate('SupplierPromoCodes')}
-        onNavigateToDeliveryZones={() => navigation.navigate('SupplierDeliveryZones')}
-        onNavigateToMode={() => navigation.navigate('SupplierMode')}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierShopProfileWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <ShopProfileEditor
-        onGoBack={() => navigation.goBack()}
-        onSaved={() => navigation.goBack()}
-      />
-    </SafeScreen>
-  )
-}
-
-function SupplierSalesPointsWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <SalesPointsScreen onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
-function SupplierWalletWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <SupplierWalletScreen onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
-function SupplierPromoCodesWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <PromoCodesScreen onGoBack={() => navigation.goBack()} />
+      <ScreenHeader title="Modifier mon mot de passe" onBack={() => navigation.goBack()} />
+      <ChangePasswordScreen onDone={() => navigation.goBack()} />
     </SafeScreen>
   )
 }
@@ -754,30 +552,6 @@ function BuyerWalletWrapper({ navigation }: any) {
   return (
     <SafeScreen>
       <WalletScreen onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
-function SupplierOpeningHoursWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <OpeningHoursEditor onSave={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
-function SupplierDeliveryZonesWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <DeliveryZoneEditor onSave={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
-function SupplierModeWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <ModeSelector onModeChanged={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }
@@ -839,6 +613,7 @@ function OrderTrackingWrapper({ route, navigation }: any) {
       <OrderTracking
         orderId={orderId}
         onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId, undefined, orderId)}
+        onOpenCourierChat={(deliveryId, courierName) => openChatWithCourier(navigation, deliveryId, courierName, orderId)}
         onRate={supplierId => navigation.navigate('RateOrder', { supplierId, orderId })}
         onBack={() => navigation.goBack()}
       />

@@ -9,8 +9,6 @@ import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -22,6 +20,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
@@ -204,10 +203,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={styles.screen}>
       <ScrollView
         style={[styles.screen, { backgroundColor: semantic.bgPage }]}
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
@@ -376,7 +372,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
               )}
         </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

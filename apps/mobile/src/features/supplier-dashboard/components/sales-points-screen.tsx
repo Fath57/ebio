@@ -11,8 +11,6 @@ import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import { use, useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -26,6 +24,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { WeekScheduleEditor } from './week-schedule-editor'
@@ -345,10 +344,7 @@ function SalesPointForm({ point, onDone }: SalesPointFormProps) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.container, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader
         title={point ? 'Modifier le point de vente' : 'Nouveau point de vente'}
         onBack={() => onDone(false)}
@@ -463,7 +459,7 @@ function SalesPointForm({ point, onDone }: SalesPointFormProps) {
             : <Text style={styles.saveButtonText}>Enregistrer</Text>}
         </TouchableOpacity>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

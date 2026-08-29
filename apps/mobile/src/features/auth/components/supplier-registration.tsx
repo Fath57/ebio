@@ -11,8 +11,6 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -26,6 +24,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { storage } from '../../../utils/offline-storage'
 import { appAlert } from '../../common/components/app-alert'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
@@ -256,7 +255,7 @@ export function SupplierRegistration({
       clearDraft()
       updateDraft({ step: 4 })
     }
-    catch {
+    catch (error) {
       const msg = error instanceof Error ? error.message : 'L\'inscription a échoué. Veuillez réessayer.'
       showError('Erreur', msg)
     }
@@ -601,10 +600,7 @@ export function SupplierRegistration({
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.screen, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Devenir fournisseur" onBack={onGoBack} />
       <ScrollView
         contentContainerStyle={styles.screenContent}
@@ -626,7 +622,7 @@ export function SupplierRegistration({
         onConfirm={() => setErrorModal(e => ({ ...e, visible: false }))}
         onCancel={() => setErrorModal(e => ({ ...e, visible: false }))}
       />
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

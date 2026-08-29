@@ -16,6 +16,7 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { allergenLabel, labelLabel, nutritionBasisLabel } from '../../catalog/composition'
 import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -25,6 +26,18 @@ interface Variant {
   label: string
   pricePerUnit: number
   stock: number
+}
+
+interface NutritionalValues {
+  basis?: string | null
+  energyKcal?: number | null
+  fat?: number | null
+  saturatedFat?: number | null
+  carbohydrates?: number | null
+  sugars?: number | null
+  fiber?: number | null
+  protein?: number | null
+  salt?: number | null
 }
 
 interface ProductDetail {
@@ -41,9 +54,28 @@ interface ProductDetail {
   promotionalPrice: number | null
   promotionExpiresAt: string | null
   variants: Variant[]
+  ingredients?: string | null
+  allergens?: string[] | null
+  labels?: string[] | null
+  origin?: string | null
+  conservation?: string | null
+  nutritionalValues?: NutritionalValues | null
   createdAt: string
   updatedAt: string
 }
+
+type NutritionNumericKey = Exclude<keyof NutritionalValues, 'basis'>
+
+const NUTRITION_ROWS: Array<{ key: NutritionNumericKey, label: string, unit: string }> = [
+  { key: 'energyKcal', label: 'Énergie', unit: 'kcal' },
+  { key: 'fat', label: 'Matières grasses', unit: 'g' },
+  { key: 'saturatedFat', label: 'dont acides gras saturés', unit: 'g' },
+  { key: 'carbohydrates', label: 'Glucides', unit: 'g' },
+  { key: 'sugars', label: 'dont sucres', unit: 'g' },
+  { key: 'fiber', label: 'Fibres', unit: 'g' },
+  { key: 'protein', label: 'Protéines', unit: 'g' },
+  { key: 'salt', label: 'Sel', unit: 'g' },
+]
 
 const STATUS_LABELS: Record<string, { label: string, color: string, bg: string }> = {
   ACTIVE: { label: 'Actif', color: colors.green[800], bg: colors.green[50] },
@@ -296,6 +328,82 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
             </View>
           )}
 
+          {/* Composition & product sheet — read-only, shown only when filled in */}
+          {product.ingredients != null && product.ingredients !== '' && (
+            <View style={styles.descriptionSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Ingrédients</Text>
+              <Text style={[styles.description, { color: semantic.textPrimary }]}>{product.ingredients}</Text>
+            </View>
+          )}
+
+          {(product.allergens?.length ?? 0) > 0 && (
+            <View style={styles.descriptionSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Allergènes</Text>
+              <View style={styles.compositionChipRow}>
+                {product.allergens?.map(a => (
+                  <View key={a} style={[styles.compositionChip, { backgroundColor: colors.coral[50] }]}>
+                    <Text style={[styles.compositionChipText, { color: colors.coral[600] }]}>{allergenLabel(a)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {(product.labels?.length ?? 0) > 0 && (
+            <View style={styles.descriptionSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Labels</Text>
+              <View style={styles.compositionChipRow}>
+                {product.labels?.map(l => (
+                  <View key={l} style={[styles.compositionChip, { backgroundColor: colors.green[50] }]}>
+                    <Text style={[styles.compositionChipText, { color: colors.green[800] }]}>{labelLabel(l)}</Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {product.origin != null && product.origin !== '' && (
+            <View style={styles.descriptionSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Origine</Text>
+              <Text style={[styles.description, { color: semantic.textPrimary }]}>{product.origin}</Text>
+            </View>
+          )}
+
+          {product.conservation != null && product.conservation !== '' && (
+            <View style={styles.descriptionSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Conservation</Text>
+              <Text style={[styles.description, { color: semantic.textPrimary }]}>{product.conservation}</Text>
+            </View>
+          )}
+
+          {product.nutritionalValues != null
+            && NUTRITION_ROWS.some(r => product.nutritionalValues?.[r.key] != null) && (
+            <View style={styles.descriptionSection}>
+              <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>
+                Valeurs nutritionnelles (
+                {nutritionBasisLabel(product.nutritionalValues.basis)}
+                )
+              </Text>
+              <View style={[styles.nutritionTable, { borderColor: semantic.borderNormal }]}>
+                {NUTRITION_ROWS.map((row) => {
+                  const value = product.nutritionalValues?.[row.key]
+                  if (value == null)
+                    return null
+                  return (
+                    <View key={row.key} style={styles.nutritionRow}>
+                      <Text style={[styles.nutritionLabel, { color: semantic.textSecondary }]}>{row.label}</Text>
+                      <Text style={[styles.nutritionValue, { color: semantic.textPrimary }]}>
+                        {value.toLocaleString('fr-FR')}
+                        {' '}
+                        {row.unit}
+                      </Text>
+                    </View>
+                  )
+                })}
+              </View>
+            </View>
+          )}
+
           {/* Meta */}
           <View style={styles.metaRow}>
             <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
@@ -442,6 +550,26 @@ const styles = StyleSheet.create({
 
   descriptionSection: { marginTop: spacing[5] },
   description: { ...typography.bodyL, lineHeight: 15 * 1.7 },
+
+  compositionChipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] },
+  compositionChip: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+  },
+  compositionChipText: { ...typography.caption, fontFamily: fonts.sansSb },
+  nutritionTable: {
+    borderWidth: 1,
+    borderRadius: radius.lg,
+    paddingHorizontal: spacing[3],
+  },
+  nutritionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: spacing[2],
+  },
+  nutritionLabel: { ...typography.bodyS },
+  nutritionValue: { ...typography.bodyS, fontFamily: fonts.mono },
 
   metaRow: {
     flexDirection: 'row',

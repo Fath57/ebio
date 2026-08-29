@@ -9,8 +9,6 @@ import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -24,6 +22,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 interface EditProfileScreenProps {
@@ -199,10 +198,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={[styles.flex, { backgroundColor: semantic.bgPage }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -338,7 +334,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
           onGoBack()
         }}
       />
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

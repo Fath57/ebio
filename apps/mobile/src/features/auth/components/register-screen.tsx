@@ -9,9 +9,7 @@ import { useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -30,6 +28,8 @@ import {
 } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { BRAND_LOGO } from '../../../utils/app-variant'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { GoogleSignInButton } from './google-sign-in-button'
 import { OtpInput, ResendTimer } from './otp-input'
 
@@ -236,10 +236,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
   const isPhoneValid = /^\+229\d{10}$/.test(phone)
 
   return (
-    <KeyboardAvoidingView
-      style={[styles.flex, { backgroundColor: semantic.bgPage }]}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={[styles.flex, { backgroundColor: semantic.bgPage }]}>
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
@@ -251,7 +248,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
         {/* Brand */}
         <View style={styles.brandContainer}>
           <Image
-            source={require('../../../../assets/logo-transparent.png')}
+            source={BRAND_LOGO}
             style={styles.logo}
             resizeMode="contain"
           />
@@ -564,7 +561,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
           </View>
         </View>
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 

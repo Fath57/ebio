@@ -18,12 +18,11 @@ import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
-import { AppNavigation } from './src/app/navigation'
+import { AppNavigation } from './src/app/navigation-entry'
 import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
 import { AppAlertHost } from './src/features/common/components/app-alert'
 import { LocationProvider } from './src/features/common/location-context'
-import { useNotifications } from './src/features/notifications/hooks/use-notifications'
 import { OnboardingScreen } from './src/features/onboarding/components/onboarding-screen'
 import { colors } from './src/theme/theme'
 import { ThemeProvider } from './src/theme/theme-context'
@@ -32,6 +31,7 @@ import { hydrateStorageCache, storage } from './src/utils/offline-storage'
 SplashScreen.preventAutoHideAsync()
 
 const ONBOARDING_KEY = 'onboarding_seen'
+const FONT_LOAD_TIMEOUT_MS = 6000
 
 export default function App(): React.JSX.Element | null {
   const [showSplash, setShowSplash] = useState(true)
@@ -44,8 +44,9 @@ export default function App(): React.JSX.Element | null {
       .then(() => setShowOnboarding(storage.getString(ONBOARDING_KEY) !== '1'))
       .catch(() => setShowOnboarding(false))
   }, [])
-  useNotifications()
-  const [fontsLoaded] = useFonts({
+  // Notifications are mounted once inside each variant's navigation root,
+  // where the session is known — a second mount here double-fired every tap.
+  const [fontsLoaded, fontError] = useFonts({
     DMSerifDisplay_400Regular,
     PlusJakartaSans_400Regular,
     PlusJakartaSans_500Medium,
@@ -54,13 +55,35 @@ export default function App(): React.JSX.Element | null {
     JetBrainsMono_500Medium,
   })
 
-  const onLayoutRootView = useCallback(async () => {
+  // Never hold the whole app hostage to the font download: on an error or
+  // after a few seconds, render with the system fonts and say why in the log.
+  const [fontTimedOut, setFontTimedOut] = useState(false)
+  useEffect(() => {
     if (fontsLoaded) {
-      await SplashScreen.hideAsync()
+      return
+    }
+    const timer = setTimeout(() => setFontTimedOut(true), FONT_LOAD_TIMEOUT_MS)
+    return () => {
+      clearTimeout(timer)
     }
   }, [fontsLoaded])
+  useEffect(() => {
+    if (fontError) {
+      console.warn('[fonts] loading failed, falling back to system fonts', fontError)
+    }
+    else if (fontTimedOut && !fontsLoaded) {
+      console.warn('[fonts] still not loaded after timeout, rendering with system fonts')
+    }
+  }, [fontError, fontTimedOut, fontsLoaded])
+  const fontsReady = fontsLoaded || fontError != null || fontTimedOut
 
-  if (!fontsLoaded) {
+  const onLayoutRootView = useCallback(async () => {
+    if (fontsReady) {
+      await SplashScreen.hideAsync()
+    }
+  }, [fontsReady])
+
+  if (!fontsReady) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.neutral[0] }}>
         <ActivityIndicator size="large" color={colors.green[400]} />

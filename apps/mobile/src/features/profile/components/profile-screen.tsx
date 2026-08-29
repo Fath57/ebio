@@ -5,6 +5,7 @@ import CircleQuestionMark from 'lucide-react-native/dist/esm/icons/circle-questi
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import FileText from 'lucide-react-native/dist/esm/icons/file-text'
 import Hourglass from 'lucide-react-native/dist/esm/icons/hourglass'
+import KeyRound from 'lucide-react-native/dist/esm/icons/key-round'
 import LogOutIcon from 'lucide-react-native/dist/esm/icons/log-out'
 import Monitor from 'lucide-react-native/dist/esm/icons/monitor'
 import Moon from 'lucide-react-native/dist/esm/icons/moon'
@@ -20,6 +21,7 @@ import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
+  Linking,
   ScrollView,
   StyleSheet,
   Switch,
@@ -31,9 +33,18 @@ import { notifyAuthChange, signOut, useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { BRAND_LOGO } from '../../../utils/app-variant'
 import { ConfirmModal } from '../../common/components/confirm-modal'
-import { ModeSwitch } from '../../common/components/mode-switch'
 import { ScreenHeader } from '../../common/components/screen-header'
+
+const SUPPLIER_APP_PACKAGE = 'com.ebio.supplier'
+
+/** Opens the eBio Fournisseur Play Store listing (store app, then web fallback). */
+function openSupplierApp() {
+  Linking.openURL(`market://details?id=${SUPPLIER_APP_PACKAGE}`).catch(() => {
+    Linking.openURL(`https://play.google.com/store/apps/details?id=${SUPPLIER_APP_PACKAGE}`)
+  })
+}
 
 interface UserProfile {
   id: string
@@ -56,6 +67,7 @@ const THEME_OPTIONS: { value: ThemeMode, label: string, Icon: typeof Sun }[] = [
 const ROLE_LABELS: Record<string, string> = {
   BUYER: 'Acheteur',
   SUPPLIER: 'Fournisseur',
+  COURIER: 'Livreur',
   ADMIN: 'Administrateur',
 }
 
@@ -65,12 +77,12 @@ interface ProfileScreenProps {
   onNavigateToNotifications?: () => void
   onNavigateToLogin?: () => void
   onNavigateToEditProfile?: () => void
+  onNavigateToChangePassword?: () => void
   onNavigateToSupplierRegistration?: () => void
-  onNavigateToDashboard?: () => void
   refreshTrigger?: number
 }
 
-export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToSupplierRegistration, onNavigateToDashboard, refreshTrigger }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
   const tabBarHeight = useBottomTabBarHeight()
@@ -164,7 +176,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
     return (
       <View style={[styles.center, { backgroundColor: semantic.bgPage }]}>
         <Image
-          source={require('../../../../assets/logo-transparent.png')}
+          source={BRAND_LOGO}
           style={styles.guestLogo}
           resizeMode="contain"
         />
@@ -224,17 +236,29 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Mode switcher — visible only for validated suppliers */}
+        {/* Supplier space moved to the dedicated eBio Fournisseur app */}
         {supplierStatus.isSupplier && supplierStatus.validationStatus === 'VALIDATED' && (
           <View style={styles.modeSwitchWrap}>
-            <ModeSwitch
-              mode="buyer"
-              onChange={(m) => {
-                if (m === 'seller') {
-                  onNavigateToDashboard?.()
-                }
-              }}
-            />
+            <TouchableOpacity
+              style={[styles.supplierAppBanner, { backgroundColor: semantic.bgPrimaryLight }]}
+              onPress={openSupplierApp}
+              accessibilityRole="button"
+              accessibilityLabel="Installer l'application eBio Fournisseur"
+            >
+              <Store size={24} color={colors.green[600]} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.pendingTitle, { color: semantic.textPrimary }]}>
+                  Votre boutique a déménagé
+                </Text>
+                <Text style={[styles.pendingSubtitle, { color: semantic.textSecondary }]}>
+                  Gérez «
+                  {' '}
+                  {supplierStatus.shopName}
+                  {' '}
+                  » depuis la nouvelle application eBio Fournisseur. Touchez pour l'installer.
+                </Text>
+              </View>
+            </TouchableOpacity>
           </View>
         )}
 
@@ -295,6 +319,13 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
               label="Modifier le profil"
               sublabel="Nom, e-mail, téléphone"
               onPress={() => onNavigateToEditProfile?.()}
+              semantic={semantic}
+            />
+            <MenuItem
+              icon={KeyRound}
+              label="Modifier mon mot de passe"
+              sublabel="Sécurité du compte"
+              onPress={() => onNavigateToChangePassword?.()}
               semantic={semantic}
             />
           </View>
@@ -708,6 +739,13 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     gap: spacing[3],
     marginHorizontal: spacing[4],
+    padding: spacing[4],
+    borderRadius: radius.lg,
+  },
+  supplierAppBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
     padding: spacing[4],
     borderRadius: radius.lg,
   },

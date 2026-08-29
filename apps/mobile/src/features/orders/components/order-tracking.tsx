@@ -1,22 +1,28 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
+import Bike from 'lucide-react-native/dist/esm/icons/bike'
+import Car from 'lucide-react-native/dist/esm/icons/car'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
+import Footprints from 'lucide-react-native/dist/esm/icons/footprints'
 import House from 'lucide-react-native/dist/esm/icons/house'
 import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
+import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
+  Linking,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -24,6 +30,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -68,6 +75,8 @@ interface OrderTrackingProps {
   orderId: string
   onBack?: () => void
   onOpenChat: (supplierId: string) => void
+  /** Opens (or creates) the buyer <-> courier thread of the delivery. */
+  onOpenCourierChat: (deliveryId: string, courierName: string) => void
   onRate: (supplierId: string) => void
 }
 
@@ -104,16 +113,6 @@ function formatPrice(value: number): string {
   return value.toLocaleString('fr-FR').replace(/,/g, ' ')
 }
 
-function formatDateTime(iso: string): string {
-  const date = new Date(iso)
-  return date.toLocaleDateString('fr-FR', {
-    day: 'numeric',
-    month: 'short',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 function formatTime(iso: string): string {
   const date = new Date(iso)
   return date.toLocaleTimeString('fr-FR', {
@@ -126,6 +125,7 @@ export function OrderTracking({
   orderId,
   onBack,
   onOpenChat,
+  onOpenCourierChat,
   onRate,
 }: OrderTrackingProps) {
   const [order, setOrder] = useState<OrderDetail | null>(null)
@@ -243,7 +243,6 @@ export function OrderTracking({
   const currentStatusIndex = STATUS_ORDER.indexOf(order.currentStatus)
   const isCancelled = order.currentStatus === 'CANCELLED'
   const isDelivered = order.currentStatus === 'DELIVERED'
-  const statusConfig = STATUS_CONFIG[order.currentStatus]
 
   const subtotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0)
   const deliveryFee = order.total - subtotal
@@ -268,50 +267,17 @@ export function OrderTracking({
           />
         )}
       >
+        {/* Live map + courier first: while a run is on, it is what the buyer opens the screen for */}
+        {(order.currentStatus === 'IN_DELIVERY' || order.currentStatus === 'DELIVERED') && (
+          <DeliveryInfoCard orderId={orderId} isDelivered={isDelivered} onOpenCourierChat={onOpenCourierChat} />
+        )}
+
         {/* Cancelled banner */}
         {isCancelled && (
           <View style={styles.cancelledBanner}>
             <Text style={styles.cancelledBannerText}>Commande annulée</Text>
           </View>
         )}
-
-        {/* Status hero card */}
-        <View style={[styles.heroCard, { backgroundColor: semantic.bgCard }, CARD_SHADOW]}>
-          <View style={[
-            styles.heroIconCircle,
-            {
-              backgroundColor: isCancelled ? colors.coral[50] : colors.green[50],
-            },
-          ]}
-          >
-            {getStatusIcon(
-              order.currentStatus,
-              isCancelled ? colors.coral[400] : colors.green[400],
-            )}
-          </View>
-          <Text style={[
-            styles.heroStatusLabel,
-            {
-              color: isCancelled ? colors.coral[600] : semantic.textPrimaryColor,
-            },
-          ]}
-          >
-            {statusConfig.heroLabel}
-          </Text>
-          <View style={styles.heroSupplierRow}>
-            <Store size={14} color={semantic.textSecondary} />
-            <Text style={[styles.heroSupplierName, { color: semantic.textSecondary }]}>
-              Chez
-              {' '}
-              {order.supplierName}
-            </Text>
-          </View>
-          {order.createdAt && (
-            <Text style={[styles.heroDate, { color: semantic.textTertiary }]}>
-              {formatDateTime(order.createdAt)}
-            </Text>
-          )}
-        </View>
 
         {/* Timeline */}
         {!isCancelled && (
@@ -363,7 +329,7 @@ export function OrderTracking({
                       )}
                     </View>
 
-                    <View style={styles.timelineContent}>
+                    <View style={[styles.timelineContent, isLast && styles.timelineContentLast]}>
                       <Text style={[
                         styles.timelineLabel,
                         { color: semantic.textTertiary },
@@ -670,39 +636,6 @@ const styles = StyleSheet.create({
   },
 
   // Hero card
-  heroCard: {
-    borderRadius: radius.xl,
-    paddingVertical: spacing[6],
-    paddingHorizontal: spacing[4],
-    alignItems: 'center',
-    gap: spacing[2],
-  },
-  heroIconCircle: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: spacing[1],
-  },
-  heroStatusLabel: {
-    fontFamily: fonts.sansBd,
-    fontSize: 20,
-    lineHeight: 26,
-  },
-  heroSupplierRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  heroSupplierName: {
-    fontFamily: fonts.sansMd,
-    fontSize: 14,
-  },
-  heroDate: {
-    fontFamily: fonts.sansMd,
-    fontSize: 12,
-  },
 
   // Section card
   sectionCard: {
@@ -713,7 +646,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSb,
     fontSize: 16,
     lineHeight: 22,
-    marginBottom: spacing[3],
+    marginBottom: spacing[2],
   },
   sectionTitleRow: {
     flexDirection: 'row',
@@ -733,7 +666,7 @@ const styles = StyleSheet.create({
   },
   timelineStep: {
     flexDirection: 'row',
-    minHeight: 56,
+    minHeight: 40,
   },
   timelineLeft: {
     width: 40,
@@ -759,15 +692,18 @@ const styles = StyleSheet.create({
   timelineLine: {
     flex: 1,
     width: 2,
-    minHeight: 16,
+    minHeight: 10,
     marginVertical: 2,
   },
   timelineContent: {
     flex: 1,
     paddingLeft: spacing[3],
-    paddingBottom: spacing[3],
+    paddingBottom: spacing[2],
     justifyContent: 'center',
     gap: 2,
+  },
+  timelineContentLast: {
+    paddingBottom: 0,
   },
   timelineLabel: {
     fontFamily: fonts.sans,
@@ -867,7 +803,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
-    marginBottom: spacing[3],
+    marginBottom: spacing[2],
   },
   infoIconCircle: {
     width: 36,
@@ -954,5 +890,323 @@ const styles = StyleSheet.create({
   },
   buttonDisabled: {
     opacity: 0.5,
+  },
+})
+
+interface DeliveryInfo {
+  id: string
+  status: string
+  courier: { name: string, phone: string | null } | null
+  courierVehicleType: 'MOTO' | 'BICYCLE' | 'CAR' | 'ON_FOOT' | null
+  courierPosition: { latitude: number, longitude: number, updatedAt: string | null } | null
+  pickupPosition: { latitude: number, longitude: number } | null
+  confirmationCode: string | null
+  failReason: string | null
+}
+
+const VEHICLE_ICONS = {
+  MOTO: Bike,
+  BICYCLE: Bike,
+  CAR: Car,
+  ON_FOOT: Footprints,
+} as const
+
+const IN_PROGRESS_STATUSES = ['ACCEPTED', 'PICKED_UP', 'IN_TRANSIT']
+/** Courier position refresh cadence while the delivery is on the road. */
+const TRACKING_POLL_MS = 10000
+
+function positionAge(updatedAt: string | null): string | null {
+  if (!updatedAt) {
+    return null
+  }
+  const minutes = Math.round((Date.now() - new Date(updatedAt).getTime()) / 60000)
+  if (minutes < 1) {
+    return 'à l\'instant'
+  }
+  if (minutes < 60) {
+    return `il y a ${minutes} min`
+  }
+  return `il y a ${Math.round(minutes / 60)} h`
+}
+
+/** Uber-style live map: courier marker (vehicle icon), shop, and the buyer. */
+function DeliveryLiveMap({ info }: { info: DeliveryInfo }) {
+  const { semantic } = useTheme()
+  const mapRef = useRef<MapView>(null)
+  const position = info.courierPosition
+
+  useEffect(() => {
+    if (!position) {
+      return
+    }
+    const coords = [{ latitude: position.latitude, longitude: position.longitude }]
+    if (info.pickupPosition) {
+      coords.push(info.pickupPosition)
+    }
+    mapRef.current?.fitToCoordinates(coords, {
+      edgePadding: { top: 48, right: 48, bottom: 48, left: 48 },
+      animated: true,
+    })
+  }, [position, info.pickupPosition])
+
+  if (!position) {
+    return null
+  }
+
+  const VehicleIcon = info.courierVehicleType ? VEHICLE_ICONS[info.courierVehicleType] : Bike
+  const age = positionAge(position.updatedAt)
+
+  return (
+    <View style={deliveryStyles.mapWrap}>
+      <MapView
+        ref={mapRef}
+        style={StyleSheet.absoluteFill}
+        provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+        initialRegion={{
+          latitude: position.latitude,
+          longitude: position.longitude,
+          latitudeDelta: 0.04,
+          longitudeDelta: 0.04,
+        }}
+        showsUserLocation
+        showsMyLocationButton={false}
+        toolbarEnabled={false}
+      >
+        <Marker
+          coordinate={{ latitude: position.latitude, longitude: position.longitude }}
+          anchor={{ x: 0.5, y: 0.5 }}
+          tracksViewChanges={false}
+        >
+          <View style={deliveryStyles.courierMarker}>
+            <VehicleIcon size={18} color={colors.neutral[0]} strokeWidth={2.2} />
+          </View>
+        </Marker>
+        {info.pickupPosition
+          ? (
+              <Marker
+                coordinate={info.pickupPosition}
+                anchor={{ x: 0.5, y: 0.5 }}
+                tracksViewChanges={false}
+              >
+                <View style={[deliveryStyles.shopMarker, { backgroundColor: semantic.bgCard }]}>
+                  <Store size={16} color={colors.earth[600]} strokeWidth={2.2} />
+                </View>
+              </Marker>
+            )
+          : null}
+      </MapView>
+      {age
+        ? (
+            <View style={[deliveryStyles.mapBadge, { backgroundColor: semantic.bgCard }]}>
+              <Text style={[deliveryStyles.mapBadgeText, { color: semantic.textSecondary }]}>
+                Position
+                {' '}
+                {age}
+              </Text>
+            </View>
+          )
+        : null}
+    </View>
+  )
+}
+
+/**
+ * Courier block of the tracking screen: who delivers, and the 4-digit code the
+ * buyer hands to the courier as proof of delivery.
+ */
+function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat }: {
+  orderId: string
+  isDelivered: boolean
+  onOpenCourierChat: (deliveryId: string, courierName: string) => void
+}) {
+  const { semantic } = useTheme()
+  const [info, setInfo] = useState<DeliveryInfo | null>(null)
+  const inProgress = info ? IN_PROGRESS_STATUSES.includes(info.status) : false
+
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const res = await apiFetch(`/api/deliveries/by-order/${orderId}`)
+        if (res.ok && !cancelled) {
+          const data = await res.json() as DeliveryInfo
+          setInfo(data)
+        }
+      }
+      catch {
+        // The card simply stays hidden / keeps its last state
+      }
+    }
+
+    load()
+    // Live tracking: refresh the courier position while the delivery moves
+    const timer = inProgress ? setInterval(load, TRACKING_POLL_MS) : null
+    return () => {
+      cancelled = true
+      if (timer) {
+        clearInterval(timer)
+      }
+    }
+  }, [orderId, inProgress])
+
+  if (!info || !info.courier) {
+    return null
+  }
+
+  return (
+    <View style={[deliveryStyles.card, { backgroundColor: semantic.bgCard }, CARD_SHADOW]}>
+      {inProgress ? <DeliveryLiveMap info={info} /> : null}
+      <Text style={[deliveryStyles.title, { color: semantic.textPrimary }]}>Votre livreur</Text>
+      <View style={deliveryStyles.courierRow}>
+        <View style={[deliveryStyles.courierAvatar, { backgroundColor: semantic.bgPrimaryLight }]}>
+          <Truck size={18} color={colors.green[600]} />
+        </View>
+        <Text style={[deliveryStyles.courierName, { color: semantic.textPrimary }]}>{info.courier.name}</Text>
+        <TouchableOpacity
+          style={[deliveryStyles.callButton, { backgroundColor: semantic.bgPrimaryLight }]}
+          onPress={() => onOpenCourierChat(info.id, info.courier?.name ?? 'Livreur')}
+          accessibilityRole="button"
+          accessibilityLabel="Écrire au livreur"
+        >
+          <MessageCircle size={18} color={colors.green[600]} />
+        </TouchableOpacity>
+        {info.courier.phone
+          ? (
+              <TouchableOpacity
+                style={[deliveryStyles.callButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                onPress={() => {
+                  Linking.openURL(`tel:${info.courier?.phone}`)
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="Appeler le livreur"
+              >
+                <Phone size={18} color={colors.green[600]} />
+              </TouchableOpacity>
+            )
+          : null}
+      </View>
+      {!isDelivered && info.confirmationCode
+        ? (
+            <View style={[deliveryStyles.codeBox, { backgroundColor: semantic.bgPrimaryLight }]}>
+              <Text style={[deliveryStyles.codeLabel, { color: semantic.textSecondary }]}>
+                Code de confirmation à remettre au livreur
+              </Text>
+              <Text style={[deliveryStyles.codeValue, { color: semantic.textPrimaryColor }]}>
+                {info.confirmationCode}
+              </Text>
+            </View>
+          )
+        : null}
+      {info.status === 'FAILED'
+        ? (
+            <View style={[deliveryStyles.failBox, { backgroundColor: colors.coral[50] }]}>
+              <Text style={[deliveryStyles.failText, { color: colors.coral[800] }]}>
+                La livraison n'a pas pu aboutir. Le fournisseur organise une nouvelle tentative.
+              </Text>
+            </View>
+          )
+        : null}
+    </View>
+  )
+}
+
+const deliveryStyles = StyleSheet.create({
+  // Same footprint as the other section cards: the scroll content already
+  // carries the horizontal padding and the vertical gap.
+  card: {
+    borderRadius: radius.xl,
+    padding: spacing[4],
+  },
+  title: {
+    ...typography.h3,
+    marginBottom: spacing[3],
+  },
+  courierRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  courierAvatar: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  courierName: {
+    ...typography.bodyL,
+    fontFamily: fonts.sansMd,
+    flex: 1,
+  },
+  callButton: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  codeBox: {
+    borderRadius: radius.md,
+    padding: spacing[4],
+    alignItems: 'center',
+    marginTop: spacing[3],
+  },
+  codeLabel: {
+    ...typography.caption,
+    textAlign: 'center',
+  },
+  codeValue: {
+    fontFamily: fonts.mono,
+    fontSize: 32,
+    letterSpacing: 10,
+    marginTop: spacing[2],
+  },
+  failBox: {
+    borderRadius: radius.md,
+    padding: spacing[3],
+    marginTop: spacing[3],
+  },
+  failText: {
+    ...typography.bodyS,
+  },
+  mapWrap: {
+    height: 220,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    marginBottom: spacing[3],
+  },
+  courierMarker: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.green[400],
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: colors.neutral[0],
+    ...shadows.md,
+  },
+  shopMarker: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.earth[200],
+    ...shadows.sm,
+  },
+  mapBadge: {
+    position: 'absolute',
+    bottom: spacing[2],
+    left: spacing[2],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[1],
+    borderRadius: radius.pill,
+    ...shadows.sm,
+  },
+  mapBadgeText: {
+    ...typography.caption,
   },
 })

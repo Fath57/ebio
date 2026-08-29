@@ -1,6 +1,7 @@
 import type { SearchResult } from '../hooks/use-search'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import Star from 'lucide-react-native/dist/esm/icons/star'
+import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
 import {
   Image,
@@ -46,7 +47,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
         {product.photo
           ? (
               <Image
-                source={{ uri: product.photo }}
+                source={{ uri: product.thumbnail ?? product.photo }}
                 style={styles.image}
                 resizeMode="cover"
               />
@@ -88,13 +89,13 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
 
       {/* Content */}
       <View style={styles.body}>
-        {/* Row 1: Shop name + rating */}
+        {/* Row 1: Product name + rating — the product is what the buyer scans for */}
         <View style={styles.titleRow}>
           <Text
-            style={[styles.shopName, { color: semantic.textPrimary }]}
+            style={[styles.productName, { color: semantic.textPrimary }]}
             numberOfLines={1}
           >
-            {supplier.shopName}
+            {product.name}
           </Text>
           {supplier.rating !== null && (
             <View style={styles.ratingPill}>
@@ -104,13 +105,16 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
           )}
         </View>
 
-        {/* Row 2: Product name */}
-        <Text
-          style={[styles.productName, { color: semantic.textSecondary }]}
-          numberOfLines={1}
-        >
-          {product.name}
-        </Text>
+        {/* Row 2: Shop name */}
+        <View style={styles.shopRow}>
+          <Store size={12} color={semantic.textTertiary} strokeWidth={2.2} />
+          <Text
+            style={[styles.shopName, { color: semantic.textSecondary }]}
+            numberOfLines={1}
+          >
+            {supplier.shopName}
+          </Text>
+        </View>
 
         {/* Row 3: Meta line — distance · price · mode */}
         <View style={styles.metaRow}>
@@ -257,7 +261,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: spacing[2],
   },
-  shopName: {
+  productName: {
     fontFamily: fonts.sansBd,
     fontSize: 17,
     lineHeight: 17 * 1.3,
@@ -279,10 +283,16 @@ const styles = StyleSheet.create({
   },
 
   // Product
-  productName: {
+  shopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  shopName: {
     fontFamily: fonts.sans,
     fontSize: 13,
     lineHeight: 13 * 1.4,
+    flexShrink: 1,
   },
 
   // Meta

@@ -1,3 +1,4 @@
+import type { NutritionalValues, ProductCompositionData } from './product-composition'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -13,7 +14,7 @@ import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
@@ -27,8 +28,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { apiFetch } from '../../../utils/api-client'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 import { useProductUnits } from '../hooks/use-product-units'
+import { ProductCompositionSections, ProductLabelChips } from './product-composition'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const HERO_HEIGHT = 380
@@ -73,7 +76,41 @@ export function ProductDetailScreen({
   const insets = useSafeAreaInsets()
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
+  const [composition, setComposition] = useState<ProductCompositionData | null>(null)
   const scrollY = useRef(new Animated.Value(0)).current
+
+  // The navigation param is a lean list payload — fetch the full product
+  // detail to get the composition fields (fiche produit).
+  useEffect(() => {
+    let cancelled = false
+    async function loadComposition() {
+      try {
+        const res = await apiFetch(`/api/products/${product.id}`)
+        if (!res.ok)
+          return
+        const data = await res.json() as Record<string, unknown>
+        if (cancelled)
+          return
+        setComposition({
+          ingredients: typeof data.ingredients === 'string' ? data.ingredients : null,
+          allergens: Array.isArray(data.allergens) ? data.allergens as string[] : [],
+          labels: Array.isArray(data.labels) ? data.labels as string[] : [],
+          origin: typeof data.origin === 'string' ? data.origin : null,
+          conservation: typeof data.conservation === 'string' ? data.conservation : null,
+          nutritionalValues: data.nutritionalValues !== null && typeof data.nutritionalValues === 'object'
+            ? data.nutritionalValues as NutritionalValues
+            : null,
+        })
+      }
+      catch {
+        // Composition sections simply stay hidden when the fetch fails.
+      }
+    }
+    loadComposition()
+    return () => {
+      cancelled = true
+    }
+  }, [product.id])
 
   const hasPromo = product.promotionalPrice !== null && product.promotionalPrice < product.pricePerUnit
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
@@ -280,6 +317,9 @@ export function ProductDetailScreen({
                   : 'Indisponible'}
               </Text>
             </View>
+            {composition !== null && composition.labels.length > 0 && (
+              <ProductLabelChips labels={composition.labels} />
+            )}
           </View>
 
           {/* Price block — editorial treatment */}
@@ -331,6 +371,11 @@ export function ProductDetailScreen({
             </View>
           </>
         )}
+
+        {/* ============================================================== */}
+        {/* FICHE PRODUIT — composition                                     */}
+        {/* ============================================================== */}
+        <ProductCompositionSections composition={composition} />
 
         {/* ============================================================== */}
         {/* FOURNISSEUR                                                     */}

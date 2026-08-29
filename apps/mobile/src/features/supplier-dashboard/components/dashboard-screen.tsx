@@ -1,14 +1,17 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Settings from 'lucide-react-native/dist/esm/icons/settings'
 import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up'
+import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -18,8 +21,8 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
-import { ModeSwitch } from '../../common/components/mode-switch'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { NotificationBell } from '../../notifications/components/notification-bell'
 
 interface DashboardData {
   pendingOrders: number
@@ -32,38 +35,60 @@ interface DashboardData {
 }
 
 interface DashboardScreenProps {
-  onGoBack: () => void
+  /** Absent in the dedicated supplier app: the dashboard is the root screen. */
+  onGoBack?: () => void
   onNavigateToProducts: () => void
   onNavigateToOrders: () => void
   onNavigateToSettings: () => void
   onNavigateToReviews: () => void
   onNavigateToWallet: () => void
-  onSwitchToBuyer: () => void
+  onNavigateToMessages: () => void
+  onNavigateToNotifications?: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onSwitchToBuyer }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToMessages, onNavigateToNotifications }: DashboardScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [loadFailed, setLoadFailed] = useState(false)
 
-  useEffect(() => {
-    async function load() {
-      try {
-        const res = await apiFetch('/api/suppliers/me/dashboard')
-        if (res.ok) {
-          setData(await res.json())
-        }
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch('/api/suppliers/me/dashboard')
+      if (res.ok) {
+        setData(await res.json())
+        setLoadFailed(false)
       }
-      catch {
-        // ignore
-      }
-      finally {
-        setLoading(false)
+      else {
+        setLoadFailed(true)
       }
     }
-    load()
+    catch {
+      setLoadFailed(true)
+    }
+    finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
   }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  // KPIs must be fresh when the supplier comes back to the tab.
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
+
+  const handleRefresh = useCallback(() => {
+    setRefreshing(true)
+    load()
+  }, [load])
 
   if (loading) {
     return (
@@ -78,21 +103,36 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
       style={[styles.container, { backgroundColor: semantic.bgPage }]}
       contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
       showsVerticalScrollIndicator={false}
-    >
-      {/* Header */}
-      <ScreenHeader title="Tableau de bord" onBack={onGoBack} />
-
-      {/* Mode switcher — back to buyer space */}
-      <View style={styles.modeSwitchWrap}>
-        <ModeSwitch
-          mode="seller"
-          onChange={(m) => {
-            if (m === 'buyer') {
-              onSwitchToBuyer()
-            }
-          }}
+      refreshControl={(
+        <RefreshControl
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+          tintColor={colors.green[400]}
+          colors={[colors.green[400]]}
         />
-      </View>
+      )}
+    >
+      <ScreenHeader
+        title="Tableau de bord"
+        onBack={onGoBack}
+        rightSlot={onNavigateToNotifications ? <NotificationBell onPress={onNavigateToNotifications} /> : undefined}
+      />
+
+      {/* Load failure banner */}
+      {loadFailed && (
+        <TouchableOpacity
+          style={[styles.errorBanner, { backgroundColor: colors.coral[50] }]}
+          onPress={handleRefresh}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Impossible de charger le tableau de bord. Réessayer."
+        >
+          <TriangleAlert size={18} color={colors.coral[600]} />
+          <Text style={[styles.errorBannerText, { color: colors.coral[600] }]}>
+            Impossible de charger — Réessayer
+          </Text>
+        </TouchableOpacity>
+      )}
 
       {/* KPI cards */}
       <View style={styles.kpiRow}>
@@ -117,7 +157,11 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           </Text>
         </View>
 
-        <View style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}>
+        <TouchableOpacity
+          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
+          onPress={onNavigateToProducts}
+          activeOpacity={0.7}
+        >
           <Package size={20} color={colors.earth[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
             {data?.criticalStockProducts ?? 0}
@@ -125,7 +169,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             Stock critique
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Secondary metrics */}
@@ -144,7 +188,11 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           </Text>
         </TouchableOpacity>
 
-        <View style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}>
+        <TouchableOpacity
+          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
+          onPress={onNavigateToMessages}
+          activeOpacity={0.7}
+        >
           <MessageCircle size={20} color={colors.blue[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
             {data?.unreadMessages ?? 0}
@@ -152,7 +200,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             Messages
           </Text>
-        </View>
+        </TouchableOpacity>
       </View>
 
       {/* Earnings breakdown: gross, eBio commission, net — last 30 days.
@@ -212,7 +260,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
               commande
               {(data?.pendingOrders ?? 0) > 1 ? 's' : ''}
               {' '}
-              en attente
+              à traiter
             </Text>
             <Text style={[styles.alertSubtitle, { color: colors.earth[600] }]}>
               Traitez-les pour satisfaire vos clients
@@ -285,11 +333,6 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[4],
   },
   headerTitle: { ...typography.h2 },
-
-  modeSwitchWrap: {
-    marginTop: spacing[2],
-    marginBottom: spacing[1],
-  },
   kpiRow: {
     flexDirection: 'row',
     gap: spacing[3],
@@ -337,6 +380,18 @@ const styles = StyleSheet.create({
   },
   alertTitle: { ...typography.h3 },
   alertSubtitle: { ...typography.bodyS, marginTop: 2 },
+
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[2],
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.lg,
+  },
+  errorBannerText: { ...typography.bodyS, fontFamily: fonts.sansSb },
 
   sectionTitle: {
     ...typography.overline,

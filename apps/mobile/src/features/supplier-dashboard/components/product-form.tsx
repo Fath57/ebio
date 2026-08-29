@@ -1,17 +1,16 @@
+import type { NutritionBasis } from '../../catalog/composition'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
-import { Audio } from 'expo-av'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
-import Mic from 'lucide-react-native/dist/esm/icons/mic'
-import Square from 'lucide-react-native/dist/esm/icons/square'
+import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
+import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
+import ImagePlus from 'lucide-react-native/dist/esm/icons/image-plus'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  KeyboardAvoidingView,
-  Platform,
   ScrollView,
   StyleSheet,
   Switch,
@@ -23,13 +22,45 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ALLERGEN_CODES, ALLERGEN_LABELS, LABEL_CODES, LABEL_LABELS, NUTRITION_BASES, NUTRITION_BASIS_LABELS } from '../../catalog/composition'
 import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { useCategories } from '../../search/hooks/use-search'
+import { CategoryPickerField } from './category-picker'
 
 const MAX_PHOTOS = 3
+
+// Allergen / label chips store the canonical API codes and display the French label
+// Nutrition bounds mirror the API contract: energy ≤ 900 kcal, each gram field 0–100 g
+const MAX_ENERGY_KCAL = 900
+const MAX_GRAMS = 100
+
+const NUTRITION_FIELDS = [
+  { key: 'energyKcal', label: 'Énergie (kcal)', max: MAX_ENERGY_KCAL },
+  { key: 'fat', label: 'Matières grasses (g)', max: MAX_GRAMS },
+  { key: 'saturatedFat', label: 'dont saturées (g)', max: MAX_GRAMS },
+  { key: 'carbohydrates', label: 'Glucides (g)', max: MAX_GRAMS },
+  { key: 'sugars', label: 'dont sucres (g)', max: MAX_GRAMS },
+  { key: 'fiber', label: 'Fibres (g)', max: MAX_GRAMS },
+  { key: 'protein', label: 'Protéines (g)', max: MAX_GRAMS },
+  { key: 'salt', label: 'Sel (g)', max: MAX_GRAMS },
+] as const
+
+type NutritionKey = typeof NUTRITION_FIELDS[number]['key']
+
+const EMPTY_NUTRITION: Record<NutritionKey, string> = {
+  energyKcal: '',
+  fat: '',
+  saturatedFat: '',
+  carbohydrates: '',
+  sugars: '',
+  fiber: '',
+  protein: '',
+  salt: '',
+}
 
 interface Variant {
   id: string
@@ -87,37 +118,114 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   const [alertThreshold, setAlertThreshold] = useState(
     initialData?.alertThreshold ?? '',
   )
-  const [mediaIds, setMediaIds] = useState<string[]>([])
-  const [photoUrls, setPhotoUrls] = useState<string[]>(initialData?.photos ?? [])
-  const { uploading: _uploadingPhoto, pickAndUpload } = useMediaUpload({
+  // Existing photos (URLs already on the product, kept unless removed) vs
+  // freshly uploaded ones (sent as mediaIds). The API needs both lists on
+  // update, otherwise new uploads used to wipe the existing photos.
+  const [existingPhotos, setExistingPhotos] = useState<string[]>(initialData?.photos ?? [])
+  const [newPhotos, setNewPhotos] = useState<Array<{ mediaId: string, url: string }>>([])
+  const { uploading, progress, pickAndUpload, takePhotoAndUpload } = useMediaUpload({
     context: 'PRODUCT_PHOTO',
   })
   const [variants, setVariants] = useState<Variant[]>(
     initialData?.variants ?? [],
   )
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true)
-  const [voiceUri, setVoiceUri] = useState<string | null>(
-    initialData?.voiceDescriptionUri ?? null,
-  )
-  const [isRecording, setIsRecording] = useState(false)
-  const [recording, setRecording] = useState<Audio.Recording | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [hasPromo, setHasPromo] = useState(initialData?.promotionalPrice != null)
+  const [removingPromo, setRemovingPromo] = useState(false)
+  // Keeps the id of a product created in this session, so a retry after a
+  // failed promotion call updates it instead of creating a duplicate.
+  const createdIdRef = useRef<string | null>(null)
 
-  async function handleAddPhoto(): Promise<void> {
-    if (photoUrls.length >= MAX_PHOTOS) {
+  // Composition & fiche produit
+  const [compositionOpen, setCompositionOpen] = useState(false)
+  const [ingredients, setIngredients] = useState('')
+  const [allergensSel, setAllergensSel] = useState<string[]>([])
+  const [labelsSel, setLabelsSel] = useState<string[]>([])
+  const [origin, setOrigin] = useState('')
+  const [conservation, setConservation] = useState('')
+  const [nutrition, setNutrition] = useState<Record<NutritionKey, string>>(EMPTY_NUTRITION)
+  const [nutritionBasis, setNutritionBasis] = useState<NutritionBasis>('100g')
+
+  // Edit mode: initialData (built by the navigation wrapper) does not carry
+  // the composition fields, so hydrate them from the product endpoint.
+  useEffect(() => {
+    const id = initialData?.id
+    if (!id)
+      return
+    let cancelled = false
+    async function hydrate(): Promise<void> {
+      try {
+        const res = await apiFetch(`/api/products/${id}`)
+        if (!res.ok || cancelled)
+          return
+        const p = await res.json() as Record<string, unknown>
+        if (cancelled)
+          return
+        const nv = (p.nutritionalValues as Record<string, number | string | null> | null) ?? null
+        const nextNutrition = { ...EMPTY_NUTRITION }
+        for (const field of NUTRITION_FIELDS) {
+          const value = nv?.[field.key]
+          if (typeof value === 'number')
+            nextNutrition[field.key] = String(value)
+        }
+        setIngredients((p.ingredients as string) ?? '')
+        setAllergensSel((p.allergens as string[]) ?? [])
+        setLabelsSel((p.labels as string[]) ?? [])
+        setOrigin((p.origin as string) ?? '')
+        setConservation((p.conservation as string) ?? '')
+        setNutrition(nextNutrition)
+        setNutritionBasis(nv?.basis === '100ml' ? '100ml' : '100g')
+        const hasComposition = Boolean(p.ingredients)
+          || ((p.allergens as string[]) ?? []).length > 0
+          || ((p.labels as string[]) ?? []).length > 0
+          || Boolean(p.origin)
+          || Boolean(p.conservation)
+          || nv != null
+        if (hasComposition)
+          setCompositionOpen(true)
+      }
+      catch {
+        // Offline: the composition section simply starts empty
+      }
+    }
+    hydrate()
+    return () => {
+      cancelled = true
+    }
+  }, [initialData?.id])
+
+  const totalPhotos = existingPhotos.length + newPhotos.length
+
+  async function handleAddPhoto(fromCamera: boolean): Promise<void> {
+    if (totalPhotos >= MAX_PHOTOS) {
       showError('Limite atteinte', `Maximum ${MAX_PHOTOS} photos autorisées.`)
       return
     }
-    const result = await pickAndUpload()
+    const result = fromCamera ? await takePhotoAndUpload() : await pickAndUpload()
     if (result) {
-      setMediaIds(prev => [...prev, result.mediaId])
-      setPhotoUrls(prev => [...prev, result.publicUrl ?? ''])
+      setNewPhotos(prev => [...prev, { mediaId: result.mediaId, url: result.publicUrl ?? '' }])
     }
   }
 
-  function handleRemovePhoto(index: number): void {
-    setMediaIds(prev => prev.filter((_, i) => i !== index))
-    setPhotoUrls(prev => prev.filter((_, i) => i !== index))
+  function handleRemoveExistingPhoto(index: number): void {
+    setExistingPhotos(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function handleRemoveNewPhoto(mediaId: string): void {
+    setNewPhotos(prev => prev.filter(p => p.mediaId !== mediaId))
+  }
+
+  function toggleAllergen(value: string): void {
+    setAllergensSel(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value])
+  }
+
+  function toggleLabel(value: string): void {
+    setLabelsSel(prev => prev.includes(value) ? prev.filter(v => v !== value) : [...prev, value])
+  }
+
+  function setNutritionField(key: NutritionKey, value: string): void {
+    setNutrition(prev => ({ ...prev, [key]: value }))
   }
 
   function handleAddVariant(): void {
@@ -145,44 +253,85 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
     [],
   )
 
-  async function handleStartRecording(): Promise<void> {
+  async function readError(res: Response): Promise<string> {
+    const body = await res.json().catch(() => null) as { message?: string, aggregateErrors?: Array<{ message?: string }> } | null
+    return body?.aggregateErrors?.[0]?.message ?? body?.message ?? 'Une erreur est survenue'
+  }
+
+  async function handleRemovePromotion(): Promise<void> {
+    const productId = initialData?.id ?? createdIdRef.current
+    if (!productId)
+      return
+    setRemovingPromo(true)
     try {
-      const permission = await Audio.requestPermissionsAsync()
-      if (!permission.granted) {
-        showError(
-          'Permission refusée',
-          'L\'accès au microphone est requis pour enregistrer une description vocale.',
-        )
-        return
+      const res = await apiFetch(`/api/suppliers/me/products/${productId}/promotion`, { method: 'DELETE' })
+      if (res.ok) {
+        setHasPromo(false)
+        setPromoPrice('')
       }
-      await Audio.setAudioModeAsync({
-        allowsRecordingIOS: true,
-        playsInSilentModeIOS: true,
-      })
-      const { recording: newRecording } = await Audio.Recording.createAsync(
-        Audio.RecordingOptionsPresets.HIGH_QUALITY,
-      )
-      setRecording(newRecording)
-      setIsRecording(true)
+      else {
+        showError('Erreur', await readError(res))
+      }
     }
     catch {
-      showError('Erreur', 'Impossible de démarrer l\'enregistrement.')
+      showError('Erreur', 'Impossible de retirer la promotion. Vérifiez votre connexion.')
+    }
+    finally {
+      setRemovingPromo(false)
     }
   }
 
-  async function handleStopRecording(): Promise<void> {
-    if (!recording)
-      return
-    try {
-      await recording.stopAndUnloadAsync()
-      const uri = recording.getURI()
-      setVoiceUri(uri)
-      setRecording(null)
-      setIsRecording(false)
+  /** Parsed nutrition inputs (comma accepted as decimal separator); blank fields are skipped. */
+  function parseNutrition(): Partial<Record<NutritionKey, number>> {
+    const parsed: Partial<Record<NutritionKey, number>> = {}
+    for (const field of NUTRITION_FIELDS) {
+      const raw = nutrition[field.key].trim().replace(',', '.')
+      if (raw === '')
+        continue
+      const value = Number.parseFloat(raw)
+      if (!Number.isNaN(value))
+        parsed[field.key] = value
     }
-    catch {
-      setIsRecording(false)
+    return parsed
+  }
+
+  /** Client-side mirror of the API nutrition bounds; returns a French error or null. */
+  function validateNutrition(values: Partial<Record<NutritionKey, number>>): string | null {
+    for (const field of NUTRITION_FIELDS) {
+      const value = values[field.key]
+      if (value === undefined)
+        continue
+      if (value < 0)
+        return `${field.label} : la valeur ne peut pas être négative.`
+      if (value > field.max) {
+        const unit = field.key === 'energyKcal' ? 'kcal' : 'g'
+        return `${field.label} : la valeur ne peut pas dépasser ${field.max} ${unit} ${NUTRITION_BASIS_LABELS[nutritionBasis]}.`
+      }
     }
+    if (values.saturatedFat !== undefined && values.fat !== undefined && values.saturatedFat > values.fat)
+      return 'Les acides gras saturés ne peuvent pas dépasser les matières grasses.'
+    if (values.sugars !== undefined && values.carbohydrates !== undefined && values.sugars > values.carbohydrates)
+      return 'Les sucres ne peuvent pas dépasser les glucides.'
+    return null
+  }
+
+  /** Composition fields, empty ones omitted so the API keeps its defaults. */
+  function buildCompositionBody(): Record<string, unknown> {
+    const composition: Record<string, unknown> = {}
+    if (ingredients.trim())
+      composition.ingredients = ingredients.trim()
+    if (allergensSel.length > 0)
+      composition.allergens = allergensSel
+    if (labelsSel.length > 0)
+      composition.labels = labelsSel
+    if (origin.trim())
+      composition.origin = origin.trim()
+    if (conservation.trim())
+      composition.conservation = conservation.trim()
+    const nutritionalValues = parseNutrition()
+    if (Object.keys(nutritionalValues).length > 0)
+      composition.nutritionalValues = { basis: nutritionBasis, ...nutritionalValues }
+    return composition
   }
 
   async function handleSubmit(): Promise<void> {
@@ -194,9 +343,28 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
       return
     }
 
+    if (promoPrice.trim()) {
+      const promoNum = Number.parseFloat(promoPrice)
+      const priceNum = Number.parseFloat(price)
+      if (Number.isNaN(promoNum) || promoNum <= 0 || promoNum >= priceNum) {
+        showError(
+          'Prix promotionnel invalide',
+          'Le prix promotionnel doit être inférieur au prix normal.',
+        )
+        return
+      }
+    }
+
+    const nutritionError = validateNutrition(parseNutrition())
+    if (nutritionError) {
+      showError('Valeurs nutritionnelles invalides', nutritionError)
+      return
+    }
+
     setIsSubmitting(true)
     try {
-      const body = {
+      const existingId = initialData?.id ?? createdIdRef.current
+      const body: Record<string, unknown> = {
         name: name.trim(),
         description: description.trim(),
         categoryId: category,
@@ -205,39 +373,62 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         stock: Number.parseInt(stock, 10),
         stockAlertThreshold: alertThreshold ? Number.parseInt(alertThreshold, 10) : 5,
         status: isActive ? 'ACTIVE' : 'HIDDEN',
-        mediaIds,
+        mediaIds: newPhotos.map(p => p.mediaId),
         variants: variants.map(v => ({
           label: v.label,
           pricePerUnit: Number.parseFloat(v.price),
           stock: Number.parseInt(v.stock, 10),
         })),
+        ...buildCompositionBody(),
+      }
+      if (existingId) {
+        // URLs of existing photos to keep, in order — without this list the
+        // API wipes every photo not re-uploaded in this edit.
+        body.photos = existingPhotos.filter(url => url !== '')
       }
 
-      const method = initialData?.id ? 'PUT' : 'POST'
-      const path = initialData?.id
-        ? `/api/suppliers/me/products/${initialData.id}`
+      const method = existingId ? 'PUT' : 'POST'
+      const path = existingId
+        ? `/api/suppliers/me/products/${existingId}`
         : '/api/suppliers/me/products'
 
       const res = await apiFetch(path, {
         method,
         body: JSON.stringify(body),
       })
-      const saved = await res.json().catch(() => null)
+      if (!res.ok) {
+        showError('Enregistrement impossible', await readError(res))
+        return
+      }
+      const saved = await res.json().catch(() => null) as { id?: string } | null
 
-      // Promotion (endpoint dédié) — appliquée si un prix promo est saisi
-      const productId = initialData?.id ?? saved?.id
+      const productId = existingId ?? saved?.id ?? null
+      if (!existingId && saved?.id) {
+        // From now on this session updates the created product instead of
+        // creating duplicates (e.g. retry after a failed promotion call).
+        createdIdRef.current = saved.id
+        setExistingPhotos(prev => [...prev, ...newPhotos.map(p => p.url).filter(url => url !== '')])
+        setNewPhotos([])
+      }
+
+      // Promotion (dedicated endpoint) — applied when a promo price is set
       if (productId && promoPrice.trim()) {
         const expiresAt = new Date(Date.now() + promoDays * 24 * 60 * 60 * 1000).toISOString()
-        await apiFetch(`/api/suppliers/me/products/${productId}/promotion`, {
+        const promoRes = await apiFetch(`/api/suppliers/me/products/${productId}/promotion`, {
           method: 'POST',
           body: JSON.stringify({ promotionalPrice: Number.parseFloat(promoPrice), expiresAt }),
         })
+        if (!promoRes.ok) {
+          showError('Promotion non appliquée', await readError(promoRes))
+          return
+        }
+        setHasPromo(true)
       }
 
       onSave?.()
     }
     catch {
-      showError('Erreur', 'Impossible d\'enregistrer le produit.')
+      showError('Erreur', 'Impossible d\'enregistrer le produit. Vérifiez votre connexion.')
     }
     finally {
       setIsSubmitting(false)
@@ -245,10 +436,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   }
 
   return (
-    <KeyboardAvoidingView
-      style={styles.screen}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-    >
+    <KeyboardAwareView style={styles.screen}>
       <ScreenHeader
         title={initialData ? 'Modifier le produit' : 'Nouveau produit'}
         onBack={onCancel}
@@ -262,36 +450,73 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         {/* Photos */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>
           Photos (
-          {photoUrls.length}
+          {totalPhotos}
           /
           {MAX_PHOTOS}
           )
         </Text>
         <View style={styles.photoRow}>
-          {photoUrls.map((uri, index) => (
-            <View key={uri} style={styles.photoContainer}>
+          {existingPhotos.map((uri, index) => (
+            <View key={`existing-${uri}`} style={styles.photoContainer}>
               <Image source={{ uri }} style={styles.photoImage} resizeMode="cover" />
               <TouchableOpacity
                 style={styles.photoRemoveButton}
-                onPress={() => handleRemovePhoto(index)}
+                onPress={() => handleRemoveExistingPhoto(index)}
                 accessibilityLabel={`Supprimer la photo ${index + 1}`}
               >
                 <X size={12} color={colors.neutral[0]} />
               </TouchableOpacity>
             </View>
           ))}
-          {photoUrls.length < MAX_PHOTOS && (
-            <TouchableOpacity
-              style={[styles.photoAddButton, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
-              onPress={handleAddPhoto}
-              accessibilityLabel="Ajouter une photo"
-            >
-              <Camera size={20} color={semantic.textTertiary} />
-              <Text style={[styles.photoAddText, { color: semantic.textTertiary }]}>Ajouter</Text>
-              <Text style={[styles.photoGuideText, { color: semantic.textTertiary }]}>Cadrez le produit au centre</Text>
-            </TouchableOpacity>
+          {newPhotos.map(photo => (
+            <View key={photo.mediaId} style={styles.photoContainer}>
+              <Image source={{ uri: photo.url }} style={styles.photoImage} resizeMode="cover" />
+              <TouchableOpacity
+                style={styles.photoRemoveButton}
+                onPress={() => handleRemoveNewPhoto(photo.mediaId)}
+                accessibilityLabel="Supprimer la nouvelle photo"
+              >
+                <X size={12} color={colors.neutral[0]} />
+              </TouchableOpacity>
+            </View>
+          ))}
+          {totalPhotos < MAX_PHOTOS && (
+            <>
+              <TouchableOpacity
+                style={[styles.photoAddButton, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }, uploading && styles.buttonDisabled]}
+                onPress={() => handleAddPhoto(false)}
+                disabled={uploading}
+                accessibilityRole="button"
+                accessibilityLabel="Ajouter une photo depuis la galerie"
+              >
+                <ImagePlus size={20} color={semantic.textTertiary} />
+                <Text style={[styles.photoAddText, { color: semantic.textTertiary }]}>Galerie</Text>
+                <Text style={[styles.photoGuideText, { color: semantic.textTertiary }]}>Cadrez le produit au centre</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.photoAddButton, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }, uploading && styles.buttonDisabled]}
+                onPress={() => handleAddPhoto(true)}
+                disabled={uploading}
+                accessibilityRole="button"
+                accessibilityLabel="Prendre une photo"
+              >
+                <Camera size={20} color={semantic.textTertiary} />
+                <Text style={[styles.photoAddText, { color: semantic.textTertiary }]}>Prendre une photo</Text>
+              </TouchableOpacity>
+            </>
           )}
         </View>
+        {uploading && (
+          <View style={styles.uploadProgressRow}>
+            <ActivityIndicator size="small" color={colors.green[400]} />
+            <Text style={[styles.uploadProgressText, { color: semantic.textSecondary }]}>
+              Envoi de la photo…
+              {' '}
+              {Math.round(progress * 100)}
+              {' %'}
+            </Text>
+          </View>
+        )}
 
         {/* Name */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Nom du produit *</Text>
@@ -318,38 +543,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
 
         {/* Category */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Catégorie *</Text>
-        <View style={styles.categoryGrid}>
-          {categories.map((cat) => {
-            const isSelected = category === cat.id
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                style={[
-                  styles.categoryChip,
-                  { borderColor: semantic.borderNormal, backgroundColor: semantic.bgCard },
-                  isSelected && styles.categoryChipActive,
-                ]}
-                onPress={() => setCategory(cat.id)}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: isSelected }}
-                accessibilityLabel={cat.label}
-              >
-                {cat.imageUrl
-                  ? <Image source={{ uri: cat.imageUrl }} style={{ width: 16, height: 16, borderRadius: 4 }} />
-                  : <cat.fallbackIcon size={16} color={isSelected ? colors.green[800] : semantic.textSecondary} />}
-                <Text
-                  style={[
-                    styles.categoryLabel,
-                    { color: semantic.textSecondary },
-                    isSelected && styles.categoryLabelActive,
-                  ]}
-                >
-                  {cat.label}
-                </Text>
-              </TouchableOpacity>
-            )
-          })}
-        </View>
+        <CategoryPickerField categories={categories} value={category} onChange={setCategory} />
 
         {/* Price + Unit */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Prix et unité *</Text>
@@ -432,6 +626,23 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
             })}
           </View>
         )}
+        {hasPromo && (
+          <TouchableOpacity
+            style={[styles.removePromoButton, removingPromo && styles.buttonDisabled]}
+            onPress={handleRemovePromotion}
+            disabled={removingPromo}
+            accessibilityRole="button"
+            accessibilityLabel="Retirer la promotion"
+          >
+            {removingPromo
+              ? (
+                  <ActivityIndicator size="small" color={colors.coral[600]} />
+                )
+              : (
+                  <Text style={styles.removePromoText}>Retirer la promotion</Text>
+                )}
+          </TouchableOpacity>
+        )}
 
         {/* Variants */}
         <View style={styles.sectionHeader}>
@@ -508,39 +719,145 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
           accessibilityLabel="Seuil d'alerte stock"
         />
 
-        {/* Voice description */}
-        <Text style={[styles.label, { color: semantic.textSecondary }]}>Description vocale</Text>
-        <View style={styles.voiceRow}>
-          <TouchableOpacity
-            style={[
-              styles.voiceButton,
-              { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
-              isRecording && styles.voiceButtonRecording,
-            ]}
-            onPress={isRecording ? handleStopRecording : handleStartRecording}
-            accessibilityLabel={
-              isRecording
-                ? 'Arrêter l\'enregistrement'
-                : 'Enregistrer une description vocale'
-            }
-          >
-            {isRecording
-              ? <Square size={18} color={colors.coral[600]} />
-              : <Mic size={18} color={semantic.textSecondary} />}
-            <Text
-              style={[
-                styles.voiceText,
-                { color: semantic.textSecondary },
-                isRecording && styles.voiceTextRecording,
-              ]}
-            >
-              {isRecording ? 'Enregistrement en cours...' : 'Enregistrer'}
-            </Text>
-          </TouchableOpacity>
-          {voiceUri && !isRecording && (
-            <Text style={[styles.voiceRecorded, { color: semantic.textPrimaryColor }]}>Enregistrement sauvegardé</Text>
-          )}
-        </View>
+        {/* Composition & fiche produit (collapsible, all optional) */}
+        <TouchableOpacity
+          style={[styles.collapseHeader, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
+          onPress={() => setCompositionOpen(open => !open)}
+          accessibilityRole="button"
+          accessibilityState={{ expanded: compositionOpen }}
+          accessibilityLabel="Composition et fiche produit"
+        >
+          <Text style={[styles.collapseHeaderText, { color: semantic.textPrimary }]}>Composition & fiche produit</Text>
+          {compositionOpen
+            ? <ChevronUp size={18} color={semantic.textSecondary} />
+            : <ChevronDown size={18} color={semantic.textSecondary} />}
+        </TouchableOpacity>
+        {compositionOpen && (
+          <View>
+            <Text style={[styles.label, { color: semantic.textSecondary }]}>Ingrédients</Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+              placeholder="Liste des ingrédients"
+              placeholderTextColor={semantic.textTertiary}
+              value={ingredients}
+              onChangeText={setIngredients}
+              multiline
+              accessibilityLabel="Ingrédients"
+            />
+
+            <Text style={[styles.label, { color: semantic.textSecondary }]}>Allergènes</Text>
+            <View style={styles.chipWrap}>
+              {ALLERGEN_CODES.map((allergen) => {
+                const isSelected = allergensSel.includes(allergen)
+                return (
+                  <TouchableOpacity
+                    key={allergen}
+                    style={[
+                      styles.unitChip,
+                      { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
+                      isSelected && styles.unitChipActive,
+                    ]}
+                    onPress={() => toggleAllergen(allergen)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isSelected }}
+                    accessibilityLabel={ALLERGEN_LABELS[allergen]}
+                  >
+                    <Text style={[styles.unitChipText, { color: semantic.textSecondary }, isSelected && styles.unitChipTextActive]}>
+                      {ALLERGEN_LABELS[allergen]}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+
+            <Text style={[styles.label, { color: semantic.textSecondary }]}>Labels</Text>
+            <View style={styles.chipWrap}>
+              {LABEL_CODES.map((qualityLabel) => {
+                const isSelected = labelsSel.includes(qualityLabel)
+                return (
+                  <TouchableOpacity
+                    key={qualityLabel}
+                    style={[
+                      styles.unitChip,
+                      { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
+                      isSelected && styles.unitChipActive,
+                    ]}
+                    onPress={() => toggleLabel(qualityLabel)}
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: isSelected }}
+                    accessibilityLabel={LABEL_LABELS[qualityLabel]}
+                  >
+                    <Text style={[styles.unitChipText, { color: semantic.textSecondary }, isSelected && styles.unitChipTextActive]}>
+                      {LABEL_LABELS[qualityLabel]}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+
+            <Text style={[styles.label, { color: semantic.textSecondary }]}>Origine</Text>
+            <TextInput
+              style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+              placeholder="Ex: Vallée de l'Ouémé, Bénin"
+              placeholderTextColor={semantic.textTertiary}
+              value={origin}
+              onChangeText={setOrigin}
+              accessibilityLabel="Origine"
+            />
+
+            <Text style={[styles.label, { color: semantic.textSecondary }]}>Conservation</Text>
+            <TextInput
+              style={[styles.textInput, styles.textArea, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+              placeholder="Ex: À conserver au frais après ouverture"
+              placeholderTextColor={semantic.textTertiary}
+              value={conservation}
+              onChangeText={setConservation}
+              multiline
+              accessibilityLabel="Conservation"
+            />
+
+            <Text style={[styles.label, { color: semantic.textSecondary }]}>Valeurs nutritionnelles</Text>
+            <View style={styles.chipWrap} accessibilityRole="radiogroup" accessibilityLabel="Base des valeurs nutritionnelles">
+              {NUTRITION_BASES.map((basis) => {
+                const isSelected = nutritionBasis === basis
+                return (
+                  <TouchableOpacity
+                    key={basis}
+                    style={[
+                      styles.unitChip,
+                      { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
+                      isSelected && styles.unitChipActive,
+                    ]}
+                    onPress={() => setNutritionBasis(basis)}
+                    accessibilityRole="radio"
+                    accessibilityState={{ selected: isSelected }}
+                    accessibilityLabel={NUTRITION_BASIS_LABELS[basis]}
+                  >
+                    <Text style={[styles.unitChipText, { color: semantic.textSecondary }, isSelected && styles.unitChipTextActive]}>
+                      {NUTRITION_BASIS_LABELS[basis]}
+                    </Text>
+                  </TouchableOpacity>
+                )
+              })}
+            </View>
+            <View style={styles.nutritionGrid}>
+              {NUTRITION_FIELDS.map(field => (
+                <View key={field.key} style={styles.nutritionField}>
+                  <Text style={[styles.nutritionFieldLabel, { color: semantic.textTertiary }]}>{field.label}</Text>
+                  <TextInput
+                    style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+                    placeholder="—"
+                    placeholderTextColor={semantic.textTertiary}
+                    keyboardType="numeric"
+                    value={nutrition[field.key]}
+                    onChangeText={value => setNutritionField(field.key, value)}
+                    accessibilityLabel={field.label}
+                  />
+                </View>
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Status toggle */}
         <View style={[styles.statusRow, { borderTopColor: semantic.borderLight }]}>
@@ -601,7 +918,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
           onCancel={() => setModal(prev => ({ ...prev, visible: false }))}
         />
       </ScrollView>
-    </KeyboardAvoidingView>
+    </KeyboardAwareView>
   )
 }
 
@@ -689,35 +1006,6 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingHorizontal: 4,
   },
-  categoryGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing[2],
-    marginTop: spacing[1],
-  },
-  categoryChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing[1],
-    minHeight: 44,
-    paddingHorizontal: spacing[3],
-    borderRadius: radius.pill,
-    borderWidth: 1,
-  },
-  categoryChipActive: {
-    backgroundColor: colors.green[50],
-    borderColor: colors.green[400],
-  },
-  categoryIcon: {
-    fontSize: 16,
-  },
-  categoryLabel: {
-    fontFamily: fonts.sansMd,
-    fontSize: 13,
-  },
-  categoryLabelActive: {
-    color: colors.green[800],
-  },
   priceRow: {
     gap: spacing[2],
   },
@@ -784,35 +1072,63 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: colors.coral[400],
   },
-  voiceRow: {
+  uploadProgressRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing[2],
     marginTop: spacing[1],
   },
-  voiceButton: {
+  uploadProgressText: {
+    ...typography.caption,
+  },
+  removePromoButton: {
     minHeight: 44,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    borderWidth: 1,
     borderRadius: radius.md,
-  },
-  voiceButtonRecording: {
-    borderColor: colors.coral[400],
+    borderWidth: 1,
+    borderColor: colors.coral[200],
     backgroundColor: colors.coral[50],
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing[1],
   },
-  voiceIcon: {
-    fontSize: 18,
-  },
-  voiceText: {
-    fontFamily: fonts.sansMd,
+  removePromoText: {
+    fontFamily: fonts.sansSb,
     fontSize: 14,
-  },
-  voiceTextRecording: {
     color: colors.coral[600],
   },
-  voiceRecorded: {
-    ...typography.caption,
+  collapseHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing[3],
+    borderWidth: 1,
+    borderRadius: radius.md,
+    marginTop: spacing[4],
+  },
+  collapseHeaderText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
+  },
+  chipWrap: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[1],
+    marginTop: spacing[1],
+  },
+  nutritionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+    marginTop: spacing[1],
+  },
+  nutritionField: {
+    width: '47%',
+    gap: 4,
+  },
+  nutritionFieldLabel: {
+    fontFamily: fonts.sansMd,
+    fontSize: 11,
   },
   statusRow: {
     flexDirection: 'row',

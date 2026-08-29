@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
+  Modal,
   StyleSheet,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from 'react-native'
@@ -39,9 +41,11 @@ interface OrderManagementProps {
   onGoBack?: () => void
 }
 
-type Tab = 'pending' | 'active' | 'done'
+type Tab = 'all' | 'pending' | 'active' | 'done'
 
+// `all` keeps an empty status list: it means « no filter » (see `filtered`).
 const TABS: Array<{ key: Tab, label: string, statuses: OrderStatus[] }> = [
+  { key: 'all', label: 'Tous', statuses: [] },
   { key: 'pending', label: 'En attente', statuses: ['PLACED'] },
   { key: 'active', label: 'En cours', statuses: ['ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY'] },
   { key: 'done', label: 'Terminées', statuses: ['DELIVERED', 'CANCELLED', 'DISPUTED'] },
@@ -87,6 +91,8 @@ const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: str
   READY: { status: 'IN_DELIVERY', label: 'En livraison' },
 }
 
+const REJECT_REASONS = ['Rupture de stock', 'Boutique fermée', 'Zone non desservie', 'Autre'] as const
+
 export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderManagementProps) {
   const tabBarHeight = useBottomTabBarHeight()
   const [orders, setOrders] = useState<SupplierOrder[]>([])
@@ -100,13 +106,14 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
     setModal({ visible: true, title, message, type: 'error' })
   }
 
-  function showConfirm(title: string, message: string, onConfirm: () => void): void {
-    setModal({ visible: true, title, message, type: 'confirm', onConfirm })
-  }
+  // Reject-reason picker state
+  const [rejectOrderId, setRejectOrderId] = useState<string | null>(null)
+  const [rejectReason, setRejectReason] = useState<string>(REJECT_REASONS[0])
+  const [rejectCustomText, setRejectCustomText] = useState('')
 
   const fetchOrders = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/orders?role=supplier')
+      const res = await apiFetch('/api/orders?limit=100')
       if (res.ok) {
         const json = await res.json()
         const items = (json.orders ?? json.data ?? json ?? []) as Array<Record<string, unknown>>
@@ -167,35 +174,42 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
   }
 
   function handleReject(orderId: string): void {
-    showConfirm(
-      'Refuser la commande',
-      'Êtes-vous sûr de vouloir refuser cette commande ?',
-      async () => {
-        setProcessingId(orderId)
-        try {
-          const res = await apiFetch(`/api/orders/${orderId}/reject`, {
-            method: 'PATCH',
-            body: JSON.stringify({ reason: 'Commande refusée par le fournisseur' }),
-          })
-          if (res.ok) {
-            setOrders(prev =>
-              prev.map(o =>
-                o.id === orderId ? { ...o, status: 'CANCELLED' as OrderStatus } : o,
-              ),
-            )
-          }
-          else {
-            showError('Erreur', 'Impossible de refuser la commande.')
-          }
-        }
-        catch {
-          showError('Erreur', 'Impossible de refuser la commande.')
-        }
-        finally {
-          setProcessingId(null)
-        }
-      },
-    )
+    setRejectReason(REJECT_REASONS[0])
+    setRejectCustomText('')
+    setRejectOrderId(orderId)
+  }
+
+  async function submitReject(): Promise<void> {
+    if (!rejectOrderId)
+      return
+    const reason = rejectReason === 'Autre' ? rejectCustomText.trim() : rejectReason
+    if (!reason)
+      return
+    const orderId = rejectOrderId
+    setRejectOrderId(null)
+    setProcessingId(orderId)
+    try {
+      const res = await apiFetch(`/api/orders/${orderId}/reject`, {
+        method: 'PATCH',
+        body: JSON.stringify({ reason }),
+      })
+      if (res.ok) {
+        setOrders(prev =>
+          prev.map(o =>
+            o.id === orderId ? { ...o, status: 'CANCELLED' as OrderStatus } : o,
+          ),
+        )
+      }
+      else {
+        showError('Erreur', 'Impossible de refuser la commande.')
+      }
+    }
+    catch {
+      showError('Erreur', 'Impossible de refuser la commande.')
+    }
+    finally {
+      setProcessingId(null)
+    }
   }
 
   async function handleConfirmDelivery(orderId: string): Promise<void> {
@@ -369,7 +383,7 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
   }
 
   const activeTab = TABS.find(t => t.key === tab) ?? TABS[0]
-  const filtered = orders.filter(o => activeTab.statuses.includes(o.status))
+  const filtered = activeTab.statuses.length === 0 ? orders : orders.filter(o => activeTab.statuses.includes(o.status))
 
   return (
     <View style={styles.screen}>
@@ -406,6 +420,70 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
           </View>
         )}
       />
+
+      {/* Reject reason picker */}
+      <Modal
+        visible={rejectOrderId !== null}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setRejectOrderId(null)}
+      >
+        <View style={styles.rejectOverlay}>
+          <View style={styles.rejectCard}>
+            <Text style={styles.rejectTitle}>Refuser la commande</Text>
+            <Text style={styles.rejectSubtitle}>Indiquez le motif du refus, il sera transmis au client.</Text>
+            {REJECT_REASONS.map((r) => {
+              const isSelected = rejectReason === r
+              return (
+                <TouchableOpacity
+                  key={r}
+                  style={[styles.rejectOption, isSelected && styles.rejectOptionActive]}
+                  onPress={() => setRejectReason(r)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: isSelected }}
+                  accessibilityLabel={r}
+                >
+                  <View style={[styles.rejectRadio, isSelected && styles.rejectRadioActive]} />
+                  <Text style={[styles.rejectOptionText, isSelected && styles.rejectOptionTextActive]}>{r}</Text>
+                </TouchableOpacity>
+              )
+            })}
+            {rejectReason === 'Autre' && (
+              <TextInput
+                style={styles.rejectInput}
+                placeholder="Précisez le motif"
+                placeholderTextColor={colors.neutral[400]}
+                value={rejectCustomText}
+                onChangeText={setRejectCustomText}
+                multiline
+                accessibilityLabel="Motif du refus"
+              />
+            )}
+            <View style={styles.rejectActions}>
+              <TouchableOpacity
+                style={styles.rejectCancelButton}
+                onPress={() => setRejectOrderId(null)}
+                accessibilityRole="button"
+                accessibilityLabel="Annuler"
+              >
+                <Text style={styles.rejectCancelText}>Annuler</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.rejectConfirmButton,
+                  rejectReason === 'Autre' && rejectCustomText.trim() === '' && styles.buttonDisabled,
+                ]}
+                onPress={submitReject}
+                disabled={rejectReason === 'Autre' && rejectCustomText.trim() === ''}
+                accessibilityRole="button"
+                accessibilityLabel="Confirmer le refus"
+              >
+                <Text style={styles.rejectConfirmText}>Refuser</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
       <ConfirmModal
         visible={modal.visible}
@@ -569,6 +647,104 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: colors.neutral[0],
+  },
+  rejectOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'center',
+    padding: spacing[4],
+  },
+  rejectCard: {
+    backgroundColor: colors.neutral[0],
+    borderRadius: radius.lg,
+    padding: spacing[4],
+    gap: spacing[2],
+  },
+  rejectTitle: {
+    ...typography.h3,
+    color: colors.neutral[800],
+  },
+  rejectSubtitle: {
+    ...typography.bodyS,
+    color: colors.neutral[400],
+    marginBottom: spacing[1],
+  },
+  rejectOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    paddingHorizontal: spacing[3],
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: radius.md,
+  },
+  rejectOptionActive: {
+    borderColor: colors.green[400],
+    backgroundColor: colors.green[50],
+  },
+  rejectRadio: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: colors.neutral[200],
+  },
+  rejectRadioActive: {
+    borderColor: colors.green[400],
+    backgroundColor: colors.green[400],
+  },
+  rejectOptionText: {
+    ...typography.bodyS,
+    fontFamily: fonts.sansMd,
+    color: colors.neutral[600],
+  },
+  rejectOptionTextActive: {
+    color: colors.green[800],
+  },
+  rejectInput: {
+    minHeight: 64,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    paddingTop: spacing[2],
+    fontFamily: fonts.sans,
+    fontSize: 14,
+    color: colors.neutral[800],
+    textAlignVertical: 'top',
+  },
+  rejectActions: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginTop: spacing[2],
+  },
+  rejectCancelButton: {
+    flex: 1,
+    minHeight: 44,
+    borderWidth: 1,
+    borderColor: colors.neutral[200],
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rejectCancelText: {
+    fontFamily: fonts.sansMd,
+    fontSize: 14,
+    color: colors.neutral[600],
+  },
+  rejectConfirmButton: {
+    flex: 1,
+    minHeight: 44,
+    backgroundColor: colors.coral[400],
+    borderRadius: radius.md,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  rejectConfirmText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
+    color: colors.neutral[0],
   },
   emptyText: {
     ...typography.bodyL,
