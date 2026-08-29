@@ -1,6 +1,7 @@
 import type { DeliveryOffer } from '../types'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import PackageIcon from 'lucide-react-native/dist/esm/icons/package'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
@@ -12,6 +13,8 @@ interface OffersScreenProps {
   offers: DeliveryOffer[]
   refreshing: boolean
   unavailable: boolean
+  /** Km between the device and the declared zone when clearly outside it. */
+  outOfZoneKm: number | null
   onRefresh: () => void
   onAccept: (offerId: string) => Promise<{ ok: boolean, conflict: boolean, gone: boolean, forbidden: boolean }>
   onAccepted: () => void
@@ -26,7 +29,7 @@ function formatAmount(amount: number): string {
 }
 
 /** Feed of nearby deliveries awaiting a courier. First to accept wins. */
-export function OffersScreen({ offers, refreshing, unavailable, onRefresh, onAccept, onAccepted }: OffersScreenProps) {
+export function OffersScreen({ offers, refreshing, unavailable, outOfZoneKm, onRefresh, onAccept, onAccepted }: OffersScreenProps) {
   const { semantic } = useTheme()
 
   async function accept(offer: DeliveryOffer) {
@@ -114,6 +117,16 @@ export function OffersScreen({ offers, refreshing, unavailable, onRefresh, onAcc
       keyExtractor={item => item.id}
       renderItem={renderOffer}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green[400]} />}
+      ListHeaderComponent={outOfZoneKm !== null
+        ? (
+            <View style={styles.zoneBanner} accessibilityRole="alert">
+              <MapPinOff size={18} color={colors.earth[800]} strokeWidth={2} />
+              <Text style={styles.zoneBannerText}>
+                {`Vous êtes à ${formatKm(outOfZoneKm)} de votre zone de livraison. Les courses ne vous sont proposées que lorsque vous y êtes.`}
+              </Text>
+            </View>
+          )
+        : null}
       ListEmptyComponent={(
         <View style={styles.empty}>
           <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
@@ -135,6 +148,23 @@ const styles = StyleSheet.create({
     padding: spacing[4],
     paddingBottom: spacing[12],
     flexGrow: 1,
+  },
+  zoneBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    backgroundColor: colors.earth[50],
+    borderWidth: 1,
+    borderColor: colors.earth[200],
+    borderRadius: radius.lg,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[4],
+  },
+  zoneBannerText: {
+    ...typography.caption,
+    flex: 1,
+    color: colors.earth[800],
   },
   card: {
     borderRadius: radius.lg,

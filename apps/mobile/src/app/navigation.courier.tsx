@@ -33,6 +33,7 @@ import { useActiveDelivery } from '../features/courier/hooks/use-active-delivery
 import { useCourierProfile } from '../features/courier/hooks/use-courier-profile'
 import { useOffers } from '../features/courier/hooks/use-offers'
 import { useOfflineQueue } from '../features/courier/hooks/use-offline-queue'
+import { useOutOfZone } from '../features/courier/hooks/use-out-of-zone'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { signOut, useSession } from '../lib/auth-client'
@@ -216,6 +217,7 @@ function CoursesHomeWrapper({ navigation }: any) {
   const offers = useOffers()
   const refreshOffers = offers.refresh
   const { profile, refresh: refreshProfile } = useCourierProfile()
+  const outOfZoneKm = useOutOfZone(profile)
   const queue = useOfflineQueue(refresh)
 
   // A DELIVERY_OFFER push received in foreground refreshes the feed at once.
@@ -281,6 +283,7 @@ function CoursesHomeWrapper({ navigation }: any) {
         offers={offers.offers}
         refreshing={offers.refreshing}
         unavailable={offers.unavailable}
+        outOfZoneKm={outOfZoneKm}
         onRefresh={offers.refresh}
         onAccept={offers.accept}
         onAccepted={refresh}
