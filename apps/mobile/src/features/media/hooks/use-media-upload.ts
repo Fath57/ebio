@@ -1,5 +1,4 @@
 import * as DocumentPicker from 'expo-document-picker'
-import * as FileSystem from 'expo-file-system/legacy'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
@@ -29,7 +28,7 @@ interface UseMediaUploadOptions {
   entityType?: string
   entityId?: string
   maxFiles?: number
-  mediaTypes?: ImagePicker.MediaTypeOptions
+  mediaTypes?: ImagePicker.MediaType[]
 }
 
 export function useMediaUpload(options: UseMediaUploadOptions) {
@@ -48,7 +47,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: options.mediaTypes ?? ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: options.mediaTypes ?? ['images'],
       allowsEditing: true,
       quality: 0.8,
     })
@@ -128,19 +127,20 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     setProgress(0)
 
     try {
-      // Get file size if not provided
-      let size = fileSize
-      if (!size) {
-        const info = await FileSystem.getInfoAsync(fileUri)
-        size = (info as { size?: number }).size ?? 0
-      }
+      // Step 0: read the file first. React Native replaces the Content-Type
+      // header with the blob's own MIME type, so the blob is the only source
+      // of truth for what will actually be sent — and it gives the exact size.
+      const fileResponse = await fetch(fileUri)
+      const blob = await fileResponse.blob()
+      const uploadMimeType = blob.type || mimeType
+      const size = blob.size || fileSize
 
       // Step 1: Initiate upload → get presigned URL(s)
       const initiateRes = await apiFetch('/api/media/upload', {
         method: 'POST',
         body: JSON.stringify({
           fileName,
-          mimeType,
+          mimeType: uploadMimeType,
           fileSize: size,
           context: options.context,
           entityType: options.entityType,
@@ -157,17 +157,14 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
       setProgress(0.1)
 
       // Step 2: Upload file to S3 via presigned URL
-      const fileResponse = await fetch(fileUri)
-      const blob = await fileResponse.blob()
-
       if (parts.length === 1) {
         const s3Res = await fetch(parts[0].uploadUrl, {
           method: 'PUT',
           body: blob,
-          headers: { 'Content-Type': mimeType },
+          headers: { 'Content-Type': uploadMimeType },
         })
         if (!s3Res.ok) {
-          throw new Error('Erreur lors de l\'upload vers le stockage')
+          throw new Error(`Erreur lors de l'upload vers le stockage (${s3Res.status})`)
         }
         setProgress(0.8)
       }

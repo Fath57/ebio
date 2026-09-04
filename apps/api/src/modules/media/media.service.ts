@@ -83,12 +83,15 @@ export class MediaService {
       : 1
 
     if (!needsMultipart) {
-      // Simple presigned PUT
+      // Simple presigned PUT. Content-Type and Content-Length are deliberately
+      // left out of the signature: React Native overrides the Content-Type
+      // header with the blob's own MIME type (a `.m4a` voice note is sent as
+      // `audio/mp4`, not the declared `audio/m4a`), which made every signed
+      // header mismatch and S3 answer 403. The declared type is kept on the
+      // Media row; the object keeps whatever the client sends.
       const command = new PutObjectCommand({
         Bucket: s3Config.bucket,
         Key: s3Key,
-        ContentType: input.mimeType,
-        ContentLength: input.fileSize,
       })
       const uploadUrl = await getSignedUrl(this.s3, command, { expiresIn: 3600 })
 

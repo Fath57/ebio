@@ -412,24 +412,35 @@ export function ChatScreen({
   }, [currentUserId, uploadFile, deliverMessage])
 
   const handleSendPhoto = useCallback(async () => {
-    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
-    if (!permission.granted) {
-      appAlert('Permission requise', 'Autorisez l’accès à la galerie pour ajouter des photos.')
+    // The send travels over the socket: say so rather than leaving a dead button.
+    if (websocketClient.getConnectionState() !== 'connected') {
+      appAlert('Hors connexion', 'La messagerie se reconnecte. Réessayez dans un instant.')
       return
     }
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      quality: 0.8,
-    })
-    if (result.canceled || !result.assets?.[0])
-      return
-    const asset = result.assets[0]
-    void startMediaSend(asset.uri, asset.fileName ?? 'photo.jpg', asset.mimeType ?? 'image/jpeg', 'IMAGE')
+    try {
+      // No permission gate: the system picker grants access to the picked
+      // file on its own, and the media-library request bundles
+      // WRITE_EXTERNAL_STORAGE, which Android 11/12 denies without ever
+      // prompting. Same call as the profile photo picker, which works.
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        quality: 0.8,
+      })
+      if (result.canceled || !result.assets?.[0])
+        return
+      const asset = result.assets[0]
+      void startMediaSend(asset.uri, asset.fileName ?? 'photo.jpg', asset.mimeType ?? 'image/jpeg', 'IMAGE')
+    }
+    catch (error) {
+      // A rejected picker used to vanish as an unhandled rejection: in a
+      // release build the button simply looked dead.
+      appAlert('Galerie indisponible', error instanceof Error ? error.message : 'Impossible d’ouvrir la galerie.')
+    }
   }, [startMediaSend])
 
   const handleSendVoice = useCallback((uri: string, durationMs: number) => {
-    void startMediaSend(uri, 'voice-note.m4a', 'audio/m4a', 'VOICE', durationMs)
+    void startMediaSend(uri, 'voice-note.m4a', 'audio/mp4', 'VOICE', durationMs)
   }, [startMediaSend])
 
   /** Retries a failed bubble: re-upload if the media never left the device. */
@@ -442,7 +453,7 @@ export function ChatScreen({
         const uploaded = await uploadFile(
           message.content,
           message.type === 'VOICE' ? 'voice-note.m4a' : 'photo.jpg',
-          message.type === 'VOICE' ? 'audio/m4a' : 'image/jpeg',
+          message.type === 'VOICE' ? 'audio/mp4' : 'image/jpeg',
           0,
         )
         setUploadingMsgId(null)
@@ -677,9 +688,8 @@ export function ChatScreen({
       <View style={[styles.inputBar, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: (keyboardHeight > 0 ? keyboardHeight : insets.bottom) + spacing[2] }]}>
         {!isRecordingVoice && (
           <TouchableOpacity
-            style={[styles.iconButton, isOffline && styles.buttonDisabled]}
+            style={styles.iconButton}
             onPress={handleSendPhoto}
-            disabled={isOffline}
             accessibilityRole="button"
             accessibilityLabel="Envoyer une photo"
           >
