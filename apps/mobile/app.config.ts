@@ -123,6 +123,13 @@ export default ({ config }: ConfigContext): ExpoConfig => {
         // silent no-op and no push permission can ever be granted.
         'android.permission.POST_NOTIFICATIONS',
       ],
+      // expo-audio merges FOREGROUND_SERVICE_MEDIA_PLAYBACK from its own
+      // manifest, which forces a Play Console declaration. The app only plays
+      // chat voice notes in the foreground and never enables lock-screen
+      // controls, so the media playback service is never started.
+      blockedPermissions: [
+        'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
+      ],
       // Universal links stay on the client app only: the published app keeps
       // handling https://e-bio.org/boutique links after the split.
       intentFilters: variant === 'client'
