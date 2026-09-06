@@ -13,7 +13,7 @@ import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import UserPen from 'lucide-react-native/dist/esm/icons/user-pen'
 import * as React from 'react'
 import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
@@ -640,12 +640,13 @@ const HIDE_TAB_BAR_ROUTES = new Set(['ChatDetail', 'SupplierProductForm'])
 
 function SupplierTabs() {
   const { semantic } = useTheme()
+  const insets = useSafeAreaInsets()
   const { count: chatUnread } = useChatUnreadCount()
   const { count: pendingOrders } = usePendingOrdersCount()
 
   const baseTabBarStyle = {
-    height: 64,
-    paddingBottom: 10,
+    height: 64 + insets.bottom,
+    paddingBottom: 10 + insets.bottom,
     paddingTop: 4,
     backgroundColor: semantic.bgCard,
     borderTopWidth: 0,

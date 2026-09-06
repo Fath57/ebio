@@ -9,7 +9,7 @@ import User from 'lucide-react-native/dist/esm/icons/user'
 import Wallet from 'lucide-react-native/dist/esm/icons/wallet'
 import { useEffect } from 'react'
 import { ActivityIndicator, StyleSheet, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
@@ -477,6 +477,7 @@ const HIDE_TAB_BAR_ROUTES = new Set(['CourierChat', 'CourierHistoryChat', 'Couri
 
 function CourierTabs() {
   const { semantic } = useTheme()
+  const insets = useSafeAreaInsets()
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
@@ -491,8 +492,8 @@ function CourierTabs() {
           tabBarStyle: shouldHide
             ? { display: 'none' as const }
             : {
-                height: 64,
-                paddingBottom: 10,
+                height: 64 + insets.bottom,
+                paddingBottom: 10 + insets.bottom,
                 paddingTop: 4,
                 backgroundColor: semantic.bgCard,
                 borderTopWidth: 0,

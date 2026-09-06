@@ -31,6 +31,8 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { FadeInView, ScalePressable } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
+import { useCart } from '../../cart/cart-context'
+import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
 import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -308,6 +310,9 @@ export function SupplierProfileScreen({
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   const navigation = useNavigation()
+  const { getItemCount } = useCart()
+  // Keep the last product row reachable above the floating cart bar.
+  const cartBarClearance = getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
 
   const { latitude: buyerLat, longitude: buyerLng } = useLocation()
   const [supplier, setSupplier] = useState<SupplierProfile | null>(null)
@@ -539,7 +544,7 @@ export function SupplierProfileScreen({
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] }}
+        contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] + cartBarClearance }}
         showsVerticalScrollIndicator={false}
         bounces
       >

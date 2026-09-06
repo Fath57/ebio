@@ -4,10 +4,9 @@ import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import Search from 'lucide-react-native/dist/esm/icons/search'
-import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import { useCallback, useState } from 'react'
-import { Image, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
@@ -16,13 +15,10 @@ import { NOTIFICATION_AUDIENCE } from '../../../utils/app-variant'
 interface HomeHeaderProps {
   /** Libellé de la position courante (ex. « Cotonou, Akpakpa »). */
   locationLabel: string
-  /** URL de l'avatar, si renseigné sur le profil. */
-  avatarUrl?: string | null
   onPickLocation: () => void
   onOpenSearch: () => void
   onOpenMap: () => void
   onOpenNotifications: () => void
-  onOpenProfile: () => void
   onOpenWallet: () => void
 }
 
@@ -90,16 +86,14 @@ function formatBalance(value: number): string {
 
 /**
  * Bandeau vert de l'accueil : position à gauche, solde du portefeuille,
- * notifications et profil à droite, puis la barre de recherche sur fond blanc.
+ * notifications à droite, puis la barre de recherche sur fond blanc.
  */
 export function HomeHeader({
   locationLabel,
-  avatarUrl,
   onPickLocation,
   onOpenSearch,
   onOpenMap,
   onOpenNotifications,
-  onOpenProfile,
   onOpenWallet,
 }: HomeHeaderProps) {
   const insets = useSafeAreaInsets()
@@ -147,17 +141,6 @@ export function HomeHeader({
                 <Text style={styles.badgeText}>{unreadCount > 9 ? '9+' : unreadCount}</Text>
               </View>
             )}
-          </Pressable>
-
-          <Pressable
-            style={styles.circle}
-            onPress={onOpenProfile}
-            accessibilityRole="button"
-            accessibilityLabel="Mon profil"
-          >
-            {avatarUrl
-              ? <Image source={{ uri: avatarUrl }} style={styles.avatar} />
-              : <UserIcon size={20} color={colors.neutral[900]} strokeWidth={2.2} />}
           </Pressable>
         </View>
       </View>
@@ -250,11 +233,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'visible',
-  },
-  avatar: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
   },
   badge: {
     position: 'absolute',

@@ -56,6 +56,8 @@ interface CartScreenProps {
   onCheckout: (supplierId: string) => void
   onRemoveItem: (itemId: string) => void
   onContinueShopping?: () => void
+  /** Ouvre la fiche du produit (image ou nom touché). */
+  onPressItem?: (productId: string) => void
 }
 
 function formatPrice(value: number): string {
@@ -131,6 +133,7 @@ export function CartScreen({
   onCheckout,
   onRemoveItem,
   onContinueShopping,
+  onPressItem,
 }: CartScreenProps) {
   const { semantic } = useTheme()
 
@@ -227,23 +230,36 @@ export function CartScreen({
                       ],
                     ]}
                   >
-                    {item.imageUrl
-                      ? (
-                          <Image
-                            source={{ uri: item.imageUrl }}
-                            style={styles.itemImage}
-                            resizeMode="cover"
-                          />
-                        )
-                      : (
-                          <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
-                            <Package size={24} color={semantic.textTertiary} />
-                          </View>
-                        )}
+                    <TouchableOpacity
+                      onPress={() => onPressItem?.(item.productId)}
+                      disabled={!onPressItem}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Voir le produit `}
+                    >
+                      {item.imageUrl
+                        ? (
+                            <Image
+                              source={{ uri: item.imageUrl }}
+                              style={styles.itemImage}
+                              resizeMode="cover"
+                            />
+                          )
+                        : (
+                            <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
+                              <Package size={24} color={semantic.textTertiary} />
+                            </View>
+                          )}
+                    </TouchableOpacity>
 
                     <View style={styles.itemDetails}>
                       <View style={styles.itemTopRow}>
-                        <Text style={[styles.itemName, { color: semantic.textPrimary }]} numberOfLines={2}>
+                        <Text
+                          style={[styles.itemName, { color: semantic.textPrimary }]}
+                          numberOfLines={2}
+                          onPress={onPressItem ? () => onPressItem(item.productId) : undefined}
+                          accessibilityRole={onPressItem ? 'link' : undefined}
+                        >
                           {item.name}
                         </Text>
                         <TouchableOpacity

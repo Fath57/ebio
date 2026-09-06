@@ -13,7 +13,6 @@ import {
   Text,
   View,
 } from 'react-native'
-import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { useLocation } from '../../common/location-context'
@@ -36,7 +35,6 @@ interface HomeScreenProps {
   onSeeAll: (preset: HomePreset) => void
   onPickLocation: () => void
   onOpenNotifications: () => void
-  onOpenProfile: () => void
   onOpenWallet: () => void
 }
 
@@ -49,11 +47,9 @@ export function HomeScreen({
   onSeeAll,
   onPickLocation,
   onOpenNotifications,
-  onOpenProfile,
   onOpenWallet,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
-  const { data: session } = useSession()
   const { latitude, longitude, label: locationLabel } = useLocation()
   const { categories, loadCategories } = useCategories()
   const { nearby, validated, promos, loading } = useHomeFeed(latitude, longitude)
@@ -84,12 +80,10 @@ export function HomeScreen({
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <HomeHeader
         locationLabel={locationLabel}
-        avatarUrl={session?.user?.image}
         onPickLocation={onPickLocation}
         onOpenSearch={onOpenSearch}
         onOpenMap={onOpenMap}
         onOpenNotifications={onOpenNotifications}
-        onOpenProfile={onOpenProfile}
         onOpenWallet={onOpenWallet}
       />
 

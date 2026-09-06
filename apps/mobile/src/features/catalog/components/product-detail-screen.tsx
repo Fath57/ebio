@@ -29,6 +29,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { useCart } from '../../cart/cart-context'
+import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 import { useProductUnits } from '../hooks/use-product-units'
 import { ProductCompositionSections, ProductLabelChips } from './product-composition'
@@ -74,6 +76,9 @@ export function ProductDetailScreen({
   const { semantic } = useTheme()
   const { shortLabel } = useProductUnits()
   const insets = useSafeAreaInsets()
+  const { getItemCount } = useCart()
+  // Keep the add-to-cart card reachable above the floating cart bar.
+  const cartBarClearance = getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
   const [composition, setComposition] = useState<ProductCompositionData | null>(null)
@@ -223,7 +228,7 @@ export function ProductDetailScreen({
 
       <Animated.ScrollView
         style={styles.scrollView}
-        contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] }}
+        contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] + cartBarClearance }}
         showsVerticalScrollIndicator={false}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { y: scrollY } } }],

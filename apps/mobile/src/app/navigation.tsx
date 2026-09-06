@@ -10,13 +10,14 @@ import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
 import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
 import { RegisterScreen } from '../features/auth/components/register-screen'
 import { SupplierRegistration } from '../features/auth/components/supplier-registration'
 import { useCart } from '../features/cart/cart-context'
+import { CartCtaBar } from '../features/cart/components/cart-cta-bar'
 import { CartScreen } from '../features/cart/components/cart-screen'
 import { CheckoutFlow } from '../features/cart/components/checkout-flow'
 import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
@@ -81,7 +82,6 @@ function SearchHomeWrapper({ navigation }: any) {
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
-        onOpenProfile={() => navigation.navigate('Profil', { screen: 'ProfileHome' })}
         onSeeAll={(preset) => {
           if (preset === 'validated') {
             navigation.navigate('SearchResults', { validatedOnly: true, title: 'Validé eBio' })
@@ -182,14 +182,17 @@ async function openChatWithCourier(navigation: any, deliveryId: string, peerName
 function SupplierProfileWrapper({ route, navigation }: any) {
   const { supplierId } = route.params
   return (
-    <SupplierProfileScreen
-      supplierId={supplierId}
-      onNavigateToChat={id => openChatWithSupplier(navigation, id)}
-      onNavigateToProduct={(productId, product, supplierInfo) => {
-        navigation.navigate('ProductDetail', { product, supplier: supplierInfo })
-      }}
-      onGoBack={() => navigation.goBack()}
-    />
+    <View style={{ flex: 1 }}>
+      <SupplierProfileScreen
+        supplierId={supplierId}
+        onNavigateToChat={id => openChatWithSupplier(navigation, id)}
+        onNavigateToProduct={(productId, product, supplierInfo) => {
+          navigation.navigate('ProductDetail', { product, supplier: supplierInfo })
+        }}
+        onGoBack={() => navigation.goBack()}
+      />
+      <CartCtaBar onPress={() => navigation.navigate('Panier')} />
+    </View>
   )
 }
 
@@ -243,25 +246,28 @@ function ProductDetailWrapper({ route, navigation }: any) {
   }
 
   return (
-    <ProductDetailScreen
-      product={product}
-      supplier={supplier}
-      onGoBack={() => navigation.goBack()}
-      onAddToCart={(productId, quantity) => {
-        addItem({
-          productId,
-          supplierId: supplier.id,
-          supplierName: supplier.shopName,
-          name: product.name,
-          imageUrl: product.imageUrl,
-          pricePerUnit: product.promotionalPrice ?? product.pricePerUnit,
-          unit: product.unit,
-          quantity,
-        })
-        navigation.goBack()
-      }}
-      onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
-    />
+    <View style={{ flex: 1 }}>
+      <ProductDetailScreen
+        product={product}
+        supplier={supplier}
+        onGoBack={() => navigation.goBack()}
+        onAddToCart={(productId, quantity) => {
+          addItem({
+            productId,
+            supplierId: supplier.id,
+            supplierName: supplier.shopName,
+            name: product.name,
+            imageUrl: product.imageUrl,
+            pricePerUnit: product.promotionalPrice ?? product.pricePerUnit,
+            unit: product.unit,
+            quantity,
+          })
+          navigation.goBack()
+        }}
+        onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
+      />
+      <CartCtaBar onPress={() => navigation.navigate('Panier')} />
+    </View>
   )
 }
 
@@ -367,6 +373,7 @@ function CartHomeWrapper({ navigation }: any) {
         onChangeDeliveryMode={changeDeliveryMode}
         onCheckout={handleCheckout}
         onRemoveItem={removeItem}
+        onPressItem={productId => navigation.navigate('Accueil', { screen: 'ProductDetail', params: { productId } })}
       />
     </SafeScreen>
   )
@@ -772,11 +779,12 @@ const HIDE_TAB_BAR_ROUTES = new Set([
 
 export function AppNavigation() {
   const { semantic } = useTheme()
+  const insets = useSafeAreaInsets()
   useNotifications()
 
   const baseTabBarStyle = {
-    height: 64,
-    paddingBottom: 10,
+    height: 64 + insets.bottom,
+    paddingBottom: 10 + insets.bottom,
     paddingTop: 4,
     backgroundColor: semantic.bgCard,
     borderTopWidth: 0,

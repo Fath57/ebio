@@ -82,7 +82,8 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         groups.push({
           supplierId: input.supplierId,
           supplierName: input.supplierName,
-          deliveryMode: 'PICKUP',
+          // Delivery is what most buyers want; pickup stays one tap away.
+          deliveryMode: 'DELIVERY',
           items: [
             {
               id: generateId(),
