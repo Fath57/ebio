@@ -43,7 +43,7 @@ export const createOrderSchema = z.object({
   supplierId: z.string().uuid(),
   pickupMode: pickupModeEnum,
   paymentMethod: paymentMethodEnum,
-  deliveryAddress: z.string().min(5).max(500).optional(),
+  deliveryAddress: z.string().trim().min(3, 'Adresse de livraison trop courte : indiquez le quartier et un repère').max(500).optional(),
   deliveryLatitude: z.number().min(-90).max(90).optional(),
   deliveryLongitude: z.number().min(-180).max(180).optional(),
   deliverySlot: z.string().max(200).optional(),

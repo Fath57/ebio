@@ -34,6 +34,9 @@ import { useDeliveryFee } from '../hooks/use-delivery-fee'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
+// Mirrors the API contract (createOrderSchema.deliveryAddress).
+const MIN_ADDRESS_LENGTH = 3
+
 interface OrderSummary {
   supplierId: string
   supplierName: string
@@ -226,8 +229,13 @@ export function CheckoutFlow({
   }, [promoInput, orderSummary.supplierId, orderSummary.total])
 
   const handleProceedToPayment = useCallback(async () => {
-    if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryAddress.trim()) {
+    const trimmedAddress = deliveryAddress.trim()
+    if (orderSummary.deliveryMode === 'DELIVERY' && !trimmedAddress) {
       appAlert('Adresse requise', 'Veuillez saisir une adresse de livraison.')
+      return
+    }
+    if (orderSummary.deliveryMode === 'DELIVERY' && trimmedAddress.length < MIN_ADDRESS_LENGTH) {
+      appAlert('Adresse trop courte', 'Indiquez le quartier et un repère (ex. en face de la pharmacie) pour que le livreur vous trouve.')
       return
     }
     // Insist on the map point without blocking: an address alone is often
@@ -261,7 +269,7 @@ export function CheckoutFlow({
           pickupMode: orderSummary.deliveryMode === 'PICKUP' ? 'ON_SITE' : 'DELIVERY',
           paymentMethod: payWithWallet ? 'WALLET' : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
           promoCode: appliedPromo?.code,
-          deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? deliveryAddress : undefined,
+          deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? trimmedAddress : undefined,
           deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.latitude : undefined,
           deliveryLongitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.longitude : undefined,
           deliverySlot: deliverySlot || undefined,

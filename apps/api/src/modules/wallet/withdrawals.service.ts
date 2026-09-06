@@ -1,4 +1,5 @@
 import type { User } from '../auth/auth.entity'
+import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
@@ -374,6 +375,7 @@ export class WithdrawalsService {
 
   /** Safety net when the webhook never lands. */
   @Cron(CronExpression.EVERY_10_MINUTES)
+  @EnsureRequestContext()
   async pollStaleProcessing(): Promise<void> {
     const cutoff = new Date(Date.now() - STALE_PROCESSING_MS)
     const stale = await this.em.find(WithdrawalRequest, {
