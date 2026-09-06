@@ -155,6 +155,27 @@
         "track": "internal",
         "releaseStatus": "completed"
       }
+    },
+    "closed-client": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
+    },
+    "closed-supplier": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
+    },
+    "closed-courier": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "alpha",
+        "releaseStatus": "completed"
+      }
     }
   }
 }
