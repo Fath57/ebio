@@ -68,6 +68,8 @@ export class CaslAbilityFactory {
         break
 
       case UserRole.SUPPLIER:
+        // Also covers a supplier validated as courier: the courier app must
+        // keep working while the role stays SUPPLIER.
         can('create', 'Product')
         can('read', 'Product')
         can('update', 'Product')
@@ -97,6 +99,8 @@ export class CaslAbilityFactory {
         can('create', 'Supplier')
         can('read', 'Delivery')
         can('update', 'Delivery')
+        can('read', 'CourierProfile')
+        can('update', 'CourierProfile')
         break
 
       case UserRole.COURIER:

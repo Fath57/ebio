@@ -5,7 +5,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
-import { UserRole } from '../auth/auth.entity'
+import { User, UserRole } from '../auth/auth.entity'
 import { MediaService } from '../media/media.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -101,10 +101,7 @@ export class AdminCouriersService {
     profile.rejectionReason = undefined
     profile.validatedAt = new Date()
     profile.validatedBy = adminId
-    // Same promotion mechanics as suppliers: the enum role drives CASL.
-    if (profile.user.role !== UserRole.ADMIN) {
-      profile.user.role = UserRole.COURIER
-    }
+    this.promoteToCourier(profile.user)
     await this.em.flush()
 
     await this.notificationsService.send({
@@ -185,15 +182,24 @@ export class AdminCouriersService {
     return profile
   }
 
+  /**
+   * The single-valued role drives CASL. Only a plain buyer is promoted: a
+   * supplier keeps SUPPLIER (a superset of the courier abilities), otherwise
+   * validating them as courier locks them out of their own shop.
+   */
+  private promoteToCourier(user: User): void {
+    if (user.role === UserRole.BUYER) {
+      user.role = UserRole.COURIER
+    }
+  }
+
   async reactivate(id: string, adminId: string): Promise<CourierProfile> {
     const { profile } = await this.getById(id)
     if (profile.validationStatus !== ValidationStatus.SUSPENDED) {
       throw new BadRequestException('Ce livreur n\'est pas suspendu')
     }
     profile.validationStatus = ValidationStatus.VALIDATED
-    if (profile.user.role !== UserRole.ADMIN) {
-      profile.user.role = UserRole.COURIER
-    }
+    this.promoteToCourier(profile.user)
     await this.em.flush()
 
     await this.notificationsService.send({
