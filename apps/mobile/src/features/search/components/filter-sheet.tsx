@@ -16,19 +16,12 @@ interface FilterValues {
   inStockOnly: boolean
 }
 
-/**
- * Sur la carte, les pins sont des points de vente : seuls la distance et les
- * catégories ont un sens. Prix et stock ne concernent que la liste de produits.
- */
-type FilterScope = 'products' | 'suppliers'
-
 interface FilterSheetProps {
   visible: boolean
   onClose: () => void
   onApply: (filters: FilterValues) => void
   initialValues?: Partial<FilterValues>
   categoryOptions?: CategoryItem[]
-  scope?: FilterScope
 }
 
 const DEFAULT_FILTERS: FilterValues = {
@@ -164,7 +157,6 @@ export function FilterSheet({
   onApply,
   initialValues,
   categoryOptions = FALLBACK_CATEGORIES,
-  scope = 'products',
 }: FilterSheetProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
@@ -423,52 +415,47 @@ export function FilterSheet({
               </ScrollView>
             </View>
 
-            {scope === 'products' && (
-              <>
-                {/* Max price */}
-                <View style={styles.section}>
-                  <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Prix maximum (FCFA)</Text>
-                  <TextInput
-                    style={[styles.priceInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary }]}
-                    keyboardType="numeric"
-                    placeholder="Ex : 5 000"
-                    placeholderTextColor={semantic.textTertiary}
-                    value={filters.maxPrice?.toString() ?? ''}
-                    onChangeText={(text) => {
-                      const num = Number.parseInt(text.replace(/\s/g, ''), 10)
-                      setFilters(p => ({
-                        ...p,
-                        maxPrice: Number.isNaN(num) ? undefined : num,
-                      }))
-                    }}
-                    accessibilityLabel="Prix maximum en FCFA"
-                  />
-                </View>
+            {/* Max price */}
+            <View style={styles.section}>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Prix maximum (FCFA)</Text>
+              <TextInput
+                style={[styles.priceInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary }]}
+                keyboardType="numeric"
+                placeholder="Ex : 5 000"
+                placeholderTextColor={semantic.textTertiary}
+                value={filters.maxPrice?.toString() ?? ''}
+                onChangeText={(text) => {
+                  const num = Number.parseInt(text.replace(/\s/g, ''), 10)
+                  setFilters(p => ({
+                    ...p,
+                    maxPrice: Number.isNaN(num) ? undefined : num,
+                  }))
+                }}
+                accessibilityLabel="Prix maximum en FCFA"
+              />
+            </View>
 
-                {/* In stock toggle */}
-                <View style={styles.section}>
-                  <View style={styles.toggleRow}>
-                    <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>En stock uniquement</Text>
-                    <Switch
-                      value={filters.inStockOnly}
-                      onValueChange={val =>
-                        setFilters(p => ({ ...p, inStockOnly: val }))}
-                      trackColor={{
-                        false: colors.neutral[200],
-                        true: colors.green[200],
-                      }}
-                      thumbColor={
-                        filters.inStockOnly
-                          ? colors.green[400]
-                          : colors.neutral[400]
-                      }
-                      accessibilityLabel="En stock uniquement"
-                    />
-                  </View>
-                </View>
-              </>
-            )}
-
+            {/* In stock toggle */}
+            <View style={styles.section}>
+              <View style={styles.toggleRow}>
+                <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>En stock uniquement</Text>
+                <Switch
+                  value={filters.inStockOnly}
+                  onValueChange={val =>
+                    setFilters(p => ({ ...p, inStockOnly: val }))}
+                  trackColor={{
+                    false: colors.neutral[200],
+                    true: colors.green[200],
+                  }}
+                  thumbColor={
+                    filters.inStockOnly
+                      ? colors.green[400]
+                      : colors.neutral[400]
+                  }
+                  accessibilityLabel="En stock uniquement"
+                />
+              </View>
+            </View>
           </ScrollView>
 
           {/* Sticky footer */}

@@ -33,7 +33,12 @@ interface UseNearbyResult {
  * seconde géolocalisation : sinon la carte se centre à un endroit et affiche
  * les marqueurs d'un autre.
  */
-export function useNearbySuppliers(radiusKm?: number, categories?: string[]): UseNearbyResult {
+export function useNearbySuppliers(
+  radiusKm?: number,
+  categories?: string[],
+  maxPrice?: number,
+  inStockOnly?: boolean,
+): UseNearbyResult {
   const { latitude, longitude, loading: locationLoading } = useLocation()
   const [suppliers, setSuppliers] = useState<NearbySupplier[]>([])
   const [loading, setLoading] = useState(true)
@@ -50,6 +55,10 @@ export function useNearbySuppliers(radiusKm?: number, categories?: string[]): Us
         params.set('radius', String(radiusKm))
       if (categoryParam)
         params.set('category', categoryParam)
+      if (maxPrice !== undefined)
+        params.set('maxPrice', String(maxPrice))
+      if (inStockOnly)
+        params.set('inStockOnly', 'true')
       const res = await apiFetch(`/api/suppliers/nearby?${params}`)
       if (res.ok) {
         const data = (await res.json()) as NearbySupplier[]
@@ -62,7 +71,7 @@ export function useNearbySuppliers(radiusKm?: number, categories?: string[]): Us
     finally {
       setLoading(false)
     }
-  }, [radiusKm, categoryParam])
+  }, [radiusKm, categoryParam, maxPrice, inStockOnly])
 
   useEffect(() => {
     if (locationLoading)

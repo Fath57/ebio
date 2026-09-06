@@ -176,7 +176,8 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
   const hasActiveFilters
     = appliedFilters.radius !== undefined
       || appliedFilters.categories.length > 0
-      || (viewMode === 'list' && (appliedFilters.maxPrice !== undefined || !appliedFilters.inStockOnly))
+      || appliedFilters.maxPrice !== undefined
+      || !appliedFilters.inStockOnly
 
   function renderSearchResultItem({ item, index }: { item: SearchResult, index: number }) {
     return (
@@ -296,8 +297,8 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       {/* Back header — shown when used as a pushed results screen.
           Les filtres vivent dans son rightSlot : action de niveau écran, comme
-          « Tout marquer lu » sur les notifications. En mode carte, seuls la
-          distance et les catégories restent proposés. */}
+          « Tout marquer lu » sur les notifications. Les mêmes critères produit
+          (distance, catégories, prix, stock) valent en liste comme sur la carte. */}
       {onGoBack && (
         <ScreenHeader
           title={headerTitle ?? 'Recherche'}
@@ -446,6 +447,8 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
               onNavigateToSupplier={handleCardPress}
               radiusKm={appliedFilters.radius}
               categories={appliedFilters.categories}
+              maxPrice={appliedFilters.maxPrice}
+              inStockOnly={appliedFilters.inStockOnly}
             />
           )}
 
@@ -463,7 +466,6 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
         onApply={handleApplyFilters}
         initialValues={appliedFilters}
         categoryOptions={categories}
-        scope={viewMode === 'map' ? 'suppliers' : 'products'}
       />
     </View>
   )

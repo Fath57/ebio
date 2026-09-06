@@ -1,6 +1,7 @@
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import Locate from 'lucide-react-native/dist/esm/icons/locate'
 import RefreshCw from 'lucide-react-native/dist/esm/icons/refresh-cw'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Platform,
@@ -23,27 +24,38 @@ interface MapScreenProps {
   radiusKm?: number
   /** Slugs de catégories : seuls les fournisseurs qui en vendent sont affichés. */
   categories?: string[]
+  /** Prix maximum (FCFA) d'au moins un produit du fournisseur. */
+  maxPrice?: number
+  /** Ne garder que les fournisseurs ayant au moins un produit en stock. */
+  inStockOnly?: boolean
 }
 
 /** Niveau de zoom d'ouverture — environ un quart d'agglomération. */
 const DEFAULT_DELTA = 0.08
 
-/** Hauteur de la tab bar flottante à dégager en bas de carte. */
-const TAB_BAR_CLEARANCE = 64
 /**
  * Les vues de marqueur personnalisées doivent cesser de se redessiner une fois
  * posées, sinon Android repeint la carte en continu.
  */
 const TRACK_CHANGES_MS = 600
 
-export function MapScreen({ onNavigateToSupplier, radiusKm, categories }: MapScreenProps) {
+export function MapScreen({ onNavigateToSupplier, radiusKm, categories, maxPrice, inStockOnly }: MapScreenProps) {
   const { semantic } = useTheme()
   const mapRef = useRef<MapView>(null)
-  const { suppliers, loading, error, refresh } = useNearbySuppliers(radiusKm, categories)
+  // Floating tab bar to clear at the bottom of the map (0 outside the tabs).
+  const tabBarClearance = use(BottomTabBarHeightContext) ?? 0
+  const { suppliers, loading, error, refresh } = useNearbySuppliers(radiusKm, categories, maxPrice, inStockOnly)
   // Position de référence de l'app : GPS ou choix manuel de l'utilisateur.
   const { latitude, longitude, loading: locationLoading } = useLocation()
   const [selectedId, setSelectedId] = useState<string | null>(null)
   const [tracksChanges, setTracksChanges] = useState(true)
+
+  // Each pin is a place (shop or sales point); a supplier with several places
+  // appears several times, so count distinct suppliers and sales points apart.
+  const { supplierCount, salesPointCount } = useMemo(() => ({
+    supplierCount: new Set(suppliers.map(s => s.id)).size,
+    salesPointCount: suppliers.filter(s => s.salesPointId !== null).length,
+  }), [suppliers])
   const hasAutoCentered = useRef(false)
 
   // `initialRegion` est figé au premier rendu : si la position se résout après,
@@ -109,7 +121,7 @@ export function MapScreen({ onNavigateToSupplier, radiusKm, categories }: MapScr
         showsMyLocationButton={false}
         showsCompass={false}
         toolbarEnabled={false}
-        mapPadding={{ top: 0, right: 0, bottom: TAB_BAR_CLEARANCE, left: 0 }}
+        mapPadding={{ top: 0, right: 0, bottom: tabBarClearance, left: 0 }}
         onPress={() => setSelectedId(null)}
       >
         {suppliers.map((supplier) => {
@@ -139,10 +151,7 @@ export function MapScreen({ onNavigateToSupplier, radiusKm, categories }: MapScr
       {/* Compteur */}
       <View style={[styles.countBadge, { backgroundColor: semantic.bgCard }]}>
         <Text style={[styles.countText, { color: semantic.textPrimary }]}>
-          {suppliers.length}
-          {' '}
-          fournisseur
-          {suppliers.length > 1 ? 's' : ''}
+          {`${supplierCount} fournisseur${supplierCount > 1 ? 's' : ''} · ${salesPointCount} point${salesPointCount > 1 ? 's' : ''} de vente`}
         </Text>
       </View>
 
@@ -173,7 +182,7 @@ export function MapScreen({ onNavigateToSupplier, radiusKm, categories }: MapScr
       )}
 
       {error && !loading && (
-        <View style={[styles.errorBanner, { bottom: TAB_BAR_CLEARANCE + spacing[4] }]}>
+        <View style={[styles.errorBanner, { bottom: tabBarClearance + spacing[4] }]}>
           <Text style={styles.errorText}>{error}</Text>
           <Pressable onPress={refresh} accessibilityRole="button" accessibilityLabel="Réessayer">
             <Text style={styles.errorRetry}>Réessayer</Text>
@@ -188,7 +197,7 @@ export function MapScreen({ onNavigateToSupplier, radiusKm, categories }: MapScr
           setSelectedId(null)
           onNavigateToSupplier?.(id)
         }}
-        bottomInset={TAB_BAR_CLEARANCE}
+        bottomInset={tabBarClearance}
       />
     </View>
   )

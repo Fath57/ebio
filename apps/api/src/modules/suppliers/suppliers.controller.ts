@@ -52,6 +52,8 @@ export class SuppliersController {
     @Query('longitude') longitude?: string,
     @Query('radius') radiusParam?: string,
     @Query('category') category?: string,
+    @Query('maxPrice') maxPriceParam?: string,
+    @Query('inStockOnly') inStockOnly?: string,
   ) {
     const lat = latitude ? Number(latitude) : undefined
     const lng = longitude ? Number(longitude) : undefined
@@ -59,7 +61,9 @@ export class SuppliersController {
     // Comma-separated category slugs, e.g. `category=fruits,legumes`
     const categorySlugs = category ? category.split(',').map(c => c.trim()).filter(Boolean) : undefined
 
-    return this.suppliersService.findNearby(lat, lng, radiusKm, categorySlugs)
+    const maxPrice = maxPriceParam ? Number(maxPriceParam) : undefined
+
+    return this.suppliersService.findNearby(lat, lng, radiusKm, categorySlugs, maxPrice, inStockOnly === 'true')
   }
 
   @Get(':id')
