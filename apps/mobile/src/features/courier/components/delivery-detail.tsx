@@ -138,10 +138,10 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
                   <Text style={styles.cashTitle}>Espèces</Text>
                 </View>
                 <Text style={styles.cashLine}>
-                  {`À remettre à la boutique au retrait : ${formatAmount(delivery.cashToShop ?? 0)}`}
+                  {`Vous payez la boutique ${formatAmount(delivery.cashToShop ?? 0)} au retrait, de votre poche`}
                 </Text>
                 <Text style={styles.cashLine}>
-                  {`À encaisser chez le client : ${formatAmount(delivery.cashToCollect ?? delivery.totalAmount)}`}
+                  {`Le client vous remet ${formatAmount(delivery.cashToCollect ?? delivery.totalAmount)} en espèces à la livraison`}
                 </Text>
               </View>
             )

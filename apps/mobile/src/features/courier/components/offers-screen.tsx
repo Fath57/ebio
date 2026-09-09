@@ -113,7 +113,7 @@ export function OffersScreen({ offers, refreshing, unavailable, outOfZoneKm, onR
               <View style={styles.line}>
                 <Banknote size={16} color={colors.earth[600]} strokeWidth={2} />
                 <Text style={[styles.lineText, { color: colors.earth[800] }]}>
-                  {`À avancer à la boutique : ${formatAmount(item.cashToShop)}`}
+                  {`Vous payez la boutique ${formatAmount(item.cashToShop)} au retrait · le client vous remet ${formatAmount(item.cashToCollect ?? item.totalAmount)} à la livraison`}
                 </Text>
               </View>
             )
