@@ -420,6 +420,7 @@
       "financialSummary": "Financial summary",
       "subtotal": "Subtotal",
       "commission": "Commission",
+      "payment": "Payment",
       "confirmAccept": "Confirm acceptance",
       "confirmAcceptDesc": "Do you want to accept this order?",
       "confirmReject": "Confirm rejection",
@@ -762,6 +763,11 @@
         "CANCELLED": "Cancelled",
         "DISPUTED": "Disputed"
       },
+      "paymentMethods": {
+        "CASH_ON_DELIVERY": "Cash",
+        "FEDAPAY": "FedaPay",
+        "WALLET": "Wallet"
+      },
       "detail": {
         "parties": "Parties",
         "logistics": "Logistics",
@@ -939,6 +945,14 @@
           "supportsRefund": "Refunds supported",
           "supportsRefundHint": "Allows refunding a buyer through this method."
         }
+      },
+      "cashLimit": {
+        "title": "Cash on delivery",
+        "description": "Maximum order total payable in cash on delivery. The courier advances the goods at the shop on pickup and collects the total from the customer; this cap bounds their exposure. Set 0 to disable cash.",
+        "amount": "Cap (FCFA)",
+        "amountHint": "Integer between 0 and 10,000,000 FCFA. Applies to upcoming orders only.",
+        "saved": "Cap saved",
+        "error": "Could not save the cap. Try again."
       },
       "deliveryCommission": {
         "title": "eBio commission on delivery fees",

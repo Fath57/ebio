@@ -832,7 +832,7 @@ export class AdminService {
 
     const rows = await this.em.getConnection().execute(
       `SELECT o.id, o.order_number, o.status, o.total_amount, o.commission_amount,
-              o."createdAt" as created_at, o.pickup_mode,
+              o."createdAt" as created_at, o.pickup_mode, o.payment_method,
               bu.id as buyer_id, bu.name as buyer_name,
               s.id as supplier_id, s.shop_name as supplier_name
        ${from}
@@ -1299,6 +1299,7 @@ export class AdminService {
       orderNumber: r.order_number as string,
       status: r.status as string,
       pickupMode: r.pickup_mode as string,
+      paymentMethod: (r.payment_method as string) ?? null,
       totalAmount: Number(r.total_amount ?? 0),
       commissionAmount: Number(r.commission_amount ?? 0),
       createdAt: this.toIso(r.created_at) ?? '',

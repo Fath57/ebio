@@ -15,6 +15,8 @@ export interface AdminOrderListItem {
   orderNumber: string
   status: string
   pickupMode: string
+  /** CASH_ON_DELIVERY | FEDAPAY | WALLET (null on legacy rows). */
+  paymentMethod: string | null
   totalAmount: number
   commissionAmount: number
   createdAt: string
@@ -42,7 +44,6 @@ export interface AdminOrderDeliverySummary {
 export interface AdminOrderDetail extends AdminOrderListItem {
   delivery: AdminOrderDeliverySummary | null
   commissionRate: number
-  paymentMethod: string
   deliveryAddress: string | null
   deliverySlot: string | null
   acceptedAt: string | null

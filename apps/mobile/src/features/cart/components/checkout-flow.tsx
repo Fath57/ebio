@@ -1,5 +1,6 @@
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinCheck from 'lucide-react-native/dist/esm/icons/map-pin-check'
@@ -33,6 +34,8 @@ import { LocationPickerScreen } from '../../map/components/location-picker-scree
 import { useDeliveryFee } from '../hooks/use-delivery-fee'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
+
+type PaymentChoice = 'FEDAPAY' | 'WALLET' | 'CASH'
 
 // Mirrors the API contract (createOrderSchema.deliveryAddress).
 const MIN_ADDRESS_LENGTH = 3
@@ -166,7 +169,9 @@ export function CheckoutFlow({
   const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
   // Wallet checkout: the balance decides whether the option is even offered.
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
-  const [payWithWallet, setPayWithWallet] = useState(false)
+  const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('FEDAPAY')
+  // Cash on delivery: the server caps the amount; 0 means the option is off.
+  const [cashMaxAmount, setCashMaxAmount] = useState(0)
   // Promo code: server-checked before the order, re-checked at creation.
   const [promoInput, setPromoInput] = useState('')
   const [appliedPromo, setAppliedPromo] = useState<{ code: string, discount: number } | null>(null)
@@ -193,11 +198,33 @@ export function CheckoutFlow({
         // wallet stays unavailable; FedaPay/cash path is unaffected
       }
     }
+    async function loadCashCap() {
+      try {
+        const res = await apiFetch('/api/settings/public')
+        if (res.ok && !cancelled) {
+          const data = await res.json() as { cashOnDeliveryMaxAmount?: number }
+          setCashMaxAmount(typeof data.cashOnDeliveryMaxAmount === 'number' ? data.cashOnDeliveryMaxAmount : 0)
+        }
+      }
+      catch {
+        // cash stays hidden; online payment is unaffected
+      }
+    }
     loadBalance()
+    loadCashCap()
     return () => {
       cancelled = true
     }
   }, [])
+
+  const orderTotal = orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee
+  const isPickup = orderSummary.deliveryMode === 'PICKUP'
+  const cashAvailable = cashMaxAmount > 0 && orderTotal <= cashMaxAmount
+  const walletAvailable = walletBalance !== null && walletBalance >= orderTotal
+  // A choice that stops being affordable (promo removed, fee changed) falls back to online payment.
+  const effectiveChoice: PaymentChoice = (paymentChoice === 'CASH' && !cashAvailable) || (paymentChoice === 'WALLET' && !walletAvailable)
+    ? 'FEDAPAY'
+    : paymentChoice
 
   const handleApplyPromo = useCallback(async () => {
     const code = promoInput.trim()
@@ -267,7 +294,11 @@ export function CheckoutFlow({
         body: JSON.stringify({
           supplierId: orderSummary.supplierId,
           pickupMode: orderSummary.deliveryMode === 'PICKUP' ? 'ON_SITE' : 'DELIVERY',
-          paymentMethod: payWithWallet ? 'WALLET' : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
+          paymentMethod: effectiveChoice === 'CASH'
+            ? 'CASH_ON_DELIVERY'
+            : effectiveChoice === 'WALLET'
+              ? 'WALLET'
+              : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
           promoCode: appliedPromo?.code,
           deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? trimmedAddress : undefined,
           deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.latitude : undefined,
@@ -306,6 +337,11 @@ export function CheckoutFlow({
         const message = error?.aggregateErrors?.[0]?.message
           ?? error?.message
           ?? 'Impossible de créer la commande. Veuillez réessayer.'
+        // Cash cap or cash disabled: the server explains, the buyer picks another way.
+        if (orderRes.status === 400 && effectiveChoice === 'CASH' && typeof error?.message === 'string') {
+          appAlert('Paiement en espèces', error.message)
+          return
+        }
         appAlert('Erreur', message)
         return
       }
@@ -316,7 +352,8 @@ export function CheckoutFlow({
       }
       setPendingOrderId(order.id)
 
-      if (payWithWallet || !fedapayPublicKey) {
+      // Wallet and cash orders need no payment widget: the order is already placed.
+      if (effectiveChoice !== 'FEDAPAY' || !fedapayPublicKey) {
         onComplete(order.orderNumber ?? order.id, order.id)
         return
       }
@@ -343,7 +380,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, payWithWallet, appliedPromo, orderNumber, onComplete])
+  }, [orderSummary, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete])
 
   const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
@@ -579,7 +616,7 @@ export function CheckoutFlow({
             <View style={[styles.totalRow, { borderTopColor: semantic.borderNormal }]}>
               <Text style={[styles.totalLabel, { color: semantic.textPrimary }]}>Total</Text>
               <Text style={styles.totalValue}>
-                {formatPrice(orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee)}
+                {formatPrice(orderTotal)}
                 {' '}
                 FCFA
               </Text>
@@ -587,17 +624,19 @@ export function CheckoutFlow({
           </View>
 
           {/* Payment method */}
-          {walletBalance !== null && walletBalance >= orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee && (
+          {walletAvailable && (
             <TouchableOpacity
               style={[
                 styles.card,
                 styles.walletOption,
-                { backgroundColor: semantic.bgCard, borderColor: payWithWallet ? colors.green[400] : semantic.borderLight },
+                { backgroundColor: semantic.bgCard, borderColor: effectiveChoice === 'WALLET' ? colors.green[400] : semantic.borderLight },
               ]}
-              onPress={() => setPayWithWallet(previous => !previous)}
+              onPress={() => setPaymentChoice(previous => (previous === 'WALLET' ? 'FEDAPAY' : 'WALLET'))}
               activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ selected: effectiveChoice === 'WALLET' }}
             >
-              <Wallet size={18} color={payWithWallet ? colors.green[600] : semantic.textSecondary} strokeWidth={2} />
+              <Wallet size={18} color={effectiveChoice === 'WALLET' ? colors.green[600] : semantic.textSecondary} strokeWidth={2} />
               <View style={{ flex: 1 }}>
                 <Text style={[styles.walletOptionTitle, { color: semantic.textPrimary }]}>
                   Payer avec mon portefeuille
@@ -605,16 +644,47 @@ export function CheckoutFlow({
                 <Text style={[styles.walletOptionHint, { color: semantic.textSecondary }]}>
                   Solde :
                   {' '}
-                  {formatPrice(walletBalance)}
+                  {formatPrice(walletBalance ?? 0)}
                   {' '}
                   FCFA — débit immédiat, sans frais
                 </Text>
               </View>
-              {payWithWallet && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
+              {effectiveChoice === 'WALLET' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
             </TouchableOpacity>
           )}
 
-          {!payWithWallet && (
+          {cashMaxAmount > 0 && (
+            <TouchableOpacity
+              style={[
+                styles.card,
+                styles.walletOption,
+                { backgroundColor: semantic.bgCard, borderColor: effectiveChoice === 'CASH' ? colors.green[400] : semantic.borderLight },
+                !cashAvailable && styles.buttonDisabled,
+              ]}
+              onPress={() => setPaymentChoice(previous => (previous === 'CASH' ? 'FEDAPAY' : 'CASH'))}
+              disabled={!cashAvailable}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ selected: effectiveChoice === 'CASH', disabled: !cashAvailable }}
+            >
+              <Banknote size={18} color={effectiveChoice === 'CASH' ? colors.green[600] : semantic.textSecondary} strokeWidth={2} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.walletOptionTitle, { color: semantic.textPrimary }]}>
+                  {isPickup ? 'Espèces au retrait' : 'Espèces à la livraison'}
+                </Text>
+                <Text style={[styles.walletOptionHint, { color: semantic.textSecondary }]}>
+                  {!cashAvailable
+                    ? `Disponible jusqu'à ${formatPrice(cashMaxAmount)} FCFA par commande`
+                    : isPickup
+                      ? 'Vous payez la boutique en retirant votre commande'
+                      : 'Vous payez le livreur à la réception, montant exact de préférence'}
+                </Text>
+              </View>
+              {effectiveChoice === 'CASH' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
+            </TouchableOpacity>
+          )}
+
+          {effectiveChoice === 'FEDAPAY' && (
             <View style={[styles.paymentInfo, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}>
               <CircleCheck size={16} color={colors.green[400]} strokeWidth={2} />
               <Text style={[styles.paymentInfoText, { color: semantic.textSecondary }]}>
@@ -629,7 +699,7 @@ export function CheckoutFlow({
           <View style={styles.bottomPriceCol}>
             <Text style={[styles.bottomPriceLabel, { color: semantic.textTertiary }]}>Total</Text>
             <Text style={[styles.bottomPriceValue, { color: semantic.textPrimary }]}>
-              {formatPrice(orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee)}
+              {formatPrice(orderTotal)}
               {' '}
               FCFA
             </Text>
@@ -645,7 +715,11 @@ export function CheckoutFlow({
               : (
                   <>
                     <Text style={styles.confirmButtonText}>
-                      {payWithWallet ? 'Payer avec le portefeuille' : 'Payer maintenant'}
+                      {effectiveChoice === 'CASH'
+                        ? 'Commander'
+                        : effectiveChoice === 'WALLET'
+                          ? 'Payer avec le portefeuille'
+                          : 'Payer maintenant'}
                     </Text>
                     <ArrowRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />
                   </>

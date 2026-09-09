@@ -1,3 +1,4 @@
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
 import { useState } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native'
@@ -8,6 +9,8 @@ import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 interface ProofScreenProps {
+  /** Cash orders close with the buyer's code only: the photo fallback is off. */
+  isCash?: boolean
   onComplete: (body: Record<string, unknown>) => Promise<{ ok: boolean, queued: boolean, errorMessage?: string }>
   onDone: () => void
 }
@@ -16,7 +19,7 @@ interface ProofScreenProps {
  * Proof of delivery. Nominal path: the 4-digit code the buyer received at
  * pickup. Fallback: a photo of the handed-over package (absent customer, etc.).
  */
-export function ProofScreen({ onComplete, onDone }: ProofScreenProps) {
+export function ProofScreen({ isCash = false, onComplete, onDone }: ProofScreenProps) {
   const { semantic } = useTheme()
   const [code, setCode] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -65,6 +68,16 @@ export function ProofScreen({ onComplete, onDone }: ProofScreenProps) {
         <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
           Demandez au client le code à 4 chiffres reçu dans son application.
         </Text>
+        {isCash
+          ? (
+              <View style={styles.cashNote} accessibilityRole="alert">
+                <Banknote size={18} color={colors.earth[800]} strokeWidth={2.2} />
+                <Text style={styles.cashNoteText}>
+                  Commande en espèces : saisissez le code du client après encaissement.
+                </Text>
+              </View>
+            )
+          : null}
 
         <TextInput
           style={[styles.codeInput, { backgroundColor: semantic.bgCard, color: semantic.textPrimary, borderColor: semantic.borderNormal }]}
@@ -89,31 +102,37 @@ export function ProofScreen({ onComplete, onDone }: ProofScreenProps) {
             : <Text style={styles.primaryText}>Valider le code</Text>}
         </Pressable>
 
-        <View style={styles.separator}>
-          <View style={[styles.separatorLine, { backgroundColor: semantic.borderLight }]} />
-          <Text style={[styles.separatorText, { color: semantic.textTertiary }]}>ou</Text>
-          <View style={[styles.separatorLine, { backgroundColor: semantic.borderLight }]} />
-        </View>
-
-        <Pressable
-          style={[styles.secondary, { borderColor: semantic.borderNormal }, (submitting || uploading) && styles.disabled]}
-          onPress={submitPhoto}
-          disabled={submitting || uploading}
-          accessibilityRole="button"
-          accessibilityLabel="Prendre une photo comme preuve de livraison"
-        >
-          {uploading
-            ? <ActivityIndicator size="small" color={colors.green[400]} />
-            : (
-                <View style={styles.secondaryContent}>
-                  <Camera size={18} color={semantic.textPrimary} strokeWidth={2} />
-                  <Text style={[styles.secondaryText, { color: semantic.textPrimary }]}>Photo de la remise</Text>
+        {isCash
+          ? null
+          : (
+              <>
+                <View style={styles.separator}>
+                  <View style={[styles.separatorLine, { backgroundColor: semantic.borderLight }]} />
+                  <Text style={[styles.separatorText, { color: semantic.textTertiary }]}>ou</Text>
+                  <View style={[styles.separatorLine, { backgroundColor: semantic.borderLight }]} />
                 </View>
-              )}
-        </Pressable>
-        <Text style={[styles.note, { color: semantic.textTertiary }]}>
-          La photo sert de preuve quand le client ne peut pas donner le code.
-        </Text>
+
+                <Pressable
+                  style={[styles.secondary, { borderColor: semantic.borderNormal }, (submitting || uploading) && styles.disabled]}
+                  onPress={submitPhoto}
+                  disabled={submitting || uploading}
+                  accessibilityRole="button"
+                  accessibilityLabel="Prendre une photo comme preuve de livraison"
+                >
+                  {uploading
+                    ? <ActivityIndicator size="small" color={colors.green[400]} />
+                    : (
+                        <View style={styles.secondaryContent}>
+                          <Camera size={18} color={semantic.textPrimary} strokeWidth={2} />
+                          <Text style={[styles.secondaryText, { color: semantic.textPrimary }]}>Photo de la remise</Text>
+                        </View>
+                      )}
+                </Pressable>
+                <Text style={[styles.note, { color: semantic.textTertiary }]}>
+                  La photo sert de preuve quand le client ne peut pas donner le code.
+                </Text>
+              </>
+            )}
       </ScrollView>
     </KeyboardAwareView>
   )
@@ -132,6 +151,23 @@ const styles = StyleSheet.create({
     ...typography.bodyL,
     marginTop: spacing[2],
     marginBottom: spacing[5],
+  },
+  cashNote: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    backgroundColor: colors.earth[50],
+    borderWidth: 1,
+    borderColor: colors.earth[200],
+    borderRadius: radius.md,
+    paddingVertical: spacing[3],
+    paddingHorizontal: spacing[4],
+    marginBottom: spacing[4],
+  },
+  cashNoteText: {
+    ...typography.bodyS,
+    flex: 1,
+    color: colors.earth[800],
   },
   codeInput: {
     height: 64,

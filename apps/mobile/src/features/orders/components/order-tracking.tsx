@@ -516,8 +516,17 @@ export function OrderTracking({
             <View style={styles.infoContent}>
               <Text style={[styles.infoLabel, { color: semantic.textTertiary }]}>Paiement</Text>
               <Text style={[styles.infoValue, { color: semantic.textPrimary }]}>
-                {order.paymentMethod === 'FEDAPAY' ? 'FedaPay' : 'Espèces à la livraison'}
+                {order.paymentMethod === 'FEDAPAY'
+                  ? 'FedaPay'
+                  : order.paymentMethod === 'WALLET'
+                    ? 'Portefeuille eBio'
+                    : order.pickupMode === 'DELIVERY' ? 'Espèces à la livraison' : 'Espèces au retrait'}
               </Text>
+              {order.paymentMethod === 'CASH_ON_DELIVERY' && order.pickupMode === 'DELIVERY' && !isDelivered && !isCancelled && (
+                <Text style={[styles.infoLabel, { color: colors.earth[600], marginTop: 2 }]}>
+                  {`À régler au livreur : ${formatPrice(order.total)} FCFA en espèces`}
+                </Text>
+              )}
             </View>
           </View>
         </View>

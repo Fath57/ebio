@@ -1,4 +1,5 @@
 import type { Delivery, DeliveryFailReason } from '../types'
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
@@ -91,8 +92,9 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
   const currentIndex = STEPS.findIndex(step => step.status === delivery.status)
   const isCancelled = delivery.status === 'CANCELLED'
   const courierFee = delivery.courierFee ?? 0
+  const isCash = delivery.paymentMethod === 'CASH_ON_DELIVERY'
   // Cash orders: eBio's share of the delivery fee is debited from the wallet.
-  const cashCommission = delivery.paymentMethod === 'CASH_ON_DELIVERY'
+  const cashCommission = isCash
     ? Math.max(0, (delivery.deliveryFee ?? 0) - courierFee)
     : 0
 
@@ -178,6 +180,26 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
               : null}
           </View>
         </View>
+
+        {isCash
+          ? (
+              <View style={styles.cashCard} accessibilityRole="summary">
+                <View style={styles.cashHeader}>
+                  <Banknote size={18} color={colors.earth[800]} strokeWidth={2.2} />
+                  <Text style={styles.cashTitle}>Espèces</Text>
+                </View>
+                <Text style={styles.cashLine}>
+                  {`À remettre à la boutique au retrait : ${formatAmount(delivery.cashToShop ?? 0)}`}
+                </Text>
+                <Text style={styles.cashLine}>
+                  {`À encaisser chez le client : ${formatAmount(delivery.cashToCollect ?? delivery.totalAmount)}`}
+                </Text>
+                <Text style={styles.cashHint}>
+                  Vous avancez les marchandises à la boutique et gardez les frais de livraison.
+                </Text>
+              </View>
+            )
+          : null}
       </View>
 
       <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
@@ -383,6 +405,34 @@ const styles = StyleSheet.create({
   divider: {
     height: 1,
     marginVertical: spacing[3],
+  },
+  cashCard: {
+    marginTop: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.earth[200],
+    backgroundColor: colors.earth[50],
+    padding: spacing[3],
+    gap: spacing[1],
+  },
+  cashHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[1],
+  },
+  cashTitle: {
+    ...typography.h3,
+    color: colors.earth[800],
+  },
+  cashLine: {
+    ...typography.bodyS,
+    color: colors.earth[800],
+  },
+  cashHint: {
+    ...typography.caption,
+    color: colors.earth[600],
+    marginTop: spacing[1],
   },
   primary: {
     height: 44,

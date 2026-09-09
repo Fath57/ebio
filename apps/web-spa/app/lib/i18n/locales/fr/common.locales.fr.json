@@ -420,6 +420,7 @@
       "financialSummary": "Résumé financier",
       "subtotal": "Sous-total",
       "commission": "Commission",
+      "payment": "Paiement",
       "confirmAccept": "Confirmer l'acceptation",
       "confirmAcceptDesc": "Voulez-vous accepter cette commande ?",
       "confirmReject": "Confirmer le refus",
@@ -762,6 +763,11 @@
         "CANCELLED": "Annulée",
         "DISPUTED": "Litige"
       },
+      "paymentMethods": {
+        "CASH_ON_DELIVERY": "Espèces",
+        "FEDAPAY": "FedaPay",
+        "WALLET": "Portefeuille"
+      },
       "detail": {
         "parties": "Parties",
         "logistics": "Logistique",
@@ -939,6 +945,14 @@
           "supportsRefund": "Remboursements possibles",
           "supportsRefundHint": "Permet de rembourser un acheteur par ce moyen."
         }
+      },
+      "cashLimit": {
+        "title": "Espèces à la livraison",
+        "description": "Montant maximal d'une commande payable en espèces à la livraison. Le livreur avance la marchandise à la boutique au retrait et encaisse le total chez le client ; ce plafond limite son exposition. Mettre 0 pour désactiver les espèces.",
+        "amount": "Plafond (FCFA)",
+        "amountHint": "Entier entre 0 et 10 000 000 FCFA. Appliqué aux commandes à venir uniquement.",
+        "saved": "Plafond enregistré",
+        "error": "Impossible d’enregistrer le plafond. Réessayez."
       },
       "deliveryCommission": {
         "title": "Commission eBio sur les frais de livraison",

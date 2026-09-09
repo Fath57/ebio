@@ -1,6 +1,7 @@
 import type { CommissionCategoryRate } from '../forms/commission-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
+  adminControllerUpdateCashOnDeliveryLimit,
   adminControllerUpdateCommissions,
   adminControllerUpdateDeliveryCommission,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
@@ -14,6 +15,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
+import { CashLimitForm } from '../forms/cash-limit-form'
 import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 
@@ -21,6 +23,8 @@ interface AdminSettingsData {
   commissions: CommissionCategoryRate[]
   /** eBio's share of the delivery fee as a fraction (0.10 = 10 %). */
   deliveryCommissionRate: number
+  /** Maximum order total payable in cash on delivery, in FCFA (0 = disabled). */
+  cashOnDeliveryMaxAmount: number
 }
 
 function fetchAdminSettingsQueryOptions() {
@@ -43,6 +47,7 @@ export default function AdminSettingsPage() {
   const { t } = useTranslation()
   const queryClient = useQueryClient()
   const [deliveryFeedback, setDeliveryFeedback] = useState<'saved' | 'error' | null>(null)
+  const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
 
@@ -75,6 +80,25 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setDeliveryFeedback('error')
+    },
+  })
+
+  const { mutate: updateCashLimit, isPending: isCashLimitPending } = useMutation({
+    mutationFn: async (amount: number) => {
+      const response = await adminControllerUpdateCashOnDeliveryLimit({ body: { amount } })
+      if (response.error)
+        throw new Error('Failed to update cash on delivery limit')
+      return response.data
+    },
+    onMutate: () => {
+      setCashLimitFeedback(null)
+    },
+    onSuccess: () => {
+      setCashLimitFeedback('saved')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
+    },
+    onError: () => {
+      setCashLimitFeedback('error')
     },
   })
 
@@ -165,6 +189,28 @@ export default function AdminSettingsPage() {
                 {deliveryFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.deliveryCommission.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.cashLimit.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.cashLimit.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <CashLimitForm
+                  amount={settings?.cashOnDeliveryMaxAmount ?? 25000}
+                  onSubmit={updateCashLimit}
+                  isPending={isCashLimitPending}
+                />
+                {cashLimitFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.cashLimit.saved')}</p>
+                )}
+                {cashLimitFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.cashLimit.error')}
                   </p>
                 )}
               </CardContent>

@@ -1,4 +1,5 @@
 import type { Delivery } from '../types'
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Navigation from 'lucide-react-native/dist/esm/icons/navigation'
 import { useState } from 'react'
@@ -71,8 +72,9 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
     }
   }
   const courierFee = delivery.courierFee ?? 0
+  const isCash = delivery.paymentMethod === 'CASH_ON_DELIVERY'
   // Cash orders: eBio's share of the delivery fee is debited from the wallet.
-  const cashCommission = delivery.paymentMethod === 'CASH_ON_DELIVERY'
+  const cashCommission = isCash
     ? Math.max(0, (delivery.deliveryFee ?? 0) - courierFee)
     : 0
 
@@ -126,6 +128,22 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
               <Text style={[styles.value, { color: semantic.textSecondary }]}>
                 {`Commission eBio de ${formatAmount(cashCommission)} prélevée sur votre portefeuille`}
               </Text>
+            )
+          : null}
+        {isCash
+          ? (
+              <View style={styles.cashCard} accessibilityRole="summary">
+                <View style={styles.cashHeader}>
+                  <Banknote size={18} color={colors.earth[800]} strokeWidth={2.2} />
+                  <Text style={styles.cashTitle}>Espèces</Text>
+                </View>
+                <Text style={styles.cashLine}>
+                  {`À remettre à la boutique au retrait : ${formatAmount(delivery.cashToShop ?? 0)}`}
+                </Text>
+                <Text style={styles.cashLine}>
+                  {`À encaisser chez le client : ${formatAmount(delivery.cashToCollect ?? delivery.totalAmount)}`}
+                </Text>
+              </View>
             )
           : null}
         {delivered && tipAmount > 0
@@ -245,6 +263,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing[2],
     marginTop: spacing[1],
+  },
+  cashCard: {
+    marginTop: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    borderColor: colors.earth[200],
+    backgroundColor: colors.earth[50],
+    padding: spacing[3],
+    gap: spacing[1],
+  },
+  cashHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[1],
+  },
+  cashTitle: {
+    ...typography.h3,
+    color: colors.earth[800],
+  },
+  cashLine: {
+    ...typography.bodyS,
+    color: colors.earth[800],
   },
   failBox: {
     borderRadius: radius.md,

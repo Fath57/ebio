@@ -1,4 +1,5 @@
 import type { DeliveryOffer } from '../types'
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
@@ -53,10 +54,21 @@ export function OffersScreen({ offers, refreshing, unavailable, outOfZoneKm, onR
   }
 
   function renderOffer({ item }: { item: DeliveryOffer }) {
+    const isCash = item.paymentMethod === 'CASH_ON_DELIVERY'
     return (
       <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
         <View style={styles.cardHeader}>
-          <Text style={[styles.orderNumber, { color: semantic.textTertiary }]}>{item.orderNumber}</Text>
+          <View style={styles.cardHeaderLeft}>
+            <Text style={[styles.orderNumber, { color: semantic.textTertiary }]}>{item.orderNumber}</Text>
+            {isCash
+              ? (
+                  <View style={styles.cashBadge} accessibilityLabel="Commande payée en espèces">
+                    <Banknote size={12} color={colors.earth[800]} strokeWidth={2.2} />
+                    <Text style={styles.cashBadgeText}>Espèces</Text>
+                  </View>
+                )
+              : null}
+          </View>
           {item.distanceKm !== null
             ? (
                 <Text style={[styles.distance, { color: semantic.textPrimaryColor }]}>
@@ -96,6 +108,16 @@ export function OffersScreen({ offers, refreshing, unavailable, outOfZoneKm, onR
             {`Vous gagnez ${formatAmount(item.courierFee ?? 0)}`}
           </Text>
         </View>
+        {isCash && item.cashToShop !== null
+          ? (
+              <View style={styles.line}>
+                <Banknote size={16} color={colors.earth[600]} strokeWidth={2} />
+                <Text style={[styles.lineText, { color: colors.earth[800] }]}>
+                  {`À avancer à la boutique : ${formatAmount(item.cashToShop)}`}
+                </Text>
+              </View>
+            )
+          : null}
 
         <Pressable
           style={styles.acceptButton}
@@ -177,8 +199,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing[2],
   },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    flexShrink: 1,
+  },
   orderNumber: {
     ...typography.caption,
+  },
+  cashBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.earth[50],
+    borderWidth: 1,
+    borderColor: colors.earth[200],
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  cashBadgeText: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.earth[800],
   },
   distance: {
     ...typography.price,

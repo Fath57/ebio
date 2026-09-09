@@ -43,6 +43,11 @@ export interface DeliveryOffer {
   deliveryFee: number
   /** The courier's net earning once eBio's commission is taken. */
   courierFee: number
+  paymentMethod: string
+  /** Cash orders: what to collect from the buyer at the door, null otherwise. */
+  cashToCollect: number | null
+  /** Cash orders: what the courier hands the shop at pickup, null otherwise. */
+  cashToShop: number | null
   offeredAt: string
 }
 
@@ -88,6 +93,10 @@ export interface Delivery {
   /** The courier's net earning once eBio's commission is taken. */
   courierFee: number
   paymentMethod: string
+  /** Cash orders: what to collect from the buyer at the door, null otherwise. */
+  cashToCollect: number | null
+  /** Cash orders: what the courier hands the shop at pickup, null otherwise. */
+  cashToShop: number | null
   acceptedAt: string | null
   pickedUpAt: string | null
   inTransitAt: string | null

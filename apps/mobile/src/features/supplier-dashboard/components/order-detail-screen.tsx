@@ -68,7 +68,8 @@ const PICKUP_LABELS: Record<string, string> = {
 
 const PAYMENT_LABELS: Record<string, string> = {
   FEDAPAY: 'Mobile Money',
-  CASH_ON_DELIVERY: 'Paiement à la livraison',
+  WALLET: 'Portefeuille eBio',
+  CASH_ON_DELIVERY: 'Espèces',
 }
 
 function formatPrice(n: number): string {
@@ -350,6 +351,15 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
             <InfoRow label="Créneau" value={order.deliverySlot} semantic={semantic} />
           )}
           <InfoRow label="Paiement" value={PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod} semantic={semantic} />
+          {order.paymentMethod === 'CASH_ON_DELIVERY' && (
+            <InfoRow
+              label="Espèces"
+              value={order.pickupMode === 'DELIVERY'
+                ? `Le livreur vous remet ${formatPrice(Math.max(0, order.totalAmount - order.deliveryFee))} FCFA au retrait`
+                : `Le client paie ${formatPrice(order.totalAmount)} FCFA au retrait`}
+              semantic={semantic}
+            />
+          )}
         </View>
 
         {/* Timeline */}

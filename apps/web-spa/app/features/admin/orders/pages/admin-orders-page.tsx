@@ -35,6 +35,9 @@ const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 
   DISPUTED: 'destructive',
 }
 
+/** Known payment methods; anything else falls back to the raw value. */
+const PAYMENT_METHODS = ['CASH_ON_DELIVERY', 'FEDAPAY', 'WALLET']
+
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
 }
@@ -87,6 +90,20 @@ export default function AdminOrdersPage() {
           {t(`admin.orders.status.${row.original.status}`)}
         </Badge>
       ),
+    },
+    {
+      id: 'paymentMethod',
+      header: t('admin.orders.columns.payment'),
+      cell: ({ row }) => {
+        const method = row.original.paymentMethod
+        if (!method)
+          return <span className="text-muted-foreground">—</span>
+        return (
+          <Badge variant="outline">
+            {PAYMENT_METHODS.includes(method) ? t(`admin.orders.paymentMethods.${method}`) : method}
+          </Badge>
+        )
+      },
     },
     {
       id: 'totalAmount',
