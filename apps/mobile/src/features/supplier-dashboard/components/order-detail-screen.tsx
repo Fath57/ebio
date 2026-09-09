@@ -193,13 +193,6 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
     ])
   }
 
-  function confirmSelfDelivery(): void {
-    appAlert('Livrer moi-même', 'La recherche de livreur eBio sera annulée et vous assurez la livraison.', [
-      { text: 'Je livre moi-même', onPress: () => { void transition('status', { status: 'IN_DELIVERY' }) } },
-      { text: 'Annuler', style: 'cancel' as const },
-    ])
-  }
-
   const handleRefresh = useCallback(() => {
     setRefreshing(true)
     setRefreshToken(t => t + 1)
@@ -263,9 +256,6 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           )}
           {order.status === 'READY' && order.pickupMode === 'ON_SITE' && (
             <ActionButton label="Remise au client — livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la remise.') }} disabled={acting} />
-          )}
-          {order.status === 'READY' && order.pickupMode === 'DELIVERY' && (
-            <ActionButton label="Je livre moi-même" onPress={confirmSelfDelivery} disabled={acting} variant="secondary" />
           )}
           {order.status === 'IN_DELIVERY' && (
             <ActionButton label="Marquer comme livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la livraison.') }} disabled={acting} variant="secondary" />

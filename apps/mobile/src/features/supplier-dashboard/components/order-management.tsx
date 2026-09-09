@@ -84,11 +84,11 @@ function formatTimeSince(iso: string): string {
   return `il y a ${diffD}j`
 }
 
-// Transitions via PATCH /orders/:id/status (statuts acceptés par l'API)
+// Transitions via PATCH /orders/:id/status (statuts acceptés par l'API).
+// READY has no manual step: an eBio courier takes the delivery from there.
 const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: string }>> = {
   ACCEPTED: { status: 'PREPARING', label: 'En préparation' },
   PREPARING: { status: 'READY', label: 'Prête' },
-  READY: { status: 'IN_DELIVERY', label: 'En livraison' },
 }
 
 const REJECT_REASONS = ['Rupture de stock', 'Boutique fermée', 'Zone non desservie', 'Autre'] as const
