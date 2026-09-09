@@ -176,7 +176,7 @@ export function RateCourierScreen({ deliveryId, courierName, mode, onDone, onBac
         <Text style={[styles.successBody, { color: semantic.textSecondary }]}>
           {`${courierName} recevra ${formatAmount(amount)} dans son portefeuille.`}
         </Text>
-        <TouchableOpacity style={styles.primaryButton} onPress={onDone} accessibilityRole="button" accessibilityLabel="Fermer">
+        <TouchableOpacity style={[styles.primaryButton, styles.successButton]} onPress={onDone} accessibilityRole="button" accessibilityLabel="Fermer">
           <Text style={styles.primaryText}>Fermer</Text>
         </TouchableOpacity>
       </View>
@@ -425,6 +425,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: spacing[4],
   },
+  // The success view centres its children: the button must stretch itself.
+  successButton: { alignSelf: 'stretch', paddingHorizontal: spacing[6] },
   successTitle: { ...typography.h2, textAlign: 'center' },
   successBody: { ...typography.bodyS, textAlign: 'center', marginTop: spacing[2] },
 })
