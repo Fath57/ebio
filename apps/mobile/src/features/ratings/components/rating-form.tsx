@@ -13,6 +13,10 @@ interface RatingFormProps {
   orderId?: string
   transactionType: 'ORDER' | 'CONTACT'
   onComplete?: () => void
+  /** Heading above the criteria; defaults to the generic "Notez votre expérience". */
+  title?: string
+  /** Skip the "Merci !" alert — the caller chains another step and thanks the user itself. */
+  silent?: boolean
 }
 
 const CRITERIA = [
@@ -22,7 +26,7 @@ const CRITERIA = [
   { key: 'conformityRating', label: 'Conformité à la description' },
 ] as const
 
-export function RatingForm({ supplierId, orderId, transactionType, onComplete }: RatingFormProps) {
+export function RatingForm({ supplierId, orderId, transactionType, onComplete, title, silent = false }: RatingFormProps) {
   const { semantic } = useTheme()
   const [ratings, setRatings] = useState<Record<string, number>>({
     qualityRating: 0,
@@ -55,7 +59,8 @@ export function RatingForm({ supplierId, orderId, transactionType, onComplete }:
       })
 
       if (res.ok) {
-        appAlert('Merci !', 'Votre avis a été enregistré.')
+        if (!silent)
+          appAlert('Merci !', 'Votre avis a été enregistré.')
         onComplete?.()
       }
       else {
@@ -74,7 +79,7 @@ export function RatingForm({ supplierId, orderId, transactionType, onComplete }:
   return (
     <KeyboardAwareView style={{ flex: 1 }}>
       <ScrollView style={[styles.container, { backgroundColor: semantic.bgPage }]} contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={[styles.title, { color: semantic.textPrimary }]}>Notez votre expérience</Text>
+        <Text style={[styles.title, { color: semantic.textPrimary }]}>{title ?? 'Notez votre expérience'}</Text>
 
         {CRITERIA.map(({ key, label }) => (
           <View key={key} style={[styles.criterionRow, { borderBottomColor: semantic.borderLight }]}>

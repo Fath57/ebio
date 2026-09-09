@@ -78,11 +78,10 @@ interface OrderTrackingProps {
   onOpenChat: (supplierId: string) => void
   /** Opens (or creates) the buyer <-> courier thread of the delivery. */
   onOpenCourierChat: (deliveryId: string, courierName: string) => void
-  onRate: (supplierId: string) => void
-  /** Opens the courier rating flow once the delivery is done. */
-  onRateCourier: (deliveryId: string, courierName: string) => void
-  /** Opens the tip flow (courier already rated). */
-  onTipCourier: (deliveryId: string, courierName: string) => void
+  /** Opens the single rating flow (shop review, then courier + tip). */
+  onRate: (supplierId: string, hasReview: boolean) => void
+  /** Opens the tip step alone (courier already rated). */
+  onTipCourier: (supplierId: string) => void
 }
 
 const STATUS_ORDER: OrderStatus[] = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED']
@@ -132,10 +131,11 @@ export function OrderTracking({
   onOpenChat,
   onOpenCourierChat,
   onRate,
-  onRateCourier,
   onTipCourier,
 }: OrderTrackingProps) {
   const [order, setOrder] = useState<OrderDetail | null>(null)
+  // Lifted from the courier card so the action bar knows whether the courier still awaits a rating.
+  const [deliveryInfo, setDeliveryInfo] = useState<DeliveryInfo | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isConfirming, setIsConfirming] = useState(false)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -250,6 +250,11 @@ export function OrderTracking({
   const currentStatusIndex = STATUS_ORDER.indexOf(order.currentStatus)
   const isCancelled = order.currentStatus === 'CANCELLED'
   const isDelivered = order.currentStatus === 'DELIVERED'
+  // One button covers both reviews; its label says what is still missing.
+  const courierPending = deliveryInfo?.status === 'DELIVERED' && deliveryInfo.courier !== null && !deliveryInfo.buyerRating
+  const rateLabel = !order.hasReview
+    ? (courierPending ? 'Noter ma commande' : 'Noter la boutique')
+    : courierPending ? 'Noter le livreur' : null
 
   const subtotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0)
   const deliveryFee = order.total - subtotal
@@ -280,8 +285,8 @@ export function OrderTracking({
             orderId={orderId}
             isDelivered={isDelivered}
             onOpenCourierChat={onOpenCourierChat}
-            onRateCourier={onRateCourier}
-            onTipCourier={onTipCourier}
+            onTipCourier={() => onTipCourier(order.supplierId)}
+            onInfoLoaded={setDeliveryInfo}
           />
         )}
 
@@ -544,16 +549,16 @@ export function OrderTracking({
                       Réception confirmée. Merci !
                     </Text>
                   </View>
-                  {!order.hasReview && (
+                  {rateLabel && (
                     <TouchableOpacity
                       style={styles.rateButton}
-                      onPress={() => onRate(order.supplierId)}
+                      onPress={() => onRate(order.supplierId, order.hasReview)}
                       activeOpacity={0.8}
                       accessibilityRole="button"
-                      accessibilityLabel="Noter la boutique"
+                      accessibilityLabel={rateLabel}
                     >
                       <Star size={16} color={colors.neutral[0]} />
-                      <Text style={styles.rateButtonText}>Noter la boutique</Text>
+                      <Text style={styles.rateButtonText}>{rateLabel}</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -1035,12 +1040,12 @@ function DeliveryLiveMap({ info }: { info: DeliveryInfo }) {
  * Courier block of the tracking screen: who delivers, and the 4-digit code the
  * buyer hands to the courier as proof of delivery.
  */
-function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onRateCourier, onTipCourier }: {
+function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourier, onInfoLoaded }: {
   orderId: string
   isDelivered: boolean
   onOpenCourierChat: (deliveryId: string, courierName: string) => void
-  onRateCourier: (deliveryId: string, courierName: string) => void
-  onTipCourier: (deliveryId: string, courierName: string) => void
+  onTipCourier: () => void
+  onInfoLoaded: (info: DeliveryInfo) => void
 }) {
   const { semantic } = useTheme()
   const [info, setInfo] = useState<DeliveryInfo | null>(null)
@@ -1052,12 +1057,13 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onRateCouri
       if (res.ok) {
         const data = await res.json() as DeliveryInfo
         setInfo(data)
+        onInfoLoaded(data)
       }
     }
     catch {
       // The card simply stays hidden / keeps its last state
     }
-  }, [orderId])
+  }, [orderId, onInfoLoaded])
 
   // Back from the rating / tip screens: the card must reflect what was given.
   useFocusEffect(
@@ -1152,18 +1158,7 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onRateCouri
                       <StarRating value={info.buyerRating.rating} size={16} />
                     </View>
                   )
-                : (
-                    <TouchableOpacity
-                      style={deliveryStyles.rateCourierButton}
-                      onPress={() => onRateCourier(info.id, courier.name)}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel="Noter le livreur"
-                    >
-                      <Star size={16} color={colors.neutral[0]} />
-                      <Text style={deliveryStyles.rateCourierText}>Noter le livreur</Text>
-                    </TouchableOpacity>
-                  )}
+                : null}
               {info.tipAmount > 0
                 ? (
                     <View style={deliveryStyles.feedbackRow}>
@@ -1177,7 +1172,7 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onRateCouri
                   ? (
                       <TouchableOpacity
                         style={[deliveryStyles.tipButton, { borderColor: semantic.borderNormal }]}
-                        onPress={() => onTipCourier(info.id, courier.name)}
+                        onPress={onTipCourier}
                         activeOpacity={0.8}
                         accessibilityRole="button"
                         accessibilityLabel="Laisser un pourboire"
@@ -1260,20 +1255,6 @@ const deliveryStyles = StyleSheet.create({
   tipValue: {
     ...typography.price,
     fontSize: 14,
-  },
-  rateCourierButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing[2],
-    backgroundColor: colors.earth[400],
-    borderRadius: radius.pill,
-    paddingVertical: spacing[3],
-    minHeight: 44,
-  },
-  rateCourierText: {
-    ...typography.h3,
-    color: colors.neutral[0],
   },
   tipButton: {
     flexDirection: 'row',

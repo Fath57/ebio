@@ -27,7 +27,6 @@ import { openDeliveryConversation } from '../features/chat/delivery-chat'
 import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { useLocation } from '../features/common/location-context'
-import { RateCourierScreen } from '../features/deliveries/components/rate-courier-screen'
 import { HomeScreen } from '../features/home/components/home-screen'
 import { LocationPickerScreen } from '../features/map/components/location-picker-screen'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
@@ -37,7 +36,7 @@ import { OrderList } from '../features/orders/components/order-list'
 import { OrderTracking } from '../features/orders/components/order-tracking'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
 import { ProfileScreen } from '../features/profile/components/profile-screen'
-import { RatingForm } from '../features/ratings/components/rating-form'
+import { RateOrderFlow } from '../features/ratings/components/rate-order-flow'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
@@ -480,7 +479,6 @@ function OrdersStackScreen() {
       <OrdersStack.Screen name="MyOrders" component={MyOrdersWrapper} />
       <OrdersStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
       <OrdersStack.Screen name="RateOrder" component={RateOrderWrapper} />
-      <OrdersStack.Screen name="RateCourier" component={RateCourierWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -623,41 +621,31 @@ function OrderTrackingWrapper({ route, navigation }: any) {
         orderId={orderId}
         onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId, undefined, orderId)}
         onOpenCourierChat={(deliveryId, courierName) => openChatWithCourier(navigation, deliveryId, courierName, orderId)}
-        onRate={supplierId => navigation.navigate('RateOrder', { supplierId, orderId })}
-        onRateCourier={(deliveryId, courierName) => navigation.navigate('RateCourier', { deliveryId, courierName, mode: 'rate' })}
-        onTipCourier={(deliveryId, courierName) => navigation.navigate('RateCourier', { deliveryId, courierName, mode: 'tip' })}
+        onRate={(supplierId, hasReview) => navigation.navigate('RateOrder', { supplierId, orderId, hasReview })}
+        onTipCourier={supplierId => navigation.navigate('RateOrder', { supplierId, orderId, hasReview: true, tipOnly: true })}
         onBack={() => navigation.goBack()}
-      />
-    </SafeScreen>
-  )
-}
-
-function RateCourierWrapper({ route, navigation }: any) {
-  const { deliveryId, courierName, mode } = route.params as { deliveryId: string, courierName: string, mode: 'rate' | 'tip' }
-  return (
-    <SafeScreen>
-      <RateCourierScreen
-        deliveryId={deliveryId}
-        courierName={courierName}
-        mode={mode}
-        onDone={() => navigation.goBack()}
-        onBack={() => navigation.goBack()}
-        onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
       />
     </SafeScreen>
   )
 }
 
 function RateOrderWrapper({ route, navigation }: any) {
-  const { supplierId, orderId } = route.params
+  const { supplierId, orderId, hasReview, tipOnly } = route.params as {
+    supplierId: string
+    orderId: string
+    hasReview: boolean
+    tipOnly?: boolean
+  }
   return (
     <SafeScreen>
-      <ScreenHeader title="Votre avis" onBack={() => navigation.goBack()} />
-      <RatingForm
-        supplierId={supplierId}
+      <RateOrderFlow
         orderId={orderId}
-        transactionType="ORDER"
-        onComplete={() => navigation.goBack()}
+        supplierId={supplierId}
+        hasReview={hasReview}
+        tipOnly={tipOnly}
+        onDone={() => navigation.goBack()}
+        onBack={() => navigation.goBack()}
+        onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
       />
     </SafeScreen>
   )
