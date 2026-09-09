@@ -178,7 +178,8 @@
     "withdrawals": "Payouts",
     "wallet": "Wallet",
     "promoCodes": "Promo codes",
-    "couriers": "Couriers"
+    "couriers": "Couriers",
+    "deliveries": "Deliveries"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -775,7 +776,14 @@
         "quantity": "Qty",
         "unitPrice": "Unit price",
         "commissionDetail": "Commission ({{rate}}%)",
-        "applyStatus": "Apply"
+        "applyStatus": "Apply",
+        "delivery": "Delivery",
+        "deliveryStatus": "Run status",
+        "courier": "Courier",
+        "noDelivery": "No delivery run (on-site pickup)",
+        "assignCourier": "Assign a courier",
+        "changeCourier": "Change courier",
+        "viewDelivery": "View delivery"
       }
     },
     "productUnits": {
@@ -1337,6 +1345,82 @@
       "pagination": {
         "previous": "Previous",
         "next": "Next"
+      }
+    },
+    "deliveries": {
+      "title": "Deliveries",
+      "description": "Shared fleet runs: tracking and courier assignment",
+      "filterByStatus": "Filter by status",
+      "empty": "No delivery for this filter",
+      "backToList": "Back to deliveries",
+      "columns": {
+        "order": "Order",
+        "shop": "Shop",
+        "dropoff": "Drop-off address",
+        "courier": "Courier",
+        "status": "Status",
+        "updatedAt": "Updated"
+      },
+      "statuses": {
+        "all": "All statuses",
+        "AWAITING_COURIER": "Awaiting courier",
+        "ACCEPTED": "Accepted",
+        "PICKED_UP": "Picked up",
+        "IN_TRANSIT": "In transit",
+        "DELIVERED": "Delivered",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled"
+      },
+      "noCourier": "No courier",
+      "assign": "Assign",
+      "changeCourier": "Change courier",
+      "rebroadcast": "Rebroadcast",
+      "rebroadcastDone": "Delivery re-offered to nearby couriers",
+      "rebroadcastError": "Rebroadcast failed",
+      "reassignments": "{{count}} reassignment(s)",
+      "assignPage": {
+        "title": "Assign a courier",
+        "pickup": "Pickup",
+        "dropoff": "Drop-off",
+        "waitingSince": "Waiting for {{duration}}",
+        "currentCourier": "Current courier",
+        "search": "Name or phone…",
+        "availableOnly": "Available only",
+        "radius": "Radius",
+        "anyRadius": "No limit",
+        "vehicle": "Vehicle",
+        "anyVehicle": "All",
+        "candidates": "{{count}} courier(s)",
+        "noCandidates": "No courier matches these criteria",
+        "searchHint": "Searching by name ignores the radius",
+        "distance": "{{km}} km",
+        "noPosition": "Unknown position",
+        "seen": "Seen {{ago}}",
+        "zoneCenter": "Zone centre",
+        "active": "{{count}} active",
+        "delivered": "{{count}} delivered",
+        "current": "On this delivery",
+        "online": "Available",
+        "offline": "Offline",
+        "assign": "Assign",
+        "confirmTitle": "Assign this delivery to {{name}}?",
+        "confirmBody": "The courier gets a notification and the delivery moves to “Accepted”.",
+        "confirmPrevious": "{{name}} will be removed from the delivery and notified.",
+        "confirmUnavailable": "This courier is offline: they will only see the delivery when they next open the app.",
+        "note": "Message for the courier (optional)",
+        "notePlaceholder": "E.g. customer in a hurry, call before pickup",
+        "assigned": "Delivery assigned to {{name}}",
+        "assignError": "Assignment failed",
+        "notAssignable": "This delivery can no longer be assigned: it is already picked up or finished.",
+        "legend": {
+          "pickup": "Pickup point",
+          "dropoff": "Customer",
+          "gps": "Recent GPS position",
+          "zone": "Declared zone centre",
+          "offline": "Offline"
+        },
+        "mapMissingKey": "Map unavailable: Google Maps key missing (VITE_GOOGLE_MAPS_API_KEY).",
+        "timeline": "Timeline"
       }
     }
   },

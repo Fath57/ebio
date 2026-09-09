@@ -19,7 +19,7 @@ import {
   TableRow,
 } from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft } from 'lucide-react'
+import { ArrowLeft, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
@@ -28,6 +28,9 @@ import {
   fetchAdminOrderQueryOptions,
   updateAdminOrderStatus,
 } from '../utils/orders-queries'
+
+/** The back office may still pick the courier until the parcel leaves the shop. */
+const ASSIGNABLE_DELIVERY_STATUSES = new Set(['AWAITING_COURIER', 'ACCEPTED'])
 
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
@@ -147,6 +150,38 @@ export default function AdminOrderDetailPage() {
             <InfoRow label={t('admin.orders.detail.createdAt')} value={formatDate(order.createdAt)} />
             <InfoRow label={t('admin.orders.detail.acceptedAt')} value={formatDate(order.acceptedAt)} />
             <InfoRow label={t('admin.orders.detail.deliveredAt')} value={formatDate(order.deliveredAt)} />
+          </CardContent>
+        </Card>
+
+        <Card className="md:col-span-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle>{t('admin.orders.detail.delivery')}</CardTitle>
+            {order.delivery && ASSIGNABLE_DELIVERY_STATUSES.has(order.delivery.status) && (
+              <Button size="sm" variant={order.delivery.courierId ? 'outline' : 'default'} asChild>
+                <Link to={`/admin/livraisons/${order.delivery.id}/assigner`}>
+                  <Truck className="mr-2 h-4 w-4" />
+                  {t(order.delivery.courierId ? 'admin.orders.detail.changeCourier' : 'admin.orders.detail.assignCourier')}
+                </Link>
+              </Button>
+            )}
+          </CardHeader>
+          <CardContent>
+            {order.delivery
+              ? (
+                  <>
+                    <InfoRow
+                      label={t('admin.orders.detail.deliveryStatus')}
+                      value={t(`admin.deliveries.statuses.${order.delivery.status}`)}
+                    />
+                    <InfoRow
+                      label={t('admin.orders.detail.courier')}
+                      value={order.delivery.courierName ?? t('admin.deliveries.noCourier')}
+                    />
+                  </>
+                )
+              : (
+                  <p className="text-sm text-muted-foreground">{t('admin.orders.detail.noDelivery')}</p>
+                )}
           </CardContent>
         </Card>
       </div>

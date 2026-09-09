@@ -30,7 +30,17 @@ export interface AdminOrderLine {
   totalPrice: number
 }
 
+/** Latest courier run of the order (null for on-site pickup). */
+export interface AdminOrderDeliverySummary {
+  id: string
+  status: string
+  courierId: string | null
+  courierName: string | null
+  updatedAt: string | null
+}
+
 export interface AdminOrderDetail extends AdminOrderListItem {
+  delivery: AdminOrderDeliverySummary | null
   commissionRate: number
   paymentMethod: string
   deliveryAddress: string | null

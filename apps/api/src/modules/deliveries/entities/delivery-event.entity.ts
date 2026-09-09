@@ -22,6 +22,8 @@ export enum DeliveryEventType {
   ORDER_CANCELLED = 'ORDER_CANCELLED',
   /** Supplier advanced the order manually while the delivery was unclaimed. */
   SELF_DELIVERED = 'SELF_DELIVERED',
+  /** Back-office forced the courier, bypassing the offer/accept loop. */
+  ASSIGNED_BY_ADMIN = 'ASSIGNED_BY_ADMIN',
 }
 
 /** Append-only transition log — the traceable per-step history (SC-002). */

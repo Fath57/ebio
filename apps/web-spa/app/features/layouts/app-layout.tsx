@@ -27,6 +27,7 @@ import {
   Store,
   Sun,
   TicketPercent,
+  Truck,
   Users,
   Wallet,
 } from 'lucide-react'
@@ -115,6 +116,7 @@ export default function AppLayout() {
       group: { label: t('nav.groups.sales'), icon: <ShoppingCart className="h-4 w-4" /> },
       items: [
         { to: '/admin/commandes', label: t('nav.orders'), icon: <ClipboardList className="h-4 w-4" /> },
+        { to: '/admin/livraisons', label: t('nav.deliveries'), icon: <Truck className="h-4 w-4" /> },
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" /> },
         { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" /> },
         { to: '/admin/reversements', label: t('nav.withdrawals'), icon: <Banknote className="h-4 w-4" /> },

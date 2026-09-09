@@ -71,6 +71,7 @@ In a SPA, environment variables must be defined at build time as they are integr
 | Variable | Description | Required | Default |
 |----------|-------------|----------|---------|
 | `VITE_API_URL` | Backend API URL | Yes | - |
+| `VITE_GOOGLE_MAPS_API_KEY` | Google Maps JavaScript API key (back-office delivery map) | No | - |
 
 > **Note**: All environment variables used in the application must start with `VITE_` to be accessible in the client code.
 

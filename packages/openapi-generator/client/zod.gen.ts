@@ -140,6 +140,20 @@ export const zRejectCourier = z.object({
 });
 
 /**
+ * AssignDelivery
+ *
+ * Back-office assignment of a delivery to a chosen courier
+ */
+export const zAssignDelivery = z.object({
+  courierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  note: z.optional(z.string().max(300)),
+});
+
+/**
  * UpdateCourierAvailability
  *
  * Toggle courier availability (online / offline)
@@ -1728,7 +1742,7 @@ export const zCreateOrder = z.object({
     ),
   pickupMode: zPickupMode,
   paymentMethod: zPaymentMethod,
-  deliveryAddress: z.optional(z.string().min(5).max(500)),
+  deliveryAddress: z.optional(z.string().min(3).max(500)),
   deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   deliverySlot: z.optional(z.string().max(200)),
@@ -3831,6 +3845,9 @@ export const zSuppliersControllerFindNearbyData = z.object({
     latitude: z.string(),
     longitude: z.string(),
     radius: z.string(),
+    category: z.string(),
+    maxPrice: z.string(),
+    inStockOnly: z.string(),
   }),
 });
 
@@ -4856,7 +4873,7 @@ export const zOrdersControllerCreateData = z.object({
       ),
     pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
     paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
-    deliveryAddress: z.optional(z.string().min(5).max(500)),
+    deliveryAddress: z.optional(z.string().min(3).max(500)),
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     deliverySlot: z.optional(z.string().max(200)),
@@ -4886,6 +4903,14 @@ export const zOrdersControllerCreateData = z.object({
 });
 
 export const zOrdersControllerFindByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerInvoiceData = z.object({
   body: z.optional(z.never()),
   path: z.object({
     id: z.string(),
@@ -5443,6 +5468,50 @@ export const zAdminCouriersControllerListDeliveriesData = z.object({
     page: z.string(),
     limit: z.string(),
   }),
+});
+
+export const zAdminCouriersControllerGetDeliveryData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminCouriersControllerListCandidatesData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.object({
+    q: z.string(),
+    radiusKm: z.string(),
+    availableOnly: z.string(),
+    vehicleType: z.string(),
+  }),
+});
+
+export const zAdminCouriersControllerAssignDeliveryData = z.object({
+  body: z.object({
+    courierId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    note: z.optional(z.string().max(300)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminCouriersControllerRebroadcastDeliveryData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
 });
 
 export const zChatControllerGetConversationsData = z.object({

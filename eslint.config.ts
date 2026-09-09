@@ -13,6 +13,8 @@ export default antfu(
       '**/build/',
       'packages/schematics/src/files/',
       'packages/openapi-generator/client/',
+      // Store assets and one-off Play Console scripts, not application code.
+      'apps/mobile/store/',
       '**/.astro/**',
       'node_modules/',
       'CLAUDE.md',

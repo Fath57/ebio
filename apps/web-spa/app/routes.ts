@@ -51,6 +51,10 @@ export default [
       route('admin/commandes', 'features/admin/orders/pages/admin-orders-page.tsx'),
       route('admin/commandes/:orderId', 'features/admin/orders/pages/admin-order-detail-page.tsx'),
 
+      // Admin — Livraisons (flotte partagée)
+      route('admin/livraisons', 'features/admin/deliveries/pages/admin-deliveries-page.tsx'),
+      route('admin/livraisons/:deliveryId/assigner', 'features/admin/deliveries/pages/admin-delivery-assign-page.tsx'),
+
       // Admin — Fournisseurs
       route('admin/fournisseurs', 'features/admin/suppliers/pages/admin-suppliers-page.tsx'),
       route('admin/fournisseurs/:supplierId', 'features/admin/suppliers/pages/admin-supplier-detail-page.tsx'),

@@ -178,7 +178,8 @@
     "withdrawals": "Reversements",
     "wallet": "Portefeuille",
     "promoCodes": "Codes promo",
-    "couriers": "Livreurs"
+    "couriers": "Livreurs",
+    "deliveries": "Livraisons"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -775,7 +776,14 @@
         "quantity": "Qté",
         "unitPrice": "Prix unitaire",
         "commissionDetail": "Commission ({{rate}} %)",
-        "applyStatus": "Appliquer"
+        "applyStatus": "Appliquer",
+        "delivery": "Livraison",
+        "deliveryStatus": "Statut de la course",
+        "courier": "Livreur",
+        "noDelivery": "Pas de course de livraison (retrait sur place)",
+        "assignCourier": "Attribuer un livreur",
+        "changeCourier": "Changer de livreur",
+        "viewDelivery": "Voir la course"
       }
     },
     "productUnits": {
@@ -1337,6 +1345,82 @@
       "pagination": {
         "previous": "Précédent",
         "next": "Suivant"
+      }
+    },
+    "deliveries": {
+      "title": "Livraisons",
+      "description": "Courses de la flotte partagée : suivi et attribution des livreurs",
+      "filterByStatus": "Filtrer par statut",
+      "empty": "Aucune livraison pour ce filtre",
+      "backToList": "Retour aux livraisons",
+      "columns": {
+        "order": "Commande",
+        "shop": "Boutique",
+        "dropoff": "Adresse de livraison",
+        "courier": "Livreur",
+        "status": "Statut",
+        "updatedAt": "Mise à jour"
+      },
+      "statuses": {
+        "all": "Tous les statuts",
+        "AWAITING_COURIER": "En attente de livreur",
+        "ACCEPTED": "Acceptée",
+        "PICKED_UP": "Récupérée",
+        "IN_TRANSIT": "En livraison",
+        "DELIVERED": "Livrée",
+        "FAILED": "Échec",
+        "CANCELLED": "Annulée"
+      },
+      "noCourier": "Aucun livreur",
+      "assign": "Attribuer",
+      "changeCourier": "Changer de livreur",
+      "rebroadcast": "Relancer la diffusion",
+      "rebroadcastDone": "Course rediffusée aux livreurs proches",
+      "rebroadcastError": "Rediffusion impossible",
+      "reassignments": "{{count}} réattribution(s)",
+      "assignPage": {
+        "title": "Attribuer un livreur",
+        "pickup": "Retrait",
+        "dropoff": "Livraison",
+        "waitingSince": "En attente depuis {{duration}}",
+        "currentCourier": "Livreur actuel",
+        "search": "Nom ou téléphone…",
+        "availableOnly": "Disponibles seulement",
+        "radius": "Rayon",
+        "anyRadius": "Sans limite",
+        "vehicle": "Véhicule",
+        "anyVehicle": "Tous",
+        "candidates": "{{count}} livreur(s)",
+        "noCandidates": "Aucun livreur ne correspond à ces critères",
+        "searchHint": "La recherche par nom ignore le rayon",
+        "distance": "{{km}} km",
+        "noPosition": "Position inconnue",
+        "seen": "Vu {{ago}}",
+        "zoneCenter": "Centre de zone",
+        "active": "{{count}} en cours",
+        "delivered": "{{count}} livrées",
+        "current": "Sur cette course",
+        "online": "Disponible",
+        "offline": "Hors ligne",
+        "assign": "Assigner",
+        "confirmTitle": "Attribuer la course à {{name}} ?",
+        "confirmBody": "Le livreur reçoit une notification et la course passe en « Acceptée ».",
+        "confirmPrevious": "{{name}} sera retiré de la course et prévenu.",
+        "confirmUnavailable": "Ce livreur est hors ligne : il ne verra la course qu'à sa prochaine ouverture de l'app.",
+        "note": "Message pour le livreur (optionnel)",
+        "notePlaceholder": "Ex. : client pressé, appeler avant le retrait",
+        "assigned": "Course attribuée à {{name}}",
+        "assignError": "Attribution impossible",
+        "notAssignable": "Cette course ne peut plus être attribuée : elle est déjà récupérée ou terminée.",
+        "legend": {
+          "pickup": "Point de retrait",
+          "dropoff": "Client",
+          "gps": "Position GPS récente",
+          "zone": "Centre de zone déclarée",
+          "offline": "Hors ligne"
+        },
+        "mapMissingKey": "Carte indisponible : clé Google Maps absente (VITE_GOOGLE_MAPS_API_KEY).",
+        "timeline": "Historique"
       }
     }
   },

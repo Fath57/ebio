@@ -50,6 +50,7 @@ export const deliveryEventTypeEnum = z.enum([
   'REASSIGNED',
   'ORDER_CANCELLED',
   'SELF_DELIVERED',
+  'ASSIGNED_BY_ADMIN',
 ]).meta({
   title: 'DeliveryEventType',
   description: 'Type of a delivery timeline event',
@@ -279,3 +280,40 @@ export type FailDelivery = z.infer<typeof failDeliverySchema>
 export type DeliveryOffer = z.infer<typeof deliveryOfferSchema>
 export type DeliveryResponse = z.infer<typeof deliveryResponseSchema>
 export type DeliveryEventDto = z.infer<typeof deliveryEventSchema>
+
+// ─── Back-office assignment ──────────────────────────────────────────────────
+
+export const assignDeliverySchema = z.object({
+  courierId: z.string().uuid(),
+  /** Free text passed along in the courier's notification (e.g. "client pressé"). */
+  note: z.string().trim().max(300).optional(),
+}).meta({
+  title: 'AssignDelivery',
+  description: 'Back-office assignment of a delivery to a chosen courier',
+})
+
+export const courierCandidateSchema = z.object({
+  id: z.string().uuid(),
+  fullName: z.string(),
+  phone: z.string(),
+  vehicleType: vehicleTypeEnum,
+  zone: z.string(),
+  isAvailable: z.boolean(),
+  /** Where the courier is drawn on the map: fresh GPS fix, declared zone centre, or nothing. */
+  positionSource: z.enum(['GPS', 'ZONE']).nullable(),
+  position: geoPointSchema.nullable(),
+  lastLocationAt: z.string().datetime().nullable(),
+  /** Distance from the pickup point in km, null when neither side has a position. */
+  distanceKm: z.number().nullable(),
+  /** Deliveries currently accepted, picked up or in transit. */
+  activeDeliveries: z.number(),
+  deliveredCount: z.number(),
+  /** True when this courier already holds the delivery being assigned. */
+  isCurrent: z.boolean(),
+}).meta({
+  title: 'CourierCandidate',
+  description: 'A validated courier ranked for a back-office assignment',
+})
+
+export type AssignDelivery = z.infer<typeof assignDeliverySchema>
+export type CourierCandidate = z.infer<typeof courierCandidateSchema>

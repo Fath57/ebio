@@ -8,7 +8,7 @@
       "@/*": ["./app/*"]
     },
     // Required types for Vite (https://vite.dev/guide/features.html#client-types)
-    "types": ["vite/client"],
+    "types": ["vite/client", "google.maps"],
     "outDir": "./dist"
   },
   "include": [

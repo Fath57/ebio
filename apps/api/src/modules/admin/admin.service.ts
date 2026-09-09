@@ -875,8 +875,30 @@ export class AdminService {
       [orderId],
     )
 
+    // Latest courier run of the order, so the back office can jump straight
+    // to the assignment page (null when the order is picked up on site).
+    const deliveryRows = await this.em.getConnection().execute(
+      `SELECT d.id, d.status, d.courier_id, cp.full_name AS courier_name, d."updatedAt" AS updated_at
+       FROM deliveries d
+       LEFT JOIN courier_profiles cp ON cp.id = d.courier_id
+       WHERE d.order_id = ?
+       ORDER BY d."createdAt" DESC
+       LIMIT 1`,
+      [orderId],
+    ) as Array<Record<string, unknown>>
+    const deliveryRow = deliveryRows[0]
+
     return {
       ...this.mapOrderRow(row),
+      delivery: deliveryRow
+        ? {
+            id: deliveryRow.id as string,
+            status: deliveryRow.status as string,
+            courierId: (deliveryRow.courier_id as string) ?? null,
+            courierName: (deliveryRow.courier_name as string) ?? null,
+            updatedAt: this.toIso(deliveryRow.updated_at),
+          }
+        : null,
       commissionRate: Number(row.commission_rate ?? 0),
       paymentMethod: row.payment_method as string,
       deliveryAddress: (row.delivery_address as string) ?? null,

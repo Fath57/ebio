@@ -220,6 +220,16 @@ export type RejectCourier = {
 };
 
 /**
+ * AssignDelivery
+ *
+ * Back-office assignment of a delivery to a chosen courier
+ */
+export type AssignDelivery = {
+  courierId: string;
+  note?: string;
+};
+
+/**
  * RegisterCourier
  *
  * Courier application data
@@ -4245,6 +4255,9 @@ export type SuppliersControllerFindNearbyData = {
     latitude: string;
     longitude: string;
     radius: string;
+    category: string;
+    maxPrice: string;
+    inStockOnly: string;
   };
   url: "/api/suppliers/nearby";
 };
@@ -5803,6 +5816,19 @@ export type OrdersControllerFindByIdResponses = {
   200: unknown;
 };
 
+export type OrdersControllerInvoiceData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/invoice";
+};
+
+export type OrdersControllerInvoiceResponses = {
+  200: unknown;
+};
+
 export type OrdersControllerAcceptData = {
   body?: never;
   path: {
@@ -6598,6 +6624,71 @@ export type AdminCouriersControllerListDeliveriesData = {
 
 export type AdminCouriersControllerListDeliveriesResponses = {
   200: unknown;
+};
+
+export type AdminCouriersControllerGetDeliveryData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/deliveries/{id}";
+};
+
+export type AdminCouriersControllerGetDeliveryResponses = {
+  200: unknown;
+};
+
+export type AdminCouriersControllerListCandidatesData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    q: string;
+    radiusKm: string;
+    availableOnly: string;
+    vehicleType: string;
+  };
+  url: "/api/admin/deliveries/{id}/candidates";
+};
+
+export type AdminCouriersControllerListCandidatesResponses = {
+  200: unknown;
+};
+
+export type AdminCouriersControllerAssignDeliveryData = {
+  /**
+   * AssignDelivery
+   *
+   * Back-office assignment of a delivery to a chosen courier
+   */
+  body: {
+    courierId: string;
+    note?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/deliveries/{id}/assign";
+};
+
+export type AdminCouriersControllerAssignDeliveryResponses = {
+  201: unknown;
+};
+
+export type AdminCouriersControllerRebroadcastDeliveryData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/deliveries/{id}/rebroadcast";
+};
+
+export type AdminCouriersControllerRebroadcastDeliveryResponses = {
+  201: unknown;
 };
 
 export type ChatControllerGetConversationsData = {

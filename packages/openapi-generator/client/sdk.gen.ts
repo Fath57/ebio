@@ -56,14 +56,22 @@ import type {
   AdminControllerValidateSupplierResponses,
   AdminCouriersControllerApproveData,
   AdminCouriersControllerApproveResponses,
+  AdminCouriersControllerAssignDeliveryData,
+  AdminCouriersControllerAssignDeliveryResponses,
   AdminCouriersControllerGetByIdData,
   AdminCouriersControllerGetByIdResponses,
+  AdminCouriersControllerGetDeliveryData,
+  AdminCouriersControllerGetDeliveryResponses,
+  AdminCouriersControllerListCandidatesData,
+  AdminCouriersControllerListCandidatesResponses,
   AdminCouriersControllerListData,
   AdminCouriersControllerListDeliveriesData,
   AdminCouriersControllerListDeliveriesResponses,
   AdminCouriersControllerListResponses,
   AdminCouriersControllerReactivateData,
   AdminCouriersControllerReactivateResponses,
+  AdminCouriersControllerRebroadcastDeliveryData,
+  AdminCouriersControllerRebroadcastDeliveryResponses,
   AdminCouriersControllerRejectData,
   AdminCouriersControllerRejectResponses,
   AdminCouriersControllerSuspendData,
@@ -270,6 +278,8 @@ import type {
   OrdersControllerFindAllResponses,
   OrdersControllerFindByIdData,
   OrdersControllerFindByIdResponses,
+  OrdersControllerInvoiceData,
+  OrdersControllerInvoiceResponses,
   OrdersControllerRejectData,
   OrdersControllerRejectResponses,
   OrdersControllerUpdateStatusData,
@@ -2587,6 +2597,15 @@ export const ordersControllerFindById = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({ url: "/api/orders/{id}", ...options });
 
+export const ordersControllerInvoice = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerInvoiceData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    OrdersControllerInvoiceResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/{id}/invoice", ...options });
+
 export const ordersControllerAccept = <ThrowOnError extends boolean = false>(
   options: Options<OrdersControllerAcceptData, ThrowOnError>,
 ) =>
@@ -3179,6 +3198,60 @@ export const adminCouriersControllerListDeliveries = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/deliveries", ...options });
+
+export const adminCouriersControllerGetDelivery = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminCouriersControllerGetDeliveryData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminCouriersControllerGetDeliveryResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/deliveries/{id}", ...options });
+
+export const adminCouriersControllerListCandidates = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminCouriersControllerListCandidatesData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminCouriersControllerListCandidatesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/deliveries/{id}/candidates", ...options });
+
+export const adminCouriersControllerAssignDelivery = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminCouriersControllerAssignDeliveryData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminCouriersControllerAssignDeliveryResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/deliveries/{id}/assign",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminCouriersControllerRebroadcastDelivery = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    AdminCouriersControllerRebroadcastDeliveryData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    AdminCouriersControllerRebroadcastDeliveryResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/deliveries/{id}/rebroadcast", ...options });
 
 export const chatControllerGetConversations = <
   ThrowOnError extends boolean = false,

@@ -4323,6 +4323,30 @@
             "schema": {
               "type": "string"
             }
+          },
+          {
+            "name": "category",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "maxPrice",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "inStockOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
           }
         ],
         "responses": {
@@ -7635,7 +7659,7 @@
                   },
                   "deliveryAddress": {
                     "type": "string",
-                    "minLength": 5,
+                    "minLength": 3,
                     "maxLength": 500
                   },
                   "deliveryLatitude": {
@@ -7771,6 +7795,29 @@
     "/api/orders/{id}": {
       "get": {
         "operationId": "OrdersController_findById",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{id}/invoice": {
+      "get": {
+        "operationId": "OrdersController_invoice",
         "tags": [
           "Orders"
         ],
@@ -9455,6 +9502,158 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/deliveries/{id}": {
+      "get": {
+        "operationId": "AdminCouriersController_getDelivery",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/deliveries/{id}/candidates": {
+      "get": {
+        "operationId": "AdminCouriersController_listCandidates",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "radiusKm",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "availableOnly",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "vehicleType",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/deliveries/{id}/assign": {
+      "post": {
+        "operationId": "AdminCouriersController_assignDelivery",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Back-office assignment of a delivery to a chosen courier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "courierId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "note": {
+                    "type": "string",
+                    "maxLength": 300
+                  }
+                },
+                "required": [
+                  "courierId"
+                ],
+                "additionalProperties": false,
+                "title": "AssignDelivery",
+                "description": "Back-office assignment of a delivery to a chosen courier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/deliveries/{id}/rebroadcast": {
+      "post": {
+        "operationId": "AdminCouriersController_rebroadcastDelivery",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
             "description": ""
           }
         }
@@ -12194,6 +12393,26 @@
         "title": "RejectCourier",
         "description": "Reason shown to the rejected courier applicant"
       },
+      "AssignDelivery": {
+        "type": "object",
+        "properties": {
+          "courierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "courierId"
+        ],
+        "additionalProperties": false,
+        "title": "AssignDelivery",
+        "description": "Back-office assignment of a delivery to a chosen courier"
+      },
       "RegisterCourier": {
         "type": "object",
         "properties": {
@@ -12839,7 +13058,7 @@
           },
           "deliveryAddress": {
             "type": "string",
-            "minLength": 5,
+            "minLength": 3,
             "maxLength": 500
           },
           "deliveryLatitude": {
