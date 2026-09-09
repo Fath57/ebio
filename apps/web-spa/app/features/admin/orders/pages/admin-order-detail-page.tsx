@@ -19,10 +19,11 @@ import {
   TableRow,
 } from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Truck } from 'lucide-react'
+import { ArrowLeft, Star, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { fetchAdminDeliveryQueryOptions } from '../../deliveries/utils/deliveries-queries'
 import {
   ADMIN_ORDER_STATUSES,
   fetchAdminOrderQueryOptions,
@@ -45,6 +46,27 @@ function InfoRow({ label, value }: { label: string, value: string | null }) {
   )
 }
 
+/** Five stars, the first `rating` ones filled, plus the optional buyer comment. */
+function RatingRow({ label, rating, comment }: { label: string, rating: number, comment: string | null }) {
+  return (
+    <div className="flex justify-between gap-4 py-1.5 text-sm">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="flex flex-col items-end gap-1 text-right">
+        <span className="flex items-center gap-0.5" aria-label={`${rating} / 5`}>
+          {Array.from({ length: 5 }, (_, index) => (
+            <Star
+              key={index}
+              className={`h-4 w-4 ${index < rating ? 'fill-amber-400 text-amber-400' : 'text-muted-foreground/40'}`}
+              aria-hidden
+            />
+          ))}
+        </span>
+        {comment && <span className="font-normal italic text-muted-foreground">{`« ${comment} »`}</span>}
+      </span>
+    </div>
+  )
+}
+
 export default function AdminOrderDetailPage() {
   const { t, i18n } = useTranslation()
   const { orderId } = useParams()
@@ -53,6 +75,13 @@ export default function AdminOrderDetailPage() {
   const { data: order, isLoading } = useQuery({
     ...fetchAdminOrderQueryOptions(orderId ?? ''),
     enabled: Boolean(orderId),
+  })
+  // The order summary only carries status + courier; fees, tip and rating live
+  // on the full delivery resource.
+  const deliveryId = order?.delivery?.id ?? ''
+  const { data: delivery } = useQuery({
+    ...fetchAdminDeliveryQueryOptions(deliveryId),
+    enabled: Boolean(deliveryId),
   })
 
   const statusMutation = useMutation({
@@ -177,6 +206,23 @@ export default function AdminOrderDetailPage() {
                       label={t('admin.orders.detail.courier')}
                       value={order.delivery.courierName ?? t('admin.deliveries.noCourier')}
                     />
+                    {delivery && (
+                      <>
+                        <Separator className="my-2" />
+                        <InfoRow label={t('admin.orders.detail.deliveryFee')} value={formatAmount(delivery.deliveryFee)} />
+                        <InfoRow label={t('admin.orders.detail.courierFee')} value={formatAmount(delivery.courierFee)} />
+                        {delivery.tipAmount > 0 && (
+                          <InfoRow label={t('admin.orders.detail.tip')} value={formatAmount(delivery.tipAmount)} />
+                        )}
+                        {delivery.buyerRating && (
+                          <RatingRow
+                            label={t('admin.orders.detail.buyerRating')}
+                            rating={delivery.buyerRating.rating}
+                            comment={delivery.buyerRating.comment}
+                          />
+                        )}
+                      </>
+                    )}
                   </>
                 )
               : (

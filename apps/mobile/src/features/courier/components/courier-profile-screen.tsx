@@ -8,6 +8,7 @@ import { signOut } from '../../../lib/auth-client'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { appAlert } from '../../common/components/app-alert'
+import { StarRating } from '../../common/components/star-rating'
 import { VEHICLE_LABELS } from '../types'
 import { AvailabilityToggle } from './availability-toggle'
 
@@ -18,6 +19,10 @@ interface CourierProfileScreenProps {
   onAvailabilityChanged: (isAvailable: boolean) => void
   onEdit: () => void
   onSignedOut: () => void
+}
+
+function formatRatingAvg(value: number): string {
+  return value.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
 }
 
 /** Courier profile tab: identity, availability, application data, sign out. */
@@ -50,6 +55,29 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
           </View>
           <AvailabilityToggle isAvailable={profile.isAvailable} onChanged={onAvailabilityChanged} />
         </View>
+      </View>
+
+      <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
+        <Text style={[styles.label, styles.firstLabel, { color: semantic.textTertiary }]}>Ma note</Text>
+        {profile.ratingCount > 0 && profile.ratingAvg !== null
+          ? (
+              <View style={styles.ratingRow}>
+                <Text style={[styles.ratingValue, { color: semantic.textPrimary }]}>
+                  {`${formatRatingAvg(profile.ratingAvg)} / 5`}
+                </Text>
+                <View style={styles.ratingStars}>
+                  <StarRating value={profile.ratingAvg} size={18} />
+                  <Text style={[styles.ratingCount, { color: semantic.textSecondary }]}>
+                    {`${profile.ratingCount} avis`}
+                  </Text>
+                </View>
+              </View>
+            )
+          : (
+              <Text style={[styles.value, { color: semantic.textSecondary }]}>
+                Pas encore de note — vos premières livraisons compteront.
+              </Text>
+            )}
       </View>
 
       <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
@@ -140,6 +168,25 @@ const styles = StyleSheet.create({
   label: {
     ...typography.overline,
     marginTop: spacing[3],
+  },
+  firstLabel: {
+    marginTop: 0,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginTop: spacing[2],
+  },
+  ratingValue: {
+    ...typography.h1,
+  },
+  ratingStars: {
+    flex: 1,
+  },
+  ratingCount: {
+    ...typography.caption,
+    marginTop: 2,
   },
   value: {
     ...typography.bodyL,

@@ -786,7 +786,11 @@
         "noDelivery": "Pas de course de livraison (retrait sur place)",
         "assignCourier": "Attribuer un livreur",
         "changeCourier": "Changer de livreur",
-        "viewDelivery": "Voir la course"
+        "viewDelivery": "Voir la course",
+        "deliveryFee": "Frais de livraison",
+        "courierFee": "Part livreur",
+        "tip": "Pourboire",
+        "buyerRating": "Note du client"
       }
     },
     "productUnits": {
@@ -1356,12 +1360,14 @@
       "filterByStatus": "Filtrer par statut",
       "empty": "Aucun livreur pour ce filtre",
       "backToList": "Retour aux livreurs",
+      "ratingLabel": "Note {{value}} sur 5, {{count}} avis",
       "columns": {
         "name": "Nom",
         "phone": "Téléphone",
         "vehicle": "Transport",
         "zone": "Zone",
         "status": "Statut",
+        "rating": "Note",
         "submittedAt": "Candidature"
       },
       "statuses": {
@@ -1390,6 +1396,10 @@
         "delivered": "Livrées",
         "failed": "Échecs",
         "active": "En cours",
+        "rating": "Note moyenne",
+        "ratingValue": "{{value}} / 5",
+        "ratingCount": "{{count}} avis",
+        "noRating": "Pas encore de note",
         "wallet": "Portefeuille",
         "walletDebtHint": "Le livreur doit cette commission à eBio (courses payées en espèces)",
         "walletOwedHint": "Montant dû au livreur",

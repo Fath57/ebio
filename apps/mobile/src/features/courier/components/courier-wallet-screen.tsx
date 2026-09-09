@@ -2,6 +2,7 @@ import type { CourierPayoutNumber, CourierTopup, CourierWalletTransactionType, C
 import ArrowDownToLine from 'lucide-react-native/dist/esm/icons/arrow-down-to-line'
 import ArrowUpFromLine from 'lucide-react-native/dist/esm/icons/arrow-up-from-line'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
+import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import Percent from 'lucide-react-native/dist/esm/icons/percent'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
@@ -84,6 +85,7 @@ interface MovementStyle {
 const MOVEMENT_STYLES: Record<CourierWalletTransactionType, MovementStyle> = {
   DELIVERY_EARNING: { label: 'Gain de course', Icon: Bike, color: colors.green[600], background: colors.green[50] },
   DELIVERY_COMMISSION: { label: 'Commission eBio', Icon: Percent, color: colors.coral[600], background: colors.coral[50] },
+  TIP_EARNING: { label: 'Pourboire', Icon: Gift, color: colors.green[600], background: colors.green[50] },
   TOPUP: { label: 'Recharge', Icon: ArrowDownToLine, color: colors.blue[600], background: colors.blue[50] },
   WITHDRAWAL: { label: 'Reversement', Icon: ArrowUpFromLine, color: colors.earth[600], background: colors.earth[50] },
   WITHDRAWAL_REFUND: { label: 'Reversement annulé', Icon: RotateCcw, color: colors.green[600], background: colors.green[50] },

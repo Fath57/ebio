@@ -283,6 +283,14 @@ function handleCourierTap(type: string, data: Record<string, unknown>) {
       // landing on Profil is enough once validated.
       navigationRef.navigate('Profil')
       break
+    case 'COURIER_TIP':
+      // The tip lands in the ledger as a TIP_EARNING movement.
+      navigationRef.navigate('Portefeuille')
+      break
+    case 'COURIER_RATED':
+      // The rating shows on the finished run in the history list.
+      navigationRef.navigate('Historique')
+      break
     default:
       break
   }

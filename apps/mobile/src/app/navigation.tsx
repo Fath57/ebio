@@ -27,6 +27,7 @@ import { openDeliveryConversation } from '../features/chat/delivery-chat'
 import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { useLocation } from '../features/common/location-context'
+import { RateCourierScreen } from '../features/deliveries/components/rate-courier-screen'
 import { HomeScreen } from '../features/home/components/home-screen'
 import { LocationPickerScreen } from '../features/map/components/location-picker-screen'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
@@ -479,6 +480,7 @@ function OrdersStackScreen() {
       <OrdersStack.Screen name="MyOrders" component={MyOrdersWrapper} />
       <OrdersStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
       <OrdersStack.Screen name="RateOrder" component={RateOrderWrapper} />
+      <OrdersStack.Screen name="RateCourier" component={RateCourierWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -622,7 +624,25 @@ function OrderTrackingWrapper({ route, navigation }: any) {
         onOpenChat={supplierId => openChatWithSupplier(navigation, supplierId, undefined, orderId)}
         onOpenCourierChat={(deliveryId, courierName) => openChatWithCourier(navigation, deliveryId, courierName, orderId)}
         onRate={supplierId => navigation.navigate('RateOrder', { supplierId, orderId })}
+        onRateCourier={(deliveryId, courierName) => navigation.navigate('RateCourier', { deliveryId, courierName, mode: 'rate' })}
+        onTipCourier={(deliveryId, courierName) => navigation.navigate('RateCourier', { deliveryId, courierName, mode: 'tip' })}
         onBack={() => navigation.goBack()}
+      />
+    </SafeScreen>
+  )
+}
+
+function RateCourierWrapper({ route, navigation }: any) {
+  const { deliveryId, courierName, mode } = route.params as { deliveryId: string, courierName: string, mode: 'rate' | 'tip' }
+  return (
+    <SafeScreen>
+      <RateCourierScreen
+        deliveryId={deliveryId}
+        courierName={courierName}
+        mode={mode}
+        onDone={() => navigation.goBack()}
+        onBack={() => navigation.goBack()}
+        onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
       />
     </SafeScreen>
   )

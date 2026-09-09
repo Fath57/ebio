@@ -1,6 +1,7 @@
 import BellOff from 'lucide-react-native/dist/esm/icons/bell-off'
 import CheckCheck from 'lucide-react-native/dist/esm/icons/check-check'
 import CreditCardIcon from 'lucide-react-native/dist/esm/icons/credit-card'
+import GiftIcon from 'lucide-react-native/dist/esm/icons/gift'
 import MessageCircleIcon from 'lucide-react-native/dist/esm/icons/message-circle'
 import PackageIcon from 'lucide-react-native/dist/esm/icons/package'
 import ShieldAlertIcon from 'lucide-react-native/dist/esm/icons/shield-alert'
@@ -55,6 +56,8 @@ const TYPE_ICONS: Record<string, typeof PackageIcon> = {
   SUPPLIER_REJECTED: ShieldAlertIcon,
   DISPUTE_OPENED: ShieldAlertIcon,
   DISPUTE_RESOLVED: ShieldAlertIcon,
+  COURIER_RATED: StarIcon,
+  COURIER_TIP: GiftIcon,
 }
 
 function formatRelativeTime(dateStr: string): string {

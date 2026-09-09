@@ -33,6 +33,12 @@ export interface DeliveryEvent {
   payload: Record<string, unknown> | null
 }
 
+export interface BuyerRating {
+  rating: number
+  comment: string | null
+  createdAt: string
+}
+
 export interface AdminDelivery {
   id: string
   orderId: string
@@ -42,7 +48,7 @@ export interface AdminDelivery {
   dropoffAddress: string
   supplierShopName: string
   buyerContact: { name: string, phone: string | null } | null
-  courier: { name: string, phone: string } | null
+  courier: { name: string, phone: string, ratingAvg: number | null, ratingCount: number } | null
   courierVehicleType: VehicleType | null
   courierPosition: (GeoPoint & { updatedAt: string }) | null
   pickupPosition: GeoPoint | null
@@ -52,6 +58,10 @@ export interface AdminDelivery {
   paymentMethod: string
   deliveryFee: number
   courierFee: number
+  /** Buyer tip in FCFA, 0 when none. */
+  tipAmount: number
+  /** Buyer rating of the courier, null until rated (or not exposed). */
+  buyerRating: BuyerRating | null
   acceptedAt: string | null
   pickedUpAt: string | null
   deliveredAt: string | null
@@ -84,6 +94,8 @@ export interface CourierCandidate {
   distanceKm: number | null
   activeDeliveries: number
   deliveredCount: number
+  ratingAvg: number | null
+  ratingCount: number
   isCurrent: boolean
 }
 

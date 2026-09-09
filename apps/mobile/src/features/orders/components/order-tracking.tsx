@@ -35,6 +35,7 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { StarRating } from '../../common/components/star-rating'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type PickupMode = 'ON_SITE' | 'DELIVERY'
@@ -78,6 +79,10 @@ interface OrderTrackingProps {
   /** Opens (or creates) the buyer <-> courier thread of the delivery. */
   onOpenCourierChat: (deliveryId: string, courierName: string) => void
   onRate: (supplierId: string) => void
+  /** Opens the courier rating flow once the delivery is done. */
+  onRateCourier: (deliveryId: string, courierName: string) => void
+  /** Opens the tip flow (courier already rated). */
+  onTipCourier: (deliveryId: string, courierName: string) => void
 }
 
 const STATUS_ORDER: OrderStatus[] = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED']
@@ -127,6 +132,8 @@ export function OrderTracking({
   onOpenChat,
   onOpenCourierChat,
   onRate,
+  onRateCourier,
+  onTipCourier,
 }: OrderTrackingProps) {
   const [order, setOrder] = useState<OrderDetail | null>(null)
   const [isLoading, setIsLoading] = useState(true)
@@ -269,7 +276,13 @@ export function OrderTracking({
       >
         {/* Live map + courier first: while a run is on, it is what the buyer opens the screen for */}
         {(order.currentStatus === 'IN_DELIVERY' || order.currentStatus === 'DELIVERED') && (
-          <DeliveryInfoCard orderId={orderId} isDelivered={isDelivered} onOpenCourierChat={onOpenCourierChat} />
+          <DeliveryInfoCard
+            orderId={orderId}
+            isDelivered={isDelivered}
+            onOpenCourierChat={onOpenCourierChat}
+            onRateCourier={onRateCourier}
+            onTipCourier={onTipCourier}
+          />
         )}
 
         {/* Cancelled banner */}
@@ -896,7 +909,11 @@ const styles = StyleSheet.create({
 interface DeliveryInfo {
   id: string
   status: string
-  courier: { name: string, phone: string | null } | null
+  courier: { name: string, phone: string | null, ratingAvg: number | null, ratingCount: number } | null
+  /** Tip already left by the buyer, in FCFA (0 when none). */
+  tipAmount: number
+  /** The buyer's rating of the courier, null until given. */
+  buyerRating: { rating: number, comment: string | null, createdAt: string } | null
   courierVehicleType: 'MOTO' | 'BICYCLE' | 'CAR' | 'ON_FOOT' | null
   courierPosition: { latitude: number, longitude: number, updatedAt: string | null } | null
   pickupPosition: { latitude: number, longitude: number } | null
@@ -914,6 +931,10 @@ const VEHICLE_ICONS = {
 const IN_PROGRESS_STATUSES = ['ACCEPTED', 'PICKED_UP', 'IN_TRANSIT']
 /** Courier position refresh cadence while the delivery is on the road. */
 const TRACKING_POLL_MS = 10000
+
+function formatRatingAvg(value: number): string {
+  return value.toLocaleString('fr-FR', { minimumFractionDigits: 1, maximumFractionDigits: 1 })
+}
 
 function positionAge(updatedAt: string | null): string | null {
   if (!updatedAt) {
@@ -1014,45 +1035,54 @@ function DeliveryLiveMap({ info }: { info: DeliveryInfo }) {
  * Courier block of the tracking screen: who delivers, and the 4-digit code the
  * buyer hands to the courier as proof of delivery.
  */
-function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat }: {
+function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onRateCourier, onTipCourier }: {
   orderId: string
   isDelivered: boolean
   onOpenCourierChat: (deliveryId: string, courierName: string) => void
+  onRateCourier: (deliveryId: string, courierName: string) => void
+  onTipCourier: (deliveryId: string, courierName: string) => void
 }) {
   const { semantic } = useTheme()
   const [info, setInfo] = useState<DeliveryInfo | null>(null)
   const inProgress = info ? IN_PROGRESS_STATUSES.includes(info.status) : false
 
+  const load = useCallback(async () => {
+    try {
+      const res = await apiFetch(`/api/deliveries/by-order/${orderId}`)
+      if (res.ok) {
+        const data = await res.json() as DeliveryInfo
+        setInfo(data)
+      }
+    }
+    catch {
+      // The card simply stays hidden / keeps its last state
+    }
+  }, [orderId])
+
+  // Back from the rating / tip screens: the card must reflect what was given.
+  useFocusEffect(
+    useCallback(() => {
+      load()
+    }, [load]),
+  )
+
   useEffect(() => {
-    let cancelled = false
-
-    const load = async () => {
-      try {
-        const res = await apiFetch(`/api/deliveries/by-order/${orderId}`)
-        if (res.ok && !cancelled) {
-          const data = await res.json() as DeliveryInfo
-          setInfo(data)
-        }
-      }
-      catch {
-        // The card simply stays hidden / keeps its last state
-      }
-    }
-
-    load()
     // Live tracking: refresh the courier position while the delivery moves
-    const timer = inProgress ? setInterval(load, TRACKING_POLL_MS) : null
-    return () => {
-      cancelled = true
-      if (timer) {
-        clearInterval(timer)
-      }
+    if (!inProgress) {
+      return undefined
     }
-  }, [orderId, inProgress])
+    const timer = setInterval(load, TRACKING_POLL_MS)
+    return () => {
+      clearInterval(timer)
+    }
+  }, [load, inProgress])
 
   if (!info || !info.courier) {
     return null
   }
+
+  const courier = info.courier
+  const delivered = info.status === 'DELIVERED'
 
   return (
     <View style={[deliveryStyles.card, { backgroundColor: semantic.bgCard }, CARD_SHADOW]}>
@@ -1062,7 +1092,21 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat }: {
         <View style={[deliveryStyles.courierAvatar, { backgroundColor: semantic.bgPrimaryLight }]}>
           <Truck size={18} color={colors.green[600]} />
         </View>
-        <Text style={[deliveryStyles.courierName, { color: semantic.textPrimary }]}>{info.courier.name}</Text>
+        <View style={deliveryStyles.courierIdentity}>
+          <Text style={[deliveryStyles.courierName, { color: semantic.textPrimary }]}>{courier.name}</Text>
+          {courier.ratingCount > 0 && courier.ratingAvg !== null
+            ? (
+                <View style={deliveryStyles.courierRatingRow}>
+                  <StarRating value={courier.ratingAvg} size={12} />
+                  <Text style={[deliveryStyles.courierRatingText, { color: semantic.textSecondary }]}>
+                    {`${formatRatingAvg(courier.ratingAvg)} (${courier.ratingCount})`}
+                  </Text>
+                </View>
+              )
+            : (
+                <Text style={[deliveryStyles.courierRatingText, { color: semantic.textTertiary }]}>Nouveau livreur</Text>
+              )}
+        </View>
         <TouchableOpacity
           style={[deliveryStyles.callButton, { backgroundColor: semantic.bgPrimaryLight }]}
           onPress={() => onOpenCourierChat(info.id, info.courier?.name ?? 'Livreur')}
@@ -1095,6 +1139,54 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat }: {
               <Text style={[deliveryStyles.codeValue, { color: semantic.textPrimaryColor }]}>
                 {info.confirmationCode}
               </Text>
+            </View>
+          )
+        : null}
+      {delivered
+        ? (
+            <View style={[deliveryStyles.feedbackBox, { borderTopColor: semantic.borderLight }]}>
+              {info.buyerRating
+                ? (
+                    <View style={deliveryStyles.feedbackRow}>
+                      <Text style={[deliveryStyles.feedbackLabel, { color: semantic.textSecondary }]}>Votre note</Text>
+                      <StarRating value={info.buyerRating.rating} size={16} />
+                    </View>
+                  )
+                : (
+                    <TouchableOpacity
+                      style={deliveryStyles.rateCourierButton}
+                      onPress={() => onRateCourier(info.id, courier.name)}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel="Noter le livreur"
+                    >
+                      <Star size={16} color={colors.neutral[0]} />
+                      <Text style={deliveryStyles.rateCourierText}>Noter le livreur</Text>
+                    </TouchableOpacity>
+                  )}
+              {info.tipAmount > 0
+                ? (
+                    <View style={deliveryStyles.feedbackRow}>
+                      <Text style={[deliveryStyles.feedbackLabel, { color: semantic.textSecondary }]}>Pourboire laissé</Text>
+                      <Text style={[deliveryStyles.tipValue, { color: semantic.textPrimaryColor }]}>
+                        {`${formatPrice(info.tipAmount)} FCFA`}
+                      </Text>
+                    </View>
+                  )
+                : info.buyerRating
+                  ? (
+                      <TouchableOpacity
+                        style={[deliveryStyles.tipButton, { borderColor: semantic.borderNormal }]}
+                        onPress={() => onTipCourier(info.id, courier.name)}
+                        activeOpacity={0.8}
+                        accessibilityRole="button"
+                        accessibilityLabel="Laisser un pourboire"
+                      >
+                        <Banknote size={16} color={semantic.textPrimaryColor} />
+                        <Text style={[deliveryStyles.tipButtonText, { color: semantic.textPrimaryColor }]}>Laisser un pourboire</Text>
+                      </TouchableOpacity>
+                    )
+                  : null}
             </View>
           )
         : null}
@@ -1134,10 +1226,68 @@ const deliveryStyles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  courierIdentity: {
+    flex: 1,
+  },
   courierName: {
     ...typography.bodyL,
     fontFamily: fonts.sansMd,
-    flex: 1,
+  },
+  courierRatingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    marginTop: 1,
+  },
+  courierRatingText: {
+    ...typography.caption,
+  },
+  feedbackBox: {
+    marginTop: spacing[3],
+    paddingTop: spacing[3],
+    borderTopWidth: 1,
+    gap: spacing[2],
+  },
+  feedbackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    minHeight: 24,
+  },
+  feedbackLabel: {
+    ...typography.bodyS,
+  },
+  tipValue: {
+    ...typography.price,
+    fontSize: 14,
+  },
+  rateCourierButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    backgroundColor: colors.earth[400],
+    borderRadius: radius.pill,
+    paddingVertical: spacing[3],
+    minHeight: 44,
+  },
+  rateCourierText: {
+    ...typography.h3,
+    color: colors.neutral[0],
+  },
+  tipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingVertical: spacing[3],
+    minHeight: 44,
+  },
+  tipButtonText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
   },
   callButton: {
     width: 44,

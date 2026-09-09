@@ -6,6 +6,7 @@ import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'rea
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { StarRating } from '../../common/components/star-rating'
 
 interface HistoryScreenProps {
   onOpenDetail: (delivery: Delivery) => void
@@ -61,6 +62,20 @@ export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
         <View style={styles.cardText}>
           <Text style={[styles.orderNumber, { color: semantic.textPrimary }]}>{item.orderNumber}</Text>
           <Text style={[styles.address, { color: semantic.textSecondary }]} numberOfLines={1}>{item.dropoffAddress}</Text>
+          {delivered && (item.buyerRating || (item.tipAmount ?? 0) > 0)
+            ? (
+                <View style={styles.feedbackRow}>
+                  {item.buyerRating ? <StarRating value={item.buyerRating.rating} size={12} /> : null}
+                  {(item.tipAmount ?? 0) > 0
+                    ? (
+                        <Text style={[styles.tip, { color: colors.green[600] }]}>
+                          {`Pourboire : ${(item.tipAmount ?? 0).toLocaleString('fr-FR')} FCFA`}
+                        </Text>
+                      )
+                    : null}
+                </View>
+              )
+            : null}
         </View>
         <Text style={[styles.date, { color: semantic.textTertiary }]}>
           {formatDate(delivered ? item.deliveredAt : item.failedAt)}
@@ -114,6 +129,15 @@ const styles = StyleSheet.create({
   address: {
     ...typography.bodyS,
     marginTop: 1,
+  },
+  feedbackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[1],
+  },
+  tip: {
+    ...typography.caption,
   },
   date: {
     ...typography.caption,

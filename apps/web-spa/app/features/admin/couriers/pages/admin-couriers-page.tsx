@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { CourierRating } from '../components/courier-rating'
 import { fetchAdminCouriersQueryOptions } from '../utils/couriers-queries'
 
 const STATUS_OPTIONS = ['ALL', 'PENDING', 'VALIDATED', 'REJECTED', 'SUSPENDED']
@@ -90,6 +91,7 @@ export default function AdminCouriersPage() {
             <TableHead>{t('admin.couriers.columns.vehicle')}</TableHead>
             <TableHead>{t('admin.couriers.columns.zone')}</TableHead>
             <TableHead>{t('admin.couriers.columns.status')}</TableHead>
+            <TableHead>{t('admin.couriers.columns.rating')}</TableHead>
             <TableHead>{t('admin.couriers.columns.submittedAt')}</TableHead>
           </TableRow>
         </TableHeader>
@@ -109,12 +111,15 @@ export default function AdminCouriersPage() {
                   {t(`admin.couriers.statuses.${courier.validationStatus.toLowerCase()}`)}
                 </Badge>
               </TableCell>
+              <TableCell>
+                <CourierRating ratingAvg={courier.ratingAvg} ratingCount={courier.ratingCount} />
+              </TableCell>
               <TableCell>{new Date(courier.createdAt).toLocaleDateString('fr-FR')}</TableCell>
             </TableRow>
           ))}
           {(data?.couriers?.length ?? 0) === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-center text-muted-foreground">
+              <TableCell colSpan={7} className="text-center text-muted-foreground">
                 {t('admin.couriers.empty')}
               </TableCell>
             </TableRow>

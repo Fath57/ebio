@@ -19,6 +19,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
+import { formatRating } from '../components/courier-rating'
 import {
   approveCourierMutationOptions,
   fetchAdminCourierQueryOptions,
@@ -39,7 +40,7 @@ const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 
 }
 
 export default function AdminCourierDetailPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { courierId } = useParams<{ courierId: string }>()
@@ -156,7 +157,7 @@ export default function AdminCourierDetailPage() {
           <CardHeader>
             <CardTitle>{t('admin.couriers.detail.stats')}</CardTitle>
           </CardHeader>
-          <CardContent className="grid grid-cols-3 gap-4 text-center">
+          <CardContent className="grid grid-cols-2 gap-4 text-center sm:grid-cols-4">
             <div>
               <p className="text-2xl font-bold">{courier.stats.delivered}</p>
               <p className="text-sm text-muted-foreground">{t('admin.couriers.detail.delivered')}</p>
@@ -168,6 +169,25 @@ export default function AdminCourierDetailPage() {
             <div>
               <p className="text-2xl font-bold">{courier.stats.active}</p>
               <p className="text-sm text-muted-foreground">{t('admin.couriers.detail.active')}</p>
+            </div>
+            <div>
+              {courier.ratingCount > 0 && courier.ratingAvg !== null
+                ? (
+                    <>
+                      <p className="text-2xl font-bold tabular-nums">
+                        {t('admin.couriers.detail.ratingValue', { value: formatRating(courier.ratingAvg, i18n.language) })}
+                      </p>
+                      <p className="text-sm text-muted-foreground">
+                        {`${t('admin.couriers.detail.rating')} · ${t('admin.couriers.detail.ratingCount', { count: courier.ratingCount })}`}
+                      </p>
+                    </>
+                  )
+                : (
+                    <>
+                      <p className="text-2xl font-bold text-muted-foreground">—</p>
+                      <p className="text-sm text-muted-foreground">{t('admin.couriers.detail.noRating')}</p>
+                    </>
+                  )}
             </div>
           </CardContent>
         </Card>

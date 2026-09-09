@@ -15,6 +15,7 @@ export type CourierWalletTransactionType
     | 'PROMO_COMPENSATION'
     | 'DELIVERY_EARNING'
     | 'DELIVERY_COMMISSION'
+    | 'TIP_EARNING'
 
 export interface CourierWalletTransaction {
   id: string

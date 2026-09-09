@@ -20,6 +20,9 @@ export interface CourierProfile {
   validationStatus: CourierValidationStatus
   rejectionReason: string | null
   isAvailable: boolean
+  /** Average of the buyers' ratings, null until the first one. */
+  ratingAvg: number | null
+  ratingCount: number
   validatedAt: string | null
   createdAt: string
 }
@@ -46,6 +49,12 @@ export interface DeliveryOffer {
 export interface DeliveryContact {
   name: string
   phone: string | null
+}
+
+export interface BuyerRating {
+  rating: number
+  comment: string | null
+  createdAt: string
 }
 
 export interface DeliveryEventDto {
@@ -85,6 +94,10 @@ export interface Delivery {
   deliveredAt: string | null
   failedAt: string | null
   events: DeliveryEventDto[]
+  /** Rating left by the buyer once delivered, null otherwise. */
+  buyerRating?: BuyerRating | null
+  /** Tip received from the buyer, in FCFA (0 when none). */
+  tipAmount?: number
   createdAt: string
 }
 

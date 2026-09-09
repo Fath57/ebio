@@ -7,6 +7,7 @@ import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
+import { StarRating } from '../../common/components/star-rating'
 import { DELIVERY_STATUS_LABELS, FAIL_REASON_LABELS } from '../types'
 
 interface DeliveryDetailProps {
@@ -50,6 +51,8 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
   const { semantic } = useTheme()
   const [openingChat, setOpeningChat] = useState(false)
   const failed = delivery.status === 'FAILED'
+  const delivered = delivery.status === 'DELIVERED'
+  const tipAmount = delivery.tipAmount ?? 0
 
   async function openChat(): Promise<void> {
     if (openingChat || !onOpenChat) {
@@ -123,6 +126,34 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
               <Text style={[styles.value, { color: semantic.textSecondary }]}>
                 {`Commission eBio de ${formatAmount(cashCommission)} prélevée sur votre portefeuille`}
               </Text>
+            )
+          : null}
+        {delivered && tipAmount > 0
+          ? (
+              <>
+                <Text style={[styles.label, { color: semantic.textTertiary }]}>Pourboire</Text>
+                <Text style={[styles.amount, { color: semantic.textPrimaryColor }]}>{`Pourboire : ${formatAmount(tipAmount)}`}</Text>
+              </>
+            )
+          : null}
+        {delivered && delivery.buyerRating
+          ? (
+              <>
+                <Text style={[styles.label, { color: semantic.textTertiary }]}>Note du client</Text>
+                <View style={styles.ratingRow}>
+                  <StarRating value={delivery.buyerRating.rating} size={16} />
+                  <Text style={[styles.value, { color: semantic.textSecondary, marginTop: 0 }]}>
+                    {`${delivery.buyerRating.rating} / 5`}
+                  </Text>
+                </View>
+                {delivery.buyerRating.comment
+                  ? (
+                      <Text style={[styles.value, { color: semantic.textPrimary }]}>
+                        {`« ${delivery.buyerRating.comment} »`}
+                      </Text>
+                    )
+                  : null}
+              </>
             )
           : null}
 
@@ -208,6 +239,12 @@ const styles = StyleSheet.create({
   amount: {
     ...typography.price,
     marginTop: 2,
+  },
+  ratingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginTop: spacing[1],
   },
   failBox: {
     borderRadius: radius.md,

@@ -4,6 +4,7 @@ import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { useEffect, useRef } from 'react'
 import { useTranslation } from 'react-i18next'
+import { CourierRating } from '../../couriers/components/courier-rating'
 import { formatRelative } from '../utils/deliveries-queries'
 
 interface CandidateListProps {
@@ -110,6 +111,12 @@ function CandidateRow({ candidate, selected, onSelect, onAssign, assignDisabled 
             {t('admin.deliveries.assignPage.active', { count: candidate.activeDeliveries })}
             {' · '}
             {t('admin.deliveries.assignPage.delivered', { count: candidate.deliveredCount })}
+            {candidate.ratingCount > 0 && (
+              <>
+                {' · '}
+                <CourierRating ratingAvg={candidate.ratingAvg} ratingCount={candidate.ratingCount} className="text-foreground" />
+              </>
+            )}
           </p>
         </div>
         <div className="shrink-0 text-right">

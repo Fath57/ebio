@@ -786,7 +786,11 @@
         "noDelivery": "No delivery run (on-site pickup)",
         "assignCourier": "Assign a courier",
         "changeCourier": "Change courier",
-        "viewDelivery": "View delivery"
+        "viewDelivery": "View delivery",
+        "deliveryFee": "Delivery fee",
+        "courierFee": "Courier share",
+        "tip": "Tip",
+        "buyerRating": "Customer rating"
       }
     },
     "productUnits": {
@@ -1356,12 +1360,14 @@
       "filterByStatus": "Filter by status",
       "empty": "No courier for this filter",
       "backToList": "Back to couriers",
+      "ratingLabel": "Rated {{value}} out of 5, {{count}} reviews",
       "columns": {
         "name": "Name",
         "phone": "Phone",
         "vehicle": "Vehicle",
         "zone": "Zone",
         "status": "Status",
+        "rating": "Rating",
         "submittedAt": "Applied on"
       },
       "statuses": {
@@ -1390,6 +1396,10 @@
         "delivered": "Delivered",
         "failed": "Failed",
         "active": "Active",
+        "rating": "Average rating",
+        "ratingValue": "{{value}} / 5",
+        "ratingCount": "{{count}} reviews",
+        "noRating": "No rating yet",
         "wallet": "Wallet",
         "walletDebtHint": "The courier owes this commission to eBio (cash-paid deliveries)",
         "walletOwedHint": "Amount owed to the courier",

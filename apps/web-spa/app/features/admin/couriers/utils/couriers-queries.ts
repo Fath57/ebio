@@ -18,6 +18,9 @@ export interface AdminCourierItem {
   validationStatus: string
   rejectionReason: string | null
   isAvailable: boolean
+  /** Average buyer rating (1-5, one decimal), null until the first rating. */
+  ratingAvg: number | null
+  ratingCount: number
   validatedAt: string | null
   createdAt: string
 }
