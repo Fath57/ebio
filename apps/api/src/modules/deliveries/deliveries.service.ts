@@ -231,7 +231,7 @@ export class DeliveriesService {
          FROM courier_profiles WHERE id = ?
        )
        SELECT d.id, o.order_number, d.pickup_address, d.dropoff_address, d.offered_at,
-              s.shop_name, o.total_amount, d.delivery_fee, d.courier_fee,
+              s.shop_name, o.total_amount, o.payment_method, d.delivery_fee, d.courier_fee,
               o.delivery_latitude AS dropoff_latitude, o.delivery_longitude AS dropoff_longitude,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count,
               CASE WHEN d.pickup_location IS NOT NULL AND me.loc IS NOT NULL
@@ -372,6 +372,10 @@ export class DeliveriesService {
         throw new UnprocessableEntityException('Code de confirmation invalide')
       }
       delivery.proofType = DeliveryProofType.CODE
+    }
+    else if (delivery.order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
+      // The code is the buyer's receipt for the cash handed over: no photo shortcut.
+      throw new UnprocessableEntityException('Une commande payée en espèces se clôture avec le code de confirmation du client')
     }
     else {
       delivery.proofType = DeliveryProofType.PHOTO

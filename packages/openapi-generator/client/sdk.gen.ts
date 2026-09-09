@@ -44,6 +44,8 @@ import type {
   AdminControllerResolveReportResponses,
   AdminControllerSuspendSupplierData,
   AdminControllerSuspendSupplierResponses,
+  AdminControllerUpdateCashOnDeliveryLimitData,
+  AdminControllerUpdateCashOnDeliveryLimitResponses,
   AdminControllerUpdateCommissionsData,
   AdminControllerUpdateCommissionsResponses,
   AdminControllerUpdateDeliveryCommissionData,
@@ -402,6 +404,8 @@ import type {
   PublicPostControllerGetPostsResponses,
   PublicPostControllerGetRandomPostData,
   PublicPostControllerGetRandomPostResponses,
+  PublicSettingsControllerGetPublicData,
+  PublicSettingsControllerGetPublicResponses,
   RatingsControllerCreateReviewData,
   RatingsControllerCreateReviewResponses,
   RatingsControllerGetSupplierBadgesData,
@@ -1960,6 +1964,17 @@ export const notificationsControllerSendTestNotification = <
     unknown,
     ThrowOnError
   >({ url: "/api/notifications/test", ...options });
+
+export const publicSettingsControllerGetPublic = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<PublicSettingsControllerGetPublicData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    PublicSettingsControllerGetPublicResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/settings/public", ...options });
 
 export const walletControllerGetMyWallet = <
   ThrowOnError extends boolean = false,
@@ -3912,6 +3927,24 @@ export const adminControllerUpdateDeliveryCommission = <
     ThrowOnError
   >({
     url: "/api/admin/settings/delivery-commission",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminControllerUpdateCashOnDeliveryLimit = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerUpdateCashOnDeliveryLimitData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminControllerUpdateCashOnDeliveryLimitResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/settings/cash-limit",
     ...options,
     headers: {
       "Content-Type": "application/json",

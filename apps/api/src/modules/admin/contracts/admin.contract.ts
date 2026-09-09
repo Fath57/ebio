@@ -185,6 +185,14 @@ export const deliveryCommissionSchema = z.object({
   description: 'eBio\'s share of the delivery fee, as a fraction (0.10 = 10 %); the rest goes to the courier',
 })
 
+export const cashOnDeliveryLimitSchema = z.object({
+  /** Integer FCFA; 0 disables cash on delivery altogether. */
+  amount: z.number().int().min(0).max(10_000_000),
+}).meta({
+  title: 'CashOnDeliveryLimit',
+  description: 'Largest order total payable in cash at the door',
+})
+
 export const supplierCommissionRateSchema = z.object({
   rate: z.number().min(0).max(0.5).nullable(),
 }).meta({
@@ -275,6 +283,7 @@ export type DisputeResolutionInput = z.infer<typeof disputeResolutionSchema>
 export type BroadcastNotification = z.infer<typeof broadcastNotificationSchema>
 export type CommissionRates = z.infer<typeof commissionRateSchema>
 export type DeliveryCommissionRateInput = z.infer<typeof deliveryCommissionSchema>
+export type CashOnDeliveryLimitInput = z.infer<typeof cashOnDeliveryLimitSchema>
 export type SupplierCommissionRateInput = z.infer<typeof supplierCommissionRateSchema>
 export type CommissionSummary = z.infer<typeof commissionSummarySchema>
 export type CommissionOrderList = z.infer<typeof commissionOrderListSchema>

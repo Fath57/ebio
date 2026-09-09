@@ -461,6 +461,15 @@ export const zDeliveryCommissionRate = z.object({
 });
 
 /**
+ * CashOnDeliveryLimit
+ *
+ * Largest order total payable in cash at the door
+ */
+export const zCashOnDeliveryLimit = z.object({
+  amount: z.int().gte(0).lte(10000000),
+});
+
+/**
  * BroadcastNotification
  *
  * Send a notification to a group of users
@@ -4325,6 +4334,12 @@ export const zNotificationsControllerSendTestNotificationData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zPublicSettingsControllerGetPublicData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zWalletControllerGetMyWalletData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -6116,6 +6131,14 @@ export const zAdminControllerUpdateCommissionsData = z.object({
 export const zAdminControllerUpdateDeliveryCommissionData = z.object({
   body: z.object({
     rate: z.number().gte(0).lte(0.5),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminControllerUpdateCashOnDeliveryLimitData = z.object({
+  body: z.object({
+    amount: z.int().gte(0).lte(10000000),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),

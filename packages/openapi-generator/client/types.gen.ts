@@ -610,6 +610,15 @@ export type DeliveryCommissionRate = {
 };
 
 /**
+ * CashOnDeliveryLimit
+ *
+ * Largest order total payable in cash at the door
+ */
+export type CashOnDeliveryLimit = {
+  amount: number;
+};
+
+/**
  * BroadcastNotification
  *
  * Send a notification to a group of users
@@ -4915,6 +4924,17 @@ export type NotificationsControllerSendTestNotificationResponses = {
   201: unknown;
 };
 
+export type PublicSettingsControllerGetPublicData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/settings/public";
+};
+
+export type PublicSettingsControllerGetPublicResponses = {
+  200: unknown;
+};
+
 export type WalletControllerGetMyWalletData = {
   body?: never;
   path?: never;
@@ -7577,6 +7597,24 @@ export type AdminControllerUpdateDeliveryCommissionData = {
 };
 
 export type AdminControllerUpdateDeliveryCommissionResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateCashOnDeliveryLimitData = {
+  /**
+   * CashOnDeliveryLimit
+   *
+   * Largest order total payable in cash at the door
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings/cash-limit";
+};
+
+export type AdminControllerUpdateCashOnDeliveryLimitResponses = {
   200: unknown;
 };
 

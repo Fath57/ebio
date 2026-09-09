@@ -3,9 +3,13 @@ import { BadRequestException, Injectable } from '@nestjs/common'
 import { PlatformSetting } from './platform-setting.entity'
 
 export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
+export const CASH_ON_DELIVERY_MAX_AMOUNT_KEY = 'cash_on_delivery_max_amount'
 
 /** Applied when the row is missing or unreadable. */
 export const DEFAULT_DELIVERY_COMMISSION_RATE = 0.1
+/** Largest order total (FCFA) payable in cash at the door; 0 disables cash. */
+export const DEFAULT_CASH_ON_DELIVERY_MAX_AMOUNT = 25_000
+const CASH_LIMIT_CEILING = 10_000_000
 
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
@@ -31,6 +35,26 @@ export class PlatformSettingsService {
       throw new BadRequestException('Le taux de commission doit être compris entre 0 et 1')
     }
     await this.set(DELIVERY_COMMISSION_RATE_KEY, String(rate))
+  }
+
+  /**
+   * Cash cap, integer FCFA. The courier fronts the goods to the shop and
+   * collects the total at the door, so the cap bounds their exposure.
+   */
+  async getCashOnDeliveryMaxAmount(): Promise<number> {
+    const raw = await this.get(CASH_ON_DELIVERY_MAX_AMOUNT_KEY)
+    const amount = raw === null ? Number.NaN : Number(raw)
+    if (!Number.isInteger(amount) || amount < 0 || amount > CASH_LIMIT_CEILING) {
+      return DEFAULT_CASH_ON_DELIVERY_MAX_AMOUNT
+    }
+    return amount
+  }
+
+  async setCashOnDeliveryMaxAmount(amount: number): Promise<void> {
+    if (!Number.isInteger(amount) || amount < 0 || amount > CASH_LIMIT_CEILING) {
+      throw new BadRequestException('Le plafond espèces doit être un montant entier entre 0 et 10 000 000 FCFA')
+    }
+    await this.set(CASH_ON_DELIVERY_MAX_AMOUNT_KEY, String(amount))
   }
 
   /** Admin edits call this so the new value applies immediately. */

@@ -544,7 +544,12 @@ export class AdminService {
        ORDER BY c.name`,
     )
     const deliveryCommissionRate = await this.platformSettings.getDeliveryCommissionRate()
-    return { commissions, deliveryCommissionRate }
+    const cashOnDeliveryMaxAmount = await this.platformSettings.getCashOnDeliveryMaxAmount()
+    return { commissions, deliveryCommissionRate, cashOnDeliveryMaxAmount }
+  }
+
+  async updateCashOnDeliveryMaxAmount(amount: number): Promise<void> {
+    await this.platformSettings.setCashOnDeliveryMaxAmount(amount)
   }
 
   async updateDeliveryCommissionRate(rate: number): Promise<void> {

@@ -22,7 +22,20 @@ export interface OfferRow {
   shop_name: string
   items_count: string | number
   total_amount: number
+  payment_method: string
   offered_at: Date
+}
+
+/**
+ * Cash run: the courier fronts the goods to the shop at pickup and collects
+ * the whole total at the door, keeping the delivery fee as their own.
+ */
+function cashAmounts(paymentMethod: string, totalAmount: number, deliveryFee: number): { cashToCollect: number | null, cashToShop: number | null } {
+  if (paymentMethod !== 'CASH_ON_DELIVERY') {
+    return { cashToCollect: null, cashToShop: null }
+  }
+  const total = Math.round(totalAmount)
+  return { cashToCollect: total, cashToShop: Math.max(0, total - Math.round(deliveryFee)) }
 }
 
 export class DeliveriesMapper {
@@ -64,6 +77,8 @@ export class DeliveriesMapper {
       supplierShopName: row.shop_name,
       itemsCount: Number(row.items_count),
       totalAmount: row.total_amount,
+      paymentMethod: row.payment_method,
+      ...cashAmounts(row.payment_method, Number(row.total_amount), Number(row.delivery_fee ?? 0)),
       offeredAt: new Date(row.offered_at).toISOString(),
     }
   }
@@ -131,6 +146,7 @@ export class DeliveriesMapper {
       itemsCount: order.items.isInitialized() ? order.items.count() : 0,
       totalAmount: order.totalAmount,
       paymentMethod: order.paymentMethod,
+      ...cashAmounts(order.paymentMethod, order.totalAmount, delivery.deliveryFee ?? 0),
       deliveryFee: delivery.deliveryFee ?? 0,
       courierFee: delivery.courierFee ?? 0,
       tipAmount: delivery.tipAmount ?? 0,

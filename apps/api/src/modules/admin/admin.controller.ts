@@ -4,6 +4,7 @@ import type { OrderStatus } from '../orders/entities/order.entity'
 import type {
   AdminOrderStatusInput,
   BroadcastNotification,
+  CashOnDeliveryLimitInput,
   CommissionRates,
   DeliveryCommissionRateInput,
   DisputeResolutionInput,
@@ -35,6 +36,7 @@ import { AdminService } from './admin.service'
 import {
   adminOrderStatusSchema,
   broadcastNotificationSchema,
+  cashOnDeliveryLimitSchema,
   commissionRateSchema,
   deliveryCommissionSchema,
   disputeResolutionSchema,
@@ -391,6 +393,15 @@ export class AdminController {
     @TypedBody(deliveryCommissionSchema) body: DeliveryCommissionRateInput,
   ) {
     await this.adminService.updateDeliveryCommissionRate(body.rate)
+    return { success: true }
+  }
+
+  @CanManage('Settings')
+  @Put('settings/cash-limit')
+  async updateCashOnDeliveryLimit(
+    @TypedBody(cashOnDeliveryLimitSchema) body: CashOnDeliveryLimitInput,
+  ) {
+    await this.adminService.updateCashOnDeliveryMaxAmount(body.amount)
     return { success: true }
   }
 

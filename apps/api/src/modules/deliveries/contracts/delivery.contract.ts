@@ -179,6 +179,11 @@ export const deliveryOfferSchema = z.object({
   supplierShopName: z.string(),
   itemsCount: z.number(),
   totalAmount: z.number(),
+  paymentMethod: z.string(),
+  /** Cash order: what the courier collects from the buyer at the door (null otherwise). */
+  cashToCollect: z.number().nullable(),
+  /** Cash order: what the courier hands the shop at pickup, i.e. the goods (null otherwise). */
+  cashToShop: z.number().nullable(),
   offeredAt: z.string().datetime(),
 }).meta({
   title: 'DeliveryOffer',
@@ -262,6 +267,10 @@ export const deliveryResponseSchema = z.object({
   itemsCount: z.number(),
   totalAmount: z.number(),
   paymentMethod: z.string(),
+  /** Cash order: what the courier collects from the buyer at the door (null otherwise). */
+  cashToCollect: z.number().nullable(),
+  /** Cash order: what the courier hands the shop at pickup, i.e. the goods (null otherwise). */
+  cashToShop: z.number().nullable(),
   /** Buyer-paid delivery fee snapshotted when the run was offered. */
   deliveryFee: z.number(),
   /** The courier's share of that fee (integer FCFA). */

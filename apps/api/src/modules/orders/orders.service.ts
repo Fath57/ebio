@@ -28,6 +28,7 @@ import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.ent
 import { ProductVariant } from '../products/entities/product-variant.entity'
 import { Product } from '../products/entities/product.entity'
 import { PromoCodesService } from '../promo-codes/promo-codes.service'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { WalletService } from '../wallet/wallet.service'
@@ -134,6 +135,7 @@ export class OrdersService {
     private readonly promoCodesService: PromoCodesService,
     private readonly emailService: EmailService,
     private readonly routeMapService: RouteMapService,
+    private readonly platformSettings: PlatformSettingsService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -215,6 +217,20 @@ export class OrdersService {
     )
 
     const deliveryFee = computeDeliveryFee(supplier, data.pickupMode === PickupMode.DELIVERY, totalAmount)
+
+    // Cash: the courier fronts the goods and collects the total at the door,
+    // so the platform caps what one order may put in a courier's hands.
+    if (data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
+      const cashLimit = await this.platformSettings.getCashOnDeliveryMaxAmount()
+      if (cashLimit <= 0) {
+        throw new BadRequestException('Le paiement en espèces n\'est pas disponible pour le moment')
+      }
+      if (discountedItemsTotal + deliveryFee > cashLimit) {
+        throw new BadRequestException(
+          `Le paiement en espèces est limité à ${cashLimit.toLocaleString('fr-FR')} FCFA par commande. Payez en ligne ou réduisez votre panier.`,
+        )
+      }
+    }
 
     const order = this.em.create(Order, {
       orderNumber,
