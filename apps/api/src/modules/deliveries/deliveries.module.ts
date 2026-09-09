@@ -7,6 +7,7 @@ import { WalletModule } from '../wallet/wallet.module'
 import { AdminCouriersController } from './admin-couriers.controller'
 import { AdminCouriersService } from './admin-couriers.service'
 import { AdminDeliveriesService } from './admin-deliveries.service'
+import { CourierFeedbackService } from './courier-feedback.service'
 import { CouriersController } from './couriers.controller'
 import { DeliveriesController } from './deliveries.controller'
 import { DeliveriesService } from './deliveries.service'
@@ -23,6 +24,7 @@ import { DispatchService } from './dispatch.service'
     DispatchService,
     AdminCouriersService,
     AdminDeliveriesService,
+    CourierFeedbackService,
     { provide: ORDER_DELIVERY_HOOKS, useExisting: DeliveriesService },
   ],
   exports: [DeliveriesService, DispatchService, ORDER_DELIVERY_HOOKS],

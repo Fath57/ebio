@@ -318,6 +318,25 @@ export type FailDelivery = {
 };
 
 /**
+ * RateCourier
+ *
+ * Buyer rating of the courier once the delivery is done
+ */
+export type RateCourier = {
+  rating: number;
+  comment?: string;
+};
+
+/**
+ * TipCourier
+ *
+ * Tip for the courier, debited from the buyer wallet and credited in full to the courier
+ */
+export type TipCourier = {
+  amount: number;
+};
+
+/**
  * CreatePaymentMethodInput
  *
  * Input for creating a payment method
@@ -6566,6 +6585,47 @@ export type DeliveriesControllerRebroadcastData = {
 };
 
 export type DeliveriesControllerRebroadcastResponses = {
+  201: unknown;
+};
+
+export type DeliveriesControllerRateData = {
+  /**
+   * RateCourier
+   *
+   * Buyer rating of the courier once the delivery is done
+   */
+  body: {
+    rating: number;
+    comment?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/rate";
+};
+
+export type DeliveriesControllerRateResponses = {
+  201: unknown;
+};
+
+export type DeliveriesControllerTipData = {
+  /**
+   * TipCourier
+   *
+   * Tip for the courier, debited from the buyer wallet and credited in full to the courier
+   */
+  body: {
+    amount: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/tip";
+};
+
+export type DeliveriesControllerTipResponses = {
   201: unknown;
 };
 

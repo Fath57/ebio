@@ -42,7 +42,7 @@ export enum DeliveryFailReason {
 
 @Entity({ tableName: 'deliveries' })
 export class Delivery {
-  [OptionalProps]?: 'id' | 'status' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'tipAmount' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -132,6 +132,10 @@ export class Delivery {
    */
   @Property({ fieldName: 'courier_fee', type: 'float', default: 0 })
   courierFee: number = 0
+
+  /** Tip left by the buyer after delivery (integer FCFA), 0 when none. */
+  @Property({ fieldName: 'tip_amount', type: 'float', default: 0 })
+  tipAmount: number = 0
 
   /** Current broadcast radius, widened by the rebroadcast cron up to 25 km. */
   @Property({ fieldName: 'broadcast_radius_km', type: 'float', default: 5 })

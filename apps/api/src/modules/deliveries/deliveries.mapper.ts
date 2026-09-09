@@ -1,5 +1,6 @@
 import type { CourierProfileResponse, DeliveryOffer, DeliveryResponse } from './contracts/delivery.contract'
 import type { CourierProfile } from './entities/courier-profile.entity'
+import type { CourierRating } from './entities/courier-rating.entity'
 import type { DeliveryEvent } from './entities/delivery-event.entity'
 import type { Delivery } from './entities/delivery.entity'
 import { DeliveryStatus } from './entities/delivery.entity'
@@ -40,6 +41,8 @@ export class DeliveriesMapper {
       validationStatus: profile.validationStatus,
       rejectionReason: profile.rejectionReason ?? null,
       isAvailable: profile.isAvailable,
+      ratingAvg: profile.ratingAvg ?? null,
+      ratingCount: profile.ratingCount ?? 0,
       validatedAt: profile.validatedAt?.toISOString() ?? null,
       createdAt: profile.createdAt.toISOString(),
     }
@@ -70,7 +73,12 @@ export class DeliveriesMapper {
    * confirmation code only for the buyer (and admin), courier identity for
    * everyone once assigned.
    */
-  static toResponse(delivery: Delivery, audience: DeliveryAudience, events: DeliveryEvent[]): DeliveryResponse {
+  static toResponse(
+    delivery: Delivery,
+    audience: DeliveryAudience,
+    events: DeliveryEvent[],
+    buyerRating: CourierRating | null = null,
+  ): DeliveryResponse {
     const order = delivery.order
     const showBuyerContact = audience === 'courier' || audience === 'admin'
     const showCode = audience === 'buyer' || audience === 'admin'
@@ -94,8 +102,13 @@ export class DeliveriesMapper {
       buyerContact: showBuyerContact
         ? { name: order.buyer.name, phone: order.buyer.phone ?? null }
         : null,
-      courier: delivery.courier
-        ? { name: delivery.courier.fullName, phone: delivery.courier.phone }
+      courier: courier
+        ? {
+            name: courier.fullName,
+            phone: courier.phone,
+            ratingAvg: courier.ratingAvg ?? null,
+            ratingCount: courier.ratingCount ?? 0,
+          }
         : null,
       courierVehicleType: delivery.courier?.vehicleType ?? null,
       courierPosition: showPosition && courier
@@ -120,6 +133,10 @@ export class DeliveriesMapper {
       paymentMethod: order.paymentMethod,
       deliveryFee: delivery.deliveryFee ?? 0,
       courierFee: delivery.courierFee ?? 0,
+      tipAmount: delivery.tipAmount ?? 0,
+      buyerRating: buyerRating
+        ? { rating: buyerRating.rating, comment: buyerRating.comment ?? null, createdAt: buyerRating.createdAt.toISOString() }
+        : null,
       acceptedAt: delivery.acceptedAt?.toISOString() ?? null,
       pickedUpAt: delivery.pickedUpAt?.toISOString() ?? null,
       inTransitAt: delivery.inTransitAt?.toISOString() ?? null,

@@ -41,6 +41,10 @@ export enum NotificationType {
   COURIER_EARNING = 'COURIER_EARNING',
   /** Courier payout number / withdrawal lifecycle. */
   COURIER_PAYOUT = 'COURIER_PAYOUT',
+  /** A buyer rated the courier's run. */
+  COURIER_RATED = 'COURIER_RATED',
+  /** A buyer tipped the courier; the wallet is already credited. */
+  COURIER_TIP = 'COURIER_TIP',
 }
 
 export enum NotificationChannel {

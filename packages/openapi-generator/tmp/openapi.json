@@ -9282,6 +9282,104 @@
         }
       }
     },
+    "/api/deliveries/{id}/rate": {
+      "post": {
+        "operationId": "DeliveriesController_rate",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Buyer rating of the courier once the delivery is done",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "rating": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "comment": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "rating"
+                ],
+                "additionalProperties": false,
+                "title": "RateCourier",
+                "description": "Buyer rating of the courier once the delivery is done"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/deliveries/{id}/tip": {
+      "post": {
+        "operationId": "DeliveriesController_tip",
+        "tags": [
+          "Deliveries"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Tip for the courier, debited from the buyer wallet and credited in full to the courier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 50000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "TipCourier",
+                "description": "Tip for the courier, debited from the buyer wallet and credited in full to the courier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/couriers": {
       "get": {
         "operationId": "AdminCouriersController_list",
@@ -12989,6 +13087,42 @@
         "additionalProperties": false,
         "title": "FailDelivery",
         "description": "Report a failed delivery attempt"
+      },
+      "RateCourier": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "additionalProperties": false,
+        "title": "RateCourier",
+        "description": "Buyer rating of the courier once the delivery is done"
+      },
+      "TipCourier": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 50000
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "TipCourier",
+        "description": "Tip for the courier, debited from the buyer wallet and credited in full to the courier"
       },
       "CreatePaymentMethodInput": {
         "type": "object",

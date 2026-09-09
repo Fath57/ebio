@@ -13,6 +13,7 @@ import { WalletService } from '../wallet/wallet.service'
 import { AdminCouriersService } from './admin-couriers.service'
 import { AdminDeliveriesService } from './admin-deliveries.service'
 import { assignDeliverySchema, rejectCourierSchema } from './contracts/delivery.contract'
+import { CourierFeedbackService } from './courier-feedback.service'
 import { DeliveriesMapper } from './deliveries.mapper'
 import { DeliveriesService } from './deliveries.service'
 import { VehicleType } from './entities/courier-profile.entity'
@@ -31,6 +32,7 @@ export class AdminCouriersController {
     private readonly adminDeliveriesService: AdminDeliveriesService,
     private readonly deliveriesService: DeliveriesService,
     private readonly walletService: WalletService,
+    private readonly feedbackService: CourierFeedbackService,
   ) {}
 
   @CanRead('CourierProfile')
@@ -134,8 +136,9 @@ export class AdminCouriersController {
   async getDelivery(@Param('id') id: string) {
     const delivery = await this.adminDeliveriesService.getById(id)
     const events = await this.deliveriesService.getEvents(delivery.id)
+    const rating = await this.feedbackService.findRating(delivery.id)
     return {
-      ...DeliveriesMapper.toResponse(delivery, 'admin', events),
+      ...DeliveriesMapper.toResponse(delivery, 'admin', events, rating),
       courierId: delivery.courier?.id ?? null,
       reassignmentCount: delivery.reassignmentCount,
       offeredAt: delivery.offeredAt.toISOString(),

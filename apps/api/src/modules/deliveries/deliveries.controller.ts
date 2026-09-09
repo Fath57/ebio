@@ -9,15 +9,21 @@ import { AuthGuard } from '../auth/auth.guard'
 import {
   completeDeliverySchema,
   failDeliverySchema,
+  rateCourierSchema,
+  tipCourierSchema,
   transitionSchema,
 } from './contracts/delivery.contract'
+import { CourierFeedbackService } from './courier-feedback.service'
 import { DeliveriesMapper } from './deliveries.mapper'
 import { DeliveriesService } from './deliveries.service'
 
 @Controller('deliveries')
 @UseGuards(AuthGuard)
 export class DeliveriesController {
-  constructor(private readonly deliveriesService: DeliveriesService) {}
+  constructor(
+    private readonly deliveriesService: DeliveriesService,
+    private readonly feedbackService: CourierFeedbackService,
+  ) {}
 
   @Get('offers')
   @UseGuards(CaslGuard)
@@ -39,7 +45,8 @@ export class DeliveriesController {
     const responses = []
     for (const delivery of deliveries) {
       const events = await this.deliveriesService.getEvents(delivery.id)
-      responses.push(DeliveriesMapper.toResponse(delivery, 'courier', events))
+      const rating = await this.feedbackService.findRating(delivery.id)
+      responses.push(DeliveriesMapper.toResponse(delivery, 'courier', events, rating))
     }
     return responses
   }
@@ -53,7 +60,8 @@ export class DeliveriesController {
   ) {
     const { delivery, audience } = await this.deliveriesService.getByOrderForRequester(orderId, session.user.id)
     const events = await this.deliveriesService.getEvents(delivery.id)
-    return DeliveriesMapper.toResponse(delivery, audience, events)
+    const rating = await this.feedbackService.findRating(delivery.id)
+    return DeliveriesMapper.toResponse(delivery, audience, events, rating)
   }
 
   @Get(':id')
@@ -65,7 +73,8 @@ export class DeliveriesController {
   ) {
     const { delivery, audience } = await this.deliveriesService.getForRequester(id, session.user.id)
     const events = await this.deliveriesService.getEvents(delivery.id)
-    return DeliveriesMapper.toResponse(delivery, audience, events)
+    const rating = await this.feedbackService.findRating(delivery.id)
+    return DeliveriesMapper.toResponse(delivery, audience, events, rating)
   }
 
   @Post(':id/accept')
@@ -142,5 +151,30 @@ export class DeliveriesController {
     const delivery = await this.deliveriesService.rebroadcast(id, session.user.id)
     const events = await this.deliveriesService.getEvents(delivery.id)
     return DeliveriesMapper.toResponse(delivery, 'supplier', events)
+  }
+
+  /** Buyer feedback: rating of the courier once the run is delivered. */
+  @Post(':id/rate')
+  @UseGuards(CaslGuard)
+  @CanRead('Delivery')
+  async rate(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(rateCourierSchema) body: z.infer<typeof rateCourierSchema>,
+  ) {
+    const rating = await this.feedbackService.rate(id, session.user.id, body)
+    return { rating: rating.rating, comment: rating.comment ?? null, createdAt: rating.createdAt.toISOString() }
+  }
+
+  /** Buyer feedback: tip paid from the personal wallet to the courier. */
+  @Post(':id/tip')
+  @UseGuards(CaslGuard)
+  @CanRead('Delivery')
+  async tip(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(tipCourierSchema) body: z.infer<typeof tipCourierSchema>,
+  ) {
+    return this.feedbackService.tip(id, session.user.id, body)
   }
 }

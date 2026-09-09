@@ -114,6 +114,9 @@ export const courierProfileResponseSchema = z.object({
   validationStatus: courierValidationStatusEnum,
   rejectionReason: z.string().nullable(),
   isAvailable: z.boolean(),
+  /** Average buyer rating (1–5), null until the first rating. */
+  ratingAvg: z.number().nullable(),
+  ratingCount: z.number(),
   validatedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
 }).meta({
@@ -214,6 +217,24 @@ export const courierPositionSchema = geoPointSchema.extend({
   description: 'Last reported courier position, for the live tracking map',
 })
 
+export const deliveryCourierSchema = deliveryContactSchema.extend({
+  /** Average buyer rating (1–5), null until the first rating. */
+  ratingAvg: z.number().nullable(),
+  ratingCount: z.number(),
+}).meta({
+  title: 'DeliveryCourier',
+  description: 'Courier identity and reputation shown to the buyer and the shop',
+})
+
+export const courierRatingResponseSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().nullable(),
+  createdAt: z.string().datetime(),
+}).meta({
+  title: 'CourierRatingResponse',
+  description: 'The rating the buyer left on a delivery',
+})
+
 export const deliveryResponseSchema = z.object({
   id: z.string().uuid(),
   orderId: z.string().uuid(),
@@ -225,7 +246,7 @@ export const deliveryResponseSchema = z.object({
   /** Buyer contact — only present for the assigned courier. */
   buyerContact: deliveryContactSchema.nullable(),
   /** Courier identity — present for supplier/buyer once assigned. */
-  courier: deliveryContactSchema.nullable(),
+  courier: deliveryCourierSchema.nullable(),
   courierVehicleType: vehicleTypeEnum.nullable(),
   /** Live position — only while the delivery is in progress. */
   courierPosition: courierPositionSchema.nullable(),
@@ -245,6 +266,10 @@ export const deliveryResponseSchema = z.object({
   deliveryFee: z.number(),
   /** The courier's share of that fee (integer FCFA). */
   courierFee: z.number(),
+  /** Tip the buyer left after delivery (integer FCFA), 0 when none. */
+  tipAmount: z.number(),
+  /** The buyer's rating of the courier, null until given. */
+  buyerRating: courierRatingResponseSchema.nullable(),
   acceptedAt: z.string().datetime().nullable(),
   pickedUpAt: z.string().datetime().nullable(),
   inTransitAt: z.string().datetime().nullable(),
@@ -268,6 +293,42 @@ export const mineFilterEnum = z.enum(['active', 'done']).meta({
   title: 'CourierDeliveriesFilter',
   description: 'active = accepted/picked up/in transit; done = delivered/failed',
 })
+
+// ===== Buyer feedback on the courier =====
+
+export const rateCourierSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  comment: z.string().trim().max(500).optional(),
+}).meta({
+  title: 'RateCourier',
+  description: 'Buyer rating of the courier once the delivery is done',
+})
+
+export const TIP_MIN_AMOUNT = 100
+export const TIP_MAX_AMOUNT = 50_000
+
+export const tipCourierSchema = z.object({
+  /** Integer FCFA, paid from the buyer's personal wallet. */
+  amount: z.number().int().min(TIP_MIN_AMOUNT).max(TIP_MAX_AMOUNT),
+}).meta({
+  title: 'TipCourier',
+  description: 'Tip for the courier, debited from the buyer wallet and credited in full to the courier',
+})
+
+export const courierTipResponseSchema = z.object({
+  amount: z.number(),
+  /** Buyer wallet balance after the tip. */
+  walletBalance: z.number(),
+  createdAt: z.string().datetime(),
+}).meta({
+  title: 'CourierTipResponse',
+  description: 'Confirmation of a tip paid to the courier',
+})
+
+export type RateCourier = z.infer<typeof rateCourierSchema>
+export type TipCourier = z.infer<typeof tipCourierSchema>
+export type CourierRatingResponse = z.infer<typeof courierRatingResponseSchema>
+export type CourierTipResponse = z.infer<typeof courierTipResponseSchema>
 
 export type RegisterCourier = z.infer<typeof registerCourierSchema>
 export type UpdateCourier = z.infer<typeof updateCourierSchema>
@@ -308,6 +369,8 @@ export const courierCandidateSchema = z.object({
   /** Deliveries currently accepted, picked up or in transit. */
   activeDeliveries: z.number(),
   deliveredCount: z.number(),
+  ratingAvg: z.number().nullable(),
+  ratingCount: z.number(),
   /** True when this courier already holds the delivery being assigned. */
   isCurrent: z.boolean(),
 }).meta({

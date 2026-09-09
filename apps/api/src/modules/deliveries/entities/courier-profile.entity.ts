@@ -25,7 +25,7 @@ export enum VehicleType {
  */
 @Entity({ tableName: 'courier_profiles' })
 export class CourierProfile {
-  [OptionalProps]?: 'id' | 'validationStatus' | 'isAvailable' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'validationStatus' | 'isAvailable' | 'ratingCount' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -90,6 +90,13 @@ export class CourierProfile {
 
   @Property({ fieldName: 'last_longitude', type: 'float', nullable: true })
   lastLongitude?: number
+
+  /** Running average of buyer ratings (1–5), null until the first rating. */
+  @Property({ fieldName: 'rating_avg', type: 'float', nullable: true })
+  ratingAvg?: number
+
+  @Property({ fieldName: 'rating_count', type: 'int', default: 0 })
+  ratingCount: number = 0
 
   @Property({ fieldName: 'validated_at', nullable: true })
   validatedAt?: Date

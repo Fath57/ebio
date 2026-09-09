@@ -218,6 +218,25 @@ export const zCompleteDelivery = z.union([
 ]);
 
 /**
+ * RateCourier
+ *
+ * Buyer rating of the courier once the delivery is done
+ */
+export const zRateCourier = z.object({
+  rating: z.int().gte(1).lte(5),
+  comment: z.optional(z.string().max(500)),
+});
+
+/**
+ * TipCourier
+ *
+ * Tip for the courier, debited from the buyer wallet and credited in full to the courier
+ */
+export const zTipCourier = z.object({
+  amount: z.int().gte(100).lte(50000),
+});
+
+/**
  * CreatePaymentMethodInput
  *
  * Input for creating a payment method
@@ -5465,6 +5484,27 @@ export const zDeliveriesControllerFailData = z.object({
 
 export const zDeliveriesControllerRebroadcastData = z.object({
   body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zDeliveriesControllerRateData = z.object({
+  body: z.object({
+    rating: z.int().gte(1).lte(5),
+    comment: z.optional(z.string().max(500)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zDeliveriesControllerTipData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(50000),
+  }),
   path: z.object({
     id: z.string(),
   }),

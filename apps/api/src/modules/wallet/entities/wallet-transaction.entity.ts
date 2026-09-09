@@ -19,6 +19,10 @@ export enum WalletTransactionType {
   DELIVERY_EARNING = 'DELIVERY_EARNING',
   /** eBio's cut on a cash delivery fee the courier kept in hand. */
   DELIVERY_COMMISSION = 'DELIVERY_COMMISSION',
+  /** Buyer's personal wallet debited for a courier tip. */
+  TIP_PAYMENT = 'TIP_PAYMENT',
+  /** Courier wallet credited with a buyer's tip, in full. */
+  TIP_EARNING = 'TIP_EARNING',
 }
 
 /**

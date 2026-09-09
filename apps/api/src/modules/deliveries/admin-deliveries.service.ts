@@ -41,6 +41,8 @@ interface CandidateRow {
   distance_km: string | null
   active_deliveries: string
   delivered_count: string
+  rating_avg: number | null
+  rating_count: number
 }
 
 /**
@@ -114,6 +116,7 @@ export class AdminDeliveriesService {
          FROM courier_profiles cp
        )
        SELECT cp.id, cp.full_name, cp.phone, cp.vehicle_type, cp.zone, cp.is_available,
+              cp.rating_avg, cp.rating_count,
               ref.position_source,
               ST_Y(ref.loc::geometry) AS latitude,
               ST_X(ref.loc::geometry) AS longitude,
@@ -149,6 +152,8 @@ export class AdminDeliveriesService {
       distanceKm: row.distance_km === null ? null : Number(row.distance_km),
       activeDeliveries: Number(row.active_deliveries),
       deliveredCount: Number(row.delivered_count),
+      ratingAvg: row.rating_avg === null ? null : Number(row.rating_avg),
+      ratingCount: Number(row.rating_count ?? 0),
       isCurrent: delivery.courier?.id === row.id,
     }))
   }

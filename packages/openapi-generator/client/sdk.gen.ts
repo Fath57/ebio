@@ -222,10 +222,14 @@ import type {
   DeliveriesControllerOffersResponses,
   DeliveriesControllerPickupData,
   DeliveriesControllerPickupResponses,
+  DeliveriesControllerRateData,
+  DeliveriesControllerRateResponses,
   DeliveriesControllerRebroadcastData,
   DeliveriesControllerRebroadcastResponses,
   DeliveriesControllerStartData,
   DeliveriesControllerStartResponses,
+  DeliveriesControllerTipData,
+  DeliveriesControllerTipResponses,
   GeocodingControllerAutocompleteData,
   GeocodingControllerAutocompleteResponses,
   GeocodingControllerResolvePlaceData,
@@ -3134,6 +3138,38 @@ export const deliveriesControllerRebroadcast = <
     unknown,
     ThrowOnError
   >({ url: "/api/deliveries/{id}/rebroadcast", ...options });
+
+export const deliveriesControllerRate = <ThrowOnError extends boolean = false>(
+  options: Options<DeliveriesControllerRateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    DeliveriesControllerRateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/deliveries/{id}/rate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const deliveriesControllerTip = <ThrowOnError extends boolean = false>(
+  options: Options<DeliveriesControllerTipData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    DeliveriesControllerTipResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/deliveries/{id}/tip",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const adminCouriersControllerList = <
   ThrowOnError extends boolean = false,
