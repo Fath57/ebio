@@ -137,7 +137,9 @@
       "description": "Vous n'avez pas les droits nécessaires pour accéder à cette page.",
       "backHome": "Retour à l'accueil"
     },
-    "loading": "Chargement…"
+    "loading": "Chargement…",
+    "show": "Afficher",
+    "hide": "Masquer"
   },
   "userRoles": {
     "BUYER": "Acheteur",
@@ -179,7 +181,8 @@
     "wallet": "Portefeuille",
     "promoCodes": "Codes promo",
     "couriers": "Livreurs",
-    "deliveries": "Livraisons"
+    "deliveries": "Livraisons",
+    "team": "Équipe"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -833,7 +836,7 @@
       "addRoleDescription": "Définissez un nouveau rôle avec ses permissions",
       "editRole": "Modifier le rôle",
       "editRoleDescription": "Modifiez les permissions de ce rôle",
-      "permissionsCount": "permissions",
+      "permissionsCount": "{{count}} permission",
       "columns": {
         "name": "Nom",
         "description": "Description",
@@ -849,27 +852,23 @@
         "create": "Créer le rôle",
         "update": "Mettre à jour"
       },
-      "permissions": {
-        "subject": "Sujet",
-        "all": "Tout",
-        "actions": {
-          "create": "Créer",
-          "read": "Lire",
-          "update": "Modifier",
-          "delete": "Supprimer",
-          "manage": "Gérer"
-        },
-        "subjects": {
-          "product": "Produit",
-          "order": "Commande",
-          "user": "Utilisateur",
-          "supplier": "Fournisseur",
-          "rating": "Évaluation",
-          "report": "Signalement",
-          "subscription": "Abonnement",
-          "settings": "Paramètres"
-        }
-      }
+      "permissionsCount_other": "{{count}} permissions",
+      "system": "Système",
+      "allRights": "Tous les droits",
+      "members": "Membres",
+      "deleteBlocked": "Retirez d'abord ce rôle aux membres qui l'ont",
+      "systemNotice": "Le rôle super administrateur possède tous les droits et ne peut pas être modifié.",
+      "viewRole": "Rôle super administrateur",
+      "manageTeam": "Gérer l'équipe",
+      "empty": "Aucun rôle pour le moment.",
+      "notFound": "Rôle introuvable.",
+      "checkAll": "Tout cocher",
+      "uncheckAll": "Tout décocher",
+      "created": "Rôle créé",
+      "updated": "Rôle mis à jour",
+      "deleted": "Rôle supprimé",
+      "deleteTitle": "Supprimer ce rôle ?",
+      "deleteConfirm": "Le rôle « {{name}} » sera définitivement supprimé."
     },
     "settings": {
       "title": "Paramètres Plateforme",
@@ -1144,12 +1143,77 @@
         "phone": "Téléphone",
         "role": "Rôle",
         "shop": "Boutique",
-        "since": "Inscrit le"
+        "since": "Inscrit le",
+        "status": "Statut"
       },
       "role": {
         "ADMIN": "Admin",
         "SUPPLIER": "Fournisseur",
-        "BUYER": "Acheteur"
+        "BUYER": "Acheteur",
+        "COURIER": "Livreur"
+      },
+      "status": {
+        "active": "Actif",
+        "suspended": "Suspendu",
+        "suspendedUntil": "Suspendu jusqu'au {{date}}",
+        "banned": "Bloqué",
+        "filterAll": "Tous",
+        "filterActive": "Actifs",
+        "filterBlocked": "Suspendus ou bloqués"
+      },
+      "detail": {
+        "notFound": "Utilisateur introuvable.",
+        "identity": "Identité",
+        "emailVerified": "E-mail vérifié",
+        "lastLogin": "Dernière connexion",
+        "activity": "Activité",
+        "ordersCount": "Commandes passées",
+        "courier": "Profil livreur",
+        "courierProfile": "Voir le profil livreur",
+        "available": "disponible",
+        "unavailable": "indisponible",
+        "sanction": "Sanction",
+        "untilReinstated": "Jusqu'à réactivation",
+        "changedBy": "Modifié par",
+        "changedAt": "Modifié le",
+        "yes": "Oui",
+        "no": "Non"
+      },
+      "actions": {
+        "suspend": "Suspendre",
+        "ban": "Bloquer",
+        "reinstate": "Réactiver",
+        "reason": "Motif",
+        "reasonPlaceholder": "Expliquez la décision (visible dans l'historique)…",
+        "until": "Fin de la suspension",
+        "untilHint": "Laisser vide pour une suspension jusqu'à réactivation",
+        "suspendConfirm": "{{name}} ne pourra plus se connecter pendant la suspension.",
+        "banConfirm": "Le compte ne pourra plus se connecter à aucune application eBio.",
+        "reinstateConfirm": "{{name}} retrouvera l'accès à son compte.",
+        "reinstateNote": "Note (facultative)",
+        "suspended": "Compte suspendu",
+        "banned": "Compte bloqué",
+        "reinstated": "Compte réactivé",
+        "staffHint": "Ce membre fait partie de l'équipe : gérez son accès depuis la page Équipe."
+      },
+      "audit": {
+        "title": "Historique",
+        "empty": "Aucune action enregistrée",
+        "by": "Par {{name}}",
+        "until": "jusqu'au {{date}}",
+        "USER_SUSPENDED": "Suspension",
+        "USER_BANNED": "Blocage",
+        "USER_REINSTATED": "Réactivation",
+        "STAFF_INVITED": "Invitation dans l'équipe",
+        "STAFF_ROLE_CHANGED": "Changement de rôle",
+        "STAFF_REMOVED": "Retrait de l'équipe",
+        "DELIVERY_ASSIGNED": "Livreur attribué",
+        "DELIVERY_REASSIGNED": "Livreur réattribué",
+        "targetTypes": {
+          "USER": "Utilisateur",
+          "STAFF": "Équipe",
+          "DELIVERY": "Livraison"
+        }
       }
     },
     "validation": {
@@ -1422,6 +1486,98 @@
         "mapMissingKey": "Carte indisponible : clé Google Maps absente (VITE_GOOGLE_MAPS_API_KEY).",
         "timeline": "Historique"
       }
+    },
+    "team": {
+      "title": "Équipe",
+      "description": "Les membres du back-office et leurs rôles",
+      "invite": "Inviter un membre",
+      "inviteTitle": "Inviter un membre",
+      "inviteDescription": "Un e-mail d'invitation lui permettra de choisir son mot de passe.",
+      "name": "Nom",
+      "email": "E-mail",
+      "role": "Rôle",
+      "rolePlaceholder": "Choisir un rôle",
+      "send": "Envoyer l'invitation",
+      "invited": "Invitation envoyée à {{email}}",
+      "resend": "Renvoyer l'invitation",
+      "resent": "Invitation renvoyée",
+      "changeRole": "Changer le rôle",
+      "changeRoleTitle": "Changer le rôle du membre",
+      "roleChanged": "Rôle mis à jour",
+      "remove": "Retirer de l'équipe",
+      "removeTitle": "Retirer ce membre de l'équipe ?",
+      "removeConfirm": "{{name}} perdra l'accès au back-office. Son compte reste utilisable dans l'application.",
+      "removed": "Membre retiré de l'équipe",
+      "superAdmin": "Super administrateur",
+      "pending": "Invitation en attente",
+      "neverConnected": "Jamais connecté",
+      "lastLogin": "Vu {{ago}}",
+      "createdAt": "Ajouté le",
+      "you": "vous",
+      "member": "Membre",
+      "status": "Statut",
+      "actions": "Actions",
+      "rightsHint": "Les droits d'un membre viennent de son rôle.",
+      "manageRoles": "Gérer les rôles",
+      "empty": "Aucun membre dans l'équipe pour le moment.",
+      "sections": {
+        "orders": "Commandes",
+        "deliveries": "Livraisons",
+        "suppliers": "Boutiques",
+        "couriers": "Livreurs",
+        "users": "Utilisateurs",
+        "payments": "Paiements",
+        "content": "Contenu",
+        "catalog": "Catalogue",
+        "settings": "Réglages",
+        "team": "Équipe"
+      },
+      "permissions": {
+        "orders": {
+          "view": "Voir les commandes et litiges",
+          "manage": "Changer le statut, valider, trancher un litige"
+        },
+        "deliveries": {
+          "view": "Voir les livraisons",
+          "manage": "Attribuer un livreur, relancer"
+        },
+        "suppliers": {
+          "view": "Voir les boutiques et candidatures",
+          "manage": "Valider, refuser, suspendre, fixer la commission"
+        },
+        "couriers": {
+          "view": "Voir les livreurs",
+          "manage": "Valider, refuser, suspendre"
+        },
+        "users": {
+          "view": "Voir les utilisateurs",
+          "manage": "Suspendre, bloquer, réactiver"
+        },
+        "payments": {
+          "view": "Voir transactions et commissions",
+          "withdrawals": "Traiter les reversements"
+        },
+        "content": {
+          "moderation": "Modérer les signalements",
+          "banners": "Gérer les bannières",
+          "landing": "Gérer la page d'accueil du site",
+          "broadcast": "Envoyer une notification à tous"
+        },
+        "catalog": {
+          "products": "Voir tous les produits",
+          "categories": "Gérer les catégories",
+          "units": "Gérer les unités de vente",
+          "promoCodes": "Gérer les codes promo"
+        },
+        "settings": {
+          "view": "Voir les réglages",
+          "manage": "Modifier commissions et réglages"
+        },
+        "team": {
+          "manage": "Gérer l'équipe et les rôles"
+        }
+      },
+      "recentActions": "Dernières actions"
     }
   },
   "errorCodes": {

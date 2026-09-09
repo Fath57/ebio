@@ -1,4 +1,5 @@
 import * as SecureStore from 'expo-secure-store'
+import { parseAccountBlock, setAccountBlock } from './account-block'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
 const SESSION_KEY = 'ebio_session_token'
@@ -101,5 +102,12 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
     headers.Authorization = `Bearer ${token}`
   }
 
-  return fetch(`${API_URL}${path}`, { ...options, headers })
+  const res = await fetch(`${API_URL}${path}`, { ...options, headers })
+  if (res.status === 403) {
+    // A sanctioned account is refused everywhere: surface it once, app-wide.
+    const block = parseAccountBlock(await res.clone().json().catch(() => null))
+    if (block)
+      setAccountBlock(block)
+  }
+  return res
 }

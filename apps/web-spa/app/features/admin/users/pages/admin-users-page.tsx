@@ -1,28 +1,29 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
-import type { AdminUserItem } from '../utils/users-queries'
+import type { AdminUserItem, UserStatusFilter } from '../utils/users-queries'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { useQuery } from '@tanstack/react-query'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Link, useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
 import { useServerSorting } from '@/features/admin/common/utils/use-server-sorting'
-import { fetchAdminUsersQueryOptions } from '../utils/users-queries'
+import { UserStatusBadge } from '../components/user-status-badge'
+import { fetchAdminUsersQueryOptions, ROLE_VARIANTS, USER_ROLE_OPTIONS } from '../utils/users-queries'
 
 const PAGE_SIZE = 20
 
-const ROLE_OPTIONS = ['ADMIN', 'SUPPLIER', 'BUYER']
-
-const ROLE_VARIANTS: Record<string, 'default' | 'secondary' | 'outline'> = {
-  ADMIN: 'default',
-  SUPPLIER: 'secondary',
-  BUYER: 'outline',
-}
+const STATUS_OPTIONS: Array<{ value: UserStatusFilter, labelKey: string }> = [
+  { value: '', labelKey: 'admin.users.status.filterAll' },
+  { value: 'ACTIVE', labelKey: 'admin.users.status.filterActive' },
+  { value: 'BLOCKED', labelKey: 'admin.users.status.filterBlocked' },
+]
 
 export default function AdminUsersPage() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [role, setRole] = useState('')
+  const [status, setStatus] = useState<UserStatusFilter>('')
   const [page, setPage] = useState(1)
   const resetPage = useCallback(() => setPage(1), [])
   const { sorting, setSorting, sortBy, sortDir } = useServerSorting('createdAt', resetPage)
@@ -31,6 +32,7 @@ export default function AdminUsersPage() {
     fetchAdminUsersQueryOptions({
       q: search || undefined,
       role: role || undefined,
+      status,
       sortBy,
       sortDir,
       page,
@@ -69,9 +71,26 @@ export default function AdminUsersPage() {
       id: 'role',
       header: t('admin.users.columns.role'),
       cell: ({ row }) => (
-        <Badge variant={ROLE_VARIANTS[row.original.role] ?? 'outline'}>
-          {t(`admin.users.role.${row.original.role}`)}
-        </Badge>
+        <span className="flex flex-wrap items-center gap-1">
+          <Badge variant={ROLE_VARIANTS[row.original.role] ?? 'outline'}>
+            {t(`admin.users.role.${row.original.role}`)}
+          </Badge>
+          {row.original.staffRoleName && (
+            <span className="text-xs text-muted-foreground">{row.original.staffRoleName}</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      id: 'status',
+      header: t('admin.users.columns.status'),
+      enableSorting: false,
+      cell: ({ row }) => (
+        <UserStatusBadge
+          status={row.original.status}
+          isBlocked={row.original.isBlocked}
+          suspendedUntil={row.original.suspendedUntil}
+        />
       ),
     },
     {
@@ -84,6 +103,7 @@ export default function AdminUsersPage() {
             <Link
               className="text-primary underline-offset-4 hover:underline"
               to={`/admin/fournisseurs/${row.original.supplierId}`}
+              onClick={event => event.stopPropagation()}
             >
               {row.original.supplierShopName}
             </Link>
@@ -108,21 +128,39 @@ export default function AdminUsersPage() {
       }}
       searchPlaceholder={t('admin.users.searchPlaceholder')}
       filters={(
-        <select
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
-          value={role}
-          onChange={(event) => {
-            setRole(event.target.value)
-            setPage(1)
-          }}
-        >
-          <option value="">{t('admin.users.allRoles')}</option>
-          {ROLE_OPTIONS.map(value => (
-            <option key={value} value={value}>
-              {t(`admin.users.role.${value}`)}
-            </option>
-          ))}
-        </select>
+        <>
+          <select
+            className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+            value={role}
+            aria-label={t('admin.users.columns.role')}
+            onChange={(event) => {
+              setRole(event.target.value)
+              setPage(1)
+            }}
+          >
+            <option value="">{t('admin.users.allRoles')}</option>
+            {USER_ROLE_OPTIONS.map(value => (
+              <option key={value} value={value}>
+                {t(`admin.users.role.${value}`)}
+              </option>
+            ))}
+          </select>
+          <select
+            className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+            value={status}
+            aria-label={t('admin.users.columns.status')}
+            onChange={(event) => {
+              setStatus(event.target.value as UserStatusFilter)
+              setPage(1)
+            }}
+          >
+            {STATUS_OPTIONS.map(option => (
+              <option key={option.value} value={option.value}>
+                {t(option.labelKey)}
+              </option>
+            ))}
+          </select>
+        </>
       )}
       columns={columns}
       data={data?.items ?? []}
@@ -132,6 +170,7 @@ export default function AdminUsersPage() {
       onPageChange={setPage}
       sorting={sorting}
       onSortingChange={setSorting}
+      onRowClick={user => navigate(`/admin/utilisateurs/${user.id}`)}
       isLoading={isLoading}
       emptyLabel={t('admin.users.empty')}
     />

@@ -18,12 +18,39 @@ export type Subjects
     | 'ContentReport'
     | 'Badge'
     | 'Category'
+    | 'Delivery'
+    | 'CourierProfile'
+    | 'Banner'
+    | 'LandingContent'
+    | 'Withdrawal'
+    | 'PromoCode'
+    | 'Settings'
+    | 'Staff'
     | 'all'
 
 export type AppAbility = PureAbility<[Actions, Subjects]>
 
-export type UserRole = 'SUPPLIER' | 'ADMIN'
+export type UserRole = 'BUYER' | 'SUPPLIER' | 'COURIER' | 'ADMIN'
 
+export interface ServerPermission {
+  action: string
+  subject: string
+}
+
+/**
+ * Builds the ability of a staff member from the permissions the API returns
+ * on `GET /users/me`. A super administrator gets `manage all`.
+ */
+export function createAbilityFromPermissions(permissions: ServerPermission[]): AppAbility {
+  const { can, build } = new AbilityBuilder<AppAbility>(PureAbility)
+
+  for (const permission of permissions)
+    can(permission.action as Actions, permission.subject as Subjects)
+
+  return build()
+}
+
+/** Hardcoded abilities for app users; staff abilities come from the server. */
 export function createAbilityForRole(role: UserRole): AppAbility {
   const { can, build } = new AbilityBuilder<AppAbility>(PureAbility)
 
@@ -52,6 +79,11 @@ export function createAbilityForRole(role: UserRole): AppAbility {
 
     case 'ADMIN':
       can('manage', 'all')
+      break
+
+    case 'BUYER':
+    case 'COURIER':
+      // App-only roles: nothing to do in the back office.
       break
   }
 

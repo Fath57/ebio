@@ -137,7 +137,9 @@
       "description": "You do not have permission to access this page.",
       "backHome": "Back to home"
     },
-    "loading": "Loading…"
+    "loading": "Loading…",
+    "show": "Show",
+    "hide": "Hide"
   },
   "userRoles": {
     "BUYER": "Buyer",
@@ -179,7 +181,8 @@
     "wallet": "Wallet",
     "promoCodes": "Promo codes",
     "couriers": "Couriers",
-    "deliveries": "Deliveries"
+    "deliveries": "Deliveries",
+    "team": "Team"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -833,7 +836,7 @@
       "addRoleDescription": "Define a new role with its permissions",
       "editRole": "Edit role",
       "editRoleDescription": "Modify this role's permissions",
-      "permissionsCount": "permissions",
+      "permissionsCount": "{{count}} permission",
       "columns": {
         "name": "Name",
         "description": "Description",
@@ -849,27 +852,23 @@
         "create": "Create role",
         "update": "Update"
       },
-      "permissions": {
-        "subject": "Subject",
-        "all": "All",
-        "actions": {
-          "create": "Create",
-          "read": "Read",
-          "update": "Update",
-          "delete": "Delete",
-          "manage": "Manage"
-        },
-        "subjects": {
-          "product": "Product",
-          "order": "Order",
-          "user": "User",
-          "supplier": "Supplier",
-          "rating": "Rating",
-          "report": "Report",
-          "subscription": "Subscription",
-          "settings": "Settings"
-        }
-      }
+      "permissionsCount_other": "{{count}} permissions",
+      "system": "System",
+      "allRights": "All rights",
+      "members": "Members",
+      "deleteBlocked": "Remove this role from its members first",
+      "systemNotice": "The super administrator role has every right and cannot be edited.",
+      "viewRole": "Super administrator role",
+      "manageTeam": "Manage team",
+      "empty": "No role yet.",
+      "notFound": "Role not found.",
+      "checkAll": "Check all",
+      "uncheckAll": "Uncheck all",
+      "created": "Role created",
+      "updated": "Role updated",
+      "deleted": "Role deleted",
+      "deleteTitle": "Delete this role?",
+      "deleteConfirm": "The role \"{{name}}\" will be permanently deleted."
     },
     "settings": {
       "title": "Platform Settings",
@@ -1144,12 +1143,77 @@
         "phone": "Phone",
         "role": "Role",
         "shop": "Shop",
-        "since": "Joined on"
+        "since": "Joined on",
+        "status": "Status"
       },
       "role": {
         "ADMIN": "Admin",
         "SUPPLIER": "Supplier",
-        "BUYER": "Buyer"
+        "BUYER": "Buyer",
+        "COURIER": "Courier"
+      },
+      "status": {
+        "active": "Active",
+        "suspended": "Suspended",
+        "suspendedUntil": "Suspended until {{date}}",
+        "banned": "Banned",
+        "filterAll": "All",
+        "filterActive": "Active",
+        "filterBlocked": "Suspended or banned"
+      },
+      "detail": {
+        "notFound": "User not found.",
+        "identity": "Identity",
+        "emailVerified": "E-mail verified",
+        "lastLogin": "Last sign-in",
+        "activity": "Activity",
+        "ordersCount": "Orders placed",
+        "courier": "Courier profile",
+        "courierProfile": "View courier profile",
+        "available": "available",
+        "unavailable": "unavailable",
+        "sanction": "Sanction",
+        "untilReinstated": "Until reinstated",
+        "changedBy": "Changed by",
+        "changedAt": "Changed on",
+        "yes": "Yes",
+        "no": "No"
+      },
+      "actions": {
+        "suspend": "Suspend",
+        "ban": "Ban",
+        "reinstate": "Reinstate",
+        "reason": "Reason",
+        "reasonPlaceholder": "Explain the decision (kept in the history)…",
+        "until": "End of suspension",
+        "untilHint": "Leave empty to suspend until reinstated",
+        "suspendConfirm": "{{name}} will not be able to sign in while suspended.",
+        "banConfirm": "The account will no longer be able to sign in to any eBio app.",
+        "reinstateConfirm": "{{name}} will regain access to their account.",
+        "reinstateNote": "Note (optional)",
+        "suspended": "Account suspended",
+        "banned": "Account banned",
+        "reinstated": "Account reinstated",
+        "staffHint": "This member is part of the team: manage their access from the Team page."
+      },
+      "audit": {
+        "title": "History",
+        "empty": "No action recorded",
+        "by": "By {{name}}",
+        "until": "until {{date}}",
+        "USER_SUSPENDED": "Suspension",
+        "USER_BANNED": "Ban",
+        "USER_REINSTATED": "Reinstatement",
+        "STAFF_INVITED": "Invited to the team",
+        "STAFF_ROLE_CHANGED": "Role change",
+        "STAFF_REMOVED": "Removed from the team",
+        "DELIVERY_ASSIGNED": "Courier assigned",
+        "DELIVERY_REASSIGNED": "Courier reassigned",
+        "targetTypes": {
+          "USER": "User",
+          "STAFF": "Team",
+          "DELIVERY": "Delivery"
+        }
       }
     },
     "validation": {
@@ -1422,6 +1486,98 @@
         "mapMissingKey": "Map unavailable: Google Maps key missing (VITE_GOOGLE_MAPS_API_KEY).",
         "timeline": "Timeline"
       }
+    },
+    "team": {
+      "title": "Team",
+      "description": "Back-office members and their roles",
+      "invite": "Invite a member",
+      "inviteTitle": "Invite a member",
+      "inviteDescription": "An invitation e-mail will let them choose their password.",
+      "name": "Name",
+      "email": "E-mail",
+      "role": "Role",
+      "rolePlaceholder": "Choose a role",
+      "send": "Send invitation",
+      "invited": "Invitation sent to {{email}}",
+      "resend": "Resend invitation",
+      "resent": "Invitation resent",
+      "changeRole": "Change role",
+      "changeRoleTitle": "Change the member's role",
+      "roleChanged": "Role updated",
+      "remove": "Remove from team",
+      "removeTitle": "Remove this member from the team?",
+      "removeConfirm": "{{name}} will lose access to the back office. Their account stays usable in the app.",
+      "removed": "Member removed from the team",
+      "superAdmin": "Super administrator",
+      "pending": "Invitation pending",
+      "neverConnected": "Never signed in",
+      "lastLogin": "Seen {{ago}}",
+      "createdAt": "Added on",
+      "you": "you",
+      "member": "Member",
+      "status": "Status",
+      "actions": "Actions",
+      "rightsHint": "A member's rights come from their role.",
+      "manageRoles": "Manage roles",
+      "empty": "No team member yet.",
+      "sections": {
+        "orders": "Orders",
+        "deliveries": "Deliveries",
+        "suppliers": "Shops",
+        "couriers": "Couriers",
+        "users": "Users",
+        "payments": "Payments",
+        "content": "Content",
+        "catalog": "Catalog",
+        "settings": "Settings",
+        "team": "Team"
+      },
+      "permissions": {
+        "orders": {
+          "view": "View orders and disputes",
+          "manage": "Change status, validate, settle a dispute"
+        },
+        "deliveries": {
+          "view": "View deliveries",
+          "manage": "Assign a courier, rebroadcast"
+        },
+        "suppliers": {
+          "view": "View shops and applications",
+          "manage": "Approve, reject, suspend, set the commission"
+        },
+        "couriers": {
+          "view": "View couriers",
+          "manage": "Approve, reject, suspend"
+        },
+        "users": {
+          "view": "View users",
+          "manage": "Suspend, block, reactivate"
+        },
+        "payments": {
+          "view": "View transactions and commissions",
+          "withdrawals": "Process withdrawals"
+        },
+        "content": {
+          "moderation": "Moderate reports",
+          "banners": "Manage banners",
+          "landing": "Manage the website landing page",
+          "broadcast": "Send a notification to everyone"
+        },
+        "catalog": {
+          "products": "View all products",
+          "categories": "Manage categories",
+          "units": "Manage sale units",
+          "promoCodes": "Manage promo codes"
+        },
+        "settings": {
+          "view": "View settings",
+          "manage": "Edit commissions and settings"
+        },
+        "team": {
+          "manage": "Manage the team and roles"
+        }
+      },
+      "recentActions": "Recent actions"
     }
   },
   "errorCodes": {

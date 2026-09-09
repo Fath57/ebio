@@ -19,6 +19,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AppNavigation } from './src/app/navigation-entry'
+import { AccountBlockedScreen } from './src/features/auth/components/account-blocked-screen'
 import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
 import { AppAlertHost } from './src/features/common/components/app-alert'
@@ -26,6 +27,7 @@ import { LocationProvider } from './src/features/common/location-context'
 import { OnboardingScreen } from './src/features/onboarding/components/onboarding-screen'
 import { colors } from './src/theme/theme'
 import { ThemeProvider } from './src/theme/theme-context'
+import { useAccountBlock } from './src/utils/account-block'
 import { hydrateStorageCache, storage } from './src/utils/offline-storage'
 
 SplashScreen.preventAutoHideAsync()
@@ -37,6 +39,7 @@ export default function App(): React.JSX.Element | null {
   const [showSplash, setShowSplash] = useState(true)
   // null = still reading storage; resolved well before the splash ends.
   const [showOnboarding, setShowOnboarding] = useState<boolean | null>(null)
+  const accountBlock = useAccountBlock()
 
   useEffect(() => {
     // Also hydrates the sync storage cache (registration drafts rely on it).
@@ -97,6 +100,7 @@ export default function App(): React.JSX.Element | null {
         <CartProvider>
           <SafeAreaProvider onLayout={onLayoutRootView}>
             <AppNavigation />
+            {accountBlock && <AccountBlockedScreen block={accountBlock} />}
             <AppAlertHost />
             <StatusBar style="auto" />
             {showOnboarding === true && (

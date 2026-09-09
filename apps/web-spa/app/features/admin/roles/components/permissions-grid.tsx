@@ -1,121 +1,77 @@
+import type { CatalogSection } from '../utils/roles-queries'
+import { Button } from '@boilerstone/ui/components/primitives/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Checkbox } from '@boilerstone/ui/components/primitives/checkbox'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
-import * as React from 'react'
+import { Label } from '@boilerstone/ui/components/primitives/label'
 import { useTranslation } from 'react-i18next'
 
-interface Permission {
-  id: string
-  subject: string
-  action: string
-}
-
 interface PermissionsGridProps {
-  permissions: Permission[]
+  sections: CatalogSection[]
   selectedIds: string[]
   onChange: (ids: string[]) => void
+  /** System role: every box checked and locked. */
+  readOnly?: boolean
 }
 
-const SUBJECTS = ['Product', 'Order', 'User', 'Supplier', 'Rating', 'Report', 'Settings']
-const ACTIONS = ['create', 'read', 'update', 'delete', 'manage']
-
-export const PermissionsGrid: React.FC<PermissionsGridProps> = ({
-  permissions,
-  selectedIds,
-  onChange,
-}) => {
+export function PermissionsGrid({ sections, selectedIds, onChange, readOnly = false }: PermissionsGridProps) {
   const { t } = useTranslation()
 
-  const getPermissionId = (subject: string, action: string) => {
-    const perm = permissions.find(p => p.subject === subject && p.action === action)
-    return perm?.id
+  const toggle = (id: string) => {
+    if (selectedIds.includes(id))
+      onChange(selectedIds.filter(selected => selected !== id))
+    else
+      onChange([...selectedIds, id])
   }
 
-  const togglePermission = (permissionId: string) => {
-    if (selectedIds.includes(permissionId)) {
-      onChange(selectedIds.filter(id => id !== permissionId))
-    }
-    else {
-      onChange([...selectedIds, permissionId])
-    }
-  }
-
-  const toggleSubjectAll = (subject: string) => {
-    const subjectPermissions = permissions.filter(p => p.subject === subject)
-    const allSelected = subjectPermissions.every(p => selectedIds.includes(p.id))
+  const toggleSection = (section: CatalogSection) => {
+    const ids = section.permissions.map(p => p.id)
+    const allSelected = ids.every(id => selectedIds.includes(id))
     if (allSelected) {
-      onChange(selectedIds.filter(id => !subjectPermissions.some(p => p.id === id)))
+      onChange(selectedIds.filter(id => !ids.includes(id)))
+      return
     }
-    else {
-      const newIds = [...selectedIds]
-      subjectPermissions.forEach((p) => {
-        if (!newIds.includes(p.id)) {
-          newIds.push(p.id)
-        }
-      })
-      onChange(newIds)
-    }
+    onChange([...selectedIds, ...ids.filter(id => !selectedIds.includes(id))])
   }
 
   return (
-    <div className="overflow-x-auto">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="text-left">
-              {t('admin.roles.permissions.subject')}
-            </TableHead>
-            {ACTIONS.map(action => (
-              <TableHead key={action} className="text-center">
-                {t(`admin.roles.permissions.actions.${action}`)}
-              </TableHead>
-            ))}
-            <TableHead className="text-center">
-              {t('admin.roles.permissions.all')}
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {SUBJECTS.map((subject) => {
-            const subjectPermissions = permissions.filter(p => p.subject === subject)
-            const allSelected = subjectPermissions.length > 0 && subjectPermissions.every(p => selectedIds.includes(p.id))
-            return (
-              <TableRow key={subject}>
-                <TableCell className="font-medium">
-                  {t(`admin.roles.permissions.subjects.${subject.toLowerCase()}`)}
-                </TableCell>
-                {ACTIONS.map((action) => {
-                  const permId = getPermissionId(subject, action)
-                  return (
-                    <TableCell key={action} className="text-center">
-                      {permId
-                        ? (
-                            <Checkbox
-                              checked={selectedIds.includes(permId)}
-                              onCheckedChange={() => togglePermission(permId)}
-                            />
-                          )
-                        : <span className="text-muted-foreground">-</span>}
-                    </TableCell>
-                  )
-                })}
-                <TableCell className="text-center">
-                  <Checkbox
-                    checked={allSelected}
-                    onCheckedChange={() => toggleSubjectAll(subject)}
-                  />
-                </TableCell>
-              </TableRow>
-            )
-          })}
-        </TableBody>
-      </Table>
+    <div className="grid gap-4 md:grid-cols-2">
+      {sections.map((section) => {
+        const allSelected = section.permissions.every(p => readOnly || selectedIds.includes(p.id))
+        return (
+          <Card key={section.key} className="gap-4 py-4">
+            <CardHeader className="flex flex-row items-center justify-between gap-2">
+              <CardTitle className="text-base">
+                {t(`admin.team.sections.${section.key}`, { defaultValue: section.key })}
+              </CardTitle>
+              {!readOnly && (
+                <Button type="button" variant="ghost" size="sm" onClick={() => toggleSection(section)}>
+                  {allSelected ? t('admin.roles.uncheckAll') : t('admin.roles.checkAll')}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {section.permissions.map((permission) => {
+                const inputId = `permission-${permission.id}`
+                return (
+                  <div key={permission.id} className="flex items-start gap-3">
+                    <Checkbox
+                      id={inputId}
+                      checked={readOnly || selectedIds.includes(permission.id)}
+                      disabled={readOnly}
+                      onCheckedChange={() => toggle(permission.id)}
+                    />
+                    <Label htmlFor={inputId} className="font-normal leading-snug">
+                      {t(`admin.team.permissions.${section.key}.${permission.key}`, {
+                        defaultValue: permission.description ?? permission.key,
+                      })}
+                    </Label>
+                  </div>
+                )
+              })}
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

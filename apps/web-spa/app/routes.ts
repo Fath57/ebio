@@ -65,6 +65,7 @@ export default [
 
       // Admin — Utilisateurs
       route('admin/utilisateurs', 'features/admin/users/pages/admin-users-page.tsx'),
+      route('admin/utilisateurs/:userId', 'features/admin/users/pages/admin-user-detail-page.tsx'),
 
       // Admin — Bannières
       route('admin/bannieres', 'features/admin/banners/pages/banners-page.tsx'),
@@ -96,6 +97,7 @@ export default [
 
       // Admin — Settings & Roles
       route('admin/parametres', 'features/admin/settings/pages/admin-settings-page.tsx'),
+      route('admin/equipe', 'features/admin/team/pages/team-page.tsx'),
       route('admin/roles', 'features/admin/roles/pages/roles-page.tsx'),
       route('admin/roles/nouveau', 'features/admin/roles/pages/role-create-page.tsx'),
       route('admin/roles/:roleId/modifier', 'features/admin/roles/pages/role-edit-page.tsx'),
