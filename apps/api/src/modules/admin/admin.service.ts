@@ -1061,6 +1061,7 @@ export class AdminService {
 
   async getUsers(params: {
     role?: string
+    status?: string
     q?: string
     sortBy?: string
     sortDir?: string
@@ -1073,6 +1074,13 @@ export class AdminService {
     if (params.role) {
       conditions.push(`u.role = ?`)
       queryParams.push(params.role)
+    }
+    if (params.status === 'BLOCKED') {
+      // Effective standing: a suspension past its end date is active again.
+      conditions.push(`(u.status = 'BANNED' OR (u.status = 'SUSPENDED' AND (u.suspended_until IS NULL OR u.suspended_until > NOW())))`)
+    }
+    else if (params.status === 'ACTIVE') {
+      conditions.push(`(u.status = 'ACTIVE' OR (u.status = 'SUSPENDED' AND u.suspended_until IS NOT NULL AND u.suspended_until <= NOW()))`)
     }
     if (params.q) {
       conditions.push(`(u.name ILIKE ? OR u.email ILIKE ? OR u.phone ILIKE ?)`)
@@ -1091,10 +1099,15 @@ export class AdminService {
 
     const rows = await this.em.getConnection().execute(
       `SELECT u.id, u.name, u.email, u.phone, u.role, u."emailVerified" as email_verified,
-              u."createdAt" as created_at,
-              s.id as supplier_id, s.shop_name as supplier_shop_name
+              u."createdAt" as created_at, u."lastLoginAt" as last_login_at,
+              u.status, u.suspended_until, u.status_reason,
+              CASE WHEN u.role = 'ADMIN' THEN r.name END as staff_role_name,
+              s.id as supplier_id, s.shop_name as supplier_shop_name,
+              cp.id as courier_id
        FROM users u
        LEFT JOIN suppliers s ON s.user_id = u.id
+       LEFT JOIN courier_profiles cp ON cp.user_id = u.id
+       LEFT JOIN roles r ON r.id = u.role_id
        WHERE ${whereClause}
        ${this.buildOrderBy(USER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
        LIMIT ? OFFSET ?`,
@@ -1112,6 +1125,14 @@ export class AdminService {
         createdAt: this.toIso(r.created_at) ?? '',
         supplierId: (r.supplier_id as string) ?? null,
         supplierShopName: (r.supplier_shop_name as string) ?? null,
+        courierId: (r.courier_id as string) ?? null,
+        staffRoleName: (r.staff_role_name as string) ?? null,
+        lastLoginAt: this.toIso(r.last_login_at),
+        status: r.status as string,
+        isBlocked: r.status === 'BANNED'
+          || (r.status === 'SUSPENDED' && (!r.suspended_until || new Date(r.suspended_until as string).getTime() > Date.now())),
+        suspendedUntil: this.toIso(r.suspended_until),
+        statusReason: (r.status_reason as string) ?? null,
       })),
       total,
       page: params.page,

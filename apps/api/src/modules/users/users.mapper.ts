@@ -2,8 +2,11 @@ import type { User } from '../auth/auth.entity'
 import type { UserResponse, UserSummary } from './contracts/user.contract'
 
 export class UserMapper {
-  static toResponse(user: User): UserResponse {
+  static toResponse(user: User, permissions: Array<{ action: string, subject: string }> = []): UserResponse {
+    const staffRole = user.userRole as { id: string, name: string } | undefined
     return {
+      staffRole: user.role === 'ADMIN' && staffRole?.name ? { id: staffRole.id, name: staffRole.name } : null,
+      permissions,
       id: user.id,
       name: user.name,
       email: user.email ?? null,

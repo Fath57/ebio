@@ -2,6 +2,7 @@ import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
+import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
@@ -32,6 +33,7 @@ export class AdminCouriersController {
     private readonly walletService: WalletService,
   ) {}
 
+  @CanRead('CourierProfile')
   @Get('couriers')
   async list(
     @Query('status') status?: string,
@@ -49,6 +51,7 @@ export class AdminCouriersController {
     }
   }
 
+  @CanRead('CourierProfile')
   @Get('couriers/:id')
   async getById(@Param('id') id: string) {
     const { profile, stats, identityDocument } = await this.adminCouriersService.getById(id)
@@ -63,6 +66,7 @@ export class AdminCouriersController {
     }
   }
 
+  @CanManage('CourierProfile')
   @Post('couriers/:id/approve')
   async approve(
     @Session() session: LoggedInBetterAuthSession,
@@ -72,6 +76,7 @@ export class AdminCouriersController {
     return DeliveriesMapper.toCourierProfileResponse(profile)
   }
 
+  @CanManage('CourierProfile')
   @Post('couriers/:id/reject')
   async reject(
     @Session() session: LoggedInBetterAuthSession,
@@ -82,6 +87,7 @@ export class AdminCouriersController {
     return DeliveriesMapper.toCourierProfileResponse(profile)
   }
 
+  @CanManage('CourierProfile')
   @Post('couriers/:id/suspend')
   async suspend(
     @Session() session: LoggedInBetterAuthSession,
@@ -91,6 +97,7 @@ export class AdminCouriersController {
     return DeliveriesMapper.toCourierProfileResponse(profile)
   }
 
+  @CanManage('CourierProfile')
   @Post('couriers/:id/reactivate')
   async reactivate(
     @Session() session: LoggedInBetterAuthSession,
@@ -100,6 +107,7 @@ export class AdminCouriersController {
     return DeliveriesMapper.toCourierProfileResponse(profile)
   }
 
+  @CanRead('Delivery')
   @Get('deliveries')
   async listDeliveries(
     @Query('status') status?: string,
@@ -121,6 +129,7 @@ export class AdminCouriersController {
     return { deliveries, total: result.total }
   }
 
+  @CanRead('Delivery')
   @Get('deliveries/:id')
   async getDelivery(@Param('id') id: string) {
     const delivery = await this.adminDeliveriesService.getById(id)
@@ -134,6 +143,7 @@ export class AdminCouriersController {
   }
 
   /** Couriers ranked around the pickup point, for the assignment page. */
+  @CanRead('Delivery')
   @Get('deliveries/:id/candidates')
   async listCandidates(
     @Param('id') id: string,
@@ -151,6 +161,7 @@ export class AdminCouriersController {
     })
   }
 
+  @CanManage('Delivery')
   @Post('deliveries/:id/assign')
   async assignDelivery(
     @Session() session: LoggedInBetterAuthSession,
@@ -162,6 +173,7 @@ export class AdminCouriersController {
     return DeliveriesMapper.toResponse(delivery, 'admin', events)
   }
 
+  @CanManage('Delivery')
   @Post('deliveries/:id/rebroadcast')
   async rebroadcastDelivery(
     @Session() session: LoggedInBetterAuthSession,

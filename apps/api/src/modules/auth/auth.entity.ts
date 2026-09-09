@@ -18,9 +18,17 @@ export enum UserRole {
   ADMIN = 'ADMIN',
 }
 
+/**
+ * Account-level standing, independent of the supplier/courier profile
+ * validation. SUSPENDED is temporary (see `suspendedUntil`), BANNED is not.
+ * Plain string column on purpose: no CHECK constraint to migrate when a
+ * value is added.
+ */
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED'
+
 @Entity({ tableName: 'users' })
 export class User {
-  [OptionalProps]?: 'id' | 'emailVerified' | 'role' | 'biometricEnabled' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'emailVerified' | 'role' | 'biometricEnabled' | 'status' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -60,11 +68,38 @@ export class User {
   @Property({ fieldName: 'lastLoginAt', nullable: true })
   lastLoginAt?: Date
 
+  @Property({ type: 'string', length: 20, default: 'ACTIVE' })
+  status: UserStatus = 'ACTIVE'
+
+  /** Shown to the user when the account is suspended or banned. */
+  @Property({ fieldName: 'status_reason', nullable: true })
+  statusReason?: string
+
+  /** End of a temporary suspension; null for a ban or an active account. */
+  @Property({ fieldName: 'suspended_until', nullable: true })
+  suspendedUntil?: Date
+
+  @Property({ fieldName: 'status_changed_at', nullable: true })
+  statusChangedAt?: Date
+
+  /** Staff member who last changed the status. */
+  @Property({ fieldName: 'status_changed_by', nullable: true })
+  statusChangedBy?: string
+
   @Property({ fieldName: 'createdAt' })
   createdAt: Date = new Date()
 
   @Property({ fieldName: 'updatedAt', onUpdate: () => new Date() })
   updatedAt: Date = new Date()
+
+  /** A suspension past its end date no longer blocks anything. */
+  isBlocked(): boolean {
+    if (this.status === 'BANNED')
+      return true
+    if (this.status === 'SUSPENDED')
+      return !this.suspendedUntil || this.suspendedUntil.getTime() > Date.now()
+    return false
+  }
 }
 
 @Entity({ tableName: 'session' })

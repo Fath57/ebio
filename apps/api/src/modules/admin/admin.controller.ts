@@ -24,7 +24,7 @@ import {
   Res,
   UseGuards,
 } from '@nestjs/common'
-import { CanManage } from '../../common/decorators/check-permissions.decorator'
+import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
@@ -47,7 +47,6 @@ import {
 @Controller('admin')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
 @Roles('ADMIN')
-@CanManage('all')
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
@@ -59,6 +58,7 @@ export class AdminController {
     return this.adminService.getDashboardKpis()
   }
 
+  @CanRead('Supplier')
   @Get('validations')
   async getValidations(
     @Query('status') status?: string,
@@ -72,6 +72,7 @@ export class AdminController {
     })
   }
 
+  @CanManage('Supplier')
   @Patch('validations/:supplierId')
   async validateSupplier(
     @Param('supplierId') supplierId: string,
@@ -82,6 +83,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanManage('ContentReport')
   @Get('reports')
   async getReports(
     @Query('targetType') targetType?: string,
@@ -97,6 +99,7 @@ export class AdminController {
     })
   }
 
+  @CanManage('ContentReport')
   @Patch('reports/:id')
   async resolveReport(
     @Param('id') id: string,
@@ -107,6 +110,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanRead('Order')
   @Get('disputes')
   async getDisputes(
     @Query('status') status?: string,
@@ -120,6 +124,7 @@ export class AdminController {
     })
   }
 
+  @CanManage('Order')
   @Patch('disputes/:id')
   async resolveDispute(
     @Param('id') id: string,
@@ -130,6 +135,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanManage('Supplier')
   @Patch('suppliers/:id/suspend')
   async suspendSupplier(
     @Param('id') id: string,
@@ -141,6 +147,7 @@ export class AdminController {
   }
 
   /** Negotiated rate (fraction); null goes back to the category grid. */
+  @CanManage('Supplier')
   @Patch('suppliers/:id/commission-rate')
   async updateSupplierCommissionRate(
     @Param('id') id: string,
@@ -150,6 +157,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanManage('Supplier')
   @Patch('suppliers/:id/reinstate')
   async reinstateSupplier(
     @Param('id') id: string,
@@ -159,6 +167,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanRead('Payment')
   @Get('transactions')
   async getTransactions(
     @Query('from') from?: string,
@@ -183,6 +192,7 @@ export class AdminController {
     })
   }
 
+  @CanRead('Payment')
   @Get('commissions')
   async getCommissions(
     @Query('from') from?: string,
@@ -200,6 +210,7 @@ export class AdminController {
     })
   }
 
+  @CanRead('Payment')
   @Get('commissions/orders')
   async getCommissionOrders(
     @Query('from') from?: string,
@@ -226,6 +237,7 @@ export class AdminController {
     })
   }
 
+  @CanRead('Order')
   @Get('orders')
   async getOrders(
     @Query('status') status?: string,
@@ -247,12 +259,14 @@ export class AdminController {
     })
   }
 
+  @CanRead('Order')
   @Get('orders/:id')
   async getOrderById(@Param('id') id: string) {
     return this.adminService.getOrderById(id)
   }
 
   /** Admins can set any status: their job is unblocking real-world messes. */
+  @CanManage('Order')
   @Patch('orders/:id/status')
   async updateOrderStatus(
     @Param('id') id: string,
@@ -262,6 +276,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanRead('Supplier')
   @Get('suppliers')
   async getSuppliers(
     @Query('status') status?: string,
@@ -281,6 +296,7 @@ export class AdminController {
     })
   }
 
+  @CanRead('Supplier')
   @Get('suppliers/:id')
   async getSupplierById(@Param('id') id: string) {
     return this.adminService.getSupplierById(id)
@@ -291,6 +307,7 @@ export class AdminController {
    * hides anything not on sale nearby, neither of which suits an editor
    * choosing what to feature.
    */
+  @CanRead('Product')
   @Get('products')
   async getProducts(
     @Query('q') q?: string,
@@ -300,9 +317,11 @@ export class AdminController {
     return this.adminService.getProducts({ q, supplierId, limit: Number(limit) })
   }
 
+  @CanRead('User')
   @Get('users')
   async getUsers(
     @Query('role') role?: string,
+    @Query('status') status?: string,
     @Query('q') q?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
@@ -311,6 +330,7 @@ export class AdminController {
   ) {
     return this.adminService.getUsers({
       role,
+      status,
       q,
       sortBy,
       sortDir,
@@ -319,6 +339,7 @@ export class AdminController {
     })
   }
 
+  @CanRead('Payment')
   @Get('payments')
   async getPayments(
     @Query('status') status?: string,
@@ -349,11 +370,13 @@ export class AdminController {
     })
   }
 
+  @CanRead('Settings')
   @Get('settings')
   async getSettings() {
     return this.adminService.getSettings()
   }
 
+  @CanManage('Settings')
   @Put('settings/commissions')
   async updateCommissions(
     @TypedBody(commissionRateSchema) body: CommissionRates,
@@ -362,6 +385,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanManage('Settings')
   @Put('settings/delivery-commission')
   async updateDeliveryCommission(
     @TypedBody(deliveryCommissionSchema) body: DeliveryCommissionRateInput,
@@ -370,6 +394,7 @@ export class AdminController {
     return { success: true }
   }
 
+  @CanManage('Notification')
   @Post('notifications/broadcast')
   async broadcastNotification(
     @TypedBody(broadcastNotificationSchema) body: BroadcastNotification,

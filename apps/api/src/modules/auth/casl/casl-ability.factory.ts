@@ -27,46 +27,55 @@ export type Subjects
     | 'LandingContent'
     | 'Delivery'
     | 'CourierProfile'
+    // Back-office only subjects (see admin-permissions.catalog.ts)
+    | 'Withdrawal'
+    | 'PromoCode'
+    | 'Settings'
+    | 'Staff'
     | 'all'
 
 export type Actions = 'create' | 'read' | 'update' | 'delete' | 'manage'
 
 export type AppAbility = MongoAbility<[Actions, Subjects]>
 
+export interface GrantedPermission {
+  action: Actions
+  subject: Subjects
+}
+
 @Injectable()
 export class CaslAbilityFactory {
   constructor(private readonly em: EntityManager) {}
 
+  /**
+   * The enum role is the audience (buyer, supplier, courier, staff) and keeps
+   * its hardcoded abilities for the apps. A staff member (`ADMIN`) draws its
+   * rights from the DB role assigned by the back-office; without one it is a
+   * super administrator, which keeps the historical accounts working.
+   */
   async createForUser(user: User): Promise<AppAbility> {
     const builder = new AbilityBuilder<AppAbility>(createMongoAbility)
     const { can, build } = builder
 
-    // Try to load role with permissions from DB
-    if (user.userRole) {
-      const role = await this.em.findOne(
-        Role,
-        { id: (user.userRole as unknown as Role).id ?? user.userRole },
-        { populate: ['permissions'] },
-      )
-
-      if (role) {
-        for (const permission of role.permissions.getItems()) {
-          const conditions = permission.conditions
-            ? this.interpolateConditions(permission.conditions, user)
-            : undefined
-          // eslint-disable-next-line ts/no-explicit-any
-          can(permission.action as Actions, permission.subject as Subjects, conditions as any)
-        }
+    if (user.role === UserRole.ADMIN) {
+      const role = await this.loadStaffRole(user)
+      if (!role) {
+        can('manage', 'all')
         return build()
       }
+      for (const permission of role.permissions.getItems()) {
+        const conditions = permission.conditions
+          ? this.interpolateConditions(permission.conditions, user)
+          : undefined
+        // eslint-disable-next-line ts/no-explicit-any
+        can(permission.action as Actions, permission.subject as Subjects, conditions as any)
+      }
+      return build()
     }
 
-    // Fallback to enum-based role definitions
+    // App users: the DB role (seeded demo accounts carry one) is ignored, the
+    // enum alone decides. Keeping both sources for them made abilities drift.
     switch (user.role) {
-      case UserRole.ADMIN:
-        can('manage', 'all')
-        break
-
       case UserRole.SUPPLIER:
         // Also covers a supplier validated as courier: the courier app must
         // keep working while the role stays SUPPLIER.
@@ -162,6 +171,36 @@ export class CaslAbilityFactory {
     }
 
     return build()
+  }
+
+  /**
+   * Flat list of what the user may do, for clients that gate their UI
+   * (back-office nav, buttons). Only staff members get an explicit list; app
+   * users rely on their audience and get an empty array.
+   */
+  async listGrantedPermissions(user: User): Promise<GrantedPermission[]> {
+    if (user.role !== UserRole.ADMIN) {
+      return []
+    }
+    const role = await this.loadStaffRole(user)
+    if (!role) {
+      return [{ action: 'manage', subject: 'all' }]
+    }
+    return role.permissions.getItems().map(p => ({
+      action: p.action as Actions,
+      subject: p.subject as Subjects,
+    }))
+  }
+
+  private async loadStaffRole(user: User): Promise<Role | null> {
+    if (!user.userRole) {
+      return null
+    }
+    return this.em.findOne(
+      Role,
+      { id: (user.userRole as unknown as Role).id ?? user.userRole },
+      { populate: ['permissions'] },
+    )
   }
 
   private interpolateConditions(

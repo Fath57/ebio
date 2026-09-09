@@ -2,6 +2,7 @@ import type { Order } from '../orders/entities/order.entity'
 import type { CourierCandidate } from './contracts/delivery.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import { AuditService } from '../admin/audit.service'
 import { User } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -52,6 +53,7 @@ export class AdminDeliveriesService {
     private readonly em: EntityManager,
     private readonly notificationsService: NotificationsService,
     private readonly dispatchService: DispatchService,
+    private readonly auditService: AuditService,
   ) {}
 
   async getById(deliveryId: string): Promise<Delivery> {
@@ -219,6 +221,14 @@ export class AdminDeliveriesService {
     })
 
     await this.notifyAssignment(updated, courier, released, note)
+    await this.auditService.record({
+      actorUserId: adminId,
+      action: released ? 'DELIVERY_REASSIGNED' : 'DELIVERY_ASSIGNED',
+      targetType: 'delivery',
+      targetId: deliveryId,
+      reason: note,
+      payload: { courierId: courier.id, releasedCourierId: released?.id ?? null, orderNumber: updated.order.orderNumber },
+    })
     return updated
   }
 

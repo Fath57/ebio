@@ -73,8 +73,9 @@ function buildService(delivery: TestDelivery, courier: TestCourier | null) {
   }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
   const dispatch = { broadcast: vi.fn().mockResolvedValue(1) }
-  const service = new AdminDeliveriesService(em as never, notifications as never, dispatch as never)
-  return { service, em, execute, notifications, dispatch, created }
+  const audit = { record: vi.fn().mockResolvedValue(undefined) }
+  const service = new AdminDeliveriesService(em as never, notifications as never, dispatch as never, audit as never)
+  return { service, em, execute, notifications, dispatch, created, audit }
 }
 
 describe('assign', () => {
@@ -85,7 +86,7 @@ describe('assign', () => {
   it('assigns an unclaimed delivery and notifies courier, buyer and supplier', async () => {
     const delivery = buildDelivery()
     const courier = buildCourier()
-    const { service, execute, notifications, created } = buildService(delivery, courier)
+    const { service, execute, notifications, created, audit } = buildService(delivery, courier)
 
     await service.assign(delivery.id, courier.id, 'admin-1', 'Client pressé')
 
@@ -99,6 +100,7 @@ describe('assign', () => {
     expect(recipients).toEqual(['user-courier-1', 'user-buyer', 'user-supplier'])
     // The courier push must reach the courier app even though the type belongs to buyer/supplier audiences.
     expect(notifications.send.mock.calls[0][0].apps).toEqual(['courier'])
+    expect(audit.record).toHaveBeenCalledWith(expect.objectContaining({ action: 'DELIVERY_ASSIGNED', targetId: delivery.id }))
   })
 
   it('reassigns an accepted delivery and warns the released courier', async () => {

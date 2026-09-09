@@ -2,6 +2,7 @@
 import type { Dictionary } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/core'
 import { Seeder } from '@mikro-orm/seeder'
+import { ALL_CATALOG_PERMISSIONS, STAFF_ROLES } from '../modules/auth/casl/admin-permissions.catalog'
 
 const PERMISSIONS = [
   { action: 'create', subject: 'Product', description: 'Creer un produit' },
@@ -162,9 +163,21 @@ const ROLES = [
   },
 ]
 
+/** App audience roles from this file, staff roles from the shared catalogue. */
+function allRoles() {
+  const appRoles = ROLES.filter(r => !STAFF_ROLES.some(s => s.name === r.name))
+  return [...appRoles, ...STAFF_ROLES.map(r => ({ ...r, isDefault: false }))]
+}
+
+function allPermissions() {
+  const seen = new Set(PERMISSIONS.map(p => `${p.action}:${p.subject}`))
+  const extra = ALL_CATALOG_PERMISSIONS.filter(p => !seen.has(`${p.action}:${p.subject}`))
+  return [...PERMISSIONS, ...extra.map(p => ({ action: p.action, subject: p.subject, description: p.description }))]
+}
+
 export class RbacSeeder extends Seeder {
   async run(em: EntityManager, _context: Dictionary): Promise<void> {
-    for (const perm of PERMISSIONS) {
+    for (const perm of allPermissions()) {
       await em.getConnection().execute(
         `INSERT INTO permissions (id, action, subject, description, created_at)
          VALUES (gen_random_uuid(), ?, ?, ?, NOW())
@@ -172,9 +185,9 @@ export class RbacSeeder extends Seeder {
         [perm.action, perm.subject, perm.description],
       )
     }
-    console.info(`Seeded ${PERMISSIONS.length} permissions`)
+    console.info(`Seeded ${allPermissions().length} permissions`)
 
-    for (const roleDef of ROLES) {
+    for (const roleDef of allRoles()) {
       await em.getConnection().execute(
         `INSERT INTO roles (id, name, description, is_default, created_at, updated_at)
          VALUES (gen_random_uuid(), ?, ?, ?, NOW(), NOW())
@@ -205,6 +218,6 @@ export class RbacSeeder extends Seeder {
         )
       }
     }
-    console.info(`Seeded ${ROLES.length} roles with permissions`)
+    console.info(`Seeded ${allRoles().length} roles with permissions`)
   }
 }

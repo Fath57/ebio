@@ -1,0 +1,19 @@
+<%- include('partials/heading', { text: 'Bienvenue dans l\'équipe eBio', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<p>
+  <strong><%= invitedBy %></strong> vous a ajouté à l'équipe du back-office eBio
+  avec le rôle <strong><%= roleName %></strong><% if (roleDescription) { %> (<%= roleDescription %>)<% } %>.
+</p>
+
+<p>
+  Pour activer votre accès, choisissez votre mot de passe en cliquant sur le bouton ci-dessous.
+  Vous vous connecterez ensuite avec votre adresse e-mail.
+</p>
+
+<%- include('partials/button', { href: setPasswordUrl, label: 'Choisir mon mot de passe', variant: 'primary' }) %>
+
+<p style="font-size: 13px; color: #9B9890;">
+  Ce lien est valable 7 jours. Si vous n'attendiez pas cette invitation, ignorez simplement cet e-mail.
+</p>

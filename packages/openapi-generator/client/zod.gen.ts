@@ -350,6 +350,38 @@ export const zCreateDispute = z.object({
 });
 
 /**
+ * SuspendUser
+ *
+ * Temporarily block an account
+ */
+export const zSuspendUser = z.object({
+  reason: z.string().min(3).max(255),
+  until: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+      ),
+  ),
+});
+
+/**
+ * BanUser
+ *
+ * Permanently block an account
+ */
+export const zBanUser = z.object({
+  reason: z.string().min(3).max(255),
+});
+
+/**
+ * ReinstateUser
+ */
+export const zReinstateUser = z.object({
+  note: z.optional(z.string().max(255)),
+});
+
+/**
  * SuspendSupplier
  *
  * Reason for suspending a supplier
@@ -443,6 +475,8 @@ export const zOtpVerify = z.object({
 
 /**
  * CreateRole
+ *
+ * A staff role and the permissions it grants
  */
 export const zCreateRole = z.object({
   name: z.string().min(2).max(50),
@@ -484,6 +518,36 @@ export const zAssignRole = z.object({
     .regex(
       /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
     ),
+  roleId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+});
+
+/**
+ * InviteStaff
+ *
+ * Add a member to the back-office team
+ */
+export const zInviteStaff = z.object({
+  name: z.string().min(2).max(100),
+  email: z
+    .email()
+    .regex(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+    ),
+  roleId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+});
+
+/**
+ * ChangeStaffRole
+ */
+export const zChangeStaffRole = z.object({
   roleId: z
     .uuid()
     .regex(
@@ -5966,6 +6030,7 @@ export const zAdminControllerGetUsersData = z.object({
   path: z.optional(z.never()),
   query: z.object({
     role: z.string(),
+    status: z.string(),
     q: z.string(),
     sortBy: z.string(),
     sortDir: z.string(),
@@ -6028,6 +6093,59 @@ export const zAdminControllerBroadcastNotificationData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminUsersControllerGetByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminUsersControllerSuspendData = z.object({
+  body: z.object({
+    reason: z.string().min(3).max(255),
+    until: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminUsersControllerBanData = z.object({
+  body: z.object({
+    reason: z.string().min(3).max(255),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminUsersControllerReinstateData = z.object({
+  body: z.object({
+    note: z.optional(z.string().max(255)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminUsersControllerRecentAuditData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    actorId: z.string(),
+  }),
+});
+
 export const zRolesControllerFindAllData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -6052,7 +6170,7 @@ export const zRolesControllerCreateData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zRolesControllerGetAllPermissionsData = z.object({
+export const zRolesControllerGetCatalogData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -6100,5 +6218,59 @@ export const zRolesControllerAssignRoleData = z.object({
       ),
   }),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zStaffControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zStaffControllerInviteData = z.object({
+  body: z.object({
+    name: z.string().min(2).max(100),
+    email: z
+      .email()
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+    roleId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zStaffControllerResendInvitationData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zStaffControllerChangeRoleData = z.object({
+  body: z.object({
+    roleId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zStaffControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });

@@ -8,6 +8,7 @@ import { SentryGlobalFilter, SentryModule } from '@sentry/nestjs/setup'
 import { LoggerModule } from 'nestjs-pino'
 import { AppController } from './app.controller'
 import { AdminModule } from './modules/admin/admin.module'
+import { AuditModule } from './modules/admin/audit.module'
 import { AiModule } from './modules/ai/ai.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { RolesModule } from './modules/auth/roles/roles.module'
@@ -137,6 +138,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     CommunityModule,
     TrainingModule,
     AdminModule,
+    AuditModule,
     RolesModule,
     UsersModule,
     MediaModule,

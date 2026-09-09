@@ -5,6 +5,10 @@ import { config } from '../../config/env.config'
 
 export type TemplateName
   = 'reset-password'
+    | 'order-invoice'
+    | 'staff-invitation'
+    | 'account-suspended'
+    | 'account-reinstated'
     | 'verify-email'
     | 'welcome'
     | 'otp-code'

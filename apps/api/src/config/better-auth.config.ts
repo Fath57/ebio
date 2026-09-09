@@ -104,6 +104,24 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
           required: false,
           input: false,
         },
+        // Account standing rides on the session so AuthGuard needs no extra query.
+        status: {
+          type: 'string',
+          defaultValue: 'ACTIVE',
+          input: false,
+        },
+        statusReason: {
+          type: 'string',
+          required: false,
+          input: false,
+          fieldName: 'status_reason',
+        },
+        suspendedUntil: {
+          type: 'date',
+          required: false,
+          input: false,
+          fieldName: 'suspended_until',
+        },
       },
     },
     rateLimit: {

@@ -84,6 +84,16 @@ import type {
   AdminPromoCodesControllerRemoveResponses,
   AdminPromoCodesControllerUpdateData,
   AdminPromoCodesControllerUpdateResponses,
+  AdminUsersControllerBanData,
+  AdminUsersControllerBanResponses,
+  AdminUsersControllerGetByIdData,
+  AdminUsersControllerGetByIdResponses,
+  AdminUsersControllerRecentAuditData,
+  AdminUsersControllerRecentAuditResponses,
+  AdminUsersControllerReinstateData,
+  AdminUsersControllerReinstateResponses,
+  AdminUsersControllerSuspendData,
+  AdminUsersControllerSuspendResponses,
   AiExampleControllerChatData,
   AiExampleControllerChatResponses,
   AiExampleControllerGenerateObjectData,
@@ -404,8 +414,8 @@ import type {
   RolesControllerDeleteResponses,
   RolesControllerFindAllData,
   RolesControllerFindAllResponses,
-  RolesControllerGetAllPermissionsData,
-  RolesControllerGetAllPermissionsResponses,
+  RolesControllerGetCatalogData,
+  RolesControllerGetCatalogResponses,
   RolesControllerUpdateData,
   RolesControllerUpdateResponses,
   SalesPointsControllerCreateData,
@@ -424,6 +434,16 @@ import type {
   SearchControllerGetCategoriesResponses,
   SearchControllerSearchProductsData,
   SearchControllerSearchProductsResponses,
+  StaffControllerChangeRoleData,
+  StaffControllerChangeRoleResponses,
+  StaffControllerInviteData,
+  StaffControllerInviteResponses,
+  StaffControllerListData,
+  StaffControllerListResponses,
+  StaffControllerRemoveData,
+  StaffControllerRemoveResponses,
+  StaffControllerResendInvitationData,
+  StaffControllerResendInvitationResponses,
   SupplierPromoCodesControllerCreateData,
   SupplierPromoCodesControllerCreateResponses,
   SupplierPromoCodesControllerListData,
@@ -3881,6 +3901,80 @@ export const adminControllerBroadcastNotification = <
     },
   });
 
+export const adminUsersControllerGetById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminUsersControllerGetByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminUsersControllerGetByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/users/{id}", ...options });
+
+export const adminUsersControllerSuspend = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminUsersControllerSuspendData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminUsersControllerSuspendResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/users/{id}/suspend",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminUsersControllerBan = <ThrowOnError extends boolean = false>(
+  options: Options<AdminUsersControllerBanData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminUsersControllerBanResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/users/{id}/ban",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminUsersControllerReinstate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminUsersControllerReinstateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminUsersControllerReinstateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/users/{id}/reinstate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminUsersControllerRecentAudit = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminUsersControllerRecentAuditData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminUsersControllerRecentAuditResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/users/audit/recent", ...options });
+
 export const rolesControllerFindAll = <ThrowOnError extends boolean = false>(
   options?: Options<RolesControllerFindAllData, ThrowOnError>,
 ) =>
@@ -3906,13 +4000,11 @@ export const rolesControllerCreate = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const rolesControllerGetAllPermissions = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<RolesControllerGetAllPermissionsData, ThrowOnError>,
+export const rolesControllerGetCatalog = <ThrowOnError extends boolean = false>(
+  options?: Options<RolesControllerGetCatalogData, ThrowOnError>,
 ) =>
   (options?.client ?? client).get<
-    RolesControllerGetAllPermissionsResponses,
+    RolesControllerGetCatalogResponses,
     unknown,
     ThrowOnError
   >({ url: "/api/admin/roles/permissions", ...options });
@@ -3957,3 +4049,64 @@ export const rolesControllerAssignRole = <ThrowOnError extends boolean = false>(
       ...options.headers,
     },
   });
+
+export const staffControllerList = <ThrowOnError extends boolean = false>(
+  options?: Options<StaffControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    StaffControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/staff", ...options });
+
+export const staffControllerInvite = <ThrowOnError extends boolean = false>(
+  options: Options<StaffControllerInviteData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    StaffControllerInviteResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/staff",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const staffControllerResendInvitation = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<StaffControllerResendInvitationData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    StaffControllerResendInvitationResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/staff/{id}/resend-invitation", ...options });
+
+export const staffControllerChangeRole = <ThrowOnError extends boolean = false>(
+  options: Options<StaffControllerChangeRoleData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    StaffControllerChangeRoleResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/staff/{id}/role",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const staffControllerRemove = <ThrowOnError extends boolean = false>(
+  options: Options<StaffControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    StaffControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/staff/{id}", ...options });

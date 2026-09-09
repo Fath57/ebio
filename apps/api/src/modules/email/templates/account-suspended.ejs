@@ -1,0 +1,26 @@
+<%- include('partials/heading', { text: permanent ? 'Votre compte eBio a été bloqué' : 'Votre compte eBio est suspendu', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<% if (permanent) { %>
+<p>
+  L'équipe eBio a bloqué votre compte. Vous ne pouvez plus vous connecter aux applications eBio.
+</p>
+<% } else if (until) { %>
+<p>
+  L'équipe eBio a suspendu votre compte jusqu'au <strong><%= until %></strong>.
+  Passé cette date, vous pourrez de nouveau vous connecter.
+</p>
+<% } else { %>
+<p>
+  L'équipe eBio a suspendu votre compte jusqu'à nouvel ordre.
+</p>
+<% } %>
+
+<% if (reason) { %>
+<p><strong>Motif :</strong> <%= reason %></p>
+<% } %>
+
+<p style="font-size: 13px; color: #9B9890;">
+  Si vous pensez qu'il s'agit d'une erreur, répondez à cet e-mail ou écrivez à contact@e-bio.org.
+</p>

@@ -9,6 +9,10 @@ export const userResponseSchema = z.object({
   image: z.string().url().nullable(),
   biometricEnabled: z.boolean(),
   createdAt: z.string().datetime(),
+  /** Staff members only: the back-office role they hold (null = super administrator). */
+  staffRole: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
+  /** What the back-office lets this user see or do (empty for app users). */
+  permissions: z.array(z.object({ action: z.string(), subject: z.string() })),
 }).meta({ title: 'UserResponse', description: 'Public user profile' })
 
 export const updateUserSchema = z.object({

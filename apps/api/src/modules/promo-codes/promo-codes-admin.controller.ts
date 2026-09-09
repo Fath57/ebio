@@ -22,7 +22,7 @@ import { PromoCodesService } from './promo-codes.service'
 @Controller('admin/promo-codes')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
 @Roles('ADMIN')
-@CanManage('all')
+@CanManage('PromoCode')
 export class AdminPromoCodesController {
   constructor(private readonly promoCodesService: PromoCodesService) {}
 

@@ -2,7 +2,7 @@ import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import type { AdminPayoutNumberAction, AdminWithdrawalAction } from './contracts/wallet.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { BadRequestException, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common'
-import { CanManage } from '../../common/decorators/check-permissions.decorator'
+import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
@@ -15,13 +15,13 @@ import { WithdrawalsService } from './withdrawals.service'
 @Controller('admin')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
 @Roles('ADMIN')
-@CanManage('all')
 export class WalletAdminController {
   constructor(
     private readonly withdrawalsService: WithdrawalsService,
     private readonly topupService: TopupService,
   ) {}
 
+  @CanRead('Payment')
   @Get('payout-numbers')
   async listNumbers(
     @Query('status') status?: string,
@@ -31,6 +31,7 @@ export class WalletAdminController {
     return this.withdrawalsService.adminListNumbers(status, Number(page), Number(limit))
   }
 
+  @CanManage('Withdrawal')
   @Patch('payout-numbers/:id')
   async actOnNumber(
     @Param('id') id: string,
@@ -40,6 +41,7 @@ export class WalletAdminController {
     return this.withdrawalsService.adminActOnNumber(id, session.user.id, body.action, body.rejectionReason)
   }
 
+  @CanRead('Payment')
   @Get('withdrawals')
   async listWithdrawals(
     @Query('status') status?: string,
@@ -50,6 +52,7 @@ export class WalletAdminController {
   }
 
   /** approve fires the FedaPay payout; reject re-credits the wallet. */
+  @CanManage('Withdrawal')
   @Patch('withdrawals/:id')
   async actOnWithdrawal(
     @Param('id') id: string,
@@ -65,6 +68,7 @@ export class WalletAdminController {
     return this.withdrawalsService.reject(id, session.user.id, body.rejectionReason)
   }
 
+  @CanRead('Payment')
   @Get('wallet-topups')
   async listTopups(
     @Query('status') status?: string,
@@ -74,6 +78,7 @@ export class WalletAdminController {
     return this.topupService.adminList(status, Number(page), Number(limit))
   }
 
+  @CanRead('Payment')
   @Get('wallets')
   async walletsOverview() {
     return this.withdrawalsService.adminWalletsOverview()
