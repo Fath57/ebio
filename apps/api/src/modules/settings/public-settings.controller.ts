@@ -9,6 +9,7 @@ export class PublicSettingsController {
   @Get('public')
   async getPublic() {
     const cashOnDeliveryMaxAmount = await this.platformSettings.getCashOnDeliveryMaxAmount()
-    return { cashOnDeliveryMaxAmount }
+    const courierMaxDebt = await this.platformSettings.getCourierMaxDebt()
+    return { cashOnDeliveryMaxAmount, courierMaxDebt }
   }
 }

@@ -5,6 +5,7 @@ import { Cron } from '@nestjs/schedule'
 import { User } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { Delivery, DeliveryStatus } from './entities/delivery.entity'
 
@@ -29,7 +30,23 @@ export class DispatchService {
   constructor(
     private readonly em: EntityManager,
     private readonly notificationsService: NotificationsService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
+
+  /**
+   * SQL fragment keeping out couriers whose wallet debt passed the platform
+   * limit (0 = no limit). Bound as a negative balance floor.
+   */
+  private async debtFilter(): Promise<{ sql: string, params: number[] }> {
+    const limit = await this.platformSettings.getCourierMaxDebt()
+    if (limit <= 0) {
+      return { sql: '', params: [] }
+    }
+    return {
+      sql: ` AND NOT EXISTS (SELECT 1 FROM wallets w WHERE w.courier_profile_id = cp.id AND w.balance < ?)`,
+      params: [-limit],
+    }
+  }
 
   /**
    * Validated + available couriers with a fresh (<12h) position inside the
@@ -45,6 +62,7 @@ export class DispatchService {
       return []
     }
 
+    const debt = await this.debtFilter()
     if (hasLocation[0].has_location) {
       // Fresh live position first; declared zone circle as fallback so a
       // courier who has not opened the app today still gets nearby offers.
@@ -53,7 +71,7 @@ export class DispatchService {
          FROM courier_profiles cp, deliveries d
          WHERE d.id = ?
            AND cp.validation_status = 'VALIDATED'
-           AND cp.is_available = true
+           AND cp.is_available = true${debt.sql}
            AND (
              (cp.last_known_location IS NOT NULL
                AND cp.last_location_at > NOW() - INTERVAL '12 hours'
@@ -68,15 +86,15 @@ export class DispatchService {
                )
              )
            )`,
-        [deliveryId],
+        [deliveryId, ...debt.params],
       )
     }
 
     return this.em.getConnection().execute(
       `SELECT cp.id, cp.user_id
        FROM courier_profiles cp
-       WHERE cp.validation_status = 'VALIDATED' AND cp.is_available = true`,
-      [],
+       WHERE cp.validation_status = 'VALIDATED' AND cp.is_available = true${debt.sql}`,
+      debt.params,
     )
   }
 

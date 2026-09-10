@@ -11,8 +11,10 @@ function buildService() {
     getConnection: () => ({ execute }),
   }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
-  const service = new DispatchService(em as never, notifications as never)
-  return { service, em, execute, notifications }
+  // No debt limit by default: the eligibility SQL stays exactly as before.
+  const settings = { getCourierMaxDebt: vi.fn().mockResolvedValue(0) }
+  const service = new DispatchService(em as never, notifications as never, settings as never)
+  return { service, em, execute, notifications, settings }
 }
 
 interface TestDelivery {
@@ -47,6 +49,18 @@ function buildDelivery(extra: Partial<TestDelivery> = {}): TestDelivery {
 
 describe('dispatchService', () => {
   describe('findEligibleCouriers', () => {
+    it('keeps indebted couriers out once a debt limit is set', async () => {
+      const { service, execute, settings } = buildService()
+      settings.getCourierMaxDebt.mockResolvedValue(5000)
+      execute
+        .mockResolvedValueOnce([{ has_location: false }])
+        .mockResolvedValueOnce([])
+      await service.findEligibleCouriers('delivery-1')
+      const [sql, params] = execute.mock.calls[1]
+      expect(sql).toContain('NOT EXISTS (SELECT 1 FROM wallets w')
+      expect(params).toEqual([-5000])
+    })
+
     it('filters by distance and freshness when the pickup has a location', async () => {
       const { service, execute } = buildService()
       execute

@@ -36,6 +36,15 @@ import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus } from 
 
 const ACTIVE_STATUSES = [DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.IN_TRANSIT]
 
+/** Why a validated, available courier still gets no runs. */
+export interface DispatchBlock {
+  reason: 'DEBT'
+  /** Current wallet balance (negative). */
+  balance: number
+  /** Platform debt limit the balance went past. */
+  limit: number
+}
+
 @Injectable()
 export class DeliveriesService {
   private readonly logger = new Logger(DeliveriesService.name)
@@ -210,11 +219,40 @@ export class DeliveriesService {
     return delivery
   }
 
+  /**
+   * Cash commissions can drive a courier balance negative; past the platform
+   * limit the courier is kept out of dispatch until they top up. Null when
+   * nothing blocks them.
+   */
+  async getDispatchBlock(courierId: string): Promise<DispatchBlock | null> {
+    const limit = await this.platformSettings.getCourierMaxDebt()
+    if (limit <= 0) {
+      return null
+    }
+    const wallet = await this.walletService.getOrCreate({ courierId })
+    const balance = Number(wallet.balance)
+    return balance < -limit ? { reason: 'DEBT', balance, limit } : null
+  }
+
+  private async assertNotBlocked(courierId: string): Promise<void> {
+    const block = await this.getDispatchBlock(courierId)
+    if (block) {
+      throw new ForbiddenException({
+        statusCode: 403,
+        code: 'COURIER_DEBT',
+        message: `Votre portefeuille est à ${block.balance.toLocaleString('fr-FR')} FCFA, au-delà de la dette autorisée (${block.limit.toLocaleString('fr-FR')} FCFA). Rechargez-le pour reprendre les courses.`,
+        balance: block.balance,
+        limit: block.limit,
+      })
+    }
+  }
+
   async getOffers(userId: string): Promise<OfferRow[]> {
     const profile = await this.getMyProfile(userId)
     if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
       throw new ForbiddenException('Passez disponible pour voir les courses proposées')
     }
+    await this.assertNotBlocked(profile.id)
 
     // Reference point: fresh (<12h) live position first, declared zone circle
     // as fallback. A courier with neither only sees location-less deliveries.
@@ -261,6 +299,7 @@ export class DeliveriesService {
     if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
       throw new ForbiddenException('Passez disponible pour accepter une course')
     }
+    await this.assertNotBlocked(profile.id)
 
     const claimed = await this.em.getConnection().execute(
       `UPDATE deliveries SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(), "updatedAt" = NOW()

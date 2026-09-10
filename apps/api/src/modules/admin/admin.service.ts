@@ -545,7 +545,12 @@ export class AdminService {
     )
     const deliveryCommissionRate = await this.platformSettings.getDeliveryCommissionRate()
     const cashOnDeliveryMaxAmount = await this.platformSettings.getCashOnDeliveryMaxAmount()
-    return { commissions, deliveryCommissionRate, cashOnDeliveryMaxAmount }
+    const courierMaxDebt = await this.platformSettings.getCourierMaxDebt()
+    return { commissions, deliveryCommissionRate, cashOnDeliveryMaxAmount, courierMaxDebt }
+  }
+
+  async updateCourierMaxDebt(amount: number): Promise<void> {
+    await this.platformSettings.setCourierMaxDebt(amount)
   }
 
   async updateCashOnDeliveryMaxAmount(amount: number): Promise<void> {

@@ -4,12 +4,15 @@ import { PlatformSetting } from './platform-setting.entity'
 
 export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
 export const CASH_ON_DELIVERY_MAX_AMOUNT_KEY = 'cash_on_delivery_max_amount'
+export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
 
 /** Applied when the row is missing or unreadable. */
 export const DEFAULT_DELIVERY_COMMISSION_RATE = 0.1
 /** Largest order total (FCFA) payable in cash at the door; 0 disables cash. */
 export const DEFAULT_CASH_ON_DELIVERY_MAX_AMOUNT = 25_000
 const CASH_LIMIT_CEILING = 10_000_000
+/** Deepest negative courier balance (FCFA) before offers stop; 0 = no limit. */
+export const DEFAULT_COURIER_MAX_DEBT = 5_000
 
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
@@ -55,6 +58,26 @@ export class PlatformSettingsService {
       throw new BadRequestException('Le plafond espèces doit être un montant entier entre 0 et 10 000 000 FCFA')
     }
     await this.set(CASH_ON_DELIVERY_MAX_AMOUNT_KEY, String(amount))
+  }
+
+  /**
+   * Cash commissions push a courier balance negative; past this debt the
+   * courier stops receiving and accepting runs until they top up.
+   */
+  async getCourierMaxDebt(): Promise<number> {
+    const raw = await this.get(COURIER_MAX_DEBT_KEY)
+    const amount = raw === null ? Number.NaN : Number(raw)
+    if (!Number.isInteger(amount) || amount < 0 || amount > CASH_LIMIT_CEILING) {
+      return DEFAULT_COURIER_MAX_DEBT
+    }
+    return amount
+  }
+
+  async setCourierMaxDebt(amount: number): Promise<void> {
+    if (!Number.isInteger(amount) || amount < 0 || amount > CASH_LIMIT_CEILING) {
+      throw new BadRequestException('La dette maximale doit être un montant entier entre 0 et 10 000 000 FCFA')
+    }
+    await this.set(COURIER_MAX_DEBT_KEY, String(amount))
   }
 
   /** Admin edits call this so the new value applies immediately. */

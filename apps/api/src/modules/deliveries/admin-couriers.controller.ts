@@ -48,7 +48,7 @@ export class AdminCouriersController {
       limit: limit ? Number(limit) : undefined,
     })
     return {
-      couriers: result.couriers.map(DeliveriesMapper.toCourierProfileResponse),
+      couriers: result.couriers.map(profile => DeliveriesMapper.toCourierProfileResponse(profile)),
       total: result.total,
     }
   }

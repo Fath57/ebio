@@ -11686,6 +11686,44 @@
         }
       }
     },
+    "/api/admin/settings/courier-debt-limit": {
+      "put": {
+        "operationId": "AdminController_updateCourierDebtLimit",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Deepest negative courier wallet balance before offers and acceptance are suspended",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "CourierDebtLimit",
+                "description": "Deepest negative courier wallet balance before offers and acceptance are suspended"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/notifications/broadcast": {
       "post": {
         "operationId": "AdminController_broadcastNotification",
@@ -13926,6 +13964,22 @@
         "additionalProperties": false,
         "title": "CashOnDeliveryLimit",
         "description": "Largest order total payable in cash at the door"
+      },
+      "CourierDebtLimit": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "CourierDebtLimit",
+        "description": "Deepest negative courier wallet balance before offers and acceptance are suspended"
       },
       "BroadcastNotification": {
         "type": "object",

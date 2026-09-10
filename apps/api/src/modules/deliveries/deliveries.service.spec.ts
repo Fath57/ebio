@@ -31,7 +31,7 @@ function buildService() {
     credit: vi.fn().mockResolvedValue(0),
     debit: vi.fn().mockResolvedValue(0),
   }
-  const settings = { getDeliveryCommissionRate: vi.fn().mockResolvedValue(0.1) }
+  const settings = { getDeliveryCommissionRate: vi.fn().mockResolvedValue(0.1), getCourierMaxDebt: vi.fn().mockResolvedValue(0) }
   const service = new DeliveriesService(
     em as never,
     notifications as never,

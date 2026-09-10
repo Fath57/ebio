@@ -284,6 +284,15 @@ export type BroadcastNotification = z.infer<typeof broadcastNotificationSchema>
 export type CommissionRates = z.infer<typeof commissionRateSchema>
 export type DeliveryCommissionRateInput = z.infer<typeof deliveryCommissionSchema>
 export type CashOnDeliveryLimitInput = z.infer<typeof cashOnDeliveryLimitSchema>
+
+export const courierDebtLimitSchema = z.object({
+  /** Integer FCFA of negative balance tolerated; 0 disables the block. */
+  amount: z.number().int().min(0).max(10_000_000),
+}).meta({
+  title: 'CourierDebtLimit',
+  description: 'Deepest negative courier wallet balance before offers and acceptance are suspended',
+})
+export type CourierDebtLimitInput = z.infer<typeof courierDebtLimitSchema>
 export type SupplierCommissionRateInput = z.infer<typeof supplierCommissionRateSchema>
 export type CommissionSummary = z.infer<typeof commissionSummarySchema>
 export type CommissionOrderList = z.infer<typeof commissionOrderListSchema>

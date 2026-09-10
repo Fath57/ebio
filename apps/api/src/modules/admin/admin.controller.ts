@@ -6,6 +6,7 @@ import type {
   BroadcastNotification,
   CashOnDeliveryLimitInput,
   CommissionRates,
+  CourierDebtLimitInput,
   DeliveryCommissionRateInput,
   DisputeResolutionInput,
   ResolveReportInput,
@@ -38,6 +39,7 @@ import {
   broadcastNotificationSchema,
   cashOnDeliveryLimitSchema,
   commissionRateSchema,
+  courierDebtLimitSchema,
   deliveryCommissionSchema,
   disputeResolutionSchema,
   resolveReportSchema,
@@ -402,6 +404,15 @@ export class AdminController {
     @TypedBody(cashOnDeliveryLimitSchema) body: CashOnDeliveryLimitInput,
   ) {
     await this.adminService.updateCashOnDeliveryMaxAmount(body.amount)
+    return { success: true }
+  }
+
+  @CanManage('Settings')
+  @Put('settings/courier-debt-limit')
+  async updateCourierDebtLimit(
+    @TypedBody(courierDebtLimitSchema) body: CourierDebtLimitInput,
+  ) {
+    await this.adminService.updateCourierMaxDebt(body.amount)
     return { success: true }
   }
 

@@ -4,6 +4,7 @@ import { Controller, Get, Patch, Post, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
+import { ValidationStatus } from '../suppliers/supplier.entity'
 import {
   registerCourierSchema,
   updateAvailabilitySchema,
@@ -35,7 +36,10 @@ export class CouriersController {
   @Get('me')
   async me(@Session() session: LoggedInBetterAuthSession) {
     const profile = await this.deliveriesService.getMyProfile(session.user.id)
-    return DeliveriesMapper.toCourierProfileResponse(profile)
+    const block = profile.validationStatus === ValidationStatus.VALIDATED
+      ? await this.deliveriesService.getDispatchBlock(profile.id)
+      : null
+    return DeliveriesMapper.toCourierProfileResponse(profile, block)
   }
 
   @Patch('me')

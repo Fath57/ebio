@@ -117,6 +117,12 @@ export const courierProfileResponseSchema = z.object({
   /** Average buyer rating (1–5), null until the first rating. */
   ratingAvg: z.number().nullable(),
   ratingCount: z.number(),
+  /** Set when the courier is kept out of dispatch (wallet debt past the limit). */
+  dispatchBlock: z.object({
+    reason: z.enum(['DEBT']),
+    balance: z.number(),
+    limit: z.number(),
+  }).nullable(),
   validatedAt: z.string().datetime().nullable(),
   createdAt: z.string().datetime(),
 }).meta({

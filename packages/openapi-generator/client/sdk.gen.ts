@@ -48,6 +48,8 @@ import type {
   AdminControllerUpdateCashOnDeliveryLimitResponses,
   AdminControllerUpdateCommissionsData,
   AdminControllerUpdateCommissionsResponses,
+  AdminControllerUpdateCourierDebtLimitData,
+  AdminControllerUpdateCourierDebtLimitResponses,
   AdminControllerUpdateDeliveryCommissionData,
   AdminControllerUpdateDeliveryCommissionResponses,
   AdminControllerUpdateOrderStatusData,
@@ -3945,6 +3947,24 @@ export const adminControllerUpdateCashOnDeliveryLimit = <
     ThrowOnError
   >({
     url: "/api/admin/settings/cash-limit",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminControllerUpdateCourierDebtLimit = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerUpdateCourierDebtLimitData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminControllerUpdateCourierDebtLimitResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/settings/courier-debt-limit",
     ...options,
     headers: {
       "Content-Type": "application/json",

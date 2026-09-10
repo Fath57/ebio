@@ -1,4 +1,5 @@
 import type { CourierProfileResponse, DeliveryOffer, DeliveryResponse } from './contracts/delivery.contract'
+import type { DispatchBlock } from './deliveries.service'
 import type { CourierProfile } from './entities/courier-profile.entity'
 import type { CourierRating } from './entities/courier-rating.entity'
 import type { DeliveryEvent } from './entities/delivery-event.entity'
@@ -39,7 +40,7 @@ function cashAmounts(paymentMethod: string, totalAmount: number, deliveryFee: nu
 }
 
 export class DeliveriesMapper {
-  static toCourierProfileResponse(profile: CourierProfile): CourierProfileResponse {
+  static toCourierProfileResponse(profile: CourierProfile, dispatchBlock: DispatchBlock | null = null): CourierProfileResponse {
     return {
       id: profile.id,
       userId: profile.user.id,
@@ -56,6 +57,7 @@ export class DeliveriesMapper {
       isAvailable: profile.isAvailable,
       ratingAvg: profile.ratingAvg ?? null,
       ratingCount: profile.ratingCount ?? 0,
+      dispatchBlock,
       validatedAt: profile.validatedAt?.toISOString() ?? null,
       createdAt: profile.createdAt.toISOString(),
     }

@@ -470,6 +470,15 @@ export const zCashOnDeliveryLimit = z.object({
 });
 
 /**
+ * CourierDebtLimit
+ *
+ * Deepest negative courier wallet balance before offers and acceptance are suspended
+ */
+export const zCourierDebtLimit = z.object({
+  amount: z.int().gte(0).lte(10000000),
+});
+
+/**
  * BroadcastNotification
  *
  * Send a notification to a group of users
@@ -6137,6 +6146,14 @@ export const zAdminControllerUpdateDeliveryCommissionData = z.object({
 });
 
 export const zAdminControllerUpdateCashOnDeliveryLimitData = z.object({
+  body: z.object({
+    amount: z.int().gte(0).lte(10000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminControllerUpdateCourierDebtLimitData = z.object({
   body: z.object({
     amount: z.int().gte(0).lte(10000000),
   }),

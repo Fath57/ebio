@@ -619,6 +619,15 @@ export type CashOnDeliveryLimit = {
 };
 
 /**
+ * CourierDebtLimit
+ *
+ * Deepest negative courier wallet balance before offers and acceptance are suspended
+ */
+export type CourierDebtLimit = {
+  amount: number;
+};
+
+/**
  * BroadcastNotification
  *
  * Send a notification to a group of users
@@ -7615,6 +7624,24 @@ export type AdminControllerUpdateCashOnDeliveryLimitData = {
 };
 
 export type AdminControllerUpdateCashOnDeliveryLimitResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateCourierDebtLimitData = {
+  /**
+   * CourierDebtLimit
+   *
+   * Deepest negative courier wallet balance before offers and acceptance are suspended
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings/courier-debt-limit";
+};
+
+export type AdminControllerUpdateCourierDebtLimitResponses = {
   200: unknown;
 };
 
