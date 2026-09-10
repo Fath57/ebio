@@ -27,6 +27,7 @@ export interface OfferRow {
   offered_at: Date
   is_targeted: boolean | null
   offer_expires_at: Date | string | null
+  pickup_ready_at: Date | string | null
 }
 
 /**
@@ -85,6 +86,7 @@ export class DeliveriesMapper {
       ...cashAmounts(row.payment_method, Number(row.total_amount), Number(row.delivery_fee ?? 0)),
       isTargeted: row.is_targeted === true,
       expiresAt: row.offer_expires_at ? new Date(row.offer_expires_at).toISOString() : null,
+      pickupReadyAt: row.pickup_ready_at ? new Date(row.pickup_ready_at).toISOString() : null,
       offeredAt: new Date(row.offered_at).toISOString(),
     }
   }
@@ -159,6 +161,9 @@ export class DeliveriesMapper {
       buyerRating: buyerRating
         ? { rating: buyerRating.rating, comment: buyerRating.comment ?? null, createdAt: buyerRating.createdAt.toISOString() }
         : null,
+      pickupReadyAt: delivery.pickupReadyAt?.toISOString() ?? null,
+      dispatchAt: delivery.dispatchAt?.toISOString() ?? null,
+      dispatchStartedAt: delivery.dispatchStartedAt?.toISOString() ?? null,
       acceptedAt: delivery.acceptedAt?.toISOString() ?? null,
       pickedUpAt: delivery.pickedUpAt?.toISOString() ?? null,
       inTransitAt: delivery.inTransitAt?.toISOString() ?? null,

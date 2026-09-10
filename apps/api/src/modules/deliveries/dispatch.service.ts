@@ -202,8 +202,27 @@ export class DispatchService {
     delivery.offerRound = 0
     delivery.offeredToCourier = null
     delivery.offerExpiresAt = null
+    delivery.dispatchStartedAt = delivery.dispatchStartedAt ?? new Date()
     await this.em.flush()
     await this.offerNext(deliveryId)
+  }
+
+  /** Runs scheduled during preparation whose search time has come. */
+  async startScheduled(): Promise<void> {
+    const due = await this.em.find(Delivery, {
+      status: DeliveryStatus.AWAITING_COURIER,
+      dispatchPhase: DispatchPhase.SCHEDULED,
+      dispatchAt: { $lte: new Date() },
+    })
+    for (const delivery of due) {
+      await this.startDispatch(delivery.id)
+    }
+  }
+
+  @Cron('*/30 * * * * *')
+  @EnsureRequestContext()
+  async startScheduledCron(): Promise<void> {
+    await this.startScheduled()
   }
 
   /**

@@ -30,6 +30,8 @@ export enum DeliveryStatus {
 
 /** How the run is currently being offered to couriers. */
 export enum DispatchPhase {
+  /** Created while the shop prepares; the search starts at dispatchAt. */
+  SCHEDULED = 'SCHEDULED',
   /** One ranked courier at a time, 40 s each. */
   TARGETED = 'TARGETED',
   /** Everyone in the radius, first to accept wins. */
@@ -156,8 +158,19 @@ export class Delivery {
   @ManyToOne(() => CourierProfile, { fieldName: 'offered_to_courier_id', nullable: true })
   offeredToCourier?: Rel<CourierProfile> | null
 
-  @Property({ fieldName: 'offer_expires_at', nullable: true })
+  @Property({ fieldName: 'offer_expires_at', type: 'Date', nullable: true })
   offerExpiresAt?: Date | null
+
+  /** When the shop expects the parcel to be ready (from the declared prep time). */
+  @Property({ fieldName: 'pickup_ready_at', type: 'Date', nullable: true })
+  pickupReadyAt?: Date | null
+
+  /** When the courier search is due to start (a lead before pickupReadyAt). */
+  @Property({ fieldName: 'dispatch_at', type: 'Date', nullable: true })
+  dispatchAt?: Date | null
+
+  @Property({ fieldName: 'dispatch_started_at', type: 'Date', nullable: true })
+  dispatchStartedAt?: Date | null
 
   /** Current broadcast radius, widened by the rebroadcast cron up to 25 km. */
   @Property({ fieldName: 'broadcast_radius_km', type: 'float', default: 5 })

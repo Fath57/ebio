@@ -357,6 +357,7 @@ export const zRejectOrder = z.object({
  */
 export const zUpdateOrderStatus = z.object({
   status: z.enum(["PREPARING", "READY", "IN_DELIVERY"]),
+  prepMinutes: z.optional(z.int().gte(1).lte(240)),
 });
 
 /**
@@ -5046,6 +5047,7 @@ export const zOrdersControllerRejectData = z.object({
 export const zOrdersControllerUpdateStatusData = z.object({
   body: z.object({
     status: z.enum(["PREPARING", "READY", "IN_DELIVERY"]),
+    prepMinutes: z.optional(z.int().gte(1).lte(240)),
   }),
   path: z.object({
     id: z.string(),

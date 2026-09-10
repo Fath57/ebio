@@ -28,6 +28,7 @@ export class OrderMapper {
       deliveryConfirmedByBuyer: order.deliveryConfirmedByBuyer,
       deliveryConfirmedBySupplier: order.deliveryConfirmedBySupplier,
       acceptedAt: order.acceptedAt?.toISOString() ?? null,
+      estimatedReadyAt: order.estimatedReadyAt?.toISOString() ?? null,
       deliveredAt: order.deliveredAt?.toISOString() ?? null,
       escrowReleasedAt: order.escrowReleasedAt?.toISOString() ?? null,
       items: order.items.isInitialized()

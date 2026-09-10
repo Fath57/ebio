@@ -67,6 +67,8 @@ export const createOrderSchema = z.object({
 
 export const updateOrderStatusSchema = z.object({
   status: z.enum(['PREPARING', 'READY', 'IN_DELIVERY']),
+  /** With PREPARING: minutes until the parcel is ready; the courier search starts a little before. */
+  prepMinutes: z.number().int().min(1).max(240).optional(),
 }).meta({
   title: 'UpdateOrderStatus',
   description: 'Update order status (supplier only)',
@@ -135,6 +137,8 @@ export const orderResponseSchema = z.object({
   deliveryConfirmedByBuyer: z.boolean(),
   deliveryConfirmedBySupplier: z.boolean(),
   acceptedAt: z.string().datetime().nullable(),
+  /** Shop's estimate of readiness while preparing (null otherwise). */
+  estimatedReadyAt: z.string().datetime().nullable(),
   deliveredAt: z.string().datetime().nullable(),
   escrowReleasedAt: z.string().datetime().nullable(),
   items: z.array(orderItemSchema),

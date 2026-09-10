@@ -123,6 +123,9 @@ interface RenderedInvoice {
   attachments: EmailAttachment[]
 }
 
+/** Applied when the shop starts preparing without giving an estimate. */
+const DEFAULT_PREP_MINUTES = 20
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
@@ -484,7 +487,7 @@ export class OrdersService {
     return order
   }
 
-  async updateStatus(orderId: string, supplierId: string, newStatus: OrderStatus): Promise<Order> {
+  async updateStatus(orderId: string, supplierId: string, newStatus: OrderStatus, prepMinutes?: number): Promise<Order> {
     const order = await this.findById(orderId)
     this.verifySupplierOwnership(order, supplierId)
 
@@ -502,7 +505,17 @@ export class OrdersService {
       await this.deliveriesService.handleSupplierTakeover(order)
     }
 
+    // Preparation time declared by the shop: the run is created right away
+    // and the courier search is timed to the estimate (see DeliveriesService).
+    if (newStatus === OrderStatus.PREPARING && order.pickupMode === PickupMode.DELIVERY) {
+      order.estimatedReadyAt = new Date(Date.now() + (prepMinutes ?? DEFAULT_PREP_MINUTES) * 60_000)
+    }
+
     await this.applyStatus(order, newStatus)
+
+    if (newStatus === OrderStatus.PREPARING && order.pickupMode === PickupMode.DELIVERY) {
+      await this.deliveriesService.scheduleForOrder(order)
+    }
     return order
   }
 

@@ -36,6 +36,8 @@ import { DeliveryOfferResponse } from './entities/delivery-offer.entity'
 import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const ACTIVE_STATUSES = [DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.IN_TRANSIT]
+/** The courier search starts this long before the shop's readiness estimate. */
+export const DISPATCH_LEAD_MINUTES = 10
 
 /** Why a validated, available courier still gets no runs. */
 export interface DispatchBlock {
@@ -159,9 +161,33 @@ export class DeliveriesService {
   async createForOrder(order: Order): Promise<Delivery | null> {
     const existing = await this.em.findOne(Delivery, { order: { id: order.id } })
     if (existing) {
+      // Scheduled during preparation and the parcel is ready early: search now.
+      if (existing.status === DeliveryStatus.AWAITING_COURIER && existing.dispatchPhase === DispatchPhase.SCHEDULED) {
+        existing.pickupReadyAt = new Date()
+        await this.em.flush()
+        await this.dispatchService.startDispatch(existing.id)
+      }
       return existing
     }
+    return this.createDelivery(order, null)
+  }
 
+  /**
+   * PREPARING with a readiness estimate: the run exists at once (visible to
+   * the back-office, assignable by hand) but stays SCHEDULED until
+   * DISPATCH_LEAD_MINUTES before the estimate, when the search starts.
+   */
+  async scheduleForOrder(order: Order): Promise<Delivery | null> {
+    const existing = await this.em.findOne(Delivery, { order: { id: order.id } })
+    if (existing) {
+      return existing
+    }
+    const readyAt = order.estimatedReadyAt ?? new Date()
+    const dispatchAt = new Date(Math.max(Date.now(), readyAt.getTime() - DISPATCH_LEAD_MINUTES * 60_000))
+    return this.createDelivery(order, { readyAt, dispatchAt })
+  }
+
+  private async createDelivery(order: Order, schedule: { readyAt: Date, dispatchAt: Date } | null): Promise<Delivery | null> {
     const supplier = order.supplier
     const deliveryFee = order.deliveryFee ?? 0
     const rate = await this.platformSettings.getDeliveryCommissionRate()
@@ -172,11 +198,16 @@ export class DeliveriesService {
       offeredAt: new Date(),
       deliveryFee,
       courierFee: computeCourierFee(deliveryFee, rate),
+      dispatchPhase: schedule ? DispatchPhase.SCHEDULED : DispatchPhase.BROADCAST,
+      pickupReadyAt: schedule?.readyAt ?? null,
+      dispatchAt: schedule?.dispatchAt ?? null,
     })
     this.em.create(DeliveryEvent, {
       delivery,
       type: DeliveryEventType.CREATED,
-      payload: { orderNumber: order.orderNumber },
+      payload: schedule
+        ? { orderNumber: order.orderNumber, readyAt: schedule.readyAt.toISOString(), dispatchAt: schedule.dispatchAt.toISOString() }
+        : { orderNumber: order.orderNumber },
     })
     await this.em.flush()
 
@@ -209,6 +240,10 @@ export class DeliveriesService {
       }
     }
 
+    if (schedule && schedule.dispatchAt.getTime() > Date.now()) {
+      // The scheduled-dispatch cron takes over at dispatchAt.
+      return delivery
+    }
     try {
       await this.dispatchService.startDispatch(delivery.id)
     }
@@ -387,6 +422,9 @@ export class DeliveriesService {
   async pickup(deliveryId: string, userId: string, occurredAt?: string): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
     this.assertStatus(delivery, DeliveryStatus.ACCEPTED)
+    if (delivery.order.status === OrderStatus.PREPARING || delivery.order.status === OrderStatus.ACCEPTED) {
+      throw new ConflictException('La commande n\'est pas encore prête : la boutique doit d\'abord la marquer prête')
+    }
 
     const when = await this.clampOccurredAt(delivery, occurredAt)
     delivery.status = DeliveryStatus.PICKED_UP

@@ -103,6 +103,10 @@ export class Order {
   @Property({ fieldName: 'accepted_at', nullable: true })
   acceptedAt?: Date
 
+  /** Shop's estimate of when the parcel will be ready, set when preparation starts. */
+  @Property({ fieldName: 'estimated_ready_at', type: 'Date', nullable: true })
+  estimatedReadyAt?: Date | null
+
   @Property({ fieldName: 'delivered_at', nullable: true })
   deliveredAt?: Date
 

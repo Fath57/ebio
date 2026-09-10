@@ -7953,6 +7953,11 @@
                       "READY",
                       "IN_DELIVERY"
                     ]
+                  },
+                  "prepMinutes": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 240
                   }
                 },
                 "required": [
@@ -13734,6 +13739,11 @@
               "READY",
               "IN_DELIVERY"
             ]
+          },
+          "prepMinutes": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 240
           }
         },
         "required": [

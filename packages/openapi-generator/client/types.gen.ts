@@ -484,6 +484,7 @@ export type RejectOrder = {
  */
 export type UpdateOrderStatus = {
   status: "PREPARING" | "READY" | "IN_DELIVERY";
+  prepMinutes?: number;
 };
 
 /**
@@ -5964,6 +5965,7 @@ export type OrdersControllerUpdateStatusData = {
    */
   body: {
     status: "PREPARING" | "READY" | "IN_DELIVERY";
+    prepMinutes?: number;
   };
   path: {
     id: string;

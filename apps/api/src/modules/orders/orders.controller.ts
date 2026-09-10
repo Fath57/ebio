@@ -147,7 +147,7 @@ export class OrdersController {
     @TypedBody(updateOrderStatusSchema) body: z.infer<typeof updateOrderStatusSchema>,
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    const order = await this.ordersService.updateStatus(id, supplier.id, body.status as OrderStatus)
+    const order = await this.ordersService.updateStatus(id, supplier.id, body.status as OrderStatus, body.prepMinutes)
     return OrderMapper.toResponse(order)
   }
 

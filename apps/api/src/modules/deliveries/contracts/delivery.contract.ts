@@ -197,6 +197,8 @@ export const deliveryOfferSchema = z.object({
   isTargeted: z.boolean(),
   /** End of the exclusive window (null on broadcast offers). */
   expiresAt: z.string().datetime().nullable(),
+  /** When the shop expects the parcel to be ready; null for legacy runs. */
+  pickupReadyAt: z.string().datetime().nullable(),
   offeredAt: z.string().datetime(),
 }).meta({
   title: 'DeliveryOffer',
@@ -292,6 +294,10 @@ export const deliveryResponseSchema = z.object({
   tipAmount: z.number(),
   /** The buyer's rating of the courier, null until given. */
   buyerRating: courierRatingResponseSchema.nullable(),
+  /** Early dispatch: shop readiness estimate, planned and actual search start. */
+  pickupReadyAt: z.string().datetime().nullable(),
+  dispatchAt: z.string().datetime().nullable(),
+  dispatchStartedAt: z.string().datetime().nullable(),
   acceptedAt: z.string().datetime().nullable(),
   pickedUpAt: z.string().datetime().nullable(),
   inTransitAt: z.string().datetime().nullable(),
