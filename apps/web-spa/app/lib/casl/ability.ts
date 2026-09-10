@@ -24,6 +24,7 @@ export type Subjects
     | 'LandingContent'
     | 'Withdrawal'
     | 'PromoCode'
+    | 'Promotion'
     | 'Settings'
     | 'Staff'
     | 'all'

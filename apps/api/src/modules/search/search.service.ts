@@ -13,6 +13,7 @@ interface RawSearchRow {
   unit: string
   stock: number
   promotional_price: number | null
+  promotion_types: string[] | null
   supplier_id: string
   shop_name: string
   latitude: number | null
@@ -150,6 +151,9 @@ export class SearchService {
         p.unit,
         p.stock,
         CASE WHEN p.promotion_expires_at IS NULL OR p.promotion_expires_at > NOW() THEN p.promotional_price END AS promotional_price,
+        (SELECT COALESCE(array_agg(pp.type), '{}') FROM product_promotions pp
+          WHERE pp.product_id = p.id AND pp.is_active = true
+            AND pp.starts_at <= NOW() AND (pp.ends_at IS NULL OR pp.ends_at > NOW())) AS promotion_types,
         s.id as supplier_id,
         s.shop_name,
         ST_Y(s.location::geometry) as latitude,
@@ -307,6 +311,7 @@ export class SearchService {
         unit: row.unit,
         inStock: row.stock > 0,
         promotionalPrice: row.promotional_price,
+        promotionTypes: row.promotion_types ?? [],
       },
     }
   }

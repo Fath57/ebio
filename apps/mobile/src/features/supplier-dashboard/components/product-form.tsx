@@ -7,7 +7,7 @@ import ImagePlus from 'lucide-react-native/dist/esm/icons/image-plus'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import * as React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -30,6 +30,7 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { useCategories } from '../../search/hooks/use-search'
 import { CategoryPickerField } from './category-picker'
+import { ProductPromotionsSection } from './product-promotions-section'
 
 const MAX_PHOTOS = 3
 
@@ -84,7 +85,8 @@ interface ProductFormProps {
     variants: Variant[]
     isActive: boolean
     voiceDescriptionUri: string | null
-    promotionalPrice: number | null
+    /** Legacy projection of the live PRICE promotion — no longer used by the form */
+    promotionalPrice?: number | null
   }
   onSave?: () => void
   onCancel?: () => void
@@ -107,10 +109,6 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
 
   const [name, setName] = useState(initialData?.name ?? '')
   const [description, setDescription] = useState(initialData?.description ?? '')
-  const [promoPrice, setPromoPrice] = useState(
-    initialData?.promotionalPrice != null ? String(initialData.promotionalPrice) : '',
-  )
-  const [promoDays, setPromoDays] = useState(7)
   const [category, setCategory] = useState(initialData?.category ?? '')
   const [price, setPrice] = useState(initialData?.price ?? '')
   const [unit, setUnit] = useState<string>(initialData?.unit ?? '')
@@ -131,11 +129,6 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   )
   const [isActive, setIsActive] = useState(initialData?.isActive ?? true)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [hasPromo, setHasPromo] = useState(initialData?.promotionalPrice != null)
-  const [removingPromo, setRemovingPromo] = useState(false)
-  // Keeps the id of a product created in this session, so a retry after a
-  // failed promotion call updates it instead of creating a duplicate.
-  const createdIdRef = useRef<string | null>(null)
 
   // Composition & fiche produit
   const [compositionOpen, setCompositionOpen] = useState(false)
@@ -258,29 +251,6 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
     return body?.aggregateErrors?.[0]?.message ?? body?.message ?? 'Une erreur est survenue'
   }
 
-  async function handleRemovePromotion(): Promise<void> {
-    const productId = initialData?.id ?? createdIdRef.current
-    if (!productId)
-      return
-    setRemovingPromo(true)
-    try {
-      const res = await apiFetch(`/api/suppliers/me/products/${productId}/promotion`, { method: 'DELETE' })
-      if (res.ok) {
-        setHasPromo(false)
-        setPromoPrice('')
-      }
-      else {
-        showError('Erreur', await readError(res))
-      }
-    }
-    catch {
-      showError('Erreur', 'Impossible de retirer la promotion. Vérifiez votre connexion.')
-    }
-    finally {
-      setRemovingPromo(false)
-    }
-  }
-
   /** Parsed nutrition inputs (comma accepted as decimal separator); blank fields are skipped. */
   function parseNutrition(): Partial<Record<NutritionKey, number>> {
     const parsed: Partial<Record<NutritionKey, number>> = {}
@@ -343,18 +313,6 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
       return
     }
 
-    if (promoPrice.trim()) {
-      const promoNum = Number.parseFloat(promoPrice)
-      const priceNum = Number.parseFloat(price)
-      if (Number.isNaN(promoNum) || promoNum <= 0 || promoNum >= priceNum) {
-        showError(
-          'Prix promotionnel invalide',
-          'Le prix promotionnel doit être inférieur au prix normal.',
-        )
-        return
-      }
-    }
-
     const nutritionError = validateNutrition(parseNutrition())
     if (nutritionError) {
       showError('Valeurs nutritionnelles invalides', nutritionError)
@@ -363,7 +321,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
 
     setIsSubmitting(true)
     try {
-      const existingId = initialData?.id ?? createdIdRef.current
+      const existingId = initialData?.id
       const body: Record<string, unknown> = {
         name: name.trim(),
         description: description.trim(),
@@ -399,30 +357,6 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
       if (!res.ok) {
         showError('Enregistrement impossible', await readError(res))
         return
-      }
-      const saved = await res.json().catch(() => null) as { id?: string } | null
-
-      const productId = existingId ?? saved?.id ?? null
-      if (!existingId && saved?.id) {
-        // From now on this session updates the created product instead of
-        // creating duplicates (e.g. retry after a failed promotion call).
-        createdIdRef.current = saved.id
-        setExistingPhotos(prev => [...prev, ...newPhotos.map(p => p.url).filter(url => url !== '')])
-        setNewPhotos([])
-      }
-
-      // Promotion (dedicated endpoint) — applied when a promo price is set
-      if (productId && promoPrice.trim()) {
-        const expiresAt = new Date(Date.now() + promoDays * 24 * 60 * 60 * 1000).toISOString()
-        const promoRes = await apiFetch(`/api/suppliers/me/products/${productId}/promotion`, {
-          method: 'POST',
-          body: JSON.stringify({ promotionalPrice: Number.parseFloat(promoPrice), expiresAt }),
-        })
-        if (!promoRes.ok) {
-          showError('Promotion non appliquée', await readError(promoRes))
-          return
-        }
-        setHasPromo(true)
       }
 
       onSave?.()
@@ -588,61 +522,23 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
           </View>
         </View>
 
-        {/* Promotion */}
-        <Text style={[styles.label, { color: semantic.textSecondary }]}>Prix promotionnel (optionnel)</Text>
-        <TextInput
-          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-          placeholder="Prix promo (FCFA)"
-          placeholderTextColor={semantic.textTertiary}
-          keyboardType="numeric"
-          value={promoPrice}
-          onChangeText={setPromoPrice}
-          accessibilityLabel="Prix promotionnel"
-        />
-        {promoPrice.trim() !== '' && (
-          <View style={styles.unitRow}>
-            {[7, 15, 30].map((d) => {
-              const isSelected = promoDays === d
-              return (
-                <TouchableOpacity
-                  key={d}
-                  style={[
-                    styles.unitChip,
-                    { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface },
-                    isSelected && styles.unitChipActive,
-                  ]}
-                  onPress={() => setPromoDays(d)}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: isSelected }}
-                  accessibilityLabel={`${d} jours`}
-                >
-                  <Text style={[styles.unitChipText, { color: semantic.textSecondary }, isSelected && styles.unitChipTextActive]}>
-                    {d}
-                    {' '}
-                    jours
-                  </Text>
-                </TouchableOpacity>
-              )
-            })}
-          </View>
-        )}
-        {hasPromo && (
-          <TouchableOpacity
-            style={[styles.removePromoButton, removingPromo && styles.buttonDisabled]}
-            onPress={handleRemovePromotion}
-            disabled={removingPromo}
-            accessibilityRole="button"
-            accessibilityLabel="Retirer la promotion"
-          >
-            {removingPromo
-              ? (
-                  <ActivityIndicator size="small" color={colors.coral[600]} />
-                )
-              : (
-                  <Text style={styles.removePromoText}>Retirer la promotion</Text>
-                )}
-          </TouchableOpacity>
-        )}
+        {/* Promotions — dated, typed promotions live on their own endpoints,
+            so a product must exist before any can be attached */}
+        {initialData?.id
+          ? (
+              <ProductPromotionsSection
+                productId={initialData.id}
+                regularPrice={Number.parseFloat(price) || 0}
+              />
+            )
+          : (
+              <View>
+                <Text style={[styles.label, { color: semantic.textSecondary }]}>Promotions</Text>
+                <Text style={[styles.hint, { color: semantic.textTertiary }]}>
+                  Enregistrez le produit pour ajouter des promotions.
+                </Text>
+              </View>
+            )}
 
         {/* Variants */}
         <View style={styles.sectionHeader}>
@@ -1081,20 +977,8 @@ const styles = StyleSheet.create({
   uploadProgressText: {
     ...typography.caption,
   },
-  removePromoButton: {
-    minHeight: 44,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.coral[200],
-    backgroundColor: colors.coral[50],
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: spacing[1],
-  },
-  removePromoText: {
-    fontFamily: fonts.sansSb,
-    fontSize: 14,
-    color: colors.coral[600],
+  hint: {
+    ...typography.bodyS,
   },
   collapseHeader: {
     flexDirection: 'row',

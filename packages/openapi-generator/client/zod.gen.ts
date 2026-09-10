@@ -1413,6 +1413,7 @@ export const zSearchResult = z.object({
     unit: z.string(),
     inStock: z.boolean(),
     promotionalPrice: z.union([z.number(), z.null()]),
+    promotionTypes: z.array(z.string()),
   }),
 });
 

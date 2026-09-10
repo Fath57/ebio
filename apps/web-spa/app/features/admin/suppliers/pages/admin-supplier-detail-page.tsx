@@ -1,18 +1,31 @@
+import type { PromotedProduct } from '../../promotions/components/product-promotions-dialog'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@boilerstone/ui/components/primitives/table'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Ban, RotateCcw } from 'lucide-react'
+import { ArrowLeft, Ban, RotateCcw, Tag } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { Can } from '@/lib/casl/can'
+import { ProductPromotionsDialog } from '../../promotions/components/product-promotions-dialog'
 import {
   fetchAdminSupplierQueryOptions,
+  fetchSupplierProductsQueryOptions,
   reinstateSupplier,
+  SUPPLIER_PRODUCTS_PAGE_SIZE,
   suspendSupplier,
   updateSupplierCommissionRate,
 } from '../utils/suppliers-queries'
@@ -28,11 +41,136 @@ function InfoRow({ label, value }: { label: string, value: string | null }) {
   )
 }
 
+function formatAmount(value: number): string {
+  return `${value.toLocaleString('fr-FR')} FCFA`
+}
+
+interface SupplierProductsCardProps {
+  supplierId: string
+  isValidated: boolean
+  onManagePromotions: (product: PromotedProduct) => void
+}
+
+/** The shop's catalogue with its live promotion badges and the eBio promotion action. */
+function SupplierProductsCard({ supplierId, isValidated, onManagePromotions }: SupplierProductsCardProps) {
+  const { t } = useTranslation()
+  const [offset, setOffset] = useState(0)
+  const { data: page, isLoading } = useQuery({
+    ...fetchSupplierProductsQueryOptions(supplierId, offset),
+    enabled: Boolean(supplierId),
+  })
+
+  const products = page?.data ?? []
+  const hasPrevious = offset > 0
+  const hasNext = page?.meta.hasMore ?? false
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>{t('admin.suppliers.detail.products.title')}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {isLoading && <Skeleton className="h-24 w-full" />}
+        {!isLoading && products.length === 0 && (
+          <p className="text-muted-foreground text-sm">
+            {t(isValidated
+              ? 'admin.suppliers.detail.products.empty'
+              : 'admin.suppliers.detail.products.notValidatedHint')}
+          </p>
+        )}
+        {products.length > 0 && (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>{t('admin.suppliers.detail.products.columns.name')}</TableHead>
+                <TableHead className="text-right">{t('admin.suppliers.detail.products.columns.price')}</TableHead>
+                <TableHead>{t('admin.suppliers.detail.products.columns.status')}</TableHead>
+                <TableHead>{t('admin.suppliers.detail.products.columns.promotions')}</TableHead>
+                <TableHead className="w-0" />
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {products.map(product => (
+                <TableRow key={product.id}>
+                  <TableCell className="font-medium">{product.name}</TableCell>
+                  <TableCell className="text-right">
+                    {product.promotionalPrice !== null
+                      ? (
+                          <span className="flex flex-col items-end">
+                            <span>{formatAmount(product.promotionalPrice)}</span>
+                            <span className="text-muted-foreground text-xs line-through">
+                              {formatAmount(product.pricePerUnit)}
+                            </span>
+                          </span>
+                        )
+                      : formatAmount(product.pricePerUnit)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={product.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                      {t(`admin.suppliers.detail.products.status.${product.status}`)}
+                    </Badge>
+                  </TableCell>
+                  <TableCell>
+                    <span className="flex flex-wrap gap-1">
+                      {product.promotionTypes.map(type => (
+                        <Badge key={type} variant="outline">
+                          {t(`admin.promotions.types.${type}`)}
+                        </Badge>
+                      ))}
+                    </span>
+                  </TableCell>
+                  <TableCell>
+                    <Can action="manage" subject="Promotion">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => onManagePromotions({
+                          id: product.id,
+                          name: product.name,
+                          pricePerUnit: product.pricePerUnit,
+                        })}
+                      >
+                        <Tag className="mr-2 h-4 w-4" />
+                        {t('admin.suppliers.detail.products.manage')}
+                      </Button>
+                    </Can>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        )}
+        {(hasPrevious || hasNext) && (
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!hasPrevious}
+              onClick={() => setOffset(Math.max(0, offset - SUPPLIER_PRODUCTS_PAGE_SIZE))}
+            >
+              {t('admin.suppliers.detail.products.previous')}
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={!hasNext}
+              onClick={() => setOffset(offset + SUPPLIER_PRODUCTS_PAGE_SIZE)}
+            >
+              {t('admin.suppliers.detail.products.next')}
+            </Button>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
 export default function AdminSupplierDetailPage() {
   const { t, i18n } = useTranslation()
   const { supplierId } = useParams()
   const queryClient = useQueryClient()
   const [reason, setReason] = useState('')
+  const [promotedProduct, setPromotedProduct] = useState<PromotedProduct | null>(null)
   const { data: supplier, isLoading } = useQuery({
     ...fetchAdminSupplierQueryOptions(supplierId ?? ''),
     enabled: Boolean(supplierId),
@@ -242,6 +380,13 @@ export default function AdminSupplierDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <SupplierProductsCard
+        supplierId={supplier.id}
+        isValidated={supplier.validationStatus === 'VALIDATED'}
+        onManagePromotions={setPromotedProduct}
+      />
+      <ProductPromotionsDialog product={promotedProduct} onClose={() => setPromotedProduct(null)} />
 
       <Card>
         <CardHeader>

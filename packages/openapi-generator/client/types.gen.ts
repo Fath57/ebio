@@ -1726,6 +1726,7 @@ export type SearchResult = {
     unit: string;
     inStock: boolean;
     promotionalPrice: number | null;
+    promotionTypes: Array<string>;
   };
 };
 

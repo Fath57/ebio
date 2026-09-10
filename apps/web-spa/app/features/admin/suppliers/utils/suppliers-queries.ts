@@ -4,6 +4,7 @@ import {
   adminControllerReinstateSupplier,
   adminControllerSuspendSupplier,
   adminControllerUpdateSupplierCommissionRate,
+  productsControllerFindBySupplier,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export interface AdminSupplierOwner {
@@ -112,4 +113,47 @@ export async function updateSupplierCommissionRate(supplierId: string, rate: num
   })
   if (response.error)
     throw new Error('Failed to update commission rate')
+}
+
+export type SupplierProductPromotionType = 'PRICE' | 'BOGO' | 'FREE_DELIVERY'
+
+/** `ProductSummary` of the public catalogue, as listed on the supplier page. */
+export interface SupplierProductSummary {
+  id: string
+  name: string
+  photo: string | null
+  thumbnail: string | null
+  pricePerUnit: number
+  unit: string
+  stock: number
+  status: 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN'
+  promotionalPrice: number | null
+  /** Live promotion types, whoever funds them. */
+  promotionTypes: SupplierProductPromotionType[]
+}
+
+export interface SupplierProductsPage {
+  data: SupplierProductSummary[]
+  meta: { itemCount: number, pageSize: number, offset: number, hasMore: boolean }
+}
+
+export const SUPPLIER_PRODUCTS_PAGE_SIZE = 20
+
+/**
+ * The public endpoint answers with an empty page for a shop that is not
+ * validated yet; the page says so instead of showing "no products".
+ */
+export function fetchSupplierProductsQueryOptions(supplierId: string, offset: number) {
+  return {
+    queryKey: ['admin', 'suppliers', supplierId, 'products', offset],
+    queryFn: async () => {
+      const response = await productsControllerFindBySupplier({
+        path: { supplierId },
+        query: { status: '', categoryId: '', offset, pageSize: SUPPLIER_PRODUCTS_PAGE_SIZE },
+      })
+      if (response.error)
+        throw new Error('Failed to fetch supplier products')
+      return response.data as SupplierProductsPage
+    },
+  }
 }

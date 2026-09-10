@@ -40,6 +40,8 @@ export const searchResultSchema = z.object({
     unit: z.string(),
     inStock: z.boolean(),
     promotionalPrice: z.number().nullable(),
+    /** Live promotion types, for badges (e.g. ['BOGO', 'FREE_DELIVERY']). */
+    promotionTypes: z.array(z.string()),
   }),
 }).meta({ title: 'SearchResult' })
 

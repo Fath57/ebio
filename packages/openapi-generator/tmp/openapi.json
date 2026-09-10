@@ -17589,6 +17589,12 @@
                     "type": "null"
                   }
                 ]
+              },
+              "promotionTypes": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
               }
             },
             "required": [
@@ -17599,7 +17605,8 @@
               "pricePerUnit",
               "unit",
               "inStock",
-              "promotionalPrice"
+              "promotionalPrice",
+              "promotionTypes"
             ],
             "additionalProperties": false
           }

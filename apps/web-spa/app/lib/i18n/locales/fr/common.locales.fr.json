@@ -131,6 +131,7 @@
     "delete": "Supprimer",
     "back": "Retour",
     "error": "Une erreur est survenue",
+    "close": "Fermer",
     "retry": "Réessayer",
     "unauthorized": {
       "title": "Accès non autorisé",
@@ -795,7 +796,55 @@
         "deliveryFee": "Frais de livraison",
         "courierFee": "Part livreur",
         "tip": "Pourboire",
-        "buyerRating": "Note du client"
+        "buyerRating": "Note du client",
+        "gift": "Offert",
+        "sponsoredDelivery": {
+          "SUPPLIER": "Livraison offerte par la boutique",
+          "PLATFORM": "Livraison offerte par eBio"
+        },
+        "promoCompensation": "Compensation promo eBio"
+      }
+    },
+    "promotions": {
+      "title": "Promotions",
+      "dialogTitle": "Promotions — {{name}}",
+      "dialogDescription": "Les promotions eBio sont financées par la plateforme : la boutique est compensée lors du reversement.",
+      "empty": "Aucune promotion sur ce produit.",
+      "types": {
+        "PRICE": "Prix promotionnel",
+        "BOGO": "Offert à l'achat",
+        "FREE_DELIVERY": "Livraison offerte"
+      },
+      "origin": {
+        "SUPPLIER": "Boutique",
+        "PLATFORM": "eBio"
+      },
+      "inactive": "Inactive",
+      "expired": "Expirée",
+      "bogoValue": "{{buy}} acheté(s), {{get}} offert(s)",
+      "from": "Du {{date}}",
+      "until": "au {{date}}",
+      "noEnd": "sans date de fin",
+      "remove": "Retirer la promotion",
+      "removed": "Promotion retirée.",
+      "created": "Promotion ajoutée.",
+      "form": {
+        "title": "Ajouter une promotion eBio",
+        "replaceHint": "Une promotion active du même type sera remplacée.",
+        "type": "Type",
+        "promoPrice": "Prix promotionnel (FCFA)",
+        "regularPrice": "Prix actuel : {{price}}",
+        "buyQty": "Quantité achetée",
+        "getQty": "Quantité offerte",
+        "endsAt": "Fin (optionnelle)",
+        "endsAtHint": "Laissez vide pour une promotion sans date de fin.",
+        "submit": "Ajouter"
+      },
+      "errors": {
+        "promoPriceRequired": "Le prix promotionnel est requis.",
+        "promoPriceTooHigh": "Le prix promotionnel doit être inférieur au prix actuel.",
+        "qtyRange": "Entre 1 et 20.",
+        "endsAtPast": "La date de fin doit être dans le futur."
       }
     },
     "productUnits": {
@@ -1125,6 +1174,25 @@
         "mode": "Mode",
         "closed": "Fermé",
         "noOpeningHours": "Aucun horaire renseigné.",
+        "products": {
+          "title": "Produits",
+          "empty": "Aucun produit.",
+          "notValidatedHint": "Le catalogue n'est visible qu'une fois la boutique validée.",
+          "columns": {
+            "name": "Produit",
+            "price": "Prix",
+            "status": "Statut",
+            "promotions": "Promotions"
+          },
+          "status": {
+            "ACTIVE": "En vente",
+            "OUT_OF_STOCK": "Rupture",
+            "HIDDEN": "Masqué"
+          },
+          "manage": "Promotions",
+          "previous": "Précédent",
+          "next": "Suivant"
+        },
         "commission": {
           "title": "Commission",
           "currentRate": "Taux appliqué",

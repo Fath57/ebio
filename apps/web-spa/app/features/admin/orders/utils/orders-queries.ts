@@ -30,6 +30,8 @@ export interface AdminOrderLine {
   quantity: number
   unitPrice: number
   totalPrice: number
+  /** Free unit(s) of a "buy X get Y" promotion: shown at 0. */
+  isGift: boolean
 }
 
 /** Latest courier run of the order (null for on-site pickup). */
@@ -52,6 +54,11 @@ export interface AdminOrderDetail extends AdminOrderListItem {
   estimatedReadyAt: string | null
   buyerEmail: string | null
   buyerPhone: string | null
+  /** Who paid the delivery on the buyer's behalf (null = the buyer did). */
+  deliverySponsor: 'SUPPLIER' | 'PLATFORM' | null
+  sponsoredDeliveryFee: number
+  /** What eBio owes the shop for its platform-funded promotions. */
+  platformPromoCompensation: number
   items: AdminOrderLine[]
 }
 

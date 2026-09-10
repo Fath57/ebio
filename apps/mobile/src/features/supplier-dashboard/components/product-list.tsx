@@ -34,6 +34,14 @@ interface Product {
   unit: string
   stock: number
   status: ProductStatus
+  /** Types of the promotions currently live on the product (PRICE, BOGO, FREE_DELIVERY) */
+  promotionTypes: string[]
+}
+
+const PROMO_BADGES: Record<string, { label: string, bgColor: string, textColor: string }> = {
+  PRICE: { label: 'Promo', bgColor: colors.coral[50], textColor: colors.coral[600] },
+  BOGO: { label: '1+1', bgColor: colors.earth[50], textColor: colors.earth[600] },
+  FREE_DELIVERY: { label: 'Livraison offerte', bgColor: colors.blue[50], textColor: colors.blue[600] },
 }
 
 function getStatusConfig(status: ProductStatus): {
@@ -110,6 +118,7 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
           unit: (p.unit as string) ?? '',
           stock: (p.stock as number) ?? 0,
           status: (p.status as ProductStatus) ?? 'ACTIVE',
+          promotionTypes: Array.isArray(p.promotionTypes) ? p.promotionTypes as string[] : [],
         })))
       }
     }
@@ -173,6 +182,9 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
   function renderProductCard({ item }: { item: Product }): React.ReactElement {
     const statusConfig = getStatusConfig(item.status)
     const isEditingStock = editingStockId === item.id
+    const promoBadges = item.promotionTypes
+      .map(type => PROMO_BADGES[type])
+      .filter((badge): badge is NonNullable<typeof badge> => badge != null)
 
     return (
       <TouchableOpacity
@@ -209,6 +221,15 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
               FCFA /
               {unitShortLabel(item.unit)}
             </Text>
+            {promoBadges.length > 0 && (
+              <View style={styles.promoRow}>
+                {promoBadges.map(badge => (
+                  <View key={badge.label} style={[styles.promoBadge, { backgroundColor: badge.bgColor }]}>
+                    <Text style={[styles.promoBadgeText, { color: badge.textColor }]}>{badge.label}</Text>
+                  </View>
+                ))}
+              </View>
+            )}
 
             <View style={styles.cardFooter}>
               {isEditingStock
@@ -496,6 +517,21 @@ const styles = StyleSheet.create({
   productPrice: {
     ...typography.price,
     marginTop: 2,
+  },
+  promoRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[1],
+    marginTop: spacing[1],
+  },
+  promoBadge: {
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  promoBadgeText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 10,
   },
   cardFooter: {
     flexDirection: 'row',
