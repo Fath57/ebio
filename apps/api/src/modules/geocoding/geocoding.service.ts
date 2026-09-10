@@ -119,6 +119,32 @@ export class GeocodingService {
   }
 
   /**
+   * Human-readable address of a point, for a pin the user dropped on a map.
+   * Coordinates are rounded to ~10 m so nearby taps share a cache entry; null
+   * when Google knows nothing there (open sea, desert).
+   */
+  async reverse(latitude: number, longitude: number): Promise<string | null> {
+    const lat = latitude.toFixed(4)
+    const lng = longitude.toFixed(4)
+    const cacheKey = `rev:${lat},${lng}`
+    const cached = this.readCache<{ label: string | null }>(cacheKey)
+    if (cached) {
+      return cached.label
+    }
+
+    const url = new URL('https://maps.googleapis.com/maps/api/geocode/json')
+    url.searchParams.set('latlng', `${lat},${lng}`)
+    url.searchParams.set('language', 'fr')
+    url.searchParams.set('key', this.apiKey)
+
+    const data = await this.callGoogle(url)
+    const results = (data.results ?? []) as Array<Record<string, unknown>>
+    const label = typeof results[0]?.formatted_address === 'string' ? results[0].formatted_address : null
+    this.writeCache(cacheKey, { label }, PLACE_TTL_MS)
+    return label
+  }
+
+  /**
    * Google répond 200 avec un `status` applicatif : une clé invalide ou un quota
    * dépassé n'est pas une erreur HTTP, il faut lire le corps.
    */

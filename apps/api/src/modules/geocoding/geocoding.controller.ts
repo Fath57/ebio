@@ -43,4 +43,20 @@ export class GeocodingController {
   ) {
     return this.geocodingService.resolvePlace(placeId, session)
   }
+
+  /** Address under a map pin; null when nothing is known there. */
+  @Get('reverse')
+  @Public()
+  @RateLimit(60, 60_000)
+  async reverse(
+    @Query('lat') lat: string = '',
+    @Query('lng') lng: string = '',
+  ) {
+    const latitude = Number(lat)
+    const longitude = Number(lng)
+    if (!Number.isFinite(latitude) || !Number.isFinite(longitude) || Math.abs(latitude) > 90 || Math.abs(longitude) > 180) {
+      return { label: null }
+    }
+    return { label: await this.geocodingService.reverse(latitude, longitude) }
+  }
 }

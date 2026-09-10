@@ -4,7 +4,7 @@ import Locate from 'lucide-react-native/dist/esm/icons/locate'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Search from 'lucide-react-native/dist/esm/icons/search'
 import X from 'lucide-react-native/dist/esm/icons/x'
-import { use, useRef, useState } from 'react'
+import { use, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Keyboard,
@@ -18,16 +18,18 @@ import {
   View,
 } from 'react-native'
 import MapView, { PROVIDER_GOOGLE } from 'react-native-maps'
-import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
+import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { usePlaceSearch } from '../hooks/use-place-search'
+import { reverseGeocode } from '../utils/reverse-geocode'
 
 interface LocationPickerScreenProps {
   initialLatitude: number
   initialLongitude: number
-  onConfirm: (coords: { latitude: number, longitude: number }) => void
+  /** `label` is the reverse-geocoded address of the pin when one was found. */
+  onConfirm: (coords: { latitude: number, longitude: number, label?: string | null }) => void
   onGoBack: () => void
 }
 
@@ -40,6 +42,22 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
   const mapRef = useRef<MapView>(null)
   const [center, setCenter] = useState({ latitude: initialLatitude, longitude: initialLongitude })
   const [locating, setLocating] = useState(false)
+  // Address under the pin, refreshed a moment after the map stops moving.
+  const [centerLabel, setCenterLabel] = useState<string | null>(null)
+
+  useEffect(() => {
+    let cancelled = false
+    setCenterLabel(null)
+    const timer = setTimeout(async () => {
+      const label = await reverseGeocode(center.latitude, center.longitude)
+      if (!cancelled)
+        setCenterLabel(label)
+    }, 600)
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
+  }, [center.latitude, center.longitude])
   const { query, setQuery, suggestions, searching, resolve, accept, reset } = usePlaceSearch()
 
   async function handleSelectPlace(placeId: string, label: string) {
@@ -179,9 +197,12 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
       </View>
 
       <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: tabBarHeight + spacing[5] }]}>
+        <Text style={[styles.centerLabel, { color: centerLabel ? semantic.textPrimary : semantic.textTertiary }]} numberOfLines={2}>
+          {centerLabel ?? 'Recherche de l\'adresse…'}
+        </Text>
         <TouchableOpacity
           style={styles.confirmButton}
-          onPress={() => onConfirm(center)}
+          onPress={() => onConfirm({ ...center, label: centerLabel })}
           activeOpacity={0.85}
           accessibilityRole="button"
           accessibilityLabel="Confirmer cette position"
@@ -295,6 +316,11 @@ const styles = StyleSheet.create({
     paddingTop: spacing[3],
     paddingBottom: spacing[5],
     borderTopWidth: 1,
+  },
+  centerLabel: {
+    ...typography.bodyS,
+    textAlign: 'center',
+    marginBottom: spacing[3],
   },
   confirmButton: {
     height: 52,

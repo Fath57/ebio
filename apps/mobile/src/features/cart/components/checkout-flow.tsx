@@ -216,6 +216,8 @@ export function CheckoutFlow({
   // Drop-off point on the map: the single most useful thing for the courier,
   // and what the platform prices the delivery on.
   const [deliveryPosition, setDeliveryPosition] = useState<{ latitude: number, longitude: number } | null>(null)
+  /** Address of the pinned point, from the map's reverse geocoding. */
+  const [deliveryPlaceLabel, setDeliveryPlaceLabel] = useState<string | null>(null)
   const { quote: deliveryQuote, loading: quoteLoading } = useDeliveryQuote(
     orderSummary.supplierId,
     orderSummary.deliveryMode === 'DELIVERY',
@@ -565,7 +567,7 @@ export function CheckoutFlow({
                     </Text>
                     <Text style={[styles.positionHint, { color: deliveryPosition ? semantic.textSecondary : colors.green[50] }]}>
                       {deliveryPosition
-                        ? `Le tarif de livraison est calculé depuis ce point · Appuyez pour modifier`
+                        ? `${deliveryPlaceLabel ?? `${deliveryPosition.latitude.toFixed(5)}, ${deliveryPosition.longitude.toFixed(5)}`} · Le tarif est calculé depuis ce point · Appuyez pour modifier`
                         : 'Recommandé : placez le repère à votre porte pour guider le livreur'}
                     </Text>
                   </View>
@@ -813,7 +815,8 @@ export function CheckoutFlow({
             initialLatitude={deliveryPosition?.latitude ?? pickerStart?.latitude ?? currentLatitude}
             initialLongitude={deliveryPosition?.longitude ?? pickerStart?.longitude ?? currentLongitude}
             onConfirm={(coords) => {
-              setDeliveryPosition(coords)
+              setDeliveryPosition({ latitude: coords.latitude, longitude: coords.longitude })
+              setDeliveryPlaceLabel(coords.label ?? null)
               setPickerOpen(false)
             }}
             onGoBack={() => setPickerOpen(false)}
