@@ -51,6 +51,9 @@ export const deliveryEventTypeEnum = z.enum([
   'ORDER_CANCELLED',
   'SELF_DELIVERED',
   'ASSIGNED_BY_ADMIN',
+  'OFFERED',
+  'OFFER_DECLINED',
+  'OFFER_EXPIRED',
 ]).meta({
   title: 'DeliveryEventType',
   description: 'Type of a delivery timeline event',
@@ -190,6 +193,10 @@ export const deliveryOfferSchema = z.object({
   cashToCollect: z.number().nullable(),
   /** Cash order: what the courier hands the shop at pickup, i.e. the goods (null otherwise). */
   cashToShop: z.number().nullable(),
+  /** True when this run is offered to this courier alone, until expiresAt. */
+  isTargeted: z.boolean(),
+  /** End of the exclusive window (null on broadcast offers). */
+  expiresAt: z.string().datetime().nullable(),
   offeredAt: z.string().datetime(),
 }).meta({
   title: 'DeliveryOffer',

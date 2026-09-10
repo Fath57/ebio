@@ -32,7 +32,8 @@ import { WalletService } from '../wallet/wallet.service'
 import { DispatchService } from './dispatch.service'
 import { CourierProfile, VehicleType } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
-import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus } from './entities/delivery.entity'
+import { DeliveryOfferResponse } from './entities/delivery-offer.entity'
+import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const ACTIVE_STATUSES = [DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.IN_TRANSIT]
 
@@ -209,7 +210,7 @@ export class DeliveriesService {
     }
 
     try {
-      await this.dispatchService.broadcast(delivery.id)
+      await this.dispatchService.startDispatch(delivery.id)
     }
     catch (error) {
       // A failed push must not block the READY transition; the cron rebroadcasts.
@@ -270,6 +271,8 @@ export class DeliveriesService {
        )
        SELECT d.id, o.order_number, d.pickup_address, d.dropoff_address, d.offered_at,
               s.shop_name, o.total_amount, o.payment_method, d.delivery_fee, d.courier_fee,
+              (d.offered_to_courier_id = ?) AS is_targeted,
+              CASE WHEN d.offered_to_courier_id = ? THEN d.offer_expires_at END AS offer_expires_at,
               o.delivery_latitude AS dropoff_latitude, o.delivery_longitude AS dropoff_longitude,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count,
               CASE WHEN d.pickup_location IS NOT NULL AND me.loc IS NOT NULL
@@ -285,11 +288,18 @@ export class DeliveriesService {
        CROSS JOIN me
        WHERE d.status = 'AWAITING_COURIER'
          AND (
-           d.pickup_location IS NULL
-           OR (me.loc IS NOT NULL AND ST_DWithin(d.pickup_location, me.loc, GREATEST(d.broadcast_radius_km * 1000, me.zone_radius_m)))
+           -- Exclusive offer still open for me: shown whatever the radius.
+           (d.offered_to_courier_id = ? AND d.offer_expires_at > NOW())
+           OR (
+             d.dispatch_phase = 'BROADCAST'
+             AND (
+               d.pickup_location IS NULL
+               OR (me.loc IS NOT NULL AND ST_DWithin(d.pickup_location, me.loc, GREATEST(d.broadcast_radius_km * 1000, me.zone_radius_m)))
+             )
+           )
          )
-       ORDER BY distance_km ASC NULLS LAST, d.offered_at ASC`,
-      [profile.id],
+       ORDER BY is_targeted DESC, distance_km ASC NULLS LAST, d.offered_at ASC`,
+      [profile.id, profile.id, profile.id, profile.id],
     )
   }
 
@@ -301,11 +311,15 @@ export class DeliveriesService {
     }
     await this.assertNotBlocked(profile.id)
 
+    // Targeted phase: only the courier holding the open offer may claim.
     const claimed = await this.em.getConnection().execute(
-      `UPDATE deliveries SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(), "updatedAt" = NOW()
+      `UPDATE deliveries
+       SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(),
+           offered_to_courier_id = NULL, offer_expires_at = NULL, "updatedAt" = NOW()
        WHERE id = ? AND courier_id IS NULL AND status = 'AWAITING_COURIER'
+         AND (dispatch_phase = 'BROADCAST' OR (offered_to_courier_id = ? AND offer_expires_at > NOW()))
        RETURNING id`,
-      [profile.id, deliveryId],
+      [profile.id, deliveryId, profile.id],
     )
 
     if (claimed.length === 0) {
@@ -316,9 +330,13 @@ export class DeliveriesService {
       if (delivery.status === DeliveryStatus.CANCELLED) {
         throw new GoneException('Cette commande a été annulée')
       }
+      if (delivery.status === DeliveryStatus.AWAITING_COURIER) {
+        throw new ConflictException('Cette course est proposée à un autre livreur pour le moment')
+      }
       throw new ConflictException('Cette course a déjà été prise par un autre livreur')
     }
 
+    await this.dispatchService.respondToOffer(deliveryId, profile.id, DeliveryOfferResponse.ACCEPTED)
     const delivery = await this.loadDelivery(deliveryId)
     this.em.create(DeliveryEvent, {
       delivery,
@@ -351,6 +369,19 @@ export class DeliveriesService {
     ])
 
     return delivery
+  }
+
+  /** The targeted courier passes: the next ranked courier is asked at once. */
+  async decline(deliveryId: string, userId: string): Promise<void> {
+    const profile = await this.getMyProfile(userId)
+    const delivery = await this.em.findOne(Delivery, { id: deliveryId })
+    if (!delivery) {
+      throw new NotFoundException('Delivery not found')
+    }
+    if (delivery.status !== DeliveryStatus.AWAITING_COURIER || delivery.offeredToCourier?.id !== profile.id) {
+      throw new ConflictException('Cette course ne vous est plus proposée')
+    }
+    await this.dispatchService.respondToOffer(deliveryId, profile.id, DeliveryOfferResponse.DECLINED)
   }
 
   async pickup(deliveryId: string, userId: string, occurredAt?: string): Promise<Delivery> {
@@ -603,7 +634,9 @@ export class DeliveriesService {
 
     delivery.broadcastRadiusKm = Math.min(delivery.broadcastRadiusKm + 5, 25)
     delivery.offeredAt = new Date()
+    delivery.dispatchPhase = DispatchPhase.BROADCAST
     await this.em.flush()
+    await this.dispatchService.cancelPendingOffer(delivery.id)
     await this.dispatchService.broadcast(delivery.id)
     return delivery
   }
@@ -686,6 +719,7 @@ export class DeliveriesService {
     }
 
     const assignedCourier = delivery.courier
+    await this.dispatchService.cancelPendingOffer(delivery.id)
     delivery.status = DeliveryStatus.CANCELLED
     this.em.create(DeliveryEvent, {
       delivery,

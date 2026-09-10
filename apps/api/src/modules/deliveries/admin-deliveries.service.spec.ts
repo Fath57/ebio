@@ -72,7 +72,7 @@ function buildService(delivery: TestDelivery, courier: TestCourier | null) {
     transactional: vi.fn(async (work: (em: unknown) => Promise<unknown>) => work(em)),
   }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
-  const dispatch = { broadcast: vi.fn().mockResolvedValue(1) }
+  const dispatch = { broadcast: vi.fn().mockResolvedValue(1), cancelPendingOffer: vi.fn().mockResolvedValue(undefined) }
   const audit = { record: vi.fn().mockResolvedValue(undefined) }
   const service = new AdminDeliveriesService(em as never, notifications as never, dispatch as never, audit as never)
   return { service, em, execute, notifications, dispatch, created, audit }

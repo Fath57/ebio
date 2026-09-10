@@ -24,7 +24,12 @@ function buildService() {
     getConnection: () => ({ execute }),
   }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
-  const dispatch = { broadcast: vi.fn().mockResolvedValue(0) }
+  const dispatch = {
+    broadcast: vi.fn().mockResolvedValue(0),
+    startDispatch: vi.fn().mockResolvedValue(undefined),
+    respondToOffer: vi.fn().mockResolvedValue(undefined),
+    cancelPendingOffer: vi.fn().mockResolvedValue(undefined),
+  }
   const orders = { applyStatusFromDelivery: vi.fn().mockResolvedValue(undefined) }
   const wallet = {
     getOrCreate: vi.fn().mockResolvedValue({ id: 'wallet-1', balance: '0' }),

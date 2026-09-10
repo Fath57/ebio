@@ -5420,6 +5420,14 @@ export const zDeliveriesControllerAcceptData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zDeliveriesControllerDeclineData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zDeliveriesControllerPickupData = z.object({
   body: z.object({
     occurredAt: z.optional(

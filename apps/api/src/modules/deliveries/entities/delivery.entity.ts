@@ -28,6 +28,14 @@ export enum DeliveryStatus {
   CANCELLED = 'CANCELLED',
 }
 
+/** How the run is currently being offered to couriers. */
+export enum DispatchPhase {
+  /** One ranked courier at a time, 40 s each. */
+  TARGETED = 'TARGETED',
+  /** Everyone in the radius, first to accept wins. */
+  BROADCAST = 'BROADCAST',
+}
+
 export enum DeliveryProofType {
   CODE = 'CODE',
   PHOTO = 'PHOTO',
@@ -42,7 +50,7 @@ export enum DeliveryFailReason {
 
 @Entity({ tableName: 'deliveries' })
 export class Delivery {
-  [OptionalProps]?: 'id' | 'status' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'tipAmount' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'tipAmount' | 'dispatchPhase' | 'offerRound' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -136,6 +144,20 @@ export class Delivery {
   /** Tip left by the buyer after delivery (integer FCFA), 0 when none. */
   @Property({ fieldName: 'tip_amount', type: 'float', default: 0 })
   tipAmount: number = 0
+
+  @Enum({ items: () => DispatchPhase, fieldName: 'dispatch_phase', default: DispatchPhase.BROADCAST })
+  dispatchPhase: DispatchPhase = DispatchPhase.BROADCAST
+
+  /** Number of targeted offers made so far (see DispatchService.TARGETED_ROUNDS). */
+  @Property({ fieldName: 'offer_round', type: 'int', default: 0 })
+  offerRound: number = 0
+
+  /** Courier currently holding the exclusive offer, until offerExpiresAt. */
+  @ManyToOne(() => CourierProfile, { fieldName: 'offered_to_courier_id', nullable: true })
+  offeredToCourier?: Rel<CourierProfile> | null
+
+  @Property({ fieldName: 'offer_expires_at', nullable: true })
+  offerExpiresAt?: Date | null
 
   /** Current broadcast radius, widened by the rebroadcast cron up to 25 km. */
   @Property({ fieldName: 'broadcast_radius_km', type: 'float', default: 5 })

@@ -129,7 +129,8 @@ describe('dispatchService', () => {
         courier: { id: 'c1', user: { id: 'u1' } },
       })
       em.find.mockResolvedValueOnce([stuck])
-      const broadcastSpy = vi.spyOn(service, 'broadcast').mockResolvedValue(0)
+      // A released run re-enters the targeted rounds, not the plain broadcast.
+      const broadcastSpy = vi.spyOn(service, 'startDispatch').mockResolvedValue(undefined)
       await service.reassignStuck()
       expect(stuck.courier).toBeNull()
       expect(stuck.status).toBe(DeliveryStatus.AWAITING_COURIER)

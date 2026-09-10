@@ -218,6 +218,8 @@ import type {
   DeliveriesControllerByOrderResponses,
   DeliveriesControllerCompleteData,
   DeliveriesControllerCompleteResponses,
+  DeliveriesControllerDeclineData,
+  DeliveriesControllerDeclineResponses,
   DeliveriesControllerFailData,
   DeliveriesControllerFailResponses,
   DeliveriesControllerMineData,
@@ -3076,6 +3078,17 @@ export const deliveriesControllerAccept = <
     unknown,
     ThrowOnError
   >({ url: "/api/deliveries/{id}/accept", ...options });
+
+export const deliveriesControllerDecline = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<DeliveriesControllerDeclineData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    DeliveriesControllerDeclineResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/deliveries/{id}/decline", ...options });
 
 export const deliveriesControllerPickup = <
   ThrowOnError extends boolean = false,

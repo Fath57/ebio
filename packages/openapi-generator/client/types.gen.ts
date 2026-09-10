@@ -6505,6 +6505,19 @@ export type DeliveriesControllerAcceptResponses = {
   201: unknown;
 };
 
+export type DeliveriesControllerDeclineData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/deliveries/{id}/decline";
+};
+
+export type DeliveriesControllerDeclineResponses = {
+  201: unknown;
+};
+
 export type DeliveriesControllerPickupData = {
   /**
    * DeliveryTransition

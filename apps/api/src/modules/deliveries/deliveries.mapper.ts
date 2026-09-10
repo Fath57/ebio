@@ -25,6 +25,8 @@ export interface OfferRow {
   total_amount: number
   payment_method: string
   offered_at: Date
+  is_targeted: boolean | null
+  offer_expires_at: Date | string | null
 }
 
 /**
@@ -81,6 +83,8 @@ export class DeliveriesMapper {
       totalAmount: row.total_amount,
       paymentMethod: row.payment_method,
       ...cashAmounts(row.payment_method, Number(row.total_amount), Number(row.delivery_fee ?? 0)),
+      isTargeted: row.is_targeted === true,
+      expiresAt: row.offer_expires_at ? new Date(row.offer_expires_at).toISOString() : null,
       offeredAt: new Date(row.offered_at).toISOString(),
     }
   }

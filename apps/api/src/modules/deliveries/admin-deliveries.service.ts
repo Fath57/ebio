@@ -10,7 +10,7 @@ import { ValidationStatus } from '../suppliers/supplier.entity'
 import { DispatchService } from './dispatch.service'
 import { CourierProfile } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
-import { Delivery, DeliveryStatus } from './entities/delivery.entity'
+import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 /** A live GPS fix older than this falls back to the declared zone centre. */
 const FRESH_LOCATION_HOURS = 12
@@ -226,6 +226,8 @@ export class AdminDeliveriesService {
     })
 
     await this.notifyAssignment(updated, courier, released, note)
+    // A forced assignment ends any exclusive offer still running.
+    await this.dispatchService.cancelPendingOffer(deliveryId)
     await this.auditService.record({
       actorUserId: adminId,
       action: released ? 'DELIVERY_REASSIGNED' : 'DELIVERY_ASSIGNED',
@@ -251,6 +253,9 @@ export class AdminDeliveriesService {
       payload: { manual: true, byAdmin: true },
     })
     await this.em.flush()
+    delivery.dispatchPhase = DispatchPhase.BROADCAST
+    await this.em.flush()
+    await this.dispatchService.cancelPendingOffer(delivery.id)
     await this.dispatchService.broadcast(delivery.id)
     return delivery
   }

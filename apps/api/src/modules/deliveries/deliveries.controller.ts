@@ -89,6 +89,18 @@ export class DeliveriesController {
     return DeliveriesMapper.toResponse(delivery, 'courier', events)
   }
 
+  /** Targeted offer refused: the next ranked courier is asked right away. */
+  @Post(':id/decline')
+  @UseGuards(CaslGuard)
+  @CanUpdate('Delivery')
+  async decline(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+  ) {
+    await this.deliveriesService.decline(id, session.user.id)
+    return { declined: true }
+  }
+
   @Post(':id/pickup')
   @UseGuards(CaslGuard)
   @CanUpdate('Delivery')

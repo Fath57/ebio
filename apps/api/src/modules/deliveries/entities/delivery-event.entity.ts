@@ -24,6 +24,10 @@ export enum DeliveryEventType {
   SELF_DELIVERED = 'SELF_DELIVERED',
   /** Back-office forced the courier, bypassing the offer/accept loop. */
   ASSIGNED_BY_ADMIN = 'ASSIGNED_BY_ADMIN',
+  /** Targeted offer sent to one ranked courier. */
+  OFFERED = 'OFFERED',
+  OFFER_DECLINED = 'OFFER_DECLINED',
+  OFFER_EXPIRED = 'OFFER_EXPIRED',
 }
 
 /** Append-only transition log — the traceable per-step history (SC-002). */
