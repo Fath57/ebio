@@ -25,6 +25,22 @@ export const zCompleteUpload = z.object({
 });
 
 /**
+ * DeliveryQuoteRequest
+ *
+ * What the buyer would pay to have this basket delivered to this point
+ */
+export const zDeliveryQuoteRequest = z.object({
+  supplierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  itemsTotal: z.number().gte(0),
+  latitude: z.optional(z.number().gte(-90).lte(90)),
+  longitude: z.optional(z.number().gte(-180).lte(180)),
+});
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -1489,6 +1505,43 @@ export const zInitiateUpload = z.object({
       ),
   ),
   parts: z.int().gte(1).lte(100).default(1),
+});
+
+/**
+ * DeliveryPricingMode
+ *
+ * How the platform prices a delivery: one fee, base + per-km, or distance rings
+ */
+export const zDeliveryPricingMode = z.enum(["FLAT", "DISTANCE", "ZONES"]);
+
+/**
+ * DeliveryPricingConfig
+ *
+ * Platform-wide delivery pricing rules (admin-tuned)
+ */
+export const zDeliveryPricingConfig = z.object({
+  mode: zDeliveryPricingMode,
+  flat: z.object({
+    fee: z.int().gte(0).lte(1000000),
+  }),
+  distance: z.object({
+    baseFee: z.int().gte(0).lte(1000000),
+    perKm: z.int().gte(0).lte(1000000),
+    minFee: z.int().gte(0).lte(1000000),
+    maxFee: z.int().gte(0).lte(1000000),
+    roundTo: z.int().gte(1).lte(10000),
+  }),
+  zones: z
+    .array(
+      z.object({
+        maxKm: z.number().gte(0.1).lte(500),
+        fee: z.int().gte(0).lte(1000000),
+      }),
+    )
+    .min(1)
+    .max(10),
+  freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
+  maxDistanceKm: z.number().gte(0.5).lte(500),
 });
 
 /**
@@ -4346,6 +4399,56 @@ export const zNotificationsControllerSendTestNotificationData = z.object({
 
 export const zPublicSettingsControllerGetPublicData = z.object({
   body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zDeliveryPricingControllerQuoteData = z.object({
+  body: z.object({
+    supplierId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    itemsTotal: z.number().gte(0),
+    latitude: z.optional(z.number().gte(-90).lte(90)),
+    longitude: z.optional(z.number().gte(-180).lte(180)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminDeliveryPricingControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminDeliveryPricingControllerUpdateData = z.object({
+  body: z.object({
+    mode: z.enum(["FLAT", "DISTANCE", "ZONES"]),
+    flat: z.object({
+      fee: z.int().gte(0).lte(1000000),
+    }),
+    distance: z.object({
+      baseFee: z.int().gte(0).lte(1000000),
+      perKm: z.int().gte(0).lte(1000000),
+      minFee: z.int().gte(0).lte(1000000),
+      maxFee: z.int().gte(0).lte(1000000),
+      roundTo: z.int().gte(1).lte(10000),
+    }),
+    zones: z
+      .array(
+        z.object({
+          maxKm: z.number().gte(0.1).lte(500),
+          fee: z.int().gte(0).lte(1000000),
+        }),
+      )
+      .min(1)
+      .max(10),
+    freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
+    maxDistanceKm: z.number().gte(0.5).lte(500),
+  }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });

@@ -1,45 +1,114 @@
 /**
  * Single source of truth for what a delivery costs the buyer.
  *
- * The model is a flat fee per shop, optionally waived above a subtotal the shop
- * chooses. It is deliberately simple: no supplier had ever drawn a delivery
- * zone, so charging was gated behind a step nobody took.
+ * Pricing is platform-wide (admin-tuned, see PlatformSettingsService), never
+ * per shop: one of three modes, a basket threshold for free delivery, and a
+ * hard distance limit. Distances are shop → drop-off point, computed by the
+ * caller (PostGIS) and passed in.
  */
 
-export interface DeliveryPricing {
-  /** Flat fee on a delivery order. Zero or absent means delivery is free. */
-  deliveryFee?: number | null
-  /** Items subtotal above which the fee is waived. Null disables the waiver. */
-  freeDeliveryFrom?: number | null
+export type DeliveryPricingMode = 'FLAT' | 'DISTANCE' | 'ZONES'
+
+export interface DeliveryZone {
+  /** Ring outer radius from the shop, km. Rings are sorted ascending. */
+  maxKm: number
+  fee: number
 }
 
-/**
- * Fee due for an order.
- *
- * @param isDelivery False for a pickup: nothing is delivered, nothing is owed.
- * @param itemsTotal Items only. The fee is never part of its own waiver test,
- * which would otherwise let a large fee unlock free delivery on a small basket.
- */
-export function computeDeliveryFee(
-  pricing: DeliveryPricing,
-  isDelivery: boolean,
-  itemsTotal: number,
-): number {
-  if (!isDelivery) {
-    return 0
+export interface DeliveryPricingConfig {
+  mode: DeliveryPricingMode
+  flat: { fee: number }
+  distance: {
+    baseFee: number
+    perKm: number
+    minFee: number
+    maxFee: number
+    /** Fees are rounded up to this step (100 = to the next 100 FCFA). */
+    roundTo: number
   }
+  zones: DeliveryZone[]
+  /** Items subtotal above which delivery is free; null disables. */
+  freeFrom: number | null
+  /** Beyond this distance the order is refused. */
+  maxDistanceKm: number
+}
 
-  const fee = pricing.deliveryFee ?? 0
-  if (fee <= 0) {
-    return 0
+export const DEFAULT_DELIVERY_PRICING: DeliveryPricingConfig = {
+  mode: 'DISTANCE',
+  flat: { fee: 500 },
+  distance: { baseFee: 300, perKm: 100, minFee: 300, maxFee: 2500, roundTo: 100 },
+  zones: [
+    { maxKm: 3, fee: 500 },
+    { maxKm: 8, fee: 1000 },
+    { maxKm: 25, fee: 1500 },
+  ],
+  freeFrom: null,
+  maxDistanceKm: 25,
+}
+
+export type DeliveryFeeReason
+  = | 'PICKUP'
+    | 'FREE_THRESHOLD'
+    | 'FLAT'
+    | 'DISTANCE'
+    | 'ZONE'
+  /** Distance-based mode but the buyer gave no drop-off point yet. */
+    | 'NO_POSITION'
+  /** The shop has no position: the flat fee applies as a fallback. */
+    | 'NO_SHOP_POSITION'
+    | 'OUT_OF_RANGE'
+
+export interface DeliveryFeeInput {
+  isDelivery: boolean
+  /** Items only: the fee never counts toward its own waiver. */
+  itemsTotal: number
+  /** Shop → drop-off, km; null when either side has no position. */
+  distanceKm: number | null
+  hasShopPosition: boolean
+}
+
+export interface DeliveryFeeResult {
+  /** Null when the delivery cannot be priced (see reason). */
+  fee: number | null
+  reason: DeliveryFeeReason
+  distanceKm: number | null
+}
+
+function roundUpTo(value: number, step: number): number {
+  const safeStep = step > 0 ? step : 1
+  return Math.ceil(value / safeStep) * safeStep
+}
+
+export function computeDeliveryFee(config: DeliveryPricingConfig, input: DeliveryFeeInput): DeliveryFeeResult {
+  const { distanceKm } = input
+  if (!input.isDelivery) {
+    return { fee: 0, reason: 'PICKUP', distanceKm }
   }
-
-  const threshold = pricing.freeDeliveryFrom
-  if (threshold !== null && threshold !== undefined && itemsTotal >= threshold) {
-    return 0
+  if (config.freeFrom !== null && config.freeFrom > 0 && input.itemsTotal >= config.freeFrom) {
+    return { fee: 0, reason: 'FREE_THRESHOLD', distanceKm }
   }
-
-  return fee
+  if (config.mode === 'FLAT') {
+    return { fee: Math.round(config.flat.fee), reason: 'FLAT', distanceKm }
+  }
+  if (!input.hasShopPosition) {
+    return { fee: Math.round(config.flat.fee), reason: 'NO_SHOP_POSITION', distanceKm }
+  }
+  if (distanceKm === null) {
+    return { fee: null, reason: 'NO_POSITION', distanceKm }
+  }
+  if (distanceKm > config.maxDistanceKm) {
+    return { fee: null, reason: 'OUT_OF_RANGE', distanceKm }
+  }
+  if (config.mode === 'DISTANCE') {
+    const { baseFee, perKm, minFee, maxFee, roundTo } = config.distance
+    const raw = roundUpTo(baseFee + perKm * distanceKm, roundTo)
+    return { fee: Math.min(Math.max(raw, minFee), maxFee), reason: 'DISTANCE', distanceKm }
+  }
+  const ring = [...config.zones].sort((a, b) => a.maxKm - b.maxKm).find(zone => distanceKm <= zone.maxKm)
+  if (!ring) {
+    return { fee: null, reason: 'OUT_OF_RANGE', distanceKm }
+  }
+  return { fee: Math.round(ring.fee), reason: 'ZONE', distanceKm }
 }
 
 /**

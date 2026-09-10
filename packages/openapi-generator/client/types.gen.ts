@@ -34,6 +34,43 @@ export type CompleteUpload = {
 };
 
 /**
+ * DeliveryQuoteRequest
+ *
+ * What the buyer would pay to have this basket delivered to this point
+ */
+export type DeliveryQuoteRequest = {
+  supplierId: string;
+  itemsTotal: number;
+  latitude?: number;
+  longitude?: number;
+};
+
+/**
+ * DeliveryPricingConfig
+ *
+ * Platform-wide delivery pricing rules (admin-tuned)
+ */
+export type DeliveryPricingConfig = {
+  mode: DeliveryPricingMode;
+  flat: {
+    fee: number;
+  };
+  distance: {
+    baseFee: number;
+    perKm: number;
+    minFee: number;
+    maxFee: number;
+    roundTo: number;
+  };
+  zones: Array<{
+    maxKm: number;
+    fee: number;
+  }>;
+  freeFrom: number | null;
+  maxDistanceKm: number;
+};
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -1716,6 +1753,25 @@ export const MediaContext = {
  * Contexte d'utilisation du média
  */
 export type MediaContext = (typeof MediaContext)[keyof typeof MediaContext];
+
+/**
+ * DeliveryPricingMode
+ *
+ * How the platform prices a delivery: one fee, base + per-km, or distance rings
+ */
+export const DeliveryPricingMode = {
+  FLAT: "FLAT",
+  DISTANCE: "DISTANCE",
+  ZONES: "ZONES",
+} as const;
+
+/**
+ * DeliveryPricingMode
+ *
+ * How the platform prices a delivery: one fee, base + per-km, or distance rings
+ */
+export type DeliveryPricingMode =
+  (typeof DeliveryPricingMode)[keyof typeof DeliveryPricingMode];
 
 /**
  * OpeningHours
@@ -4942,6 +4998,77 @@ export type PublicSettingsControllerGetPublicData = {
 };
 
 export type PublicSettingsControllerGetPublicResponses = {
+  200: unknown;
+};
+
+export type DeliveryPricingControllerQuoteData = {
+  /**
+   * DeliveryQuoteRequest
+   *
+   * What the buyer would pay to have this basket delivered to this point
+   */
+  body: {
+    supplierId: string;
+    itemsTotal: number;
+    latitude?: number;
+    longitude?: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/delivery-pricing/quote";
+};
+
+export type DeliveryPricingControllerQuoteResponses = {
+  201: unknown;
+};
+
+export type AdminDeliveryPricingControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/delivery-pricing";
+};
+
+export type AdminDeliveryPricingControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminDeliveryPricingControllerUpdateData = {
+  /**
+   * DeliveryPricingConfig
+   *
+   * Platform-wide delivery pricing rules (admin-tuned)
+   */
+  body: {
+    /**
+     * DeliveryPricingMode
+     *
+     * How the platform prices a delivery: one fee, base + per-km, or distance rings
+     */
+    mode: "FLAT" | "DISTANCE" | "ZONES";
+    flat: {
+      fee: number;
+    };
+    distance: {
+      baseFee: number;
+      perKm: number;
+      minFee: number;
+      maxFee: number;
+      roundTo: number;
+    };
+    zones: Array<{
+      maxKm: number;
+      fee: number;
+    }>;
+    freeFrom: number | null;
+    maxDistanceKm: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/delivery-pricing";
+};
+
+export type AdminDeliveryPricingControllerUpdateResponses = {
   200: unknown;
 };
 

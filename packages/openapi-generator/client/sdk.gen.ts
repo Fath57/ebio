@@ -80,6 +80,10 @@ import type {
   AdminCouriersControllerRejectResponses,
   AdminCouriersControllerSuspendData,
   AdminCouriersControllerSuspendResponses,
+  AdminDeliveryPricingControllerGetData,
+  AdminDeliveryPricingControllerGetResponses,
+  AdminDeliveryPricingControllerUpdateData,
+  AdminDeliveryPricingControllerUpdateResponses,
   AdminPromoCodesControllerCreateData,
   AdminPromoCodesControllerCreateResponses,
   AdminPromoCodesControllerListData,
@@ -236,6 +240,8 @@ import type {
   DeliveriesControllerStartResponses,
   DeliveriesControllerTipData,
   DeliveriesControllerTipResponses,
+  DeliveryPricingControllerQuoteData,
+  DeliveryPricingControllerQuoteResponses,
   GeocodingControllerAutocompleteData,
   GeocodingControllerAutocompleteResponses,
   GeocodingControllerResolvePlaceData,
@@ -1979,6 +1985,53 @@ export const publicSettingsControllerGetPublic = <
     unknown,
     ThrowOnError
   >({ url: "/api/settings/public", ...options });
+
+export const deliveryPricingControllerQuote = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<DeliveryPricingControllerQuoteData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    DeliveryPricingControllerQuoteResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/delivery-pricing/quote",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminDeliveryPricingControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminDeliveryPricingControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminDeliveryPricingControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/delivery-pricing", ...options });
+
+export const adminDeliveryPricingControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminDeliveryPricingControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminDeliveryPricingControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/delivery-pricing",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const walletControllerGetMyWallet = <
   ThrowOnError extends boolean = false,

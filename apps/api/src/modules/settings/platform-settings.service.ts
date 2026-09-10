@@ -1,10 +1,14 @@
+import type { DeliveryPricingConfig } from '../../common/delivery-fee'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable } from '@nestjs/common'
+import { DEFAULT_DELIVERY_PRICING } from '../../common/delivery-fee'
+import { deliveryPricingConfigSchema } from './contracts/delivery-pricing.contract'
 import { PlatformSetting } from './platform-setting.entity'
 
 export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
 export const CASH_ON_DELIVERY_MAX_AMOUNT_KEY = 'cash_on_delivery_max_amount'
 export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
+export const DELIVERY_PRICING_KEY = 'delivery_pricing'
 
 /** Applied when the row is missing or unreadable. */
 export const DEFAULT_DELIVERY_COMMISSION_RATE = 0.1
@@ -78,6 +82,25 @@ export class PlatformSettingsService {
       throw new BadRequestException('La dette maximale doit être un montant entier entre 0 et 10 000 000 FCFA')
     }
     await this.set(COURIER_MAX_DEBT_KEY, String(amount))
+  }
+
+  /** Platform delivery pricing; an unreadable or missing row yields the defaults. */
+  async getDeliveryPricing(): Promise<DeliveryPricingConfig> {
+    const raw = await this.get(DELIVERY_PRICING_KEY)
+    if (raw === null) {
+      return DEFAULT_DELIVERY_PRICING
+    }
+    try {
+      const parsed = deliveryPricingConfigSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_DELIVERY_PRICING
+    }
+    catch {
+      return DEFAULT_DELIVERY_PRICING
+    }
+  }
+
+  async setDeliveryPricing(config: DeliveryPricingConfig): Promise<void> {
+    await this.set(DELIVERY_PRICING_KEY, JSON.stringify(config))
   }
 
   /** Admin edits call this so the new value applies immediately. */

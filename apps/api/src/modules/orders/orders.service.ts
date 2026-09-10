@@ -13,7 +13,6 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
-import { computeDeliveryFee } from '../../common/delivery-fee'
 import { thumbnailUrlFor } from '../../common/media-urls'
 import { User, UserRole } from '../auth/auth.entity'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
@@ -28,6 +27,7 @@ import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.ent
 import { ProductVariant } from '../products/entities/product-variant.entity'
 import { Product } from '../products/entities/product.entity'
 import { PromoCodesService } from '../promo-codes/promo-codes.service'
+import { DeliveryPricingService } from '../settings/delivery-pricing.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
@@ -139,6 +139,7 @@ export class OrdersService {
     private readonly emailService: EmailService,
     private readonly routeMapService: RouteMapService,
     private readonly platformSettings: PlatformSettingsService,
+    private readonly deliveryPricing: DeliveryPricingService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -219,7 +220,15 @@ export class OrdersService {
       supplier.commissionRate,
     )
 
-    const deliveryFee = computeDeliveryFee(supplier, data.pickupMode === PickupMode.DELIVERY, totalAmount)
+    // Platform pricing (never the shop's): same rules as the checkout quote,
+    // so the fee charged is the fee the buyer saw. Out of range = refusal.
+    const deliveryFee = await this.deliveryPricing.feeForOrder({
+      supplierId: supplier.id,
+      itemsTotal: totalAmount,
+      isDelivery: data.pickupMode === PickupMode.DELIVERY,
+      latitude: data.deliveryLatitude,
+      longitude: data.deliveryLongitude,
+    })
 
     // Cash: the courier fronts the goods and collects the total at the door,
     // so the platform caps what one order may put in a courier's hands.
