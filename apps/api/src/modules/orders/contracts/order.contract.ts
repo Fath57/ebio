@@ -99,6 +99,8 @@ export const orderItemSchema = z.object({
   quantity: z.number(),
   unitPrice: z.number(),
   totalPrice: z.number(),
+  /** Free unit added by a buy-X-get-Y promotion (unitPrice 0). */
+  isGift: z.boolean(),
 }).meta({
   title: 'OrderItem',
   description: 'An item within an order response',

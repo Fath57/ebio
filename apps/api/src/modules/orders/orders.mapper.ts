@@ -43,6 +43,7 @@ export class OrderMapper {
             quantity: item.quantity,
             unitPrice: item.unitPrice,
             totalPrice: item.totalPrice,
+            isGift: item.isGift,
           }))
         : [],
       delivery,

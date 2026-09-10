@@ -444,6 +444,147 @@ export type VerifyCheckoutInput = {
 };
 
 /**
+ * CreateCategory
+ *
+ * Data required to create a new category
+ */
+export type CreateCategory = {
+  name: string;
+  slug: string;
+  icon: string;
+  imageUrl?: string;
+  sortOrder: number;
+};
+
+/**
+ * UpdateCategory
+ *
+ * Update category -- all fields optional
+ */
+export type UpdateCategory = {
+  name?: string;
+  slug?: string;
+  icon?: string;
+  imageUrl?: string;
+  sortOrder?: number;
+};
+
+/**
+ * CreateProductUnit
+ *
+ * Data required to add a unit of sale
+ */
+export type CreateProductUnit = {
+  code: string;
+  label: string;
+  shortLabel: string;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+/**
+ * UpdateProductUnit
+ *
+ * Update a unit of sale — every field optional, the code is immutable
+ */
+export type UpdateProductUnit = {
+  label?: string;
+  shortLabel?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+/**
+ * CreateProduct
+ *
+ * Data required to create a new product
+ */
+export type CreateProduct = {
+  name: string;
+  categoryId: string;
+  description?: string;
+  pricePerUnit: number;
+  unit: ProductUnitCode;
+  stock: number;
+  stockAlertThreshold: number;
+  status: ProductStatus;
+  variants?: Array<{
+    label: string;
+    pricePerUnit: number;
+    stock?: number;
+  }>;
+  mediaIds?: Array<string>;
+  ingredients?: string;
+  allergens?: Array<AllergenCode>;
+  labels?: Array<ProductLabelCode>;
+  origin?: string;
+  conservation?: string;
+  nutritionalValues?: NutritionalValues;
+};
+
+/**
+ * UpdateProduct
+ *
+ * Update product — all fields optional
+ */
+export type UpdateProduct = {
+  name?: string;
+  categoryId?: string;
+  description?: string;
+  pricePerUnit?: number;
+  unit?: ProductUnitCode;
+  stock?: number;
+  stockAlertThreshold?: number;
+  status?: ProductStatus;
+  variants?: Array<{
+    label: string;
+    pricePerUnit: number;
+    stock?: number;
+  }>;
+  mediaIds?: Array<string>;
+  ingredients?: string;
+  allergens?: Array<AllergenCode>;
+  labels?: Array<ProductLabelCode>;
+  origin?: string;
+  conservation?: string;
+  nutritionalValues?: NutritionalValues;
+  photos?: Array<string>;
+};
+
+/**
+ * StockUpdate
+ *
+ * Update product stock level
+ */
+export type StockUpdate = {
+  stock: number;
+};
+
+/**
+ * Promotion
+ *
+ * Set a promotional price on a product
+ */
+export type Promotion = {
+  promotionalPrice: number;
+  expiresAt: Date;
+};
+
+/**
+ * CreateProductPromotion
+ *
+ * A dated promotion on one product
+ */
+export type CreateProductPromotion = {
+  type: PromotionType;
+  promoPrice?: number;
+  buyQty?: number;
+  getQty?: number;
+  startsAt?: Date;
+  endsAt?: Date | null;
+};
+
+/**
  * ValidatePromo
  *
  * Pre-checkout check: is this code usable on this cart?
@@ -501,6 +642,20 @@ export type CreateOrder = {
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   deliverySlot?: string;
+  promoCode?: string;
+  items: Array<OrderItemInput>;
+};
+
+/**
+ * PreviewOrder
+ *
+ * Basket as it would be charged: promotions, gifts, discount and delivery fee
+ */
+export type PreviewOrder = {
+  supplierId: string;
+  pickupMode: PickupMode;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
   promoCode?: string;
   items: Array<OrderItemInput>;
 };
@@ -1032,133 +1187,6 @@ export type UpdateLandingFaq = {
   answer?: string;
   isActive?: boolean;
   sortOrder?: number;
-};
-
-/**
- * CreateCategory
- *
- * Data required to create a new category
- */
-export type CreateCategory = {
-  name: string;
-  slug: string;
-  icon: string;
-  imageUrl?: string;
-  sortOrder: number;
-};
-
-/**
- * UpdateCategory
- *
- * Update category -- all fields optional
- */
-export type UpdateCategory = {
-  name?: string;
-  slug?: string;
-  icon?: string;
-  imageUrl?: string;
-  sortOrder?: number;
-};
-
-/**
- * CreateProductUnit
- *
- * Data required to add a unit of sale
- */
-export type CreateProductUnit = {
-  code: string;
-  label: string;
-  shortLabel: string;
-  isActive: boolean;
-  sortOrder: number;
-};
-
-/**
- * UpdateProductUnit
- *
- * Update a unit of sale — every field optional, the code is immutable
- */
-export type UpdateProductUnit = {
-  label?: string;
-  shortLabel?: string;
-  isActive?: boolean;
-  sortOrder?: number;
-};
-
-/**
- * CreateProduct
- *
- * Data required to create a new product
- */
-export type CreateProduct = {
-  name: string;
-  categoryId: string;
-  description?: string;
-  pricePerUnit: number;
-  unit: ProductUnitCode;
-  stock: number;
-  stockAlertThreshold: number;
-  status: ProductStatus;
-  variants?: Array<{
-    label: string;
-    pricePerUnit: number;
-    stock?: number;
-  }>;
-  mediaIds?: Array<string>;
-  ingredients?: string;
-  allergens?: Array<AllergenCode>;
-  labels?: Array<ProductLabelCode>;
-  origin?: string;
-  conservation?: string;
-  nutritionalValues?: NutritionalValues;
-};
-
-/**
- * UpdateProduct
- *
- * Update product — all fields optional
- */
-export type UpdateProduct = {
-  name?: string;
-  categoryId?: string;
-  description?: string;
-  pricePerUnit?: number;
-  unit?: ProductUnitCode;
-  stock?: number;
-  stockAlertThreshold?: number;
-  status?: ProductStatus;
-  variants?: Array<{
-    label: string;
-    pricePerUnit: number;
-    stock?: number;
-  }>;
-  mediaIds?: Array<string>;
-  ingredients?: string;
-  allergens?: Array<AllergenCode>;
-  labels?: Array<ProductLabelCode>;
-  origin?: string;
-  conservation?: string;
-  nutritionalValues?: NutritionalValues;
-  photos?: Array<string>;
-};
-
-/**
- * StockUpdate
- *
- * Update product stock level
- */
-export type StockUpdate = {
-  stock: number;
-};
-
-/**
- * Promotion
- *
- * Set a promotional price on a product
- */
-export type Promotion = {
-  promotionalPrice: number;
-  expiresAt: Date;
 };
 
 /**
@@ -1864,6 +1892,144 @@ export type DeliveryFailReason =
   (typeof DeliveryFailReason)[keyof typeof DeliveryFailReason];
 
 /**
+ * PaginationQuerySchema
+ *
+ * Schema for pagination query
+ */
+export type PaginationQuerySchema = {
+  /**
+   * Starting position of the query
+   */
+  offset: number;
+  /**
+   * Number of items to return
+   */
+  pageSize: number;
+};
+
+/**
+ * ProductUnitCode
+ *
+ * Code of a unit of sale, from the product units reference list
+ */
+export type ProductUnitCode = string;
+
+/**
+ * ProductStatus
+ *
+ * Product visibility and availability status
+ */
+export const ProductStatus = {
+  ACTIVE: "ACTIVE",
+  OUT_OF_STOCK: "OUT_OF_STOCK",
+  HIDDEN: "HIDDEN",
+} as const;
+
+/**
+ * ProductStatus
+ *
+ * Product visibility and availability status
+ */
+export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus];
+
+/**
+ * AllergenCode
+ *
+ * One of the 14 EU-regulated allergens (canonical code)
+ */
+export const AllergenCode = {
+  GLUTEN: "gluten",
+  CRUSTACEANS: "crustaceans",
+  EGGS: "eggs",
+  FISH: "fish",
+  PEANUTS: "peanuts",
+  SOY: "soy",
+  MILK: "milk",
+  NUTS: "nuts",
+  CELERY: "celery",
+  MUSTARD: "mustard",
+  SESAME: "sesame",
+  SULPHITES: "sulphites",
+  LUPIN: "lupin",
+  MOLLUSCS: "molluscs",
+} as const;
+
+/**
+ * AllergenCode
+ *
+ * One of the 14 EU-regulated allergens (canonical code)
+ */
+export type AllergenCode = (typeof AllergenCode)[keyof typeof AllergenCode];
+
+/**
+ * ProductLabelCode
+ *
+ * Quality / certification label (canonical code)
+ */
+export const ProductLabelCode = {
+  ORGANIC: "organic",
+  ECOCERT: "ecocert",
+  LOCAL: "local",
+  FAIR_TRADE: "fair-trade",
+  GMO_FREE: "gmo-free",
+  HANDMADE: "handmade",
+  ARTISANAL: "artisanal",
+  VEGAN: "vegan",
+  VEGETARIAN: "vegetarian",
+  GLUTEN_FREE: "gluten-free",
+  LACTOSE_FREE: "lactose-free",
+  SUGAR_FREE: "sugar-free",
+} as const;
+
+/**
+ * ProductLabelCode
+ *
+ * Quality / certification label (canonical code)
+ */
+export type ProductLabelCode =
+  (typeof ProductLabelCode)[keyof typeof ProductLabelCode];
+
+/**
+ * NutritionalValues
+ *
+ * Valeurs nutritionnelles pour 100 g / 100 ml
+ */
+export type NutritionalValues = {
+  /**
+   * NutritionBasis
+   *
+   * Reference quantity the nutritional values are given for
+   */
+  basis: "100g" | "100ml";
+  energyKcal?: number;
+  fat?: number;
+  saturatedFat?: number;
+  carbohydrates?: number;
+  sugars?: number;
+  fiber?: number;
+  protein?: number;
+  salt?: number;
+};
+
+/**
+ * PromotionType
+ *
+ * PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product
+ */
+export const PromotionType = {
+  PRICE: "PRICE",
+  BOGO: "BOGO",
+  FREE_DELIVERY: "FREE_DELIVERY",
+} as const;
+
+/**
+ * PromotionType
+ *
+ * PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product
+ */
+export type PromotionType = (typeof PromotionType)[keyof typeof PromotionType];
+
+/**
  * PromoType
  *
  * Discount type: percentage of the items subtotal, or fixed amount
@@ -2179,22 +2345,6 @@ export type AiGenerateOptions = {
 };
 
 /**
- * PaginationQuerySchema
- *
- * Schema for pagination query
- */
-export type PaginationQuerySchema = {
-  /**
-   * Starting position of the query
-   */
-  offset: number;
-  /**
-   * Number of items to return
-   */
-  pageSize: number;
-};
-
-/**
  * SortingQueryStringSchema
  *
  * Schema for sorting items
@@ -2230,110 +2380,6 @@ export const ContactReason = {
  * Why the visitor is writing
  */
 export type ContactReason = (typeof ContactReason)[keyof typeof ContactReason];
-
-/**
- * ProductUnitCode
- *
- * Code of a unit of sale, from the product units reference list
- */
-export type ProductUnitCode = string;
-
-/**
- * ProductStatus
- *
- * Product visibility and availability status
- */
-export const ProductStatus = {
-  ACTIVE: "ACTIVE",
-  OUT_OF_STOCK: "OUT_OF_STOCK",
-  HIDDEN: "HIDDEN",
-} as const;
-
-/**
- * ProductStatus
- *
- * Product visibility and availability status
- */
-export type ProductStatus = (typeof ProductStatus)[keyof typeof ProductStatus];
-
-/**
- * AllergenCode
- *
- * One of the 14 EU-regulated allergens (canonical code)
- */
-export const AllergenCode = {
-  GLUTEN: "gluten",
-  CRUSTACEANS: "crustaceans",
-  EGGS: "eggs",
-  FISH: "fish",
-  PEANUTS: "peanuts",
-  SOY: "soy",
-  MILK: "milk",
-  NUTS: "nuts",
-  CELERY: "celery",
-  MUSTARD: "mustard",
-  SESAME: "sesame",
-  SULPHITES: "sulphites",
-  LUPIN: "lupin",
-  MOLLUSCS: "molluscs",
-} as const;
-
-/**
- * AllergenCode
- *
- * One of the 14 EU-regulated allergens (canonical code)
- */
-export type AllergenCode = (typeof AllergenCode)[keyof typeof AllergenCode];
-
-/**
- * ProductLabelCode
- *
- * Quality / certification label (canonical code)
- */
-export const ProductLabelCode = {
-  ORGANIC: "organic",
-  ECOCERT: "ecocert",
-  LOCAL: "local",
-  FAIR_TRADE: "fair-trade",
-  GMO_FREE: "gmo-free",
-  HANDMADE: "handmade",
-  ARTISANAL: "artisanal",
-  VEGAN: "vegan",
-  VEGETARIAN: "vegetarian",
-  GLUTEN_FREE: "gluten-free",
-  LACTOSE_FREE: "lactose-free",
-  SUGAR_FREE: "sugar-free",
-} as const;
-
-/**
- * ProductLabelCode
- *
- * Quality / certification label (canonical code)
- */
-export type ProductLabelCode =
-  (typeof ProductLabelCode)[keyof typeof ProductLabelCode];
-
-/**
- * NutritionalValues
- *
- * Valeurs nutritionnelles pour 100 g / 100 ml
- */
-export type NutritionalValues = {
-  /**
-   * NutritionBasis
-   *
-   * Reference quantity the nutritional values are given for
-   */
-  basis: "100g" | "100ml";
-  energyKcal?: number;
-  fat?: number;
-  saturatedFat?: number;
-  carbohydrates?: number;
-  sugars?: number;
-  fiber?: number;
-  protein?: number;
-  salt?: number;
-};
 
 /**
  * SearchProductsQuery
@@ -4124,6 +4170,20 @@ export type GeocodingControllerResolvePlaceData = {
 };
 
 export type GeocodingControllerResolvePlaceResponses = {
+  200: unknown;
+};
+
+export type GeocodingControllerReverseData = {
+  body?: never;
+  path?: never;
+  query: {
+    lat: string;
+    lng: string;
+  };
+  url: "/api/geocoding/reverse";
+};
+
+export type GeocodingControllerReverseResponses = {
   200: unknown;
 };
 
@@ -5969,6 +6029,131 @@ export type ProductUnitsControllerUpdateResponses = {
   200: unknown;
 };
 
+export type SupplierPromotionsControllerListData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}/promotions";
+};
+
+export type SupplierPromotionsControllerListResponses = {
+  200: unknown;
+};
+
+export type SupplierPromotionsControllerCreateData = {
+  /**
+   * CreateProductPromotion
+   *
+   * A dated promotion on one product
+   */
+  body: {
+    /**
+     * PromotionType
+     *
+     * PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product
+     */
+    type: "PRICE" | "BOGO" | "FREE_DELIVERY";
+    promoPrice?: number;
+    buyQty?: number;
+    getQty?: number;
+    startsAt?: Date;
+    endsAt?: Date | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}/promotions";
+};
+
+export type SupplierPromotionsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type SupplierPromotionsControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+    promotionId: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/products/{id}/promotions/{promotionId}";
+};
+
+export type SupplierPromotionsControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type AdminPromotionsControllerListData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/products/{id}/promotions";
+};
+
+export type AdminPromotionsControllerListResponses = {
+  200: unknown;
+};
+
+export type AdminPromotionsControllerCreateData = {
+  /**
+   * CreateProductPromotion
+   *
+   * A dated promotion on one product
+   */
+  body: {
+    /**
+     * PromotionType
+     *
+     * PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product
+     */
+    type: "PRICE" | "BOGO" | "FREE_DELIVERY";
+    promoPrice?: number;
+    buyQty?: number;
+    getQty?: number;
+    startsAt?: Date;
+    endsAt?: Date | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/products/{id}/promotions";
+};
+
+export type AdminPromotionsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type AdminPromotionsControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+    promotionId: string;
+  };
+  query?: never;
+  url: "/api/admin/products/{id}/promotions/{promotionId}";
+};
+
+export type AdminPromotionsControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type RecommendationsControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/recommendations";
+};
+
+export type RecommendationsControllerListResponses = {
+  200: unknown;
+};
+
 export type OrdersControllerFindAllData = {
   body?: never;
   path?: never;
@@ -6022,6 +6207,38 @@ export type OrdersControllerCreateData = {
 };
 
 export type OrdersControllerCreateResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerPreviewData = {
+  /**
+   * PreviewOrder
+   *
+   * Basket as it would be charged: promotions, gifts, discount and delivery fee
+   */
+  body: {
+    supplierId: string;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
+    promoCode?: string;
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders/preview";
+};
+
+export type OrdersControllerPreviewResponses = {
   201: unknown;
 };
 

@@ -3522,6 +3522,37 @@
         }
       }
     },
+    "/api/geocoding/reverse": {
+      "get": {
+        "operationId": "GeocodingController_reverse",
+        "tags": [
+          "Geocoding"
+        ],
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/promo-codes/validate": {
       "post": {
         "operationId": "PromoCodesController_validate",
@@ -7839,6 +7870,290 @@
         }
       }
     },
+    "/api/suppliers/me/products/{id}/promotions": {
+      "get": {
+        "operationId": "SupplierPromotionsController_list",
+        "tags": [
+          "SupplierPromotions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "SupplierPromotionsController_create",
+        "tags": [
+          "SupplierPromotions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "A dated promotion on one product",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PRICE",
+                      "BOGO",
+                      "FREE_DELIVERY"
+                    ],
+                    "title": "PromotionType",
+                    "description": "PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product"
+                  },
+                  "promoPrice": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "buyQty": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "getQty": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  },
+                  "endsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false,
+                "title": "CreateProductPromotion",
+                "description": "A dated promotion on one product"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/products/{id}/promotions/{promotionId}": {
+      "delete": {
+        "operationId": "SupplierPromotionsController_remove",
+        "tags": [
+          "SupplierPromotions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "promotionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/products/{id}/promotions": {
+      "get": {
+        "operationId": "AdminPromotionsController_list",
+        "tags": [
+          "AdminPromotions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "AdminPromotionsController_create",
+        "tags": [
+          "AdminPromotions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "A dated promotion on one product",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PRICE",
+                      "BOGO",
+                      "FREE_DELIVERY"
+                    ],
+                    "title": "PromotionType",
+                    "description": "PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product"
+                  },
+                  "promoPrice": {
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "buyQty": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "getQty": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 20
+                  },
+                  "startsAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  },
+                  "endsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "type"
+                ],
+                "additionalProperties": false,
+                "title": "CreateProductPromotion",
+                "description": "A dated promotion on one product"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/products/{id}/promotions/{promotionId}": {
+      "delete": {
+        "operationId": "AdminPromotionsController_remove",
+        "tags": [
+          "AdminPromotions"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "promotionId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/recommendations": {
+      "get": {
+        "operationId": "RecommendationsController_list",
+        "tags": [
+          "Recommendations"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/orders": {
       "post": {
         "operationId": "OrdersController_create",
@@ -8008,6 +8323,101 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/preview": {
+      "post": {
+        "operationId": "OrdersController_preview",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Basket as it would be charged: promotions, gifts, discount and delivery fee",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "supplierId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "pickupMode": {
+                    "type": "string",
+                    "enum": [
+                      "ON_SITE",
+                      "DELIVERY"
+                    ],
+                    "title": "PickupMode",
+                    "description": "How the buyer will receive the order"
+                  },
+                  "deliveryLatitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "deliveryLongitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "promoCode": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
+                  "items": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "OrderItemInput",
+                      "description": "A single item in the order"
+                    }
+                  }
+                },
+                "required": [
+                  "supplierId",
+                  "pickupMode",
+                  "items"
+                ],
+                "additionalProperties": false,
+                "title": "PreviewOrder",
+                "description": "Basket as it would be charged: promotions, gifts, discount and delivery fee"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         }
@@ -13805,6 +14215,461 @@
         "title": "VerifyCheckoutInput",
         "description": "Input for verifying a payment made via Checkout.js"
       },
+      "CreateCategory": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "icon": {
+            "default": "📦",
+            "type": "string",
+            "maxLength": 50
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "slug",
+          "icon",
+          "sortOrder"
+        ],
+        "additionalProperties": false,
+        "title": "CreateCategory",
+        "description": "Data required to create a new category"
+      },
+      "UpdateCategory": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "slug": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 100
+          },
+          "icon": {
+            "default": "📦",
+            "type": "string",
+            "maxLength": 50
+          },
+          "imageUrl": {
+            "type": "string",
+            "format": "uri"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateCategory",
+        "description": "Update category -- all fields optional"
+      },
+      "CreateProductUnit": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32,
+            "pattern": "^[A-Z0-9_]+$"
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "shortLabel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "shortLabel",
+          "isActive",
+          "sortOrder"
+        ],
+        "additionalProperties": false,
+        "title": "CreateProductUnit",
+        "description": "Data required to add a unit of sale"
+      },
+      "UpdateProductUnit": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "shortLabel": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 16
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateProductUnit",
+        "description": "Update a unit of sale — every field optional, the code is immutable"
+      },
+      "CreateProduct": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "$ref": "#/components/schemas/ProductUnitCode"
+          },
+          "stock": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stockAlertThreshold": {
+            "default": 5,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProductStatus"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "pricePerUnit": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "stock": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "label",
+                "pricePerUnit"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "mediaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "ingredients": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "allergens": {
+            "maxItems": 14,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllergenCode"
+            }
+          },
+          "labels": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLabelCode"
+            }
+          },
+          "origin": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "conservation": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "nutritionalValues": {
+            "$ref": "#/components/schemas/NutritionalValues"
+          }
+        },
+        "required": [
+          "name",
+          "categoryId",
+          "pricePerUnit",
+          "unit",
+          "stock",
+          "stockAlertThreshold",
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "CreateProduct",
+        "description": "Data required to create a new product"
+      },
+      "UpdateProduct": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 200
+          },
+          "categoryId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 2000
+          },
+          "pricePerUnit": {
+            "type": "number",
+            "minimum": 0
+          },
+          "unit": {
+            "$ref": "#/components/schemas/ProductUnitCode"
+          },
+          "stock": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "stockAlertThreshold": {
+            "default": 5,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "status": {
+            "$ref": "#/components/schemas/ProductStatus"
+          },
+          "variants": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "label": {
+                  "type": "string",
+                  "minLength": 1,
+                  "maxLength": 100
+                },
+                "pricePerUnit": {
+                  "type": "number",
+                  "minimum": 0
+                },
+                "stock": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "label",
+                "pricePerUnit"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "mediaIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "ingredients": {
+            "type": "string",
+            "maxLength": 4000
+          },
+          "allergens": {
+            "maxItems": 14,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AllergenCode"
+            }
+          },
+          "labels": {
+            "maxItems": 12,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ProductLabelCode"
+            }
+          },
+          "origin": {
+            "type": "string",
+            "maxLength": 200
+          },
+          "conservation": {
+            "type": "string",
+            "maxLength": 1000
+          },
+          "nutritionalValues": {
+            "$ref": "#/components/schemas/NutritionalValues"
+          },
+          "photos": {
+            "maxItems": 10,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateProduct",
+        "description": "Update product — all fields optional"
+      },
+      "StockUpdate": {
+        "type": "object",
+        "properties": {
+          "stock": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "stock"
+        ],
+        "additionalProperties": false,
+        "title": "StockUpdate",
+        "description": "Update product stock level"
+      },
+      "Promotion": {
+        "type": "object",
+        "properties": {
+          "promotionalPrice": {
+            "type": "number",
+            "minimum": 0
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "promotionalPrice",
+          "expiresAt"
+        ],
+        "additionalProperties": false,
+        "title": "Promotion",
+        "description": "Set a promotional price on a product"
+      },
+      "CreateProductPromotion": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/PromotionType"
+          },
+          "promoPrice": {
+            "type": "number",
+            "minimum": 0
+          },
+          "buyQty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "getQty": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 20
+          },
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "type"
+        ],
+        "additionalProperties": false,
+        "title": "CreateProductPromotion",
+        "description": "A dated promotion on one product"
+      },
       "ValidatePromo": {
         "type": "object",
         "properties": {
@@ -14063,6 +14928,49 @@
             ]
           }
         ]
+      },
+      "PreviewOrder": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "pickupMode": {
+            "$ref": "#/components/schemas/PickupMode"
+          },
+          "deliveryLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "deliveryLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "promoCode": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 30
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            }
+          }
+        },
+        "required": [
+          "supplierId",
+          "pickupMode",
+          "items"
+        ],
+        "additionalProperties": false,
+        "title": "PreviewOrder",
+        "description": "Basket as it would be charged: promotions, gifts, discount and delivery fee"
       },
       "RejectOrder": {
         "type": "object",
@@ -15236,416 +16144,6 @@
         },
         "additionalProperties": false,
         "title": "UpdateLandingFaq"
-      },
-      "CreateCategory": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "slug": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "icon": {
-            "default": "📦",
-            "type": "string",
-            "maxLength": 50
-          },
-          "imageUrl": {
-            "type": "string",
-            "format": "uri"
-          },
-          "sortOrder": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "name",
-          "slug",
-          "icon",
-          "sortOrder"
-        ],
-        "additionalProperties": false,
-        "title": "CreateCategory",
-        "description": "Data required to create a new category"
-      },
-      "UpdateCategory": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "slug": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 100
-          },
-          "icon": {
-            "default": "📦",
-            "type": "string",
-            "maxLength": 50
-          },
-          "imageUrl": {
-            "type": "string",
-            "format": "uri"
-          },
-          "sortOrder": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateCategory",
-        "description": "Update category -- all fields optional"
-      },
-      "CreateProductUnit": {
-        "type": "object",
-        "properties": {
-          "code": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 32,
-            "pattern": "^[A-Z0-9_]+$"
-          },
-          "label": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "shortLabel": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 16
-          },
-          "isActive": {
-            "default": true,
-            "type": "boolean"
-          },
-          "sortOrder": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "code",
-          "label",
-          "shortLabel",
-          "isActive",
-          "sortOrder"
-        ],
-        "additionalProperties": false,
-        "title": "CreateProductUnit",
-        "description": "Data required to add a unit of sale"
-      },
-      "UpdateProductUnit": {
-        "type": "object",
-        "properties": {
-          "label": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 64
-          },
-          "shortLabel": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 16
-          },
-          "isActive": {
-            "default": true,
-            "type": "boolean"
-          },
-          "sortOrder": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateProductUnit",
-        "description": "Update a unit of sale — every field optional, the code is immutable"
-      },
-      "CreateProduct": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 200
-          },
-          "categoryId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 2000
-          },
-          "pricePerUnit": {
-            "type": "number",
-            "minimum": 0
-          },
-          "unit": {
-            "$ref": "#/components/schemas/ProductUnitCode"
-          },
-          "stock": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "stockAlertThreshold": {
-            "default": 5,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "status": {
-            "$ref": "#/components/schemas/ProductStatus"
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 100
-                },
-                "pricePerUnit": {
-                  "type": "number",
-                  "minimum": 0
-                },
-                "stock": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                }
-              },
-              "required": [
-                "label",
-                "pricePerUnit"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "mediaIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          },
-          "ingredients": {
-            "type": "string",
-            "maxLength": 4000
-          },
-          "allergens": {
-            "maxItems": 14,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AllergenCode"
-            }
-          },
-          "labels": {
-            "maxItems": 12,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProductLabelCode"
-            }
-          },
-          "origin": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "conservation": {
-            "type": "string",
-            "maxLength": 1000
-          },
-          "nutritionalValues": {
-            "$ref": "#/components/schemas/NutritionalValues"
-          }
-        },
-        "required": [
-          "name",
-          "categoryId",
-          "pricePerUnit",
-          "unit",
-          "stock",
-          "stockAlertThreshold",
-          "status"
-        ],
-        "additionalProperties": false,
-        "title": "CreateProduct",
-        "description": "Data required to create a new product"
-      },
-      "UpdateProduct": {
-        "type": "object",
-        "properties": {
-          "name": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 200
-          },
-          "categoryId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "description": {
-            "type": "string",
-            "maxLength": 2000
-          },
-          "pricePerUnit": {
-            "type": "number",
-            "minimum": 0
-          },
-          "unit": {
-            "$ref": "#/components/schemas/ProductUnitCode"
-          },
-          "stock": {
-            "default": 0,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "stockAlertThreshold": {
-            "default": 5,
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "status": {
-            "$ref": "#/components/schemas/ProductStatus"
-          },
-          "variants": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "label": {
-                  "type": "string",
-                  "minLength": 1,
-                  "maxLength": 100
-                },
-                "pricePerUnit": {
-                  "type": "number",
-                  "minimum": 0
-                },
-                "stock": {
-                  "type": "integer",
-                  "minimum": 0,
-                  "maximum": 9007199254740991
-                }
-              },
-              "required": [
-                "label",
-                "pricePerUnit"
-              ],
-              "additionalProperties": false
-            }
-          },
-          "mediaIds": {
-            "type": "array",
-            "items": {
-              "type": "string",
-              "format": "uuid",
-              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-            }
-          },
-          "ingredients": {
-            "type": "string",
-            "maxLength": 4000
-          },
-          "allergens": {
-            "maxItems": 14,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/AllergenCode"
-            }
-          },
-          "labels": {
-            "maxItems": 12,
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/ProductLabelCode"
-            }
-          },
-          "origin": {
-            "type": "string",
-            "maxLength": 200
-          },
-          "conservation": {
-            "type": "string",
-            "maxLength": 1000
-          },
-          "nutritionalValues": {
-            "$ref": "#/components/schemas/NutritionalValues"
-          },
-          "photos": {
-            "maxItems": 10,
-            "type": "array",
-            "items": {
-              "type": "string"
-            }
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateProduct",
-        "description": "Update product — all fields optional"
-      },
-      "StockUpdate": {
-        "type": "object",
-        "properties": {
-          "stock": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          }
-        },
-        "required": [
-          "stock"
-        ],
-        "additionalProperties": false,
-        "title": "StockUpdate",
-        "description": "Update product stock level"
-      },
-      "Promotion": {
-        "type": "object",
-        "properties": {
-          "promotionalPrice": {
-            "type": "number",
-            "minimum": 0
-          },
-          "expiresAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-          }
-        },
-        "required": [
-          "promotionalPrice",
-          "expiresAt"
-        ],
-        "additionalProperties": false,
-        "title": "Promotion",
-        "description": "Set a promotional price on a product"
       },
       "CreateReview": {
         "type": "object",
@@ -17319,6 +17817,161 @@
         "title": "DeliveryFailReason",
         "description": "Why a delivery could not be completed"
       },
+      "PaginationQuerySchema": {
+        "type": "object",
+        "properties": {
+          "offset": {
+            "default": 0,
+            "description": "Starting position of the query",
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "pageSize": {
+            "default": 20,
+            "description": "Number of items to return",
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "offset",
+          "pageSize"
+        ],
+        "additionalProperties": false,
+        "title": "PaginationQuerySchema",
+        "description": "Schema for pagination query"
+      },
+      "ProductUnitCode": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 32,
+        "title": "ProductUnitCode",
+        "description": "Code of a unit of sale, from the product units reference list"
+      },
+      "ProductStatus": {
+        "default": "ACTIVE",
+        "type": "string",
+        "enum": [
+          "ACTIVE",
+          "OUT_OF_STOCK",
+          "HIDDEN"
+        ],
+        "title": "ProductStatus",
+        "description": "Product visibility and availability status"
+      },
+      "AllergenCode": {
+        "type": "string",
+        "enum": [
+          "gluten",
+          "crustaceans",
+          "eggs",
+          "fish",
+          "peanuts",
+          "soy",
+          "milk",
+          "nuts",
+          "celery",
+          "mustard",
+          "sesame",
+          "sulphites",
+          "lupin",
+          "molluscs"
+        ],
+        "title": "AllergenCode",
+        "description": "One of the 14 EU-regulated allergens (canonical code)"
+      },
+      "ProductLabelCode": {
+        "type": "string",
+        "enum": [
+          "organic",
+          "ecocert",
+          "local",
+          "fair-trade",
+          "gmo-free",
+          "handmade",
+          "artisanal",
+          "vegan",
+          "vegetarian",
+          "gluten-free",
+          "lactose-free",
+          "sugar-free"
+        ],
+        "title": "ProductLabelCode",
+        "description": "Quality / certification label (canonical code)"
+      },
+      "NutritionalValues": {
+        "type": "object",
+        "properties": {
+          "basis": {
+            "default": "100g",
+            "type": "string",
+            "enum": [
+              "100g",
+              "100ml"
+            ],
+            "title": "NutritionBasis",
+            "description": "Reference quantity the nutritional values are given for"
+          },
+          "energyKcal": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 900
+          },
+          "fat": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "saturatedFat": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "carbohydrates": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "sugars": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "fiber": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "protein": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "salt": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "basis"
+        ],
+        "additionalProperties": false,
+        "title": "NutritionalValues",
+        "description": "Valeurs nutritionnelles pour 100 g / 100 ml"
+      },
+      "PromotionType": {
+        "type": "string",
+        "enum": [
+          "PRICE",
+          "BOGO",
+          "FREE_DELIVERY"
+        ],
+        "title": "PromotionType",
+        "description": "PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product"
+      },
       "PromoType": {
         "type": "string",
         "enum": [
@@ -17882,32 +18535,6 @@
         "title": "AiGenerateOptions",
         "description": "Options for an AI generation"
       },
-      "PaginationQuerySchema": {
-        "type": "object",
-        "properties": {
-          "offset": {
-            "default": 0,
-            "description": "Starting position of the query",
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "pageSize": {
-            "default": 20,
-            "description": "Number of items to return",
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 100
-          }
-        },
-        "required": [
-          "offset",
-          "pageSize"
-        ],
-        "additionalProperties": false,
-        "title": "PaginationQuerySchema",
-        "description": "Schema for pagination query"
-      },
       "SortingQueryStringSchema": {
         "title": "SortingQueryStringSchema",
         "description": "Schema for sorting items",
@@ -18006,125 +18633,6 @@
         ],
         "title": "ContactReason",
         "description": "Why the visitor is writing"
-      },
-      "ProductUnitCode": {
-        "type": "string",
-        "minLength": 1,
-        "maxLength": 32,
-        "title": "ProductUnitCode",
-        "description": "Code of a unit of sale, from the product units reference list"
-      },
-      "ProductStatus": {
-        "default": "ACTIVE",
-        "type": "string",
-        "enum": [
-          "ACTIVE",
-          "OUT_OF_STOCK",
-          "HIDDEN"
-        ],
-        "title": "ProductStatus",
-        "description": "Product visibility and availability status"
-      },
-      "AllergenCode": {
-        "type": "string",
-        "enum": [
-          "gluten",
-          "crustaceans",
-          "eggs",
-          "fish",
-          "peanuts",
-          "soy",
-          "milk",
-          "nuts",
-          "celery",
-          "mustard",
-          "sesame",
-          "sulphites",
-          "lupin",
-          "molluscs"
-        ],
-        "title": "AllergenCode",
-        "description": "One of the 14 EU-regulated allergens (canonical code)"
-      },
-      "ProductLabelCode": {
-        "type": "string",
-        "enum": [
-          "organic",
-          "ecocert",
-          "local",
-          "fair-trade",
-          "gmo-free",
-          "handmade",
-          "artisanal",
-          "vegan",
-          "vegetarian",
-          "gluten-free",
-          "lactose-free",
-          "sugar-free"
-        ],
-        "title": "ProductLabelCode",
-        "description": "Quality / certification label (canonical code)"
-      },
-      "NutritionalValues": {
-        "type": "object",
-        "properties": {
-          "basis": {
-            "default": "100g",
-            "type": "string",
-            "enum": [
-              "100g",
-              "100ml"
-            ],
-            "title": "NutritionBasis",
-            "description": "Reference quantity the nutritional values are given for"
-          },
-          "energyKcal": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 900
-          },
-          "fat": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "saturatedFat": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "carbohydrates": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "sugars": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "fiber": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "protein": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          },
-          "salt": {
-            "type": "number",
-            "minimum": 0,
-            "maximum": 100
-          }
-        },
-        "required": [
-          "basis"
-        ],
-        "additionalProperties": false,
-        "title": "NutritionalValues",
-        "description": "Valeurs nutritionnelles pour 100 g / 100 ml"
       },
       "SearchProductsQuery": {
         "type": "object",

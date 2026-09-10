@@ -343,6 +343,84 @@ export const zVerifyCheckoutInput = z.object({
 });
 
 /**
+ * CreateCategory
+ *
+ * Data required to create a new category
+ */
+export const zCreateCategory = z.object({
+  name: z.string().min(1).max(100),
+  slug: z.string().min(1).max(100),
+  icon: z.string().max(50).default("📦"),
+  imageUrl: z.optional(z.url()),
+  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateCategory
+ *
+ * Update category -- all fields optional
+ */
+export const zUpdateCategory = z.object({
+  name: z.optional(z.string().min(1).max(100)),
+  slug: z.optional(z.string().min(1).max(100)),
+  icon: z.optional(z.string().max(50)).default("📦"),
+  imageUrl: z.optional(z.url()),
+  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
+ * CreateProductUnit
+ *
+ * Data required to add a unit of sale
+ */
+export const zCreateProductUnit = z.object({
+  code: z
+    .string()
+    .min(1)
+    .max(32)
+    .regex(/^[A-Z0-9_]+$/),
+  label: z.string().min(1).max(64),
+  shortLabel: z.string().min(1).max(16),
+  isActive: z.boolean().default(true),
+  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateProductUnit
+ *
+ * Update a unit of sale — every field optional, the code is immutable
+ */
+export const zUpdateProductUnit = z.object({
+  label: z.optional(z.string().min(1).max(64)),
+  shortLabel: z.optional(z.string().min(1).max(16)),
+  isActive: z.optional(z.boolean()).default(true),
+  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
+ * StockUpdate
+ *
+ * Update product stock level
+ */
+export const zStockUpdate = z.object({
+  stock: z.int().gte(0).lte(9007199254740991),
+});
+
+/**
+ * Promotion
+ *
+ * Set a promotional price on a product
+ */
+export const zPromotion = z.object({
+  promotionalPrice: z.number().gte(0),
+  expiresAt: z.iso
+    .datetime()
+    .regex(
+      /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+    ),
+});
+
+/**
  * ValidatePromo
  *
  * Pre-checkout check: is this code usable on this cart?
@@ -739,84 +817,6 @@ export const zUpdateLandingFaq = z.object({
   answer: z.optional(z.string().min(1).max(2000)),
   isActive: z.optional(z.boolean()).default(true),
   sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
-});
-
-/**
- * CreateCategory
- *
- * Data required to create a new category
- */
-export const zCreateCategory = z.object({
-  name: z.string().min(1).max(100),
-  slug: z.string().min(1).max(100),
-  icon: z.string().max(50).default("📦"),
-  imageUrl: z.optional(z.url()),
-  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
-});
-
-/**
- * UpdateCategory
- *
- * Update category -- all fields optional
- */
-export const zUpdateCategory = z.object({
-  name: z.optional(z.string().min(1).max(100)),
-  slug: z.optional(z.string().min(1).max(100)),
-  icon: z.optional(z.string().max(50)).default("📦"),
-  imageUrl: z.optional(z.url()),
-  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
-});
-
-/**
- * CreateProductUnit
- *
- * Data required to add a unit of sale
- */
-export const zCreateProductUnit = z.object({
-  code: z
-    .string()
-    .min(1)
-    .max(32)
-    .regex(/^[A-Z0-9_]+$/),
-  label: z.string().min(1).max(64),
-  shortLabel: z.string().min(1).max(16),
-  isActive: z.boolean().default(true),
-  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
-});
-
-/**
- * UpdateProductUnit
- *
- * Update a unit of sale — every field optional, the code is immutable
- */
-export const zUpdateProductUnit = z.object({
-  label: z.optional(z.string().min(1).max(64)),
-  shortLabel: z.optional(z.string().min(1).max(16)),
-  isActive: z.optional(z.boolean()).default(true),
-  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
-});
-
-/**
- * StockUpdate
- *
- * Update product stock level
- */
-export const zStockUpdate = z.object({
-  stock: z.int().gte(0).lte(9007199254740991),
-});
-
-/**
- * Promotion
- *
- * Set a promotional price on a product
- */
-export const zPromotion = z.object({
-  promotionalPrice: z.number().gte(0),
-  expiresAt: z.iso
-    .datetime()
-    .regex(
-      /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-    ),
 });
 
 /**
@@ -1769,6 +1769,218 @@ export const zFailDelivery = z.object({
 });
 
 /**
+ * PaginationQuerySchema
+ *
+ * Schema for pagination query
+ */
+export const zPaginationQuerySchema = z.object({
+  offset: z.int().gte(0).lte(9007199254740991).default(0),
+  pageSize: z.int().gte(1).lte(100).default(20),
+});
+
+/**
+ * ProductUnitCode
+ *
+ * Code of a unit of sale, from the product units reference list
+ */
+export const zProductUnitCode = z.string().min(1).max(32);
+
+/**
+ * ProductStatus
+ *
+ * Product visibility and availability status
+ */
+export const zProductStatus = z.enum(["ACTIVE", "OUT_OF_STOCK", "HIDDEN"]);
+
+/**
+ * AllergenCode
+ *
+ * One of the 14 EU-regulated allergens (canonical code)
+ */
+export const zAllergenCode = z.enum([
+  "gluten",
+  "crustaceans",
+  "eggs",
+  "fish",
+  "peanuts",
+  "soy",
+  "milk",
+  "nuts",
+  "celery",
+  "mustard",
+  "sesame",
+  "sulphites",
+  "lupin",
+  "molluscs",
+]);
+
+/**
+ * ProductLabelCode
+ *
+ * Quality / certification label (canonical code)
+ */
+export const zProductLabelCode = z.enum([
+  "organic",
+  "ecocert",
+  "local",
+  "fair-trade",
+  "gmo-free",
+  "handmade",
+  "artisanal",
+  "vegan",
+  "vegetarian",
+  "gluten-free",
+  "lactose-free",
+  "sugar-free",
+]);
+
+/**
+ * NutritionalValues
+ *
+ * Valeurs nutritionnelles pour 100 g / 100 ml
+ */
+export const zNutritionalValues = z.object({
+  basis: z.enum(["100g", "100ml"]),
+  energyKcal: z.optional(z.number().gte(0).lte(900)),
+  fat: z.optional(z.number().gte(0).lte(100)),
+  saturatedFat: z.optional(z.number().gte(0).lte(100)),
+  carbohydrates: z.optional(z.number().gte(0).lte(100)),
+  sugars: z.optional(z.number().gte(0).lte(100)),
+  fiber: z.optional(z.number().gte(0).lte(100)),
+  protein: z.optional(z.number().gte(0).lte(100)),
+  salt: z.optional(z.number().gte(0).lte(100)),
+});
+
+/**
+ * CreateProduct
+ *
+ * Data required to create a new product
+ */
+export const zCreateProduct = z.object({
+  name: z.string().min(2).max(200),
+  categoryId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  description: z.optional(z.string().max(2000)),
+  pricePerUnit: z.number().gte(0),
+  unit: zProductUnitCode,
+  stock: z.int().gte(0).lte(9007199254740991).default(0),
+  stockAlertThreshold: z.int().gte(0).lte(9007199254740991).default(5),
+  status: zProductStatus,
+  variants: z.optional(
+    z.array(
+      z.object({
+        label: z.string().min(1).max(100),
+        pricePerUnit: z.number().gte(0),
+        stock: z.optional(z.int().gte(0).lte(9007199254740991)),
+      }),
+    ),
+  ),
+  mediaIds: z.optional(
+    z.array(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+  ),
+  ingredients: z.optional(z.string().max(4000)),
+  allergens: z.optional(z.array(zAllergenCode).max(14)),
+  labels: z.optional(z.array(zProductLabelCode).max(12)),
+  origin: z.optional(z.string().max(200)),
+  conservation: z.optional(z.string().max(1000)),
+  nutritionalValues: z.optional(zNutritionalValues),
+});
+
+/**
+ * UpdateProduct
+ *
+ * Update product — all fields optional
+ */
+export const zUpdateProduct = z.object({
+  name: z.optional(z.string().min(2).max(200)),
+  categoryId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  description: z.optional(z.string().max(2000)),
+  pricePerUnit: z.optional(z.number().gte(0)),
+  unit: z.optional(zProductUnitCode),
+  stock: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  stockAlertThreshold: z
+    .optional(z.int().gte(0).lte(9007199254740991))
+    .default(5),
+  status: z.optional(zProductStatus),
+  variants: z.optional(
+    z.array(
+      z.object({
+        label: z.string().min(1).max(100),
+        pricePerUnit: z.number().gte(0),
+        stock: z.optional(z.int().gte(0).lte(9007199254740991)),
+      }),
+    ),
+  ),
+  mediaIds: z.optional(
+    z.array(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+  ),
+  ingredients: z.optional(z.string().max(4000)),
+  allergens: z.optional(z.array(zAllergenCode).max(14)),
+  labels: z.optional(z.array(zProductLabelCode).max(12)),
+  origin: z.optional(z.string().max(200)),
+  conservation: z.optional(z.string().max(1000)),
+  nutritionalValues: z.optional(zNutritionalValues),
+  photos: z.optional(z.array(z.string()).max(10)),
+});
+
+/**
+ * PromotionType
+ *
+ * PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product
+ */
+export const zPromotionType = z.enum(["PRICE", "BOGO", "FREE_DELIVERY"]);
+
+/**
+ * CreateProductPromotion
+ *
+ * A dated promotion on one product
+ */
+export const zCreateProductPromotion = z.object({
+  type: zPromotionType,
+  promoPrice: z.optional(z.number().gte(0)),
+  buyQty: z.optional(z.int().gte(1).lte(20)),
+  getQty: z.optional(z.int().gte(1).lte(20)),
+  startsAt: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+      ),
+  ),
+  endsAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
+});
+
+/**
  * PromoType
  *
  * Discount type: percentage of the items subtotal, or fixed amount
@@ -1901,6 +2113,24 @@ export const zCreateOrder = z.object({
   deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   deliverySlot: z.optional(z.string().max(200)),
+  promoCode: z.optional(z.string().min(1).max(30)),
+  items: z.array(zOrderItemInput).min(1),
+});
+
+/**
+ * PreviewOrder
+ *
+ * Basket as it would be charged: promotions, gifts, discount and delivery fee
+ */
+export const zPreviewOrder = z.object({
+  supplierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  pickupMode: zPickupMode,
+  deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+  deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   promoCode: z.optional(z.string().min(1).max(30)),
   items: z.array(zOrderItemInput).min(1),
 });
@@ -2322,16 +2552,6 @@ export const zStreamChatRequest = z.object({
 });
 
 /**
- * PaginationQuerySchema
- *
- * Schema for pagination query
- */
-export const zPaginationQuerySchema = z.object({
-  offset: z.int().gte(0).lte(9007199254740991).default(0),
-  pageSize: z.int().gte(1).lte(100).default(20),
-});
-
-/**
  * SortingQueryStringSchema
  *
  * Schema for sorting items
@@ -2381,172 +2601,6 @@ export const zContactMessage = z.object({
   message: z.string().min(10).max(3000),
   company: z.optional(z.string().max(0)),
   startedAt: z.int().gt(0).lte(9007199254740991),
-});
-
-/**
- * ProductUnitCode
- *
- * Code of a unit of sale, from the product units reference list
- */
-export const zProductUnitCode = z.string().min(1).max(32);
-
-/**
- * ProductStatus
- *
- * Product visibility and availability status
- */
-export const zProductStatus = z.enum(["ACTIVE", "OUT_OF_STOCK", "HIDDEN"]);
-
-/**
- * AllergenCode
- *
- * One of the 14 EU-regulated allergens (canonical code)
- */
-export const zAllergenCode = z.enum([
-  "gluten",
-  "crustaceans",
-  "eggs",
-  "fish",
-  "peanuts",
-  "soy",
-  "milk",
-  "nuts",
-  "celery",
-  "mustard",
-  "sesame",
-  "sulphites",
-  "lupin",
-  "molluscs",
-]);
-
-/**
- * ProductLabelCode
- *
- * Quality / certification label (canonical code)
- */
-export const zProductLabelCode = z.enum([
-  "organic",
-  "ecocert",
-  "local",
-  "fair-trade",
-  "gmo-free",
-  "handmade",
-  "artisanal",
-  "vegan",
-  "vegetarian",
-  "gluten-free",
-  "lactose-free",
-  "sugar-free",
-]);
-
-/**
- * NutritionalValues
- *
- * Valeurs nutritionnelles pour 100 g / 100 ml
- */
-export const zNutritionalValues = z.object({
-  basis: z.enum(["100g", "100ml"]),
-  energyKcal: z.optional(z.number().gte(0).lte(900)),
-  fat: z.optional(z.number().gte(0).lte(100)),
-  saturatedFat: z.optional(z.number().gte(0).lte(100)),
-  carbohydrates: z.optional(z.number().gte(0).lte(100)),
-  sugars: z.optional(z.number().gte(0).lte(100)),
-  fiber: z.optional(z.number().gte(0).lte(100)),
-  protein: z.optional(z.number().gte(0).lte(100)),
-  salt: z.optional(z.number().gte(0).lte(100)),
-});
-
-/**
- * CreateProduct
- *
- * Data required to create a new product
- */
-export const zCreateProduct = z.object({
-  name: z.string().min(2).max(200),
-  categoryId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  description: z.optional(z.string().max(2000)),
-  pricePerUnit: z.number().gte(0),
-  unit: zProductUnitCode,
-  stock: z.int().gte(0).lte(9007199254740991).default(0),
-  stockAlertThreshold: z.int().gte(0).lte(9007199254740991).default(5),
-  status: zProductStatus,
-  variants: z.optional(
-    z.array(
-      z.object({
-        label: z.string().min(1).max(100),
-        pricePerUnit: z.number().gte(0),
-        stock: z.optional(z.int().gte(0).lte(9007199254740991)),
-      }),
-    ),
-  ),
-  mediaIds: z.optional(
-    z.array(
-      z
-        .uuid()
-        .regex(
-          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-        ),
-    ),
-  ),
-  ingredients: z.optional(z.string().max(4000)),
-  allergens: z.optional(z.array(zAllergenCode).max(14)),
-  labels: z.optional(z.array(zProductLabelCode).max(12)),
-  origin: z.optional(z.string().max(200)),
-  conservation: z.optional(z.string().max(1000)),
-  nutritionalValues: z.optional(zNutritionalValues),
-});
-
-/**
- * UpdateProduct
- *
- * Update product — all fields optional
- */
-export const zUpdateProduct = z.object({
-  name: z.optional(z.string().min(2).max(200)),
-  categoryId: z.optional(
-    z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  ),
-  description: z.optional(z.string().max(2000)),
-  pricePerUnit: z.optional(z.number().gte(0)),
-  unit: z.optional(zProductUnitCode),
-  stock: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
-  stockAlertThreshold: z
-    .optional(z.int().gte(0).lte(9007199254740991))
-    .default(5),
-  status: z.optional(zProductStatus),
-  variants: z.optional(
-    z.array(
-      z.object({
-        label: z.string().min(1).max(100),
-        pricePerUnit: z.number().gte(0),
-        stock: z.optional(z.int().gte(0).lte(9007199254740991)),
-      }),
-    ),
-  ),
-  mediaIds: z.optional(
-    z.array(
-      z
-        .uuid()
-        .regex(
-          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-        ),
-    ),
-  ),
-  ingredients: z.optional(z.string().max(4000)),
-  allergens: z.optional(z.array(zAllergenCode).max(14)),
-  labels: z.optional(z.array(zProductLabelCode).max(12)),
-  origin: z.optional(z.string().max(200)),
-  conservation: z.optional(z.string().max(1000)),
-  nutritionalValues: z.optional(zNutritionalValues),
-  photos: z.optional(z.array(z.string()).max(10)),
 });
 
 /**
@@ -3736,6 +3790,15 @@ export const zGeocodingControllerResolvePlaceData = z.object({
   query: z.object({
     placeId: z.string(),
     session: z.string(),
+  }),
+});
+
+export const zGeocodingControllerReverseData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    lat: z.string(),
+    lng: z.string(),
   }),
 });
 
@@ -5064,6 +5127,106 @@ export const zProductUnitsControllerUpdateData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zSupplierPromotionsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierPromotionsControllerCreateData = z.object({
+  body: z.object({
+    type: z.enum(["PRICE", "BOGO", "FREE_DELIVERY"]),
+    promoPrice: z.optional(z.number().gte(0)),
+    buyQty: z.optional(z.int().gte(1).lte(20)),
+    getQty: z.optional(z.int().gte(1).lte(20)),
+    startsAt: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+    endsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierPromotionsControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    promotionId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminPromotionsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminPromotionsControllerCreateData = z.object({
+  body: z.object({
+    type: z.enum(["PRICE", "BOGO", "FREE_DELIVERY"]),
+    promoPrice: z.optional(z.number().gte(0)),
+    buyQty: z.optional(z.int().gte(1).lte(20)),
+    getQty: z.optional(z.int().gte(1).lte(20)),
+    startsAt: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+    endsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminPromotionsControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+    promotionId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zRecommendationsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zOrdersControllerFindAllData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -5088,6 +5251,41 @@ export const zOrdersControllerCreateData = z.object({
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     deliverySlot: z.optional(z.string().max(200)),
+    promoCode: z.optional(z.string().min(1).max(30)),
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gte(1).lte(9007199254740991),
+        }),
+      )
+      .min(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerPreviewData = z.object({
+  body: z.object({
+    supplierId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     promoCode: z.optional(z.string().min(1).max(30)),
     items: z
       .array(

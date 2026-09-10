@@ -92,6 +92,12 @@ import type {
   AdminPromoCodesControllerRemoveResponses,
   AdminPromoCodesControllerUpdateData,
   AdminPromoCodesControllerUpdateResponses,
+  AdminPromotionsControllerCreateData,
+  AdminPromotionsControllerCreateResponses,
+  AdminPromotionsControllerListData,
+  AdminPromotionsControllerListResponses,
+  AdminPromotionsControllerRemoveData,
+  AdminPromotionsControllerRemoveResponses,
   AdminUsersControllerBanData,
   AdminUsersControllerBanResponses,
   AdminUsersControllerGetByIdData,
@@ -246,6 +252,8 @@ import type {
   GeocodingControllerAutocompleteResponses,
   GeocodingControllerResolvePlaceData,
   GeocodingControllerResolvePlaceResponses,
+  GeocodingControllerReverseData,
+  GeocodingControllerReverseResponses,
   LandingControllerCreateFaqData,
   LandingControllerCreateFaqResponses,
   LandingControllerFindAllFaqsData,
@@ -306,6 +314,8 @@ import type {
   OrdersControllerFindByIdResponses,
   OrdersControllerInvoiceData,
   OrdersControllerInvoiceResponses,
+  OrdersControllerPreviewData,
+  OrdersControllerPreviewResponses,
   OrdersControllerRejectData,
   OrdersControllerRejectResponses,
   OrdersControllerUpdateStatusData,
@@ -424,6 +434,8 @@ import type {
   RatingsControllerGetSupplierReviewsResponses,
   RatingsControllerReportReviewData,
   RatingsControllerReportReviewResponses,
+  RecommendationsControllerListData,
+  RecommendationsControllerListResponses,
   RolesControllerAssignRoleData,
   RolesControllerAssignRoleResponses,
   RolesControllerCreateData,
@@ -470,6 +482,12 @@ import type {
   SupplierPromoCodesControllerRemoveResponses,
   SupplierPromoCodesControllerUpdateData,
   SupplierPromoCodesControllerUpdateResponses,
+  SupplierPromotionsControllerCreateData,
+  SupplierPromotionsControllerCreateResponses,
+  SupplierPromotionsControllerListData,
+  SupplierPromotionsControllerListResponses,
+  SupplierPromotionsControllerRemoveData,
+  SupplierPromotionsControllerRemoveResponses,
   SuppliersControllerCreateDeliveryZoneData,
   SuppliersControllerCreateDeliveryZoneResponses,
   SuppliersControllerDeleteDeliveryZoneData,
@@ -1388,6 +1406,17 @@ export const geocodingControllerResolvePlace = <
     unknown,
     ThrowOnError
   >({ url: "/api/geocoding/place", ...options });
+
+export const geocodingControllerReverse = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<GeocodingControllerReverseData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GeocodingControllerReverseResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/geocoding/reverse", ...options });
 
 export const promoCodesControllerValidate = <
   ThrowOnError extends boolean = false,
@@ -2659,6 +2688,100 @@ export const productUnitsControllerUpdate = <
     },
   });
 
+export const supplierPromotionsControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierPromotionsControllerListData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SupplierPromotionsControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/products/{id}/promotions", ...options });
+
+export const supplierPromotionsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierPromotionsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SupplierPromotionsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/products/{id}/promotions",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierPromotionsControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierPromotionsControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    SupplierPromotionsControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/products/{id}/promotions/{promotionId}",
+    ...options,
+  });
+
+export const adminPromotionsControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminPromotionsControllerListData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminPromotionsControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/products/{id}/promotions", ...options });
+
+export const adminPromotionsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminPromotionsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminPromotionsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/products/{id}/promotions",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminPromotionsControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminPromotionsControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    AdminPromotionsControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/products/{id}/promotions/{promotionId}", ...options });
+
+export const recommendationsControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<RecommendationsControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    RecommendationsControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/recommendations", ...options });
+
 export const ordersControllerFindAll = <ThrowOnError extends boolean = false>(
   options: Options<OrdersControllerFindAllData, ThrowOnError>,
 ) =>
@@ -2677,6 +2800,22 @@ export const ordersControllerCreate = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({
     url: "/api/orders",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerPreview = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerPreviewData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerPreviewResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/preview",
     ...options,
     headers: {
       "Content-Type": "application/json",

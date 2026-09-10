@@ -861,6 +861,7 @@ export class AdminService {
               o.commission_rate, o."createdAt" as created_at, o.pickup_mode,
               o.payment_method, o.delivery_address, o.delivery_slot,
               o.accepted_at, o.delivered_at, o.estimated_ready_at,
+              o.delivery_sponsor, o.sponsored_delivery_fee, o.platform_promo_compensation,
               bu.id as buyer_id, bu.name as buyer_name, bu.email as buyer_email,
               bu.phone as buyer_phone,
               s.id as supplier_id, s.shop_name as supplier_name
@@ -877,7 +878,7 @@ export class AdminService {
     }
 
     const items = await this.em.getConnection().execute(
-      `SELECT oi.id, oi.quantity, oi.unit_price, oi.total_price,
+      `SELECT oi.id, oi.quantity, oi.unit_price, oi.total_price, oi.is_gift,
               p.name as product_name
        FROM order_items oi
        LEFT JOIN products p ON oi.product_id = p.id
@@ -918,12 +919,18 @@ export class AdminService {
       estimatedReadyAt: this.toIso(row.estimated_ready_at),
       buyerEmail: (row.buyer_email as string) ?? null,
       buyerPhone: (row.buyer_phone as string) ?? null,
+      // Who paid the delivery on the buyer's behalf (null = the buyer did),
+      // and what eBio owes the shop for its platform-funded promotions.
+      deliverySponsor: (row.delivery_sponsor as 'SUPPLIER' | 'PLATFORM' | null) ?? null,
+      sponsoredDeliveryFee: Number(row.sponsored_delivery_fee ?? 0),
+      platformPromoCompensation: Number(row.platform_promo_compensation ?? 0),
       items: items.map((i: Record<string, unknown>) => ({
         id: i.id as string,
         productName: (i.product_name as string) ?? 'Produit supprimé',
         quantity: Number(i.quantity ?? 0),
         unitPrice: Number(i.unit_price ?? 0),
         totalPrice: Number(i.total_price ?? 0),
+        isGift: i.is_gift === true,
       })),
     }
   }
