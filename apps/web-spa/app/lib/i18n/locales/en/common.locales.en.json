@@ -511,10 +511,7 @@
       "neighborhoodPlaceholder": "E.g. Downtown",
       "mobileMoneyNumber": "Mobile Money number",
       "mobileMoneyPlaceholder": "+229 XX XX XX XX XX",
-      "deliveryFee": "Delivery fee (FCFA)",
-      "deliveryFeeHint": "0 means free delivery. On-site pickup is always free.",
-      "freeDeliveryFrom": "Free delivery from (FCFA)",
-      "freeDeliveryFromHint": "Items subtotal, fee excluded. Empty means always charged."
+      "deliveryPricingNote": "Delivery fees are set by eBio according to the distance."
     },
     "openingHours": {
       "title": "Opening hours",
@@ -963,6 +960,55 @@
         "amountHint": "Integer between 0 and 10,000,000 FCFA. Applied immediately.",
         "saved": "Maximum debt saved",
         "error": "Could not save the maximum debt. Try again."
+      },
+      "deliveryPricing": {
+        "title": "Delivery pricing",
+        "description": "One rule for every shop: the fee shown to the buyer is computed by eBio from the distance between the shop and the delivery address. Applies to upcoming orders only.",
+        "mode": {
+          "label": "Pricing mode",
+          "flat": "Flat fee",
+          "flatHint": "The same amount whatever the distance.",
+          "distance": "By distance (recommended)",
+          "distanceHint": "A base amount plus a per-kilometre rate, bounded and rounded.",
+          "zones": "By zones",
+          "zonesHint": "Distance rings, each with its own amount."
+        },
+        "flat": {
+          "fee": "Delivery fee (FCFA)",
+          "feeHint": "Integer ≥ 0. Charged on every delivery, whatever the distance."
+        },
+        "distance": {
+          "baseFee": "Base amount (FCFA)",
+          "baseFeeHint": "Pickup charge, independent of the distance.",
+          "perKm": "Rate per km (FCFA)",
+          "perKmHint": "Added for every kilometre travelled.",
+          "roundTo": "Rounding (FCFA)",
+          "roundToHint": "The total is rounded up to the next multiple. E.g. 100 → 1,240 becomes 1,300.",
+          "minFee": "Minimum (FCFA)",
+          "minFeeHint": "Floor applied after rounding.",
+          "maxFee": "Maximum (FCFA)",
+          "maxFeeHint": "Cap applied after rounding.",
+          "minMaxError": "The minimum must be lower than or equal to the maximum."
+        },
+        "zones": {
+          "label": "Distance rings",
+          "upTo": "Up to",
+          "fee": "Fee",
+          "add": "Add a ring",
+          "remove": "Remove this ring",
+          "hint": "1 to {{max}} rings. They are sorted by distance on save; beyond the last ring, delivery is refused."
+        },
+        "freeFrom": "Free delivery from (FCFA)",
+        "freeFromHint": "Items subtotal, fee excluded. Empty means never free.",
+        "maxDistanceKm": "Maximum distance (km)",
+        "maxDistanceKmHint": "Between 0.5 and 500 km. Beyond it, the order is refused.",
+        "preview": {
+          "title": "Preview:",
+          "item": "{{km}} km → {{fee}} FCFA",
+          "outOfRange": "{{km}} km → out of range"
+        },
+        "saved": "Pricing saved",
+        "error": "Could not save the pricing. Check the values and try again."
       },
       "deliveryCommission": {
         "title": "eBio commission on delivery fees",

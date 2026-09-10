@@ -1,3 +1,4 @@
+import type { DeliveryQuote, DeliveryQuoteReason } from '../hooks/use-delivery-quote'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
@@ -31,7 +32,7 @@ import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
-import { useDeliveryFee } from '../hooks/use-delivery-fee'
+import { useDeliveryQuote } from '../hooks/use-delivery-quote'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
@@ -70,6 +71,63 @@ export interface CheckoutFlowProps {
 
 function formatPrice(value: number): string {
   return value.toLocaleString('fr-FR').replace(/,/g, ' ')
+}
+
+function formatKm(value: number): string {
+  return `${value.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km`
+}
+
+/** Label of the confirm button; a blocking quote reason replaces the payment verb. */
+function confirmLabel(choice: PaymentChoice, blockedReason: DeliveryQuoteReason | null): string {
+  if (blockedReason === 'OUT_OF_RANGE') {
+    return 'Hors zone'
+  }
+  if (blockedReason !== null) {
+    return 'Point de livraison requis'
+  }
+  if (choice === 'CASH') {
+    return 'Commander'
+  }
+  if (choice === 'WALLET') {
+    return 'Payer avec le portefeuille'
+  }
+  return 'Payer maintenant'
+}
+
+interface DeliveryFeeValueProps {
+  quote: DeliveryQuote | null
+  loading: boolean
+  textColor: string
+  mutedColor: string
+}
+
+/** Right-hand side of the "Livraison" summary line: an amount, a waiver, or why there is none yet. */
+function DeliveryFeeValue({ quote, loading, textColor, mutedColor }: DeliveryFeeValueProps) {
+  if (loading || !quote) {
+    return <Text style={[styles.feeValue, { color: mutedColor }]}>…</Text>
+  }
+  // NO_POSITION and NO_SHOP_POSITION alike: nothing to charge until a point exists.
+  if (quote.fee === null && quote.reason !== 'OUT_OF_RANGE') {
+    return <Text style={[styles.feeValue, styles.feeBlocked]}>Choisissez votre point de livraison</Text>
+  }
+  if (quote.reason === 'OUT_OF_RANGE') {
+    const detail = quote.distanceKm !== null && quote.maxDistanceKm !== null
+      ? ` (${formatKm(quote.distanceKm)}, max ${formatKm(quote.maxDistanceKm)})`
+      : ''
+    return <Text style={[styles.feeValue, styles.feeBlocked]}>{`Hors zone${detail}`}</Text>
+  }
+  if (quote.reason === 'FREE_THRESHOLD' || quote.fee === 0) {
+    return <Text style={[styles.feeValue, { color: colors.green[600] }]}>Offerte</Text>
+  }
+  const showDistance = (quote.reason === 'DISTANCE' || quote.reason === 'ZONE') && quote.distanceKm !== null
+  return (
+    <Text style={[styles.feeValue, { color: textColor }]}>
+      {`${formatPrice(quote.fee ?? 0)} FCFA`}
+      {showDistance && (
+        <Text style={[styles.feeDistance, { color: mutedColor }]}>{` · ${formatKm(quote.distanceKm ?? 0)}`}</Text>
+      )}
+    </Text>
+  )
 }
 
 function buildFedaPayCheckoutHtml(
@@ -150,17 +208,19 @@ export function CheckoutFlow({
   onCancel,
 }: CheckoutFlowProps) {
   const { semantic } = useTheme()
-  const { deliveryFee } = useDeliveryFee(
-    orderSummary.supplierId,
-    orderSummary.deliveryMode === 'DELIVERY',
-    orderSummary.total,
-  )
   const insets = useSafeAreaInsets()
 
   const [currentStep, setCurrentStep] = useState<CheckoutStep>('SUMMARY')
   const [deliveryAddress, setDeliveryAddress] = useState('')
-  // Drop-off point on the map: the single most useful thing for the courier.
+  // Drop-off point on the map: the single most useful thing for the courier,
+  // and what the platform prices the delivery on.
   const [deliveryPosition, setDeliveryPosition] = useState<{ latitude: number, longitude: number } | null>(null)
+  const { quote: deliveryQuote, loading: quoteLoading } = useDeliveryQuote(
+    orderSummary.supplierId,
+    orderSummary.deliveryMode === 'DELIVERY',
+    orderSummary.total,
+    deliveryPosition,
+  )
   const [pickerOpen, setPickerOpen] = useState(false)
   const skipPositionRef = useRef(false)
   const { latitude: currentLatitude, longitude: currentLongitude } = useLocation()
@@ -217,8 +277,12 @@ export function CheckoutFlow({
     }
   }, [])
 
-  const orderTotal = orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee
   const isPickup = orderSummary.deliveryMode === 'PICKUP'
+  // A null fee means the platform cannot price the delivery yet (no drop-off
+  // point, or too far): the order cannot be placed until that changes.
+  const deliveryFee = deliveryQuote?.fee ?? 0
+  const quoteBlocked = !isPickup && (quoteLoading || deliveryQuote?.fee === null || deliveryQuote?.fee === undefined)
+  const orderTotal = orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee
   const cashAvailable = cashMaxAmount > 0 && orderTotal <= cashMaxAmount
   const walletAvailable = walletBalance !== null && walletBalance >= orderTotal
   // A choice that stops being affordable (promo removed, fee changed) falls back to online payment.
@@ -257,6 +321,10 @@ export function CheckoutFlow({
 
   const handleProceedToPayment = useCallback(async () => {
     const trimmedAddress = deliveryAddress.trim()
+    // The button is disabled meanwhile; this guards the alert-driven re-entry.
+    if (quoteBlocked) {
+      return
+    }
     if (orderSummary.deliveryMode === 'DELIVERY' && !trimmedAddress) {
       appAlert('Adresse requise', 'Veuillez saisir une adresse de livraison.')
       return
@@ -380,7 +448,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete])
+  }, [orderSummary, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked])
 
   const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
@@ -607,9 +675,7 @@ export function CheckoutFlow({
             {orderSummary.deliveryMode === 'DELIVERY' && (
               <View style={styles.feeRow}>
                 <Text style={[styles.feeLabel, { color: semantic.textSecondary }]}>Livraison</Text>
-                <Text style={[styles.feeValue, { color: deliveryFee > 0 ? semantic.textPrimary : colors.green[600] }]}>
-                  {deliveryFee > 0 ? `${formatPrice(deliveryFee)} FCFA` : 'Offerte'}
-                </Text>
+                <DeliveryFeeValue quote={deliveryQuote} loading={quoteLoading} textColor={semantic.textPrimary} mutedColor={semantic.textTertiary} />
               </View>
             )}
 
@@ -705,23 +771,20 @@ export function CheckoutFlow({
             </Text>
           </View>
           <TouchableOpacity
-            style={[styles.confirmButton, isSubmitting && styles.buttonDisabled]}
+            style={[styles.confirmButton, (isSubmitting || quoteBlocked) && styles.buttonDisabled]}
             onPress={handleProceedToPayment}
-            disabled={isSubmitting}
+            disabled={isSubmitting || quoteBlocked}
             activeOpacity={0.8}
+            accessibilityState={{ disabled: isSubmitting || quoteBlocked }}
           >
-            {isSubmitting
+            {isSubmitting || quoteLoading
               ? <ActivityIndicator size="small" color={colors.neutral[0]} />
               : (
                   <>
                     <Text style={styles.confirmButtonText}>
-                      {effectiveChoice === 'CASH'
-                        ? 'Commander'
-                        : effectiveChoice === 'WALLET'
-                          ? 'Payer avec le portefeuille'
-                          : 'Payer maintenant'}
+                      {confirmLabel(effectiveChoice, quoteBlocked ? deliveryQuote?.reason ?? null : null)}
                     </Text>
-                    <ArrowRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />
+                    {!quoteBlocked && <ArrowRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />}
                   </>
                 )}
           </TouchableOpacity>
@@ -961,6 +1024,16 @@ const styles = StyleSheet.create({
   feeValue: {
     fontFamily: fonts.sansSb,
     fontSize: 14,
+  },
+  feeBlocked: {
+    color: colors.coral[600],
+    flexShrink: 1,
+    textAlign: 'right',
+    marginLeft: spacing[3],
+  },
+  feeDistance: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
   },
   totalRow: {
     flexDirection: 'row',

@@ -50,8 +50,6 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
   const [pickingOnMap, setPickingOnMap] = useState(false)
-  const [deliveryFee, setDeliveryFee] = useState('')
-  const [freeDeliveryFrom, setFreeDeliveryFrom] = useState('')
 
   const { pickAndUpload: pickCover } = useMediaUpload({ context: 'SUPPLIER_COVER' })
   const { pickAndUpload: pickProfile } = useMediaUpload({ context: 'SUPPLIER_PROFILE' })
@@ -75,8 +73,6 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
             setLatitude(data.latitude)
             setLongitude(data.longitude)
           }
-          setDeliveryFee(typeof data.deliveryFee === 'number' && data.deliveryFee > 0 ? String(data.deliveryFee) : '')
-          setFreeDeliveryFrom(typeof data.freeDeliveryFrom === 'number' ? String(data.freeDeliveryFrom) : '')
         }
       }
       catch {
@@ -151,11 +147,6 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
         body.latitude = latitude
         body.longitude = longitude
       }
-      // An empty field means "no fee" and "no waiver" — both are sent, so
-      // clearing one actually clears it rather than leaving the old value.
-      body.deliveryFee = Number(deliveryFee.replace(',', '.')) || 0
-      const waiver = Number(freeDeliveryFrom.replace(',', '.'))
-      body.freeDeliveryFrom = freeDeliveryFrom.trim() && waiver > 0 ? waiver : null
 
       const res = await apiFetch('/api/suppliers/me', {
         method: 'PUT',
@@ -277,30 +268,9 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
           onChangeText={setMobileMoneyNumber}
         />
 
-        <Text style={[styles.label, { color: semantic.textSecondary }]}>Frais de livraison</Text>
-        <TextInput
-          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-          placeholder="0 = livraison offerte"
-          placeholderTextColor={semantic.textTertiary}
-          keyboardType="numeric"
-          value={deliveryFee}
-          onChangeText={setDeliveryFee}
-        />
-        <Text style={[styles.fieldHint, { color: semantic.textTertiary }]}>
-          Montant en FCFA ajouté aux commandes livrées. Le retrait sur place reste gratuit.
-        </Text>
-
-        <Text style={[styles.label, { color: semantic.textSecondary }]}>Livraison offerte à partir de</Text>
-        <TextInput
-          style={[styles.textInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-          placeholder="Laisser vide pour toujours facturer"
-          placeholderTextColor={semantic.textTertiary}
-          keyboardType="numeric"
-          value={freeDeliveryFrom}
-          onChangeText={setFreeDeliveryFrom}
-        />
-        <Text style={[styles.fieldHint, { color: semantic.textTertiary }]}>
-          Montant des produits, hors frais, à partir duquel la livraison est offerte.
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Livraison</Text>
+        <Text style={[styles.infoLine, { color: semantic.textTertiary }]}>
+          Les frais de livraison sont fixés par eBio selon la distance jusqu'au client.
         </Text>
 
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Localisation</Text>
@@ -422,9 +392,8 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sans,
     fontSize: 15,
   },
-  fieldHint: {
+  infoLine: {
     ...typography.caption,
-    marginTop: -spacing[2],
     marginBottom: spacing[2],
   },
   locationStatus: {

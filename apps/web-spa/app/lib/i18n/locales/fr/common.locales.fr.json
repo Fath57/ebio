@@ -511,10 +511,7 @@
       "neighborhoodPlaceholder": "Ex: Cocody, Plateau",
       "mobileMoneyNumber": "Numéro Mobile Money",
       "mobileMoneyPlaceholder": "+229 XX XX XX XX XX",
-      "deliveryFee": "Frais de livraison (FCFA)",
-      "deliveryFeeHint": "0 = livraison offerte. Le retrait sur place reste toujours gratuit.",
-      "freeDeliveryFrom": "Livraison offerte à partir de (FCFA)",
-      "freeDeliveryFromHint": "Montant des produits, hors frais. Vide = toujours facturée."
+      "deliveryPricingNote": "Les frais de livraison sont fixés par eBio selon la distance."
     },
     "openingHours": {
       "title": "Horaires d'ouverture",
@@ -963,6 +960,55 @@
         "amountHint": "Entier entre 0 et 10 000 000 FCFA. Appliqué immédiatement.",
         "saved": "Dette maximale enregistrée",
         "error": "Impossible d’enregistrer la dette maximale. Réessayez."
+      },
+      "deliveryPricing": {
+        "title": "Tarification de la livraison",
+        "description": "Règle unique, valable pour toutes les boutiques : les frais affichés à l'acheteur sont calculés par eBio à partir de la distance entre la boutique et l'adresse de livraison. Appliquée aux commandes à venir uniquement.",
+        "mode": {
+          "label": "Mode de calcul",
+          "flat": "Tarif fixe",
+          "flatHint": "Le même montant quelle que soit la distance.",
+          "distance": "À la distance (recommandé)",
+          "distanceHint": "Un montant de base plus un tarif par kilomètre, borné et arrondi.",
+          "zones": "Par zones",
+          "zonesHint": "Des paliers de distance, chacun avec son montant."
+        },
+        "flat": {
+          "fee": "Frais de livraison (FCFA)",
+          "feeHint": "Entier ≥ 0. Facturé sur chaque livraison, quelle que soit la distance."
+        },
+        "distance": {
+          "baseFee": "Montant de base (FCFA)",
+          "baseFeeHint": "Prise en charge, indépendante de la distance.",
+          "perKm": "Tarif par km (FCFA)",
+          "perKmHint": "Ajouté pour chaque kilomètre parcouru.",
+          "roundTo": "Arrondi (FCFA)",
+          "roundToHint": "Le total est arrondi au multiple supérieur. Ex. 100 → 1 240 devient 1 300.",
+          "minFee": "Minimum (FCFA)",
+          "minFeeHint": "Plancher appliqué après arrondi.",
+          "maxFee": "Maximum (FCFA)",
+          "maxFeeHint": "Plafond appliqué après arrondi.",
+          "minMaxError": "Le minimum doit être inférieur ou égal au maximum."
+        },
+        "zones": {
+          "label": "Paliers de distance",
+          "upTo": "Jusqu'à",
+          "fee": "Frais",
+          "add": "Ajouter un palier",
+          "remove": "Supprimer ce palier",
+          "hint": "De 1 à {{max}} paliers. Ils sont triés par distance à l'enregistrement ; au-delà du dernier palier, la livraison est refusée."
+        },
+        "freeFrom": "Livraison offerte à partir de (FCFA)",
+        "freeFromHint": "Montant des produits, hors frais. Vide = jamais offerte.",
+        "maxDistanceKm": "Distance maximale (km)",
+        "maxDistanceKmHint": "Entre 0,5 et 500 km. Au-delà, la commande est refusée.",
+        "preview": {
+          "title": "Aperçu :",
+          "item": "{{km}} km → {{fee}} FCFA",
+          "outOfRange": "{{km}} km → hors zone"
+        },
+        "saved": "Tarification enregistrée",
+        "error": "Impossible d’enregistrer la tarification. Vérifiez les valeurs et réessayez."
       },
       "deliveryCommission": {
         "title": "Commission eBio sur les frais de livraison",

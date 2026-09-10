@@ -52,8 +52,6 @@ interface SupplierSettingsData {
   profilePhoto: string | null
   latitude: number | null
   longitude: number | null
-  deliveryFee: number
-  freeDeliveryFrom: number | null
   openingHours: Record<string, { open: string, close: string, closed?: boolean }> | null
   mode: SupplierMode
   deliveryZones: DeliveryZoneItem[]
@@ -418,8 +416,6 @@ export default function SettingsPage() {
                     address: settings?.address ?? '',
                     neighborhood: settings?.neighborhood ?? '',
                     mobileMoneyNumber: settings?.mobileMoneyNumber ?? '',
-                    deliveryFee: settings?.deliveryFee ?? 0,
-                    freeDeliveryFrom: settings?.freeDeliveryFrom ?? null,
                   }}
                 />
               </CardContent>

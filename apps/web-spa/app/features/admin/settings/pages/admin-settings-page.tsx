@@ -1,3 +1,4 @@
+import type { DeliveryPricingConfig } from '@boilerstone/openapi-generator/client/types.gen'
 import type { CommissionCategoryRate } from '../forms/commission-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
@@ -5,6 +6,8 @@ import {
   adminControllerUpdateCommissions,
   adminControllerUpdateCourierDebtLimit,
   adminControllerUpdateDeliveryCommission,
+  adminDeliveryPricingControllerGet,
+  adminDeliveryPricingControllerUpdate,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
@@ -19,6 +22,7 @@ import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { CashLimitForm } from '../forms/cash-limit-form'
 import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
+import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
 
 interface AdminSettingsData {
   commissions: CommissionCategoryRate[]
@@ -28,6 +32,18 @@ interface AdminSettingsData {
   cashOnDeliveryMaxAmount: number
   /** Deepest negative courier balance before runs are suspended (0 = no limit). */
   courierMaxDebt: number
+}
+
+function fetchDeliveryPricingQueryOptions() {
+  return {
+    queryKey: ['admin', 'delivery-pricing'],
+    queryFn: async () => {
+      const response = await adminDeliveryPricingControllerGet()
+      if (response.error)
+        throw new Error('Failed to fetch delivery pricing')
+      return response.data as DeliveryPricingConfig
+    },
+  }
 }
 
 function fetchAdminSettingsQueryOptions() {
@@ -52,8 +68,10 @@ export default function AdminSettingsPage() {
   const [deliveryFeedback, setDeliveryFeedback] = useState<'saved' | 'error' | null>(null)
   const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
+  const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
+  const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
     mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
@@ -125,6 +143,25 @@ export default function AdminSettingsPage() {
     },
   })
 
+  const { mutate: updateDeliveryPricing, isPending: isPricingPending } = useMutation({
+    mutationFn: async (config: DeliveryPricingConfig) => {
+      const response = await adminDeliveryPricingControllerUpdate({ body: config })
+      if (response.error)
+        throw new Error('Failed to update delivery pricing')
+      return response.data as DeliveryPricingConfig
+    },
+    onMutate: () => {
+      setPricingFeedback(null)
+    },
+    onSuccess: (saved) => {
+      setPricingFeedback('saved')
+      queryClient.setQueryData(['admin', 'delivery-pricing'], saved)
+    },
+    onError: () => {
+      setPricingFeedback('error')
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -154,6 +191,34 @@ export default function AdminSettingsPage() {
         </TabsList>
 
         <TabsContent value="commissions" className="mt-6 space-y-6">
+          <Can action="manage" subject="all">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.deliveryPricing.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.deliveryPricing.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isPricingLoading || !deliveryPricing
+                  ? <Skeleton className="h-40 w-full" />
+                  : (
+                      <DeliveryPricingForm
+                        config={deliveryPricing}
+                        onSubmit={updateDeliveryPricing}
+                        isPending={isPricingPending}
+                      />
+                    )}
+                {pricingFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.deliveryPricing.saved')}</p>
+                )}
+                {pricingFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.deliveryPricing.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </Can>
+
           <Card>
             <CardHeader>
               <CardTitle className="text-base">{t('admin.settings.commission.howTitle')}</CardTitle>
