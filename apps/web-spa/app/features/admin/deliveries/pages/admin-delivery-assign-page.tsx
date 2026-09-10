@@ -22,12 +22,14 @@ import { Link, useNavigate, useParams } from 'react-router'
 import { AssignDialog } from '../components/assign-dialog'
 import { AssignMap } from '../components/assign-map'
 import { CandidateList } from '../components/candidate-list'
+import { DeliveryTimeline } from '../components/delivery-timeline'
 import {
   ASSIGNABLE_STATUSES,
   assignDeliveryMutationOptions,
   fetchAdminDeliveryQueryOptions,
   fetchCandidatesQueryOptions,
   formatElapsed,
+  getActiveOffer,
   rebroadcastDeliveryMutationOptions,
 } from '../utils/deliveries-queries'
 
@@ -112,6 +114,7 @@ export default function AdminDeliveryAssignPage() {
   }
 
   const assignable = ASSIGNABLE_STATUSES.includes(delivery.status)
+  const activeOffer = delivery.status === 'AWAITING_COURIER' ? getActiveOffer(delivery.events) : null
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -136,6 +139,11 @@ export default function AdminDeliveryAssignPage() {
         )}
         {delivery.reassignmentCount > 0 && (
           <Badge variant="outline">{t('admin.deliveries.reassignments', { count: delivery.reassignmentCount })}</Badge>
+        )}
+        {activeOffer && (
+          <Badge variant="outline" className="border-primary text-primary">
+            {t('admin.deliveries.exclusiveOffer', { round: activeOffer.round })}
+          </Badge>
         )}
         {delivery.status === 'AWAITING_COURIER' && (
           <Button
@@ -176,6 +184,8 @@ export default function AdminDeliveryAssignPage() {
           </div>
         </CardContent>
       </Card>
+
+      <DeliveryTimeline events={delivery.events} candidates={candidates} />
 
       {!assignable && (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">

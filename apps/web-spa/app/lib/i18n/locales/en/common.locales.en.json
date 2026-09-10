@@ -1517,6 +1517,26 @@
         },
         "mapMissingKey": "Map unavailable: Google Maps key missing (VITE_GOOGLE_MAPS_API_KEY).",
         "timeline": "Timeline"
+      },
+      "exclusiveOffer": "Exclusive offer in progress (round {{round}})",
+      "events": {
+        "showAll": "Show all ({{count}})",
+        "CREATED": "Delivery created",
+        "BROADCAST": "Broadcast to nearby couriers",
+        "BROADCAST_withCount": "Broadcast to {{count}} courier(s)",
+        "BROADCAST_withRadius": "Broadcast to {{count}} courier(s) within {{radius}} km",
+        "OFFERED": "Offered to a courier (round {{round}})",
+        "OFFER_DECLINED": "Offer declined (round {{round}})",
+        "OFFER_EXPIRED": "Offer expired (round {{round}})",
+        "ACCEPTED": "Accepted by the courier",
+        "PICKED_UP": "Parcel picked up",
+        "IN_TRANSIT": "Out for delivery",
+        "DELIVERED": "Delivered",
+        "FAILED": "Delivery failed",
+        "REASSIGNED": "Courier reassigned",
+        "ORDER_CANCELLED": "Order cancelled",
+        "SELF_DELIVERED": "Delivered by the supplier",
+        "ASSIGNED_BY_ADMIN": "Courier assigned by the team"
       }
     },
     "team": {

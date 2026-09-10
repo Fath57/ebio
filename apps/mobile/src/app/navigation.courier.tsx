@@ -287,6 +287,7 @@ function CoursesHomeWrapper({ navigation }: any) {
         outOfZoneKm={outOfZoneKm}
         onRefresh={offers.refresh}
         onAccept={offers.accept}
+        onDecline={offers.decline}
         onAccepted={refresh}
         onOpenWallet={() => navigation.navigate('Portefeuille')}
       />

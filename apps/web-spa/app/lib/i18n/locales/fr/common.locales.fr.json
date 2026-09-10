@@ -1517,6 +1517,26 @@
         },
         "mapMissingKey": "Carte indisponible : clé Google Maps absente (VITE_GOOGLE_MAPS_API_KEY).",
         "timeline": "Historique"
+      },
+      "exclusiveOffer": "Offre exclusive en cours (tour {{round}})",
+      "events": {
+        "showAll": "Afficher tout ({{count}})",
+        "CREATED": "Course créée",
+        "BROADCAST": "Diffusée aux livreurs proches",
+        "BROADCAST_withCount": "Diffusée à {{count}} livreur(s)",
+        "BROADCAST_withRadius": "Diffusée à {{count}} livreur(s) dans un rayon de {{radius}} km",
+        "OFFERED": "Proposée à un livreur (tour {{round}})",
+        "OFFER_DECLINED": "Offre refusée (tour {{round}})",
+        "OFFER_EXPIRED": "Offre expirée (tour {{round}})",
+        "ACCEPTED": "Acceptée par le livreur",
+        "PICKED_UP": "Colis récupéré",
+        "IN_TRANSIT": "En cours de livraison",
+        "DELIVERED": "Livrée",
+        "FAILED": "Échec de la livraison",
+        "REASSIGNED": "Livreur réattribué",
+        "ORDER_CANCELLED": "Commande annulée",
+        "SELF_DELIVERED": "Livrée par le fournisseur",
+        "ASSIGNED_BY_ADMIN": "Livreur attribué par l'équipe"
       }
     },
     "team": {

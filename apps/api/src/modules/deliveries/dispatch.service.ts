@@ -30,6 +30,7 @@ interface EligibleCourier {
 interface CandidateRow {
   id: string
   user_id: string
+  full_name: string
   distance_km: string | null
   active_deliveries: string
   rating_avg: number | null
@@ -39,6 +40,7 @@ interface CandidateRow {
 export interface RankedCourier {
   id: string
   userId: string
+  fullName: string
   score: number
   distanceKm: number | null
 }
@@ -146,7 +148,7 @@ export class DispatchService {
       return []
     }
     const rows = await this.em.getConnection().execute(
-      `SELECT cp.id, cp.user_id, cp.rating_avg,
+      `SELECT cp.id, cp.user_id, cp.full_name, cp.rating_avg,
               CASE WHEN d.pickup_location IS NOT NULL AND l.loc IS NOT NULL
                 THEN ROUND((ST_Distance(l.loc, d.pickup_location) / 1000)::numeric, 2)
               END AS distance_km,
@@ -178,6 +180,7 @@ export class DispatchService {
       .map(row => ({
         id: row.id,
         userId: row.user_id,
+        fullName: row.full_name,
         distanceKm: row.distance_km === null ? null : Number(row.distance_km),
         score: scoreCandidate({
           distanceKm: row.distance_km === null ? null : Number(row.distance_km),
@@ -235,7 +238,7 @@ export class DispatchService {
     this.em.create(DeliveryEvent, {
       delivery,
       type: DeliveryEventType.OFFERED,
-      payload: { courierId: best.id, round, score: Math.round(best.score * 100) / 100, distanceKm: best.distanceKm },
+      payload: { courierId: best.id, courierName: best.fullName, round, score: Math.round(best.score * 100) / 100, distanceKm: best.distanceKm },
     })
     await this.em.flush()
 

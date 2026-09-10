@@ -19,6 +19,9 @@ interface DeliveryDetailProps {
 
 const EVENT_LABELS: Record<string, string> = {
   CREATED: 'Course créée',
+  OFFERED: 'Proposée à un livreur',
+  OFFER_DECLINED: 'Offre refusée',
+  OFFER_EXPIRED: 'Offre expirée',
   BROADCAST: 'Proposée aux livreurs',
   ACCEPTED: 'Acceptée',
   PICKED_UP: 'Commande récupérée',

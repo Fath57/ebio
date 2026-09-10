@@ -208,3 +208,25 @@ export function formatElapsed(iso: string): string {
   const rest = minutes % 60
   return `${hours} h ${String(rest).padStart(2, '0')}`
 }
+
+/** Events that close an exclusive one-courier offer (decline, timeout, fallback broadcast or acceptance). */
+const OFFER_CLOSING_EVENTS = ['OFFER_DECLINED', 'OFFER_EXPIRED', 'BROADCAST', 'ACCEPTED']
+
+/**
+ * Returns the exclusive offer currently waiting for a courier answer, i.e. the last
+ * `OFFERED` event that no later closing event has resolved. The detail payload does
+ * not expose a dispatch phase yet, so it is derived from the event log.
+ */
+export function getActiveOffer(events: DeliveryEvent[]): { round: number, courierId: string | null } | null {
+  const lastOfferIndex = events.map(event => event.type).lastIndexOf('OFFERED')
+  if (lastOfferIndex === -1)
+    return null
+  const closed = events.slice(lastOfferIndex + 1).some(event => OFFER_CLOSING_EVENTS.includes(event.type))
+  if (closed)
+    return null
+  const payload = events[lastOfferIndex].payload ?? {}
+  return {
+    round: typeof payload.round === 'number' ? payload.round : 1,
+    courierId: typeof payload.courierId === 'string' ? payload.courierId : null,
+  }
+}

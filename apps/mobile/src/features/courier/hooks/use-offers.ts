@@ -9,6 +9,14 @@ export interface AcceptResult {
   forbidden: boolean
   /** Server explanation when the 403 is a wallet-debt block, null otherwise. */
   debtMessage: string | null
+  /** Server `message` of a 409 (e.g. run held by another courier), null otherwise. */
+  message: string | null
+}
+
+export interface DeclineResult {
+  ok: boolean
+  /** Server explanation when the offer is no longer ours (409), null otherwise. */
+  message: string | null
 }
 
 /** Wallet debt past the platform limit: the feed is withheld until a top-up. */
@@ -45,7 +53,36 @@ async function readDebtBlock(res: Response): Promise<DebtBlock | null> {
   }
 }
 
-/** Offer feed for available couriers: fetch, pull-to-refresh, accept with 409 handling. */
+/** Reads the `message` of an error body, null when absent or unparsable. */
+async function readMessage(res: Response): Promise<string | null> {
+  try {
+    const body = await res.json() as { message?: unknown }
+    return typeof body.message === 'string' && body.message.length > 0 ? body.message : null
+  }
+  catch {
+    return null
+  }
+}
+
+/** Earliest exclusive-window end among targeted offers, in ms since epoch; null when none. */
+function earliestExpiry(offers: DeliveryOffer[]): number | null {
+  let earliest: number | null = null
+  for (const offer of offers) {
+    if (!offer.isTargeted || !offer.expiresAt) {
+      continue
+    }
+    const at = new Date(offer.expiresAt).getTime()
+    if (Number.isNaN(at)) {
+      continue
+    }
+    if (earliest === null || at < earliest) {
+      earliest = at
+    }
+  }
+  return earliest
+}
+
+/** Offer feed for available couriers: fetch, pull-to-refresh, accept/decline with 409 handling. */
 export function useOffers() {
   const [offers, setOffers] = useState<DeliveryOffer[]>([])
   const [loading, setLoading] = useState(true)
@@ -82,6 +119,22 @@ export function useOffers() {
     load()
   }, [load])
 
+  // Targeted offers vanish server-side once their window closes: refetch right after
+  // the earliest one expires so the card does not linger as "Expirée".
+  useEffect(() => {
+    const expiry = earliestExpiry(offers)
+    if (expiry === null) {
+      return
+    }
+    const delay = Math.max(0, expiry - Date.now() + 500)
+    const timer = setTimeout(() => {
+      load()
+    }, delay)
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [offers, load])
+
   const refresh = useCallback(async () => {
     setRefreshing(true)
     await load()
@@ -92,24 +145,42 @@ export function useOffers() {
     try {
       const res = await apiFetch(`/api/deliveries/${offerId}/accept`, { method: 'POST' })
       if (res.ok) {
-        return { ok: true, conflict: false, gone: false, forbidden: false, debtMessage: null }
+        return { ok: true, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null }
       }
       const block = res.status === 403 ? await readDebtBlock(res) : null
+      const message = res.status === 409 ? await readMessage(res) : null
       return {
         ok: false,
         conflict: res.status === 409,
         gone: res.status === 410,
         forbidden: res.status === 403,
         debtMessage: block?.message ?? null,
+        message,
       }
     }
     catch {
-      return { ok: false, conflict: false, gone: false, forbidden: false, debtMessage: null }
+      return { ok: false, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null }
     }
     finally {
       await load()
     }
   }, [load])
 
-  return { offers, loading, refreshing, unavailable, debtBlock, refresh, accept }
+  const decline = useCallback(async (offerId: string): Promise<DeclineResult> => {
+    try {
+      const res = await apiFetch(`/api/deliveries/${offerId}/decline`, { method: 'POST' })
+      if (res.ok) {
+        return { ok: true, message: null }
+      }
+      return { ok: false, message: await readMessage(res) }
+    }
+    catch {
+      return { ok: false, message: null }
+    }
+    finally {
+      await load()
+    }
+  }, [load])
+
+  return { offers, loading, refreshing, unavailable, debtBlock, refresh, accept, decline }
 }

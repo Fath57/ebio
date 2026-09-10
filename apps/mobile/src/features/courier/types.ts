@@ -60,6 +60,10 @@ export interface DeliveryOffer {
   /** Cash orders: what the courier hands the shop at pickup, null otherwise. */
   cashToShop: number | null
   offeredAt: string
+  /** True while the run is offered to this courier alone (sequential dispatch). */
+  isTargeted: boolean
+  /** End of the exclusive window (ISO), null on broadcast offers. */
+  expiresAt: string | null
 }
 
 export interface DeliveryContact {

@@ -1,4 +1,4 @@
-import type { AcceptResult, DebtBlock } from '../hooks/use-offers'
+import type { AcceptResult, DebtBlock, DeclineResult } from '../hooks/use-offers'
 import type { DeliveryOffer } from '../types'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
@@ -6,7 +6,10 @@ import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import PackageIcon from 'lucide-react-native/dist/esm/icons/package'
 import Store from 'lucide-react-native/dist/esm/icons/store'
+import Timer from 'lucide-react-native/dist/esm/icons/timer'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
+import Zap from 'lucide-react-native/dist/esm/icons/zap'
+import { useEffect, useState } from 'react'
 import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -22,6 +25,8 @@ interface OffersScreenProps {
   outOfZoneKm: number | null
   onRefresh: () => void
   onAccept: (offerId: string) => Promise<AcceptResult>
+  /** Targeted offers only: hand the run to the next courier in line. */
+  onDecline: (offerId: string) => Promise<DeclineResult>
   onAccepted: () => void
   onOpenWallet: () => void
 }
@@ -76,9 +81,48 @@ function DebtBlockedState({ block, refreshing, onRefresh, onOpenWallet }: DebtBl
   )
 }
 
-/** Feed of nearby deliveries awaiting a courier. First to accept wins. */
-export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOfZoneKm, onRefresh, onAccept, onAccepted, onOpenWallet }: OffersScreenProps) {
-  const { semantic } = useTheme()
+/** Whole seconds left before `expiresAt`, never negative. */
+function secondsLeft(expiresAt: string): number {
+  const remaining = Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)
+  return Number.isNaN(remaining) ? 0 : Math.max(0, remaining)
+}
+
+interface CountdownProps {
+  expiresAt: string
+}
+
+/** Live "Répondre dans N s" label for the exclusive window of a targeted offer. */
+function Countdown({ expiresAt }: CountdownProps) {
+  const [left, setLeft] = useState(() => secondsLeft(expiresAt))
+
+  useEffect(() => {
+    setLeft(secondsLeft(expiresAt))
+    const interval = setInterval(() => {
+      const next = secondsLeft(expiresAt)
+      setLeft(next)
+      if (next === 0) {
+        clearInterval(interval)
+      }
+    }, 1000)
+    return () => {
+      clearInterval(interval)
+    }
+  }, [expiresAt])
+
+  const expired = left === 0
+  return (
+    <View style={styles.countdown} accessibilityLiveRegion="polite">
+      <Timer size={14} color={expired ? colors.coral[600] : colors.green[800]} strokeWidth={2.2} />
+      <Text style={[styles.countdownText, { color: expired ? colors.coral[600] : colors.green[800] }]}>
+        {expired ? 'Expirée' : `Répondre dans ${left} s`}
+      </Text>
+    </View>
+  )
+}
+
+/** Feed of nearby deliveries awaiting a courier. Targeted offers first, then first to accept wins. */
+export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOfZoneKm, onRefresh, onAccept, onDecline, onAccepted, onOpenWallet }: OffersScreenProps) {
+  const { semantic, isDark } = useTheme()
 
   async function accept(offer: DeliveryOffer) {
     const result = await onAccept(offer.id)
@@ -87,7 +131,7 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
       return
     }
     if (result.conflict) {
-      appAlert('Course déjà prise', 'Un autre livreur a accepté cette course juste avant vous.')
+      appAlert('Course indisponible', result.message ?? 'Un autre livreur a accepté cette course juste avant vous.')
     }
     else if (result.gone) {
       appAlert('Commande annulée', 'Cette commande a été annulée entre-temps.')
@@ -103,10 +147,33 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
     }
   }
 
+  async function decline(offer: DeliveryOffer) {
+    const result = await onDecline(offer.id)
+    if (result.ok) {
+      return
+    }
+    appAlert('Refus impossible', result.message ?? 'Le refus a échoué. Vérifiez votre connexion et réessayez.')
+  }
+
   function renderOffer({ item }: { item: DeliveryOffer }) {
     const isCash = item.paymentMethod === 'CASH_ON_DELIVERY'
+    const targeted = item.isTargeted
+    const cardStyle = targeted
+      ? [styles.card, styles.targetedCard, { backgroundColor: isDark ? colors.green[900] : colors.green[50] }]
+      : [styles.card, { backgroundColor: semantic.bgCard }]
     return (
-      <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
+      <View style={cardStyle}>
+        {targeted
+          ? (
+              <View style={styles.targetedHeader}>
+                <View style={styles.targetedBadge} accessibilityLabel="Course proposée en priorité">
+                  <Zap size={12} color={colors.neutral[0]} strokeWidth={2.4} />
+                  <Text style={styles.targetedBadgeText}>Proposée en priorité</Text>
+                </View>
+                {item.expiresAt ? <Countdown expiresAt={item.expiresAt} /> : null}
+              </View>
+            )
+          : null}
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
             <Text style={[styles.orderNumber, { color: semantic.textTertiary }]}>{item.orderNumber}</Text>
@@ -169,14 +236,37 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
             )
           : null}
 
-        <Pressable
-          style={styles.acceptButton}
-          onPress={() => accept(item)}
-          accessibilityRole="button"
-          accessibilityLabel={`Accepter la course ${item.orderNumber}`}
-        >
-          <Text style={styles.acceptText}>Accepter la course</Text>
-        </Pressable>
+        {targeted
+          ? (
+              <View style={styles.actions}>
+                <Pressable
+                  style={styles.declineButton}
+                  onPress={() => decline(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Refuser la course ${item.orderNumber}`}
+                >
+                  <Text style={styles.declineText}>Refuser</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.acceptButton, styles.actionGrow]}
+                  onPress={() => accept(item)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`Accepter la course ${item.orderNumber}`}
+                >
+                  <Text style={styles.acceptText}>Accepter la course</Text>
+                </Pressable>
+              </View>
+            )
+          : (
+              <Pressable
+                style={styles.acceptButton}
+                onPress={() => accept(item)}
+                accessibilityRole="button"
+                accessibilityLabel={`Accepter la course ${item.orderNumber}`}
+              >
+                <Text style={styles.acceptText}>Accepter la course</Text>
+              </Pressable>
+            )}
       </View>
     )
   }
@@ -246,6 +336,64 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing[4],
     marginBottom: spacing[3],
+  },
+  targetedCard: {
+    borderWidth: 2,
+    borderColor: colors.green[400],
+  },
+  targetedHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginBottom: spacing[3],
+  },
+  targetedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.green[400],
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 3,
+  },
+  targetedBadgeText: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.neutral[0],
+  },
+  countdown: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  countdownText: {
+    ...typography.price,
+    fontSize: 13,
+    fontVariant: ['tabular-nums'],
+  },
+  actions: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginTop: spacing[2],
+  },
+  actionGrow: {
+    flex: 1,
+    marginTop: 0,
+  },
+  declineButton: {
+    height: 44,
+    borderRadius: radius.md,
+    borderWidth: 1.5,
+    borderColor: colors.green[400],
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[4],
+  },
+  declineText: {
+    ...typography.caption,
+    fontSize: 13,
+    color: colors.green[600],
   },
   cardHeader: {
     flexDirection: 'row',
