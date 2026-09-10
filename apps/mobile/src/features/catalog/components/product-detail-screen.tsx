@@ -1,3 +1,4 @@
+import type { ProductPromotion } from '../promotions'
 import type { NutritionalValues, ProductCompositionData } from './product-composition'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
@@ -8,13 +9,14 @@ import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Package from 'lucide-react-native/dist/esm/icons/package'
+import Percent from 'lucide-react-native/dist/esm/icons/percent'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Share2 from 'lucide-react-native/dist/esm/icons/share-2'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   Animated,
   Dimensions,
@@ -30,10 +32,13 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { useCart } from '../../cart/cart-context'
+import { BasketSuggestions } from '../../cart/components/basket-suggestions'
 import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 import { useProductUnits } from '../hooks/use-product-units'
+import { describePromotion, parsePromotions, promotionChipLabels, promotionChipLabelsFor } from '../promotions'
 import { ProductCompositionSections, ProductLabelChips } from './product-composition'
+import { PromotionChips } from './promotion-chips'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const HERO_HEIGHT = 380
@@ -45,6 +50,8 @@ interface ProductDetailScreenProps {
     imageUrl: string | null
     pricePerUnit: number
     promotionalPrice: number | null
+    /** Live promotion types from the list row; the detail fetch refines them. */
+    promotionTypes?: string[]
     unit: string
     isInStock: boolean
     categoryName?: string
@@ -62,8 +69,10 @@ interface ProductDetailScreenProps {
     reviewCount?: number
   }
   onGoBack: () => void
-  onAddToCart: (productId: string, quantity: number) => void
+  onAddToCart: (productId: string, quantity: number, promotionTypes: string[]) => void
   onNavigateToSupplier: (supplierId: string) => void
+  /** Opens another product of the shop (suggestions rail). */
+  onOpenProduct?: (productId: string) => void
 }
 
 export function ProductDetailScreen({
@@ -72,6 +81,7 @@ export function ProductDetailScreen({
   onGoBack,
   onAddToCart,
   onNavigateToSupplier,
+  onOpenProduct,
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
   const { shortLabel } = useProductUnits()
@@ -82,6 +92,8 @@ export function ProductDetailScreen({
   const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
   const [composition, setComposition] = useState<ProductCompositionData | null>(null)
+  // Null until the detail fetch answers: the list row's types stand in meanwhile.
+  const [promotions, setPromotions] = useState<ProductPromotion[] | null>(null)
   const scrollY = useRef(new Animated.Value(0)).current
 
   // The navigation param is a lean list payload — fetch the full product
@@ -96,6 +108,7 @@ export function ProductDetailScreen({
         const data = await res.json() as Record<string, unknown>
         if (cancelled)
           return
+        setPromotions(parsePromotions(data.promotions))
         setComposition({
           ingredients: typeof data.ingredients === 'string' ? data.ingredients : null,
           allergens: Array.isArray(data.allergens) ? data.allergens as string[] : [],
@@ -122,6 +135,12 @@ export function ProductDetailScreen({
   const totalPrice = displayPrice * quantity
   const discount = hasPromo ? Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100) : 0
   const unitLabel = shortLabel(product.unit)
+  const promotionTypes = useMemo(
+    () => (promotions ? promotions.map(p => p.type) : product.promotionTypes ?? []),
+    [promotions, product.promotionTypes],
+  )
+  const chipLabels = promotions ? promotionChipLabelsFor(promotions) : promotionChipLabels(promotionTypes)
+  const suggestionSeed = useMemo(() => [product.id], [product.id])
 
   const handleDecrement = useCallback(() => {
     setQuantity(prev => Math.max(1, prev - 1))
@@ -133,9 +152,9 @@ export function ProductDetailScreen({
 
   const handleAddToCart = useCallback(() => {
     if (product.isInStock) {
-      onAddToCart(product.id, quantity)
+      onAddToCart(product.id, quantity, promotionTypes)
     }
-  }, [product.id, product.isInStock, quantity, onAddToCart])
+  }, [product.id, product.isInStock, quantity, promotionTypes, onAddToCart])
 
   // Scroll-driven animations
   const headerBg = scrollY.interpolate({
@@ -358,7 +377,33 @@ export function ProductDetailScreen({
                   </View>
                 </>
               )}
+              <PromotionChips labels={chipLabels} />
             </View>
+          </View>
+
+          {/* Live promotions, in plain words */}
+          {promotions && promotions.length > 0 && (
+            <View style={[styles.promotionsBlock, { backgroundColor: semantic.bgPrimaryLight }]}>
+              <Text style={[styles.promotionsTitle, { color: colors.green[800] }]}>Promotions</Text>
+              {promotions.map((promotion, index) => (
+                <View key={`${promotion.type}-${index}`} style={styles.promotionRow}>
+                  <Percent size={13} color={colors.green[600]} strokeWidth={2.2} />
+                  <Text style={[styles.promotionText, { color: colors.green[800] }]}>
+                    {describePromotion(promotion, formatPrice)}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {/* Same-shop products the buyer may want with this one */}
+          <View style={styles.suggestionsBlock}>
+            <BasketSuggestions
+              supplierId={supplier.id}
+              productIds={suggestionSeed}
+              title="Souvent achetés ensemble"
+              onOpenProduct={onOpenProduct}
+            />
           </View>
         </View>
 
@@ -849,6 +894,31 @@ const styles = StyleSheet.create({
     height: 1,
     marginHorizontal: spacing[5],
     marginVertical: spacing[5],
+  },
+
+  suggestionsBlock: {
+    marginTop: spacing[4],
+  },
+
+  // Promotions
+  promotionsBlock: {
+    marginTop: spacing[3],
+    padding: spacing[3],
+    borderRadius: radius.md,
+    gap: spacing[2],
+  },
+  promotionsTitle: {
+    fontFamily: fonts.sansSb,
+    fontSize: 13,
+  },
+  promotionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
+  promotionText: {
+    ...typography.bodyS,
+    flex: 1,
   },
 
   // Description

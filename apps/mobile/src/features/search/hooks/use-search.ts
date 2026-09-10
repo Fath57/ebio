@@ -43,6 +43,8 @@ interface SearchResult {
     unit: string
     inStock: boolean
     promotionalPrice: number | null
+    /** Live promotion types; not every endpoint sends them. */
+    promotionTypes?: string[]
   }
 }
 

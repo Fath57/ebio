@@ -1,4 +1,5 @@
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
+import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
@@ -39,6 +40,8 @@ interface CartItem {
   quantity: number
   selectedVariant: CartVariant | null
   availableVariants: CartVariant[]
+  /** Live promotion types on the product when added (absent on older carts). */
+  promotionTypes?: string[]
 }
 
 interface SupplierCartGroup {
@@ -62,6 +65,23 @@ interface CartScreenProps {
 
 function formatPrice(value: number): string {
   return value.toLocaleString('fr-FR').replace(/,/g, ' ')
+}
+
+/** What the server will add at checkout for this shop's basket, if anything. */
+function promotionHint(items: CartItem[]): string | null {
+  const types = new Set(items.flatMap(item => item.promotionTypes ?? []))
+  const hasGift = types.has('BOGO')
+  const hasFreeDelivery = types.has('FREE_DELIVERY')
+  if (hasGift && hasFreeDelivery) {
+    return 'Articles offerts et livraison offerte appliqués à la commande'
+  }
+  if (hasGift) {
+    return 'Des articles offerts seront ajoutés à la commande'
+  }
+  if (hasFreeDelivery) {
+    return 'Livraison offerte sur cette commande'
+  }
+  return null
 }
 
 function QuantityControl({
@@ -198,6 +218,7 @@ export function CartScreen({
 
         {groups.map((group) => {
           const groupTotal = computeGroupTotal(group.items)
+          const hint = promotionHint(group.items)
 
           return (
             <View
@@ -336,6 +357,13 @@ export function CartScreen({
                   </View>
                 </FadeInView>
               ))}
+
+              {hint && (
+                <View style={[styles.promotionHint, { backgroundColor: semantic.bgPrimaryLight }]}>
+                  <Gift size={14} color={colors.green[600]} strokeWidth={2} />
+                  <Text style={[styles.promotionHintText, { color: colors.green[800] }]}>{hint}</Text>
+                </View>
+              )}
 
               {/* Delivery mode */}
               <View style={styles.deliverySection}>
@@ -629,6 +657,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.sm,
+  },
+
+  /* Promotion hint */
+  promotionHint: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    marginHorizontal: spacing[4],
+    marginBottom: spacing[2],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.md,
+  },
+  promotionHintText: {
+    ...typography.caption,
+    fontFamily: fonts.sansMd,
+    flex: 1,
   },
 
   /* Delivery */

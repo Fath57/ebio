@@ -15,6 +15,8 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { ScalePressable } from '../../../utils/animations'
 import { useCart } from '../../cart/cart-context'
 import { unitShortLabel } from '../hooks/use-product-units'
+import { promotionChipLabels } from '../promotions'
+import { PromotionChips } from './promotion-chips'
 
 interface ProductCardProps {
   id: string
@@ -22,6 +24,8 @@ interface ProductCardProps {
   imageUrl: string | null
   pricePerUnit: number
   promotionalPrice: number | null
+  /** Live promotion types (BOGO, FREE_DELIVERY…) for the chips. */
+  promotionTypes?: string[]
   unit: string
   isInStock: boolean
   categoryName?: string
@@ -40,6 +44,7 @@ export function ProductCard({
   imageUrl,
   pricePerUnit,
   promotionalPrice,
+  promotionTypes,
   unit,
   isInStock,
   categoryName,
@@ -52,6 +57,7 @@ export function ProductCard({
   const hasPromo = promotionalPrice !== null && promotionalPrice < pricePerUnit
   const displayPrice = hasPromo ? promotionalPrice : pricePerUnit
   const discount = hasPromo ? Math.round((1 - promotionalPrice! / pricePerUnit) * 100) : 0
+  const chipLabels = promotionChipLabels(promotionTypes)
 
   const cartItem = useMemo(() => {
     for (const group of groups) {
@@ -81,6 +87,7 @@ export function ProductCard({
         pricePerUnit: displayPrice,
         unit,
         quantity: 1,
+        promotionTypes,
       })
     }
   }
@@ -133,6 +140,9 @@ export function ProductCard({
             </Text>
           </View>
         )}
+
+        {/* Bottom-left promotion chips (gift, free delivery) */}
+        <PromotionChips labels={chipLabels} overlay style={styles.promoChips} />
 
         {/* Out of stock scrim */}
         {!isInStock && (
@@ -273,6 +283,12 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: colors.neutral[0],
     letterSpacing: 0.3,
+  },
+  promoChips: {
+    position: 'absolute',
+    bottom: spacing[2],
+    left: spacing[2],
+    right: spacing[2],
   },
   outOfStockScrim: {
     ...StyleSheet.absoluteFillObject,

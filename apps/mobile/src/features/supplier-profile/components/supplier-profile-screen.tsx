@@ -53,6 +53,7 @@ interface Product {
   imageUrl: string | null
   pricePerUnit: number
   promotionalPrice: number | null
+  promotionTypes: string[]
   unit: string
   isInStock: boolean
 }
@@ -349,6 +350,7 @@ export function SupplierProfileScreen({
               imageUrl: (p.thumbnail ?? p.photo ?? p.imageUrl ?? null) as string | null,
               pricePerUnit: p.pricePerUnit as number,
               promotionalPrice: (p.promotionalPrice ?? null) as number | null,
+              promotionTypes: Array.isArray(p.promotionTypes) ? p.promotionTypes as string[] : [],
               unit: p.unit as string,
               isInStock: ((p.stock as number | undefined) ?? 0) > 0,
             }))
@@ -862,6 +864,7 @@ export function SupplierProfileScreen({
                         imageUrl={product.imageUrl}
                         pricePerUnit={product.pricePerUnit}
                         promotionalPrice={product.promotionalPrice}
+                        promotionTypes={product.promotionTypes}
                         unit={product.unit}
                         isInStock={product.isInStock}
                         supplierId={supplier.id}

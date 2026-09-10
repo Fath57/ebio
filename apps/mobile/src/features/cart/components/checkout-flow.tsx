@@ -1,4 +1,4 @@
-import type { DeliveryQuote, DeliveryQuoteReason } from '../hooks/use-delivery-quote'
+import type { OrderPreview, OrderPreviewLine, PreviewDeliveryReason } from '../hooks/use-order-preview'
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
@@ -9,7 +9,7 @@ import Store from 'lucide-react-native/dist/esm/icons/store'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import Wallet from 'lucide-react-native/dist/esm/icons/wallet'
 import * as React from 'react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -33,7 +33,9 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
-import { useDeliveryQuote } from '../hooks/use-delivery-quote'
+import { useCart } from '../cart-context'
+import { useOrderPreview } from '../hooks/use-order-preview'
+import { BasketSuggestions } from './basket-suggestions'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
@@ -78,8 +80,11 @@ function formatKm(value: number): string {
   return `${value.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km`
 }
 
-/** Label of the confirm button; a blocking quote reason replaces the payment verb. */
-function confirmLabel(choice: PaymentChoice, blockedReason: DeliveryQuoteReason | null): string {
+/** Delivery reasons for which the API refuses the order: nothing to charge until they change. */
+const BLOCKING_DELIVERY_REASONS: PreviewDeliveryReason[] = ['NO_POSITION', 'NO_SHOP_POSITION', 'OUT_OF_RANGE']
+
+/** Label of the confirm button; a blocking delivery reason replaces the payment verb. */
+function confirmLabel(choice: PaymentChoice, blockedReason: PreviewDeliveryReason | null): string {
   if (blockedReason === 'OUT_OF_RANGE') {
     return 'Hors zone'
   }
@@ -96,39 +101,105 @@ function confirmLabel(choice: PaymentChoice, blockedReason: DeliveryQuoteReason 
 }
 
 interface DeliveryFeeValueProps {
-  quote: DeliveryQuote | null
+  preview: OrderPreview | null
   loading: boolean
   textColor: string
   mutedColor: string
 }
 
 /** Right-hand side of the "Livraison" summary line: an amount, a waiver, or why there is none yet. */
-function DeliveryFeeValue({ quote, loading, textColor, mutedColor }: DeliveryFeeValueProps) {
-  if (loading || !quote) {
+function DeliveryFeeValue({ preview, loading, textColor, mutedColor }: DeliveryFeeValueProps) {
+  if (loading || !preview) {
     return <Text style={[styles.feeValue, { color: mutedColor }]}>…</Text>
   }
+  const { deliveryReason, deliveryFee, deliveryDistanceKm } = preview
   // NO_POSITION and NO_SHOP_POSITION alike: nothing to charge until a point exists.
-  if (quote.fee === null && quote.reason !== 'OUT_OF_RANGE') {
+  if (deliveryReason === 'NO_POSITION' || deliveryReason === 'NO_SHOP_POSITION') {
     return <Text style={[styles.feeValue, styles.feeBlocked]}>Choisissez votre point de livraison</Text>
   }
-  if (quote.reason === 'OUT_OF_RANGE') {
-    const detail = quote.distanceKm !== null && quote.maxDistanceKm !== null
-      ? ` (${formatKm(quote.distanceKm)}, max ${formatKm(quote.maxDistanceKm)})`
-      : ''
+  if (deliveryReason === 'OUT_OF_RANGE') {
+    const detail = deliveryDistanceKm !== null ? ` (${formatKm(deliveryDistanceKm)})` : ''
     return <Text style={[styles.feeValue, styles.feeBlocked]}>{`Hors zone${detail}`}</Text>
   }
-  if (quote.reason === 'FREE_THRESHOLD' || quote.fee === 0) {
+  if (deliveryReason === 'FREE_PROMO') {
+    return (
+      <Text style={[styles.feeValue, { color: colors.green[600] }]}>
+        {preview.deliverySponsor === 'PLATFORM' ? 'Offerte par eBio' : 'Offerte par la boutique'}
+      </Text>
+    )
+  }
+  if (deliveryReason === 'FREE_THRESHOLD' || deliveryFee === 0) {
     return <Text style={[styles.feeValue, { color: colors.green[600] }]}>Offerte</Text>
   }
-  const showDistance = (quote.reason === 'DISTANCE' || quote.reason === 'ZONE') && quote.distanceKm !== null
+  const showDistance = (deliveryReason === 'DISTANCE' || deliveryReason === 'ZONE') && deliveryDistanceKm !== null
   return (
     <Text style={[styles.feeValue, { color: textColor }]}>
-      {`${formatPrice(quote.fee ?? 0)} FCFA`}
+      {`${formatPrice(deliveryFee)} FCFA`}
       {showDistance && (
-        <Text style={[styles.feeDistance, { color: mutedColor }]}>{` · ${formatKm(quote.distanceKm ?? 0)}`}</Text>
+        <Text style={[styles.feeDistance, { color: mutedColor }]}>{` · ${formatKm(deliveryDistanceKm ?? 0)}`}</Text>
       )}
     </Text>
   )
+}
+
+interface SummaryLineProps {
+  line: OrderPreviewLine
+  unit: string
+  isLast: boolean
+}
+
+/** One basket line: a gift is free, a price promotion shows the regular price struck through. */
+function SummaryLine({ line, unit, isLast }: SummaryLineProps) {
+  const { semantic } = useTheme()
+  const hasPricePromo = !line.isGift && line.unitPrice < line.regularPrice
+  return (
+    <View style={[styles.itemRow, !isLast && [styles.itemRowBorder, { borderBottomColor: semantic.borderLight }]]}>
+      <View style={styles.itemInfo}>
+        <View style={styles.itemNameRow}>
+          <Text style={[styles.itemName, { color: semantic.textPrimary }]} numberOfLines={1}>
+            {`${line.quantity}x ${line.name}`}
+          </Text>
+          {line.isGift && (
+            <View style={styles.giftBadge}>
+              <Text style={styles.giftBadgeText}>Offert</Text>
+            </View>
+          )}
+        </View>
+        <Text style={[styles.itemUnit, { color: semantic.textTertiary }]}>
+          {line.isGift
+            ? (
+                <Text style={styles.itemRegularPrice}>{`${formatPrice(line.regularPrice)} FCFA / ${unitShortLabel(unit)}`}</Text>
+              )
+            : (
+                <>
+                  {`${formatPrice(line.unitPrice)} FCFA / ${unitShortLabel(unit)}`}
+                  {hasPricePromo && (
+                    <Text style={styles.itemRegularPrice}>{`  ${formatPrice(line.regularPrice)} FCFA`}</Text>
+                  )}
+                </>
+              )}
+        </Text>
+      </View>
+      <Text style={[styles.itemTotal, { color: line.isGift ? colors.green[600] : semantic.textPrimary }]}>
+        {line.isGift ? 'Offert' : `${formatPrice(line.totalPrice)} FCFA`}
+      </Text>
+    </View>
+  )
+}
+
+/** Basket as typed by the buyer, shown until the server preview lands. */
+function toLocalLines(items: OrderSummary['items']): OrderPreviewLine[] {
+  return items.map(item => ({
+    productId: item.productId,
+    variantId: item.variantId ?? null,
+    name: item.name,
+    quantity: item.quantity,
+    unitPrice: item.pricePerUnit,
+    regularPrice: item.pricePerUnit,
+    totalPrice: item.pricePerUnit * item.quantity,
+    isGift: false,
+    promotionType: null,
+  }))
 }
 
 function buildFedaPayCheckoutHtml(
@@ -218,12 +289,6 @@ export function CheckoutFlow({
   const [deliveryPosition, setDeliveryPosition] = useState<{ latitude: number, longitude: number } | null>(null)
   /** Address of the pinned point, from the map's reverse geocoding. */
   const [deliveryPlaceLabel, setDeliveryPlaceLabel] = useState<string | null>(null)
-  const { quote: deliveryQuote, loading: quoteLoading } = useDeliveryQuote(
-    orderSummary.supplierId,
-    orderSummary.deliveryMode === 'DELIVERY',
-    orderSummary.total,
-    deliveryPosition,
-  )
   const [pickerOpen, setPickerOpen] = useState(false)
   // Where the map opens when no point is pinned yet: the typed address if it
   // geocodes, otherwise the device position (a buyer ordering for elsewhere
@@ -251,9 +316,10 @@ export function CheckoutFlow({
   const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('FEDAPAY')
   // Cash on delivery: the server caps the amount; 0 means the option is off.
   const [cashMaxAmount, setCashMaxAmount] = useState(0)
-  // Promo code: server-checked before the order, re-checked at creation.
+  // Promo code: server-checked before the order, priced by the preview,
+  // re-checked at creation.
   const [promoInput, setPromoInput] = useState('')
-  const [appliedPromo, setAppliedPromo] = useState<{ code: string, discount: number } | null>(null)
+  const [appliedPromo, setAppliedPromo] = useState<{ code: string } | null>(null)
   const [promoError, setPromoError] = useState<string | null>(null)
   const [checkingPromo, setCheckingPromo] = useState(false)
   const [pendingPaymentId, setPendingPaymentId] = useState<string | null>(null)
@@ -262,6 +328,39 @@ export function CheckoutFlow({
   // Amount as the server settled it, delivery fee included. The payment widget
   // must charge that, never a total recomputed on the phone.
   const [amountDue, setAmountDue] = useState<number | null>(null)
+
+  const isPickup = orderSummary.deliveryMode === 'PICKUP'
+  // `orderSummary` is a snapshot taken when leaving the cart; the basket keeps
+  // living in the cart context (suggestions add to it from this very screen).
+  const { groups: cartGroups } = useCart()
+  const liveGroup = cartGroups.find(group => group.supplierId === orderSummary.supplierId)
+  const basketItems = useMemo<OrderSummary['items']>(
+    () => liveGroup
+      ? liveGroup.items.map(item => ({
+          productId: item.productId,
+          name: item.name,
+          quantity: item.quantity,
+          pricePerUnit: item.pricePerUnit,
+          unit: item.unit,
+        }))
+      : orderSummary.items,
+    [liveGroup, orderSummary.items],
+  )
+  const basketProductIds = useMemo(() => basketItems.map(item => item.productId), [basketItems])
+  // Single source of truth for the summary: promotions, gifts, promo code and
+  // delivery fee are all priced by the API.
+  const previewInput = useMemo(() => ({
+    supplierId: orderSummary.supplierId,
+    pickupMode: isPickup ? 'ON_SITE' as const : 'DELIVERY' as const,
+    position: isPickup ? null : deliveryPosition,
+    promoCode: appliedPromo?.code ?? null,
+    items: basketItems.map(item => ({
+      productId: item.productId,
+      ...(item.variantId ? { variantId: item.variantId } : {}),
+      quantity: item.quantity,
+    })),
+  }), [orderSummary.supplierId, basketItems, isPickup, deliveryPosition, appliedPromo?.code])
+  const { preview, loading: previewLoading, error: previewError } = useOrderPreview(previewInput)
 
   useEffect(() => {
     let cancelled = false
@@ -296,12 +395,23 @@ export function CheckoutFlow({
     }
   }, [])
 
-  const isPickup = orderSummary.deliveryMode === 'PICKUP'
-  // A null fee means the platform cannot price the delivery yet (no drop-off
-  // point, or too far): the order cannot be placed until that changes.
-  const deliveryFee = deliveryQuote?.fee ?? 0
-  const quoteBlocked = !isPickup && (quoteLoading || deliveryQuote?.fee === null || deliveryQuote?.fee === undefined)
-  const orderTotal = orderSummary.total - (appliedPromo?.discount ?? 0) + deliveryFee
+  // The platform cannot price the delivery yet (no drop-off point, or too
+  // far): the order cannot be placed until that changes.
+  const blockedReason: PreviewDeliveryReason | null = preview && BLOCKING_DELIVERY_REASONS.includes(preview.deliveryReason)
+    ? preview.deliveryReason
+    : null
+  const quoteBlocked = !isPickup && (previewLoading || preview === null || blockedReason !== null)
+  // Pickup never waits on the server: the typed basket stands in until the preview lands.
+  const localTotal = useMemo(
+    () => basketItems.reduce((sum, item) => sum + item.pricePerUnit * item.quantity, 0),
+    [basketItems],
+  )
+  const orderTotal = preview?.total ?? localTotal
+  const summaryLines = preview?.lines ?? toLocalLines(basketItems)
+  const unitByProductId = useMemo(
+    () => new Map(basketItems.map(item => [item.productId, item.unit])),
+    [basketItems],
+  )
   const cashAvailable = cashMaxAmount > 0 && orderTotal <= cashMaxAmount
   const walletAvailable = walletBalance !== null && walletBalance >= orderTotal
   // A choice that stops being affordable (promo removed, fee changed) falls back to online payment.
@@ -321,9 +431,10 @@ export function CheckoutFlow({
         method: 'POST',
         body: JSON.stringify({ code, supplierId: orderSummary.supplierId, itemsTotal: orderSummary.total }),
       })
-      const data = await res.json().catch(() => null) as { valid?: boolean, discount?: number, message?: string | null } | null
+      const data = await res.json().catch(() => null) as { valid?: boolean, message?: string | null } | null
       if (res.ok && data?.valid) {
-        setAppliedPromo({ code, discount: data.discount ?? 0 })
+        // Amount shown comes from the preview, which re-prices the whole basket.
+        setAppliedPromo({ code })
       }
       else {
         setAppliedPromo(null)
@@ -391,7 +502,7 @@ export function CheckoutFlow({
           deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.latitude : undefined,
           deliveryLongitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.longitude : undefined,
           deliverySlot: deliverySlot || undefined,
-          items: orderSummary.items.map(item => ({
+          items: basketItems.map(item => ({
             productId: item.productId,
             ...(item.variantId ? { variantId: item.variantId } : {}),
             quantity: item.quantity,
@@ -467,7 +578,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked])
+  }, [orderSummary, basketItems, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked])
 
   const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
@@ -605,34 +716,20 @@ export function CheckoutFlow({
               Récapitulatif
             </Text>
 
-            {orderSummary.items.map((item, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.itemRow,
-                  index < orderSummary.items.length - 1 && [styles.itemRowBorder, { borderBottomColor: semantic.borderLight }],
-                ]}
-              >
-                <View style={styles.itemInfo}>
-                  <Text style={[styles.itemName, { color: semantic.textPrimary }]} numberOfLines={1}>
-                    {item.quantity}
-                    x
-                    {item.name}
-                  </Text>
-                  <Text style={[styles.itemUnit, { color: semantic.textTertiary }]}>
-                    {formatPrice(item.pricePerUnit)}
-                    {' '}
-                    FCFA /
-                    {unitShortLabel(item.unit)}
-                  </Text>
-                </View>
-                <Text style={[styles.itemTotal, { color: semantic.textPrimary }]}>
-                  {formatPrice(item.quantity * item.pricePerUnit)}
-                  {' '}
-                  FCFA
-                </Text>
-              </View>
+            {summaryLines.map((line, index) => (
+              <SummaryLine
+                key={`${line.productId}-${line.variantId ?? ''}-${line.isGift ? 'gift' : 'paid'}`}
+                line={line}
+                unit={unitByProductId.get(line.productId) ?? ''}
+                isLast={index === summaryLines.length - 1}
+              />
             ))}
+
+            <BasketSuggestions
+              supplierId={orderSummary.supplierId}
+              supplierName={orderSummary.supplierName}
+              productIds={basketProductIds}
+            />
 
             {/* Promo code */}
             <View style={styles.promoRow}>
@@ -676,26 +773,27 @@ export function CheckoutFlow({
             {promoError && (
               <Text style={styles.promoError}>{promoError}</Text>
             )}
+            {appliedPromo && preview?.promoCodeMessage && (
+              <Text style={styles.promoError}>{preview.promoCodeMessage}</Text>
+            )}
             {appliedPromo && (
               <View style={styles.feeRow}>
                 <Text style={[styles.feeLabel, { color: colors.green[600] }]}>
-                  Code
-                  {' '}
-                  {appliedPromo.code}
+                  {`Code ${appliedPromo.code}`}
                 </Text>
-                <Text style={[styles.feeValue, { color: colors.green[600] }]}>
-                  −
-                  {formatPrice(appliedPromo.discount)}
-                  {' '}
-                  FCFA
+                <Text style={[styles.feeValue, { color: preview ? colors.green[600] : semantic.textTertiary }]}>
+                  {preview ? `−${formatPrice(preview.discount)} FCFA` : '…'}
                 </Text>
               </View>
+            )}
+            {previewError && (
+              <Text style={styles.promoError}>{previewError}</Text>
             )}
 
             {orderSummary.deliveryMode === 'DELIVERY' && (
               <View style={styles.feeRow}>
                 <Text style={[styles.feeLabel, { color: semantic.textSecondary }]}>Livraison</Text>
-                <DeliveryFeeValue quote={deliveryQuote} loading={quoteLoading} textColor={semantic.textPrimary} mutedColor={semantic.textTertiary} />
+                <DeliveryFeeValue preview={preview} loading={previewLoading} textColor={semantic.textPrimary} mutedColor={semantic.textTertiary} />
               </View>
             )}
 
@@ -797,12 +895,12 @@ export function CheckoutFlow({
             activeOpacity={0.8}
             accessibilityState={{ disabled: isSubmitting || quoteBlocked }}
           >
-            {isSubmitting || quoteLoading
+            {isSubmitting || (!isPickup && previewLoading)
               ? <ActivityIndicator size="small" color={colors.neutral[0]} />
               : (
                   <>
                     <Text style={styles.confirmButtonText}>
-                      {confirmLabel(effectiveChoice, quoteBlocked ? deliveryQuote?.reason ?? null : null)}
+                      {confirmLabel(effectiveChoice, quoteBlocked ? blockedReason ?? 'NO_POSITION' : null)}
                     </Text>
                     {!quoteBlocked && <ArrowRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />}
                   </>
@@ -831,7 +929,7 @@ export function CheckoutFlow({
   if (currentStep === 'PAYMENT' && fedapayPublicKey && pendingPaymentId) {
     const checkoutHtml = buildFedaPayCheckoutHtml(
       fedapayPublicKey,
-      amountDue ?? orderSummary.total + deliveryFee,
+      amountDue ?? orderTotal,
       `Commande eBio - ${orderSummary.supplierName}`,
       pendingPaymentId,
       customer,
@@ -1019,12 +1117,32 @@ const styles = StyleSheet.create({
     gap: 2,
     marginRight: spacing[3],
   },
+  itemNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+  },
   itemName: {
     fontFamily: fonts.sansMd,
     fontSize: 14,
+    flexShrink: 1,
   },
   itemUnit: {
     ...typography.caption,
+  },
+  itemRegularPrice: {
+    textDecorationLine: 'line-through',
+  },
+  giftBadge: {
+    backgroundColor: colors.green[50],
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 1,
+  },
+  giftBadgeText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 10,
+    color: colors.green[800],
   },
   itemTotal: {
     fontFamily: fonts.mono,

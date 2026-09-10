@@ -1,0 +1,53 @@
+import type { StyleProp, ViewStyle } from 'react-native'
+import * as React from 'react'
+import { StyleSheet, Text, View } from 'react-native'
+import { colors, fonts, radius, spacing } from '../../../theme/theme'
+
+interface PromotionChipsProps {
+  labels: string[]
+  /** Solid chips for use over a photo (default: soft green pills). */
+  overlay?: boolean
+  style?: StyleProp<ViewStyle>
+}
+
+/** "1+1" / "Livraison offerte" chips next to a product's price or photo. */
+export function PromotionChips({ labels, overlay = false, style }: PromotionChipsProps) {
+  if (labels.length === 0) {
+    return null
+  }
+  return (
+    <View style={[styles.row, style]}>
+      {labels.map(label => (
+        <View key={label} style={[styles.chip, overlay && styles.chipOverlay]}>
+          <Text style={[styles.chipText, overlay && styles.chipTextOverlay]}>{label}</Text>
+        </View>
+      ))}
+    </View>
+  )
+}
+
+const styles = StyleSheet.create({
+  row: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[1],
+  },
+  chip: {
+    backgroundColor: colors.green[50],
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  chipOverlay: {
+    backgroundColor: colors.green[600],
+  },
+  chipText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 9,
+    color: colors.green[800],
+    letterSpacing: 0.2,
+  },
+  chipTextOverlay: {
+    color: colors.neutral[0],
+  },
+})

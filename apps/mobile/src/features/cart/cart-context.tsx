@@ -16,6 +16,8 @@ export interface CartItem {
   pricePerUnit: number
   unit: string
   quantity: number
+  /** Live promotion types on the product when added (absent on carts stored before). */
+  promotionTypes?: string[]
 }
 
 export type DeliveryMode = 'PICKUP' | 'DELIVERY'
@@ -36,6 +38,7 @@ export interface AddItemInput {
   pricePerUnit: number
   unit: string
   quantity?: number
+  promotionTypes?: string[]
 }
 
 // ---------------------------------------------------------------------------
@@ -95,6 +98,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
               pricePerUnit: input.pricePerUnit,
               unit: input.unit,
               quantity: qty,
+              promotionTypes: input.promotionTypes,
             },
           ],
         })
@@ -105,7 +109,11 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
         if (existingIndex !== -1) {
           const existing = group.items[existingIndex]
-          group.items[existingIndex] = { ...existing, quantity: existing.quantity + qty }
+          group.items[existingIndex] = {
+            ...existing,
+            quantity: existing.quantity + qty,
+            promotionTypes: input.promotionTypes ?? existing.promotionTypes,
+          }
         }
         else {
           group.items.push({
@@ -118,6 +126,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
             pricePerUnit: input.pricePerUnit,
             unit: input.unit,
             quantity: qty,
+            promotionTypes: input.promotionTypes,
           })
         }
 

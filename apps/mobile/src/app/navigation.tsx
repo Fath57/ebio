@@ -251,7 +251,7 @@ function ProductDetailWrapper({ route, navigation }: any) {
         product={product}
         supplier={supplier}
         onGoBack={() => navigation.goBack()}
-        onAddToCart={(productId, quantity) => {
+        onAddToCart={(productId, quantity, promotionTypes) => {
           addItem({
             productId,
             supplierId: supplier.id,
@@ -261,10 +261,12 @@ function ProductDetailWrapper({ route, navigation }: any) {
             pricePerUnit: product.promotionalPrice ?? product.pricePerUnit,
             unit: product.unit,
             quantity,
+            promotionTypes,
           })
           navigation.goBack()
         }}
         onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
+        onOpenProduct={id => navigation.push('ProductDetail', { productId: id })}
       />
       <CartCtaBar onPress={() => navigation.navigate('Panier')} />
     </View>

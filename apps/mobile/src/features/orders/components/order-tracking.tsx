@@ -48,6 +48,8 @@ interface OrderItemDetail {
   quantity: number
   unitPrice: number
   totalPrice: number
+  /** Free unit added by a buy-X-get-Y promotion. */
+  isGift: boolean
 }
 
 interface StatusStep {
@@ -163,6 +165,7 @@ export function OrderTracking({
             quantity: item.quantity as number,
             unitPrice: (item.unitPrice ?? 0) as number,
             totalPrice: (item.totalPrice ?? (item.unitPrice as number ?? 0) * (item.quantity as number ?? 1)) as number,
+            isGift: item.isGift === true,
           })),
           steps: STATUS_ORDER.map(status => ({
             status,
@@ -414,17 +417,13 @@ export function OrderTracking({
                         {item.productName}
                       </Text>
                       <Text style={[styles.itemQty, { color: semantic.textTertiary }]}>
-                        {item.quantity}
-                        x
-                        {formatPrice(item.unitPrice)}
-                        {' '}
-                        FCFA
+                        {item.isGift
+                          ? `${item.quantity}x offert${item.quantity > 1 ? 's' : ''}`
+                          : `${item.quantity}x ${formatPrice(item.unitPrice)} FCFA`}
                       </Text>
                     </View>
-                    <Text style={[styles.itemTotal, { color: semantic.textPrimary }]}>
-                      {formatPrice(item.totalPrice)}
-                      {' '}
-                      FCFA
+                    <Text style={[styles.itemTotal, { color: item.isGift ? colors.green[600] : semantic.textPrimary }]}>
+                      {item.isGift ? 'Offert' : `${formatPrice(item.totalPrice)} FCFA`}
                     </Text>
                   </View>
                   {index < order.items.length - 1 && (

@@ -12,6 +12,8 @@ import {
 import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScalePressable } from '../../../utils/animations'
+import { PromotionChips } from '../../catalog/components/promotion-chips'
+import { promotionChipLabels } from '../../catalog/promotions'
 
 interface SearchResultCardProps {
   item: SearchResult
@@ -34,6 +36,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
   const { supplier, product } = item
   const hasPromo = product.promotionalPrice !== null
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
+  const chipLabels = promotionChipLabels(product.promotionTypes ?? [])
 
   return (
     <ScalePressable
@@ -150,6 +153,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
               <Text style={[styles.badgeText, { color: colors.earth[600] }]}>Top vendeur</Text>
             </View>
           )}
+          <PromotionChips labels={chipLabels} />
           {supplier.rating !== null && (
             <View style={styles.starsRow}>
               {Array.from({ length: 5 }, (_, i) => (
