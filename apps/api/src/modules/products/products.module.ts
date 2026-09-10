@@ -8,12 +8,14 @@ import { ProductUnitsController } from './product-units.controller'
 import { ProductUnitsService } from './product-units.service'
 import { ProductsController } from './products.controller'
 import { ProductsService } from './products.service'
+import { AdminPromotionsController, SupplierPromotionsController } from './promotions.controller'
+import { PromotionsService } from './promotions.service'
 import { StockAlertService } from './stock-alert.service'
 
 @Module({
   imports: [SuppliersModule, MediaModule, NotificationsModule],
-  controllers: [ProductsController, CategoriesController, ProductUnitsController],
-  providers: [ProductsService, CategoriesService, ProductUnitsService, StockAlertService],
-  exports: [ProductsService, CategoriesService, ProductUnitsService, StockAlertService],
+  controllers: [ProductsController, CategoriesController, ProductUnitsController, SupplierPromotionsController, AdminPromotionsController],
+  providers: [ProductsService, CategoriesService, ProductUnitsService, StockAlertService, PromotionsService],
+  exports: [ProductsService, CategoriesService, ProductUnitsService, StockAlertService, PromotionsService],
 })
 export class ProductsModule {}

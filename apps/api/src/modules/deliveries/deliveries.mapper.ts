@@ -19,6 +19,8 @@ export interface OfferRow {
   dropoff_latitude: number | null
   dropoff_longitude: number | null
   delivery_fee: number | null
+  /** What the buyer pays for delivery: 0 on a sponsored (free-delivery promotion) run. */
+  buyer_delivery_fee: number | null
   courier_fee: number | null
   shop_name: string
   items_count: string | number
@@ -83,7 +85,7 @@ export class DeliveriesMapper {
       itemsCount: Number(row.items_count),
       totalAmount: row.total_amount,
       paymentMethod: row.payment_method,
-      ...cashAmounts(row.payment_method, Number(row.total_amount), Number(row.delivery_fee ?? 0)),
+      ...cashAmounts(row.payment_method, Number(row.total_amount), Number(row.buyer_delivery_fee ?? 0)),
       isTargeted: row.is_targeted === true,
       expiresAt: row.offer_expires_at ? new Date(row.offer_expires_at).toISOString() : null,
       pickupReadyAt: row.pickup_ready_at ? new Date(row.pickup_ready_at).toISOString() : null,
@@ -154,7 +156,8 @@ export class DeliveriesMapper {
       itemsCount: order.items.isInitialized() ? order.items.count() : 0,
       totalAmount: order.totalAmount,
       paymentMethod: order.paymentMethod,
-      ...cashAmounts(order.paymentMethod, order.totalAmount, delivery.deliveryFee ?? 0),
+      // The buyer-paid fee (0 when sponsored) is what the courier keeps in hand.
+      ...cashAmounts(order.paymentMethod, order.totalAmount, order.deliveryFee ?? 0),
       deliveryFee: delivery.deliveryFee ?? 0,
       courierFee: delivery.courierFee ?? 0,
       tipAmount: delivery.tipAmount ?? 0,

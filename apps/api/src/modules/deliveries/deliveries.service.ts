@@ -189,7 +189,9 @@ export class DeliveriesService {
 
   private async createDelivery(order: Order, schedule: { readyAt: Date, dispatchAt: Date } | null): Promise<Delivery | null> {
     const supplier = order.supplier
-    const deliveryFee = order.deliveryFee ?? 0
+    // A sponsored (free-delivery promotion) run is still paid to the courier
+    // in full: the snapshot is the real fee, whoever covers it.
+    const deliveryFee = (order.deliveryFee || order.sponsoredDeliveryFee) ?? 0
     const rate = await this.platformSettings.getDeliveryCommissionRate()
     const delivery = this.em.create(Delivery, {
       order,
@@ -306,6 +308,7 @@ export class DeliveriesService {
        )
        SELECT d.id, o.order_number, d.pickup_address, d.dropoff_address, d.offered_at,
               s.shop_name, o.total_amount, o.payment_method, d.delivery_fee, d.courier_fee,
+              o.delivery_fee AS buyer_delivery_fee,
               (d.offered_to_courier_id = ?) AS is_targeted,
               CASE WHEN d.offered_to_courier_id = ? THEN d.offer_expires_at END AS offer_expires_at,
               o.delivery_latitude AS dropoff_latitude, o.delivery_longitude AS dropoff_longitude,
@@ -540,13 +543,27 @@ export class DeliveriesService {
       const isCash = order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY
       const deliveryFee = Math.round(delivery.deliveryFee ?? 0)
       const courierFee = Math.round(delivery.courierFee ?? 0)
-      const amount = isCash ? deliveryFee - courierFee : courierFee
+      // Sponsored delivery: the buyer handed over no fee, so the courier is
+      // credited their share like an online run and the sponsor is charged.
+      const sponsored = order.deliverySponsor != null && order.sponsoredDeliveryFee > 0
+      const amount = isCash && !sponsored ? deliveryFee - courierFee : courierFee
       if (!(amount > 0)) {
         return
       }
 
       const wallet = await this.walletService.getOrCreate({ courierId: courier.id })
-      if (isCash) {
+      if (sponsored && order.deliverySponsor === 'SUPPLIER') {
+        const shopWallet = await this.walletService.getOrCreate({ supplierId: order.supplier.id })
+        await this.walletService.debit(shopWallet.id, {
+          type: WalletTransactionType.DELIVERY_SPONSORSHIP,
+          amount: deliveryFee,
+          description: `Livraison offerte (promotion) — commande #${order.orderNumber}`,
+          orderId: order.id,
+          deliveryId: delivery.id,
+          allowNegative: true,
+        })
+      }
+      if (isCash && !sponsored) {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.DELIVERY_COMMISSION,
           amount,
@@ -572,10 +589,10 @@ export class DeliveriesService {
         user: courierUser,
         type: NotificationType.COURIER_EARNING,
         title: 'Course réglée',
-        body: isCash
+        body: isCash && !sponsored
           ? `Commission de ${formatted} FCFA prélevée sur votre portefeuille`
           : `+${formatted} FCFA crédités sur votre portefeuille`,
-        data: { deliveryId: delivery.id, orderId: order.id, amount: isCash ? -amount : amount },
+        data: { deliveryId: delivery.id, orderId: order.id, amount: isCash && !sponsored ? -amount : amount },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
     }

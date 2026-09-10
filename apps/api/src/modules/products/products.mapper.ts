@@ -1,10 +1,23 @@
 import type { ProductResponse } from './contracts/product.contract'
+import type { ProductPromotion } from './entities/product-promotion.entity'
 import type { ProductVariant } from './entities/product-variant.entity'
 import type { Product } from './entities/product.entity'
 import { thumbnailUrlFor } from '../../common/media-urls'
+import { PromotionsService } from './promotions.service'
+
+/** The legacy promo price, only while it is still running. */
+export function livePromotionalPrice(product: Pick<Product, 'promotionalPrice' | 'promotionExpiresAt'>): number | null {
+  if (product.promotionalPrice == null) {
+    return null
+  }
+  if (product.promotionExpiresAt && product.promotionExpiresAt <= new Date()) {
+    return null
+  }
+  return product.promotionalPrice
+}
 
 export class ProductMapper {
-  static toResponse(product: Product, variants: ProductVariant[] = []): ProductResponse {
+  static toResponse(product: Product, variants: ProductVariant[] = [], promotions: ProductPromotion[] = []): ProductResponse {
     return {
       id: product.id,
       supplierId: product.supplier?.id ?? '',
@@ -20,8 +33,9 @@ export class ProductMapper {
       stock: product.stock,
       stockAlertThreshold: product.stockAlertThreshold,
       status: product.status,
-      promotionalPrice: product.promotionalPrice ?? null,
-      promotionExpiresAt: product.promotionExpiresAt?.toISOString() ?? null,
+      promotionalPrice: livePromotionalPrice(product),
+      promotionExpiresAt: livePromotionalPrice(product) === null ? null : product.promotionExpiresAt?.toISOString() ?? null,
+      promotions: promotions.filter(p => p.isLive()).map(PromotionsService.toResponse),
       ingredients: product.ingredients ?? null,
       allergens: product.allergens ?? [],
       labels: product.labels ?? [],
@@ -43,7 +57,7 @@ export class ProductMapper {
     }
   }
 
-  static toSummary(product: Product) {
+  static toSummary(product: Product, promotions: ProductPromotion[] = []) {
     return {
       id: product.id,
       name: product.name,
@@ -54,7 +68,8 @@ export class ProductMapper {
       unit: product.unit,
       stock: product.stock,
       status: product.status,
-      promotionalPrice: product.promotionalPrice ?? null,
+      promotionalPrice: livePromotionalPrice(product),
+      promotionTypes: promotions.filter(p => p.isLive()).map(p => p.type),
       createdAt: product.createdAt.toISOString(),
     }
   }

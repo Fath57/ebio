@@ -1,6 +1,6 @@
 import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
 import type { EmailAttachment } from '../email/email.service'
-import type { CreateDispute, CreateOrder, OrderDeliverySummary } from './contracts/order.contract'
+import type { CreateDispute, CreateOrder, OrderDeliverySummary, OrderPreview, PreviewOrder } from './contracts/order.contract'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
@@ -24,8 +24,11 @@ import { NotificationChannel, NotificationType } from '../notifications/notifica
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
+import { ProductPromotion, PromotionType } from '../products/entities/product-promotion.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
 import { Product } from '../products/entities/product.entity'
+import { PromotionsService } from '../products/promotions.service'
+import { PromoCode } from '../promo-codes/entities/promo-code.entity'
 import { PromoCodesService } from '../promo-codes/promo-codes.service'
 import { DeliveryPricingService } from '../settings/delivery-pricing.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
@@ -126,6 +129,36 @@ interface RenderedInvoice {
 /** Applied when the shop starts preparing without giving an estimate. */
 const DEFAULT_PREP_MINUTES = 20
 
+interface BasketLine {
+  product: Product
+  variant?: ProductVariant
+  quantity: number
+  unitPrice: number
+  regularPrice: number
+  totalPrice: number
+  promotion: ProductPromotion | null
+  isGift: boolean
+}
+
+interface BasketPricing {
+  itemEntities: BasketLine[]
+  totalAmount: number
+  discount: number
+  discountedItemsTotal: number
+  commission: { rate: number, commissionAmount: number }
+  appliedPromo: PromoCode | null
+  promoCodeMessage: string | null
+  /** What the buyer pays for delivery (0 when sponsored or offered). */
+  deliveryFee: number
+  deliveryPriceable: boolean
+  deliveryReason: string
+  deliveryDistanceKm: number | null
+  deliveryMaxKm: number
+  sponsoredDeliveryFee: number
+  deliverySponsor: 'SUPPLIER' | 'PLATFORM' | null
+  platformPromoCompensation: number
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
@@ -140,6 +173,7 @@ export class OrdersService {
     private readonly routeMapService: RouteMapService,
     private readonly platformSettings: PlatformSettingsService,
     private readonly deliveryPricing: DeliveryPricingService,
+    private readonly promotionsService: PromotionsService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -161,74 +195,15 @@ export class OrdersService {
     await this.checkDuplicateOrder(buyerId, data.supplierId, data.items)
 
     const orderNumber = await this.generateOrderNumber()
-
-    let totalAmount = 0
-    const itemEntities: Array<{ product: Product, variant?: ProductVariant, quantity: number, unitPrice: number, totalPrice: number }> = []
-
-    for (const itemInput of data.items) {
-      const product = products.get(itemInput.productId)!
-      let unitPrice = product.pricePerUnit
-      let variant: ProductVariant | undefined
-
-      if (itemInput.variantId) {
-        variant = await this.em.findOne(ProductVariant, { id: itemInput.variantId, product: { id: product.id } }) ?? undefined
-        if (!variant) {
-          throw new NotFoundException(`Variant ${itemInput.variantId} not found for product ${product.name}`)
-        }
-        unitPrice = variant.pricePerUnit
+    const pricing = await this.priceBasket(buyer, supplier, products, data)
+    const { itemEntities, discount, discountedItemsTotal, commission, appliedPromo, deliveryFee } = pricing
+    if (!pricing.deliveryPriceable) {
+      if (pricing.deliveryReason === 'OUT_OF_RANGE') {
+        const km = (pricing.deliveryDistanceKm ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })
+        throw new BadRequestException(`Adresse hors zone de livraison (${km} km, maximum ${pricing.deliveryMaxKm} km). Choisissez le retrait sur place ou une autre adresse.`)
       }
-
-      if (product.promotionalPrice && (!product.promotionExpiresAt || product.promotionExpiresAt > new Date())) {
-        unitPrice = product.promotionalPrice
-      }
-
-      const totalPrice = Math.round(unitPrice * itemInput.quantity * 100) / 100
-      totalAmount += totalPrice
-
-      itemEntities.push({ product, variant, quantity: itemInput.quantity, unitPrice, totalPrice })
+      throw new BadRequestException('Choisissez votre point de livraison sur la carte pour calculer les frais de livraison')
     }
-
-    // Promo code, checked against the items subtotal. Refused = the order
-    // fails loudly; a silently dropped discount would be worse.
-    let appliedPromo = null
-    let discount = 0
-    if (data.promoCode) {
-      const promoCheck = await this.promoCodesService.check(
-        data.promoCode,
-        supplier.id,
-        totalAmount,
-        buyer.id,
-      )
-      if (!promoCheck.valid) {
-        throw new BadRequestException(promoCheck.message)
-      }
-      appliedPromo = promoCheck.promo
-      discount = promoCheck.discount
-    }
-    const discountedItemsTotal = Math.round((totalAmount - discount) * 100) / 100
-
-    // Each item pays its own category's rate, unless the shop negotiated a
-    // flat rate. The base is the discounted items only. Delivery is the
-    // shop's own cost, passed through in full, and the platform takes no cut.
-    const commissionItems = await Promise.all(itemEntities.map(async item => ({
-      categorySlug: await this.getCategorySlug(item.product),
-      // The discount spreads proportionally over the items for the rate mix.
-      totalPrice: totalAmount > 0 ? item.totalPrice * (discountedItemsTotal / totalAmount) : 0,
-    })))
-    const commission = await this.commissionService.calculateForItems(
-      commissionItems,
-      supplier.commissionRate,
-    )
-
-    // Platform pricing (never the shop's): same rules as the checkout quote,
-    // so the fee charged is the fee the buyer saw. Out of range = refusal.
-    const deliveryFee = await this.deliveryPricing.feeForOrder({
-      supplierId: supplier.id,
-      itemsTotal: totalAmount,
-      isDelivery: data.pickupMode === PickupMode.DELIVERY,
-      latitude: data.deliveryLatitude,
-      longitude: data.deliveryLongitude,
-    })
 
     // Cash: the courier fronts the goods and collects the total at the door,
     // so the platform caps what one order may put in a courier's hands.
@@ -260,6 +235,9 @@ export class OrdersService {
       deliveryLatitude: data.deliveryLatitude,
       deliveryLongitude: data.deliveryLongitude,
       deliveryFee,
+      sponsoredDeliveryFee: pricing.sponsoredDeliveryFee,
+      deliverySponsor: pricing.deliverySponsor,
+      platformPromoCompensation: pricing.platformPromoCompensation,
       totalAmount: discountedItemsTotal + deliveryFee,
       commissionRate: commission.rate,
       commissionAmount: commission.commissionAmount,
@@ -276,6 +254,8 @@ export class OrdersService {
         quantity: itemData.quantity,
         unitPrice: itemData.unitPrice,
         totalPrice: itemData.totalPrice,
+        promotion: itemData.promotion ?? null,
+        isGift: itemData.isGift,
       })
     }
 
@@ -614,6 +594,14 @@ export class OrdersService {
             orderId: order.id,
           })
         }
+        if (order.platformPromoCompensation > 0) {
+          await this.walletService.credit(wallet.id, {
+            type: WalletTransactionType.PROMO_COMPENSATION,
+            amount: order.platformPromoCompensation,
+            description: `Compensation promotion eBio — ${order.orderNumber}`,
+            orderId: order.id,
+          })
+        }
       }
     }
 
@@ -909,6 +897,171 @@ export class OrdersService {
 
     if (staleOrders.length > 0) {
       await this.em.flush()
+    }
+  }
+
+  /**
+   * What the basket would cost, without creating anything: the checkout shows
+   * exactly what create() will charge.
+   */
+  async preview(buyerId: string, data: PreviewOrder): Promise<OrderPreview> {
+    const buyer = await this.em.findOneOrFail(User, { id: buyerId })
+    const supplier = await this.em.findOne(Supplier, { id: data.supplierId })
+    if (!supplier) {
+      throw new NotFoundException('Supplier not found')
+    }
+    const products = await this.validateAndLoadItems(data.items)
+    const pricing = await this.priceBasket(buyer, supplier, products, { ...data, promoCodeSoft: true })
+    return {
+      lines: pricing.itemEntities.map(line => ({
+        productId: line.product.id,
+        variantId: line.variant?.id ?? null,
+        name: line.variant ? `${line.product.name} — ${line.variant.label}` : line.product.name,
+        quantity: line.quantity,
+        unitPrice: line.unitPrice,
+        regularPrice: line.regularPrice,
+        totalPrice: line.totalPrice,
+        isGift: line.isGift,
+        promotionType: line.promotion?.type ?? null,
+      })),
+      itemsTotal: pricing.totalAmount,
+      discount: pricing.discount,
+      promoCodeMessage: pricing.promoCodeMessage,
+      deliveryFee: pricing.deliveryFee,
+      sponsoredDeliveryFee: pricing.sponsoredDeliveryFee,
+      deliverySponsor: pricing.deliverySponsor,
+      deliveryReason: pricing.deliveryReason,
+      deliveryDistanceKm: pricing.deliveryDistanceKm,
+      total: pricing.discountedItemsTotal + pricing.deliveryFee,
+    }
+  }
+
+  /**
+   * Single pricing path for preview and create: promotions first (price cut on
+   * the base product, free units for buy-X-get-Y, free delivery sponsored by
+   * whoever created the promotion), then the promo code on the discounted
+   * items, then commission and delivery.
+   */
+  private async priceBasket(
+    buyer: User,
+    supplier: Supplier,
+    products: Map<string, Product>,
+    data: PreviewOrder & { promoCodeSoft?: boolean },
+  ): Promise<BasketPricing> {
+    const promotions = await this.promotionsService.liveByProduct([...products.keys()])
+    const itemEntities: BasketLine[] = []
+    let totalAmount = 0
+    let platformPromoCompensation = 0
+    let freeDelivery: ProductPromotion | null = null
+
+    for (const itemInput of data.items) {
+      const product = products.get(itemInput.productId)!
+      const live = promotions.get(product.id) ?? []
+      let unitPrice = product.pricePerUnit
+      let variant: ProductVariant | undefined
+
+      if (itemInput.variantId) {
+        variant = await this.em.findOne(ProductVariant, { id: itemInput.variantId, product: { id: product.id } }) ?? undefined
+        if (!variant) {
+          throw new NotFoundException(`Variant ${itemInput.variantId} not found for product ${product.name}`)
+        }
+        unitPrice = variant.pricePerUnit
+      }
+      const regularPrice = unitPrice
+
+      // A price promotion is set on the base product: variants keep their own price.
+      const pricePromo = variant ? undefined : live.find(p => p.type === PromotionType.PRICE && p.promoPrice != null)
+      if (pricePromo && pricePromo.promoPrice! < unitPrice) {
+        unitPrice = pricePromo.promoPrice!
+        if (pricePromo.createdBy === 'PLATFORM') {
+          platformPromoCompensation += (regularPrice - unitPrice) * itemInput.quantity
+        }
+      }
+
+      const totalPrice = Math.round(unitPrice * itemInput.quantity * 100) / 100
+      totalAmount += totalPrice
+      itemEntities.push({ product, variant, quantity: itemInput.quantity, unitPrice, regularPrice, totalPrice, promotion: pricePromo ?? null, isGift: false })
+
+      const bogo = live.find(p => p.type === PromotionType.BOGO)
+      const gifts = bogo ? PromotionsService.giftUnits(bogo, itemInput.quantity) : 0
+      if (bogo && gifts > 0) {
+        itemEntities.push({ product, variant, quantity: gifts, unitPrice: 0, regularPrice, totalPrice: 0, promotion: bogo, isGift: true })
+        if (bogo.createdBy === 'PLATFORM') {
+          platformPromoCompensation += regularPrice * gifts
+        }
+      }
+
+      const free = live.find(p => p.type === PromotionType.FREE_DELIVERY)
+      if (free && !freeDelivery) {
+        freeDelivery = free
+      }
+    }
+
+    // Promo code, checked against the items subtotal. At checkout preview a
+    // refused code is reported; at creation it fails loudly.
+    let appliedPromo: PromoCode | null = null
+    let discount = 0
+    let promoCodeMessage: string | null = null
+    if (data.promoCode) {
+      const promoCheck = await this.promoCodesService.check(data.promoCode, supplier.id, totalAmount, buyer.id)
+      if (!promoCheck.valid) {
+        if (!data.promoCodeSoft) {
+          throw new BadRequestException(promoCheck.message)
+        }
+        promoCodeMessage = promoCheck.message ?? 'Code promo refusé'
+      }
+      else {
+        appliedPromo = promoCheck.promo
+        discount = promoCheck.discount
+      }
+    }
+    const discountedItemsTotal = Math.round((totalAmount - discount) * 100) / 100
+
+    // Each paid item pays its own category's rate, unless the shop negotiated a
+    // flat rate. Gifts weigh nothing. Delivery is outside the commission base.
+    const paidLines = itemEntities.filter(line => !line.isGift)
+    const commissionItems = await Promise.all(paidLines.map(async item => ({
+      categorySlug: await this.getCategorySlug(item.product),
+      totalPrice: totalAmount > 0 ? item.totalPrice * (discountedItemsTotal / totalAmount) : 0,
+    })))
+    const commission = await this.commissionService.calculateForItems(commissionItems, supplier.commissionRate)
+
+    const isDelivery = data.pickupMode === PickupMode.DELIVERY
+    const quote = await this.deliveryPricing.quote({
+      supplierId: supplier.id,
+      itemsTotal: totalAmount,
+      isDelivery,
+      latitude: data.deliveryLatitude,
+      longitude: data.deliveryLongitude,
+    })
+    const realFee = quote.fee
+    let deliveryFee = realFee ?? 0
+    let sponsoredDeliveryFee = 0
+    let deliverySponsor: 'SUPPLIER' | 'PLATFORM' | null = null
+    let deliveryReason: string = quote.reason
+    if (isDelivery && freeDelivery && realFee !== null && realFee > 0) {
+      sponsoredDeliveryFee = realFee
+      deliverySponsor = freeDelivery.createdBy
+      deliveryFee = 0
+      deliveryReason = 'FREE_PROMO'
+    }
+
+    return {
+      itemEntities,
+      totalAmount,
+      discount,
+      discountedItemsTotal,
+      commission,
+      appliedPromo,
+      promoCodeMessage,
+      deliveryFee,
+      deliveryPriceable: !isDelivery || realFee !== null,
+      deliveryReason,
+      deliveryDistanceKm: quote.distanceKm,
+      deliveryMaxKm: quote.maxDistanceKm,
+      sponsoredDeliveryFee,
+      deliverySponsor,
+      platformPromoCompensation: Math.round(platformPromoCompensation * 100) / 100,
     }
   }
 

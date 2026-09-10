@@ -30,9 +30,11 @@ import {
   stockUpdateSchema,
   updateProductSchema,
 } from './contracts/product.contract'
+import { PromotionAuthor } from './entities/product-promotion.entity'
 import { ProductStatus } from './entities/product.entity'
 import { ProductMapper } from './products.mapper'
 import { ProductsService } from './products.service'
+import { PromotionsService } from './promotions.service'
 import { StockAlertService } from './stock-alert.service'
 
 @Controller()
@@ -42,6 +44,7 @@ export class ProductsController {
     private readonly productsService: ProductsService,
     private readonly stockAlertService: StockAlertService,
     private readonly suppliersService: SuppliersService,
+    private readonly promotionsService: PromotionsService,
   ) {}
 
   @Get('suppliers/:supplierId/products')
@@ -83,8 +86,9 @@ export class ProductsController {
       { status, categoryId, includeHidden: isOwner },
     )
 
+    const promotions = await this.promotionsService.liveByProduct(result.products.map(p => p.id))
     return {
-      data: result.products.map(p => ProductMapper.toSummary(p)),
+      data: result.products.map(p => ProductMapper.toSummary(p, promotions.get(p.id) ?? [])),
       meta: {
         itemCount: result.total,
         pageSize: pagination.pageSize,
@@ -114,11 +118,12 @@ export class ProductsController {
       throw new NotFoundException('Product not found')
     }
 
-    const [variants, stats] = await Promise.all([
+    const [variants, stats, promotions] = await Promise.all([
       this.productsService.getVariantsByProductId(product.id),
       this.productsService.getProductStats(product.id),
+      this.promotionsService.listForProduct(product.id),
     ])
-    return { ...ProductMapper.toResponse(product, variants), stats }
+    return { ...ProductMapper.toResponse(product, variants, promotions), stats }
   }
 
   @Post('suppliers/me/products')
@@ -195,15 +200,17 @@ export class ProductsController {
     @Param('id') id: string,
     @TypedBody(promotionSchema) body: z.infer<typeof promotionSchema>,
   ) {
+    // Legacy shape kept for older app versions; the row lives in product_promotions.
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    const product = await this.productsService.setPromotion(
-      id,
-      supplier.id,
-      body.promotionalPrice,
-      body.expiresAt,
-    )
+    const product = await this.productsService.findByIdAndVerifyOwnership(id, supplier.id)
+    await this.promotionsService.create(product, PromotionAuthor.SUPPLIER, {
+      type: 'PRICE',
+      promoPrice: body.promotionalPrice,
+      endsAt: body.expiresAt,
+    })
     const variants = await this.productsService.getVariantsByProductId(product.id)
-    return ProductMapper.toResponse(product, variants)
+    const promotions = await this.promotionsService.listForProduct(product.id)
+    return ProductMapper.toResponse(product, variants, promotions)
   }
 
   @Delete('suppliers/me/products/:id/promotion')
@@ -215,9 +222,13 @@ export class ProductsController {
     @Param('id') id: string,
   ) {
     const supplier = await this.suppliersService.findByUserId(session.user.id)
-    const product = await this.productsService.clearPromotion(id, supplier.id)
+    const product = await this.productsService.findByIdAndVerifyOwnership(id, supplier.id)
+    for (const promotion of await this.promotionsService.listForProduct(product.id, true)) {
+      if (promotion.type === 'PRICE' && promotion.isActive)
+        await this.promotionsService.remove(product.id, promotion.id)
+    }
     const variants = await this.productsService.getVariantsByProductId(product.id)
-    return ProductMapper.toResponse(product, variants)
+    return ProductMapper.toResponse(product, variants, await this.promotionsService.listForProduct(product.id))
   }
 
   @Post('products/:id/stock-alert')

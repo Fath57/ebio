@@ -16,6 +16,7 @@ export const walletTransactionSchema = z.object({
     'DELIVERY_COMMISSION',
     'TIP_PAYMENT',
     'TIP_EARNING',
+    'DELIVERY_SPONSORSHIP',
   ]),
   amount: z.number(),
   balanceAfter: z.number(),

@@ -22,6 +22,7 @@ import { SuppliersService } from '../suppliers/suppliers.service'
 import {
   createDisputeSchema,
   createOrderSchema,
+  previewOrderSchema,
   rejectOrderSchema,
   updateOrderStatusSchema,
 } from './contracts/order.contract'
@@ -47,6 +48,17 @@ export class OrdersController {
     const order = await this.ordersService.create(session.user.id, body)
     const loaded = await this.ordersService.findById(order.id)
     return OrderMapper.toResponse(loaded)
+  }
+
+  /** The basket as it would be charged; nothing is created. */
+  @Post('preview')
+  @UseGuards(CaslGuard)
+  @CanCreate('Order')
+  async preview(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedBody(previewOrderSchema) body: z.infer<typeof previewOrderSchema>,
+  ) {
+    return this.ordersService.preview(session.user.id, body)
   }
 
   @Get()

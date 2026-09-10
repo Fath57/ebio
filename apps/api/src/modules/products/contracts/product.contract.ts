@@ -108,6 +108,45 @@ export const stockUpdateSchema = z.object({
   description: 'Update product stock level',
 })
 
+export const promotionTypeEnum = z.enum(['PRICE', 'BOGO', 'FREE_DELIVERY']).meta({
+  title: 'PromotionType',
+  description: 'PRICE = promo unit price, BOGO = buy X get Y free, FREE_DELIVERY = delivery offered on orders holding the product',
+})
+
+export const createProductPromotionSchema = z.object({
+  type: promotionTypeEnum,
+  /** PRICE: the promo unit price, below the regular price. */
+  promoPrice: z.number().min(0).optional(),
+  /** BOGO: units to buy and units offered (1/1 = "1 acheté 1 offert"). */
+  buyQty: z.number().int().min(1).max(20).optional(),
+  getQty: z.number().int().min(1).max(20).optional(),
+  startsAt: z.string().datetime().optional(),
+  /** Omitted = until removed. */
+  endsAt: z.string().datetime().nullable().optional(),
+}).refine(p => p.type !== 'PRICE' || p.promoPrice !== undefined, { message: 'Le prix promotionnel est requis', path: ['promoPrice'] }).refine(p => p.type !== 'BOGO' || (p.buyQty !== undefined && p.getQty !== undefined), { message: 'Quantités achetée et offerte requises', path: ['buyQty'] }).meta({
+  title: 'CreateProductPromotion',
+  description: 'A dated promotion on one product',
+})
+
+export const productPromotionResponseSchema = z.object({
+  id: z.string().uuid(),
+  type: promotionTypeEnum,
+  promoPrice: z.number().nullable(),
+  buyQty: z.number().nullable(),
+  getQty: z.number().nullable(),
+  startsAt: z.string().datetime(),
+  endsAt: z.string().datetime().nullable(),
+  /** SUPPLIER funds its own promotion; PLATFORM = eBio pays the shop back. */
+  createdBy: z.enum(['SUPPLIER', 'PLATFORM']),
+  isActive: z.boolean(),
+}).meta({
+  title: 'ProductPromotion',
+  description: 'A promotion attached to a product',
+})
+
+export type CreateProductPromotion = z.infer<typeof createProductPromotionSchema>
+export type ProductPromotionResponse = z.infer<typeof productPromotionResponseSchema>
+
 export const promotionSchema = z.object({
   promotionalPrice: z.number().min(0),
   expiresAt: z.string().datetime(),
@@ -143,6 +182,8 @@ export const productResponseSchema = z.object({
   status: productStatusEnum,
   promotionalPrice: z.number().nullable(),
   promotionExpiresAt: z.string().datetime().nullable(),
+  /** Promotions live right now (price, buy-X-get-Y, free delivery). */
+  promotions: z.array(productPromotionResponseSchema),
   ingredients: z.string().nullable(),
   allergens: z.array(z.string()),
   labels: z.array(z.string()),
@@ -167,6 +208,8 @@ export const productSummarySchema = z.object({
   stock: z.number(),
   status: productStatusEnum,
   promotionalPrice: z.number().nullable(),
+  /** Live promotion types, for badges (e.g. ['BOGO', 'FREE_DELIVERY']). */
+  promotionTypes: z.array(promotionTypeEnum),
 }).meta({
   title: 'ProductSummary',
   description: 'Minimal product info for lists',

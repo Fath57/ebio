@@ -23,6 +23,8 @@ export enum WalletTransactionType {
   TIP_PAYMENT = 'TIP_PAYMENT',
   /** Courier wallet credited with a buyer's tip, in full. */
   TIP_EARNING = 'TIP_EARNING',
+  /** Shop pays the delivery of a free-delivery promotion it created. */
+  DELIVERY_SPONSORSHIP = 'DELIVERY_SPONSORSHIP',
 }
 
 /**

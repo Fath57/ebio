@@ -95,7 +95,7 @@ export class SearchService {
     }
 
     if (promoOnly === 'true') {
-      whereClause += `  AND p.promotional_price IS NOT NULL\n`
+      whereClause += `  AND p.promotional_price IS NOT NULL AND (p.promotion_expires_at IS NULL OR p.promotion_expires_at > NOW())\n`
     }
 
     if (q) {
@@ -149,7 +149,7 @@ export class SearchService {
         p.price_per_unit,
         p.unit,
         p.stock,
-        p.promotional_price,
+        CASE WHEN p.promotion_expires_at IS NULL OR p.promotion_expires_at > NOW() THEN p.promotional_price END AS promotional_price,
         s.id as supplier_id,
         s.shop_name,
         ST_Y(s.location::geometry) as latitude,

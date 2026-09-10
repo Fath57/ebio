@@ -413,6 +413,14 @@ export class PaymentsService {
         orderId: payment.order.id,
       })
     }
+    if (payment.order.platformPromoCompensation > 0) {
+      await this.walletService.credit(wallet.id, {
+        type: WalletTransactionType.PROMO_COMPENSATION,
+        amount: payment.order.platformPromoCompensation,
+        description: `Compensation promotion eBio — ${payment.order.orderNumber}`,
+        orderId: payment.order.id,
+      })
+    }
 
     payment.status = PaymentStatus.RELEASED
     payment.releasedAt = new Date()

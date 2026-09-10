@@ -29,6 +29,7 @@ export type Subjects
     | 'CourierProfile'
     // Back-office only subjects (see admin-permissions.catalog.ts)
     | 'Withdrawal'
+    | 'Promotion'
     | 'PromoCode'
     | 'Settings'
     | 'Staff'

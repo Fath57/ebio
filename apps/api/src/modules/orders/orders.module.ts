@@ -3,6 +3,7 @@ import { DeliveriesModule } from '../deliveries/deliveries.module'
 import { EmailModule } from '../email/email.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { PaymentsModule } from '../payments/payments.module'
+import { ProductsModule } from '../products/products.module'
 import { PromoCodesModule } from '../promo-codes/promo-codes.module'
 import { PlatformSettingsModule } from '../settings/platform-settings.module'
 import { SuppliersModule } from '../suppliers/suppliers.module'
@@ -11,7 +12,7 @@ import { OrdersController } from './orders.controller'
 import { OrdersService } from './orders.service'
 
 @Module({
-  imports: [EmailModule, NotificationsModule, PaymentsModule, PromoCodesModule, SuppliersModule, WalletModule, PlatformSettingsModule, forwardRef(() => DeliveriesModule)],
+  imports: [EmailModule, NotificationsModule, PaymentsModule, PromoCodesModule, ProductsModule, SuppliersModule, WalletModule, PlatformSettingsModule, forwardRef(() => DeliveriesModule)],
   controllers: [OrdersController],
   providers: [OrdersService],
   exports: [OrdersService],

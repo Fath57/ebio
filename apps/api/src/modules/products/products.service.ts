@@ -322,7 +322,7 @@ export class ProductsService {
     return this.em.find(ProductVariant, { product: { id: productId } })
   }
 
-  private async findByIdAndVerifyOwnership(productId: string, supplierId: string): Promise<Product> {
+  async findByIdAndVerifyOwnership(productId: string, supplierId: string): Promise<Product> {
     const product = await this.em.findOne(Product, { id: productId }, { populate: ['supplier', 'category'] })
     if (!product) {
       throw new NotFoundException('Product not found')

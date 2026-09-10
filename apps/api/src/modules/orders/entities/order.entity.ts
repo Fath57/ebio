@@ -30,7 +30,7 @@ export enum PaymentMethod {
 
 @Entity({ tableName: 'orders' })
 export class Order {
-  [OptionalProps]?: 'id' | 'status' | 'deliveryFee' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt' | 'discountAmount'
+  [OptionalProps]?: 'id' | 'status' | 'deliveryFee' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt' | 'discountAmount' | 'sponsoredDeliveryFee' | 'platformPromoCompensation'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -93,6 +93,18 @@ export class Order {
   /** SUPPLIER absorbs its own code; PLATFORM pays the shop back. */
   @Property({ fieldName: 'discount_funded_by', nullable: true })
   discountFundedBy?: 'SUPPLIER' | 'PLATFORM' | null
+
+  /** Free-delivery promotion: who pays the courier instead of the buyer. */
+  @Property({ fieldName: 'delivery_sponsor', nullable: true })
+  deliverySponsor?: 'SUPPLIER' | 'PLATFORM' | null
+
+  /** The real delivery fee when the buyer paid none (deliveryFee is then 0). */
+  @Property({ fieldName: 'sponsored_delivery_fee', type: 'float', default: 0 })
+  sponsoredDeliveryFee: number = 0
+
+  /** What eBio owes the shop for its own price / gift promotions on this order. */
+  @Property({ fieldName: 'platform_promo_compensation', type: 'float', default: 0 })
+  platformPromoCompensation: number = 0
 
   @Property({ fieldName: 'delivery_confirmed_by_buyer', default: false })
   deliveryConfirmedByBuyer: boolean = false

@@ -165,6 +165,49 @@ export const disputeResponseSchema = z.object({
 })
 
 export type CreateOrder = z.infer<typeof createOrderSchema>
+export const previewOrderSchema = createOrderSchema.pick({
+  supplierId: true,
+  pickupMode: true,
+  deliveryLatitude: true,
+  deliveryLongitude: true,
+  promoCode: true,
+  items: true,
+}).meta({
+  title: 'PreviewOrder',
+  description: 'Basket as it would be charged: promotions, gifts, discount and delivery fee',
+})
+
+export const orderPreviewLineSchema = z.object({
+  productId: z.string().uuid(),
+  variantId: z.string().uuid().nullable(),
+  name: z.string(),
+  quantity: z.number(),
+  unitPrice: z.number(),
+  regularPrice: z.number(),
+  totalPrice: z.number(),
+  isGift: z.boolean(),
+  promotionType: z.enum(['PRICE', 'BOGO', 'FREE_DELIVERY']).nullable(),
+}).meta({ title: 'OrderPreviewLine' })
+
+export const orderPreviewSchema = z.object({
+  lines: z.array(orderPreviewLineSchema),
+  itemsTotal: z.number(),
+  discount: z.number(),
+  promoCodeMessage: z.string().nullable(),
+  deliveryFee: z.number(),
+  /** Real fee when a free-delivery promotion pays it instead of the buyer. */
+  sponsoredDeliveryFee: z.number(),
+  deliverySponsor: z.enum(['SUPPLIER', 'PLATFORM']).nullable(),
+  deliveryReason: z.string(),
+  deliveryDistanceKm: z.number().nullable(),
+  total: z.number(),
+}).meta({
+  title: 'OrderPreview',
+  description: 'Server-computed basket totals',
+})
+
+export type PreviewOrder = z.infer<typeof previewOrderSchema>
+export type OrderPreview = z.infer<typeof orderPreviewSchema>
 export type UpdateOrderStatus = z.infer<typeof updateOrderStatusSchema>
 export type RejectOrder = z.infer<typeof rejectOrderSchema>
 export type CreateDispute = z.infer<typeof createDisputeSchema>
