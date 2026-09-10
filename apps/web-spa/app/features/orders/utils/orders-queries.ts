@@ -50,6 +50,8 @@ export interface OrderResponse {
   deliveryConfirmedBySupplier: boolean
   acceptedAt: string | null
   deliveredAt: string | null
+  /** Shop estimate of when the parcel is ready, set when preparation starts. */
+  estimatedReadyAt: string | null
   escrowReleasedAt: string | null
   items: OrderItem[]
   createdAt: string

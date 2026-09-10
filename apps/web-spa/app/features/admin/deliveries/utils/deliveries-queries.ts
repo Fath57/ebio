@@ -66,6 +66,12 @@ export interface AdminDelivery {
   pickedUpAt: string | null
   deliveredAt: string | null
   failedAt: string | null
+  /** Shop estimate of when the parcel is ready, null for legacy rows. */
+  pickupReadyAt: string | null
+  /** When the courier search starts (may be in the future for early dispatch). */
+  dispatchAt: string | null
+  /** Null until the courier search has actually started. */
+  dispatchStartedAt: string | null
   events: DeliveryEvent[]
   createdAt: string
 }
@@ -197,6 +203,21 @@ export function formatRelative(iso: string | null, locale: string): string | nul
   if (abs < 24 * 3_600_000)
     return rtf.format(hours, 'hour')
   return rtf.format(Math.round(diffMs / 86_400_000), 'day')
+}
+
+/** "14:05" style clock time of an ISO date, in the UI language. */
+export function formatClock(iso: string, locale: string): string {
+  return new Date(iso).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })
+}
+
+/**
+ * ISO date at which the courier search is scheduled to start, or null once the
+ * search is running (early dispatch: the run exists before couriers are asked).
+ */
+export function getPlannedSearchAt(delivery: Pick<AdminDelivery, 'status' | 'dispatchAt' | 'dispatchStartedAt'>): string | null {
+  if (delivery.status !== 'AWAITING_COURIER' || delivery.dispatchStartedAt !== null)
+    return null
+  return delivery.dispatchAt
 }
 
 /** "14 min" / "2 h 05" elapsed since an ISO date. */

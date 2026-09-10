@@ -48,6 +48,8 @@ export interface AdminOrderDetail extends AdminOrderListItem {
   deliverySlot: string | null
   acceptedAt: string | null
   deliveredAt: string | null
+  /** Shop estimate of when the parcel is ready, set when preparation starts. */
+  estimatedReadyAt: string | null
   buyerEmail: string | null
   buyerPhone: string | null
   items: AdminOrderLine[]

@@ -64,6 +64,8 @@ export interface DeliveryOffer {
   isTargeted: boolean
   /** End of the exclusive window (ISO), null on broadcast offers. */
   expiresAt: string | null
+  /** When the shop expects the parcel to be ready (early dispatch), null when unknown. */
+  pickupReadyAt: string | null
 }
 
 export interface DeliveryContact {
@@ -112,6 +114,12 @@ export interface Delivery {
   cashToCollect: number | null
   /** Cash orders: what the courier hands the shop at pickup, null otherwise. */
   cashToShop: number | null
+  /** When the shop expects the parcel to be ready (early dispatch), null when unknown. */
+  pickupReadyAt: string | null
+  /** When the courier search is scheduled to start (10 min before `pickupReadyAt`). */
+  dispatchAt: string | null
+  /** When the courier search actually started. */
+  dispatchStartedAt: string | null
   acceptedAt: string | null
   pickedUpAt: string | null
   inTransitAt: string | null

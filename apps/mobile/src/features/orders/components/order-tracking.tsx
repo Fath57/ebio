@@ -34,6 +34,7 @@ import MapView, { Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { formatTime } from '../../../utils/format-time'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { StarRating } from '../../common/components/star-rating'
 
@@ -69,6 +70,8 @@ interface OrderDetail {
   pickupMode: PickupMode
   paymentMethod: PaymentMethod
   deliveryAddress: string | null
+  /** Shop's own estimate of when the parcel will be ready (PREPARING only). */
+  estimatedReadyAt: string | null
   createdAt: string
 }
 
@@ -117,14 +120,6 @@ function formatPrice(value: number): string {
   return value.toLocaleString('fr-FR').replace(/,/g, ' ')
 }
 
-function formatTime(iso: string): string {
-  const date = new Date(iso)
-  return date.toLocaleTimeString('fr-FR', {
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-}
-
 export function OrderTracking({
   orderId,
   onBack,
@@ -160,6 +155,7 @@ export function OrderTracking({
           pickupMode: raw.pickupMode ?? 'ON_SITE',
           paymentMethod: raw.paymentMethod ?? 'CASH_ON_DELIVERY',
           deliveryAddress: raw.deliveryAddress ?? null,
+          estimatedReadyAt: (raw.estimatedReadyAt ?? null) as string | null,
           createdAt: raw.createdAt,
           items: ((raw.items ?? []) as Array<Record<string, unknown>>).map(item => ({
             productName: item.productName as string,
@@ -360,6 +356,11 @@ export function OrderTracking({
                       {step?.reachedAt && (
                         <Text style={[styles.timelineTime, { color: semantic.textTertiary }]}>
                           {formatTime(step.reachedAt)}
+                        </Text>
+                      )}
+                      {isActive && status === 'PREPARING' && order.estimatedReadyAt && (
+                        <Text style={[styles.timelineTime, { color: semantic.textSecondary }]}>
+                          {`· prête vers ${formatTime(order.estimatedReadyAt)}`}
                         </Text>
                       )}
                     </View>

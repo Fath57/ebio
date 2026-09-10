@@ -1,6 +1,7 @@
 import type { AcceptResult, DebtBlock, DeclineResult } from '../hooks/use-offers'
 import type { DeliveryOffer } from '../types'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
+import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
@@ -13,6 +14,7 @@ import { useEffect, useState } from 'react'
 import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { formatTime, isFutureIso } from '../../../utils/format-time'
 import { appAlert } from '../../common/components/app-alert'
 
 interface OffersScreenProps {
@@ -212,6 +214,14 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
             </Text>
           </View>
         </View>
+        {isFutureIso(item.pickupReadyAt) && (
+          <View style={styles.line}>
+            <Clock size={16} color={semantic.textTertiary} strokeWidth={2} />
+            <Text style={[styles.lineText, { color: semantic.textSecondary }]}>
+              {`Prête vers ${formatTime(item.pickupReadyAt)}`}
+            </Text>
+          </View>
+        )}
         <View style={styles.line}>
           <PackageIcon size={16} color={semantic.textTertiary} strokeWidth={2} />
           <Text style={[styles.lineText, { color: semantic.textSecondary }]}>

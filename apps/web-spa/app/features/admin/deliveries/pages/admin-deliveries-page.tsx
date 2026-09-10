@@ -25,7 +25,9 @@ import {
   DELIVERIES_PAGE_SIZE,
   DELIVERY_STATUSES,
   fetchAdminDeliveriesQueryOptions,
+  formatClock,
   formatRelative,
+  getPlannedSearchAt,
 } from '../utils/deliveries-queries'
 
 const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
@@ -111,6 +113,7 @@ export default function AdminDeliveriesPage() {
                 {data?.deliveries.map((delivery) => {
                   const assignable = ASSIGNABLE_STATUSES.includes(delivery.status)
                   const lastEvent = delivery.events[delivery.events.length - 1]
+                  const plannedSearchAt = getPlannedSearchAt(delivery)
                   return (
                     <TableRow
                       key={delivery.id}
@@ -129,6 +132,11 @@ export default function AdminDeliveriesPage() {
                         <Badge variant={STATUS_VARIANTS[delivery.status] ?? 'outline'}>
                           {t(`admin.deliveries.statuses.${delivery.status}`)}
                         </Badge>
+                        {plannedSearchAt && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            {t('admin.deliveries.plannedShort', { time: formatClock(plannedSearchAt, i18n.language) })}
+                          </span>
+                        )}
                       </TableCell>
                       <TableCell className="text-muted-foreground">
                         {formatRelative(lastEvent?.occurredAt ?? delivery.createdAt, i18n.language)}

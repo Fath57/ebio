@@ -13,8 +13,10 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { formatTime } from '../../../utils/format-time'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { askPrepMinutes } from '../utils/prep-minutes'
 
 interface OrderItem {
   productName: string
@@ -41,6 +43,8 @@ interface OrderDetail {
   createdAt: string
   acceptedAt: string | null
   deliveredAt: string | null
+  /** Shop estimate of when the parcel will be ready (set while PREPARING a delivery order). */
+  estimatedReadyAt: string | null
 }
 
 interface OrderDetailScreenProps {
@@ -147,6 +151,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           createdAt: (o.createdAt as string) ?? '',
           acceptedAt: (o.acceptedAt as string) ?? null,
           deliveredAt: (o.deliveredAt as string) ?? null,
+          estimatedReadyAt: (o.estimatedReadyAt as string) ?? null,
         })
       }
     }
@@ -186,6 +191,16 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
       setActing(false)
     }
   }, [orderId, load])
+
+  function startPreparation(): void {
+    if (order?.pickupMode !== 'DELIVERY') {
+      void transition('status', { status: 'PREPARING' })
+      return
+    }
+    askPrepMinutes((minutes) => {
+      void transition('status', { status: 'PREPARING', prepMinutes: minutes })
+    })
+  }
 
   function askRejectReason(): void {
     appAlert('Refuser la commande', 'Indiquez le motif communiqué au client.', [
@@ -250,7 +265,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
             </>
           )}
           {order.status === 'ACCEPTED' && (
-            <ActionButton label="Passer en préparation" onPress={() => { void transition('status', { status: 'PREPARING' }) }} disabled={acting} />
+            <ActionButton label="Passer en préparation" onPress={startPreparation} disabled={acting} />
           )}
           {order.status === 'PREPARING' && (
             <ActionButton label="Marquer comme prête" onPress={() => { void transition('status', { status: 'READY' }) }} disabled={acting} />
@@ -369,13 +384,21 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           {order.acceptedAt != null && order.acceptedAt !== '' && (
             <InfoRow label="Acceptée" value={formatDate(order.acceptedAt)} semantic={semantic} />
           )}
+          {order.status === 'PREPARING' && order.estimatedReadyAt != null && order.estimatedReadyAt !== '' && (
+            <>
+              <InfoRow label="Prête vers" value={formatTime(order.estimatedReadyAt)} semantic={semantic} />
+              {order.pickupMode === 'DELIVERY' && (
+                <Text style={[styles.infoHint, { color: semantic.textTertiary }]}>Recherche du livreur 10 min avant</Text>
+              )}
+            </>
+          )}
           {order.deliveredAt != null && order.deliveredAt !== '' && (
             <InfoRow label="Livrée" value={formatDate(order.deliveredAt)} semantic={semantic} />
           )}
         </View>
 
         {/* Course (courier delivery) — only meaningful once the order is READY */}
-        {order.pickupMode === 'DELIVERY' && ['READY', 'IN_DELIVERY', 'DELIVERED'].includes(order.status) && (
+        {order.pickupMode === 'DELIVERY' && ['PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED'].includes(order.status) && (
           <CourseSection orderId={orderId} refreshToken={refreshToken} />
         )}
       </ScrollView>
@@ -583,6 +606,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: { ...typography.bodyS },
   infoValue: { ...typography.bodyS, fontFamily: fonts.sansMd, flexShrink: 1, textAlign: 'right' },
+  infoHint: { ...typography.caption, textAlign: 'right', marginTop: -spacing[1], marginBottom: spacing[2] },
   actionBar: {
     flexDirection: 'row',
     flexWrap: 'wrap',

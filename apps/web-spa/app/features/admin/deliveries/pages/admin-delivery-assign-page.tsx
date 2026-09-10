@@ -28,8 +28,10 @@ import {
   assignDeliveryMutationOptions,
   fetchAdminDeliveryQueryOptions,
   fetchCandidatesQueryOptions,
+  formatClock,
   formatElapsed,
   getActiveOffer,
+  getPlannedSearchAt,
   rebroadcastDeliveryMutationOptions,
 } from '../utils/deliveries-queries'
 
@@ -38,7 +40,7 @@ const VEHICLES: VehicleType[] = ['MOTO', 'BICYCLE', 'CAR', 'ON_FOOT']
 const SEARCH_DEBOUNCE_MS = 300
 
 export default function AdminDeliveryAssignPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const { deliveryId } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -115,6 +117,7 @@ export default function AdminDeliveryAssignPage() {
 
   const assignable = ASSIGNABLE_STATUSES.includes(delivery.status)
   const activeOffer = delivery.status === 'AWAITING_COURIER' ? getActiveOffer(delivery.events) : null
+  const plannedSearchAt = getPlannedSearchAt(delivery)
 
   return (
     <div className="flex h-full flex-col gap-4">
@@ -132,7 +135,12 @@ export default function AdminDeliveryAssignPage() {
         <Badge variant={delivery.status === 'AWAITING_COURIER' ? 'destructive' : 'secondary'}>
           {t(`admin.deliveries.statuses.${delivery.status}`)}
         </Badge>
-        {delivery.status === 'AWAITING_COURIER' && (
+        {plannedSearchAt && (
+          <Badge variant="outline">
+            {t('admin.deliveries.plannedSearch', { time: formatClock(plannedSearchAt, i18n.language) })}
+          </Badge>
+        )}
+        {delivery.status === 'AWAITING_COURIER' && !plannedSearchAt && (
           <span className="text-sm text-muted-foreground">
             {t('admin.deliveries.assignPage.waitingSince', { duration: formatElapsed(delivery.offeredAt) })}
           </span>
@@ -167,6 +175,11 @@ export default function AdminDeliveryAssignPage() {
               <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('admin.deliveries.assignPage.pickup')}</p>
               <p className="font-medium">{delivery.supplierShopName}</p>
               <p className="text-muted-foreground">{delivery.pickupAddress}</p>
+              {delivery.pickupReadyAt && (
+                <p className="text-muted-foreground">
+                  {t('admin.deliveries.readyAround', { time: formatClock(delivery.pickupReadyAt, i18n.language) })}
+                </p>
+              )}
             </div>
           </div>
           <div className="flex items-start gap-2">

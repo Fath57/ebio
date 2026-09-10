@@ -73,7 +73,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
   onUpdateStatus,
   isPending,
 }) => {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const [acceptDialogOpen, setAcceptDialogOpen] = React.useState(false)
   const [rejectDialogOpen, setRejectDialogOpen] = React.useState(false)
   const [rejectReason, setRejectReason] = React.useState('')
@@ -82,6 +82,9 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
   const isCancelled = order.status === 'CANCELLED'
   const isDisputed = order.status === 'DISPUTED'
   const isTerminalNegative = isCancelled || isDisputed
+  const readyAround = order.status === 'PREPARING' && order.estimatedReadyAt
+    ? new Date(order.estimatedReadyAt).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
+    : null
 
   const handleAcceptConfirm = () => {
     onAccept(order.id)
@@ -109,12 +112,19 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
             {formatDate(order.createdAt)}
           </p>
         </div>
-        <Badge
-          variant={statusVariantMap[order.status] || 'outline'}
-          className="w-fit px-3 py-1 text-sm"
-        >
-          {t(`orders.status.${order.status}`)}
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge
+            variant={statusVariantMap[order.status] || 'outline'}
+            className="w-fit px-3 py-1 text-sm"
+          >
+            {t(`orders.status.${order.status}`)}
+          </Badge>
+          {readyAround && (
+            <span className="text-sm text-muted-foreground">
+              {t('orders.detail.readyAround', { time: readyAround })}
+            </span>
+          )}
+        </div>
       </div>
 
       {/* ===== Status stepper ===== */}

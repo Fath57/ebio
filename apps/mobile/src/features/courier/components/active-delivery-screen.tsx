@@ -10,6 +10,7 @@ import { useState } from 'react'
 import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { formatTime, isFutureIso } from '../../../utils/format-time'
 import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
 import { useLiveLocation } from '../hooks/use-live-location'
@@ -210,6 +211,11 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
             <Text style={[styles.addressValue, { color: semantic.textPrimary }]}>
               {`${delivery.supplierShopName} — ${delivery.pickupAddress}`}
             </Text>
+            {delivery.status === 'ACCEPTED' && isFutureIso(delivery.pickupReadyAt) && (
+              <Text style={[styles.readyHint, { color: semantic.textSecondary }]}>
+                {`Colis prêt vers ${formatTime(delivery.pickupReadyAt)} — inutile d'arriver avant`}
+              </Text>
+            )}
           </View>
           <Pressable
             style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
@@ -387,6 +393,10 @@ const styles = StyleSheet.create({
   addressValue: {
     ...typography.bodyS,
     marginTop: 2,
+  },
+  readyHint: {
+    ...typography.caption,
+    marginTop: 4,
   },
   contactName: {
     ...typography.caption,

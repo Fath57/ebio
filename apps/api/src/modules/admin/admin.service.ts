@@ -860,7 +860,7 @@ export class AdminService {
       `SELECT o.id, o.order_number, o.status, o.total_amount, o.commission_amount,
               o.commission_rate, o."createdAt" as created_at, o.pickup_mode,
               o.payment_method, o.delivery_address, o.delivery_slot,
-              o.accepted_at, o.delivered_at,
+              o.accepted_at, o.delivered_at, o.estimated_ready_at,
               bu.id as buyer_id, bu.name as buyer_name, bu.email as buyer_email,
               bu.phone as buyer_phone,
               s.id as supplier_id, s.shop_name as supplier_name
@@ -915,6 +915,7 @@ export class AdminService {
       deliverySlot: (row.delivery_slot as string) ?? null,
       acceptedAt: this.toIso(row.accepted_at),
       deliveredAt: this.toIso(row.delivered_at),
+      estimatedReadyAt: this.toIso(row.estimated_ready_at),
       buyerEmail: (row.buyer_email as string) ?? null,
       buyerPhone: (row.buyer_phone as string) ?? null,
       items: items.map((i: Record<string, unknown>) => ({

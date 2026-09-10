@@ -108,6 +108,9 @@ export default function AdminOrderDetailPage() {
 
   const formatDate = (value: string | null) =>
     value ? new Date(value).toLocaleString(i18n.language) : null
+  const readyAround = order.status === 'PREPARING' && order.estimatedReadyAt
+    ? new Date(order.estimatedReadyAt).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
+    : null
 
   return (
     <div className="space-y-6">
@@ -120,6 +123,11 @@ export default function AdminOrderDetailPage() {
         </Button>
         <h2 className="text-2xl font-bold">{order.orderNumber}</h2>
         <Badge>{t(`admin.orders.status.${order.status}`)}</Badge>
+        {readyAround && (
+          <span className="text-sm text-muted-foreground">
+            {t('admin.orders.detail.readyAround', { time: readyAround })}
+          </span>
+        )}
         {/* Every status is reachable here: the admin's job is unblocking. */}
         <div className="ml-auto flex items-center gap-2">
           <Select

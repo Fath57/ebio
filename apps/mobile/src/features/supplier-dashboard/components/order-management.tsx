@@ -14,8 +14,10 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
+import { formatTime } from '../../../utils/format-time'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { askPrepMinutes } from '../utils/prep-minutes'
 
 type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'DISPUTED'
 
@@ -32,6 +34,9 @@ interface SupplierOrder {
   items: OrderItem[]
   total: number
   status: OrderStatus
+  pickupMode: 'ON_SITE' | 'DELIVERY'
+  /** Shop estimate of when the parcel will be ready (PREPARING delivery orders). */
+  estimatedReadyAt: string | null
   createdAt: string
 }
 
@@ -128,6 +133,8 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
           })),
           total: (o.totalAmount as number) ?? (o.total as number) ?? 0,
           status: o.status as OrderStatus,
+          pickupMode: o.pickupMode === 'DELIVERY' ? 'DELIVERY' : 'ON_SITE',
+          estimatedReadyAt: (o.estimatedReadyAt as string | null) ?? null,
           createdAt: o.createdAt as string,
         })))
       }
@@ -235,19 +242,26 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
     }
   }
 
-  async function handleUpdateStatus(orderId: string, newStatus: OrderStatus): Promise<void> {
+  async function handleUpdateStatus(orderId: string, newStatus: OrderStatus, prepMinutes?: number): Promise<void> {
     setProcessingId(orderId)
     try {
       const res = await apiFetch(`/api/orders/${orderId}/status`, {
         method: 'PATCH',
-        body: JSON.stringify({ status: newStatus }),
+        body: JSON.stringify(prepMinutes !== undefined ? { status: newStatus, prepMinutes } : { status: newStatus }),
       })
       if (res.ok) {
+        // The server computes `estimatedReadyAt`; read it back rather than guessing locally.
+        const updated = await res.json().catch(() => null) as Record<string, unknown> | null
+        const estimatedReadyAt = (updated?.estimatedReadyAt as string | null | undefined) ?? null
         setOrders(prev =>
           prev.map(o =>
-            o.id === orderId ? { ...o, status: newStatus } : o,
+            o.id === orderId ? { ...o, status: newStatus, estimatedReadyAt } : o,
           ),
         )
+      }
+      else {
+        const data = await res.json().catch(() => ({})) as { message?: string }
+        showError('Erreur', data.message ?? 'Impossible de mettre à jour le statut.')
       }
     }
     catch {
@@ -256,6 +270,17 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
     finally {
       setProcessingId(null)
     }
+  }
+
+  /** PREPARING on a delivery order first asks the shop for its preparation time. */
+  function handleNextStep(item: SupplierOrder, nextStatus: OrderStatus): void {
+    if (nextStatus === 'PREPARING' && item.pickupMode === 'DELIVERY') {
+      askPrepMinutes((minutes) => {
+        void handleUpdateStatus(item.id, nextStatus, minutes)
+      })
+      return
+    }
+    void handleUpdateStatus(item.id, nextStatus)
   }
 
   const renderItem = useCallback(
@@ -283,6 +308,9 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
 
             <View style={styles.badgeRow}>
               <Text style={styles.statusBadge}>{STATUS_LABELS[item.status]}</Text>
+              {item.status === 'PREPARING' && item.estimatedReadyAt && (
+                <Text style={styles.readyAt}>{`Prête vers ${formatTime(item.estimatedReadyAt)}`}</Text>
+              )}
             </View>
 
             <Text style={styles.buyerName}>{item.buyerName}</Text>
@@ -330,7 +358,7 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
           {nextStep && (
             <TouchableOpacity
               style={[styles.statusButton, isProcessing && styles.buttonDisabled]}
-              onPress={() => handleUpdateStatus(item.id, nextStep.status)}
+              onPress={() => handleNextStep(item, nextStep.status)}
               disabled={isProcessing}
               accessibilityRole="button"
               accessibilityLabel={`Marquer comme ${nextStep.label}`}
@@ -538,6 +566,8 @@ const styles = StyleSheet.create({
   },
   badgeRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
   },
   statusBadge: {
     ...typography.caption,
@@ -581,6 +611,10 @@ const styles = StyleSheet.create({
   timeSince: {
     ...typography.caption,
     color: colors.neutral[400],
+  },
+  readyAt: {
+    ...typography.caption,
+    color: colors.neutral[600],
   },
   buyerName: {
     ...typography.bodyS,
