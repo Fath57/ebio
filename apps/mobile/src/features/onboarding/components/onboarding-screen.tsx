@@ -22,7 +22,6 @@ interface Slide {
   body: string
 }
 
-/* eslint-disable ts/no-require-imports -- RN image assets */
 const SLIDES: Slide[] = [
   {
     key: 'decouvrir',
@@ -43,7 +42,6 @@ const SLIDES: Slide[] = [
     body: 'Suivez votre commande en direct et confirmez la réception quand tout est bon.',
   },
 ]
-/* eslint-enable ts/no-require-imports */
 
 interface OnboardingScreenProps {
   onFinish: () => void

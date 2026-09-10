@@ -1,3 +1,4 @@
+import type { AcceptResult, DebtBlock } from '../hooks/use-offers'
 import type { DeliveryOffer } from '../types'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
@@ -5,7 +6,8 @@ import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import PackageIcon from 'lucide-react-native/dist/esm/icons/package'
 import Store from 'lucide-react-native/dist/esm/icons/store'
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
+import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { appAlert } from '../../common/components/app-alert'
@@ -14,11 +16,14 @@ interface OffersScreenProps {
   offers: DeliveryOffer[]
   refreshing: boolean
   unavailable: boolean
+  /** Wallet debt past the platform limit: runs are withheld until a top-up. */
+  debtBlock: DebtBlock | null
   /** Km between the device and the declared zone when clearly outside it. */
   outOfZoneKm: number | null
   onRefresh: () => void
-  onAccept: (offerId: string) => Promise<{ ok: boolean, conflict: boolean, gone: boolean, forbidden: boolean }>
+  onAccept: (offerId: string) => Promise<AcceptResult>
   onAccepted: () => void
+  onOpenWallet: () => void
 }
 
 function formatKm(km: number): string {
@@ -29,8 +34,50 @@ function formatAmount(amount: number): string {
   return `${amount.toLocaleString('fr-FR').replace(/\u202F/g, ' ')} FCFA`
 }
 
+/** Signed amount with a typographic minus sign rather than a hyphen. */
+function formatSignedAmount(amount: number): string {
+  return amount < 0 ? `\u2212${formatAmount(-amount)}` : formatAmount(amount)
+}
+
+interface DebtBlockedStateProps {
+  block: DebtBlock
+  refreshing: boolean
+  onRefresh: () => void
+  onOpenWallet: () => void
+}
+
+/** Full-screen empty state shown while the wallet debt suspends dispatch. */
+function DebtBlockedState({ block, refreshing, onRefresh, onOpenWallet }: DebtBlockedStateProps) {
+  const { semantic } = useTheme()
+  return (
+    <ScrollView
+      style={{ backgroundColor: semantic.bgPage }}
+      contentContainerStyle={styles.list}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green[400]} />}
+    >
+      <View style={styles.debtCard} accessibilityRole="alert">
+        <View style={styles.debtIcon}>
+          <WalletIcon size={28} color={colors.coral[600]} strokeWidth={2} />
+        </View>
+        <Text style={styles.debtTitle}>Courses suspendues</Text>
+        <Text style={styles.debtBody}>
+          {`Votre portefeuille est à ${formatSignedAmount(block.balance)}. La limite autorisée est de ${formatAmount(block.limit)} de dette. Rechargez votre portefeuille pour recevoir de nouvelles courses.`}
+        </Text>
+        <Pressable
+          style={styles.debtButton}
+          onPress={onOpenWallet}
+          accessibilityRole="button"
+          accessibilityLabel="Recharger mon portefeuille"
+        >
+          <Text style={styles.debtButtonText}>Recharger mon portefeuille</Text>
+        </Pressable>
+      </View>
+    </ScrollView>
+  )
+}
+
 /** Feed of nearby deliveries awaiting a courier. First to accept wins. */
-export function OffersScreen({ offers, refreshing, unavailable, outOfZoneKm, onRefresh, onAccept, onAccepted }: OffersScreenProps) {
+export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOfZoneKm, onRefresh, onAccept, onAccepted, onOpenWallet }: OffersScreenProps) {
   const { semantic } = useTheme()
 
   async function accept(offer: DeliveryOffer) {
@@ -44,6 +91,9 @@ export function OffersScreen({ offers, refreshing, unavailable, outOfZoneKm, onR
     }
     else if (result.gone) {
       appAlert('Commande annulée', 'Cette commande a été annulée entre-temps.')
+    }
+    else if (result.debtMessage) {
+      appAlert('Courses suspendues', result.debtMessage)
     }
     else if (result.forbidden) {
       appAlert('Indisponible', 'Passez disponible pour accepter une course.')
@@ -129,6 +179,10 @@ export function OffersScreen({ offers, refreshing, unavailable, outOfZoneKm, onR
         </Pressable>
       </View>
     )
+  }
+
+  if (debtBlock) {
+    return <DebtBlockedState block={debtBlock} refreshing={refreshing} onRefresh={onRefresh} onOpenWallet={onOpenWallet} />
   }
 
   return (
@@ -255,6 +309,51 @@ const styles = StyleSheet.create({
     marginTop: spacing[2],
   },
   acceptText: {
+    ...typography.caption,
+    fontSize: 13,
+    color: colors.neutral[0],
+  },
+  debtCard: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.coral[50],
+    borderWidth: 1,
+    borderColor: colors.coral[100],
+    borderRadius: radius.lg,
+    padding: spacing[6],
+  },
+  debtIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: colors.coral[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing[4],
+  },
+  debtTitle: {
+    ...typography.h3,
+    color: colors.coral[800],
+    textAlign: 'center',
+  },
+  debtBody: {
+    ...typography.bodyS,
+    color: colors.coral[800],
+    textAlign: 'center',
+    marginTop: spacing[2],
+  },
+  debtButton: {
+    height: 44,
+    borderRadius: radius.md,
+    backgroundColor: colors.coral[600],
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing[5],
+    marginTop: spacing[5],
+    alignSelf: 'stretch',
+  },
+  debtButtonText: {
     ...typography.caption,
     fontSize: 13,
     color: colors.neutral[0],

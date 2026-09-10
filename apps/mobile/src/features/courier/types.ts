@@ -6,6 +6,15 @@ export type DeliveryStatus = 'AWAITING_COURIER' | 'ACCEPTED' | 'PICKED_UP' | 'IN
 
 export type DeliveryFailReason = 'CUSTOMER_ABSENT' | 'ADDRESS_NOT_FOUND' | 'CUSTOMER_REFUSED' | 'OTHER'
 
+/** Why the platform withholds runs from the courier, null when dispatch is open. */
+export interface CourierDispatchBlock {
+  reason: 'DEBT'
+  /** Wallet balance in FCFA, negative while in debt. */
+  balance: number
+  /** Maximum debt the platform tolerates, in FCFA (positive). */
+  limit: number
+}
+
 export interface CourierProfile {
   id: string
   userId: string
@@ -23,6 +32,8 @@ export interface CourierProfile {
   /** Average of the buyers' ratings, null until the first one. */
   ratingAvg: number | null
   ratingCount: number
+  /** Set while the platform stops proposing runs (wallet debt past the limit). */
+  dispatchBlock: CourierDispatchBlock | null
   validatedAt: string | null
   createdAt: string
 }

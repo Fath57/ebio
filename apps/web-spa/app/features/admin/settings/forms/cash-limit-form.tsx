@@ -28,14 +28,17 @@ interface CashLimitFormProps {
   amount: number
   onSubmit: (amount: number) => void
   isPending: boolean
+  /** i18n namespace holding `amount` / `amountHint` (defaults to the cash cap). */
+  i18nPrefix?: string
+  /** DOM id of the field, unique per form on the page. */
+  fieldId?: string
 }
 
 /**
- * Single amount field for the maximum order total payable in cash on
- * delivery. The courier advances the goods at pickup, so this cap bounds
- * their exposure.
+ * Single integer FCFA amount field, shared by the cash-on-delivery cap and
+ * the courier debt limit: same bounds, same layout, different copy.
  */
-export function CashLimitForm({ amount, onSubmit, isPending }: CashLimitFormProps) {
+export function CashLimitForm({ amount, onSubmit, isPending, i18nPrefix = 'admin.settings.cashLimit', fieldId = 'cash-limit-amount' }: CashLimitFormProps) {
   const { t } = useTranslation()
   const form = useForm<CashLimitFormData>({
     resolver: zodResolver(cashLimitSchema) as Resolver<CashLimitFormData>,
@@ -59,11 +62,11 @@ export function CashLimitForm({ amount, onSubmit, isPending }: CashLimitFormProp
           name="amount"
           render={({ field }) => (
             <FormItem>
-              <FormLabel htmlFor="cash-limit-amount">{t('admin.settings.cashLimit.amount')}</FormLabel>
+              <FormLabel htmlFor={fieldId}>{t(`${i18nPrefix}.amount`)}</FormLabel>
               <FormControl>
                 <div className="flex items-center gap-2">
                   <Input
-                    id="cash-limit-amount"
+                    id={fieldId}
                     type="number"
                     min={0}
                     max={10000000}
@@ -74,7 +77,7 @@ export function CashLimitForm({ amount, onSubmit, isPending }: CashLimitFormProp
                   <span className="text-muted-foreground text-sm">FCFA</span>
                 </div>
               </FormControl>
-              <FormDescription>{t('admin.settings.cashLimit.amountHint')}</FormDescription>
+              <FormDescription>{t(`${i18nPrefix}.amountHint`)}</FormDescription>
               <FormMessage />
             </FormItem>
           )}

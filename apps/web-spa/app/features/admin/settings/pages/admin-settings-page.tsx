@@ -3,6 +3,7 @@ import { client } from '@boilerstone/openapi-generator'
 import {
   adminControllerUpdateCashOnDeliveryLimit,
   adminControllerUpdateCommissions,
+  adminControllerUpdateCourierDebtLimit,
   adminControllerUpdateDeliveryCommission,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
@@ -25,6 +26,8 @@ interface AdminSettingsData {
   deliveryCommissionRate: number
   /** Maximum order total payable in cash on delivery, in FCFA (0 = disabled). */
   cashOnDeliveryMaxAmount: number
+  /** Deepest negative courier balance before runs are suspended (0 = no limit). */
+  courierMaxDebt: number
 }
 
 function fetchAdminSettingsQueryOptions() {
@@ -48,6 +51,7 @@ export default function AdminSettingsPage() {
   const queryClient = useQueryClient()
   const [deliveryFeedback, setDeliveryFeedback] = useState<'saved' | 'error' | null>(null)
   const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
+  const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
 
@@ -99,6 +103,25 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setCashLimitFeedback('error')
+    },
+  })
+
+  const { mutate: updateDebtLimit, isPending: isDebtLimitPending } = useMutation({
+    mutationFn: async (amount: number) => {
+      const response = await adminControllerUpdateCourierDebtLimit({ body: { amount } })
+      if (response.error)
+        throw new Error('Failed to update courier debt limit')
+      return response.data
+    },
+    onMutate: () => {
+      setDebtLimitFeedback(null)
+    },
+    onSuccess: () => {
+      setDebtLimitFeedback('saved')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
+    },
+    onError: () => {
+      setDebtLimitFeedback('error')
     },
   })
 
@@ -211,6 +234,30 @@ export default function AdminSettingsPage() {
                 {cashLimitFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.cashLimit.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.debtLimit.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.debtLimit.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <CashLimitForm
+                  amount={settings?.courierMaxDebt ?? 5000}
+                  onSubmit={updateDebtLimit}
+                  isPending={isDebtLimitPending}
+                  i18nPrefix="admin.settings.debtLimit"
+                  fieldId="courier-debt-limit-amount"
+                />
+                {debtLimitFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.debtLimit.saved')}</p>
+                )}
+                {debtLimitFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.debtLimit.error')}
                   </p>
                 )}
               </CardContent>

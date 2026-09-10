@@ -1,4 +1,5 @@
 import type { CourierPayoutNumber, CourierTopup, CourierWalletTransactionType, CourierWithdrawal } from '../hooks/use-courier-wallet'
+import type { CourierDispatchBlock } from '../types'
 import ArrowDownToLine from 'lucide-react-native/dist/esm/icons/arrow-down-to-line'
 import ArrowUpFromLine from 'lucide-react-native/dist/esm/icons/arrow-up-from-line'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
@@ -112,11 +113,18 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+interface CourierWalletScreenProps {
+  /** Set while the platform withholds runs because of the wallet debt. */
+  dispatchBlock?: CourierDispatchBlock | null
+  /** Called whenever the wallet is re-fetched, so the caller can refresh the profile too. */
+  onRefreshed?: () => void
+}
+
 /**
  * Courier wallet: earnings ledger, top-up (to settle cash commissions) and
  * withdrawal to a validated Mobile Money number.
  */
-export function CourierWalletScreen() {
+export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: CourierWalletScreenProps = {}) {
   const { semantic } = useTheme()
   const { data: session } = useSession()
   const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
@@ -147,6 +155,13 @@ export function CourierWalletScreen() {
 
   const balance = wallet?.balance ?? 0
   const debt = balance < 0 ? -balance : 0
+  // Amount that brings the debt back under the platform limit (balance + limit, as a positive figure).
+  const topupToResume = dispatchBlock ? Math.max(0, -(dispatchBlock.balance + dispatchBlock.limit)) : 0
+
+  const handleRefresh = useCallback(() => {
+    refresh()
+    onRefreshed?.()
+  }, [refresh, onRefreshed])
   const validatedNumbers = numbers.filter(number => number.status === 'VALIDATED')
   const hasActiveWithdrawal = withdrawals.some(w => w.status === 'PENDING' || w.status === 'PROCESSING')
   const canWithdraw = balance >= MIN_WITHDRAWAL && validatedNumbers.length > 0 && !hasActiveWithdrawal
@@ -230,7 +245,8 @@ export function CourierWalletScreen() {
     setCheckoutHtml(null)
     setPendingTopupId(null)
     reload()
-  }, [reload])
+    onRefreshed?.()
+  }, [reload, onRefreshed])
 
   const handleCheckoutMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     const message = parseTopupCheckoutMessage(event.nativeEvent.data)
@@ -291,7 +307,7 @@ export function CourierWalletScreen() {
       <ScrollView
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={colors.green[400]} />}
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.green[400]} />}
       >
         {/* Balance */}
         <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
@@ -304,7 +320,9 @@ export function CourierWalletScreen() {
                 <View style={[styles.negativeBanner, { backgroundColor: colors.coral[50] }]}>
                   <TriangleAlert size={18} color={colors.coral[600]} strokeWidth={2} />
                   <Text style={[styles.negativeText, { color: colors.coral[800] }]}>
-                    Solde négatif : rechargez votre portefeuille pour régler la commission eBio des courses payées en espèces.
+                    {dispatchBlock
+                      ? `Courses suspendues au-delà de ${formatAmount(dispatchBlock.limit)} de dette. Rechargez au moins ${formatAmount(topupToResume)} pour reprendre.`
+                      : 'Solde négatif : rechargez votre portefeuille pour régler la commission eBio des courses payées en espèces.'}
                   </Text>
                 </View>
               )

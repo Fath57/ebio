@@ -283,10 +283,12 @@ function CoursesHomeWrapper({ navigation }: any) {
         offers={offers.offers}
         refreshing={offers.refreshing}
         unavailable={offers.unavailable}
+        debtBlock={offers.debtBlock}
         outOfZoneKm={outOfZoneKm}
         onRefresh={offers.refresh}
         onAccept={offers.accept}
         onAccepted={refresh}
+        onOpenWallet={() => navigation.navigate('Portefeuille')}
       />
     </SafeScreen>
   )
@@ -375,9 +377,10 @@ function HistoryStackScreen() {
 const WalletStack = createNativeStackNavigator()
 
 function CourierWalletWrapper() {
+  const { profile, refresh: refreshProfile } = useCourierProfile()
   return (
     <SafeScreen>
-      <CourierWalletScreen />
+      <CourierWalletScreen dispatchBlock={profile?.dispatchBlock ?? null} onRefreshed={refreshProfile} />
     </SafeScreen>
   )
 }
