@@ -32,6 +32,7 @@ import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
+import { geocodeAddress } from '../../map/utils/geocode-address'
 import { useDeliveryQuote } from '../hooks/use-delivery-quote'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
@@ -222,6 +223,22 @@ export function CheckoutFlow({
     deliveryPosition,
   )
   const [pickerOpen, setPickerOpen] = useState(false)
+  // Where the map opens when no point is pinned yet: the typed address if it
+  // geocodes, otherwise the device position (a buyer ordering for elsewhere
+  // would otherwise be priced from where they stand).
+  const [pickerStart, setPickerStart] = useState<{ latitude: number, longitude: number } | null>(null)
+  const [locatingAddress, setLocatingAddress] = useState(false)
+
+  const openPicker = useCallback(async () => {
+    if (!deliveryPosition && deliveryAddress.trim().length >= 3) {
+      setLocatingAddress(true)
+      const found = await geocodeAddress(deliveryAddress)
+      setLocatingAddress(false)
+      if (found)
+        setPickerStart({ latitude: found.latitude, longitude: found.longitude })
+    }
+    setPickerOpen(true)
+  }, [deliveryPosition, deliveryAddress])
   const skipPositionRef = useRef(false)
   const { latitude: currentLatitude, longitude: currentLongitude } = useLocation()
   const [deliverySlot, setDeliverySlot] = useState('')
@@ -340,7 +357,7 @@ export function CheckoutFlow({
         'Position sur la carte',
         'Sans repère sur la carte, le livreur risque de ne pas vous trouver. Placez le repère à votre porte : cela ne prend que quelques secondes.',
         [
-          { text: 'Choisir sur la carte', onPress: () => setPickerOpen(true) },
+          { text: 'Choisir sur la carte', onPress: () => { void openPicker() } },
           {
             text: 'Continuer sans',
             style: 'cancel',
@@ -534,7 +551,8 @@ export function CheckoutFlow({
                       ? { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }
                       : { backgroundColor: colors.green[400], borderColor: colors.green[400] },
                   ]}
-                  onPress={() => setPickerOpen(true)}
+                  onPress={() => { void openPicker() }}
+                  disabled={locatingAddress}
                   accessibilityRole="button"
                   accessibilityLabel={deliveryPosition ? 'Modifier ma position sur la carte' : 'Choisir ma position sur la carte'}
                 >
@@ -547,7 +565,7 @@ export function CheckoutFlow({
                     </Text>
                     <Text style={[styles.positionHint, { color: deliveryPosition ? semantic.textSecondary : colors.green[50] }]}>
                       {deliveryPosition
-                        ? `${deliveryPosition.latitude.toFixed(5)}, ${deliveryPosition.longitude.toFixed(5)} · Appuyez pour modifier`
+                        ? `Le tarif de livraison est calculé depuis ce point · Appuyez pour modifier`
                         : 'Recommandé : placez le repère à votre porte pour guider le livreur'}
                     </Text>
                   </View>
@@ -792,8 +810,8 @@ export function CheckoutFlow({
 
         <Modal visible={pickerOpen} animationType="slide" onRequestClose={() => setPickerOpen(false)}>
           <LocationPickerScreen
-            initialLatitude={deliveryPosition?.latitude ?? currentLatitude}
-            initialLongitude={deliveryPosition?.longitude ?? currentLongitude}
+            initialLatitude={deliveryPosition?.latitude ?? pickerStart?.latitude ?? currentLatitude}
+            initialLongitude={deliveryPosition?.longitude ?? pickerStart?.longitude ?? currentLongitude}
             onConfirm={(coords) => {
               setDeliveryPosition(coords)
               setPickerOpen(false)
