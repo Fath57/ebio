@@ -767,6 +767,20 @@
         "pendingValidations": "Pending validations",
         "disputes": "Disputes",
         "searchesPerDay": "Searches/day"
+      },
+      "inbox": {
+        "title": "To handle",
+        "allClear": "Everything is up to date",
+        "sendDigest": "Send the digest now",
+        "digestSent_one": "Digest sent to {{count}} member",
+        "digestSent_other": "Digest sent to {{count}} members",
+        "queues": {
+          "bannerRequests": "Banner requests",
+          "supplierValidations": "Supplier validations",
+          "courierApplications": "Courier applications",
+          "withdrawals": "Pending withdrawals",
+          "disputes": "Disputes"
+        }
       }
     },
     "moderation": {

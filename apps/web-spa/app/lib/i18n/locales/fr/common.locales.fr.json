@@ -767,6 +767,20 @@
         "pendingValidations": "Validations en attente",
         "disputes": "Litiges",
         "searchesPerDay": "Recherches/jour"
+      },
+      "inbox": {
+        "title": "À traiter",
+        "allClear": "Tout est à jour",
+        "sendDigest": "Envoyer le récapitulatif maintenant",
+        "digestSent_one": "Récapitulatif envoyé à {{count}} membre",
+        "digestSent_other": "Récapitulatif envoyé à {{count}} membres",
+        "queues": {
+          "bannerRequests": "Demandes de bannières",
+          "supplierValidations": "Validations fournisseurs",
+          "courierApplications": "Candidatures livreurs",
+          "withdrawals": "Reversements en attente",
+          "disputes": "Litiges"
+        }
       }
     },
     "moderation": {

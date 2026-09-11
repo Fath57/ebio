@@ -2,6 +2,7 @@ import { adminControllerGetDashboard } from '@boilerstone/openapi-generator/clie
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
+import { InboxBlock } from '../components/inbox-block'
 import { KpiCard } from '../components/kpi-card'
 
 interface AdminDashboardData {
@@ -54,6 +55,8 @@ export default function AdminDashboardPage() {
         <h2 className="text-2xl font-bold">{t('admin.dashboard.title')}</h2>
         <p className="text-muted-foreground">{t('admin.dashboard.description')}</p>
       </div>
+
+      <InboxBlock />
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <KpiCard
