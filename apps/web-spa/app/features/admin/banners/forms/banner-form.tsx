@@ -33,6 +33,9 @@ const bannerSchema = z.object({
   targetUrl: z.string(),
   isActive: z.boolean(),
   position: z.coerce.number().int().min(0),
+  // `datetime-local` values; empty means the bound is not set.
+  startsAt: z.string(),
+  endsAt: z.string(),
 }).superRefine((data, ctx) => {
   // Each type carries its own destination field.
   if ((data.targetType === 'SUPPLIER' || data.targetType === 'PRODUCT') && !data.targetId) {
@@ -40,6 +43,9 @@ const bannerSchema = z.object({
   }
   if (data.targetType === 'URL' && !/^https?:\/\/.+/.test(data.targetUrl)) {
     ctx.addIssue({ code: 'custom', path: ['targetUrl'], message: 'Entrez un lien complet, en https://' })
+  }
+  if (data.startsAt && data.endsAt && new Date(data.endsAt).getTime() <= new Date(data.startsAt).getTime()) {
+    ctx.addIssue({ code: 'custom', path: ['endsAt'], message: 'La fin doit être après le début' })
   }
 })
 
@@ -80,6 +86,8 @@ export const BannerForm: React.FC<BannerFormProps> = ({
       targetUrl: initialData?.targetUrl ?? '',
       isActive: initialData?.isActive ?? true,
       position: initialData?.position ?? 0,
+      startsAt: initialData?.startsAt ?? '',
+      endsAt: initialData?.endsAt ?? '',
     },
   })
 
@@ -270,6 +278,38 @@ export const BannerForm: React.FC<BannerFormProps> = ({
                     <Switch checked={field.value} onCheckedChange={field.onChange} />
                   </FormControl>
                   <FormDescription>{t('admin.banners.form.isActiveHint')}</FormDescription>
+                </FormItem>
+              )}
+            />
+          </div>
+
+          <div className="grid gap-6 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="startsAt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('admin.banners.form.startsAt')}</FormLabel>
+                  <FormControl>
+                    <Input type="datetime-local" {...field} />
+                  </FormControl>
+                  <FormDescription>{t('admin.banners.form.startsAtHint')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name="endsAt"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('admin.banners.form.endsAt')}</FormLabel>
+                  <FormControl>
+                    <Input type="datetime-local" {...field} />
+                  </FormControl>
+                  <FormDescription>{t('admin.banners.form.endsAtHint')}</FormDescription>
+                  <FormMessage />
                 </FormItem>
               )}
             />

@@ -8,6 +8,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { BannerForm } from '../forms/banner-form'
 import { fetchBannerQueryOptions, updateBanner } from '../utils/banners-queries'
+import { fromDateTimeLocal, toDateTimeLocal } from '../utils/datetime-local'
 
 export default function BannerEditPage() {
   const { t } = useTranslation()
@@ -50,7 +51,13 @@ export default function BannerEditPage() {
       </div>
       <Card className="p-6">
         <BannerForm
-          onSubmit={data => mutate({ ...data, targetId: data.targetId || null, targetUrl: data.targetUrl || null })}
+          onSubmit={data => mutate({
+            ...data,
+            targetId: data.targetId || null,
+            targetUrl: data.targetUrl || null,
+            startsAt: fromDateTimeLocal(data.startsAt),
+            endsAt: fromDateTimeLocal(data.endsAt),
+          })}
           isPending={isPending}
           initialData={{
             title: banner.title,
@@ -61,6 +68,8 @@ export default function BannerEditPage() {
             targetUrl: banner.targetUrl ?? '',
             isActive: banner.isActive,
             position: banner.position,
+            startsAt: toDateTimeLocal(banner.startsAt),
+            endsAt: toDateTimeLocal(banner.endsAt),
           }}
           // Without it the picker would show its placeholder over an existing
           // target, reading as if nothing had been chosen.

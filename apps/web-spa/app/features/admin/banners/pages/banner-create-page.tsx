@@ -7,6 +7,7 @@ import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { BannerForm } from '../forms/banner-form'
 import { createBanner } from '../utils/banners-queries'
+import { fromDateTimeLocal } from '../utils/datetime-local'
 
 export default function BannerCreatePage() {
   const { t } = useTranslation()
@@ -26,6 +27,8 @@ export default function BannerCreatePage() {
       ...data,
       targetId: data.targetId || null,
       targetUrl: data.targetUrl || null,
+      startsAt: fromDateTimeLocal(data.startsAt),
+      endsAt: fromDateTimeLocal(data.endsAt),
     })
   }
 

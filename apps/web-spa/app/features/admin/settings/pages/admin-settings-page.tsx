@@ -1,7 +1,9 @@
-import type { DeliveryPricingConfig } from '@boilerstone/openapi-generator/client/types.gen'
+import type { BannerOffers, DeliveryPricingConfig } from '@boilerstone/openapi-generator/client/types.gen'
 import type { CommissionCategoryRate } from '../forms/commission-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
+  adminBannerOffersControllerGet,
+  adminBannerOffersControllerUpdate,
   adminControllerUpdateCashOnDeliveryLimit,
   adminControllerUpdateCommissions,
   adminControllerUpdateCourierDebtLimit,
@@ -19,6 +21,7 @@ import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
+import { BannerOffersForm } from '../forms/banner-offers-form'
 import { CashLimitForm } from '../forms/cash-limit-form'
 import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
@@ -46,6 +49,18 @@ function fetchDeliveryPricingQueryOptions() {
   }
 }
 
+function fetchBannerOffersQueryOptions() {
+  return {
+    queryKey: ['admin', 'banner-offers'],
+    queryFn: async () => {
+      const response = await adminBannerOffersControllerGet()
+      if (response.error)
+        throw new Error('Failed to fetch banner offers')
+      return response.data as BannerOffers
+    },
+  }
+}
+
 function fetchAdminSettingsQueryOptions() {
   return {
     queryKey: ['admin', 'settings'],
@@ -69,9 +84,11 @@ export default function AdminSettingsPage() {
   const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
+  const [bannerOffersFeedback, setBannerOffersFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
   const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
+  const { data: bannerOffers, isLoading: isBannerOffersLoading } = useQuery(fetchBannerOffersQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
     mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
@@ -162,6 +179,25 @@ export default function AdminSettingsPage() {
     },
   })
 
+  const { mutate: updateBannerOffers, isPending: isBannerOffersPending } = useMutation({
+    mutationFn: async (offers: BannerOffers) => {
+      const response = await adminBannerOffersControllerUpdate({ body: offers })
+      if (response.error)
+        throw new Error('Failed to update banner offers')
+      return response.data as BannerOffers
+    },
+    onMutate: () => {
+      setBannerOffersFeedback(null)
+    },
+    onSuccess: (saved) => {
+      setBannerOffersFeedback('saved')
+      queryClient.setQueryData(['admin', 'banner-offers'], saved)
+    },
+    onError: () => {
+      setBannerOffersFeedback('error')
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -213,6 +249,32 @@ export default function AdminSettingsPage() {
                 {pricingFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.deliveryPricing.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.bannerOffers.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.bannerOffers.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isBannerOffersLoading || !bannerOffers
+                  ? <Skeleton className="h-40 w-full" />
+                  : (
+                      <BannerOffersForm
+                        offers={bannerOffers}
+                        onSubmit={updateBannerOffers}
+                        isPending={isBannerOffersPending}
+                      />
+                    )}
+                {bannerOffersFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.bannerOffers.saved')}</p>
+                )}
+                {bannerOffersFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.bannerOffers.error')}
                   </p>
                 )}
               </CardContent>

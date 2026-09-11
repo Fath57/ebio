@@ -20,6 +20,14 @@ export interface Banner {
   targetLabel: string | null
   isActive: boolean
   position: number
+  /** Paid by a shop through a banner request, as opposed to editorial. */
+  sponsored: boolean
+  supplierId: string | null
+  /** Diffusion window; `null` on either side means unbounded. */
+  startsAt: string | null
+  endsAt: string | null
+  impressions: number
+  clicks: number
   createdAt: string
 }
 
@@ -37,6 +45,9 @@ export interface BannerInput {
   targetUrl: string | null
   isActive: boolean
   position: number
+  /** ISO timestamps; `null` clears the bound. Omitted = unchanged. */
+  startsAt?: string | null
+  endsAt?: string | null
 }
 
 export function fetchBannersQueryOptions() {
@@ -63,15 +74,29 @@ export function fetchBannerQueryOptions(bannerId: string) {
   }
 }
 
+/** ISO string → Date for the generated contract; null and undefined pass through. */
+function toDate(value: string | null | undefined): Date | null | undefined {
+  return typeof value === 'string' ? new Date(value) : value
+}
+
+/** The generated contract types the window bounds as Date; JSON serialises them back to ISO. */
+function toBody<T extends Partial<BannerInput>>(input: T) {
+  return {
+    ...input,
+    startsAt: toDate(input.startsAt),
+    endsAt: toDate(input.endsAt),
+  }
+}
+
 export async function createBanner(input: BannerInput): Promise<Banner> {
-  const response = await bannersControllerCreate({ body: input })
+  const response = await bannersControllerCreate({ body: toBody(input) })
   if (response.error)
     throw new Error('Failed to create banner')
   return response.data as Banner
 }
 
 export async function updateBanner(bannerId: string, input: Partial<BannerInput>): Promise<Banner> {
-  const response = await bannersControllerUpdate({ path: { id: bannerId }, body: input })
+  const response = await bannersControllerUpdate({ path: { id: bannerId }, body: toBody(input) })
   if (response.error)
     throw new Error('Failed to update banner')
   return response.data as Banner

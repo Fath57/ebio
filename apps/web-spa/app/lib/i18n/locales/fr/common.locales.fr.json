@@ -661,11 +661,69 @@
         "uploadError": "L'image n'a pas pu être envoyée. Réessayez ou vérifiez la console.",
         "targetUrl": "Lien",
         "targetUrlHint": "Ouvert dans le navigateur du téléphone.",
-        "noneHint": "Bannière purement visuelle : toucher ne mène nulle part."
+        "noneHint": "Bannière purement visuelle : toucher ne mène nulle part.",
+        "startsAt": "Début",
+        "startsAtHint": "Laissez vide pour diffuser dès maintenant.",
+        "endsAt": "Fin",
+        "endsAtHint": "Laissez vide pour diffuser sans limite."
       },
       "noTarget": "Sans lien",
       "deleteConfirm": "Supprimer cette bannière ?",
-      "deleteWarning": "Elle disparaîtra immédiatement du carrousel de l’accueil."
+      "deleteWarning": "Elle disparaîtra immédiatement du carrousel de l’accueil.",
+      "sponsored": "Sponsorisée · {{shop}}",
+      "sponsoredAnonymous": "Sponsorisée",
+      "window": "du {{from}} au {{to}}",
+      "windowFrom": "à partir du {{from}}",
+      "windowUntil": "jusqu'au {{to}}",
+      "stats": "{{views}} vues · {{clicks}} clics",
+      "requests": {
+        "title": "Demandes de bannières",
+        "description": "Bannières sponsorisées demandées et payées par les boutiques. Approuver crée la bannière ; refuser rembourse la boutique.",
+        "link": "Demandes",
+        "pendingCount_one": "{{count}} demande en attente",
+        "pendingCount_other": "{{count}} demandes en attente",
+        "backToBanners": "Bannières",
+        "empty": "Aucune demande.",
+        "status": {
+          "PENDING": "En attente",
+          "APPROVED": "Approuvées",
+          "REJECTED": "Refusées",
+          "CANCELLED": "Annulées"
+        },
+        "statusLabel": {
+          "PENDING": "En attente",
+          "APPROVED": "Approuvée",
+          "REJECTED": "Refusée",
+          "CANCELLED": "Annulée"
+        },
+        "offer": "{{days}} jours · {{price}} FCFA",
+        "paid": "Payée",
+        "refunded": "Remboursé",
+        "requestedStart": "Début souhaité : {{date}}",
+        "requestedStartAsap": "Début souhaité : dès que possible",
+        "requestedAt": "Demandée le {{date}}",
+        "reason": "Motif : {{reason}}",
+        "approve": "Approuver",
+        "reject": "Refuser",
+        "approveDialog": {
+          "title": "Approuver la demande",
+          "description": "La bannière de {{shop}} sera diffusée pendant {{days}} jours à partir du début choisi.",
+          "startsAt": "Début de diffusion",
+          "startsAtHint": "Pré-rempli avec le début souhaité par la boutique. Laissez vide pour diffuser dès maintenant.",
+          "position": "Ordre",
+          "confirm": "Approuver",
+          "error": "Impossible d’approuver la demande. Réessayez."
+        },
+        "rejectDialog": {
+          "title": "Refuser la demande",
+          "description": "{{shop}} sera remboursée et verra le motif du refus.",
+          "reason": "Motif",
+          "reasonHint": "Entre 5 et 500 caractères, visible par la boutique.",
+          "reasonError": "Le motif doit faire entre 5 et 500 caractères.",
+          "confirm": "Refuser",
+          "error": "Impossible de refuser la demande. Réessayez."
+        }
+      }
     },
     "categories": {
       "title": "Gestion des catégories",
@@ -1058,6 +1116,22 @@
         },
         "saved": "Tarification enregistrée",
         "error": "Impossible d’enregistrer la tarification. Vérifiez les valeurs et réessayez."
+      },
+      "bannerOffers": {
+        "title": "Offres de bannière",
+        "description": "Durées et prix proposés aux boutiques qui demandent une bannière sponsorisée sur l'accueil, et nombre de bannières sponsorisées affichées en même temps dans le carrousel.",
+        "offers": "Offres",
+        "days": "Durée",
+        "daysUnit": "jours",
+        "price": "Prix",
+        "add": "Ajouter une offre",
+        "remove": "Retirer l'offre",
+        "offersHint": "Entre 1 et {{max}} offres, triées par durée dans l'application.",
+        "duplicateDays": "Deux offres ne peuvent pas avoir la même durée.",
+        "paidSlots": "Emplacements sponsorisés",
+        "paidSlotsHint": "Nombre maximal de bannières sponsorisées visibles en même temps dans le carrousel (0 à {{max}}). 0 suspend la diffusion sans annuler les demandes.",
+        "saved": "Offres enregistrées",
+        "error": "Impossible d’enregistrer les offres. Vérifiez les valeurs et réessayez."
       },
       "deliveryCommission": {
         "title": "Commission eBio sur les frais de livraison",

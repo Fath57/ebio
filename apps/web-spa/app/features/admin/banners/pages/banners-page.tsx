@@ -8,10 +8,11 @@ import {
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Link as LinkIcon, Megaphone, Package, Pencil, Plus, Store, Trash2 } from 'lucide-react'
+import { Inbox, Link as LinkIcon, Megaphone, Package, Pencil, Plus, Store, Trash2 } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { fetchBannerRequestsQueryOptions } from '../utils/banner-requests-queries'
 import { deleteBanner, fetchBannersQueryOptions, updateBanner } from '../utils/banners-queries'
 
 const TARGET_ICONS = {
@@ -33,6 +34,17 @@ export default function BannersPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null)
 
   const { data, isLoading } = useQuery(fetchBannersQueryOptions())
+  // Pending count for the "Demandes" badge; approved requests carry the shop
+  // name a sponsored banner does not expose on its own.
+  const { data: pendingRequests } = useQuery(fetchBannerRequestsQueryOptions('PENDING'))
+  const { data: approvedRequests } = useQuery(fetchBannerRequestsQueryOptions('APPROVED'))
+
+  const pendingCount = pendingRequests?.length ?? 0
+  const sponsorByBannerId = new Map(
+    (approvedRequests ?? [])
+      .filter(request => request.banner !== null)
+      .map(request => [request.banner?.id, request.supplierName] as const),
+  )
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin', 'banners'] })
 
@@ -72,10 +84,21 @@ export default function BannersPage() {
           <h2 className="text-2xl font-bold">{t('admin.banners.title')}</h2>
           <p className="text-muted-foreground">{t('admin.banners.description')}</p>
         </div>
-        <Button onClick={() => navigate('/admin/bannieres/nouvelle')}>
-          <Plus className="mr-2 h-4 w-4" />
-          {t('admin.banners.add')}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => navigate('/admin/bannieres/demandes')}>
+            <Inbox className="mr-2 h-4 w-4" />
+            {t('admin.banners.requests.link')}
+            {pendingCount > 0 && (
+              <Badge className="ml-2 px-1.5" aria-label={t('admin.banners.requests.pendingCount', { count: pendingCount })}>
+                {pendingCount}
+              </Badge>
+            )}
+          </Button>
+          <Button onClick={() => navigate('/admin/bannieres/nouvelle')}>
+            <Plus className="mr-2 h-4 w-4" />
+            {t('admin.banners.add')}
+          </Button>
+        </div>
       </div>
 
       {banners.length === 0
@@ -90,6 +113,7 @@ export default function BannersPage() {
                 <BannerCard
                   key={banner.id}
                   banner={banner}
+                  sponsorName={sponsorByBannerId.get(banner.id) ?? null}
                   isToggling={toggle.isPending}
                   onToggle={isActive => toggle.mutate({ id: banner.id, isActive })}
                   onEdit={() => navigate(`/admin/bannieres/${banner.id}/modifier`)}
@@ -125,16 +149,24 @@ export default function BannersPage() {
 
 interface BannerCardProps {
   banner: Banner
+  /** Shop behind a sponsored banner, when the approved request is known. */
+  sponsorName: string | null
   isToggling: boolean
   onToggle: (isActive: boolean) => void
   onEdit: () => void
   onDelete: () => void
 }
 
-function BannerCard({ banner, isToggling, onToggle, onEdit, onDelete }: BannerCardProps) {
-  const { t } = useTranslation()
+function BannerCard({ banner, sponsorName, isToggling, onToggle, onEdit, onDelete }: BannerCardProps) {
+  const { t, i18n } = useTranslation()
   const TargetIcon = TARGET_ICONS[banner.targetType]
   const isEntityTarget = banner.targetType === 'SUPPLIER' || banner.targetType === 'PRODUCT'
+
+  // A sponsored banner pointing at its own shop names it through the target.
+  const shopName = sponsorName ?? (banner.targetType === 'SUPPLIER' ? banner.targetLabel : null)
+  const formatDay = (value: string) =>
+    new Date(value).toLocaleDateString(i18n.language, { day: '2-digit', month: '2-digit' })
+  const hasWindow = banner.startsAt !== null || banner.endsAt !== null
 
   const destination = banner.targetType === 'URL'
     ? banner.targetUrl
@@ -162,22 +194,46 @@ function BannerCard({ banner, isToggling, onToggle, onEdit, onDelete }: BannerCa
           #
           {banner.position}
         </Badge>
-        {!banner.isActive && (
-          <Badge variant="outline" className="absolute top-2 right-2 bg-white/90">
-            {t('admin.banners.inactive')}
-          </Badge>
-        )}
+        <div className="absolute top-2 right-2 flex max-w-[70%] flex-col items-end gap-1">
+          {banner.sponsored && (
+            <Badge className="max-w-full truncate">
+              {shopName
+                ? t('admin.banners.sponsored', { shop: shopName })
+                : t('admin.banners.sponsoredAnonymous')}
+            </Badge>
+          )}
+          {!banner.isActive && (
+            <Badge variant="outline" className="bg-white/90">
+              {t('admin.banners.inactive')}
+            </Badge>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center justify-between gap-3 px-4 py-3">
-        <div className="flex min-w-0 items-center gap-2 text-sm">
-          <TargetIcon className="text-muted-foreground h-4 w-4 shrink-0" />
-          <span className="text-muted-foreground shrink-0">
-            {t(`admin.banners.targetType.${banner.targetType}`)}
-          </span>
-          {isEntityTarget && !banner.targetLabel
-            ? <Badge variant="destructive">{t('admin.banners.brokenTarget')}</Badge>
-            : destination && <span className="truncate font-medium">{destination}</span>}
+        <div className="min-w-0 space-y-1 text-sm">
+          <div className="flex min-w-0 items-center gap-2">
+            <TargetIcon className="text-muted-foreground h-4 w-4 shrink-0" />
+            <span className="text-muted-foreground shrink-0">
+              {t(`admin.banners.targetType.${banner.targetType}`)}
+            </span>
+            {isEntityTarget && !banner.targetLabel
+              ? <Badge variant="destructive">{t('admin.banners.brokenTarget')}</Badge>
+              : destination && <span className="truncate font-medium">{destination}</span>}
+          </div>
+          {(hasWindow || banner.sponsored) && (
+            <p className="text-muted-foreground truncate text-xs">
+              {hasWindow && (
+                banner.startsAt && banner.endsAt
+                  ? t('admin.banners.window', { from: formatDay(banner.startsAt), to: formatDay(banner.endsAt) })
+                  : banner.startsAt
+                    ? t('admin.banners.windowFrom', { from: formatDay(banner.startsAt) })
+                    : t('admin.banners.windowUntil', { to: formatDay(banner.endsAt ?? '') })
+              )}
+              {hasWindow && ' · '}
+              {t('admin.banners.stats', { views: banner.impressions, clicks: banner.clicks })}
+            </p>
+          )}
         </div>
         <div className="flex shrink-0 items-center gap-1">
           <Switch

@@ -16,6 +16,7 @@ export type MediaContext
     | 'TRAINING_CONTENT'
     | 'COMMUNITY_MEDIA'
     | 'DELIVERY_PROOF'
+    | 'BANNER_IMAGE'
 
 interface UploadedMedia {
   mediaId: string
@@ -29,6 +30,8 @@ interface UseMediaUploadOptions {
   entityId?: string
   maxFiles?: number
   mediaTypes?: ImagePicker.MediaType[]
+  /** Crop ratio handed to the native editor (e.g. `[2, 1]` for a banner). */
+  aspect?: [number, number]
 }
 
 export function useMediaUpload(options: UseMediaUploadOptions) {
@@ -49,6 +52,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: options.mediaTypes ?? ['images'],
       allowsEditing: true,
+      aspect: options.aspect,
       quality: 0.8,
     })
 
@@ -103,6 +107,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
 
     const result = await ImagePicker.launchCameraAsync({
       allowsEditing: true,
+      aspect: options.aspect,
       quality: 0.8,
     })
 

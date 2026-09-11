@@ -1,0 +1,555 @@
+import Check from 'lucide-react-native/dist/esm/icons/check'
+import ImagePlus from 'lucide-react-native/dist/esm/icons/image-plus'
+import Package from 'lucide-react-native/dist/esm/icons/package'
+import Store from 'lucide-react-native/dist/esm/icons/store'
+import { useCallback, useEffect, useState } from 'react'
+import {
+  ActivityIndicator,
+  Image,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from 'react-native'
+import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
+import { useTheme } from '../../../theme/theme-context'
+import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
+import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { ScreenHeader } from '../../common/components/screen-header'
+import { useMediaUpload } from '../../media/hooks/use-media-upload'
+import { readApiError } from '../utils/read-api-error'
+import { MIN_TOPUP, SupplierTopupSheet } from './supplier-topup-sheet'
+
+const TITLE_MAX = 60
+const SUBTITLE_MAX = 80
+/** Top-ups are rounded up to this step so the shop keeps a little slack. */
+const TOPUP_STEP = 500
+
+interface BannerOffer {
+  days: number
+  price: number
+}
+
+interface ProductOption {
+  id: string
+  name: string
+  photoUri: string | null
+}
+
+type TargetType = 'SUPPLIER' | 'PRODUCT'
+
+/** Delay before the banner should go live; `0` = as soon as eBio approves it. */
+type StartDelay = 0 | 3 | 7
+
+const START_OPTIONS: Array<{ delay: StartDelay, label: string }> = [
+  { delay: 0, label: 'Dès validation' },
+  { delay: 3, label: 'Dans 3 jours' },
+  { delay: 7, label: 'Dans 7 jours' },
+]
+
+function formatAmount(value: number): string {
+  return `${value.toLocaleString('fr-FR')} FCFA`
+}
+
+/** Amount to top up so the wallet covers `price`, rounded up to the next step. */
+export function computeMissingTopup(price: number, balance: number): number {
+  const missing = Math.max(0, price - balance)
+  const rounded = Math.ceil(missing / TOPUP_STEP) * TOPUP_STEP
+  return Math.max(rounded, MIN_TOPUP)
+}
+
+interface BannerRequestFormProps {
+  onGoBack: () => void
+  /** Called once the request has been created (and paid). */
+  onCreated: () => void
+}
+
+/**
+ * New sponsored banner request: 2:1 visual, copy, target (shop or product),
+ * offer and optional start date. The price is debited from the shop wallet on
+ * submit; when the balance is short, a FedaPay top-up is proposed and the
+ * submission retried once it is confirmed.
+ */
+export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProps) {
+  const { semantic } = useTheme()
+  const { uploading, pickAndUpload } = useMediaUpload({ context: 'BANNER_IMAGE', aspect: [2, 1] })
+
+  const [offers, setOffers] = useState<BannerOffer[]>([])
+  const [balance, setBalance] = useState<number | null>(null)
+  const [products, setProducts] = useState<ProductOption[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+
+  const [imageUrl, setImageUrl] = useState<string | null>(null)
+  const [title, setTitle] = useState('')
+  const [subtitle, setSubtitle] = useState('')
+  const [targetType, setTargetType] = useState<TargetType>('SUPPLIER')
+  const [targetId, setTargetId] = useState<string | null>(null)
+  const [durationDays, setDurationDays] = useState<number | null>(null)
+  const [startDelay, setStartDelay] = useState<StartDelay>(0)
+
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  // Insufficient balance: the sheet opens pre-filled with what is missing and
+  // the submission is retried after the top-up is verified.
+  const [topupAmount, setTopupAmount] = useState<number | null>(null)
+
+  const loadBalance = useCallback(async (): Promise<number | null> => {
+    try {
+      const res = await apiFetch('/api/suppliers/me/wallet')
+      if (!res.ok) {
+        return null
+      }
+      const data = await res.json() as { balance: number }
+      setBalance(data.balance)
+      return data.balance
+    }
+    catch {
+      return null
+    }
+  }, [])
+
+  useEffect(() => {
+    let cancelled = false
+    async function load() {
+      try {
+        const [settingsRes, productsRes] = await Promise.all([
+          apiFetch('/api/settings/public'),
+          apiFetch('/api/suppliers/me/products?pageSize=100&offset=0'),
+        ])
+        if (cancelled) {
+          return
+        }
+        if (settingsRes.ok) {
+          const data = await settingsRes.json() as { bannerOffers?: { offers?: BannerOffer[] } }
+          const list = data.bannerOffers?.offers ?? []
+          setOffers(list)
+          setDurationDays(list[0]?.days ?? null)
+        }
+        if (productsRes.ok) {
+          const json = await productsRes.json() as { data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>
+          const items = (Array.isArray(json) ? json : json.data ?? []) as Array<Record<string, unknown>>
+          setProducts(items.map(p => ({
+            id: p.id as string,
+            name: p.name as string,
+            photoUri: (p.thumbnail as string | null) ?? (p.photo as string | null) ?? null,
+          })))
+        }
+        await loadBalance()
+      }
+      catch {
+        // the form still renders; the summary line shows "solde inconnu"
+      }
+      finally {
+        if (!cancelled) {
+          setIsLoading(false)
+        }
+      }
+    }
+    load()
+    return () => {
+      cancelled = true
+    }
+  }, [loadBalance])
+
+  const selectedOffer = offers.find(offer => offer.days === durationDays) ?? null
+  const price = selectedOffer?.price ?? 0
+  const isValid = imageUrl !== null
+    && title.trim().length > 0
+    && title.trim().length <= TITLE_MAX
+    && subtitle.trim().length <= SUBTITLE_MAX
+    && selectedOffer !== null
+    && (targetType === 'SUPPLIER' || targetId !== null)
+
+  async function handlePickImage(): Promise<void> {
+    const result = await pickAndUpload()
+    if (result?.publicUrl) {
+      setImageUrl(result.publicUrl)
+    }
+    else if (result) {
+      appAlert('Image indisponible', 'L’image a été envoyée mais son adresse publique est introuvable. Réessayez.')
+    }
+  }
+
+  function selectTarget(type: TargetType): void {
+    setTargetType(type)
+    if (type === 'SUPPLIER') {
+      setTargetId(null)
+    }
+  }
+
+  const submit = useCallback(async (knownBalance: number | null) => {
+    if (!isValid || !selectedOffer) {
+      return
+    }
+    setIsSubmitting(true)
+    try {
+      const body: Record<string, unknown> = {
+        title: title.trim(),
+        imageUrl,
+        targetType,
+        durationDays: selectedOffer.days,
+      }
+      if (subtitle.trim()) {
+        body.subtitle = subtitle.trim()
+      }
+      if (targetType === 'PRODUCT' && targetId) {
+        body.targetId = targetId
+      }
+      if (startDelay > 0) {
+        body.requestedStartAt = new Date(Date.now() + startDelay * 24 * 60 * 60 * 1000).toISOString()
+      }
+      const res = await apiFetch('/api/suppliers/me/banner-requests', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      })
+      if (!res.ok) {
+        const message = await readApiError(res)
+        if (res.status === 400 && /solde insuffisant/i.test(message)) {
+          const current = knownBalance ?? (await loadBalance()) ?? 0
+          setTopupAmount(computeMissingTopup(selectedOffer.price, current))
+          return
+        }
+        appAlert('Demande refusée', message)
+        return
+      }
+      appAlert(
+        'Demande envoyée',
+        `${formatAmount(selectedOffer.price)} ont été débités de votre portefeuille. eBio valide votre bannière sous 24 h.`,
+      )
+      onCreated()
+    }
+    catch {
+      appAlert('Envoi impossible', 'Vérifiez votre connexion et réessayez.')
+    }
+    finally {
+      setIsSubmitting(false)
+    }
+  }, [isValid, selectedOffer, title, imageUrl, targetType, subtitle, targetId, startDelay, loadBalance, onCreated])
+
+  const handleTopupVerified = useCallback((newBalance: number) => {
+    setBalance(newBalance)
+    setTopupAmount(null)
+    // The wallet now covers the price: send the same request again.
+    submit(newBalance)
+  }, [submit])
+
+  if (isLoading) {
+    return (
+      <View style={[styles.center, { backgroundColor: semantic.bgPage }]}>
+        <ActivityIndicator size="large" color={colors.green[400]} />
+      </View>
+    )
+  }
+
+  const chipStyle = (selected: boolean) => [
+    styles.chip,
+    {
+      backgroundColor: selected ? colors.green[50] : semantic.bgSurface,
+      borderColor: selected ? colors.green[400] : semantic.borderNormal,
+    },
+  ]
+  const chipTextStyle = (selected: boolean) => [
+    styles.chipText,
+    { color: selected ? colors.green[800] : semantic.textPrimary },
+  ]
+
+  return (
+    <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
+      <ScreenHeader title="Nouvelle bannière" onBack={onGoBack} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+        {/* Visual */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Visuel (format 2:1)</Text>
+        <TouchableOpacity
+          style={[styles.imagePicker, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }, uploading && styles.disabled]}
+          onPress={handlePickImage}
+          disabled={uploading}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={imageUrl ? 'Changer le visuel' : 'Choisir un visuel'}
+        >
+          {imageUrl
+            ? <Image source={{ uri: imageUrl }} style={styles.imagePreview} resizeMode="cover" />
+            : (
+                <View style={styles.imagePlaceholder}>
+                  {uploading
+                    ? <ActivityIndicator size="small" color={colors.green[400]} />
+                    : <ImagePlus size={28} color={semantic.textTertiary} strokeWidth={1.5} />}
+                  <Text style={[styles.imageHint, { color: semantic.textTertiary }]}>
+                    {uploading ? 'Envoi en cours…' : 'Choisir une image dans la galerie'}
+                  </Text>
+                </View>
+              )}
+          {imageUrl && uploading
+            ? (
+                <View style={styles.imageOverlay}>
+                  <ActivityIndicator size="small" color={colors.neutral[0]} />
+                </View>
+              )
+            : null}
+        </TouchableOpacity>
+        {imageUrl
+          ? <Text style={[styles.helper, { color: semantic.textTertiary }]}>Touchez l’image pour la remplacer.</Text>
+          : null}
+
+        {/* Copy */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Titre</Text>
+        <TextInput
+          style={[styles.input, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
+          placeholder="Ex. Paniers de saison à -20 %"
+          placeholderTextColor={semantic.textTertiary}
+          value={title}
+          onChangeText={setTitle}
+          maxLength={TITLE_MAX}
+          accessibilityLabel="Titre de la bannière"
+        />
+        <Text style={[styles.counter, { color: semantic.textTertiary }]}>{`${title.length}/${TITLE_MAX}`}</Text>
+
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Sous-titre (optionnel)</Text>
+        <TextInput
+          style={[styles.input, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
+          placeholder="Ex. Livraison offerte cette semaine"
+          placeholderTextColor={semantic.textTertiary}
+          value={subtitle}
+          onChangeText={setSubtitle}
+          maxLength={SUBTITLE_MAX}
+          accessibilityLabel="Sous-titre de la bannière"
+        />
+        <Text style={[styles.counter, { color: semantic.textTertiary }]}>{`${subtitle.length}/${SUBTITLE_MAX}`}</Text>
+
+        {/* Target */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>En touchant la bannière, le client ouvre</Text>
+        <View style={styles.chipRow}>
+          <TouchableOpacity
+            style={chipStyle(targetType === 'SUPPLIER')}
+            onPress={() => selectTarget('SUPPLIER')}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: targetType === 'SUPPLIER' }}
+          >
+            <Store size={16} color={targetType === 'SUPPLIER' ? colors.green[800] : semantic.textSecondary} />
+            <Text style={chipTextStyle(targetType === 'SUPPLIER')}>Ma boutique</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={chipStyle(targetType === 'PRODUCT')}
+            onPress={() => selectTarget('PRODUCT')}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: targetType === 'PRODUCT' }}
+          >
+            <Package size={16} color={targetType === 'PRODUCT' ? colors.green[800] : semantic.textSecondary} />
+            <Text style={chipTextStyle(targetType === 'PRODUCT')}>Un produit</Text>
+          </TouchableOpacity>
+        </View>
+
+        {targetType === 'PRODUCT'
+          ? (
+              <View style={[styles.productList, { backgroundColor: semantic.bgCard }]}>
+                {products.length === 0
+                  ? (
+                      <Text style={[styles.helper, styles.productEmpty, { color: semantic.textSecondary }]}>
+                        Aucun produit dans votre catalogue. Ajoutez-en un ou choisissez « Ma boutique ».
+                      </Text>
+                    )
+                  : products.map((product, index) => {
+                      const selected = targetId === product.id
+                      return (
+                        <TouchableOpacity
+                          key={product.id}
+                          style={[
+                            styles.productRow,
+                            index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
+                          ]}
+                          onPress={() => setTargetId(product.id)}
+                          accessibilityRole="radio"
+                          accessibilityState={{ selected }}
+                          accessibilityLabel={product.name}
+                        >
+                          {product.photoUri
+                            ? <Image source={{ uri: product.photoUri }} style={styles.productThumb} />
+                            : (
+                                <View style={[styles.productThumb, { backgroundColor: colors.green[50], alignItems: 'center', justifyContent: 'center' }]}>
+                                  <Package size={16} color={colors.green[600]} />
+                                </View>
+                              )}
+                          <Text style={[styles.productName, { color: semantic.textPrimary }]} numberOfLines={1}>
+                            {product.name}
+                          </Text>
+                          {selected ? <Check size={18} color={colors.green[600]} strokeWidth={2.5} /> : null}
+                        </TouchableOpacity>
+                      )
+                    })}
+              </View>
+            )
+          : null}
+
+        {/* Offer */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Durée</Text>
+        {offers.length === 0
+          ? (
+              <Text style={[styles.helper, { color: colors.coral[600] }]}>
+                Aucune offre disponible pour le moment. Réessayez plus tard.
+              </Text>
+            )
+          : (
+              <View style={styles.chipRow}>
+                {offers.map((offer) => {
+                  const selected = durationDays === offer.days
+                  return (
+                    <TouchableOpacity
+                      key={offer.days}
+                      style={chipStyle(selected)}
+                      onPress={() => setDurationDays(offer.days)}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected }}
+                      accessibilityLabel={`${offer.days} jours, ${formatAmount(offer.price)}`}
+                    >
+                      <Text style={chipTextStyle(selected)}>
+                        {`${offer.days} jours · ${formatAmount(offer.price)}`}
+                      </Text>
+                    </TouchableOpacity>
+                  )
+                })}
+              </View>
+            )}
+
+        {/* Start date */}
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Mise en ligne</Text>
+        <View style={styles.chipRow}>
+          {START_OPTIONS.map(option => (
+            <TouchableOpacity
+              key={option.delay}
+              style={chipStyle(startDelay === option.delay)}
+              onPress={() => setStartDelay(option.delay)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: startDelay === option.delay }}
+            >
+              <Text style={chipTextStyle(startDelay === option.delay)}>{option.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Summary */}
+        <View style={[styles.summaryCard, { backgroundColor: semantic.bgCard }]}>
+          <Text style={[styles.summaryLabel, { color: semantic.textSecondary }]}>Montant débité de votre portefeuille</Text>
+          <Text style={[styles.summaryAmount, { color: semantic.textPrimary }]}>{formatAmount(price)}</Text>
+          <Text style={[styles.summaryBalance, { color: balance !== null && balance < price ? colors.coral[600] : semantic.textTertiary }]}>
+            {balance === null
+              ? 'Solde : inconnu'
+              : `Solde : ${formatAmount(balance)}`}
+            {balance !== null && balance < price ? ' · une recharge vous sera proposée' : ''}
+          </Text>
+        </View>
+
+        <TouchableOpacity
+          style={[styles.submitButton, (!isValid || isSubmitting || uploading) && styles.disabled]}
+          disabled={!isValid || isSubmitting || uploading}
+          onPress={() => submit(balance)}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Envoyer la demande"
+        >
+          {isSubmitting
+            ? <ActivityIndicator size="small" color={colors.neutral[0]} />
+            : <Text style={styles.submitButtonText}>Envoyer la demande</Text>}
+        </TouchableOpacity>
+        <Text style={[styles.helper, styles.footnote, { color: semantic.textTertiary }]}>
+          Le montant est remboursé intégralement si eBio refuse la bannière ou si vous annulez avant validation.
+        </Text>
+      </ScrollView>
+
+      <SupplierTopupSheet
+        visible={topupAmount !== null}
+        suggestedAmount={topupAmount ?? 0}
+        hint={topupAmount !== null
+          ? `Votre solde ne couvre pas les ${formatAmount(price)} de la bannière. Rechargez au moins ${formatAmount(topupAmount)} ; la demande sera envoyée dès la confirmation du paiement.`
+          : undefined}
+        onClose={() => setTopupAmount(null)}
+        onVerified={handleTopupVerified}
+      />
+    </KeyboardAwareView>
+  )
+}
+
+const styles = StyleSheet.create({
+  container: { flex: 1 },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  content: { paddingHorizontal: spacing[4], paddingBottom: spacing[10] },
+
+  label: { ...typography.caption, marginTop: spacing[4], marginBottom: spacing[2] },
+  helper: { ...typography.caption, marginTop: spacing[1] },
+  counter: { ...typography.caption, textAlign: 'right', marginTop: spacing[1] },
+  footnote: { textAlign: 'center', marginTop: spacing[3] },
+
+  imagePicker: {
+    width: '100%',
+    aspectRatio: 2,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  imagePreview: { width: '100%', height: '100%' },
+  imagePlaceholder: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: spacing[2] },
+  imageHint: { ...typography.bodyS },
+  imageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  input: {
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[3],
+    ...typography.bodyL,
+  },
+
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing[2] },
+  chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: radius.md,
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+  },
+  chipText: { ...typography.bodyS, fontFamily: fonts.sansSb },
+
+  productList: { marginTop: spacing[2], borderRadius: radius.lg, paddingHorizontal: spacing[3] },
+  productEmpty: { paddingVertical: spacing[3], textAlign: 'center' },
+  productRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    minHeight: 52,
+    paddingVertical: spacing[2],
+  },
+  productThumb: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.neutral[100] },
+  productName: { ...typography.bodyL, flex: 1 },
+
+  summaryCard: {
+    marginTop: spacing[6],
+    padding: spacing[4],
+    borderRadius: radius.lg,
+    gap: spacing[1],
+  },
+  summaryLabel: { ...typography.bodyS },
+  summaryAmount: { ...typography.h1 },
+  summaryBalance: { ...typography.caption },
+
+  submitButton: {
+    marginTop: spacing[4],
+    minHeight: 48,
+    backgroundColor: colors.green[400],
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing[3],
+  },
+  submitButtonText: { ...typography.h3, color: colors.neutral[0] },
+  disabled: { opacity: 0.5 },
+})

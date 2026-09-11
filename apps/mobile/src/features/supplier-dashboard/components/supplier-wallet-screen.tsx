@@ -20,6 +20,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { SupplierTopupSheet } from './supplier-topup-sheet'
 
 const MIN_WITHDRAWAL = 1000
 
@@ -105,6 +106,8 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
   const [withdrawAmount, setWithdrawAmount] = useState('')
   const [withdrawNumberId, setWithdrawNumberId] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  // top-up sheet (FedaPay)
+  const [isToppingUp, setIsToppingUp] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -252,18 +255,32 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
               Solde négatif : commissions sur ventes en espèces, absorbées par vos prochaines ventes en ligne.
             </Text>
           )}
-          <TouchableOpacity
-            style={[styles.withdrawButton, !canWithdraw && styles.buttonDisabled]}
-            disabled={!canWithdraw}
-            onPress={() => {
-              setWithdrawNumberId(validatedNumbers[0]?.id ?? null)
-              setIsWithdrawing(true)
-            }}
-            activeOpacity={0.8}
-          >
-            <ArrowDownToLine size={16} color={colors.neutral[0]} strokeWidth={2} />
-            <Text style={styles.withdrawButtonText}>Demander un reversement</Text>
-          </TouchableOpacity>
+          <View style={styles.actionRow}>
+            <TouchableOpacity
+              style={styles.topupButton}
+              onPress={() => setIsToppingUp(true)}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Recharger le portefeuille"
+            >
+              <Plus size={16} color={colors.neutral[0]} strokeWidth={2.5} />
+              <Text style={styles.topupButtonText}>Recharger</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.withdrawButton, { borderColor: colors.green[400] }, !canWithdraw && styles.buttonDisabled]}
+              disabled={!canWithdraw}
+              onPress={() => {
+                setWithdrawNumberId(validatedNumbers[0]?.id ?? null)
+                setIsWithdrawing(true)
+              }}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel="Demander un reversement"
+            >
+              <ArrowDownToLine size={16} color={colors.green[600]} strokeWidth={2} />
+              <Text style={styles.withdrawButtonText}>Reversement</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={[styles.balanceHint, { color: semantic.textTertiary }]}>
             {hasActiveWithdrawal
               ? 'Une demande est déjà en cours de traitement.'
@@ -494,6 +511,15 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
           </View>
         </KeyboardAwareView>
       </Modal>
+
+      <SupplierTopupSheet
+        visible={isToppingUp}
+        onClose={() => setIsToppingUp(false)}
+        onVerified={() => {
+          appAlert('Recharge confirmée', 'Votre portefeuille boutique a été crédité.')
+          load()
+        }}
+      />
     </View>
   )
 }
@@ -513,7 +539,9 @@ const styles = StyleSheet.create({
   balanceLabel: { ...typography.bodyS },
   balanceValue: { ...typography.display, fontFamily: fonts.sansBd, fontSize: 30, lineHeight: 36 },
   balanceHint: { ...typography.caption },
-  withdrawButton: {
+  actionRow: { flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] },
+  topupButton: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -521,9 +549,21 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green[400],
     borderRadius: radius.md,
     paddingVertical: spacing[3],
-    marginTop: spacing[2],
+    minHeight: 44,
   },
-  withdrawButtonText: { ...typography.h3, color: colors.neutral[0] },
+  topupButtonText: { ...typography.h3, color: colors.neutral[0] },
+  withdrawButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    borderWidth: 1.5,
+    borderRadius: radius.md,
+    paddingVertical: spacing[3],
+    minHeight: 44,
+  },
+  withdrawButtonText: { ...typography.h3, color: colors.green[600] },
   buttonDisabled: { opacity: 0.5 },
 
   sectionHeader: {

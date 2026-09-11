@@ -661,11 +661,69 @@
         "uploadError": "The image could not be uploaded. Try again or check the console.",
         "targetUrl": "Link",
         "targetUrlHint": "Opens in the phone browser.",
-        "noneHint": "Purely visual banner: tapping leads nowhere."
+        "noneHint": "Purely visual banner: tapping leads nowhere.",
+        "startsAt": "Start",
+        "startsAtHint": "Leave empty to show it right away.",
+        "endsAt": "End",
+        "endsAtHint": "Leave empty to show it indefinitely."
       },
       "noTarget": "No link",
       "deleteConfirm": "Delete this banner?",
-      "deleteWarning": "It will immediately leave the home carousel."
+      "deleteWarning": "It will immediately leave the home carousel.",
+      "sponsored": "Sponsored · {{shop}}",
+      "sponsoredAnonymous": "Sponsored",
+      "window": "from {{from}} to {{to}}",
+      "windowFrom": "from {{from}}",
+      "windowUntil": "until {{to}}",
+      "stats": "{{views}} views · {{clicks}} clicks",
+      "requests": {
+        "title": "Banner requests",
+        "description": "Sponsored banners requested and paid for by shops. Approving creates the banner; rejecting refunds the shop.",
+        "link": "Requests",
+        "pendingCount_one": "{{count}} pending request",
+        "pendingCount_other": "{{count}} pending requests",
+        "backToBanners": "Banners",
+        "empty": "No request.",
+        "status": {
+          "PENDING": "Pending",
+          "APPROVED": "Approved",
+          "REJECTED": "Rejected",
+          "CANCELLED": "Cancelled"
+        },
+        "statusLabel": {
+          "PENDING": "Pending",
+          "APPROVED": "Approved",
+          "REJECTED": "Rejected",
+          "CANCELLED": "Cancelled"
+        },
+        "offer": "{{days}} days · {{price}} FCFA",
+        "paid": "Paid",
+        "refunded": "Refunded",
+        "requestedStart": "Requested start: {{date}}",
+        "requestedStartAsap": "Requested start: as soon as possible",
+        "requestedAt": "Requested on {{date}}",
+        "reason": "Reason: {{reason}}",
+        "approve": "Approve",
+        "reject": "Reject",
+        "approveDialog": {
+          "title": "Approve the request",
+          "description": "The banner from {{shop}} will run for {{days}} days from the chosen start.",
+          "startsAt": "Diffusion start",
+          "startsAtHint": "Pre-filled with the start the shop asked for. Leave empty to start right away.",
+          "position": "Order",
+          "confirm": "Approve",
+          "error": "Could not approve the request. Try again."
+        },
+        "rejectDialog": {
+          "title": "Reject the request",
+          "description": "{{shop}} will be refunded and will see the reason.",
+          "reason": "Reason",
+          "reasonHint": "Between 5 and 500 characters, visible to the shop.",
+          "reasonError": "The reason must be between 5 and 500 characters.",
+          "confirm": "Reject",
+          "error": "Could not reject the request. Try again."
+        }
+      }
     },
     "categories": {
       "title": "Categories management",
@@ -1058,6 +1116,22 @@
         },
         "saved": "Pricing saved",
         "error": "Could not save the pricing. Check the values and try again."
+      },
+      "bannerOffers": {
+        "title": "Banner offers",
+        "description": "Durations and prices offered to shops requesting a sponsored home banner, and how many sponsored banners the carousel shows at once.",
+        "offers": "Offers",
+        "days": "Duration",
+        "daysUnit": "days",
+        "price": "Price",
+        "add": "Add an offer",
+        "remove": "Remove the offer",
+        "offersHint": "Between 1 and {{max}} offers, sorted by duration in the app.",
+        "duplicateDays": "Two offers cannot share the same duration.",
+        "paidSlots": "Sponsored slots",
+        "paidSlotsHint": "Maximum number of sponsored banners visible at once in the carousel (0 to {{max}}). 0 pauses diffusion without cancelling requests.",
+        "saved": "Offers saved",
+        "error": "Could not save the offers. Check the values and try again."
       },
       "deliveryCommission": {
         "title": "eBio commission on delivery fees",

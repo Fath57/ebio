@@ -27,6 +27,8 @@ import { ScreenHeader } from '../features/common/components/screen-header'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
+import { BannerRequestForm } from '../features/supplier-dashboard/components/banner-request-form'
+import { BannerRequestsScreen } from '../features/supplier-dashboard/components/banner-requests-screen'
 import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
 import { DeliveryZoneEditor } from '../features/supplier-dashboard/components/delivery-zone-editor'
 import { ModeSelector } from '../features/supplier-dashboard/components/mode-selector'
@@ -355,6 +357,7 @@ function SupplierSettingsWrapper({ navigation }: any) {
         onNavigateToOpeningHours={() => navigation.navigate('SupplierOpeningHours')}
         onNavigateToSalesPoints={() => navigation.navigate('SupplierSalesPoints')}
         onNavigateToPromoCodes={() => navigation.navigate('SupplierPromoCodes')}
+        onNavigateToBannerRequests={() => navigation.navigate('SupplierBannerRequests')}
         onNavigateToDeliveryZones={() => navigation.navigate('SupplierDeliveryZones')}
         onNavigateToMode={() => navigation.navigate('SupplierMode')}
       />
@@ -410,6 +413,36 @@ function SupplierPromoCodesWrapper({ navigation }: any) {
   )
 }
 
+function SupplierBannerRequestsWrapper({ navigation }: any) {
+  const [refreshKey, setRefreshKey] = React.useState(0)
+
+  // Reload the list when coming back from the form.
+  React.useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      setRefreshKey(k => k + 1)
+    })
+    return unsubscribe
+  }, [navigation])
+
+  return (
+    <SafeScreen>
+      <BannerRequestsScreen
+        onGoBack={() => navigation.goBack()}
+        onNewRequest={() => navigation.navigate('SupplierBannerRequestForm')}
+        refreshKey={refreshKey}
+      />
+    </SafeScreen>
+  )
+}
+
+function SupplierBannerRequestFormWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <BannerRequestForm onGoBack={() => navigation.goBack()} onCreated={() => navigation.goBack()} />
+    </SafeScreen>
+  )
+}
+
 function SupplierDeliveryZonesWrapper({ navigation }: any) {
   return (
     <SafeScreen>
@@ -440,6 +473,8 @@ function HomeStackScreen() {
       <HomeStack.Screen name="SupplierSalesPoints" component={SupplierSalesPointsWrapper} />
       <HomeStack.Screen name="SupplierWallet" component={SupplierWalletWrapper} />
       <HomeStack.Screen name="SupplierPromoCodes" component={SupplierPromoCodesWrapper} />
+      <HomeStack.Screen name="SupplierBannerRequests" component={SupplierBannerRequestsWrapper} />
+      <HomeStack.Screen name="SupplierBannerRequestForm" component={SupplierBannerRequestFormWrapper} />
       <HomeStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
       <HomeStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
     </HomeStack.Navigator>
