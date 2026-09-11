@@ -3,12 +3,13 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { User } from '../auth/auth.entity'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { FedaPayGateway } from '../payments/gateways/fedapay.gateway'
+import { Supplier } from '../suppliers/supplier.entity'
 import { TopupStatus, WalletTopup } from './entities/wallet-topup.entity'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
 import { WalletService } from './wallet.service'
 
 /** Which of the user's wallets a topup lands on. */
-export type TopupTarget = 'personal' | 'courier'
+export type TopupTarget = 'personal' | 'courier' | 'supplier'
 
 @Injectable()
 export class TopupService {
@@ -158,9 +159,16 @@ export class TopupService {
     return true
   }
 
-  private async resolveOwner(userId: string, target: TopupTarget): Promise<{ userId?: string, courierId?: string }> {
+  private async resolveOwner(userId: string, target: TopupTarget): Promise<{ userId?: string, courierId?: string, supplierId?: string }> {
     if (target === 'personal') {
       return { userId }
+    }
+    if (target === 'supplier') {
+      const supplier = await this.em.findOne(Supplier, { user: { id: userId } })
+      if (!supplier) {
+        throw new NotFoundException('Boutique introuvable')
+      }
+      return { supplierId: supplier.id }
     }
     const profile = await this.em.findOne(CourierProfile, { user: { id: userId } })
     if (!profile) {

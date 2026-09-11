@@ -1,12 +1,13 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
-import type { CreatePayoutNumberInput, CreateWithdrawalInput } from './contracts/wallet.contract'
+import type { CreatePayoutNumberInput, CreateWithdrawalInput, TopupInput, VerifyTopupInput } from './contracts/wallet.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { SuppliersService } from '../suppliers/suppliers.service'
-import { createPayoutNumberSchema, createWithdrawalSchema } from './contracts/wallet.contract'
+import { createPayoutNumberSchema, createWithdrawalSchema, topupSchema, verifyTopupSchema } from './contracts/wallet.contract'
+import { TopupService } from './topup.service'
 import { WalletService } from './wallet.service'
 import { WithdrawalsService } from './withdrawals.service'
 
@@ -18,7 +19,23 @@ export class SupplierWalletController {
     private readonly walletService: WalletService,
     private readonly withdrawalsService: WithdrawalsService,
     private readonly suppliersService: SuppliersService,
+    private readonly topupService: TopupService,
   ) {}
+
+  /** FedaPay top-up of the shop wallet (to pay a banner, or clear a cash debt). */
+  @Post('topup')
+  async topup(@Session() session: LoggedInBetterAuthSession, @TypedBody(topupSchema) body: TopupInput) {
+    return this.topupService.initiate(session.user.id, body.amount, 'supplier')
+  }
+
+  @Post('topups/:id/verify')
+  async verifyTopup(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(verifyTopupSchema) body: VerifyTopupInput,
+  ) {
+    return this.topupService.verify(session.user.id, id, body.fedapayTransactionId)
+  }
 
   @Get()
   async getWallet(

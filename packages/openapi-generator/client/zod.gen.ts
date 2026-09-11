@@ -41,6 +41,24 @@ export const zDeliveryQuoteRequest = z.object({
 });
 
 /**
+ * BannerOffers
+ *
+ * Sponsored banner offers (duration / price) and paid slot count
+ */
+export const zBannerOffers = z.object({
+  offers: z
+    .array(
+      z.object({
+        days: z.int().gte(1).lte(365),
+        price: z.int().gte(0).lte(10000000),
+      }),
+    )
+    .min(1)
+    .max(6),
+  paidSlots: z.int().gte(0).lte(5),
+});
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -685,6 +703,54 @@ export const zChangeStaffRole = z.object({
     .regex(
       /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
     ),
+});
+
+/**
+ * CreateBannerRequest
+ *
+ * A shop asks (and pays) for a home banner slot
+ */
+export const zCreateBannerRequest = z.object({
+  title: z.string().min(1).max(60),
+  subtitle: z.optional(z.string().max(80)),
+  imageUrl: z.url().max(1024),
+  targetType: z.enum(["SUPPLIER", "PRODUCT"]),
+  targetId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  durationDays: z.int().gte(1).lte(365),
+  requestedStartAt: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+      ),
+  ),
+});
+
+/**
+ * ApproveBannerRequest
+ */
+export const zApproveBannerRequest = z.object({
+  startsAt: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+      ),
+  ),
+  position: z.optional(z.int().gte(0).lte(9007199254740991)),
+});
+
+/**
+ * RejectBannerRequest
+ */
+export const zRejectBannerRequest = z.object({
+  reason: z.string().min(5).max(500),
 });
 
 /**
@@ -2230,6 +2296,26 @@ export const zCreateBanner = z.object({
   targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
   isActive: z.boolean().default(true),
   position: z.int().gte(0).lte(9007199254740991).default(0),
+  startsAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  endsAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
 });
 
 /**
@@ -2255,6 +2341,26 @@ export const zUpdateBanner = z.object({
   targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
   isActive: z.optional(z.boolean()).default(true),
   position: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  startsAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
+  endsAt: z.optional(
+    z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+      z.null(),
+    ]),
+  ),
 });
 
 /**
@@ -3624,6 +3730,22 @@ export const zBannersControllerFindActiveData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zBannersControllerImpressionData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zBannersControllerClickData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zBannersControllerFindAllData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -3649,6 +3771,26 @@ export const zBannersControllerCreateData = z.object({
     targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
     isActive: z.boolean().default(true),
     position: z.int().gte(0).lte(9007199254740991).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    endsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -3689,85 +3831,26 @@ export const zBannersControllerUpdateData = z.object({
     targetUrl: z.optional(z.union([z.url().max(1024), z.null()])),
     isActive: z.optional(z.boolean()).default(true),
     position: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerGetContentData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerSendContactMessageData = z.object({
-  body: z.object({
-    name: z.string().min(2).max(120),
-    email: z
-      .email()
-      .max(200)
-      .regex(
-        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
-      ),
-    phone: z.optional(
-      z.union([z.string().regex(/^[+0-9 ().-]{6,25}$/), z.literal("")]),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
     ),
-    reason: z.enum(["ACHETEUR", "FOURNISSEUR", "PARTENARIAT", "AUTRE"]),
-    message: z.string().min(10).max(3000),
-    company: z.optional(z.string().max(0)),
-    startedAt: z.int().gt(0).lte(9007199254740991),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerGetAdminContentData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerUpdateSectionData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    key: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerFindAllFaqsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerCreateFaqData = z.object({
-  body: z.object({
-    question: z.string().min(1).max(300),
-    answer: z.string().min(1).max(2000),
-    isActive: z.boolean().default(true),
-    sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerRemoveFaqData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zLandingControllerUpdateFaqData = z.object({
-  body: z.object({
-    question: z.optional(z.string().min(1).max(300)),
-    answer: z.optional(z.string().min(1).max(2000)),
-    isActive: z.optional(z.boolean()).default(true),
-    sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+    endsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
   }),
   path: z.object({
     id: z.string(),
@@ -3775,49 +3858,161 @@ export const zLandingControllerUpdateFaqData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zGeocodingControllerAutocompleteData = z.object({
+export const zSupplierBannerRequestsControllerListData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
-  query: z.object({
-    q: z.string(),
-    session: z.string(),
-    kind: z.string(),
-  }),
+  query: z.optional(z.never()),
 });
 
-export const zGeocodingControllerResolvePlaceData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    placeId: z.string(),
-    session: z.string(),
-  }),
-});
-
-export const zGeocodingControllerReverseData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    lat: z.string(),
-    lng: z.string(),
-  }),
-});
-
-export const zPromoCodesControllerValidateData = z.object({
+export const zSupplierBannerRequestsControllerCreateData = z.object({
   body: z.object({
-    code: z.string().min(1).max(30),
+    title: z.string().min(1).max(60),
+    subtitle: z.optional(z.string().max(80)),
+    imageUrl: z.url().max(1024),
+    targetType: z.enum(["SUPPLIER", "PRODUCT"]),
+    targetId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    durationDays: z.int().gte(1).lte(365),
+    requestedStartAt: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierBannerRequestsControllerCancelData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminBannerRequestsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+  }),
+});
+
+export const zAdminBannerRequestsControllerApproveData = z.object({
+  body: z.object({
+    startsAt: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+    position: z.optional(z.int().gte(0).lte(9007199254740991)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminBannerRequestsControllerRejectData = z.object({
+  body: z.object({
+    reason: z.string().min(5).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zPublicSettingsControllerGetPublicData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zDeliveryPricingControllerQuoteData = z.object({
+  body: z.object({
     supplierId: z
       .uuid()
       .regex(
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
-    itemsTotal: z.number().gt(0),
+    itemsTotal: z.number().gte(0),
+    latitude: z.optional(z.number().gte(-90).lte(90)),
+    longitude: z.optional(z.number().gte(-180).lte(180)),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zSupplierPromoCodesControllerListData = z.object({
+export const zAdminDeliveryPricingControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminDeliveryPricingControllerUpdateData = z.object({
+  body: z.object({
+    mode: z.enum(["FLAT", "DISTANCE", "ZONES"]),
+    flat: z.object({
+      fee: z.int().gte(0).lte(1000000),
+    }),
+    distance: z.object({
+      baseFee: z.int().gte(0).lte(1000000),
+      perKm: z.int().gte(0).lte(1000000),
+      minFee: z.int().gte(0).lte(1000000),
+      maxFee: z.int().gte(0).lte(1000000),
+      roundTo: z.int().gte(1).lte(10000),
+    }),
+    zones: z
+      .array(
+        z.object({
+          maxKm: z.number().gte(0.1).lte(500),
+          fee: z.int().gte(0).lte(1000000),
+        }),
+      )
+      .min(1)
+      .max(10),
+    freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
+    maxDistanceKm: z.number().gte(0.5).lte(500),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminBannerOffersControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminBannerOffersControllerUpdateData = z.object({
+  body: z.object({
+    offers: z
+      .array(
+        z.object({
+          days: z.int().gte(1).lte(365),
+          price: z.int().gte(0).lte(10000000),
+        }),
+      )
+      .min(1)
+      .max(6),
+    paidSlots: z.int().gte(0).lte(5),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zWalletControllerGetMyWalletData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
@@ -3826,143 +4021,76 @@ export const zSupplierPromoCodesControllerListData = z.object({
   }),
 });
 
-export const zSupplierPromoCodesControllerCreateData = z.object({
-  body: z.object({
-    code: z
-      .string()
-      .min(3)
-      .max(30)
-      .regex(/^[A-Z0-9-]+$/),
-    type: z.enum(["PERCENT", "FIXED"]),
-    value: z.number().gt(0),
-    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
-    minOrderAmount: z.number().gte(0).default(0),
-    startsAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    expiresAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    maxUses: z.optional(
-      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
-    ),
-    maxUsesPerUser: z.int().gt(0).lte(9007199254740991).default(1),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierPromoCodesControllerRemoveData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierPromoCodesControllerUpdateData = z.object({
-  body: z.object({
-    type: z.optional(z.enum(["PERCENT", "FIXED"])),
-    value: z.optional(z.number().gt(0)),
-    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
-    minOrderAmount: z.optional(z.number().gte(0)).default(0),
-    startsAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    expiresAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    maxUses: z.optional(
-      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
-    ),
-    maxUsesPerUser: z.optional(z.int().gt(0).lte(9007199254740991)).default(1),
-    isActive: z.optional(z.boolean()),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zAdminPromoCodesControllerListData = z.object({
+export const zWalletControllerGetMyTopupsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
-    scope: z.string(),
     page: z.string(),
     limit: z.string(),
   }),
 });
 
-export const zAdminPromoCodesControllerCreateData = z.object({
+export const zWalletControllerVerifyTopupData = z.object({
   body: z.object({
-    code: z
-      .string()
-      .min(3)
-      .max(30)
-      .regex(/^[A-Z0-9-]+$/),
-    type: z.enum(["PERCENT", "FIXED"]),
-    value: z.number().gt(0),
-    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
-    minOrderAmount: z.number().gte(0).default(0),
-    startsAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    expiresAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    maxUses: z.optional(
-      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
-    ),
-    maxUsesPerUser: z.int().gt(0).lte(9007199254740991).default(1),
+    fedapayTransactionId: z.string().min(1).max(64),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(1000000),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zAdminPromoCodesControllerRemoveData = z.object({
+export const zSupplierWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(1000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerVerifyTopupData = z.object({
+  body: z.object({
+    fedapayTransactionId: z.string().min(1).max(64),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerGetWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zSupplierWalletControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerAddNumberData = z.object({
+  body: z.object({
+    phoneNumber: z.string().min(8).max(20),
+    holderName: z.string().min(2).max(100),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerRemoveNumberData = z.object({
   body: z.optional(z.never()),
   path: z.object({
     id: z.string(),
@@ -3970,41 +4098,236 @@ export const zAdminPromoCodesControllerRemoveData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zAdminPromoCodesControllerUpdateData = z.object({
+export const zSupplierWalletControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zSupplierWalletControllerRequestWithdrawalData = z.object({
   body: z.object({
-    type: z.optional(z.enum(["PERCENT", "FIXED"])),
-    value: z.optional(z.number().gt(0)),
-    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
-    minOrderAmount: z.optional(z.number().gte(0)).default(0),
-    startsAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    expiresAt: z.optional(
-      z.union([
-        z.iso
-          .datetime()
-          .regex(
-            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-          ),
-        z.null(),
-      ]),
-    ),
-    maxUses: z.optional(
-      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
-    ),
-    maxUsesPerUser: z.optional(z.int().gt(0).lte(9007199254740991)).default(1),
-    isActive: z.optional(z.boolean()),
+    payoutNumberId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    amount: z.int().gte(1000).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerCancelWithdrawalData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerGetWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zCourierWalletControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerAddNumberData = z.object({
+  body: z.object({
+    phoneNumber: z.string().min(8).max(20),
+    holderName: z.string().min(2).max(100),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerRemoveNumberData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zCourierWalletControllerRequestWithdrawalData = z.object({
+  body: z.object({
+    payoutNumberId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    amount: z.int().gte(1000).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerCancelWithdrawalData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(1000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerListTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zCourierWalletControllerVerifyTopupData = z.object({
+  body: z.object({
+    fedapayTransactionId: z.string().min(1).max(64),
   }),
   path: z.object({
     id: z.string(),
   }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerActOnNumberData = z.object({
+  body: z.object({
+    action: z.enum(["validate", "reject"]),
+    rejectionReason: z.optional(z.string().min(3).max(255)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerActOnWithdrawalData = z.object({
+  body: z.object({
+    action: z.enum(["approve", "reject"]),
+    rejectionReason: z.optional(z.string().min(3).max(255)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerWalletsOverviewData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerRegisterTokenData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerUnregisterTokenData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerGetUnreadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    audience: z.string(),
+  }),
+});
+
+export const zNotificationsControllerGetAllData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    audience: z.string(),
+  }),
+});
+
+export const zNotificationsControllerGetUnreadCountData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    audience: z.string(),
+  }),
+});
+
+export const zNotificationsControllerMarkAsReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerMarkAllAsReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerSendTestNotificationData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
@@ -4405,43 +4728,65 @@ export const zMediaControllerFindByEntityData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zNotificationsControllerRegisterTokenData = z.object({
+export const zLandingControllerGetContentData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zNotificationsControllerUnregisterTokenData = z.object({
+export const zLandingControllerSendContactMessageData = z.object({
+  body: z.object({
+    name: z.string().min(2).max(120),
+    email: z
+      .email()
+      .max(200)
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+    phone: z.optional(
+      z.union([z.string().regex(/^[+0-9 ().-]{6,25}$/), z.literal("")]),
+    ),
+    reason: z.enum(["ACHETEUR", "FOURNISSEUR", "PARTENARIAT", "AUTRE"]),
+    message: z.string().min(10).max(3000),
+    company: z.optional(z.string().max(0)),
+    startedAt: z.int().gt(0).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerGetAdminContentData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zNotificationsControllerGetUnreadData = z.object({
+export const zLandingControllerUpdateSectionData = z.object({
   body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    audience: z.string(),
+  path: z.object({
+    key: z.string(),
   }),
+  query: z.optional(z.never()),
 });
 
-export const zNotificationsControllerGetAllData = z.object({
+export const zLandingControllerFindAllFaqsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
-  query: z.object({
-    audience: z.string(),
-  }),
+  query: z.optional(z.never()),
 });
 
-export const zNotificationsControllerGetUnreadCountData = z.object({
-  body: z.optional(z.never()),
+export const zLandingControllerCreateFaqData = z.object({
+  body: z.object({
+    question: z.string().min(1).max(300),
+    answer: z.string().min(1).max(2000),
+    isActive: z.boolean().default(true),
+    sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+  }),
   path: z.optional(z.never()),
-  query: z.object({
-    audience: z.string(),
-  }),
+  query: z.optional(z.never()),
 });
 
-export const zNotificationsControllerMarkAsReadData = z.object({
+export const zLandingControllerRemoveFaqData = z.object({
   body: z.optional(z.never()),
   path: z.object({
     id: z.string(),
@@ -4449,75 +4794,62 @@ export const zNotificationsControllerMarkAsReadData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zNotificationsControllerMarkAllAsReadData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zNotificationsControllerSendTestNotificationData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zPublicSettingsControllerGetPublicData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zDeliveryPricingControllerQuoteData = z.object({
+export const zLandingControllerUpdateFaqData = z.object({
   body: z.object({
+    question: z.optional(z.string().min(1).max(300)),
+    answer: z.optional(z.string().min(1).max(2000)),
+    isActive: z.optional(z.boolean()).default(true),
+    sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zGeocodingControllerAutocompleteData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    q: z.string(),
+    session: z.string(),
+    kind: z.string(),
+  }),
+});
+
+export const zGeocodingControllerResolvePlaceData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    placeId: z.string(),
+    session: z.string(),
+  }),
+});
+
+export const zGeocodingControllerReverseData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    lat: z.string(),
+    lng: z.string(),
+  }),
+});
+
+export const zPromoCodesControllerValidateData = z.object({
+  body: z.object({
+    code: z.string().min(1).max(30),
     supplierId: z
       .uuid()
       .regex(
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
-    itemsTotal: z.number().gte(0),
-    latitude: z.optional(z.number().gte(-90).lte(90)),
-    longitude: z.optional(z.number().gte(-180).lte(180)),
+    itemsTotal: z.number().gt(0),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zAdminDeliveryPricingControllerGetData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminDeliveryPricingControllerUpdateData = z.object({
-  body: z.object({
-    mode: z.enum(["FLAT", "DISTANCE", "ZONES"]),
-    flat: z.object({
-      fee: z.int().gte(0).lte(1000000),
-    }),
-    distance: z.object({
-      baseFee: z.int().gte(0).lte(1000000),
-      perKm: z.int().gte(0).lte(1000000),
-      minFee: z.int().gte(0).lte(1000000),
-      maxFee: z.int().gte(0).lte(1000000),
-      roundTo: z.int().gte(1).lte(10000),
-    }),
-    zones: z
-      .array(
-        z.object({
-          maxKm: z.number().gte(0.1).lte(500),
-          fee: z.int().gte(0).lte(1000000),
-        }),
-      )
-      .min(1)
-      .max(10),
-    freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
-    maxDistanceKm: z.number().gte(0.5).lte(500),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zWalletControllerGetMyWalletData = z.object({
+export const zSupplierPromoCodesControllerListData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
@@ -4526,58 +4858,47 @@ export const zWalletControllerGetMyWalletData = z.object({
   }),
 });
 
-export const zWalletControllerGetMyTopupsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletControllerVerifyTopupData = z.object({
+export const zSupplierPromoCodesControllerCreateData = z.object({
   body: z.object({
-    fedapayTransactionId: z.string().min(1).max(64),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zWalletControllerTopupData = z.object({
-  body: z.object({
-    amount: z.int().gte(100).lte(1000000),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerGetWalletData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zSupplierWalletControllerListNumbersData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerAddNumberData = z.object({
-  body: z.object({
-    phoneNumber: z.string().min(8).max(20),
-    holderName: z.string().min(2).max(100),
+    code: z
+      .string()
+      .min(3)
+      .max(30)
+      .regex(/^[A-Z0-9-]+$/),
+    type: z.enum(["PERCENT", "FIXED"]),
+    value: z.number().gt(0),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.number().gte(0).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.int().gt(0).lte(9007199254740991).default(1),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zSupplierWalletControllerRemoveNumberData = z.object({
+export const zSupplierPromoCodesControllerRemoveData = z.object({
   body: z.optional(z.never()),
   path: z.object({
     id: z.string(),
@@ -4585,118 +4906,37 @@ export const zSupplierWalletControllerRemoveNumberData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zSupplierWalletControllerListWithdrawalsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zSupplierWalletControllerRequestWithdrawalData = z.object({
+export const zSupplierPromoCodesControllerUpdateData = z.object({
   body: z.object({
-    payoutNumberId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    amount: z.int().gte(1000).lte(9007199254740991),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerCancelWithdrawalData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerGetWalletData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zCourierWalletControllerListNumbersData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerAddNumberData = z.object({
-  body: z.object({
-    phoneNumber: z.string().min(8).max(20),
-    holderName: z.string().min(2).max(100),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerRemoveNumberData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerListWithdrawalsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zCourierWalletControllerRequestWithdrawalData = z.object({
-  body: z.object({
-    payoutNumberId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    amount: z.int().gte(1000).lte(9007199254740991),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerCancelWithdrawalData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerTopupData = z.object({
-  body: z.object({
-    amount: z.int().gte(100).lte(1000000),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerListTopupsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zCourierWalletControllerVerifyTopupData = z.object({
-  body: z.object({
-    fedapayTransactionId: z.string().min(1).max(64),
+    type: z.optional(z.enum(["PERCENT", "FIXED"])),
+    value: z.optional(z.number().gt(0)),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.optional(z.number().gte(0)).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.optional(z.int().gt(0).lte(9007199254740991)).default(1),
+    isActive: z.optional(z.boolean()),
   }),
   path: z.object({
     id: z.string(),
@@ -4704,61 +4944,99 @@ export const zCourierWalletControllerVerifyTopupData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zWalletAdminControllerListNumbersData = z.object({
+export const zAdminPromoCodesControllerListData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
-    status: z.string(),
+    scope: z.string(),
     page: z.string(),
     limit: z.string(),
   }),
 });
 
-export const zWalletAdminControllerActOnNumberData = z.object({
+export const zAdminPromoCodesControllerCreateData = z.object({
   body: z.object({
-    action: z.enum(["validate", "reject"]),
-    rejectionReason: z.optional(z.string().min(3).max(255)),
+    code: z
+      .string()
+      .min(3)
+      .max(30)
+      .regex(/^[A-Z0-9-]+$/),
+    type: z.enum(["PERCENT", "FIXED"]),
+    value: z.number().gt(0),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.number().gte(0).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.int().gt(0).lte(9007199254740991).default(1),
   }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminPromoCodesControllerRemoveData = z.object({
+  body: z.optional(z.never()),
   path: z.object({
     id: z.string(),
   }),
   query: z.optional(z.never()),
 });
 
-export const zWalletAdminControllerListWithdrawalsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    status: z.string(),
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletAdminControllerActOnWithdrawalData = z.object({
+export const zAdminPromoCodesControllerUpdateData = z.object({
   body: z.object({
-    action: z.enum(["approve", "reject"]),
-    rejectionReason: z.optional(z.string().min(3).max(255)),
+    type: z.optional(z.enum(["PERCENT", "FIXED"])),
+    value: z.optional(z.number().gt(0)),
+    maxDiscount: z.optional(z.union([z.number().gt(0), z.null()])),
+    minOrderAmount: z.optional(z.number().gte(0)).default(0),
+    startsAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    expiresAt: z.optional(
+      z.union([
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+        z.null(),
+      ]),
+    ),
+    maxUses: z.optional(
+      z.union([z.int().gt(0).lte(9007199254740991), z.null()]),
+    ),
+    maxUsesPerUser: z.optional(z.int().gt(0).lte(9007199254740991)).default(1),
+    isActive: z.optional(z.boolean()),
   }),
   path: z.object({
     id: z.string(),
   }),
-  query: z.optional(z.never()),
-});
-
-export const zWalletAdminControllerListTopupsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    status: z.string(),
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletAdminControllerWalletsOverviewData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 

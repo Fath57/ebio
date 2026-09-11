@@ -2,6 +2,7 @@ import type { BannerResponse, CreateBanner, UpdateBanner } from './contracts/ban
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { Product } from '../products/entities/product.entity'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { Banner, BannerTargetType } from './banner.entity'
 
@@ -10,7 +11,10 @@ const PUBLIC_LIMIT = 5
 
 @Injectable()
 export class BannersService {
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    private readonly platformSettings: PlatformSettingsService,
+  ) {}
 
   /**
    * Bannières actives pour l'accueil mobile. Une bannière dont la cible a été
@@ -24,8 +28,23 @@ export class BannersService {
     )
 
     const labels = await this.resolveTargetLabels(banners)
+    const { paidSlots } = await this.platformSettings.getBannerOffers()
+    const now = new Date()
+    let sponsoredShown = 0
 
     return banners
+      .filter(banner => banner.isLive(now))
+      .filter((banner) => {
+        // Sponsored slots are capped so editorial banners always keep room.
+        if (!banner.sponsored) {
+          return true
+        }
+        if (sponsoredShown >= paidSlots) {
+          return false
+        }
+        sponsoredShown += 1
+        return true
+      })
       .filter((banner) => {
         // Seules les cibles en base peuvent disparaître ; une bannière URL ou
         // publicitaire n'a rien à vérifier.
@@ -70,9 +89,16 @@ export class BannersService {
       targetType,
       targetId: targetId ?? undefined,
       targetUrl: targetUrl ?? undefined,
+      startsAt: input.startsAt ? new Date(input.startsAt) : null,
+      endsAt: input.endsAt ? new Date(input.endsAt) : null,
     })
     await this.em.flush()
     return this.findById(banner.id)
+  }
+
+  /** Counters are best-effort: a lost increment never blocks the app. */
+  async count(id: string, field: 'impressions' | 'clicks'): Promise<void> {
+    await this.em.getConnection().execute(`UPDATE banners SET ${field} = ${field} + 1 WHERE id = ?`, [id])
   }
 
   async update(id: string, input: UpdateBanner): Promise<BannerResponse> {
@@ -92,7 +118,14 @@ export class BannersService {
       await this.assertTargetExists(targetType, targetId)
     }
 
-    this.em.assign(banner, { ...input, targetType, targetId, targetUrl })
+    const { startsAt, endsAt, ...rest } = input
+    this.em.assign(banner, { ...rest, targetType, targetId, targetUrl })
+    if (startsAt !== undefined) {
+      banner.startsAt = startsAt ? new Date(startsAt) : null
+    }
+    if (endsAt !== undefined) {
+      banner.endsAt = endsAt ? new Date(endsAt) : null
+    }
     await this.em.flush()
     return this.findById(banner.id)
   }
@@ -180,6 +213,12 @@ export class BannersService {
       targetLabel: banner.targetId ? labels.get(banner.targetId) ?? null : null,
       isActive: banner.isActive,
       position: banner.position,
+      sponsored: banner.sponsored,
+      supplierId: banner.supplier?.id ?? null,
+      startsAt: banner.startsAt?.toISOString() ?? null,
+      endsAt: banner.endsAt?.toISOString() ?? null,
+      impressions: banner.impressions,
+      clicks: banner.clicks,
       createdAt: banner.createdAt.toISOString(),
     }
   }

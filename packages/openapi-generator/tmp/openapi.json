@@ -2924,6 +2924,52 @@
         }
       }
     },
+    "/api/banners/{id}/impression": {
+      "post": {
+        "operationId": "BannersController_impression",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/banners/{id}/click": {
+      "post": {
+        "operationId": "BannersController_click",
+        "tags": [
+          "Banners"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/banners": {
       "get": {
         "operationId": "BannersController_findAll",
@@ -3009,6 +3055,30 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991
+                  },
+                  "startsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "endsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "required": [
@@ -3135,6 +3205,30 @@
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991
+                  },
+                  "startsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "endsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "additionalProperties": false,
@@ -3172,11 +3266,11 @@
         }
       }
     },
-    "/api/landing/content": {
+    "/api/suppliers/me/banner-requests": {
       "get": {
-        "operationId": "LandingController_getContent",
+        "operationId": "SupplierBannerRequestsController_list",
         "tags": [
-          "Landing"
+          "SupplierBannerRequests"
         ],
         "parameters": [],
         "responses": {
@@ -3184,82 +3278,67 @@
             "description": ""
           }
         }
-      }
-    },
-    "/api/landing/contact": {
+      },
       "post": {
-        "operationId": "LandingController_sendContactMessage",
+        "operationId": "SupplierBannerRequestsController_create",
         "tags": [
-          "Landing"
+          "SupplierBannerRequests"
         ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Message sent from the landing contact form",
+          "description": "A shop asks (and pays) for a home banner slot",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "name": {
+                  "title": {
                     "type": "string",
-                    "minLength": 2,
-                    "maxLength": 120
+                    "minLength": 1,
+                    "maxLength": 60
                   },
-                  "email": {
+                  "subtitle": {
                     "type": "string",
-                    "maxLength": 200,
-                    "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    "maxLength": 80
                   },
-                  "phone": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "pattern": "^[+0-9 ().-]{6,25}$"
-                      },
-                      {
-                        "type": "string",
-                        "const": ""
-                      }
-                    ]
+                  "imageUrl": {
+                    "type": "string",
+                    "maxLength": 1024,
+                    "format": "uri"
                   },
-                  "reason": {
+                  "targetType": {
                     "type": "string",
                     "enum": [
-                      "ACHETEUR",
-                      "FOURNISSEUR",
-                      "PARTENARIAT",
-                      "AUTRE"
-                    ],
-                    "title": "ContactReason",
-                    "description": "Why the visitor is writing"
+                      "SUPPLIER",
+                      "PRODUCT"
+                    ]
                   },
-                  "message": {
+                  "targetId": {
                     "type": "string",
-                    "minLength": 10,
-                    "maxLength": 3000
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
-                  "company": {
-                    "type": "string",
-                    "maxLength": 0
-                  },
-                  "startedAt": {
+                  "durationDays": {
                     "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
+                    "minimum": 1,
+                    "maximum": 365
+                  },
+                  "requestedStartAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                   }
                 },
                 "required": [
-                  "name",
-                  "email",
-                  "reason",
-                  "message",
-                  "startedAt"
+                  "title",
+                  "imageUrl",
+                  "targetType",
+                  "durationDays"
                 ],
                 "additionalProperties": false,
-                "title": "ContactMessage",
-                "description": "Message sent from the landing contact form"
+                "title": "CreateBannerRequest",
+                "description": "A shop asks (and pays) for a home banner slot"
               }
             }
           }
@@ -3271,31 +3350,40 @@
         }
       }
     },
-    "/api/landing/content/admin": {
-      "get": {
-        "operationId": "LandingController_getAdminContent",
+    "/api/suppliers/me/banner-requests/{id}/cancel": {
+      "post": {
+        "operationId": "SupplierBannerRequestsController_cancel",
         "tags": [
-          "Landing"
+          "SupplierBannerRequests"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
-          "200": {
+          "201": {
             "description": ""
           }
         }
       }
     },
-    "/api/landing/content/{key}": {
-      "put": {
-        "operationId": "LandingController_updateSection",
+    "/api/admin/banner-requests": {
+      "get": {
+        "operationId": "AdminBannerRequestsController_list",
         "tags": [
-          "Landing"
+          "AdminBannerRequests"
         ],
         "parameters": [
           {
-            "name": "key",
+            "name": "status",
             "required": true,
-            "in": "path",
+            "in": "query",
             "schema": {
               "type": "string"
             }
@@ -3308,77 +3396,11 @@
         }
       }
     },
-    "/api/landing/faqs": {
-      "get": {
-        "operationId": "LandingController_findAllFaqs",
-        "tags": [
-          "Landing"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
+    "/api/admin/banner-requests/{id}/approve": {
       "post": {
-        "operationId": "LandingController_createFaq",
+        "operationId": "AdminBannerRequestsController_approve",
         "tags": [
-          "Landing"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "question": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 300
-                  },
-                  "answer": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 2000
-                  },
-                  "isActive": {
-                    "default": true,
-                    "type": "boolean"
-                  },
-                  "sortOrder": {
-                    "default": 0,
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 9007199254740991
-                  }
-                },
-                "required": [
-                  "question",
-                  "answer",
-                  "isActive",
-                  "sortOrder"
-                ],
-                "additionalProperties": false,
-                "title": "CreateLandingFaq"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/landing/faqs/{id}": {
-      "patch": {
-        "operationId": "LandingController_updateFaq",
-        "tags": [
-          "Landing"
+          "AdminBannerRequests"
         ],
         "parameters": [
           {
@@ -3397,43 +3419,35 @@
               "schema": {
                 "type": "object",
                 "properties": {
-                  "question": {
+                  "startsAt": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 300
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                   },
-                  "answer": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 2000
-                  },
-                  "isActive": {
-                    "default": true,
-                    "type": "boolean"
-                  },
-                  "sortOrder": {
-                    "default": 0,
+                  "position": {
                     "type": "integer",
                     "minimum": 0,
                     "maximum": 9007199254740991
                   }
                 },
                 "additionalProperties": false,
-                "title": "UpdateLandingFaq"
+                "title": "ApproveBannerRequest"
               }
             }
           }
         },
         "responses": {
-          "200": {
+          "201": {
             "description": ""
           }
         }
-      },
-      "delete": {
-        "operationId": "LandingController_removeFaq",
+      }
+    },
+    "/api/admin/banner-requests/{id}/reject": {
+      "post": {
+        "operationId": "AdminBannerRequestsController_reject",
         "tags": [
-          "Landing"
+          "AdminBannerRequests"
         ],
         "parameters": [
           {
@@ -3445,134 +3459,64 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/geocoding/autocomplete": {
-      "get": {
-        "operationId": "GeocodingController_autocomplete",
-        "tags": [
-          "Geocoding"
-        ],
-        "parameters": [
-          {
-            "name": "q",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "session",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "kind",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/geocoding/place": {
-      "get": {
-        "operationId": "GeocodingController_resolvePlace",
-        "tags": [
-          "Geocoding"
-        ],
-        "parameters": [
-          {
-            "name": "placeId",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "session",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/geocoding/reverse": {
-      "get": {
-        "operationId": "GeocodingController_reverse",
-        "tags": [
-          "Geocoding"
-        ],
-        "parameters": [
-          {
-            "name": "lat",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "lng",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/promo-codes/validate": {
-      "post": {
-        "operationId": "PromoCodesController_validate",
-        "tags": [
-          "PromoCodes"
-        ],
-        "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Pre-checkout check: is this code usable on this cart?",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "code": {
+                  "reason": {
                     "type": "string",
-                    "minLength": 1,
-                    "maxLength": 30
-                  },
+                    "minLength": 5,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "RejectBannerRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/settings/public": {
+      "get": {
+        "operationId": "PublicSettingsController_getPublic",
+        "tags": [
+          "PublicSettings"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/delivery-pricing/quote": {
+      "post": {
+        "operationId": "DeliveryPricingController_quote",
+        "tags": [
+          "DeliveryPricing"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "What the buyer would pay to have this basket delivered to this point",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
                   "supplierId": {
                     "type": "string",
                     "format": "uuid",
@@ -3580,17 +3524,26 @@
                   },
                   "itemsTotal": {
                     "type": "number",
-                    "exclusiveMinimum": 0
+                    "minimum": 0
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
                   }
                 },
                 "required": [
-                  "code",
                   "supplierId",
                   "itemsTotal"
                 ],
                 "additionalProperties": false,
-                "title": "ValidatePromo",
-                "description": "Pre-checkout check: is this code usable on this cart?"
+                "title": "DeliveryQuoteRequest",
+                "description": "What the buyer would pay to have this basket delivered to this point"
               }
             }
           }
@@ -3602,11 +3555,583 @@
         }
       }
     },
-    "/api/suppliers/me/promo-codes": {
+    "/api/admin/delivery-pricing": {
       "get": {
-        "operationId": "SupplierPromoCodesController_list",
+        "operationId": "AdminDeliveryPricingController_get",
         "tags": [
-          "SupplierPromoCodes"
+          "AdminDeliveryPricing"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminDeliveryPricingController_update",
+        "tags": [
+          "AdminDeliveryPricing"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Platform-wide delivery pricing rules (admin-tuned)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "FLAT",
+                      "DISTANCE",
+                      "ZONES"
+                    ],
+                    "title": "DeliveryPricingMode",
+                    "description": "How the platform prices a delivery: one fee, base + per-km, or distance rings"
+                  },
+                  "flat": {
+                    "type": "object",
+                    "properties": {
+                      "fee": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      }
+                    },
+                    "required": [
+                      "fee"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "distance": {
+                    "type": "object",
+                    "properties": {
+                      "baseFee": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "perKm": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "minFee": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "maxFee": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1000000
+                      },
+                      "roundTo": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 10000
+                      }
+                    },
+                    "required": [
+                      "baseFee",
+                      "perKm",
+                      "minFee",
+                      "maxFee",
+                      "roundTo"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "zones": {
+                    "minItems": 1,
+                    "maxItems": 10,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "maxKm": {
+                          "type": "number",
+                          "minimum": 0.1,
+                          "maximum": 500
+                        },
+                        "fee": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 1000000
+                        }
+                      },
+                      "required": [
+                        "maxKm",
+                        "fee"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "freeFrom": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxDistanceKm": {
+                    "type": "number",
+                    "minimum": 0.5,
+                    "maximum": 500
+                  }
+                },
+                "required": [
+                  "mode",
+                  "flat",
+                  "distance",
+                  "zones",
+                  "freeFrom",
+                  "maxDistanceKm"
+                ],
+                "additionalProperties": false,
+                "title": "DeliveryPricingConfig",
+                "description": "Platform-wide delivery pricing rules (admin-tuned)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/banner-offers": {
+      "get": {
+        "operationId": "AdminBannerOffersController_get",
+        "tags": [
+          "AdminBannerOffers"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminBannerOffersController_update",
+        "tags": [
+          "AdminBannerOffers"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Sponsored banner offers (duration / price) and paid slot count",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "offers": {
+                    "minItems": 1,
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "days": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 365
+                        },
+                        "price": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 10000000
+                        }
+                      },
+                      "required": [
+                        "days",
+                        "price"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "paidSlots": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  }
+                },
+                "required": [
+                  "offers",
+                  "paidSlots"
+                ],
+                "additionalProperties": false,
+                "title": "BannerOffers",
+                "description": "Sponsored banner offers (duration / price) and paid slot count"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/wallet/me": {
+      "get": {
+        "operationId": "WalletController_getMyWallet",
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/wallet/me/topups": {
+      "get": {
+        "operationId": "WalletController_getMyTopups",
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/wallet/me/topups/{id}/verify": {
+      "post": {
+        "operationId": "WalletController_verifyTopup",
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fedapayTransactionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "fedapayTransactionId"
+                ],
+                "additionalProperties": false,
+                "title": "VerifyTopup",
+                "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/wallet/topup": {
+      "post": {
+        "operationId": "WalletController_topup",
+        "tags": [
+          "Wallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Amount to add to the wallet, paid through FedaPay",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "WalletTopup",
+                "description": "Amount to add to the wallet, paid through FedaPay"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/topup": {
+      "post": {
+        "operationId": "SupplierWalletController_topup",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Amount to add to the wallet, paid through FedaPay",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "WalletTopup",
+                "description": "Amount to add to the wallet, paid through FedaPay"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/topups/{id}/verify": {
+      "post": {
+        "operationId": "SupplierWalletController_verifyTopup",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fedapayTransactionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "fedapayTransactionId"
+                ],
+                "additionalProperties": false,
+                "title": "VerifyTopup",
+                "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet": {
+      "get": {
+        "operationId": "SupplierWalletController_getWallet",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/payout-numbers": {
+      "get": {
+        "operationId": "SupplierWalletController_listNumbers",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "SupplierWalletController_addNumber",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "holderName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "phoneNumber",
+                  "holderName"
+                ],
+                "additionalProperties": false,
+                "title": "CreatePayoutNumber",
+                "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/payout-numbers/{id}": {
+      "delete": {
+        "operationId": "SupplierWalletController_removeNumber",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/withdrawals": {
+      "get": {
+        "operationId": "SupplierWalletController_listWithdrawals",
+        "tags": [
+          "SupplierWallet"
         ],
         "parameters": [
           {
@@ -3633,107 +4158,37 @@
         }
       },
       "post": {
-        "operationId": "SupplierPromoCodesController_create",
+        "operationId": "SupplierWalletController_requestWithdrawal",
         "tags": [
-          "SupplierPromoCodes"
+          "SupplierWallet"
         ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "New promo code; supplier scope comes from the route, never the body",
+          "description": "Withdrawal request; funds are reserved immediately",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "code": {
+                  "payoutNumberId": {
                     "type": "string",
-                    "minLength": 3,
-                    "maxLength": 30,
-                    "pattern": "^[A-Z0-9-]+$"
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "PERCENT",
-                      "FIXED"
-                    ],
-                    "title": "PromoType",
-                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
-                  },
-                  "value": {
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  },
-                  "maxDiscount": {
-                    "anyOf": [
-                      {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "minOrderAmount": {
-                    "default": 0,
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "startsAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "expiresAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUses": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "exclusiveMinimum": 0,
-                        "maximum": 9007199254740991
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUsesPerUser": {
-                    "default": 1,
+                  "amount": {
                     "type": "integer",
-                    "exclusiveMinimum": 0,
+                    "minimum": 1000,
                     "maximum": 9007199254740991
                   }
                 },
                 "required": [
-                  "code",
-                  "type",
-                  "value",
-                  "minOrderAmount",
-                  "maxUsesPerUser"
+                  "payoutNumberId",
+                  "amount"
                 ],
                 "additionalProperties": false,
-                "title": "CreatePromoCode",
-                "description": "New promo code; supplier scope comes from the route, never the body"
+                "title": "CreateWithdrawal",
+                "description": "Withdrawal request; funds are reserved immediately"
               }
             }
           }
@@ -3745,122 +4200,11 @@
         }
       }
     },
-    "/api/suppliers/me/promo-codes/{id}": {
+    "/api/suppliers/me/wallet/withdrawals/{id}/cancel": {
       "patch": {
-        "operationId": "SupplierPromoCodesController_update",
+        "operationId": "SupplierWalletController_cancelWithdrawal",
         "tags": [
-          "SupplierPromoCodes"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Editable fields — the code itself is immutable once created",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "PERCENT",
-                      "FIXED"
-                    ],
-                    "title": "PromoType",
-                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
-                  },
-                  "value": {
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  },
-                  "maxDiscount": {
-                    "anyOf": [
-                      {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "minOrderAmount": {
-                    "default": 0,
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "startsAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "expiresAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUses": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "exclusiveMinimum": 0,
-                        "maximum": 9007199254740991
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUsesPerUser": {
-                    "default": 1,
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "isActive": {
-                    "type": "boolean"
-                  }
-                },
-                "additionalProperties": false,
-                "title": "UpdatePromoCode",
-                "description": "Editable fields — the code itself is immutable once created"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
-      "delete": {
-        "operationId": "SupplierPromoCodesController_remove",
-        "tags": [
-          "SupplierPromoCodes"
+          "SupplierWallet"
         ],
         "parameters": [
           {
@@ -3879,15 +4223,337 @@
         }
       }
     },
-    "/api/admin/promo-codes": {
+    "/api/couriers/me/wallet": {
       "get": {
-        "operationId": "AdminPromoCodesController_list",
+        "operationId": "CourierWalletController_getWallet",
         "tags": [
-          "AdminPromoCodes"
+          "CourierWallet"
         ],
         "parameters": [
           {
-            "name": "scope",
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/payout-numbers": {
+      "get": {
+        "operationId": "CourierWalletController_listNumbers",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "CourierWalletController_addNumber",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "phoneNumber": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 20
+                  },
+                  "holderName": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 100
+                  }
+                },
+                "required": [
+                  "phoneNumber",
+                  "holderName"
+                ],
+                "additionalProperties": false,
+                "title": "CreatePayoutNumber",
+                "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/payout-numbers/{id}": {
+      "delete": {
+        "operationId": "CourierWalletController_removeNumber",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/withdrawals": {
+      "get": {
+        "operationId": "CourierWalletController_listWithdrawals",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "CourierWalletController_requestWithdrawal",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Withdrawal request; funds are reserved immediately",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "payoutNumberId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 1000,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "payoutNumberId",
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "CreateWithdrawal",
+                "description": "Withdrawal request; funds are reserved immediately"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/withdrawals/{id}/cancel": {
+      "patch": {
+        "operationId": "CourierWalletController_cancelWithdrawal",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/topup": {
+      "post": {
+        "operationId": "CourierWalletController_topup",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Amount to add to the wallet, paid through FedaPay",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 100,
+                    "maximum": 1000000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "WalletTopup",
+                "description": "Amount to add to the wallet, paid through FedaPay"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/topups": {
+      "get": {
+        "operationId": "CourierWalletController_listTopups",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/couriers/me/wallet/topups/{id}/verify": {
+      "post": {
+        "operationId": "CourierWalletController_verifyTopup",
+        "tags": [
+          "CourierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fedapayTransactionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "fedapayTransactionId"
+                ],
+                "additionalProperties": false,
+                "title": "VerifyTopup",
+                "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/payout-numbers": {
+      "get": {
+        "operationId": "WalletAdminController_listNumbers",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
             "required": true,
             "in": "query",
             "schema": {
@@ -3916,113 +4582,215 @@
             "description": ""
           }
         }
-      },
-      "post": {
-        "operationId": "AdminPromoCodesController_create",
+      }
+    },
+    "/api/admin/payout-numbers/{id}": {
+      "patch": {
+        "operationId": "WalletAdminController_actOnNumber",
         "tags": [
-          "AdminPromoCodes"
+          "WalletAdmin"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "requestBody": {
           "required": true,
-          "description": "New promo code; supplier scope comes from the route, never the body",
+          "description": "Validate or reject a supplier or courier payout number",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "code": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 30,
-                    "pattern": "^[A-Z0-9-]+$"
-                  },
-                  "type": {
+                  "action": {
                     "type": "string",
                     "enum": [
-                      "PERCENT",
-                      "FIXED"
-                    ],
-                    "title": "PromoType",
-                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
-                  },
-                  "value": {
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  },
-                  "maxDiscount": {
-                    "anyOf": [
-                      {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      {
-                        "type": "null"
-                      }
+                      "validate",
+                      "reject"
                     ]
                   },
-                  "minOrderAmount": {
-                    "default": 0,
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "startsAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "expiresAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUses": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "exclusiveMinimum": 0,
-                        "maximum": 9007199254740991
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUsesPerUser": {
-                    "default": 1,
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
+                  "rejectionReason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255
                   }
                 },
                 "required": [
-                  "code",
-                  "type",
-                  "value",
-                  "minOrderAmount",
-                  "maxUsesPerUser"
+                  "action"
                 ],
                 "additionalProperties": false,
-                "title": "CreatePromoCode",
-                "description": "New promo code; supplier scope comes from the route, never the body"
+                "title": "AdminPayoutNumberAction",
+                "description": "Validate or reject a supplier or courier payout number"
               }
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/withdrawals": {
+      "get": {
+        "operationId": "WalletAdminController_listWithdrawals",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/withdrawals/{id}": {
+      "patch": {
+        "operationId": "WalletAdminController_actOnWithdrawal",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Approve triggers the FedaPay payout; reject re-credits the wallet",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject"
+                    ]
+                  },
+                  "rejectionReason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 255
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false,
+                "title": "AdminWithdrawalAction",
+                "description": "Approve triggers the FedaPay payout; reject re-credits the wallet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/wallet-topups": {
+      "get": {
+        "operationId": "WalletAdminController_listTopups",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/wallets": {
+      "get": {
+        "operationId": "WalletAdminController_walletsOverview",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/register-token": {
+      "post": {
+        "operationId": "NotificationsController_registerToken",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
         "responses": {
           "201": {
             "description": ""
@@ -4030,122 +4798,94 @@
         }
       }
     },
-    "/api/admin/promo-codes/{id}": {
-      "patch": {
-        "operationId": "AdminPromoCodesController_update",
+    "/api/notifications/unregister-token": {
+      "delete": {
+        "operationId": "NotificationsController_unregisterToken",
         "tags": [
-          "AdminPromoCodes"
+          "Notifications"
         ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Editable fields — the code itself is immutable once created",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "enum": [
-                      "PERCENT",
-                      "FIXED"
-                    ],
-                    "title": "PromoType",
-                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
-                  },
-                  "value": {
-                    "type": "number",
-                    "exclusiveMinimum": 0
-                  },
-                  "maxDiscount": {
-                    "anyOf": [
-                      {
-                        "type": "number",
-                        "exclusiveMinimum": 0
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "minOrderAmount": {
-                    "default": 0,
-                    "type": "number",
-                    "minimum": 0
-                  },
-                  "startsAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "expiresAt": {
-                    "anyOf": [
-                      {
-                        "type": "string",
-                        "format": "date-time",
-                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUses": {
-                    "anyOf": [
-                      {
-                        "type": "integer",
-                        "exclusiveMinimum": 0,
-                        "maximum": 9007199254740991
-                      },
-                      {
-                        "type": "null"
-                      }
-                    ]
-                  },
-                  "maxUsesPerUser": {
-                    "default": 1,
-                    "type": "integer",
-                    "exclusiveMinimum": 0,
-                    "maximum": 9007199254740991
-                  },
-                  "isActive": {
-                    "type": "boolean"
-                  }
-                },
-                "additionalProperties": false,
-                "title": "UpdatePromoCode",
-                "description": "Editable fields — the code itself is immutable once created"
-              }
-            }
-          }
-        },
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         }
-      },
-      "delete": {
-        "operationId": "AdminPromoCodesController_remove",
+      }
+    },
+    "/api/notifications/unread": {
+      "get": {
+        "operationId": "NotificationsController_getUnread",
         "tags": [
-          "AdminPromoCodes"
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "audience",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "operationId": "NotificationsController_getAll",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "audience",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/count": {
+      "get": {
+        "operationId": "NotificationsController_getUnreadCount",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [
+          {
+            "name": "audience",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/{id}/read": {
+      "patch": {
+        "operationId": "NotificationsController_markAsRead",
+        "tags": [
+          "Notifications"
         ],
         "parameters": [
           {
@@ -4159,6 +4899,34 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/read-all": {
+      "patch": {
+        "operationId": "NotificationsController_markAllAsRead",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/notifications/test": {
+      "post": {
+        "operationId": "NotificationsController_sendTestNotification",
+        "tags": [
+          "Notifications"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
             "description": ""
           }
         }
@@ -5487,13 +6255,98 @@
         }
       }
     },
-    "/api/notifications/register-token": {
-      "post": {
-        "operationId": "NotificationsController_registerToken",
+    "/api/landing/content": {
+      "get": {
+        "operationId": "LandingController_getContent",
         "tags": [
-          "Notifications"
+          "Landing"
         ],
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/contact": {
+      "post": {
+        "operationId": "LandingController_sendContactMessage",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Message sent from the landing contact form",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "email": {
+                    "type": "string",
+                    "maxLength": 200,
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "phone": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^[+0-9 ().-]{6,25}$"
+                      },
+                      {
+                        "type": "string",
+                        "const": ""
+                      }
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "enum": [
+                      "ACHETEUR",
+                      "FOURNISSEUR",
+                      "PARTENARIAT",
+                      "AUTRE"
+                    ],
+                    "title": "ContactReason",
+                    "description": "Why the visitor is writing"
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 3000
+                  },
+                  "company": {
+                    "type": "string",
+                    "maxLength": 0
+                  },
+                  "startedAt": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "name",
+                  "email",
+                  "reason",
+                  "message",
+                  "startedAt"
+                ],
+                "additionalProperties": false,
+                "title": "ContactMessage",
+                "description": "Message sent from the landing contact form"
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -5501,11 +6354,11 @@
         }
       }
     },
-    "/api/notifications/unregister-token": {
-      "delete": {
-        "operationId": "NotificationsController_unregisterToken",
+    "/api/landing/content/admin": {
+      "get": {
+        "operationId": "LandingController_getAdminContent",
         "tags": [
-          "Notifications"
+          "Landing"
         ],
         "parameters": [],
         "responses": {
@@ -5515,17 +6368,17 @@
         }
       }
     },
-    "/api/notifications/unread": {
-      "get": {
-        "operationId": "NotificationsController_getUnread",
+    "/api/landing/content/{key}": {
+      "put": {
+        "operationId": "LandingController_updateSection",
         "tags": [
-          "Notifications"
+          "Landing"
         ],
         "parameters": [
           {
-            "name": "audience",
+            "name": "key",
             "required": true,
-            "in": "query",
+            "in": "path",
             "schema": {
               "type": "string"
             }
@@ -5538,57 +6391,132 @@
         }
       }
     },
-    "/api/notifications": {
+    "/api/landing/faqs": {
       "get": {
-        "operationId": "NotificationsController_getAll",
+        "operationId": "LandingController_findAllFaqs",
         "tags": [
-          "Notifications"
+          "Landing"
         ],
-        "parameters": [
-          {
-            "name": "audience",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
+        "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         }
-      }
-    },
-    "/api/notifications/count": {
-      "get": {
-        "operationId": "NotificationsController_getUnreadCount",
+      },
+      "post": {
+        "operationId": "LandingController_createFaq",
         "tags": [
-          "Notifications"
+          "Landing"
         ],
-        "parameters": [
-          {
-            "name": "audience",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "answer": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "question",
+                  "answer",
+                  "isActive",
+                  "sortOrder"
+                ],
+                "additionalProperties": false,
+                "title": "CreateLandingFaq"
+              }
             }
           }
-        ],
+        },
         "responses": {
-          "200": {
+          "201": {
             "description": ""
           }
         }
       }
     },
-    "/api/notifications/{id}/read": {
+    "/api/landing/faqs/{id}": {
       "patch": {
-        "operationId": "NotificationsController_markAsRead",
+        "operationId": "LandingController_updateFaq",
         "tags": [
-          "Notifications"
+          "Landing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "question": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 300
+                  },
+                  "answer": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateLandingFaq"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "LandingController_removeFaq",
+        "tags": [
+          "Landing"
         ],
         "parameters": [
           {
@@ -5607,41 +6535,38 @@
         }
       }
     },
-    "/api/notifications/read-all": {
-      "patch": {
-        "operationId": "NotificationsController_markAllAsRead",
-        "tags": [
-          "Notifications"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/notifications/test": {
-      "post": {
-        "operationId": "NotificationsController_sendTestNotification",
-        "tags": [
-          "Notifications"
-        ],
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/settings/public": {
+    "/api/geocoding/autocomplete": {
       "get": {
-        "operationId": "PublicSettingsController_getPublic",
+        "operationId": "GeocodingController_autocomplete",
         "tags": [
-          "PublicSettings"
+          "Geocoding"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "kind",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -5649,21 +6574,88 @@
         }
       }
     },
-    "/api/delivery-pricing/quote": {
-      "post": {
-        "operationId": "DeliveryPricingController_quote",
+    "/api/geocoding/place": {
+      "get": {
+        "operationId": "GeocodingController_resolvePlace",
         "tags": [
-          "DeliveryPricing"
+          "Geocoding"
+        ],
+        "parameters": [
+          {
+            "name": "placeId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "session",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/geocoding/reverse": {
+      "get": {
+        "operationId": "GeocodingController_reverse",
+        "tags": [
+          "Geocoding"
+        ],
+        "parameters": [
+          {
+            "name": "lat",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "lng",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/promo-codes/validate": {
+      "post": {
+        "operationId": "PromoCodesController_validate",
+        "tags": [
+          "PromoCodes"
         ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "What the buyer would pay to have this basket delivered to this point",
+          "description": "Pre-checkout check: is this code usable on this cart?",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 30
+                  },
                   "supplierId": {
                     "type": "string",
                     "format": "uuid",
@@ -5671,26 +6663,17 @@
                   },
                   "itemsTotal": {
                     "type": "number",
-                    "minimum": 0
-                  },
-                  "latitude": {
-                    "type": "number",
-                    "minimum": -90,
-                    "maximum": 90
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "minimum": -180,
-                    "maximum": 180
+                    "exclusiveMinimum": 0
                   }
                 },
                 "required": [
+                  "code",
                   "supplierId",
                   "itemsTotal"
                 ],
                 "additionalProperties": false,
-                "title": "DeliveryQuoteRequest",
-                "description": "What the buyer would pay to have this basket delivered to this point"
+                "title": "ValidatePromo",
+                "description": "Pre-checkout check: is this code usable on this cart?"
               }
             }
           }
@@ -5702,125 +6685,114 @@
         }
       }
     },
-    "/api/admin/delivery-pricing": {
+    "/api/suppliers/me/promo-codes": {
       "get": {
-        "operationId": "AdminDeliveryPricingController_get",
+        "operationId": "SupplierPromoCodesController_list",
         "tags": [
-          "AdminDeliveryPricing"
+          "SupplierPromoCodes"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
           }
         }
       },
-      "put": {
-        "operationId": "AdminDeliveryPricingController_update",
+      "post": {
+        "operationId": "SupplierPromoCodesController_create",
         "tags": [
-          "AdminDeliveryPricing"
+          "SupplierPromoCodes"
         ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Platform-wide delivery pricing rules (admin-tuned)",
+          "description": "New promo code; supplier scope comes from the route, never the body",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "mode": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 30,
+                    "pattern": "^[A-Z0-9-]+$"
+                  },
+                  "type": {
                     "type": "string",
                     "enum": [
-                      "FLAT",
-                      "DISTANCE",
-                      "ZONES"
+                      "PERCENT",
+                      "FIXED"
                     ],
-                    "title": "DeliveryPricingMode",
-                    "description": "How the platform prices a delivery: one fee, base + per-km, or distance rings"
+                    "title": "PromoType",
+                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
                   },
-                  "flat": {
-                    "type": "object",
-                    "properties": {
-                      "fee": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 1000000
+                  "value": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "maxDiscount": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
                       }
-                    },
-                    "required": [
-                      "fee"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
-                  "distance": {
-                    "type": "object",
-                    "properties": {
-                      "baseFee": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 1000000
+                  "minOrderAmount": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "startsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                       },
-                      "perKm": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 1000000
-                      },
-                      "minFee": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 1000000
-                      },
-                      "maxFee": {
-                        "type": "integer",
-                        "minimum": 0,
-                        "maximum": 1000000
-                      },
-                      "roundTo": {
-                        "type": "integer",
-                        "minimum": 1,
-                        "maximum": 10000
+                      {
+                        "type": "null"
                       }
-                    },
-                    "required": [
-                      "baseFee",
-                      "perKm",
-                      "minFee",
-                      "maxFee",
-                      "roundTo"
-                    ],
-                    "additionalProperties": false
+                    ]
                   },
-                  "zones": {
-                    "minItems": 1,
-                    "maxItems": 10,
-                    "type": "array",
-                    "items": {
-                      "type": "object",
-                      "properties": {
-                        "maxKm": {
-                          "type": "number",
-                          "minimum": 0.1,
-                          "maximum": 500
-                        },
-                        "fee": {
-                          "type": "integer",
-                          "minimum": 0,
-                          "maximum": 1000000
-                        }
+                  "expiresAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
                       },
-                      "required": [
-                        "maxKm",
-                        "fee"
-                      ],
-                      "additionalProperties": false
-                    }
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
-                  "freeFrom": {
+                  "maxUses": {
                     "anyOf": [
                       {
                         "type": "integer",
-                        "minimum": 0,
+                        "exclusiveMinimum": 0,
                         "maximum": 9007199254740991
                       },
                       {
@@ -5828,273 +6800,150 @@
                       }
                     ]
                   },
-                  "maxDistanceKm": {
+                  "maxUsesPerUser": {
+                    "default": 1,
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "code",
+                  "type",
+                  "value",
+                  "minOrderAmount",
+                  "maxUsesPerUser"
+                ],
+                "additionalProperties": false,
+                "title": "CreatePromoCode",
+                "description": "New promo code; supplier scope comes from the route, never the body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/promo-codes/{id}": {
+      "patch": {
+        "operationId": "SupplierPromoCodesController_update",
+        "tags": [
+          "SupplierPromoCodes"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Editable fields — the code itself is immutable once created",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PERCENT",
+                      "FIXED"
+                    ],
+                    "title": "PromoType",
+                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
+                  },
+                  "value": {
                     "type": "number",
-                    "minimum": 0.5,
-                    "maximum": 500
-                  }
-                },
-                "required": [
-                  "mode",
-                  "flat",
-                  "distance",
-                  "zones",
-                  "freeFrom",
-                  "maxDistanceKm"
-                ],
-                "additionalProperties": false,
-                "title": "DeliveryPricingConfig",
-                "description": "Platform-wide delivery pricing rules (admin-tuned)"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/wallet/me": {
-      "get": {
-        "operationId": "WalletController_getMyWallet",
-        "tags": [
-          "Wallet"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/wallet/me/topups": {
-      "get": {
-        "operationId": "WalletController_getMyTopups",
-        "tags": [
-          "Wallet"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/wallet/me/topups/{id}/verify": {
-      "post": {
-        "operationId": "WalletController_verifyTopup",
-        "tags": [
-          "Wallet"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "fedapayTransactionId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                  }
-                },
-                "required": [
-                  "fedapayTransactionId"
-                ],
-                "additionalProperties": false,
-                "title": "VerifyTopup",
-                "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/wallet/topup": {
-      "post": {
-        "operationId": "WalletController_topup",
-        "tags": [
-          "Wallet"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Amount to add to the wallet, paid through FedaPay",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "amount": {
+                    "exclusiveMinimum": 0
+                  },
+                  "maxDiscount": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "minOrderAmount": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "startsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expiresAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxUses": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxUsesPerUser": {
+                    "default": 1,
                     "type": "integer",
-                    "minimum": 100,
-                    "maximum": 1000000
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  },
+                  "isActive": {
+                    "type": "boolean"
                   }
                 },
-                "required": [
-                  "amount"
-                ],
                 "additionalProperties": false,
-                "title": "WalletTopup",
-                "description": "Amount to add to the wallet, paid through FedaPay"
+                "title": "UpdatePromoCode",
+                "description": "Editable fields — the code itself is immutable once created"
               }
             }
           }
         },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/suppliers/me/wallet": {
-      "get": {
-        "operationId": "SupplierWalletController_getWallet",
-        "tags": [
-          "SupplierWallet"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/suppliers/me/wallet/payout-numbers": {
-      "get": {
-        "operationId": "SupplierWalletController_listNumbers",
-        "tags": [
-          "SupplierWallet"
-        ],
-        "parameters": [],
         "responses": {
           "200": {
             "description": ""
           }
         }
       },
-      "post": {
-        "operationId": "SupplierWalletController_addNumber",
-        "tags": [
-          "SupplierWallet"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "phoneNumber": {
-                    "type": "string",
-                    "minLength": 8,
-                    "maxLength": 20
-                  },
-                  "holderName": {
-                    "type": "string",
-                    "minLength": 2,
-                    "maxLength": 100
-                  }
-                },
-                "required": [
-                  "phoneNumber",
-                  "holderName"
-                ],
-                "additionalProperties": false,
-                "title": "CreatePayoutNumber",
-                "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/suppliers/me/wallet/payout-numbers/{id}": {
       "delete": {
-        "operationId": "SupplierWalletController_removeNumber",
+        "operationId": "SupplierPromoCodesController_remove",
         "tags": [
-          "SupplierWallet"
+          "SupplierPromoCodes"
         ],
         "parameters": [
           {
@@ -6113,13 +6962,21 @@
         }
       }
     },
-    "/api/suppliers/me/wallet/withdrawals": {
+    "/api/admin/promo-codes": {
       "get": {
-        "operationId": "SupplierWalletController_listWithdrawals",
+        "operationId": "AdminPromoCodesController_list",
         "tags": [
-          "SupplierWallet"
+          "AdminPromoCodes"
         ],
         "parameters": [
+          {
+            "name": "scope",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
           {
             "name": "page",
             "required": true,
@@ -6144,37 +7001,107 @@
         }
       },
       "post": {
-        "operationId": "SupplierWalletController_requestWithdrawal",
+        "operationId": "AdminPromoCodesController_create",
         "tags": [
-          "SupplierWallet"
+          "AdminPromoCodes"
         ],
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Withdrawal request; funds are reserved immediately",
+          "description": "New promo code; supplier scope comes from the route, never the body",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "payoutNumberId": {
+                  "code": {
                     "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    "minLength": 3,
+                    "maxLength": 30,
+                    "pattern": "^[A-Z0-9-]+$"
                   },
-                  "amount": {
+                  "type": {
+                    "type": "string",
+                    "enum": [
+                      "PERCENT",
+                      "FIXED"
+                    ],
+                    "title": "PromoType",
+                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
+                  },
+                  "value": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "maxDiscount": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "minOrderAmount": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "startsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expiresAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxUses": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxUsesPerUser": {
+                    "default": 1,
                     "type": "integer",
-                    "minimum": 1000,
+                    "exclusiveMinimum": 0,
                     "maximum": 9007199254740991
                   }
                 },
                 "required": [
-                  "payoutNumberId",
-                  "amount"
+                  "code",
+                  "type",
+                  "value",
+                  "minOrderAmount",
+                  "maxUsesPerUser"
                 ],
                 "additionalProperties": false,
-                "title": "CreateWithdrawal",
-                "description": "Withdrawal request; funds are reserved immediately"
+                "title": "CreatePromoCode",
+                "description": "New promo code; supplier scope comes from the route, never the body"
               }
             }
           }
@@ -6186,11 +7113,11 @@
         }
       }
     },
-    "/api/suppliers/me/wallet/withdrawals/{id}/cancel": {
+    "/api/admin/promo-codes/{id}": {
       "patch": {
-        "operationId": "SupplierWalletController_cancelWithdrawal",
+        "operationId": "AdminPromoCodesController_update",
         "tags": [
-          "SupplierWallet"
+          "AdminPromoCodes"
         ],
         "parameters": [
           {
@@ -6202,417 +7129,92 @@
             }
           }
         ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet": {
-      "get": {
-        "operationId": "CourierWalletController_getWallet",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet/payout-numbers": {
-      "get": {
-        "operationId": "CourierWalletController_listNumbers",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
-      "post": {
-        "operationId": "CourierWalletController_addNumber",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix",
+          "description": "Editable fields — the code itself is immutable once created",
           "content": {
             "application/json": {
               "schema": {
                 "type": "object",
                 "properties": {
-                  "phoneNumber": {
+                  "type": {
                     "type": "string",
-                    "minLength": 8,
-                    "maxLength": 20
+                    "enum": [
+                      "PERCENT",
+                      "FIXED"
+                    ],
+                    "title": "PromoType",
+                    "description": "Discount type: percentage of the items subtotal, or fixed amount"
                   },
-                  "holderName": {
-                    "type": "string",
-                    "minLength": 2,
-                    "maxLength": 100
-                  }
-                },
-                "required": [
-                  "phoneNumber",
-                  "holderName"
-                ],
-                "additionalProperties": false,
-                "title": "CreatePayoutNumber",
-                "description": "Mobile Money number to receive withdrawals; operator is derived from the prefix"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet/payout-numbers/{id}": {
-      "delete": {
-        "operationId": "CourierWalletController_removeNumber",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet/withdrawals": {
-      "get": {
-        "operationId": "CourierWalletController_listWithdrawals",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
-      "post": {
-        "operationId": "CourierWalletController_requestWithdrawal",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Withdrawal request; funds are reserved immediately",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "payoutNumberId": {
-                    "type": "string",
-                    "format": "uuid",
-                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  "value": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
                   },
-                  "amount": {
+                  "maxDiscount": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "minOrderAmount": {
+                    "default": 0,
+                    "type": "number",
+                    "minimum": 0
+                  },
+                  "startsAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "expiresAt": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxUses": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "maxUsesPerUser": {
+                    "default": 1,
                     "type": "integer",
-                    "minimum": 1000,
+                    "exclusiveMinimum": 0,
                     "maximum": 9007199254740991
-                  }
-                },
-                "required": [
-                  "payoutNumberId",
-                  "amount"
-                ],
-                "additionalProperties": false,
-                "title": "CreateWithdrawal",
-                "description": "Withdrawal request; funds are reserved immediately"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet/withdrawals/{id}/cancel": {
-      "patch": {
-        "operationId": "CourierWalletController_cancelWithdrawal",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet/topup": {
-      "post": {
-        "operationId": "CourierWalletController_topup",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Amount to add to the wallet, paid through FedaPay",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "amount": {
-                    "type": "integer",
-                    "minimum": 100,
-                    "maximum": 1000000
-                  }
-                },
-                "required": [
-                  "amount"
-                ],
-                "additionalProperties": false,
-                "title": "WalletTopup",
-                "description": "Amount to add to the wallet, paid through FedaPay"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet/topups": {
-      "get": {
-        "operationId": "CourierWalletController_listTopups",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/couriers/me/wallet/topups/{id}/verify": {
-      "post": {
-        "operationId": "CourierWalletController_verifyTopup",
-        "tags": [
-          "CourierWallet"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "fedapayTransactionId": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 64
-                  }
-                },
-                "required": [
-                  "fedapayTransactionId"
-                ],
-                "additionalProperties": false,
-                "title": "VerifyTopup",
-                "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/payout-numbers": {
-      "get": {
-        "operationId": "WalletAdminController_listNumbers",
-        "tags": [
-          "WalletAdmin"
-        ],
-        "parameters": [
-          {
-            "name": "status",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/payout-numbers/{id}": {
-      "patch": {
-        "operationId": "WalletAdminController_actOnNumber",
-        "tags": [
-          "WalletAdmin"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Validate or reject a supplier or courier payout number",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "validate",
-                      "reject"
-                    ]
                   },
-                  "rejectionReason": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 255
+                  "isActive": {
+                    "type": "boolean"
                   }
                 },
-                "required": [
-                  "action"
-                ],
                 "additionalProperties": false,
-                "title": "AdminPayoutNumberAction",
-                "description": "Validate or reject a supplier or courier payout number"
+                "title": "UpdatePromoCode",
+                "description": "Editable fields — the code itself is immutable once created"
               }
             }
           }
@@ -6622,52 +7224,11 @@
             "description": ""
           }
         }
-      }
-    },
-    "/api/admin/withdrawals": {
-      "get": {
-        "operationId": "WalletAdminController_listWithdrawals",
+      },
+      "delete": {
+        "operationId": "AdminPromoCodesController_remove",
         "tags": [
-          "WalletAdmin"
-        ],
-        "parameters": [
-          {
-            "name": "status",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/withdrawals/{id}": {
-      "patch": {
-        "operationId": "WalletAdminController_actOnWithdrawal",
-        "tags": [
-          "WalletAdmin"
+          "AdminPromoCodes"
         ],
         "parameters": [
           {
@@ -6679,90 +7240,6 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "description": "Approve triggers the FedaPay payout; reject re-credits the wallet",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "action": {
-                    "type": "string",
-                    "enum": [
-                      "approve",
-                      "reject"
-                    ]
-                  },
-                  "rejectionReason": {
-                    "type": "string",
-                    "minLength": 3,
-                    "maxLength": 255
-                  }
-                },
-                "required": [
-                  "action"
-                ],
-                "additionalProperties": false,
-                "title": "AdminWithdrawalAction",
-                "description": "Approve triggers the FedaPay payout; reject re-credits the wallet"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/wallet-topups": {
-      "get": {
-        "operationId": "WalletAdminController_listTopups",
-        "tags": [
-          "WalletAdmin"
-        ],
-        "parameters": [
-          {
-            "name": "status",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "page",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "limit",
-            "required": true,
-            "in": "query",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/wallets": {
-      "get": {
-        "operationId": "WalletAdminController_walletsOverview",
-        "tags": [
-          "WalletAdmin"
-        ],
-        "parameters": [],
         "responses": {
           "200": {
             "description": ""
@@ -13205,6 +13682,48 @@
         "title": "DeliveryPricingConfig",
         "description": "Platform-wide delivery pricing rules (admin-tuned)"
       },
+      "BannerOffers": {
+        "type": "object",
+        "properties": {
+          "offers": {
+            "minItems": 1,
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "days": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 365
+                },
+                "price": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 10000000
+                }
+              },
+              "required": [
+                "days",
+                "price"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "paidSlots": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "offers",
+          "paidSlots"
+        ],
+        "additionalProperties": false,
+        "title": "BannerOffers",
+        "description": "Sponsored banner offers (duration / price) and paid slot count"
+      },
       "UpdateUser": {
         "type": "object",
         "properties": {
@@ -15467,6 +15986,88 @@
         "additionalProperties": false,
         "title": "ChangeStaffRole"
       },
+      "CreateBannerRequest": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 60
+          },
+          "subtitle": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "imageUrl": {
+            "type": "string",
+            "maxLength": 1024,
+            "format": "uri"
+          },
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "SUPPLIER",
+              "PRODUCT"
+            ]
+          },
+          "targetId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "durationDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          },
+          "requestedStartAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "title",
+          "imageUrl",
+          "targetType",
+          "durationDays"
+        ],
+        "additionalProperties": false,
+        "title": "CreateBannerRequest",
+        "description": "A shop asks (and pays) for a home banner slot"
+      },
+      "ApproveBannerRequest": {
+        "type": "object",
+        "properties": {
+          "startsAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          },
+          "position": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false,
+        "title": "ApproveBannerRequest"
+      },
+      "RejectBannerRequest": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "RejectBannerRequest"
+      },
       "CreateBanner": {
         "type": "object",
         "properties": {
@@ -15520,6 +16121,30 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "startsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -15586,6 +16211,30 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "startsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "endsAt": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,

@@ -1,4 +1,4 @@
-import type { DeliveryPricingConfigInput, DeliveryQuoteRequest } from './contracts/delivery-pricing.contract'
+import type { BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest } from './contracts/delivery-pricing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
@@ -6,7 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { AuthGuard } from '../auth/auth.guard'
-import { deliveryPricingConfigSchema, deliveryQuoteRequestSchema } from './contracts/delivery-pricing.contract'
+import { bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema } from './contracts/delivery-pricing.contract'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSettingsService } from './platform-settings.service'
 
@@ -39,5 +39,25 @@ export class AdminDeliveryPricingController {
   async update(@TypedBody(deliveryPricingConfigSchema) body: DeliveryPricingConfigInput) {
     await this.platformSettings.setDeliveryPricing(body)
     return this.platformSettings.getDeliveryPricing()
+  }
+}
+
+@Controller('admin/banner-offers')
+@UseGuards(AuthGuard, RolesGuard, CaslGuard)
+@Roles('ADMIN')
+export class AdminBannerOffersController {
+  constructor(private readonly platformSettings: PlatformSettingsService) {}
+
+  @CanRead('Settings')
+  @Get()
+  async get() {
+    return this.platformSettings.getBannerOffers()
+  }
+
+  @CanManage('Settings')
+  @Put()
+  async update(@TypedBody(bannerOffersSchema) body: BannerOffersInput) {
+    await this.platformSettings.setBannerOffers(body)
+    return this.platformSettings.getBannerOffers()
   }
 }

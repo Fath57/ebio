@@ -1,4 +1,6 @@
-import { Entity, Enum, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
+import type { Rel } from '@mikro-orm/core'
+import { Entity, Enum, ManyToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
+import { Supplier } from '../suppliers/supplier.entity'
 
 /** Ce vers quoi une bannière renvoie quand on la touche. */
 export enum BannerTargetType {
@@ -12,7 +14,7 @@ export enum BannerTargetType {
 
 @Entity({ tableName: 'banners' })
 export class Banner {
-  [OptionalProps]?: 'id' | 'subtitle' | 'targetId' | 'targetUrl' | 'isActive' | 'position' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'subtitle' | 'targetId' | 'targetUrl' | 'isActive' | 'position' | 'sponsored' | 'impressions' | 'clicks' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -47,6 +49,30 @@ export class Banner {
   /** Ordre d'affichage croissant dans le carrousel. */
   @Property({ default: 0 })
   position: number = 0
+
+  /** Boutique qui a payé la bannière (null pour l'éditorial eBio). */
+  @ManyToOne(() => Supplier, { fieldName: 'supplier_id', nullable: true })
+  supplier?: Rel<Supplier> | null
+
+  @Property({ default: false })
+  sponsored: boolean = false
+
+  /** Fenêtre de diffusion ; null = sans limite. */
+  @Property({ fieldName: 'starts_at', type: 'Date', nullable: true })
+  startsAt?: Date | null
+
+  @Property({ fieldName: 'ends_at', type: 'Date', nullable: true })
+  endsAt?: Date | null
+
+  @Property({ type: 'int', default: 0 })
+  impressions: number = 0
+
+  @Property({ type: 'int', default: 0 })
+  clicks: number = 0
+
+  isLive(now = new Date()): boolean {
+    return this.isActive && (!this.startsAt || this.startsAt <= now) && (!this.endsAt || this.endsAt > now)
+  }
 
   @Property({ fieldName: 'createdAt' })
   createdAt: Date = new Date()

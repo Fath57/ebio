@@ -25,6 +25,10 @@ export enum WalletTransactionType {
   TIP_EARNING = 'TIP_EARNING',
   /** Shop pays the delivery of a free-delivery promotion it created. */
   DELIVERY_SPONSORSHIP = 'DELIVERY_SPONSORSHIP',
+  /** Shop pays a sponsored banner slot when filing the request. */
+  BANNER_PAYMENT = 'BANNER_PAYMENT',
+  /** Banner request rejected or cancelled: the slot price comes back. */
+  BANNER_REFUND = 'BANNER_REFUND',
 }
 
 /**

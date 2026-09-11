@@ -35,6 +35,21 @@ export class BannersController {
     return this.bannersService.findActive()
   }
 
+  /** Vue d'une bannière dans le carrousel (comptée une fois par affichage). */
+  @Post(':id/impression')
+  @Public()
+  async impression(@Param('id') id: string) {
+    await this.bannersService.count(id, 'impressions')
+    return { ok: true }
+  }
+
+  @Post(':id/click')
+  @Public()
+  async click(@Param('id') id: string) {
+    await this.bannersService.count(id, 'clicks')
+    return { ok: true }
+  }
+
   @Get()
   @Roles('ADMIN', 'SUPER_ADMIN')
   @UseGuards(RolesGuard, CaslGuard)

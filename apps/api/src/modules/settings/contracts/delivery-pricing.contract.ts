@@ -55,6 +55,20 @@ export const deliveryQuoteResponseSchema = z.object({
   description: 'Delivery fee quote for the checkout',
 })
 
+export const bannerOffersSchema = z.object({
+  /** Sellable slots: duration and price, sorted by duration. */
+  offers: z.array(z.object({
+    days: z.number().int().min(1).max(365),
+    price: z.number().int().min(0).max(10_000_000),
+  })).min(1).max(6),
+  /** How many of the carousel's slots may be sponsored at once. */
+  paidSlots: z.number().int().min(0).max(5),
+}).meta({
+  title: 'BannerOffers',
+  description: 'Sponsored banner offers (duration / price) and paid slot count',
+})
+export type BannerOffersInput = z.infer<typeof bannerOffersSchema>
+
 export type DeliveryPricingConfigInput = z.infer<typeof deliveryPricingConfigSchema>
 export type DeliveryQuoteRequest = z.infer<typeof deliveryQuoteRequestSchema>
 export type DeliveryQuoteResponse = z.infer<typeof deliveryQuoteResponseSchema>

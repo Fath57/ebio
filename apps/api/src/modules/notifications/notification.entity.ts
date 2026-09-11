@@ -45,6 +45,9 @@ export enum NotificationType {
   COURIER_RATED = 'COURIER_RATED',
   /** A buyer tipped the courier; the wallet is already credited. */
   COURIER_TIP = 'COURIER_TIP',
+  /** Sponsored banner request reviewed by eBio. */
+  BANNER_APPROVED = 'BANNER_APPROVED',
+  BANNER_REJECTED = 'BANNER_REJECTED',
 }
 
 export enum NotificationChannel {
