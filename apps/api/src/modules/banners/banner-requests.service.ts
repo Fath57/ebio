@@ -6,6 +6,7 @@ import { NotificationChannel, NotificationType } from '../notifications/notifica
 import { NotificationsService } from '../notifications/notifications.service'
 import { Product } from '../products/entities/product.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
+import { StaffInboxService } from '../staff-inbox/staff-inbox.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { WalletService } from '../wallet/wallet.service'
@@ -26,6 +27,7 @@ export class BannerRequestsService {
     private readonly walletService: WalletService,
     private readonly platformSettings: PlatformSettingsService,
     private readonly notifications: NotificationsService,
+    private readonly staffInbox: StaffInboxService,
   ) {}
 
   async listForSupplier(supplierId: string): Promise<BannerRequestResponse[]> {
@@ -87,6 +89,8 @@ export class BannerRequestsService {
     }
     request.paidAt = new Date()
     await this.em.flush()
+    // The team is told at once: the slot is paid and expected within a day.
+    void this.staffInbox.notifyNewBannerRequest({ shopName: supplier.shopName, title: data.title, durationDays: offer.days, price: offer.price })
     return this.findOne(request.id)
   }
 

@@ -85,7 +85,8 @@ function buildService(request: TestRequest | null, options: { pendingCount?: num
   }
   const settings = { getBannerOffers: vi.fn().mockResolvedValue({ offers: [{ days: 7, price: 5000 }, { days: 30, price: 15000 }], paidSlots: 3 }) }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
-  const service = new BannerRequestsService(em as never, walletService as never, settings as never, notifications as never)
+  const staffInbox = { notifyNewBannerRequest: vi.fn().mockResolvedValue(undefined) }
+  const service = new BannerRequestsService(em as never, walletService as never, settings as never, notifications as never, staffInbox as never)
   return { service, em, walletService, notifications, created }
 }
 

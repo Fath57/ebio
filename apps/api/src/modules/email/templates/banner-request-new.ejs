@@ -1,0 +1,16 @@
+<%- include('partials/heading', { text: 'Nouvelle demande de bannière', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<p>
+  La boutique <strong><%= shopName %></strong> vient de payer une bannière
+  « <%= title %> » pour <strong><%= durationDays %> jours</strong>
+  (<%= price.toLocaleString('fr-FR') %> FCFA).
+  Elle attend votre validation, idéalement sous 24 h.
+</p>
+
+<%- include('partials/button', { href: reviewUrl, label: 'Voir la demande', variant: 'primary' }) %>
+
+<p style="font-size: 13px; color: #9B9890;">
+  Un refus rembourse automatiquement la boutique.
+</p>

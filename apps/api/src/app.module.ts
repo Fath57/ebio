@@ -30,6 +30,7 @@ import { PromoCodesModule } from './modules/promo-codes/promo-codes.module'
 import { RatingsModule } from './modules/ratings/ratings.module'
 import { SearchModule } from './modules/search/search.module'
 import { PlatformSettingsModule } from './modules/settings/platform-settings.module'
+import { StaffInboxModule } from './modules/staff-inbox/staff-inbox.module'
 import { SuppliersModule } from './modules/suppliers/suppliers.module'
 import { TrainingModule } from './modules/training/training.module'
 import { UsersModule } from './modules/users/users.module'
@@ -140,6 +141,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     AdminModule,
     AuditModule,
     RolesModule,
+    StaffInboxModule,
     UsersModule,
     MediaModule,
     NotificationsModule,

@@ -7,6 +7,8 @@ export type TemplateName
   = 'reset-password'
     | 'order-invoice'
     | 'staff-invitation'
+    | 'staff-digest'
+    | 'banner-request-new'
     | 'account-suspended'
     | 'account-reinstated'
     | 'verify-email'

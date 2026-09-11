@@ -1,0 +1,17 @@
+<%- include('partials/heading', { text: 'À traiter aujourd\'hui', level: 1 }) %>
+
+<p>Bonjour <strong><%= userName %></strong>,</p>
+
+<p>Voici les files qui attendent une action de votre part ce matin :</p>
+
+<ul style="padding-left: 18px; line-height: 1.8;">
+<% lines.forEach(function (line) { %>
+  <li><a href="<%= line.url %>" style="color: #2E7D32; text-decoration: none;"><%= line.label %></a> : <strong><%= line.count %></strong></li>
+<% }) %>
+</ul>
+
+<%- include('partials/button', { href: lines[0].url, label: 'Ouvrir le back-office', variant: 'primary' }) %>
+
+<p style="font-size: 13px; color: #9B9890;">
+  Vous recevez ce récapitulatif chaque matin tant qu'une file n'est pas vide.
+</p>

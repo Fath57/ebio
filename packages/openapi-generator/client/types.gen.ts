@@ -5427,6 +5427,195 @@ export type MediaControllerFindByEntityResponses = {
   200: unknown;
 };
 
+export type StaffInboxControllerMineData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/inbox";
+};
+
+export type StaffInboxControllerMineResponses = {
+  200: unknown;
+};
+
+export type StaffInboxControllerSendDigestData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/inbox/digest";
+};
+
+export type StaffInboxControllerSendDigestResponses = {
+  201: unknown;
+};
+
+export type RolesControllerFindAllData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles";
+};
+
+export type RolesControllerFindAllResponses = {
+  200: unknown;
+};
+
+export type RolesControllerCreateData = {
+  /**
+   * CreateRole
+   *
+   * A staff role and the permissions it grants
+   */
+  body: {
+    name: string;
+    description?: string;
+    permissionIds?: Array<string>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles";
+};
+
+export type RolesControllerCreateResponses = {
+  201: unknown;
+};
+
+export type RolesControllerGetCatalogData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles/permissions";
+};
+
+export type RolesControllerGetCatalogResponses = {
+  200: unknown;
+};
+
+export type RolesControllerDeleteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/roles/{id}";
+};
+
+export type RolesControllerDeleteResponses = {
+  200: unknown;
+};
+
+export type RolesControllerUpdateData = {
+  /**
+   * UpdateRole
+   */
+  body: {
+    name?: string;
+    description?: string;
+    permissionIds?: Array<string>;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/roles/{id}";
+};
+
+export type RolesControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type RolesControllerAssignRoleData = {
+  /**
+   * AssignRole
+   */
+  body: {
+    userId: string;
+    roleId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/roles/assign";
+};
+
+export type RolesControllerAssignRoleResponses = {
+  201: unknown;
+};
+
+export type StaffControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/staff";
+};
+
+export type StaffControllerListResponses = {
+  200: unknown;
+};
+
+export type StaffControllerInviteData = {
+  /**
+   * InviteStaff
+   *
+   * Add a member to the back-office team
+   */
+  body: {
+    name: string;
+    email: string;
+    roleId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/staff";
+};
+
+export type StaffControllerInviteResponses = {
+  201: unknown;
+};
+
+export type StaffControllerResendInvitationData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/staff/{id}/resend-invitation";
+};
+
+export type StaffControllerResendInvitationResponses = {
+  201: unknown;
+};
+
+export type StaffControllerChangeRoleData = {
+  /**
+   * ChangeStaffRole
+   */
+  body: {
+    roleId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/staff/{id}/role";
+};
+
+export type StaffControllerChangeRoleResponses = {
+  200: unknown;
+};
+
+export type StaffControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/staff/{id}";
+};
+
+export type StaffControllerRemoveResponses = {
+  200: unknown;
+};
+
 export type LandingControllerGetContentData = {
   body?: never;
   path?: never;
@@ -8355,172 +8544,5 @@ export type AdminUsersControllerRecentAuditData = {
 };
 
 export type AdminUsersControllerRecentAuditResponses = {
-  200: unknown;
-};
-
-export type RolesControllerFindAllData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/roles";
-};
-
-export type RolesControllerFindAllResponses = {
-  200: unknown;
-};
-
-export type RolesControllerCreateData = {
-  /**
-   * CreateRole
-   *
-   * A staff role and the permissions it grants
-   */
-  body: {
-    name: string;
-    description?: string;
-    permissionIds?: Array<string>;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/roles";
-};
-
-export type RolesControllerCreateResponses = {
-  201: unknown;
-};
-
-export type RolesControllerGetCatalogData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/roles/permissions";
-};
-
-export type RolesControllerGetCatalogResponses = {
-  200: unknown;
-};
-
-export type RolesControllerDeleteData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/roles/{id}";
-};
-
-export type RolesControllerDeleteResponses = {
-  200: unknown;
-};
-
-export type RolesControllerUpdateData = {
-  /**
-   * UpdateRole
-   */
-  body: {
-    name?: string;
-    description?: string;
-    permissionIds?: Array<string>;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/roles/{id}";
-};
-
-export type RolesControllerUpdateResponses = {
-  200: unknown;
-};
-
-export type RolesControllerAssignRoleData = {
-  /**
-   * AssignRole
-   */
-  body: {
-    userId: string;
-    roleId: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/roles/assign";
-};
-
-export type RolesControllerAssignRoleResponses = {
-  201: unknown;
-};
-
-export type StaffControllerListData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/staff";
-};
-
-export type StaffControllerListResponses = {
-  200: unknown;
-};
-
-export type StaffControllerInviteData = {
-  /**
-   * InviteStaff
-   *
-   * Add a member to the back-office team
-   */
-  body: {
-    name: string;
-    email: string;
-    roleId: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/staff";
-};
-
-export type StaffControllerInviteResponses = {
-  201: unknown;
-};
-
-export type StaffControllerResendInvitationData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/staff/{id}/resend-invitation";
-};
-
-export type StaffControllerResendInvitationResponses = {
-  201: unknown;
-};
-
-export type StaffControllerChangeRoleData = {
-  /**
-   * ChangeStaffRole
-   */
-  body: {
-    roleId: string;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/staff/{id}/role";
-};
-
-export type StaffControllerChangeRoleResponses = {
-  200: unknown;
-};
-
-export type StaffControllerRemoveData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/staff/{id}";
-};
-
-export type StaffControllerRemoveResponses = {
   200: unknown;
 };

@@ -488,6 +488,10 @@ import type {
   StaffControllerRemoveResponses,
   StaffControllerResendInvitationData,
   StaffControllerResendInvitationResponses,
+  StaffInboxControllerMineData,
+  StaffInboxControllerMineResponses,
+  StaffInboxControllerSendDigestData,
+  StaffInboxControllerSendDigestResponses,
   SupplierBannerRequestsControllerCancelData,
   SupplierBannerRequestsControllerCancelResponses,
   SupplierBannerRequestsControllerCreateData,
@@ -2346,6 +2350,162 @@ export const mediaControllerFindByEntity = <
     unknown,
     ThrowOnError
   >({ url: "/api/media/entity/{entityType}/{entityId}", ...options });
+
+export const staffInboxControllerMine = <ThrowOnError extends boolean = false>(
+  options?: Options<StaffInboxControllerMineData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    StaffInboxControllerMineResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/inbox", ...options });
+
+export const staffInboxControllerSendDigest = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<StaffInboxControllerSendDigestData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    StaffInboxControllerSendDigestResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/inbox/digest", ...options });
+
+export const rolesControllerFindAll = <ThrowOnError extends boolean = false>(
+  options?: Options<RolesControllerFindAllData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    RolesControllerFindAllResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/roles", ...options });
+
+export const rolesControllerCreate = <ThrowOnError extends boolean = false>(
+  options: Options<RolesControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RolesControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/roles",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const rolesControllerGetCatalog = <ThrowOnError extends boolean = false>(
+  options?: Options<RolesControllerGetCatalogData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    RolesControllerGetCatalogResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/roles/permissions", ...options });
+
+export const rolesControllerDelete = <ThrowOnError extends boolean = false>(
+  options: Options<RolesControllerDeleteData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    RolesControllerDeleteResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/roles/{id}", ...options });
+
+export const rolesControllerUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<RolesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    RolesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/roles/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const rolesControllerAssignRole = <ThrowOnError extends boolean = false>(
+  options: Options<RolesControllerAssignRoleData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RolesControllerAssignRoleResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/roles/assign",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const staffControllerList = <ThrowOnError extends boolean = false>(
+  options?: Options<StaffControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    StaffControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/staff", ...options });
+
+export const staffControllerInvite = <ThrowOnError extends boolean = false>(
+  options: Options<StaffControllerInviteData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    StaffControllerInviteResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/staff",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const staffControllerResendInvitation = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<StaffControllerResendInvitationData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    StaffControllerResendInvitationResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/staff/{id}/resend-invitation", ...options });
+
+export const staffControllerChangeRole = <ThrowOnError extends boolean = false>(
+  options: Options<StaffControllerChangeRoleData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    StaffControllerChangeRoleResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/staff/{id}/role",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const staffControllerRemove = <ThrowOnError extends boolean = false>(
+  options: Options<StaffControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    StaffControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/staff/{id}", ...options });
 
 export const landingControllerGetContent = <
   ThrowOnError extends boolean = false,
@@ -4464,139 +4624,3 @@ export const adminUsersControllerRecentAudit = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/users/audit/recent", ...options });
-
-export const rolesControllerFindAll = <ThrowOnError extends boolean = false>(
-  options?: Options<RolesControllerFindAllData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    RolesControllerFindAllResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/roles", ...options });
-
-export const rolesControllerCreate = <ThrowOnError extends boolean = false>(
-  options: Options<RolesControllerCreateData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    RolesControllerCreateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/roles",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const rolesControllerGetCatalog = <ThrowOnError extends boolean = false>(
-  options?: Options<RolesControllerGetCatalogData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    RolesControllerGetCatalogResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/roles/permissions", ...options });
-
-export const rolesControllerDelete = <ThrowOnError extends boolean = false>(
-  options: Options<RolesControllerDeleteData, ThrowOnError>,
-) =>
-  (options.client ?? client).delete<
-    RolesControllerDeleteResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/roles/{id}", ...options });
-
-export const rolesControllerUpdate = <ThrowOnError extends boolean = false>(
-  options: Options<RolesControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    RolesControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/roles/{id}",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const rolesControllerAssignRole = <ThrowOnError extends boolean = false>(
-  options: Options<RolesControllerAssignRoleData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    RolesControllerAssignRoleResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/roles/assign",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const staffControllerList = <ThrowOnError extends boolean = false>(
-  options?: Options<StaffControllerListData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    StaffControllerListResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/staff", ...options });
-
-export const staffControllerInvite = <ThrowOnError extends boolean = false>(
-  options: Options<StaffControllerInviteData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    StaffControllerInviteResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/staff",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const staffControllerResendInvitation = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<StaffControllerResendInvitationData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    StaffControllerResendInvitationResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/staff/{id}/resend-invitation", ...options });
-
-export const staffControllerChangeRole = <ThrowOnError extends boolean = false>(
-  options: Options<StaffControllerChangeRoleData, ThrowOnError>,
-) =>
-  (options.client ?? client).patch<
-    StaffControllerChangeRoleResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/staff/{id}/role",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const staffControllerRemove = <ThrowOnError extends boolean = false>(
-  options: Options<StaffControllerRemoveData, ThrowOnError>,
-) =>
-  (options.client ?? client).delete<
-    StaffControllerRemoveResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/staff/{id}", ...options });
