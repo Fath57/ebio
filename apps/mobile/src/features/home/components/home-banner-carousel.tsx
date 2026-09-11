@@ -5,6 +5,20 @@ import { useEffect, useRef, useState } from 'react'
 import { AccessibilityInfo, Image, Linking, Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native'
 import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { apiFetch } from '../../../utils/api-client'
+
+/** Only real banners have a uuid; the home screen fabricates ids for fallbacks. */
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+/** Fire-and-forget counter: a lost hit never disturbs the home screen. */
+function countBanner(id: string, event: 'impression' | 'click'): void {
+  if (!UUID.test(id)) {
+    return
+  }
+  apiFetch(`/api/banners/${id}/${event}`, { method: 'POST' }).catch(() => {
+    // Offline or throttled: nothing to do.
+  })
+}
 
 interface HomeBannerCarouselProps {
   items: HomeBanner[]
@@ -29,6 +43,7 @@ const RESUME_AFTER_TOUCH_MS = 8000
 export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: HomeBannerCarouselProps) {
   /** A banner leads where its type says: a screen, the browser, or nowhere. */
   function handleBannerPress(banner: HomeBanner): void {
+    countBanner(banner.id, 'click')
     if (banner.targetType === 'SUPPLIER' && banner.targetId) {
       onOpenSupplier(banner.targetId)
     }
@@ -49,6 +64,17 @@ export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: Hom
   const [activeIndex, setActiveIndex] = useState(0)
   const [autoplay, setAutoplay] = useState(true)
   const [reduceMotion, setReduceMotion] = useState(false)
+  // One impression per banner per home visit, whatever the autoplay loops.
+  const seenRef = useRef(new Set<string>())
+
+  useEffect(() => {
+    const banner = items[activeIndex]
+    if (!banner || seenRef.current.has(banner.id)) {
+      return
+    }
+    seenRef.current.add(banner.id)
+    countBanner(banner.id, 'impression')
+  }, [items, activeIndex])
 
   const cardWidth = width - spacing[4] * 2 - spacing[8]
   const stride = cardWidth + spacing[3]
