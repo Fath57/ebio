@@ -178,6 +178,7 @@
     "users": "Utilisateurs",
     "validations": "Validations",
     "commissions": "Commissions",
+    "platformAccounts": "Comptes eBio",
     "withdrawals": "Reversements",
     "wallet": "Portefeuille",
     "promoCodes": "Codes promo",
@@ -1521,6 +1522,54 @@
         "status": "Statut",
         "rate": "Taux",
         "commission": "Commission"
+      }
+    },
+    "platformAccounts": {
+      "title": "Comptes eBio",
+      "description": "Ce que la plateforme gagne et ce qu’elle offre, compte par compte",
+      "net": "Net",
+      "netHint": "Recettes moins promotions offertes",
+      "monthly": "Évolution mensuelle",
+      "monthlyEmpty": "Aucun mouvement enregistré",
+      "ledgerDescription": "Détail des mouvements du compte, du plus récent au plus ancien",
+      "ledgerEmpty": "Aucun mouvement sur ce compte",
+      "periods": {
+        "thisMonth": "Ce mois-ci",
+        "lastMonth": "Le mois dernier",
+        "thisYear": "Cette année",
+        "all": "Depuis le début"
+      },
+      "accounts": {
+        "SALES_COMMISSION": {
+          "label": "Commissions sur les ventes",
+          "hint": "Sur les articles des commandes livrées"
+        },
+        "DELIVERY_COMMISSION": {
+          "label": "Part eBio sur les livraisons",
+          "hint": "Ce qui reste des frais après la part du livreur"
+        },
+        "BANNERS": {
+          "label": "Bannières sponsorisées",
+          "hint": "Emplacements payés par les boutiques, remboursements déduits"
+        },
+        "MARKETING": {
+          "label": "Promotions offertes par eBio",
+          "hint": "Réductions, articles offerts et livraisons prises en charge"
+        }
+      },
+      "types": {
+        "PLATFORM_COMMISSION": "Commission",
+        "PLATFORM_DELIVERY_SHARE": "Part livraison",
+        "PLATFORM_BANNER": "Bannière",
+        "PLATFORM_MARKETING": "Promotion offerte",
+        "ADJUSTMENT": "Ajustement"
+      },
+      "columns": {
+        "date": "Date",
+        "type": "Type",
+        "description": "Libellé",
+        "amount": "Montant",
+        "balanceAfter": "Solde après"
       }
     },
     "withdrawals": {

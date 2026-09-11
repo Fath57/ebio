@@ -178,6 +178,7 @@
     "users": "Users",
     "validations": "Validations",
     "commissions": "Commissions",
+    "platformAccounts": "eBio accounts",
     "withdrawals": "Payouts",
     "wallet": "Wallet",
     "promoCodes": "Promo codes",
@@ -1521,6 +1522,54 @@
         "status": "Status",
         "rate": "Rate",
         "commission": "Commission"
+      }
+    },
+    "platformAccounts": {
+      "title": "eBio accounts",
+      "description": "What the platform earns and what it gives away, account by account",
+      "net": "Net",
+      "netHint": "Revenue minus the promotions eBio offers",
+      "monthly": "Monthly trend",
+      "monthlyEmpty": "No movement recorded",
+      "ledgerDescription": "Account movements, most recent first",
+      "ledgerEmpty": "No movement on this account",
+      "periods": {
+        "thisMonth": "This month",
+        "lastMonth": "Last month",
+        "thisYear": "This year",
+        "all": "All time"
+      },
+      "accounts": {
+        "SALES_COMMISSION": {
+          "label": "Sales commission",
+          "hint": "On the items of delivered orders"
+        },
+        "DELIVERY_COMMISSION": {
+          "label": "eBio share on deliveries",
+          "hint": "What is left of the fee after the courier's share"
+        },
+        "BANNERS": {
+          "label": "Sponsored banners",
+          "hint": "Slots paid by shops, refunds deducted"
+        },
+        "MARKETING": {
+          "label": "Promotions offered by eBio",
+          "hint": "Discounts, free items and deliveries covered by eBio"
+        }
+      },
+      "types": {
+        "PLATFORM_COMMISSION": "Commission",
+        "PLATFORM_DELIVERY_SHARE": "Delivery share",
+        "PLATFORM_BANNER": "Banner",
+        "PLATFORM_MARKETING": "Offered promotion",
+        "ADJUSTMENT": "Adjustment"
+      },
+      "columns": {
+        "date": "Date",
+        "type": "Type",
+        "description": "Label",
+        "amount": "Amount",
+        "balanceAfter": "Balance after"
       }
     },
     "withdrawals": {

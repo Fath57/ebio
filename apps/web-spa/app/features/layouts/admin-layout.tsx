@@ -18,6 +18,7 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: '/admin/livraisons', action: 'read', subject: 'Delivery' },
   { prefix: '/admin/transactions', action: 'read', subject: 'Payment' },
   { prefix: '/admin/commissions', action: 'read', subject: 'Payment' },
+  { prefix: '/admin/comptes', action: 'read', subject: 'Payment' },
   { prefix: '/admin/reversements', action: 'read', subject: 'Payment' },
   { prefix: '/admin/codes-promo', action: 'manage', subject: 'PromoCode' },
   { prefix: '/admin/categories', action: 'manage', subject: 'Category' },

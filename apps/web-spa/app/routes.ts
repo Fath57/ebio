@@ -80,6 +80,7 @@ export default [
       route('admin/transactions', 'features/admin/transactions/pages/transactions-page.tsx'),
 
       route('admin/commissions', 'features/admin/commissions/pages/admin-commissions-page.tsx'),
+      route('admin/comptes', 'features/admin/platform-accounts/pages/platform-accounts-page.tsx'),
       route('admin/reversements', 'features/admin/withdrawals/pages/admin-withdrawals-page.tsx'),
       route('admin/codes-promo', 'features/admin/promo-codes/pages/admin-promo-codes-page.tsx'),
 
