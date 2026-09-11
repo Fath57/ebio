@@ -25,7 +25,7 @@ function buildUser(role: UserRole, withDbRole: boolean) {
 }
 
 describe('createForUser', () => {
-  it('gives a staff member exactly the permissions of its DB role', async () => {
+  it('adds the DB role of a staff member on top of the buyer baseline', async () => {
     const { factory } = buildFactory([
       { action: 'read', subject: 'Order' },
       { action: 'manage', subject: 'Delivery' },
@@ -38,8 +38,14 @@ describe('createForUser', () => {
     // `manage` covers every action on its subject, nothing more.
     expect(ability.can('update', 'Delivery')).toBe(true)
     expect(ability.can('manage', 'Order')).toBe(false)
-    expect(ability.can('read', 'Supplier')).toBe(false)
     expect(ability.can('manage', 'all')).toBe(false)
+    // A staff member is a person too: ordering in the client app never
+    // depends on a back-office role mentioning Order.
+    expect(ability.can('create', 'Order')).toBe(true)
+    expect(ability.can('read', 'Supplier')).toBe(true)
+    // The baseline stays app-side: it grants no back-office ability.
+    expect(ability.can('manage', 'Supplier')).toBe(false)
+    expect(ability.can('manage', 'User')).toBe(false)
   })
 
   it('treats a staff member without DB role as super administrator', async () => {

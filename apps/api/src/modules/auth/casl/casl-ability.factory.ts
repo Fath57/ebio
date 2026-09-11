@@ -51,8 +51,12 @@ export class CaslAbilityFactory {
   /**
    * The enum role is the audience (buyer, supplier, courier, staff) and keeps
    * its hardcoded abilities for the apps. A staff member (`ADMIN`) draws its
-   * rights from the DB role assigned by the back-office; without one it is a
-   * super administrator, which keeps the historical accounts working.
+   * back-office rights from the DB role assigned by the team; without one it
+   * is a super administrator, which keeps the historical accounts working.
+   *
+   * Those back-office rights come on top of the ordinary buyer abilities: a
+   * staff member is still a person who orders in the client app, and a role
+   * that does not mention `Order` must not stop them from buying.
    */
   async createForUser(user: User): Promise<AppAbility> {
     const builder = new AbilityBuilder<AppAbility>(createMongoAbility)
@@ -64,6 +68,7 @@ export class CaslAbilityFactory {
         can('manage', 'all')
         return build()
       }
+      this.addBuyerBaseline(can)
       for (const permission of role.permissions.getItems()) {
         const conditions = permission.conditions
           ? this.interpolateConditions(permission.conditions, user)
@@ -145,29 +150,7 @@ export class CaslAbilityFactory {
 
       case UserRole.BUYER:
       default:
-        can('read', 'Product')
-        can('read', 'Supplier')
-        can('read', 'Category')
-        can('create', 'Order')
-        can('read', 'Order')
-        can('update', 'Order')
-        can('create', 'Payment')
-        can('read', 'Payment')
-        can('read', 'Conversation')
-        can('create', 'Conversation')
-        can('create', 'Message')
-        can('read', 'Message')
-        can('create', 'Review')
-        can('read', 'Review')
-        can('read', 'CommunityGroup')
-        can('create', 'Publication')
-        can('read', 'Publication')
-        can('read', 'TrainingModule')
-        can('read', 'Notification')
-        can('create', 'ContentReport')
-        can('create', 'Supplier')
-        can('read', 'Delivery')
-        can('create', 'CourierProfile')
+        this.addBuyerBaseline(can)
         break
     }
 
@@ -191,6 +174,36 @@ export class CaslAbilityFactory {
       action: p.action as Actions,
       subject: p.subject as Subjects,
     }))
+  }
+
+  /**
+   * What any signed-in person may do in the client app. Shared by buyers and
+   * by staff accounts, which are buyers too.
+   */
+  private addBuyerBaseline(can: AbilityBuilder<AppAbility>['can']): void {
+    can('read', 'Product')
+    can('read', 'Supplier')
+    can('read', 'Category')
+    can('create', 'Order')
+    can('read', 'Order')
+    can('update', 'Order')
+    can('create', 'Payment')
+    can('read', 'Payment')
+    can('read', 'Conversation')
+    can('create', 'Conversation')
+    can('create', 'Message')
+    can('read', 'Message')
+    can('create', 'Review')
+    can('read', 'Review')
+    can('read', 'CommunityGroup')
+    can('create', 'Publication')
+    can('read', 'Publication')
+    can('read', 'TrainingModule')
+    can('read', 'Notification')
+    can('create', 'ContentReport')
+    can('create', 'Supplier')
+    can('read', 'Delivery')
+    can('create', 'CourierProfile')
   }
 
   private async loadStaffRole(user: User): Promise<Role | null> {
