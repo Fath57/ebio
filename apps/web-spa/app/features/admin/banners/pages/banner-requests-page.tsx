@@ -353,7 +353,13 @@ function ApproveForm({ request, isPending, isError, onCancel, onSubmit }: Approv
   const form = useForm<ApproveFormData>({
     resolver: zodResolver(approveSchema) as Resolver<ApproveFormData>,
     defaultValues: {
-      startsAt: toDateTimeLocal(request.requestedStartAt),
+      // The shop's choice wins: its requested date if still ahead, otherwise
+      // "dès validation" means now.
+      startsAt: toDateTimeLocal(
+        request.requestedStartAt && new Date(request.requestedStartAt) > new Date()
+          ? request.requestedStartAt
+          : new Date().toISOString(),
+      ),
       position: 0,
     },
   })
