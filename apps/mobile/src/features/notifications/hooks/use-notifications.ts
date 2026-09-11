@@ -345,6 +345,10 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
     case 'STOCK_ALERT':
       navigationRef.navigate('Accueil', { screen: 'SupplierProducts' })
       break
+    case 'BANNER_APPROVED':
+    case 'BANNER_REJECTED':
+      navigationRef.navigate('Accueil', { screen: 'SupplierBannerRequests' })
+      break
     case 'SUPPLIER_VALIDATED':
     case 'SUPPLIER_REJECTED':
     case 'SUPPLIER_COMPLEMENT':
