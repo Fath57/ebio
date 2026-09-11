@@ -4545,6 +4545,76 @@
         }
       }
     },
+    "/api/admin/platform-accounts": {
+      "get": {
+        "operationId": "WalletAdminController_platformOverview",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "from",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "to",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/platform-accounts/{account}/transactions": {
+      "get": {
+        "operationId": "WalletAdminController_platformTransactions",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "account",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/payout-numbers": {
       "get": {
         "operationId": "WalletAdminController_listNumbers",

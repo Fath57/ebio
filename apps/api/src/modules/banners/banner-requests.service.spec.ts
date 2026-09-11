@@ -75,6 +75,8 @@ function buildService(request: TestRequest | null, options: { pendingCount?: num
     flush: vi.fn(),
   }
   const walletService = {
+    // eBio's own books are posted best-effort alongside every movement.
+    post: vi.fn().mockResolvedValue(undefined),
     getOrCreate: vi.fn().mockResolvedValue({ id: 'wallet-shop' }),
     debit: vi.fn(async () => {
       if (options.insufficient)

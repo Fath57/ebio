@@ -34,6 +34,7 @@ import { DeliveryPricingService } from '../settings/delivery-pricing.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
+import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { Dispute } from './entities/dispute.entity'
 import { OrderItem } from './entities/order-item.entity'
@@ -602,6 +603,21 @@ export class OrdersService {
             orderId: order.id,
           })
         }
+
+        // eBio's own books, cash side: the commission it just collected from
+        // the shop, and the cost of its own promotions on this order.
+        await this.walletService.post(PlatformAccount.SALES_COMMISSION, 'credit', {
+          type: WalletTransactionType.PLATFORM_COMMISSION,
+          amount: order.commissionAmount,
+          description: `Commission — commande ${order.orderNumber} (espèces)`,
+          orderId: order.id,
+        })
+        await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
+          type: WalletTransactionType.PLATFORM_MARKETING,
+          amount: order.platformPromoCompensation + (order.discountFundedBy === 'PLATFORM' ? order.discountAmount : 0),
+          description: `Promotions eBio — commande ${order.orderNumber}`,
+          orderId: order.id,
+        })
       }
     }
 

@@ -582,6 +582,10 @@ import type {
   WalletAdminControllerListTopupsResponses,
   WalletAdminControllerListWithdrawalsData,
   WalletAdminControllerListWithdrawalsResponses,
+  WalletAdminControllerPlatformOverviewData,
+  WalletAdminControllerPlatformOverviewResponses,
+  WalletAdminControllerPlatformTransactionsData,
+  WalletAdminControllerPlatformTransactionsResponses,
   WalletAdminControllerWalletsOverviewData,
   WalletAdminControllerWalletsOverviewResponses,
   WalletControllerGetMyTopupsData,
@@ -1818,6 +1822,28 @@ export const courierWalletControllerVerifyTopup = <
       ...options.headers,
     },
   });
+
+export const walletAdminControllerPlatformOverview = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerPlatformOverviewData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerPlatformOverviewResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/platform-accounts", ...options });
+
+export const walletAdminControllerPlatformTransactions = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerPlatformTransactionsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerPlatformTransactionsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/platform-accounts/{account}/transactions", ...options });
 
 export const walletAdminControllerListNumbers = <
   ThrowOnError extends boolean = false,

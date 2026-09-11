@@ -1,5 +1,5 @@
 import type { Rel } from '@mikro-orm/core'
-import { Entity, OneToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
+import { Entity, Enum, OneToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { CourierProfile } from '../../deliveries/entities/courier-profile.entity'
 import { Supplier } from '../../suppliers/supplier.entity'
@@ -8,13 +8,25 @@ import { Supplier } from '../../suppliers/supplier.entity'
  * Internal FCFA balance. The real money sits on the platform's FedaPay
  * account; wallets are the accounting that says who owns what. Exactly one
  * owner: a personal wallet (user), a shop wallet (supplier) or a courier
- * wallet (courier profile), never several — a supplier-user or a
- * courier-user has two separate wallets.
+ * wallet (courier profile), or one of eBio's own accounts (platformAccount),
+ * never several — a supplier-user or a courier-user has two separate wallets.
  *
  * `balance` is only ever written by WalletService inside a SQL transaction
  * holding a row lock, alongside its ledger line. It always equals the sum of
  * the wallet's transactions.
  */
+/** eBio's own accounts: what the platform earned, stream by stream. */
+export enum PlatformAccount {
+  /** Commission on the items of delivered orders. */
+  SALES_COMMISSION = 'SALES_COMMISSION',
+  /** eBio's share of the delivery fees. */
+  DELIVERY_COMMISSION = 'DELIVERY_COMMISSION',
+  /** Sponsored banners paid by shops. */
+  BANNERS = 'BANNERS',
+  /** Cost centre: promotions and deliveries eBio offers. */
+  MARKETING = 'MARKETING',
+}
+
 @Entity({ tableName: 'wallets' })
 export class Wallet {
   [OptionalProps]?: 'id' | 'balance' | 'createdAt' | 'updatedAt'
@@ -30,6 +42,10 @@ export class Wallet {
 
   @OneToOne(() => CourierProfile, { fieldName: 'courier_profile_id', nullable: true, unique: true })
   courier?: Rel<CourierProfile> | null
+
+  /** eBio's own books, one wallet per revenue stream. */
+  @Enum({ items: () => PlatformAccount, fieldName: 'platform_account', nullable: true })
+  platformAccount?: PlatformAccount | null
 
   /** numeric(12,2) — MikroORM hands it over as a string; Number() at the edges. */
   @Property({ columnType: 'numeric(12,2)', default: '0' })

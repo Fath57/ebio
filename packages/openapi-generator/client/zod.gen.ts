@@ -4217,6 +4217,26 @@ export const zCourierWalletControllerVerifyTopupData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zWalletAdminControllerPlatformOverviewData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    from: z.string(),
+    to: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerPlatformTransactionsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    account: z.string(),
+  }),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
 export const zWalletAdminControllerListNumbersData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),

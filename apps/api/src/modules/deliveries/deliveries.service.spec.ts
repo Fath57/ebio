@@ -32,6 +32,8 @@ function buildService() {
   }
   const orders = { applyStatusFromDelivery: vi.fn().mockResolvedValue(undefined) }
   const wallet = {
+    // eBio's own books are posted best-effort alongside every movement.
+    post: vi.fn().mockResolvedValue(undefined),
     getOrCreate: vi.fn().mockResolvedValue({ id: 'wallet-1', balance: '0' }),
     credit: vi.fn().mockResolvedValue(0),
     debit: vi.fn().mockResolvedValue(0),

@@ -4669,6 +4669,36 @@ export type CourierWalletControllerVerifyTopupResponses = {
   201: unknown;
 };
 
+export type WalletAdminControllerPlatformOverviewData = {
+  body?: never;
+  path?: never;
+  query: {
+    from: string;
+    to: string;
+  };
+  url: "/api/admin/platform-accounts";
+};
+
+export type WalletAdminControllerPlatformOverviewResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerPlatformTransactionsData = {
+  body?: never;
+  path: {
+    account: string;
+  };
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/platform-accounts/{account}/transactions";
+};
+
+export type WalletAdminControllerPlatformTransactionsResponses = {
+  200: unknown;
+};
+
 export type WalletAdminControllerListNumbersData = {
   body?: never;
   path?: never;

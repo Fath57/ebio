@@ -9,6 +9,8 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { adminPayoutNumberActionSchema, adminWithdrawalActionSchema } from './contracts/wallet.contract'
+import { PlatformAccount } from './entities/wallet.entity'
+import { PlatformAccountsService } from './platform-accounts.service'
 import { TopupService } from './topup.service'
 import { WithdrawalsService } from './withdrawals.service'
 
@@ -19,7 +21,35 @@ export class WalletAdminController {
   constructor(
     private readonly withdrawalsService: WithdrawalsService,
     private readonly topupService: TopupService,
+    private readonly platformAccounts: PlatformAccountsService,
   ) {}
+
+  /** eBio's own accounts: live balance per revenue stream. */
+  @CanRead('Payment')
+  @Get('platform-accounts')
+  async platformOverview(
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+  ) {
+    const parse = (value?: string): Date | undefined => {
+      const date = value ? new Date(value) : undefined
+      return date && !Number.isNaN(date.getTime()) ? date : undefined
+    }
+    return this.platformAccounts.overview(parse(from), parse(to))
+  }
+
+  @CanRead('Payment')
+  @Get('platform-accounts/:account/transactions')
+  async platformTransactions(
+    @Param('account') account: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    if (!Object.values(PlatformAccount).includes(account as PlatformAccount)) {
+      throw new BadRequestException('Compte inconnu')
+    }
+    return this.platformAccounts.transactions(account as PlatformAccount, Number(page), Number(limit))
+  }
 
   @CanRead('Payment')
   @Get('payout-numbers')

@@ -12,6 +12,7 @@ import { NotificationChannel, NotificationType } from '../notifications/notifica
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, PaymentMethod as OrderPaymentMethod, OrderStatus } from '../orders/entities/order.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
+import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { CommissionService } from './commission.service'
 import { PaymentMethod } from './entities/payment-method.entity'
@@ -421,6 +422,24 @@ export class PaymentsService {
         orderId: payment.order.id,
       })
     }
+
+    // eBio's own books: the commission it just kept, and what its own
+    // promotions cost it on this order.
+    await this.walletService.post(PlatformAccount.SALES_COMMISSION, 'credit', {
+      type: WalletTransactionType.PLATFORM_COMMISSION,
+      amount: payment.order.commissionAmount,
+      description: `Commission — commande ${payment.order.orderNumber}`,
+      orderId: payment.order.id,
+      paymentId: payment.id,
+    })
+    const platformMarketingCost = payment.order.platformPromoCompensation
+      + (payment.order.discountFundedBy === 'PLATFORM' ? payment.order.discountAmount : 0)
+    await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
+      type: WalletTransactionType.PLATFORM_MARKETING,
+      amount: platformMarketingCost,
+      description: `Promotions eBio — commande ${payment.order.orderNumber}`,
+      orderId: payment.order.id,
+    })
 
     payment.status = PaymentStatus.RELEASED
     payment.releasedAt = new Date()

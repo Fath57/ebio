@@ -9,6 +9,7 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { StaffInboxService } from '../staff-inbox/staff-inbox.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
+import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { BannerRequest, BannerRequestStatus } from './banner-request.entity'
 import { Banner, BannerTargetType } from './banner.entity'
@@ -89,6 +90,11 @@ export class BannerRequestsService {
     }
     request.paidAt = new Date()
     await this.em.flush()
+    await this.walletService.post(PlatformAccount.BANNERS, 'credit', {
+      type: WalletTransactionType.PLATFORM_BANNER,
+      amount: offer.price,
+      description: `Bannière ${offer.days} jours — ${supplier.shopName}`,
+    })
     // The team is told at once: the slot is paid and expected within a day.
     void this.staffInbox.notifyNewBannerRequest({ shopName: supplier.shopName, title: data.title, durationDays: offer.days, price: offer.price })
     return this.findOne(request.id)
@@ -157,6 +163,11 @@ export class BannerRequestsService {
     }
     const wallet = await this.walletService.getOrCreate({ supplierId: request.supplier.id })
     await this.walletService.credit(wallet.id, { type: WalletTransactionType.BANNER_REFUND, amount: request.price, description })
+    await this.walletService.post(PlatformAccount.BANNERS, 'debit', {
+      type: WalletTransactionType.PLATFORM_BANNER,
+      amount: request.price,
+      description: `Remboursement bannière — ${request.supplier.shopName}`,
+    })
     request.refundedAt = new Date()
   }
 

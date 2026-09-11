@@ -29,6 +29,14 @@ export enum WalletTransactionType {
   BANNER_PAYMENT = 'BANNER_PAYMENT',
   /** Banner request rejected or cancelled: the slot price comes back. */
   BANNER_REFUND = 'BANNER_REFUND',
+  /** eBio books: commission on the items of a delivered order. */
+  PLATFORM_COMMISSION = 'PLATFORM_COMMISSION',
+  /** eBio books: its share of a delivery fee. */
+  PLATFORM_DELIVERY_SHARE = 'PLATFORM_DELIVERY_SHARE',
+  /** eBio books: a sponsored banner paid (or refunded). */
+  PLATFORM_BANNER = 'PLATFORM_BANNER',
+  /** eBio books: a promotion or a delivery offered by the platform. */
+  PLATFORM_MARKETING = 'PLATFORM_MARKETING',
 }
 
 /**

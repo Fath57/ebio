@@ -1,10 +1,10 @@
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, Injectable } from '@nestjs/common'
+import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { Supplier } from '../suppliers/supplier.entity'
 import { WalletTransaction, WalletTransactionType } from './entities/wallet-transaction.entity'
-import { Wallet } from './entities/wallet.entity'
+import { PlatformAccount, Wallet } from './entities/wallet.entity'
 
 export interface WalletMovement {
   type: WalletTransactionType
@@ -19,11 +19,12 @@ export interface WalletMovement {
   allowNegative?: boolean
 }
 
-/** Exactly one of the three ids: personal, shop or courier wallet. */
+/** Exactly one owner: personal, shop, courier wallet, or an eBio account. */
 export interface WalletOwner {
   userId?: string
   supplierId?: string
   courierId?: string
+  platformAccount?: PlatformAccount
 }
 
 /**
@@ -35,26 +36,32 @@ export interface WalletOwner {
  */
 @Injectable()
 export class WalletService {
+  private readonly logger = new Logger(WalletService.name)
+
   constructor(private readonly em: EntityManager) {}
 
   /** Lazily creates the wallet on first access. */
   async getOrCreate(owner: WalletOwner): Promise<Wallet> {
-    const where = owner.supplierId
-      ? { supplier: { id: owner.supplierId } }
-      : owner.courierId
-        ? { courier: { id: owner.courierId } }
-        : { user: { id: owner.userId } }
+    const where = owner.platformAccount
+      ? { platformAccount: owner.platformAccount }
+      : owner.supplierId
+        ? { supplier: { id: owner.supplierId } }
+        : owner.courierId
+          ? { courier: { id: owner.courierId } }
+          : { user: { id: owner.userId } }
 
     let wallet = await this.em.findOne(Wallet, where)
     if (!wallet) {
       // Concurrent first accesses race to insert; the UNIQUE constraint makes
       // the loser fail, and a re-read returns the winner's row.
       try {
-        wallet = this.em.create(Wallet, owner.supplierId
-          ? { supplier: this.em.getReference(Supplier, owner.supplierId) }
-          : owner.courierId
-            ? { courier: this.em.getReference(CourierProfile, owner.courierId) }
-            : { user: this.em.getReference(User, owner.userId!) })
+        wallet = this.em.create(Wallet, owner.platformAccount
+          ? { platformAccount: owner.platformAccount }
+          : owner.supplierId
+            ? { supplier: this.em.getReference(Supplier, owner.supplierId) }
+            : owner.courierId
+              ? { courier: this.em.getReference(CourierProfile, owner.courierId) }
+              : { user: this.em.getReference(User, owner.userId!) })
         await this.em.persistAndFlush(wallet)
       }
       catch {
@@ -63,6 +70,30 @@ export class WalletService {
       }
     }
     return wallet
+  }
+
+  /**
+   * eBio's side of a movement, posted as it happens so each revenue stream
+   * carries a real balance. Never throws and never blocks: the platform's
+   * own books must not be able to fail a buyer's order or a courier's
+   * settlement. Cost centres are allowed to go negative.
+   */
+  async post(account: PlatformAccount, direction: 'credit' | 'debit', movement: WalletMovement): Promise<void> {
+    if (!(movement.amount > 0)) {
+      return
+    }
+    try {
+      const wallet = await this.getOrCreate({ platformAccount: account })
+      if (direction === 'credit') {
+        await this.credit(wallet.id, movement)
+      }
+      else {
+        await this.debit(wallet.id, { ...movement, allowNegative: true })
+      }
+    }
+    catch (error) {
+      this.logger.error(`Platform posting failed on ${account} (${movement.type})`, error instanceof Error ? error.stack : String(error))
+    }
   }
 
   async getBalance(walletId: string): Promise<number> {

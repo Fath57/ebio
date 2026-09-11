@@ -28,6 +28,7 @@ import { OrdersService } from '../orders/orders.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
+import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { DispatchService } from './dispatch.service'
 import { CourierProfile, VehicleType } from './entities/courier-profile.entity'
@@ -578,6 +579,27 @@ export class DeliveriesService {
           type: WalletTransactionType.DELIVERY_EARNING,
           amount,
           description: `Gain de la course — commande #${order.orderNumber}`,
+          orderId: order.id,
+          deliveryId: delivery.id,
+        })
+      }
+
+      // eBio's own books: its share of the fee, or what an offered delivery
+      // costs it when the platform is the sponsor.
+      if (sponsored && order.deliverySponsor === 'PLATFORM') {
+        await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
+          type: WalletTransactionType.PLATFORM_MARKETING,
+          amount: courierFee,
+          description: `Livraison offerte par eBio — commande #${order.orderNumber}`,
+          orderId: order.id,
+          deliveryId: delivery.id,
+        })
+      }
+      else {
+        await this.walletService.post(PlatformAccount.DELIVERY_COMMISSION, 'credit', {
+          type: WalletTransactionType.PLATFORM_DELIVERY_SHARE,
+          amount: deliveryFee - courierFee,
+          description: `Part eBio sur la livraison — commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
         })
