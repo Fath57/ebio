@@ -1,6 +1,7 @@
 import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
 import type { EmailAttachment } from '../email/email.service'
 import type { CreateDispute, CreateOrder, OrderDeliverySummary, OrderPreview, PreviewOrder } from './contracts/order.contract'
+import type { InvoiceItemData } from './order-format'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
@@ -13,7 +14,6 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
-import { thumbnailUrlFor } from '../../common/media-urls'
 import { User, UserRole } from '../auth/auth.entity'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
 import { VehicleType } from '../deliveries/entities/courier-profile.entity'
@@ -39,6 +39,8 @@ import { WalletService } from '../wallet/wallet.service'
 import { Dispute } from './entities/dispute.entity'
 import { OrderItem } from './entities/order-item.entity'
 import { Order, OrderStatus, PaymentMethod, PickupMode } from './entities/order.entity'
+import { OrderEmailsService } from './order-emails.service'
+import { buildInvoiceItems, formatFcfa, formatInvoiceDate, PAYMENT_LABELS } from './order-format'
 
 interface OrderFilters {
   status?: OrderStatus
@@ -58,44 +60,11 @@ const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 const _FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000
 
 const ROUTE_MAP_CID = 'route-map'
-const INVOICE_TIME_ZONE = 'Africa/Porto-Novo'
-
-const PAYMENT_LABELS: Record<PaymentMethod, string> = {
-  [PaymentMethod.FEDAPAY]: 'FedaPay (paiement en ligne)',
-  [PaymentMethod.WALLET]: 'Portefeuille eBio',
-  [PaymentMethod.CASH_ON_DELIVERY]: 'Espèces à la livraison',
-}
-
 const VEHICLE_LABELS: Record<VehicleType, string> = {
   [VehicleType.MOTO]: 'Moto',
   [VehicleType.BICYCLE]: 'Vélo',
   [VehicleType.CAR]: 'Voiture',
   [VehicleType.ON_FOOT]: 'À pied',
-}
-
-/** `1 200 FCFA` — fr-FR grouping with non-breaking spaces, no decimals. */
-function formatFcfa(amount: number): string {
-  const grouped = Math.round(amount).toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, '\u00A0')
-  return `${grouped}\u00A0FCFA`
-}
-
-function formatInvoiceDate(date: Date): string {
-  return new Intl.DateTimeFormat('fr-FR', {
-    day: 'numeric',
-    month: 'long',
-    year: 'numeric',
-    timeZone: INVOICE_TIME_ZONE,
-  }).format(date)
-}
-
-/** What the `order-invoice` template consumes. Prices are pre-formatted. */
-export interface InvoiceItemData {
-  name: string
-  variant: string | null
-  quantity: number
-  unitPrice: string
-  totalPrice: string
-  thumbnailUrl: string | null
 }
 
 export interface InvoiceData extends Record<string, unknown> {
@@ -175,6 +144,7 @@ export class OrdersService {
     private readonly platformSettings: PlatformSettingsService,
     private readonly deliveryPricing: DeliveryPricingService,
     private readonly promotionsService: PromotionsService,
+    private readonly orderEmails: OrderEmailsService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -309,6 +279,7 @@ export class OrdersService {
     // Cash and wallet orders have no pending payment step: notify at once.
     if (order.paymentMethod !== PaymentMethod.FEDAPAY) {
       await this.sendOrderPlacedNotifications(order)
+      void this.orderEmails.sendOrderPlaced(order.id)
     }
 
     return order
@@ -735,17 +706,7 @@ export class OrdersService {
       }
     }
 
-    const items: InvoiceItemData[] = order.items.getItems().map((item) => {
-      const photo = item.product.photos[0] ?? null
-      return {
-        name: item.product.name,
-        variant: item.variant?.label ?? null,
-        quantity: item.quantity,
-        unitPrice: formatFcfa(item.unitPrice),
-        totalPrice: formatFcfa(item.totalPrice),
-        thumbnailUrl: thumbnailUrlFor(photo) ?? photo,
-      }
-    })
+    const items = buildInvoiceItems(order)
     const subtotal = order.items.getItems().reduce((sum, item) => sum + item.totalPrice, 0)
 
     const data: InvoiceData = {

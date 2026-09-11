@@ -1,0 +1,80 @@
+<!--
+  Order confirmation — sent to the buyer as soon as the order is real.
+  Variables: orderNumber, orderDate, buyerName, shopName,
+    items [{ name, variant?, quantity, unitPrice, totalPrice, thumbnailUrl? }],
+    subtotal, discount?, deliveryFee?, deliveryOffered, total, paymentLabel,
+    isDelivery, deliveryAddress?, deliverySlot?, readyHint, orderUrl
+-->
+<% const font = "'Plus Jakarta Sans', Arial, sans-serif" %>
+<% const cell = `font-family: ${font}; font-size: 14px; color: #2A2924; line-height: 1.5;` %>
+<% const muted = `font-family: ${font}; font-size: 12px; color: #9B9890; line-height: 1.5;` %>
+
+<%- include('partials/heading', { text: 'Votre commande est confirmée', level: 1 }) %>
+
+<p style="<%= cell %>">
+  Bonjour <strong><%= buyerName %></strong>, merci pour votre commande
+  <strong><%= orderNumber %></strong> du <%= orderDate %> chez <strong><%= shopName %></strong>.
+</p>
+
+<p style="<%= muted %>"><%= readyHint %></p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
+  <% items.forEach((item, index) => { %>
+    <tr>
+      <td valign="top" width="72" style="padding: 10px 12px 10px 0; <%= index > 0 ? 'border-top: 1px solid #EDECEA;' : '' %>">
+        <% if (item.thumbnailUrl) { %>
+          <img src="<%= item.thumbnailUrl %>" alt="" width="56" height="56" style="display: block; width: 56px; height: 56px; border-radius: 8px; object-fit: cover; background-color: #F7F6F2;" />
+        <% } else { %>
+          <span style="display: block; width: 56px; height: 56px; border-radius: 8px; background-color: #F7F6F2;"></span>
+        <% } %>
+      </td>
+      <td valign="top" style="padding: 10px 0; <%= index > 0 ? 'border-top: 1px solid #EDECEA;' : '' %> <%= cell %>">
+        <strong><%= item.name %></strong><% if (item.variant) { %><br /><span style="<%= muted %>"><%= item.variant %></span><% } %>
+        <br /><span style="<%= muted %>"><%= item.quantity %> × <%= item.unitPrice %></span>
+      </td>
+      <td valign="top" align="right" style="padding: 10px 0; <%= index > 0 ? 'border-top: 1px solid #EDECEA;' : '' %> <%= cell %>">
+        <%= item.totalPrice %>
+      </td>
+    </tr>
+  <% }) %>
+</table>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 16px; border-top: 1px solid #EDECEA; padding-top: 12px;">
+  <tr>
+    <td style="<%= cell %> padding-top: 12px;">Sous-total</td>
+    <td align="right" style="<%= cell %> padding-top: 12px;"><%= subtotal %></td>
+  </tr>
+  <% if (discount) { %>
+  <tr>
+    <td style="<%= cell %>">Remise</td>
+    <td align="right" style="<%= cell %> color: #1e7a37;">− <%= discount %></td>
+  </tr>
+  <% } %>
+  <% if (isDelivery) { %>
+  <tr>
+    <td style="<%= cell %>">Livraison</td>
+    <td align="right" style="<%= cell %>"><%= deliveryOffered ? 'Offerte' : deliveryFee %></td>
+  </tr>
+  <% } %>
+  <tr>
+    <td style="<%= cell %> font-weight: 700; padding-top: 8px;">Total</td>
+    <td align="right" style="<%= cell %> font-weight: 700; padding-top: 8px;"><%= total %></td>
+  </tr>
+  <tr>
+    <td style="<%= muted %> padding-top: 8px;">Paiement</td>
+    <td align="right" style="<%= muted %> padding-top: 8px;"><%= paymentLabel %></td>
+  </tr>
+</table>
+
+<% if (isDelivery && deliveryAddress) { %>
+  <p style="<%= cell %> margin-top: 20px;">
+    <strong>Livraison</strong><br />
+    <%= deliveryAddress %><% if (deliverySlot) { %><br /><span style="<%= muted %>"><%= deliverySlot %></span><% } %>
+  </p>
+<% } %>
+
+<%- include('partials/button', { href: orderUrl, label: 'Suivre ma commande', variant: 'primary' }) %>
+
+<p style="<%= muted %>">
+  Une question ? Répondez à cet e-mail ou écrivez à la boutique depuis l'application.
+</p>

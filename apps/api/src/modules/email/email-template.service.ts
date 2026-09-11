@@ -6,6 +6,8 @@ import { config } from '../../config/env.config'
 export type TemplateName
   = 'reset-password'
     | 'order-invoice'
+    | 'order-confirmation'
+    | 'order-new-supplier'
     | 'staff-invitation'
     | 'staff-digest'
     | 'banner-request-new'
@@ -18,6 +20,8 @@ export type TemplateName
     | 'supplier-reinstated'
     | 'contact-message'
     | 'order-invoice'
+    | 'order-confirmation'
+    | 'order-new-supplier'
 
 @Injectable()
 export class EmailTemplateService {

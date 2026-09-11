@@ -258,9 +258,21 @@ export default function AdminOrderDetailPage() {
               {order.items.map(item => (
                 <TableRow key={item.id} className={item.isGift ? 'text-muted-foreground' : undefined}>
                   <TableCell>
-                    <span className="flex flex-wrap items-center gap-2">
-                      {item.productName}
-                      {item.isGift && <Badge variant="secondary">{t('admin.orders.detail.gift')}</Badge>}
+                    <span className="flex items-center gap-3">
+                      {item.productThumbnail || item.productPhoto
+                        ? (
+                            <img
+                              src={item.productThumbnail ?? item.productPhoto ?? ''}
+                              alt=""
+                              loading="lazy"
+                              className="size-10 shrink-0 rounded-md object-cover"
+                            />
+                          )
+                        : <span className="bg-muted size-10 shrink-0 rounded-md" />}
+                      <span className="flex flex-wrap items-center gap-2">
+                        {item.productName}
+                        {item.isGift && <Badge variant="secondary">{t('admin.orders.detail.gift')}</Badge>}
+                      </span>
                     </span>
                   </TableCell>
                   <TableCell className="text-right">{item.quantity}</TableCell>

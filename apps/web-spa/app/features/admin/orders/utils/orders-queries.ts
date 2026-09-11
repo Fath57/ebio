@@ -27,6 +27,9 @@ export interface AdminOrderListItem {
 export interface AdminOrderLine {
   id: string
   productName: string
+  /** First product photo, and its thumbnail when the optimised variant exists. */
+  productPhoto: string | null
+  productThumbnail: string | null
   quantity: number
   unitPrice: number
   totalPrice: number

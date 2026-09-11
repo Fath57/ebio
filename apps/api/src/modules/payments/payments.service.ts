@@ -11,6 +11,7 @@ import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, PaymentMethod as OrderPaymentMethod, OrderStatus } from '../orders/entities/order.entity'
+import { OrderEmailsService } from '../orders/order-emails.service'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
@@ -29,6 +30,7 @@ export class PaymentsService {
     private readonly commissionService: CommissionService,
     private readonly gatewayFactory: PaymentGatewayFactory,
     private readonly walletService: WalletService,
+    private readonly orderEmails: OrderEmailsService,
   ) {}
 
   /**
@@ -244,6 +246,7 @@ export class PaymentsService {
     })
 
     await this.sendOrderPlacedNotifications(order.id)
+    void this.orderEmails.sendOrderPlaced(order.id)
 
     return {
       paymentId: payment.id,
@@ -323,6 +326,7 @@ export class PaymentsService {
       })
 
       await this.sendOrderPlacedNotifications(payment.order.id)
+      void this.orderEmails.sendOrderPlaced(payment.order.id)
     }
     else if (webhookResult.status === 'failed') {
       payment.status = PaymentStatus.FAILED

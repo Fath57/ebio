@@ -16,6 +16,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
+import { thumbnailUrlFor } from '../../common/media-urls'
 import { config } from '../../config/env.config'
 import { User, UserRole } from '../auth/auth.entity'
 import { EmailService } from '../email/email.service'
@@ -879,7 +880,7 @@ export class AdminService {
 
     const items = await this.em.getConnection().execute(
       `SELECT oi.id, oi.quantity, oi.unit_price, oi.total_price, oi.is_gift,
-              p.name as product_name
+              p.name as product_name, p.photos->>0 AS product_photo
        FROM order_items oi
        LEFT JOIN products p ON oi.product_id = p.id
        WHERE oi.order_id = ?`,
@@ -927,6 +928,8 @@ export class AdminService {
       items: items.map((i: Record<string, unknown>) => ({
         id: i.id as string,
         productName: (i.product_name as string) ?? 'Produit supprimé',
+        productPhoto: (i.product_photo as string) ?? null,
+        productThumbnail: thumbnailUrlFor(i.product_photo as string | null),
         quantity: Number(i.quantity ?? 0),
         unitPrice: Number(i.unit_price ?? 0),
         totalPrice: Number(i.total_price ?? 0),
