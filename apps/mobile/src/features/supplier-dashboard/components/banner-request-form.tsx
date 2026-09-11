@@ -1,8 +1,9 @@
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import ImagePlus from 'lucide-react-native/dist/esm/icons/image-plus'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Store from 'lucide-react-native/dist/esm/icons/store'
-import { useCallback, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -41,14 +42,34 @@ interface ProductOption {
 
 type TargetType = 'SUPPLIER' | 'PRODUCT'
 
-/** Delay before the banner should go live; `0` = as soon as eBio approves it. */
-type StartDelay = 0 | 3 | 7
-
-const START_OPTIONS: Array<{ delay: StartDelay, label: string }> = [
+/** Delay in days before the banner should go live; `0` = as soon as eBio approves it. */
+const START_OPTIONS: Array<{ delay: number, label: string }> = [
   { delay: 0, label: 'Dès validation' },
   { delay: 3, label: 'Dans 3 jours' },
   { delay: 7, label: 'Dans 7 jours' },
 ]
+const MAX_START_DELAY_DAYS = 60
+/** Rows shown in the product picker before asking to refine the search. */
+const PRODUCT_ROWS = 8
+
+/** Every page of the catalogue: a shop may list far more than one page. */
+async function loadAllProducts(): Promise<Array<Record<string, unknown>>> {
+  const pageSize = 100
+  const all: Array<Record<string, unknown>> = []
+  for (let offset = 0; offset < 1000; offset += pageSize) {
+    const res = await apiFetch(`/api/suppliers/me/products?pageSize=${pageSize}&offset=${offset}`)
+    if (!res.ok) {
+      break
+    }
+    const json = await res.json() as { data?: Array<Record<string, unknown>>, meta?: { hasMore?: boolean } } | Array<Record<string, unknown>>
+    const items = (Array.isArray(json) ? json : json.data ?? []) as Array<Record<string, unknown>>
+    all.push(...items)
+    if (Array.isArray(json) || !json.meta?.hasMore || items.length === 0) {
+      break
+    }
+  }
+  return all
+}
 
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
@@ -88,7 +109,11 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
   const [targetType, setTargetType] = useState<TargetType>('SUPPLIER')
   const [targetId, setTargetId] = useState<string | null>(null)
   const [durationDays, setDurationDays] = useState<number | null>(null)
-  const [startDelay, setStartDelay] = useState<StartDelay>(0)
+  const [startDelay, setStartDelay] = useState(0)
+  const [customDelay, setCustomDelay] = useState(false)
+  const [customDelayText, setCustomDelayText] = useState('')
+  const [productQuery, setProductQuery] = useState('')
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
 
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Insufficient balance: the sheet opens pre-filled with what is missing and
@@ -114,9 +139,9 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
     let cancelled = false
     async function load() {
       try {
-        const [settingsRes, productsRes] = await Promise.all([
+        const [settingsRes, allProducts] = await Promise.all([
           apiFetch('/api/settings/public'),
-          apiFetch('/api/suppliers/me/products?pageSize=100&offset=0'),
+          loadAllProducts(),
         ])
         if (cancelled) {
           return
@@ -127,9 +152,8 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
           setOffers(list)
           setDurationDays(list[0]?.days ?? null)
         }
-        if (productsRes.ok) {
-          const json = await productsRes.json() as { data?: Array<Record<string, unknown>> } | Array<Record<string, unknown>>
-          const items = (Array.isArray(json) ? json : json.data ?? []) as Array<Record<string, unknown>>
+        {
+          const items = allProducts
           setProducts(items.map(p => ({
             id: p.id as string,
             name: p.name as string,
@@ -155,7 +179,19 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
 
   const selectedOffer = offers.find(offer => offer.days === durationDays) ?? null
   const price = selectedOffer?.price ?? 0
-  const isValid = imageUrl !== null
+  const normalizedQuery = productQuery.trim().toLowerCase()
+  const matchingProducts = normalizedQuery
+    ? products.filter(p => p.name.toLowerCase().includes(normalizedQuery))
+    : products
+  // The chosen product stays visible whatever the search says.
+  const visibleProducts = [
+    ...matchingProducts.filter(p => p.id === targetId),
+    ...matchingProducts.filter(p => p.id !== targetId),
+  ].slice(0, PRODUCT_ROWS)
+  const hiddenProducts = Math.max(0, matchingProducts.length - visibleProducts.length)
+  const customDelayValid = !customDelay || (Number(customDelayText) >= 1 && Number(customDelayText) <= MAX_START_DELAY_DAYS)
+  const isValid = customDelayValid
+    && imageUrl !== null
     && title.trim().length > 0
     && title.trim().length <= TITLE_MAX
     && subtitle.trim().length <= SUBTITLE_MAX
@@ -197,8 +233,9 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
       if (targetType === 'PRODUCT' && targetId) {
         body.targetId = targetId
       }
-      if (startDelay > 0) {
-        body.requestedStartAt = new Date(Date.now() + startDelay * 24 * 60 * 60 * 1000).toISOString()
+      const effectiveDelay = customDelay ? Number(customDelayText) || 0 : startDelay
+      if (effectiveDelay > 0) {
+        body.requestedStartAt = new Date(Date.now() + effectiveDelay * 24 * 60 * 60 * 1000).toISOString()
       }
       const res = await apiFetch('/api/suppliers/me/banner-requests', {
         method: 'POST',
@@ -226,7 +263,7 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
     finally {
       setIsSubmitting(false)
     }
-  }, [isValid, selectedOffer, title, imageUrl, targetType, subtitle, targetId, startDelay, loadBalance, onCreated])
+  }, [isValid, selectedOffer, title, imageUrl, targetType, subtitle, targetId, startDelay, customDelay, customDelayText, loadBalance, onCreated])
 
   const handleTopupVerified = useCallback((newBalance: number) => {
     setBalance(newBalance)
@@ -258,7 +295,7 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
   return (
     <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Nouvelle bannière" onBack={onGoBack} />
-      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[10] }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Visual */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Visuel (format 2:1)</Text>
         <TouchableOpacity
@@ -344,13 +381,26 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
         {targetType === 'PRODUCT'
           ? (
               <View style={[styles.productList, { backgroundColor: semantic.bgCard }]}>
+                {products.length > PRODUCT_ROWS
+                  ? (
+                      <TextInput
+                        style={[styles.input, styles.productSearch, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
+                        placeholder={`Rechercher parmi ${products.length} produits…`}
+                        placeholderTextColor={semantic.textTertiary}
+                        value={productQuery}
+                        onChangeText={setProductQuery}
+                        autoCorrect={false}
+                        accessibilityLabel="Rechercher un produit"
+                      />
+                    )
+                  : null}
                 {products.length === 0
                   ? (
                       <Text style={[styles.helper, styles.productEmpty, { color: semantic.textSecondary }]}>
                         Aucun produit dans votre catalogue. Ajoutez-en un ou choisissez « Ma boutique ».
                       </Text>
                     )
-                  : products.map((product, index) => {
+                  : visibleProducts.map((product, index) => {
                       const selected = targetId === product.id
                       return (
                         <TouchableOpacity
@@ -378,6 +428,13 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
                         </TouchableOpacity>
                       )
                     })}
+                {hiddenProducts > 0
+                  ? (
+                      <Text style={[styles.helper, styles.productEmpty, { color: semantic.textTertiary }]}>
+                        {`${hiddenProducts} autre${hiddenProducts > 1 ? 's' : ''} produit${hiddenProducts > 1 ? 's' : ''} — affinez la recherche`}
+                      </Text>
+                    )
+                  : null}
               </View>
             )
           : null}
@@ -418,15 +475,43 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
           {START_OPTIONS.map(option => (
             <TouchableOpacity
               key={option.delay}
-              style={chipStyle(startDelay === option.delay)}
-              onPress={() => setStartDelay(option.delay)}
+              style={chipStyle(!customDelay && startDelay === option.delay)}
+              onPress={() => {
+                setCustomDelay(false)
+                setStartDelay(option.delay)
+              }}
               accessibilityRole="radio"
-              accessibilityState={{ selected: startDelay === option.delay }}
+              accessibilityState={{ selected: !customDelay && startDelay === option.delay }}
             >
-              <Text style={chipTextStyle(startDelay === option.delay)}>{option.label}</Text>
+              <Text style={chipTextStyle(!customDelay && startDelay === option.delay)}>{option.label}</Text>
             </TouchableOpacity>
           ))}
+          <TouchableOpacity
+            style={chipStyle(customDelay)}
+            onPress={() => setCustomDelay(true)}
+            accessibilityRole="radio"
+            accessibilityState={{ selected: customDelay }}
+          >
+            <Text style={chipTextStyle(customDelay)}>Autre</Text>
+          </TouchableOpacity>
         </View>
+        {customDelay
+          ? (
+              <View style={styles.customDelayRow}>
+                <Text style={[styles.helper, { color: semantic.textSecondary, marginTop: 0 }]}>Dans</Text>
+                <TextInput
+                  style={[styles.input, styles.customDelayInput, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
+                  keyboardType="number-pad"
+                  value={customDelayText}
+                  onChangeText={text => setCustomDelayText(text.replace(/\D/g, '').slice(0, 2))}
+                  placeholder="10"
+                  placeholderTextColor={semantic.textTertiary}
+                  accessibilityLabel="Nombre de jours avant la mise en ligne"
+                />
+                <Text style={[styles.helper, { color: semantic.textSecondary, marginTop: 0 }]}>{`jours (max ${MAX_START_DELAY_DAYS})`}</Text>
+              </View>
+            )
+          : null}
 
         {/* Summary */}
         <View style={[styles.summaryCard, { backgroundColor: semantic.bgCard }]}>
@@ -530,6 +615,9 @@ const styles = StyleSheet.create({
   },
   productThumb: { width: 36, height: 36, borderRadius: radius.sm, backgroundColor: colors.neutral[100] },
   productName: { ...typography.bodyL, flex: 1 },
+  productSearch: { marginHorizontal: spacing[3], marginTop: spacing[3], marginBottom: spacing[2] },
+  customDelayRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[2], marginTop: spacing[3] },
+  customDelayInput: { width: 72, textAlign: 'center' },
 
   summaryCard: {
     marginTop: spacing[6],
