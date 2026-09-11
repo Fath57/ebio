@@ -35,6 +35,10 @@ interface BasketSuggestionsProps {
   limit?: number
   /** Makes the card itself open the product. */
   onOpenProduct?: (productId: string) => void
+  /** Already-fetched suggestions; skips the request when the caller has them. */
+  items?: RecommendedProduct[]
+  /** Hides the section heading when the surrounding screen already has one. */
+  hideTitle?: boolean
 }
 
 interface SuggestionCardProps {
@@ -108,10 +112,15 @@ export function BasketSuggestions({
   title = 'Complétez votre panier',
   limit = 4,
   onOpenProduct,
+  items: providedItems,
+  hideTitle = false,
 }: BasketSuggestionsProps) {
   const { semantic } = useTheme()
   const { groups, addItem } = useCart()
-  const { items } = useRecommendations(supplierId, productIds, limit)
+  // The caller may already hold the list (the checkout upsell does): asking
+  // again would just duplicate the request.
+  const fetched = useRecommendations(providedItems ? null : supplierId, productIds, limit)
+  const items = providedItems ?? fetched.items
 
   if (items.length === 0 || supplierId === null) {
     return null
@@ -139,7 +148,7 @@ export function BasketSuggestions({
 
   return (
     <View style={styles.container}>
-      <Text style={[styles.title, { color: semantic.textPrimary }]}>{title}</Text>
+      {hideTitle ? null : <Text style={[styles.title, { color: semantic.textPrimary }]}>{title}</Text>}
       <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.rail}>
         {items.map(item => (
           <SuggestionCard

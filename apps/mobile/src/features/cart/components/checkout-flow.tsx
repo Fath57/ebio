@@ -35,6 +35,7 @@ import { LocationPickerScreen } from '../../map/components/location-picker-scree
 import { geocodeAddress } from '../../map/utils/geocode-address'
 import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
+import { useRecommendations } from '../hooks/use-recommendations'
 import { BasketSuggestions } from './basket-suggestions'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
@@ -307,6 +308,9 @@ export function CheckoutFlow({
     setPickerOpen(true)
   }, [deliveryPosition, deliveryAddress])
   const skipPositionRef = useRef(false)
+  // The upsell is offered once per checkout, on the way to the payment.
+  const upsellShownRef = useRef(false)
+  const [upsellOpen, setUpsellOpen] = useState(false)
   const { latitude: currentLatitude, longitude: currentLongitude } = useLocation()
   const [deliverySlot, setDeliverySlot] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -347,6 +351,7 @@ export function CheckoutFlow({
     [liveGroup, orderSummary.items],
   )
   const basketProductIds = useMemo(() => basketItems.map(item => item.productId), [basketItems])
+  const { items: upsellItems } = useRecommendations(orderSummary.supplierId, basketProductIds, 4)
   // Single source of truth for the summary: promotions, gifts, promo code and
   // delivery fee are all priced by the API.
   const previewInput = useMemo(() => ({
@@ -463,6 +468,13 @@ export function CheckoutFlow({
       appAlert('Adresse trop courte', 'Indiquez le quartier et un repère (ex. en face de la pharmacie) pour que le livreur vous trouve.')
       return
     }
+    // One last chance to round out the basket, just before paying.
+    if (!upsellShownRef.current && upsellItems.length > 0) {
+      upsellShownRef.current = true
+      setUpsellOpen(true)
+      return
+    }
+
     // Insist on the map point without blocking: an address alone is often
     // not enough for the courier to find the door.
     if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryPosition && !skipPositionRef.current) {
@@ -578,7 +590,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, basketItems, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked])
+  }, [orderSummary, basketItems, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems])
 
   const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
     try {
@@ -724,12 +736,6 @@ export function CheckoutFlow({
                 isLast={index === summaryLines.length - 1}
               />
             ))}
-
-            <BasketSuggestions
-              supplierId={orderSummary.supplierId}
-              supplierName={orderSummary.supplierName}
-              productIds={basketProductIds}
-            />
 
             {/* Promo code */}
             <View style={styles.promoRow}>
@@ -907,6 +913,41 @@ export function CheckoutFlow({
                 )}
           </TouchableOpacity>
         </View>
+
+        <Modal
+          visible={upsellOpen}
+          transparent
+          animationType="slide"
+          onRequestClose={() => setUpsellOpen(false)}
+        >
+          <View style={styles.upsellBackdrop}>
+            <View style={[styles.upsellSheet, { backgroundColor: semantic.bgPage }]}>
+              <Text style={[styles.upsellTitle, { color: semantic.textPrimary }]}>Avant de valider</Text>
+              <Text style={[styles.upsellSubtitle, { color: semantic.textSecondary }]}>
+                Ces produits accompagnent souvent une commande comme la vôtre. Ajoutez-les en un geste, votre total se met à jour.
+              </Text>
+              <BasketSuggestions
+                supplierId={orderSummary.supplierId}
+                supplierName={orderSummary.supplierName}
+                productIds={basketProductIds}
+                items={upsellItems}
+                hideTitle
+              />
+              <TouchableOpacity
+                style={styles.upsellContinue}
+                onPress={() => {
+                  setUpsellOpen(false)
+                  void handleProceedToPayment()
+                }}
+                activeOpacity={0.85}
+                accessibilityRole="button"
+                accessibilityLabel="Continuer vers le paiement"
+              >
+                <Text style={styles.upsellContinueText}>Continuer</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
 
         <Modal visible={pickerOpen} animationType="slide" onRequestClose={() => setPickerOpen(false)}>
           <LocationPickerScreen
@@ -1192,6 +1233,39 @@ const styles = StyleSheet.create({
   },
 
   // Payment info
+  upsellBackdrop: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0, 0, 0, 0.45)',
+  },
+  upsellSheet: {
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    paddingTop: spacing[5],
+    paddingBottom: spacing[6],
+  },
+  upsellTitle: {
+    ...typography.h2,
+    paddingHorizontal: spacing[4],
+  },
+  upsellSubtitle: {
+    ...typography.bodyS,
+    paddingHorizontal: spacing[4],
+    marginTop: spacing[1],
+  },
+  upsellContinue: {
+    marginHorizontal: spacing[4],
+    marginTop: spacing[2],
+    height: 52,
+    borderRadius: radius.pill,
+    backgroundColor: colors.green[400],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  upsellContinueText: {
+    ...typography.h3,
+    color: colors.neutral[0],
+  },
   promoRow: {
     flexDirection: 'row',
     gap: spacing[2],
