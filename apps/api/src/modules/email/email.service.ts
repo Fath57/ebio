@@ -78,7 +78,8 @@ export class EmailService {
   }: EmailOptions): Promise<void> {
     try {
       const mailOptions = {
-        from: config.email.from,
+        // Object form so nodemailer encodes the display name properly.
+        from: { name: config.email.fromName, address: config.email.from },
         to,
         subject,
         text: content,

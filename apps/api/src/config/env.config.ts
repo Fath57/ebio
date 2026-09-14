@@ -64,6 +64,8 @@ export const configValidationSchema = z.object({
   EMAIL_USER: z.string().optional(),
   EMAIL_PASSWORD: z.string().optional(),
   EMAIL_FROM: z.string().email().default('noreply@ebio.app'),
+  /** Display name shown instead of the bare address in a mail client. */
+  EMAIL_FROM_NAME: z.string().default('eBio'),
 
   // AI Providers
   OPENAI_API_KEY: z.string().optional(), // OpenAI
@@ -169,6 +171,7 @@ export const config = {
     user: configParsed.data.EMAIL_USER,
     password: configParsed.data.EMAIL_PASSWORD,
     from: configParsed.data.EMAIL_FROM,
+    fromName: configParsed.data.EMAIL_FROM_NAME,
   },
   clients: {
     webApp: {
