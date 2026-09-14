@@ -34,6 +34,8 @@ ENV NODE_ENV=production
 COPY --from=builder /app/api/node_modules ./node_modules
 COPY --from=builder /app/apps/api/dist ./dist
 COPY --from=builder /app/api/package.json ./package.json
+# Static assets served at /static (the e-mail logo lives here).
+COPY --from=builder /app/apps/api/public ./public
 
 # Expose port
 EXPOSE 3000
