@@ -49,7 +49,7 @@ describe('emailService', () => {
       await service.sendEmail(emailOptions)
 
       expect(mockSendMail).toHaveBeenCalledWith({
-        from: expect.any(String),
+        from: { name: expect.any(String), address: expect.any(String) },
         to: emailOptions.to,
         subject: emailOptions.subject,
         text: emailOptions.content,
@@ -76,7 +76,7 @@ describe('emailService', () => {
       await service.sendEmail(emailOptions)
 
       expect(mockSendMail).toHaveBeenCalledWith({
-        from: expect.any(String),
+        from: { name: expect.any(String), address: expect.any(String) },
         to: emailOptions.to,
         subject: emailOptions.subject,
         text: emailOptions.content,
