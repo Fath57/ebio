@@ -2,6 +2,7 @@ import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { FaqManager } from '../components/faq-manager'
+import { ScreensCard } from '../components/screens-card'
 import {
   ContactCard,
   FooterCard,
@@ -11,7 +12,7 @@ import {
   SupplierCard,
   TrustCard,
 } from '../components/section-cards'
-import { fetchLandingContentQueryOptions, fetchLandingFaqsQueryOptions } from '../utils/site-queries'
+import { EMPTY_SCREENS, fetchLandingContentQueryOptions, fetchLandingFaqsQueryOptions } from '../utils/site-queries'
 
 export default function SitePage() {
   const { t } = useTranslation()
@@ -38,6 +39,7 @@ export default function SitePage() {
       <HeroCard initial={content.hero} />
       <TrustCard initial={content.trust} />
       <StepsCard initial={content.steps} />
+      <ScreensCard initial={content.screens ?? EMPTY_SCREENS} />
       <SupplierCard initial={content.supplier} />
       <FooterCard initial={content.footer} />
       <ContactCard initial={content.contact} />

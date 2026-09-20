@@ -29,6 +29,20 @@ export interface LandingStep {
   body: string
 }
 
+export interface LandingScreen {
+  /** Absolute media URL once edited from the backoffice, bundled asset before. */
+  imageUrl: string
+  caption: string
+  alt: string
+}
+
+export interface LandingScreens {
+  eyebrow: string
+  title: string
+  body: string
+  screens: LandingScreen[]
+}
+
 export interface LandingSupplier {
   eyebrow: string
   title: string
@@ -53,6 +67,7 @@ export interface LandingContent {
   stores: LandingStores
   trust: { points: LandingTrustPoint[] }
   steps: { eyebrow: string, title: string, steps: LandingStep[] }
+  screens: LandingScreens
   supplier: LandingSupplier
   footer: LandingFooter
   faq: LandingFaqItem[]
@@ -106,6 +121,28 @@ export const DEFAULT_CONTENT: LandingContent = {
       },
     ],
   },
+  screens: {
+    eyebrow: 'L’application',
+    title: 'Le marché bio, dans votre poche',
+    body: 'Les boutiques autour de vous, leurs produits du moment et vos commandes, réunis dans une seule application.',
+    screens: [
+      {
+        imageUrl: '/captures/accueil.webp',
+        caption: 'L’accueil, avec les boutiques autour de vous',
+        alt: 'Écran d’accueil de l’app eBio : position Cotonou, catégories de produits et promotions du moment',
+      },
+      {
+        imageUrl: '/captures/carte.webp',
+        caption: 'La carte, et les boutiques Validé eBio',
+        alt: 'La carte eBio autour de Cotonou avec la fiche d’une boutique validée et sa distance',
+      },
+      {
+        imageUrl: '/captures/boutique.webp',
+        caption: 'La fiche boutique, du contact à la commande',
+        alt: 'La fiche de la boutique Granges d’Afrique : contact, horaires, itinéraire et jus en promotion en FCFA',
+      },
+    ],
+  },
   supplier: {
     eyebrow: 'Producteurs & transformateurs',
     title: 'Votre étal, visible de toute la ville',
@@ -153,11 +190,14 @@ export function mergeContent(remote: unknown): LandingContent {
     return DEFAULT_CONTENT
   }
   const data = remote as Record<string, unknown>
+  // A carousel without a single image is worse than the shipped captures.
+  const screens = pick(data.screens, DEFAULT_CONTENT.screens)
   return {
     hero: pick(data.hero, DEFAULT_CONTENT.hero),
     stores: pick(data.stores, DEFAULT_CONTENT.stores),
     trust: pick(data.trust, DEFAULT_CONTENT.trust),
     steps: pick(data.steps, DEFAULT_CONTENT.steps),
+    screens: Array.isArray(screens.screens) && screens.screens.length > 0 ? screens : DEFAULT_CONTENT.screens,
     supplier: pick(data.supplier, DEFAULT_CONTENT.supplier),
     footer: pick(data.footer, DEFAULT_CONTENT.footer),
     faq: Array.isArray(data.faq) && data.faq.length > 0

@@ -1194,6 +1194,23 @@
         "stepTitle": "Titre de l'étape",
         "stepBody": "Texte de l'étape"
       },
+      "screens": {
+        "title": "Écrans de l'application",
+        "description": "Le carrousel de captures d'écran du site. Ajoutez autant d'images que vous voulez, elles défilent.",
+        "eyebrow": "Sur-titre",
+        "sectionTitle": "Titre de la section",
+        "body": "Texte d'introduction",
+        "image": "Image",
+        "imageHint": "Une capture d'écran du téléphone, en portrait",
+        "caption": "Légende sous l'image",
+        "alt": "Description de l'image",
+        "altHint": "Lue par les lecteurs d'écran et par Google, quand l'image ne s'affiche pas",
+        "screenNumber": "Écran",
+        "add": "Ajouter un écran",
+        "remove": "Supprimer cet écran",
+        "moveUp": "Monter",
+        "moveDown": "Descendre"
+      },
       "supplier": {
         "title": "Section fournisseurs",
         "description": "La bande verte destinée aux producteurs et transformateurs",

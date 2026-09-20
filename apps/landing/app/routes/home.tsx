@@ -146,7 +146,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </div>
         </section>
 
-        <AppScreens />
+        <AppScreens content={content.screens} />
 
         {/* Producers and processors: reach beyond the neighborhood */}
         <section id="fournisseurs" className="scroll-mt-20 bg-green-900 text-paper">

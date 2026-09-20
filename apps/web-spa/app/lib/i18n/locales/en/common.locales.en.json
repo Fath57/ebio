@@ -1194,6 +1194,23 @@
         "stepTitle": "Step title",
         "stepBody": "Step text"
       },
+      "screens": {
+        "title": "App screens",
+        "description": "The screenshot carousel of the site. Add as many images as you like, they scroll.",
+        "eyebrow": "Eyebrow",
+        "sectionTitle": "Section title",
+        "body": "Introduction text",
+        "image": "Image",
+        "imageHint": "A phone screenshot, in portrait",
+        "caption": "Caption under the image",
+        "alt": "Image description",
+        "altHint": "Read by screen readers and by Google, when the image does not load",
+        "screenNumber": "Screen",
+        "add": "Add a screen",
+        "remove": "Remove this screen",
+        "moveUp": "Move up",
+        "moveDown": "Move down"
+      },
       "supplier": {
         "title": "Suppliers section",
         "description": "The green band for producers and processors",

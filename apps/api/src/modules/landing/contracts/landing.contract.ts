@@ -43,6 +43,24 @@ export const landingStepsSchema = z.object({
   steps: z.array(stepSchema).length(3),
 }).meta({ title: 'LandingSteps' })
 
+const screenSchema = z.object({
+  /** Absolute URL of the uploaded capture, served by the media bucket. */
+  imageUrl: z.string().url('Chaque écran doit avoir une image').max(1000),
+  caption: z.string().min(1, 'Chaque écran doit avoir une légende').max(160),
+  alt: z.string().min(1, 'Chaque écran doit avoir une description d’image').max(300),
+})
+
+/**
+ * The captures carousel. Deliberately unbounded: the section is a slider, so
+ * the number of screens is an editorial choice, not a layout constraint.
+ */
+export const landingScreensSchema = z.object({
+  eyebrow: z.string().min(1).max(80),
+  title: z.string().min(1).max(160),
+  body: z.string().min(1).max(500),
+  screens: z.array(screenSchema).min(1, 'Ajoutez au moins un écran'),
+}).meta({ title: 'LandingScreens' })
+
 export const landingSupplierSchema = z.object({
   eyebrow: z.string().min(1).max(80),
   title: z.string().min(1).max(160),
@@ -70,6 +88,7 @@ export const LANDING_SECTION_SCHEMAS = {
   stores: landingStoresSchema,
   trust: landingTrustSchema,
   steps: landingStepsSchema,
+  screens: landingScreensSchema,
   supplier: landingSupplierSchema,
   footer: landingFooterSchema,
   contact: landingContactSchema,

@@ -32,6 +32,19 @@ export interface LandingSteps {
   steps: Array<{ title: string, body: string }>
 }
 
+export interface LandingScreen {
+  imageUrl: string
+  caption: string
+  alt: string
+}
+
+export interface LandingScreens {
+  eyebrow: string
+  title: string
+  body: string
+  screens: LandingScreen[]
+}
+
 export interface LandingSupplier {
   eyebrow: string
   title: string
@@ -55,6 +68,7 @@ export interface LandingContent {
   stores: LandingStores
   trust: LandingTrust
   steps: LandingSteps
+  screens: LandingScreens
   supplier: LandingSupplier
   footer: LandingFooter
   contact: LandingContact
@@ -68,6 +82,17 @@ export interface LandingFaq {
   answer: string
   isActive: boolean
   sortOrder: number
+}
+
+/**
+ * The captures section is the only one that can be missing: it was added after
+ * the seed, so a base where the SQL has not been replayed still edits it.
+ */
+export const EMPTY_SCREENS: LandingScreens = {
+  eyebrow: 'L’application',
+  title: 'Le marché bio, dans votre poche',
+  body: 'Les boutiques autour de vous, leurs produits du moment et vos commandes, réunis dans une seule application.',
+  screens: [],
 }
 
 export function fetchLandingContentQueryOptions() {

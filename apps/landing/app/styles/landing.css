@@ -71,6 +71,19 @@ body {
   text-transform: uppercase;
 }
 
+/*
+ * Captures slider: the scrollbar under the phones would read as a page
+ * artifact, and the track is already navigable by swipe, arrows and dots.
+ */
+.slider-track {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.slider-track::-webkit-scrollbar {
+  display: none;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
