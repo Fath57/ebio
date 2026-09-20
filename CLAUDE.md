@@ -14,6 +14,17 @@ Read all the documentation cited in the README.md file that could be useful to u
 
 You must always follow these guidelines.
 
+## Design (front-end)
+
+Brand rules, color/typography/spacing tokens and the review checklist live in
+[.claude/context/design-principles.md](./.claude/context/design-principles.md).
+Read it before writing UI code — the charter wins over what the code currently does.
+
+Run `/design-review` before finalizing a visual change: it opens the affected
+screens in Chrome and reports blockers, responsive and accessibility issues.
+Mobile (React Native) is out of the browser's reach; review it on device captures
+against the same checklist.
+
 ## Active Technologies
 - TypeScript (strict mode) on Node.js 24.13.0 (001-ebio-marketplace-v1)
 - PostgreSQL + PostGIS (geospatial queries), Redis (cache, sessions, rate limiting, WebSocket adapter), Cloudflare R2 (S3-compatible file storage) (001-ebio-marketplace-v1)
