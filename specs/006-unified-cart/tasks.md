@@ -3,6 +3,38 @@
 **Feature**: 006-unified-cart · **Branch**: `006-unified-cart` · **Date**: 2026-09-21
 **Input**: [spec.md](./spec.md) · [plan.md](./plan.md) · [research.md](./research.md) · [data-model.md](./data-model.md) · [contracts/](./contracts/)
 
+## État au 2026-09-21
+
+**Phases 1 et 2 terminées, phase 3 terminée, phase 4 entamée.** 10 commits sur
+la branche, de `b67564a` à `60bdfdd`.
+
+Ce qui est fait est **éprouvé contre la base locale**, pas seulement typé : un
+panier à deux boutiques crée un checkout, deux commandes rattachées, un frais
+de livraison unique calculé sur la distance de tournée, un encaissement unique,
+et une tournée avec sa rémunération.
+
+**Non couvert** : la confirmation FedaPay (transaction réelle requise), et tout
+le dispatch — il se juge sur un livreur qui reçoit, accepte, collecte et livre.
+
+**Arbitrages rendus en chemin**, à confirmer :
+
+- **T038, rémunération d'une tournée** : `computeCourierFee` appliquée au frais
+  unique, soit la règle existante sur le trajet réel. Implémenté.
+- **Code promo multi-boutiques** : refusé au-delà d'une boutique. Un code
+  appartient à une boutique ; l'appliquer à chacune multiplierait une remise à
+  montant fixe. Le message propose de commander cette boutique à part.
+- **Frais de livraison** : portés par le checkout, les commandes d'un panier
+  unifié en portent 0. Sinon ils seraient facturés N fois.
+
+**Corrections au modèle décidées en exécutant**, contre ce que disaient plan et
+spec :
+
+- Le lien checkout → commandes passe par `orders.checkout_id`, pas par le
+  paiement : en espèces à la livraison aucun paiement n'existe.
+- Les numéros de commande sont alloués en amont : le compteur passe par une
+  requête brute qui ne voit pas les insertions d'une transaction, et les
+  commandes d'un même panier recevaient le même numéro.
+
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]** : parallélisable — fichiers distincts, aucune dépendance sur une tâche inachevée
@@ -26,9 +58,9 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 ## Phase 1 : Setup (infrastructure partagée)
 
-- [ ] T001 Créer la migration `apps/api/src/modules/db/migrations/` pour les tables `checkouts` et `delivery_runs`, avec les colonnes décrites dans data-model.md
-- [ ] T002 Ajouter dans la même migration les colonnes de rattachement `payments.checkout_id` et `deliveries.delivery_run_id`, toutes deux nullables, avec leurs index
-- [ ] T003 Générer le SQL équivalent dans `apps/api/scripts/2026-XX-XX-unified-cart.sql` pour application en production avant bascule du conteneur, le registre `mikro_orm_migrations` de prod ne supportant pas `migration:up` sans `--only`
+- [x] T001 Créer la migration `apps/api/src/modules/db/migrations/` pour les tables `checkouts` et `delivery_runs`, avec les colonnes décrites dans data-model.md
+- [x] T002 Ajouter dans la même migration les colonnes de rattachement `payments.checkout_id` et `deliveries.delivery_run_id`, toutes deux nullables, avec leurs index
+- [x] T003 Générer le SQL équivalent dans `apps/api/scripts/2026-XX-XX-unified-cart.sql` pour application en production avant bascule du conteneur, le registre `mikro_orm_migrations` de prod ne supportant pas `migration:up` sans `--only`
 
 **Checkpoint** : la base accepte les deux tables et les deux colonnes ; l'application existante tourne sans les voir.
 
@@ -38,15 +70,15 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 **⚠️ À terminer avant toute tâche de parcours.**
 
-- [ ] T004 [P] Créer l'entité `apps/api/src/modules/payments/entities/checkout.entity.ts` avec ses champs, son enum de statut et sa relation 1→N vers `Payment`
-- [ ] T005 [P] Créer l'entité `apps/api/src/modules/deliveries/entities/delivery-run.entity.ts` avec ses champs, son enum de statut, `pickup_order` en jsonb et sa relation 1→N vers `Delivery`
-- [ ] T006 Ajouter `checkout` (ManyToOne nullable) à `apps/api/src/modules/payments/payment.entity.ts` sans toucher au `@OneToOne(Order, { owner: true })` existant
-- [ ] T007 Ajouter `deliveryRun` (ManyToOne nullable) à `apps/api/src/modules/deliveries/entities/delivery.entity.ts` sans toucher au `@OneToOne(Order, { unique: true })` existant
-- [ ] T008 [P] Écrire les contrats Zod du checkout dans `apps/api/src/modules/orders/contracts/` : entrée de l'aperçu multi-boutiques, entrée de création, réponses, conformément à `contracts/checkout.md`
-- [ ] T009 [P] Écrire les contrats Zod de la tournée dans `apps/api/src/modules/deliveries/contracts/`, conformément à `contracts/delivery-run.md`
-- [ ] T010 Écrire `computeRunDistance` dans `apps/api/src/common/delivery-fee.ts` : somme des tronçons collecte → collecte, puis dernière collecte → adresse de livraison
-- [ ] T011 Adapter `computeDeliveryFee` pour être alimentée par la distance de tournée, en conservant les motifs existants et le caractère **non bloquant** de `NO_SHOP_POSITION`
-- [ ] T012 Mettre à jour `apps/api/src/common/delivery-fee.spec.ts` : la distance passée est désormais celle d'une tournée, et `NO_SHOP_POSITION` doit rester tarifé au forfait
+- [x] T004 [P] Créer l'entité `apps/api/src/modules/payments/entities/checkout.entity.ts` avec ses champs, son enum de statut et sa relation 1→N vers `Payment`
+- [x] T005 [P] Créer l'entité `apps/api/src/modules/deliveries/entities/delivery-run.entity.ts` avec ses champs, son enum de statut, `pickup_order` en jsonb et sa relation 1→N vers `Delivery`
+- [x] T006 Ajouter `checkout` (ManyToOne nullable) à `apps/api/src/modules/payments/payment.entity.ts` sans toucher au `@OneToOne(Order, { owner: true })` existant
+- [x] T007 Ajouter `deliveryRun` (ManyToOne nullable) à `apps/api/src/modules/deliveries/entities/delivery.entity.ts` sans toucher au `@OneToOne(Order, { unique: true })` existant
+- [x] T008 [P] Écrire les contrats Zod du checkout dans `apps/api/src/modules/orders/contracts/` : entrée de l'aperçu multi-boutiques, entrée de création, réponses, conformément à `contracts/checkout.md`
+- [x] T009 [P] Écrire les contrats Zod de la tournée dans `apps/api/src/modules/deliveries/contracts/`, conformément à `contracts/delivery-run.md`
+- [x] T010 Écrire `computeRunDistance` dans `apps/api/src/common/delivery-fee.ts` : somme des tronçons collecte → collecte, puis dernière collecte → adresse de livraison
+- [x] T011 Adapter `computeDeliveryFee` pour être alimentée par la distance de tournée, en conservant les motifs existants et le caractère **non bloquant** de `NO_SHOP_POSITION`
+- [x] T012 Mettre à jour `apps/api/src/common/delivery-fee.spec.ts` : la distance passée est désormais celle d'une tournée, et `NO_SHOP_POSITION` doit rester tarifé au forfait
 
 **Checkpoint** : les entités existent, les contrats compilent, le tarif sait raisonner en tournée. Aucun comportement visible n'a changé.
 
@@ -60,34 +92,47 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 ### Tests
 
-- [ ] T013 [P] [US1] Tester la répartition d'un checkout entre N commandes dans `apps/api/src/modules/payments/checkout-split.spec.ts` : somme des parts égale au total, réduction répartie au prorata, arrondis sans perte de centime
+- [x] T013 [P] [US1] Tester la répartition d'un checkout entre N commandes dans `apps/api/src/modules/payments/checkout-split.spec.ts` : somme des parts égale au total, réduction répartie au prorata, arrondis sans perte de centime
 
 ### API
 
-- [ ] T014 [US1] Élargir `POST /api/orders/preview` dans `apps/api/src/modules/orders/orders.controller.ts` pour accepter un panier multi-boutiques, sans `supplierId`
-- [ ] T015 [US1] Adapter `priceBasket` dans `apps/api/src/modules/orders/orders.service.ts` pour chiffrer plusieurs boutiques en un appel et renvoyer un bloc par boutique
-- [ ] T016 [US1] Appliquer le code promo au panier entier et répartir sa charge au prorata entre boutiques, dans `apps/api/src/modules/orders/orders.service.ts`
-- [ ] T017 [US1] Évaluer le seuil de livraison gratuite sur le total du panier, et non boutique par boutique, dans `apps/api/src/common/delivery-fee.ts`
-- [ ] T018 [US1] Écrire `createCheckout` dans `apps/api/src/modules/orders/orders.service.ts` : création du checkout et des N commandes dans **une seule transaction**
-- [ ] T019 [US1] Déplacer le contrôle du plafond espèces du niveau commande au niveau checkout, et renvoyer le dépassement chiffré (`cashLimitExceededBy`)
-- [ ] T020 [US1] Rattacher chaque `Payment` créé à son checkout dans `apps/api/src/modules/payments/payments.service.ts`, en laissant l'escrow intact
-- [ ] T021 [US1] Adapter `apps/api/src/modules/payments/payments-webhook.controller.ts` pour retrouver les N commandes depuis la transaction unique du prestataire
-- [ ] T022 [US1] Vérifier que `escrow-scheduler.service.ts` libère toujours commande par commande, et le documenter par un commentaire — c'est le comportement voulu, pas un oubli
+- [x] T014 [US1] Élargir `POST /api/orders/preview` dans `apps/api/src/modules/orders/orders.controller.ts` pour accepter un panier multi-boutiques, sans `supplierId`
+- [x] T015 [US1] Adapter `priceBasket` dans `apps/api/src/modules/orders/orders.service.ts` pour chiffrer plusieurs boutiques en un appel et renvoyer un bloc par boutique
+- [x] T016 [US1] ~~Appliquer le code promo au panier entier et répartir sa charge au prorata~~ — **abandonné au profit d'un refus explicite** au-delà d'une boutique : un code appartient à une boutique, l'appliquer à chacune multiplierait une remise à montant fixe (voir État)
+- [ ] T017 [US1] Vérifier le seuil de livraison gratuite sur le total du panier : `computeDeliveryFee` reçoit déjà ce total, mais rien ne l'a éprouvé avec un seuil réellement configuré
+- [x] T018 [US1] Écrire `createCheckout` dans `apps/api/src/modules/orders/orders.service.ts` : création du checkout et des N commandes dans **une seule transaction**
+- [x] T019 [US1] Déplacer le contrôle du plafond espèces du niveau commande au niveau checkout, et renvoyer le dépassement chiffré (`cashLimitExceededBy`)
+- [x] T020 [US1] Rattacher chaque `Payment` créé à son checkout dans `apps/api/src/modules/payments/payments.service.ts`, en laissant l'escrow intact
+- [ ] T021 [US1] Adapter `apps/api/src/modules/payments/payments-webhook.controller.ts` pour retrouver les N commandes depuis la transaction unique du prestataire — **non fait** : la confirmation passe aujourd'hui par `/payments/cart/verify`, appelée par l'application. Le webhook reste le filet quand l'application ne repasse pas, et il ignore encore les checkouts
+- [x] T022 [US1] Vérifier que `escrow-scheduler.service.ts` libère toujours commande par commande — vérifié par lecture : il raisonne par commande, rien à changer, et c'est le comportement voulu
 
 ### Mobile
 
-- [ ] T023 [US1] Aplatir `CartState` dans `apps/mobile/src/features/cart/cart-context.tsx` : liste d'articles portant `supplierId` et `supplierName`, `deliveryMode` remonté au panier
-- [ ] T024 [US1] Écrire l'hydratation de compatibilité depuis la clé `ebio_cart` dans le même fichier : ancien format aplati, `DELIVERY` retenu si les modes divergent
-- [ ] T025 [US1] Refondre `apps/mobile/src/features/cart/components/cart-screen.tsx` : une seule liste, la boutique indiquée sur chaque ligne, un seul total, un seul bouton
-- [ ] T026 [US1] Rendre `apps/mobile/src/features/cart/components/checkout-flow.tsx` multi-boutiques : une adresse, un paiement, un récapitulatif par boutique à l'affichage
-- [ ] T027 [US1] Afficher le message de dépassement du plafond espèces (montant en cause, deux issues) dans `checkout-flow.tsx`
-- [ ] T028 [US1] Nommer la boutique bloquante quand une seule empêche la validation, dans `checkout-flow.tsx`
+- [x] T023 [US1] Aplatir `CartState` dans `apps/mobile/src/features/cart/cart-context.tsx` : liste d'articles portant `supplierId` et `supplierName`, `deliveryMode` remonté au panier
+- [x] T024 [US1] Écrire l'hydratation de compatibilité depuis la clé `ebio_cart` dans le même fichier : ancien format aplati, `DELIVERY` retenu si les modes divergent
+- [x] T025 [US1] Refondre `apps/mobile/src/features/cart/components/cart-screen.tsx` : une seule liste, la boutique indiquée sur chaque ligne, un seul total, un seul bouton
+- [x] T026 [US1] Rendre `apps/mobile/src/features/cart/components/checkout-flow.tsx` multi-boutiques : une adresse, un paiement, un récapitulatif par boutique à l'affichage
+- [x] T027 [US1] Afficher le message de dépassement du plafond espèces (montant en cause, deux issues) dans `checkout-flow.tsx`
+- [x] T028 [US1] Nommer la boutique bloquante quand une seule empêche la validation, dans `checkout-flow.tsx`
 
 **Checkpoint** : un panier à trois boutiques part en un paiement. Livrable et démontrable seul.
 
 ---
 
 ## Phase 4 : User Story 2 — Une seule livraison pour plusieurs boutiques (P2)
+
+> **Pour la session dédiée au dispatch.** La tournée existe déjà (T030, T038,
+> T039). Ce qui reste est la diffusion, et elle ne se juge pas au typecheck :
+> il faut un livreur validé, disponible, avec une position GPS de moins de
+> 12 heures, et l'app livreur lancée en variante Metro. Sept méthodes de
+> `dispatch.service.ts` raisonnent par `deliveryId` et doivent raisonner par
+> tournée — `findEligibleCouriers`, `rankCandidates`, `startDispatch`,
+> `offerNext`, `respondToOffer`, `cancelPendingOffer`, `expireOffers` — plus le
+> cron des 30 secondes. L'éligibilité se transpose en prenant le premier point
+> de collecte comme origine.
+>
+> Le rattachement livraison → tournée est déjà en place : une livraison créée
+> pour une commande issue d'un panier rejoint sa tournée automatiquement.
 
 **Objectif** : un frais unique, une tournée, un livreur, une remise.
 
@@ -99,7 +144,7 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 ### API — tournée et diffusion
 
-- [ ] T030 [US2] Créer la tournée à la création du checkout en mode `DELIVERY`, dans `apps/api/src/modules/orders/orders.service.ts`, en n'en créant aucune en `ON_SITE`
+- [x] T030 [US2] Créer la tournée à la création du checkout en mode `DELIVERY`, dans `apps/api/src/modules/orders/orders.service.ts`, en n'en créant aucune en `ON_SITE`
 - [ ] T031 [US2] Calculer l'ordre de passage et le stocker dans `pickup_order`, dans `apps/api/src/modules/deliveries/deliveries.service.ts`
 - [ ] T032 [US2] Porter `findEligibleCouriers` et `rankCandidates` de `dispatch.service.ts` au niveau tournée, en prenant le premier point de collecte comme origine
 - [ ] T033 [US2] Porter `startDispatch`, `offerNext`, `respondToOffer` et `cancelPendingOffer` au niveau tournée, en conservant la bascule ciblé → diffusion large
@@ -107,8 +152,8 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 - [ ] T035 [US2] Écrire `GET /api/couriers/me/runs/offered` et `POST /api/couriers/me/runs/:id/respond` dans `apps/api/src/modules/deliveries/couriers.controller.ts`, l'acceptation portant sur toute la tournée
 - [ ] T036 [US2] Écrire `POST /api/deliveries/:id/collect` : seule la commande de cette boutique passe en « récupérée » ; la tournée passe en `DELIVERING` à la dernière collecte
 - [ ] T037 [US2] Écrire `POST /api/runs/:id/deliver` : un seul code, toutes les commandes de la tournée passent en « livrée », encaissement espèces sur le total
-- [ ] T038 [US2] Définir et implémenter la rémunération d'une tournée dans `apps/api/src/modules/deliveries/deliveries.service.ts` — **la formule n'est définie ni par la spec ni par l'existant, elle doit être arbitrée avant cette tâche**
-- [ ] T039 [US2] Renseigner `shop_count`, `total_distance_km` et `offers_sent` à chaque étape, et `outcome` à l'issue (FR-020a)
+- [x] T038 [US2] Définir et implémenter la rémunération d'une tournée dans `apps/api/src/modules/deliveries/deliveries.service.ts` — **la formule n'est définie ni par la spec ni par l'existant, elle doit être arbitrée avant cette tâche**
+- [x] T039 [US2] Renseigner `shop_count`, `total_distance_km` et `offers_sent` à chaque étape, et `outcome` à l'issue (FR-020a)
 
 ### Mobile — acheteur et livreur
 
