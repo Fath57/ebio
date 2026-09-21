@@ -235,7 +235,11 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
         <View style={styles.line}>
           <HandCoins size={16} color={colors.green[600]} strokeWidth={2} />
           <Text style={[styles.lineText, { color: semantic.textPrimaryColor }]}>
-            {`Vous gagnez ${formatAmount(item.courierFee)} pour la tournée`}
+            Vous gagnez
+            {' '}
+            <Text style={styles.amount}>{formatAmount(item.courierFee)}</Text>
+            {' '}
+            pour la tournée
           </Text>
         </View>
         {isCash && item.cashToShop !== null

@@ -140,7 +140,11 @@ export function ActiveRunScreen({ run, pendingCount, onCollect, onDeliver, onCha
         <View style={styles.line}>
           <HandCoins size={16} color={colors.green[600]} strokeWidth={2} />
           <Text style={[styles.lineText, { color: semantic.textPrimaryColor }]}>
-            {`Vous gagnez ${formatAmount(run.courierFee)} pour la tournée`}
+            Vous gagnez
+            {' '}
+            <Text style={styles.amount}>{formatAmount(run.courierFee)}</Text>
+            {' '}
+            pour la tournée
           </Text>
         </View>
         {isCash && run.cashToShop !== null
@@ -148,7 +152,11 @@ export function ActiveRunScreen({ run, pendingCount, onCollect, onDeliver, onCha
               <View style={styles.line}>
                 <Banknote size={16} color={colors.earth[600]} strokeWidth={2} />
                 <Text style={[styles.lineText, { color: colors.earth[800] }]}>
-                  {`Vous avancez ${formatAmount(run.cashToShop)} aux boutiques · le client vous remet ${formatAmount(run.cashToCollect ?? run.totalAmount)}`}
+                  Vous avancez
+                  {' '}
+                  <Text style={styles.amount}>{formatAmount(run.cashToShop)}</Text>
+                  {' aux boutiques · le client vous remet '}
+                  <Text style={styles.amount}>{formatAmount(run.cashToCollect ?? run.totalAmount)}</Text>
                 </Text>
               </View>
             )
@@ -233,6 +241,11 @@ const styles = StyleSheet.create({
     ...typography.bodyS,
     flex: 1,
   },
+  /** Tout montant est en JetBrains Mono — règle de marque, pas de goût. */
+  amount: {
+    ...typography.price,
+    fontSize: 14,
+  },
   pending: {
     ...typography.caption,
   },
@@ -276,8 +289,8 @@ const styles = StyleSheet.create({
     ...typography.caption,
   },
   iconButton: {
-    width: 40,
-    height: 40,
+    width: 44,
+    height: 44,
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',

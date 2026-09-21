@@ -204,12 +204,12 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 ## Phase 6 : Polish & transverse
 
-- [ ] T056 [P] Vérifier la non-régression du panier mono-boutique : même nombre d'étapes ou moins qu'avant (FR-024), c'est le cas le plus fréquent
-- [ ] T057 [P] Vérifier que l'app fournisseur n'a besoin d'aucune modification (FR-023) — même écran de commandes, mêmes statuts
-- [ ] T058 [P] Contrôler la conformité au design system sur les écrans panier et caisse : cibles 44×44, contrastes AA, montants en JetBrains Mono, vocabulaire de marque
-- [ ] T059 Dérouler intégralement `quickstart.md` sur appareil, y compris les quatre cas limites
-- [ ] T060 `pnpm lint` à 0 erreur, typecheck API propre, `pnpm --filter=@boilerstone/api test` au vert
-- [ ] T061 Documenter la procédure de déploiement dans `specs/006-unified-cart/quickstart.md` : SQL appliqué avant la bascule, puis `migration:up --only`
+- [x] T056 [P] Vérifier la non-régression du panier mono-boutique : même nombre d'étapes ou moins qu'avant (FR-024), c'est le cas le plus fréquent
+- [x] T057 [P] Vérifier que l'app fournisseur n'a besoin d'aucune modification (FR-023) — même écran de commandes, mêmes statuts
+- [x] T058 [P] Contrôler la conformité au design system sur les écrans panier et caisse : cibles 44×44, contrastes AA, montants en JetBrains Mono, vocabulaire de marque
+- [ ] T059 Dérouler intégralement `quickstart.md` sur appareil, y compris les quatre cas limites — **non fait** : demande un téléphone, Metro et un livreur validé avec une position GPS de moins de 12 h. Seul point de la phase 6 qui reste ouvert.
+- [x] T060 `pnpm lint` à 0 erreur, typecheck API propre, `pnpm --filter=@boilerstone/api test` au vert
+- [x] T061 Documenter la procédure de déploiement dans `specs/006-unified-cart/quickstart.md` : SQL appliqué avant la bascule, puis `migration:up --only`
 
 ---
 

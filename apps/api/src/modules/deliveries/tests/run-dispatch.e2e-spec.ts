@@ -42,7 +42,7 @@ interface Fixture {
   deliveryIds: string[]
 }
 
-async function seed(em: EntityManager): Promise<Fixture> {
+async function seed(em: EntityManager, options: { shops?: 1 | 2 } = {}): Promise<Fixture> {
   const buyer = await createUserData(em)
   const courierUser = await createUserData(em)
   const farCourierUser = await createUserData(em)
@@ -67,8 +67,9 @@ async function seed(em: EntityManager): Promise<Fixture> {
   const courier = await insertCourier(courierUser.id, 'Livreur Proche', '+22990000000', LIVREUR)
   const farCourier = await insertCourier(farCourierUser.id, 'Livreur Loin', '+22990000001', LIVREUR_LOIN)
 
+  const shopCount = options.shops ?? 2
   const shops: string[] = []
-  for (const [index, shopUser] of [shopUserA, shopUserB].entries()) {
+  for (const [index, shopUser] of [shopUserA, shopUserB].slice(0, shopCount).entries()) {
     const point = index === 0 ? FATOU : KOFFI
     const [shop] = await db.execute(
       `INSERT INTO suppliers (user_id, shop_name, type, mode, validation_status, location, "createdAt", "updatedAt")
@@ -91,9 +92,9 @@ async function seed(em: EntityManager): Promise<Fixture> {
   const [run] = await db.execute(
     `INSERT INTO delivery_runs (checkout_id, supplier_ids, pickup_order, delivery_fee, courier_earning,
                                 shop_count, pickup_spread_km, total_distance_km, "createdAt", "updatedAt")
-     VALUES (?, ?::jsonb, '[]'::jsonb, 800, 720, 2, 0.99, 2.1, NOW(), NOW())
+     VALUES (?, ?::jsonb, '[]'::jsonb, 800, 720, ?, 0.99, 2.1, NOW(), NOW())
      RETURNING id`,
-    [checkout.id, JSON.stringify(shops)],
+    [checkout.id, JSON.stringify(shops), shopCount],
   ) as Array<{ id: string }>
 
   const deliveryIds: string[] = []
@@ -541,6 +542,55 @@ describe('diffusion d\'une tournée (e2e)', () => {
         fixture.deliveryIds,
       ) as Array<{ delivery_run_id: string | null }>
       expect(courses.every(row => row.delivery_run_id === fixture.runId)).toBe(true)
+    })
+  })
+
+  describe('panier d\'une seule boutique', () => {
+    /**
+     * Le cas le plus fréquent, et celui qu'il ne faut surtout pas alourdir : le
+     * panier unifié ne doit rien ajouter à un achat chez une seule boutique.
+     */
+    it('suit exactement le même chemin qu\'avant, en une collecte et une remise', async (context) => {
+      const { em, app } = context
+      const fixture = await seed(em as EntityManager, { shops: 1 })
+      const dispatch = app.get(DispatchService)
+      const deliveries = app.get(DeliveriesService)
+      const db = (em as EntityManager).getConnection()
+
+      await dispatch.startRunDispatch(fixture.runId)
+      const run = await deliveries.acceptRun(fixture.runId, fixture.courierUserId)
+      expect(run.shopCount).toBe(1)
+      expect(run.pickupOrder).toHaveLength(1)
+
+      // Une seule collecte suffit à mettre la tournée en route.
+      await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
+      const [apresCollecte] = await db.execute(
+        `SELECT status, confirmation_code FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, confirmation_code: string }>
+      expect(apresCollecte.status).toBe('DELIVERING')
+
+      await deliveries.deliverRun(fixture.runId, fixture.courierUserId, {
+        proofType: 'CODE',
+        code: apresCollecte.confirmation_code,
+      })
+
+      const [course] = await db.execute(
+        `SELECT d.status, o.status AS order_status FROM deliveries d
+         JOIN orders o ON o.id = d.order_id WHERE d.delivery_run_id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, order_status: string }>
+      expect(course.status).toBe('DELIVERED')
+      expect(course.order_status).toBe('DELIVERED')
+
+      // Le livreur touche le frais entier : une boutique, un trajet.
+      const gains = await db.execute(
+        `SELECT amount FROM wallet_transactions
+         WHERE delivery_run_id = ? AND type = 'DELIVERY_EARNING'`,
+        [fixture.runId],
+      ) as Array<{ amount: string }>
+      expect(gains).toHaveLength(1)
+      expect(Number(gains[0].amount)).toBe(720)
     })
   })
 })
