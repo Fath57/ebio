@@ -142,7 +142,7 @@ export function ProductCard({
         )}
 
         {/* Bottom-left promotion chips (gift, free delivery) */}
-        <PromotionChips labels={chipLabels} overlay style={styles.promoChips} />
+        <PromotionChips labels={chipLabels} overlay maxVisible={2} style={styles.promoChips} />
 
         {/* Out of stock scrim */}
         {!isInStock && (

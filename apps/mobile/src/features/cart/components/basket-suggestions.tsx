@@ -82,7 +82,7 @@ function SuggestionCard({ item, inCart, onAdd, onOpen }: SuggestionCardProps) {
       {hasPromo && (
         <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>{`${formatPrice(item.pricePerUnit)} FCFA`}</Text>
       )}
-      <PromotionChips labels={promotionChipLabels(item.promotionTypes)} />
+      <PromotionChips labels={promotionChipLabels(item.promotionTypes)} maxVisible={2} />
       {onAdd && (
         <TouchableOpacity
           style={[styles.addButton, inCart && styles.addButtonDone]}
