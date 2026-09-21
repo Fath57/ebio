@@ -32,6 +32,37 @@ interface DeliveryRun {
   status: DeliveryRunStatus
   courierName: string | null
   courierVehicleType: VehicleType | null
+  /**
+   * Renseigné quand la livraison fait partie d'une tournée. L'acheteur suit
+   * alors une seule progression, même si son panier a produit deux commandes.
+   */
+  run: { id: string, shopCount: number, collectedCount: number } | null
+}
+
+/**
+ * Ce que dit la ligne de livraison quand plusieurs boutiques sont en jeu.
+ *
+ * « Colis récupéré » serait faux tant qu'il en reste à collecter, et deux
+ * lignes contradictoires sur deux cartes le seraient encore plus.
+ */
+function runProgressLabel(delivery: DeliveryRun): string | null {
+  const run = delivery.run
+  if (run === null || run.shopCount <= 1) {
+    return RUN_LABELS[delivery.status]
+  }
+  if (delivery.status === 'AWAITING_COURIER') {
+    return `Recherche d’un livreur pour vos ${run.shopCount} boutiques…`
+  }
+  if (delivery.status === 'DELIVERED' || delivery.status === 'CANCELLED') {
+    return RUN_LABELS[delivery.status]
+  }
+  if (delivery.status === 'FAILED') {
+    return RUN_LABELS.FAILED
+  }
+  if (run.collectedCount >= run.shopCount) {
+    return 'Livreur en route vers vous'
+  }
+  return `Collecte en cours · ${run.collectedCount} sur ${run.shopCount} boutiques`
 }
 
 /** Buyer-facing wording of the courier run; null = nothing worth a line. */
@@ -259,7 +290,7 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
                 </View>
 
                 {/* Live delivery run */}
-                {item.delivery && RUN_LABELS[item.delivery.status] && (
+                {item.delivery && runProgressLabel(item.delivery) && (
                   <View style={[styles.runRow, { backgroundColor: item.delivery.status === 'FAILED' ? colors.coral[50] : semantic.bgPrimaryLight }]}>
                     {LIVE_RUN_STATUSES.includes(item.delivery.status) && <View style={styles.runDot} />}
                     {(() => {
@@ -270,7 +301,7 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
                       style={[styles.runText, { color: item.delivery.status === 'FAILED' ? colors.coral[600] : colors.green[800] }]}
                       numberOfLines={1}
                     >
-                      {RUN_LABELS[item.delivery.status]}
+                      {runProgressLabel(item.delivery)}
                       {item.delivery.courierName && item.delivery.status !== 'AWAITING_COURIER' ? ` · ${item.delivery.courierName}` : ''}
                     </Text>
                   </View>

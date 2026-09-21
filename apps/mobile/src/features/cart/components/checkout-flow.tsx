@@ -158,12 +158,20 @@ function DeliveryFeeValue({ preview, loading, textColor, mutedColor }: DeliveryF
   if (deliveryReason === 'FREE_THRESHOLD' || deliveryFee === 0) {
     return <Text style={[styles.feeValue, { color: colors.green[600] }]}>Offerte</Text>
   }
-  const showDistance = (deliveryReason === 'DISTANCE' || deliveryReason === 'ZONE') && deliveryDistanceKm !== null
+  // Plusieurs tournées : dire « 2 livraisons » plutôt qu'une distance, qui
+  // n'aurait aucun sens additionnée sur deux trajets distincts.
+  const runCount = preview.deliveryRunCount
+  const showDistance = runCount <= 1
+    && (deliveryReason === 'DISTANCE' || deliveryReason === 'ZONE')
+    && deliveryDistanceKm !== null
   return (
     <Text style={[styles.feeValue, { color: textColor }]}>
       {`${formatPrice(deliveryFee)} FCFA`}
       {showDistance && (
         <Text style={[styles.feeDistance, { color: mutedColor }]}>{` · ${formatKm(deliveryDistanceKm ?? 0)}`}</Text>
+      )}
+      {runCount > 1 && (
+        <Text style={[styles.feeDistance, { color: mutedColor }]}>{` · ${runCount} livraisons`}</Text>
       )}
     </Text>
   )

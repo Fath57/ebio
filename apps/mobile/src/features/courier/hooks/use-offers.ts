@@ -1,4 +1,4 @@
-import type { DeliveryOffer } from '../types'
+import type { CourierOffer, DeliveryOffer, RunOffer } from '../types'
 import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
@@ -65,7 +65,7 @@ async function readMessage(res: Response): Promise<string | null> {
 }
 
 /** Earliest exclusive-window end among targeted offers, in ms since epoch; null when none. */
-function earliestExpiry(offers: DeliveryOffer[]): number | null {
+function earliestExpiry(offers: CourierOffer[]): number | null {
   let earliest: number | null = null
   for (const offer of offers) {
     if (!offer.isTargeted || !offer.expiresAt) {
@@ -82,9 +82,34 @@ function earliestExpiry(offers: DeliveryOffer[]): number | null {
   return earliest
 }
 
+/**
+ * File unique des propositions : une course isolée et une tournée y tiennent
+ * la même place. Le livreur n'a pas à savoir laquelle des deux lui est
+ * proposée pour décider — il regarde ce qu'il gagne et où il va.
+ *
+ * Les offres prioritaires passent devant, puis la plus proche.
+ */
+function mergeOffers(deliveries: DeliveryOffer[], runs: RunOffer[]): CourierOffer[] {
+  const merged: CourierOffer[] = [
+    ...deliveries.map(offer => ({ kind: 'DELIVERY' as const, ...offer })),
+    ...runs.map(offer => ({ kind: 'RUN' as const, ...offer })),
+  ]
+  return merged.sort((a, b) => {
+    if (a.isTargeted !== b.isTargeted) {
+      return a.isTargeted ? -1 : 1
+    }
+    const da = a.distanceKm ?? Number.POSITIVE_INFINITY
+    const db = b.distanceKm ?? Number.POSITIVE_INFINITY
+    if (da !== db) {
+      return da - db
+    }
+    return new Date(a.offeredAt).getTime() - new Date(b.offeredAt).getTime()
+  })
+}
+
 /** Offer feed for available couriers: fetch, pull-to-refresh, accept/decline with 409 handling. */
 export function useOffers() {
-  const [offers, setOffers] = useState<DeliveryOffer[]>([])
+  const [offers, setOffers] = useState<CourierOffer[]>([])
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
@@ -92,20 +117,29 @@ export function useOffers() {
 
   const load = useCallback(async () => {
     try {
-      const res = await apiFetch('/api/deliveries/offers')
-      if (res.status === 403) {
-        const block = await readDebtBlock(res)
+      // Les deux files sont lues ensemble : les mêmes règles d'indisponibilité
+      // et de dette s'appliquent aux deux, et l'écran n'en montre qu'une.
+      const [deliveryRes, runRes] = await Promise.all([
+        apiFetch('/api/deliveries/offers'),
+        apiFetch('/api/runs/offers'),
+      ])
+      if (deliveryRes.status === 403) {
+        const block = await readDebtBlock(deliveryRes)
         setDebtBlock(block)
         setUnavailable(block === null)
         setOffers([])
         return
       }
-      if (!res.ok) {
+      if (!deliveryRes.ok) {
         return
       }
       setUnavailable(false)
       setDebtBlock(null)
-      setOffers(await res.json() as DeliveryOffer[])
+      const deliveries = await deliveryRes.json() as DeliveryOffer[]
+      // Une file de tournées indisponible ne doit pas vider l'écran : les
+      // courses isolées restent prenables.
+      const runs = runRes.ok ? await runRes.json() as RunOffer[] : []
+      setOffers(mergeOffers(deliveries, runs))
     }
     catch {
       // Keep the last list on network errors; pull-to-refresh retries.
@@ -141,9 +175,10 @@ export function useOffers() {
     setRefreshing(false)
   }, [load])
 
-  const accept = useCallback(async (offerId: string): Promise<AcceptResult> => {
+  const accept = useCallback(async (offer: CourierOffer): Promise<AcceptResult> => {
+    const base = offer.kind === 'RUN' ? '/api/runs' : '/api/deliveries'
     try {
-      const res = await apiFetch(`/api/deliveries/${offerId}/accept`, { method: 'POST' })
+      const res = await apiFetch(`${base}/${offer.id}/accept`, { method: 'POST' })
       if (res.ok) {
         return { ok: true, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null }
       }
@@ -166,9 +201,10 @@ export function useOffers() {
     }
   }, [load])
 
-  const decline = useCallback(async (offerId: string): Promise<DeclineResult> => {
+  const decline = useCallback(async (offer: CourierOffer): Promise<DeclineResult> => {
+    const base = offer.kind === 'RUN' ? '/api/runs' : '/api/deliveries'
     try {
-      const res = await apiFetch(`/api/deliveries/${offerId}/decline`, { method: 'POST' })
+      const res = await apiFetch(`${base}/${offer.id}/decline`, { method: 'POST' })
       if (res.ok) {
         return { ok: true, message: null }
       }

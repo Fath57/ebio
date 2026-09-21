@@ -79,12 +79,16 @@ export function useOfflineQueue(onFlushed?: () => void) {
     return unsubscribe
   }, [flush])
 
-  const sendTransition = useCallback(async (
+  /**
+   * Cœur commun : une course et une tournée se transmettent de la même façon,
+   * seule la route change. Le `deliveryId` reste stocké pour l'inspection de
+   * la file, il ne sert plus à fabriquer la route.
+   */
+  const send = useCallback(async (
     deliveryId: string,
-    action: 'pickup' | 'start' | 'complete' | 'fail',
+    path: string,
     body: Record<string, unknown> = {},
   ): Promise<TransitionResult> => {
-    const path = `/api/deliveries/${deliveryId}/${action}`
     const occurredAt = new Date().toISOString()
     try {
       const res = await apiFetch(path, {
@@ -113,5 +117,18 @@ export function useOfflineQueue(onFlushed?: () => void) {
     }
   }, [])
 
-  return { sendTransition, pendingCount, flush }
+  const sendTransition = useCallback((
+    deliveryId: string,
+    action: 'pickup' | 'start' | 'complete' | 'fail',
+    body: Record<string, unknown> = {},
+  ) => send(deliveryId, `/api/deliveries/${deliveryId}/${action}`, body), [send])
+
+  /** Remise d'une tournée : un seul appel clôt toutes ses commandes. */
+  const sendRunTransition = useCallback((
+    runId: string,
+    action: 'deliver',
+    body: Record<string, unknown> = {},
+  ) => send(runId, `/api/runs/${runId}/${action}`, body), [send])
+
+  return { sendTransition, sendRunTransition, pendingCount, flush }
 }

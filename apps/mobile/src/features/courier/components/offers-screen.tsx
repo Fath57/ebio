@@ -1,11 +1,12 @@
 import type { AcceptResult, DebtBlock, DeclineResult } from '../hooks/use-offers'
-import type { DeliveryOffer } from '../types'
+import type { CourierOffer, DeliveryOffer, RunOffer } from '../types'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import PackageIcon from 'lucide-react-native/dist/esm/icons/package'
+import Route from 'lucide-react-native/dist/esm/icons/route'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Timer from 'lucide-react-native/dist/esm/icons/timer'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
@@ -18,7 +19,7 @@ import { formatTime, isFutureIso } from '../../../utils/format-time'
 import { appAlert } from '../../common/components/app-alert'
 
 interface OffersScreenProps {
-  offers: DeliveryOffer[]
+  offers: CourierOffer[]
   refreshing: boolean
   unavailable: boolean
   /** Wallet debt past the platform limit: runs are withheld until a top-up. */
@@ -26,9 +27,9 @@ interface OffersScreenProps {
   /** Km between the device and the declared zone when clearly outside it. */
   outOfZoneKm: number | null
   onRefresh: () => void
-  onAccept: (offerId: string) => Promise<AcceptResult>
+  onAccept: (offer: CourierOffer) => Promise<AcceptResult>
   /** Targeted offers only: hand the run to the next courier in line. */
-  onDecline: (offerId: string) => Promise<DeclineResult>
+  onDecline: (offer: CourierOffer) => Promise<DeclineResult>
   onAccepted: () => void
   onOpenWallet: () => void
 }
@@ -126,38 +127,164 @@ function Countdown({ expiresAt }: CountdownProps) {
 export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOfZoneKm, onRefresh, onAccept, onDecline, onAccepted, onOpenWallet }: OffersScreenProps) {
   const { semantic, isDark } = useTheme()
 
-  async function accept(offer: DeliveryOffer) {
-    const result = await onAccept(offer.id)
+  async function accept(offer: CourierOffer) {
+    const result = await onAccept(offer)
     if (result.ok) {
       onAccepted()
       return
     }
+    const nom = offer.kind === 'RUN' ? 'tournée' : 'course'
     if (result.conflict) {
-      appAlert('Course indisponible', result.message ?? 'Un autre livreur a accepté cette course juste avant vous.')
+      appAlert(
+        offer.kind === 'RUN' ? 'Tournée indisponible' : 'Course indisponible',
+        result.message ?? `Un autre livreur a accepté cette ${nom} juste avant vous.`,
+      )
     }
     else if (result.gone) {
-      appAlert('Commande annulée', 'Cette commande a été annulée entre-temps.')
+      appAlert('Commande annulée', `Cette ${nom} a été annulée entre-temps.`)
     }
     else if (result.debtMessage) {
       appAlert('Courses suspendues', result.debtMessage)
     }
     else if (result.forbidden) {
-      appAlert('Indisponible', 'Passez disponible pour accepter une course.')
+      appAlert('Indisponible', `Passez disponible pour accepter une ${nom}.`)
     }
     else {
       appAlert('Erreur', 'L\'acceptation a échoué. Vérifiez votre connexion et réessayez.')
     }
   }
 
-  async function decline(offer: DeliveryOffer) {
-    const result = await onDecline(offer.id)
+  async function decline(offer: CourierOffer) {
+    const result = await onDecline(offer)
     if (result.ok) {
       return
     }
     appAlert('Refus impossible', result.message ?? 'Le refus a échoué. Vérifiez votre connexion et réessayez.')
   }
 
-  function renderOffer({ item }: { item: DeliveryOffer }) {
+  /**
+   * Une tournée : ce que le livreur gagne, par où il passe, et une seule
+   * remise au bout. Les numéros de commande n'y figurent pas — il n'en a rien
+   * à faire tant qu'il collecte, la boutique et l'adresse suffisent.
+   */
+  function renderRun(item: RunOffer) {
+    const isCash = item.paymentMethod === 'CASH_ON_DELIVERY'
+    const targeted = item.isTargeted
+    const cardStyle = targeted
+      ? [styles.card, styles.targetedCard, { backgroundColor: isDark ? colors.green[900] : colors.green[50] }]
+      : [styles.card, { backgroundColor: semantic.bgCard }]
+    return (
+      <View style={cardStyle}>
+        {targeted
+          ? (
+              <View style={styles.targetedHeader}>
+                <View style={styles.targetedBadge} accessibilityLabel="Tournée proposée en priorité">
+                  <Zap size={12} color={colors.neutral[0]} strokeWidth={2.4} />
+                  <Text style={styles.targetedBadgeText}>Proposée en priorité</Text>
+                </View>
+                {item.expiresAt ? <Countdown expiresAt={item.expiresAt} /> : null}
+              </View>
+            )
+          : null}
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderLeft}>
+            <View style={styles.runBadge} accessibilityLabel={`Tournée de ${item.shopCount} boutiques`}>
+              <Route size={12} color={colors.neutral[0]} strokeWidth={2.4} />
+              <Text style={styles.runBadgeText}>{`${item.shopCount} boutiques`}</Text>
+            </View>
+            {isCash
+              ? (
+                  <View style={styles.cashBadge} accessibilityLabel="Commande payée en espèces">
+                    <Banknote size={12} color={colors.earth[800]} strokeWidth={2.2} />
+                    <Text style={styles.cashBadgeText}>Espèces</Text>
+                  </View>
+                )
+              : null}
+          </View>
+          {item.distanceKm !== null
+            ? (
+                <Text style={[styles.distance, { color: semantic.textPrimaryColor }]}>
+                  {`1re boutique à ${formatKm(item.distanceKm)}`}
+                </Text>
+              )
+            : null}
+        </View>
+
+        {item.stops.map((stop, index) => (
+          <View key={stop.deliveryId} style={styles.line}>
+            <View style={styles.stopIndex}>
+              <Text style={styles.stopIndexText}>{index + 1}</Text>
+            </View>
+            <Text style={[styles.lineText, { color: semantic.textPrimary }]} numberOfLines={2}>
+              {`${stop.shopName} — ${stop.pickupAddress}`}
+            </Text>
+          </View>
+        ))}
+
+        <View style={styles.line}>
+          <MapPin size={16} color={colors.coral[400]} strokeWidth={2} />
+          <View style={styles.lineText}>
+            <Text style={[styles.lineText, { color: semantic.textPrimary }]} numberOfLines={2}>{item.dropoffAddress}</Text>
+            <Text style={[styles.lineHint, { color: item.dropoffPosition ? colors.green[800] : semantic.textTertiary }]}>
+              {item.dropoffPosition
+                ? `Une seule remise${item.routeKm !== null ? ` · trajet ≈ ${formatKm(item.routeKm)}` : ''}`
+                : 'Adresse approximative (pas de point GPS)'}
+            </Text>
+          </View>
+        </View>
+        <View style={styles.line}>
+          <HandCoins size={16} color={colors.green[600]} strokeWidth={2} />
+          <Text style={[styles.lineText, { color: semantic.textPrimaryColor }]}>
+            {`Vous gagnez ${formatAmount(item.courierFee)} pour la tournée`}
+          </Text>
+        </View>
+        {isCash && item.cashToShop !== null
+          ? (
+              <View style={styles.line}>
+                <Banknote size={16} color={colors.earth[600]} strokeWidth={2} />
+                <Text style={[styles.lineText, { color: colors.earth[800] }]}>
+                  {`Vous avancez ${formatAmount(item.cashToShop)} aux boutiques · le client vous remet ${formatAmount(item.cashToCollect ?? item.totalAmount)} à la livraison`}
+                </Text>
+              </View>
+            )
+          : null}
+
+        {targeted
+          ? (
+              <View style={styles.actions}>
+                <Pressable
+                  style={styles.declineButton}
+                  onPress={() => decline({ kind: 'RUN', ...item })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Refuser la tournée"
+                >
+                  <Text style={styles.declineText}>Refuser</Text>
+                </Pressable>
+                <Pressable
+                  style={[styles.acceptButton, styles.actionGrow]}
+                  onPress={() => accept({ kind: 'RUN', ...item })}
+                  accessibilityRole="button"
+                  accessibilityLabel="Accepter la tournée"
+                >
+                  <Text style={styles.acceptText}>Accepter la tournée</Text>
+                </Pressable>
+              </View>
+            )
+          : (
+              <Pressable
+                style={styles.acceptButton}
+                onPress={() => accept({ kind: 'RUN', ...item })}
+                accessibilityRole="button"
+                accessibilityLabel="Accepter la tournée"
+              >
+                <Text style={styles.acceptText}>Accepter la tournée</Text>
+              </Pressable>
+            )}
+      </View>
+    )
+  }
+
+  function renderDelivery(item: DeliveryOffer) {
     const isCash = item.paymentMethod === 'CASH_ON_DELIVERY'
     const targeted = item.isTargeted
     const cardStyle = targeted
@@ -251,7 +378,7 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
               <View style={styles.actions}>
                 <Pressable
                   style={styles.declineButton}
-                  onPress={() => decline(item)}
+                  onPress={() => decline({ kind: 'DELIVERY', ...item })}
                   accessibilityRole="button"
                   accessibilityLabel={`Refuser la course ${item.orderNumber}`}
                 >
@@ -259,7 +386,7 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
                 </Pressable>
                 <Pressable
                   style={[styles.acceptButton, styles.actionGrow]}
-                  onPress={() => accept(item)}
+                  onPress={() => accept({ kind: 'DELIVERY', ...item })}
                   accessibilityRole="button"
                   accessibilityLabel={`Accepter la course ${item.orderNumber}`}
                 >
@@ -270,7 +397,7 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
           : (
               <Pressable
                 style={styles.acceptButton}
-                onPress={() => accept(item)}
+                onPress={() => accept({ kind: 'DELIVERY', ...item })}
                 accessibilityRole="button"
                 accessibilityLabel={`Accepter la course ${item.orderNumber}`}
               >
@@ -279,6 +406,10 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
             )}
       </View>
     )
+  }
+
+  function renderOffer({ item }: { item: CourierOffer }) {
+    return item.kind === 'RUN' ? renderRun(item) : renderDelivery(item)
   }
 
   if (debtBlock) {
@@ -419,6 +550,34 @@ const styles = StyleSheet.create({
   },
   orderNumber: {
     ...typography.caption,
+  },
+  runBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.green[600],
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[2],
+    paddingVertical: 2,
+  },
+  runBadgeText: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.neutral[0],
+  },
+  /** Rang de passage : le livreur suit des numéros, pas des noms. */
+  stopIndex: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.green[600],
+  },
+  stopIndexText: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.neutral[0],
   },
   cashBadge: {
     flexDirection: 'row',

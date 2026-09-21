@@ -8,6 +8,7 @@ export class OrderMapper {
     return {
       id: order.id,
       orderNumber: order.orderNumber,
+      checkoutId: order.checkout?.id ?? null,
       buyerId: order.buyer.id,
       buyerName: order.buyer.name,
       supplierId: order.supplier.id,

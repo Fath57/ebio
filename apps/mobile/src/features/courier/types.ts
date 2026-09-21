@@ -156,3 +156,77 @@ export const FAIL_REASON_LABELS: Record<DeliveryFailReason, string> = {
   CUSTOMER_REFUSED: 'Refus du client',
   OTHER: 'Autre motif',
 }
+
+/**
+ * Une tournée proposée : plusieurs boutiques à collecter, une seule remise, un
+ * seul gain. Le livreur la prend ou la laisse entière — il ne peut pas en
+ * choisir la moitié, sinon le frais unique promis à l'acheteur ne couvrirait
+ * plus le trajet.
+ */
+export interface RunStop {
+  deliveryId: string
+  shopName: string
+  pickupAddress: string
+  orderNumber: string
+}
+
+export interface RunOffer {
+  id: string
+  shopCount: number
+  /** Gain net du livreur pour la tournée entière. */
+  courierFee: number
+  /** Ce que l'acheteur a payé pour la livraison. */
+  deliveryFee: number
+  dropoffAddress: string
+  dropoffPosition: { latitude: number, longitude: number } | null
+  /** Distance du livreur à la première collecte ; null sans position connue. */
+  distanceKm: number | null
+  /** Distance de la tournée complète, collectes comprises. */
+  routeKm: number | null
+  paymentMethod: string
+  totalAmount: number
+  cashToCollect: number | null
+  cashToShop: number | null
+  /** Les collectes, dans l'ordre de passage. */
+  stops: RunStop[]
+  isTargeted: boolean
+  expiresAt: string | null
+  offeredAt: string
+}
+
+/** Une proposition, course isolée ou tournée, dans une seule file. */
+export type CourierOffer
+  = | ({ kind: 'DELIVERY' } & DeliveryOffer)
+    | ({ kind: 'RUN' } & RunOffer)
+
+/** Une collecte de la tournée en cours, avec son avancement. */
+export interface ActiveRunStop {
+  deliveryId: string
+  orderId: string
+  orderNumber: string
+  shopName: string
+  pickupAddress: string
+  pickupPosition: { latitude: number, longitude: number } | null
+  status: DeliveryStatus
+  itemsCount: number
+}
+
+export type RunStatus = 'AWAITING_COURIER' | 'ESCALATED' | 'BUYER_DECISION' | 'ACCEPTED' | 'COLLECTING' | 'DELIVERING' | 'DELIVERED' | 'CANCELLED'
+
+export interface ActiveRun {
+  id: string
+  status: RunStatus
+  shopCount: number
+  courierFee: number
+  deliveryFee: number
+  routeKm: number | null
+  /** Code de remise, tiré à la première collecte ; null avant. */
+  confirmationCode: string | null
+  dropoffAddress: string
+  dropoffPosition: { latitude: number, longitude: number } | null
+  paymentMethod: string
+  totalAmount: number
+  cashToCollect: number | null
+  cashToShop: number | null
+  stops: ActiveRunStop[]
+}

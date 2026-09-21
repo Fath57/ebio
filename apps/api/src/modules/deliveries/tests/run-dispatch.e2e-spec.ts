@@ -18,6 +18,8 @@ import { createUserData } from '../../../factories/user.factory'
 import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
+import { OrdersService } from '../../orders/orders.service'
+import { DeliveriesMapper } from '../deliveries.mapper'
 import { DeliveriesModule } from '../deliveries.module'
 import { DeliveriesService } from '../deliveries.service'
 import { DispatchService } from '../dispatch.service'
@@ -316,6 +318,59 @@ describe('diffusion d\'une tournée (e2e)', () => {
       ) as Array<{ status: string, delivered_at: string | null }>
       expect(apres.status).toBe('DELIVERED')
       expect(apres.delivered_at).not.toBeNull()
+    })
+
+    it('donne au livreur une tournée unique, ses collectes dans l\'ordre', async (context) => {
+      const { app } = context
+      const fixture = await tourneeAcceptee(context)
+      const deliveries = app.get(DeliveriesService)
+
+      const row = await deliveries.getMyActiveRun(fixture.courierUserId)
+      expect(row).not.toBeNull()
+      const active = DeliveriesMapper.toActiveRun(row!)
+
+      expect(active.shopCount).toBe(2)
+      expect(active.courierFee).toBe(720)
+      expect(active.stops).toHaveLength(2)
+      // L'ordre suit le passage décidé à l'acceptation : le plus proche d'abord.
+      expect(active.stops[0].deliveryId).toBe(fixture.deliveryIds[1])
+      expect(active.stops.every(stop => stop.status === 'ACCEPTED')).toBe(true)
+      expect(active.stops[0].shopName).toBeTruthy()
+      expect(active.dropoffAddress).toContain('Cadjehoun')
+
+      // Après une collecte, l'écran doit voir l'avancement boutique par boutique.
+      await deliveries.collect(fixture.deliveryIds[1], fixture.courierUserId)
+      const apres = DeliveriesMapper.toActiveRun((await deliveries.getMyActiveRun(fixture.courierUserId))!)
+      expect(apres.status).toBe('COLLECTING')
+      expect(apres.confirmationCode).toMatch(/^\d{4}$/)
+      expect(apres.stops.find(stop => stop.deliveryId === fixture.deliveryIds[1])?.status).toBe('PICKED_UP')
+      expect(apres.stops.find(stop => stop.deliveryId === fixture.deliveryIds[0])?.status).toBe('ACCEPTED')
+    })
+
+    it('donne à l\'acheteur une seule progression pour ses deux commandes', async (context) => {
+      const { em, app } = context
+      const fixture = await tourneeAcceptee(context)
+      const deliveries = app.get(DeliveriesService)
+      const orders = app.get(OrdersService)
+
+      const orderIds = await (em as EntityManager).getConnection().execute(
+        `SELECT o.id FROM orders o JOIN deliveries d ON d.order_id = o.id WHERE d.delivery_run_id = ?`,
+        [fixture.runId],
+      ) as Array<{ id: string }>
+
+      const avant = await orders.deliverySummaries(orderIds.map(row => row.id))
+      expect(avant.size).toBe(2)
+      // Les deux commandes pointent la même tournée, au même avancement : c'est
+      // ce qui permet à l'acheteur de suivre une progression et non deux.
+      for (const summary of avant.values()) {
+        expect(summary.run).toEqual({ id: fixture.runId, shopCount: 2, collectedCount: 0 })
+      }
+
+      await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
+      const apres = await orders.deliverySummaries(orderIds.map(row => row.id))
+      for (const summary of apres.values()) {
+        expect(summary.run?.collectedCount).toBe(1)
+      }
     })
 
     it('règle le livreur une seule fois, sur le gain de la tournée', async (context) => {

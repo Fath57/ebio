@@ -111,6 +111,17 @@ export const orderDeliverySummarySchema = z.object({
   status: z.enum(['AWAITING_COURIER', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT', 'DELIVERED', 'FAILED', 'CANCELLED']),
   courierName: z.string().nullable(),
   courierVehicleType: z.enum(['MOTO', 'BICYCLE', 'CAR', 'ON_FOOT']).nullable(),
+  /**
+   * La tournée dont cette livraison fait partie, quand il y en a une. Elle
+   * permet à l'acheteur de voir une seule progression pour un panier qui
+   * couvre plusieurs boutiques, au lieu d'en suivre deux en parallèle.
+   */
+  run: z.object({
+    id: z.string().uuid(),
+    shopCount: z.number().int().positive(),
+    /** Boutiques déjà collectées, sur `shopCount`. */
+    collectedCount: z.number().int().min(0),
+  }).nullable(),
   updatedAt: z.string().datetime(),
 }).meta({
   title: 'OrderDeliverySummary',
@@ -145,6 +156,8 @@ export const orderResponseSchema = z.object({
   escrowReleasedAt: z.string().datetime().nullable(),
   items: z.array(orderItemSchema),
   delivery: orderDeliverySummarySchema.nullable(),
+  /** Le passage en caisse dont la commande est issue ; nul avant le panier unifié. */
+  checkoutId: z.string().uuid().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({

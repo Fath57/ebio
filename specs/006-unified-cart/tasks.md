@@ -161,10 +161,10 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 ### Mobile — acheteur et livreur
 
-- [ ] T040 [P] [US2] Afficher le frais de livraison unique avant paiement dans `apps/mobile/src/features/cart/components/checkout-flow.tsx`
-- [ ] T041 [P] [US2] Afficher la progression d'une tournée comme une progression unique dans `apps/mobile/src/features/orders/`
-- [ ] T042 [US2] Présenter la tournée au livreur dans `apps/mobile/src/features/courier/` : points de collecte ordonnés, point de remise, une seule décision
-- [ ] T043 [US2] Gérer la collecte boutique par boutique puis la remise unique dans `apps/mobile/src/features/courier/`
+- [x] T040 [P] [US2] Afficher le frais de livraison unique avant paiement dans `apps/mobile/src/features/cart/components/checkout-flow.tsx`
+- [x] T041 [P] [US2] Afficher la progression d'une tournée comme une progression unique dans `apps/mobile/src/features/orders/`
+- [x] T042 [US2] Présenter la tournée au livreur dans `apps/mobile/src/features/courier/` : points de collecte ordonnés, point de remise, une seule décision
+- [x] T043 [US2] Gérer la collecte boutique par boutique puis la remise unique dans `apps/mobile/src/features/courier/`
 
 **Checkpoint** : un frais, une tournée, une remise.
 

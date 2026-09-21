@@ -38,6 +38,13 @@ export interface OrderPreview {
   deliverySponsor: 'SUPPLIER' | 'PLATFORM' | null
   deliveryReason: PreviewDeliveryReason
   deliveryDistanceKm: number | null
+  /**
+   * Nombre de tournées que ce panier produit. Au-delà d'une, le frais affiché
+   * est la somme de plusieurs livraisons : l'acheteur doit savoir qu'il sera
+   * livré en plusieurs fois, sans avoir à comprendre pourquoi le découpage
+   * tombe là.
+   */
+  deliveryRunCount: number
   total: number
 }
 
@@ -109,6 +116,7 @@ function parsePreview(data: Record<string, unknown>): OrderPreview {
       ? reason as PreviewDeliveryReason
       : 'NO_POSITION',
     deliveryDistanceKm: typeof data.deliveryDistanceKm === 'number' ? data.deliveryDistanceKm : null,
+    deliveryRunCount: Array.isArray(data.runs) ? data.runs.length : 1,
     total: readNumber(data.total),
   }
 }

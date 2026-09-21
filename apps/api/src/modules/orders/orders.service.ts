@@ -355,12 +355,35 @@ export class OrdersService {
     if (orderIds.length === 0) {
       return summaries
     }
-    const deliveries = await this.em.find(Delivery, { order: { $in: orderIds } }, { populate: ['courier'] })
+    const deliveries = await this.em.find(Delivery, { order: { $in: orderIds } }, { populate: ['courier', 'deliveryRun'] })
+
+    // Avancement des tournées concernées : combien de leurs boutiques sont
+    // déjà collectées. L'acheteur suit une progression, pas deux.
+    const runIds = [...new Set(deliveries.map(d => d.deliveryRun?.id).filter((id): id is string => id != null))]
+    const progress = new Map<string, { shopCount: number, collectedCount: number }>()
+    if (runIds.length > 0) {
+      const rows = await this.em.getConnection().execute(
+        `SELECT r.id, r.shop_count,
+                COUNT(*) FILTER (WHERE d.status <> 'ACCEPTED' AND d.status <> 'AWAITING_COURIER') AS collected
+         FROM delivery_runs r
+         JOIN deliveries d ON d.delivery_run_id = r.id
+         WHERE r.id IN (${runIds.map(() => '?').join(', ')})
+         GROUP BY r.id, r.shop_count`,
+        runIds,
+      ) as Array<{ id: string, shop_count: number | string, collected: number | string }>
+      for (const row of rows) {
+        progress.set(row.id, { shopCount: Number(row.shop_count), collectedCount: Number(row.collected) })
+      }
+    }
+
     for (const delivery of deliveries) {
+      const runId = delivery.deliveryRun?.id ?? null
+      const runProgress = runId ? progress.get(runId) : undefined
       summaries.set(delivery.order.id, {
         status: delivery.status,
         courierName: delivery.courier?.fullName ?? null,
         courierVehicleType: delivery.courier?.vehicleType ?? null,
+        run: runId && runProgress ? { id: runId, ...runProgress } : null,
         updatedAt: delivery.updatedAt.toISOString(),
       })
     }

@@ -63,6 +63,38 @@ export interface RunOfferRow {
   stops: RunStopRow[] | null
 }
 
+/** Une collecte d'une tournée en cours, avec son avancement. */
+export interface ActiveRunStopRow {
+  deliveryId: string
+  orderId: string
+  orderNumber: string
+  shopName: string
+  pickupAddress: string
+  pickupLatitude: number | null
+  pickupLongitude: number | null
+  status: string
+  itemsCount: number | string
+  /** Rang de passage, sur deux chiffres, pour trier côté base. */
+  position: string
+}
+
+/** La tournée que le livreur exécute en ce moment. */
+export interface ActiveRunRow {
+  id: string
+  status: string
+  shop_count: number
+  courier_earning: number | string
+  delivery_fee: number | string
+  total_distance_km: number | string | null
+  confirmation_code: string | null
+  dropoff_address: string | null
+  dropoff_latitude: number | null
+  dropoff_longitude: number | null
+  payment_method: string
+  total_amount: number | string
+  stops: ActiveRunStopRow[] | null
+}
+
 /**
  * Cash run: the courier fronts the goods to the shop at pickup and collects
  * the whole total at the door, keeping the delivery fee as their own.
@@ -96,6 +128,42 @@ export class DeliveriesMapper {
       dispatchBlock,
       validatedAt: profile.validatedAt?.toISOString() ?? null,
       createdAt: profile.createdAt.toISOString(),
+    }
+  }
+
+  /**
+   * La tournée en cours : les collectes dans l'ordre de passage, et la remise
+   * unique qui les clôt toutes.
+   */
+  static toActiveRun(row: ActiveRunRow) {
+    const total = Number(row.total_amount)
+    return {
+      id: row.id,
+      status: row.status,
+      shopCount: Number(row.shop_count),
+      courierFee: Number(row.courier_earning),
+      deliveryFee: Number(row.delivery_fee),
+      routeKm: row.total_distance_km === null ? null : Number(row.total_distance_km),
+      confirmationCode: row.confirmation_code,
+      dropoffAddress: row.dropoff_address ?? '',
+      dropoffPosition: row.dropoff_latitude != null && row.dropoff_longitude != null
+        ? { latitude: Number(row.dropoff_latitude), longitude: Number(row.dropoff_longitude) }
+        : null,
+      paymentMethod: row.payment_method,
+      totalAmount: total,
+      ...cashAmounts(row.payment_method, total, Number(row.delivery_fee)),
+      stops: (row.stops ?? []).map(stop => ({
+        deliveryId: stop.deliveryId,
+        orderId: stop.orderId,
+        orderNumber: stop.orderNumber,
+        shopName: stop.shopName,
+        pickupAddress: stop.pickupAddress,
+        pickupPosition: stop.pickupLatitude != null && stop.pickupLongitude != null
+          ? { latitude: Number(stop.pickupLatitude), longitude: Number(stop.pickupLongitude) }
+          : null,
+        status: stop.status,
+        itemsCount: Number(stop.itemsCount),
+      })),
     }
   }
 

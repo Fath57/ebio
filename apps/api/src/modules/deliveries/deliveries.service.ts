@@ -4,7 +4,7 @@ import type {
   RegisterCourier,
   UpdateCourier,
 } from './contracts/delivery.contract'
-import type { DeliveryAudience, OfferRow, RunOfferRow } from './deliveries.mapper'
+import type { ActiveRunRow, DeliveryAudience, OfferRow, RunOfferRow } from './deliveries.mapper'
 import { randomInt } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
@@ -739,6 +739,54 @@ export class DeliveriesService {
     })
 
     return delivery
+  }
+
+  /**
+   * La tournée en cours du livreur, avec ses collectes dans l'ordre de passage.
+   *
+   * Le livreur a besoin d'un seul écran : sans cela, ses deux collectes
+   * apparaissent comme deux courses sans lien, et rien ne lui dit par où
+   * commencer ni qu'une seule remise l'attend au bout.
+   */
+  async getMyActiveRun(userId: string): Promise<ActiveRunRow | null> {
+    const profile = await this.getMyProfile(userId)
+    const rows = await this.em.getConnection().execute(
+      `SELECT r.id, r.status, r.shop_count, r.courier_earning, r.delivery_fee,
+              r.total_distance_km, r.confirmation_code, r.pickup_order,
+              c.delivery_address AS dropoff_address,
+              c.delivery_latitude AS dropoff_latitude, c.delivery_longitude AS dropoff_longitude,
+              c.payment_method, c.total_amount,
+              (SELECT jsonb_agg(stop ORDER BY stop->>'position')
+               FROM (
+                 SELECT jsonb_build_object(
+                   'deliveryId', d.id,
+                   'orderId', o.id,
+                   'orderNumber', o.order_number,
+                   'shopName', s.shop_name,
+                   'pickupAddress', d.pickup_address,
+                   'pickupLatitude', d.pickup_latitude,
+                   'pickupLongitude', d.pickup_longitude,
+                   'status', d.status,
+                   'itemsCount', (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id),
+                   'position', LPAD(COALESCE(
+                     array_position(ARRAY(SELECT jsonb_array_elements_text(r.pickup_order))::uuid[], d.id),
+                     99
+                   )::text, 2, '0')
+                 ) AS stop
+                 FROM deliveries d
+                 JOIN orders o ON o.id = d.order_id
+                 JOIN suppliers s ON s.id = o.supplier_id
+                 WHERE d.delivery_run_id = r.id
+               ) ordered) AS stops
+       FROM delivery_runs r
+       JOIN checkouts c ON c.id = r.checkout_id
+       WHERE r.courier_id = ?
+         AND r.status IN ('ACCEPTED', 'COLLECTING', 'DELIVERING')
+       ORDER BY r."updatedAt" DESC
+       LIMIT 1`,
+      [profile.id],
+    ) as ActiveRunRow[]
+    return rows[0] ?? null
   }
 
   /**

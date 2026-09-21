@@ -30,6 +30,15 @@ export class RunsController {
     return rows.map(DeliveriesMapper.toRunOffer)
   }
 
+  /** La tournée en cours du livreur, ou rien quand il n'en a pas. */
+  @Get('mine')
+  @UseGuards(CaslGuard)
+  @CanRead('Delivery')
+  async mine(@Session() session: LoggedInBetterAuthSession) {
+    const row = await this.deliveriesService.getMyActiveRun(session.user.id)
+    return row === null ? null : DeliveriesMapper.toActiveRun(row)
+  }
+
   @Post(':id/accept')
   @UseGuards(CaslGuard)
   @CanUpdate('Delivery')
