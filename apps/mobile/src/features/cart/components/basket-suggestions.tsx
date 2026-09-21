@@ -19,6 +19,13 @@ const REASON_LABELS: Record<RecommendationReason, string> = {
   NEW: 'Nouveau',
 }
 
+/**
+ * Le motif dépend de l'écran où la carte apparaît. « Souvent acheté avec vos
+ * articles » n'a de sens qu'en regard d'un panier ; sur une fiche produit, le
+ * lien est la boutique.
+ */
+export type ReasonLabels = Partial<Record<RecommendationReason, string>>
+
 const CARD_WIDTH = 150
 
 function formatPrice(value: number): string {
@@ -39,6 +46,8 @@ interface BasketSuggestionsProps {
   items?: RecommendedProduct[]
   /** Hides the section heading when the surrounding screen already has one. */
   hideTitle?: boolean
+  /** Remplace le motif affiché sur la carte, selon l'écran d'accueil. */
+  reasonLabels?: ReasonLabels
 }
 
 interface SuggestionCardProps {
@@ -46,9 +55,10 @@ interface SuggestionCardProps {
   inCart: boolean
   onAdd: ((item: RecommendedProduct) => void) | null
   onOpen: ((productId: string) => void) | null
+  reasonLabels: ReasonLabels
 }
 
-function SuggestionCard({ item, inCart, onAdd, onOpen }: SuggestionCardProps) {
+function SuggestionCard({ item, inCart, onAdd, onOpen, reasonLabels }: SuggestionCardProps) {
   const { semantic } = useTheme()
   const hasPromo = item.promotionalPrice !== null && item.promotionalPrice < item.pricePerUnit
   const displayPrice = hasPromo ? item.promotionalPrice ?? item.pricePerUnit : item.pricePerUnit
@@ -70,7 +80,7 @@ function SuggestionCard({ item, inCart, onAdd, onOpen }: SuggestionCardProps) {
             </View>
           )}
       <Text style={[styles.reason, { color: semantic.textTertiary }]} numberOfLines={1}>
-        {REASON_LABELS[item.reason]}
+        {reasonLabels[item.reason] ?? REASON_LABELS[item.reason]}
       </Text>
       <Text style={[styles.name, { color: semantic.textPrimary }]} numberOfLines={2}>
         {item.name}
@@ -114,6 +124,7 @@ export function BasketSuggestions({
   onOpenProduct,
   items: providedItems,
   hideTitle = false,
+  reasonLabels = {},
 }: BasketSuggestionsProps) {
   const { semantic } = useTheme()
   const { groups, addItem } = useCart()
@@ -157,6 +168,7 @@ export function BasketSuggestions({
             inCart={cartProductIds.has(item.id)}
             onAdd={handleAdd}
             onOpen={onOpenProduct ?? null}
+            reasonLabels={reasonLabels}
           />
         ))}
       </ScrollView>

@@ -441,12 +441,16 @@ export function ProductDetailScreen({
             </View>
           )}
 
-          {/* Same-shop products the buyer may want with this one */}
+          {/* Le reste du rayon de cette boutique */}
           <View style={styles.suggestionsBlock}>
             <BasketSuggestions
               supplierId={supplier.id}
               productIds={suggestionSeed}
-              title="Souvent achetés ensemble"
+              title="D'autres produits du fournisseur"
+              // Ici le lien entre les produits est la boutique, pas le panier :
+              // « souvent acheté avec vos articles » parlerait d'un panier que
+              // l'acheteur n'a pas forcément sous les yeux.
+              reasonLabels={{ BOUGHT_TOGETHER: 'Du même fournisseur' }}
               onOpenProduct={onOpenProduct}
             />
           </View>
