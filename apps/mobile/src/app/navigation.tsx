@@ -324,13 +324,10 @@ function CartStackScreen() {
 function CartHomeWrapper({ navigation }: any) {
   const { items, groups, deliveryMode, updateQuantity, removeItem, setDeliveryMode } = useCart()
   const { data: session } = useSession()
-  const mappedGroups = groups.map(g => ({
-    ...g,
-    items: g.items.map(item => ({
-      ...item,
-      selectedVariant: null,
-      availableVariants: [],
-    })),
+  const mappedItems = items.map(item => ({
+    ...item,
+    selectedVariant: null,
+    availableVariants: [],
   }))
 
   function handleCheckout() {
@@ -367,7 +364,7 @@ function CartHomeWrapper({ navigation }: any) {
   return (
     <SafeScreen>
       <CartScreen
-        groups={mappedGroups}
+        items={mappedItems}
         deliveryMode={deliveryMode}
         onUpdateQuantity={updateQuantity}
         onSelectVariant={() => {}}

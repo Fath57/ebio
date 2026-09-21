@@ -45,15 +45,9 @@ interface CartItem {
   promotionTypes?: string[]
 }
 
-/** Vue par boutique, dérivée du panier : le mode de remise n'y vit plus. */
-interface SupplierCartGroup {
-  supplierId: string
-  supplierName: string
-  items: CartItem[]
-}
-
 interface CartScreenProps {
-  groups: SupplierCartGroup[]
+  /** Le panier, à plat. L'acheteur n'a pas à savoir qui vend quoi. */
+  items: CartItem[]
   /** Un seul mode pour tout le panier : l'acheteur n'en a qu'un. */
   deliveryMode: DeliveryMode
   onUpdateQuantity: (itemId: string, quantity: number) => void
@@ -150,7 +144,7 @@ const quantityStyles = StyleSheet.create({
 })
 
 export function CartScreen({
-  groups,
+  items,
   onUpdateQuantity,
   onSelectVariant,
   onChangeDeliveryMode,
@@ -163,12 +157,10 @@ export function CartScreen({
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
 
-  const totalItemCount = groups.reduce(
-    (sum, group) => sum + group.items.reduce((s, item) => s + item.quantity, 0),
-    0,
-  )
+  const totalItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
+  const cartHint = promotionHint(items)
 
-  if (groups.length === 0) {
+  if (items.length === 0) {
     return (
       <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
         <ScreenHeader title="Mon panier" />
@@ -205,10 +197,7 @@ export function CartScreen({
     return items.reduce((sum, item) => sum + item.pricePerUnit * item.quantity, 0)
   }
 
-  const grandTotal = groups.reduce(
-    (sum, group) => sum + computeGroupTotal(group.items),
-    0,
-  )
+  const grandTotal = computeGroupTotal(items)
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
@@ -222,229 +211,195 @@ export function CartScreen({
         showsVerticalScrollIndicator={false}
       >
 
-        {groups.map((group) => {
-          const groupTotal = computeGroupTotal(group.items)
-          const hint = promotionHint(group.items)
-
-          return (
-            <View
-              key={group.supplierId}
-              style={[
-                styles.supplierSection,
-                {
-                  backgroundColor: semantic.bgCard,
-                },
-              ]}
-            >
-              {/* Supplier header */}
-              <View style={styles.supplierHeader}>
-                <View style={[styles.supplierIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
-                  <Store size={16} color={colors.green[600]} />
-                </View>
-                <Text style={[styles.supplierName, { color: semantic.textPrimary }]}>
-                  {group.supplierName}
-                </Text>
-              </View>
-
-              {group.items.map((item, index) => (
-                <FadeInView key={item.id} delay={index * 80}>
-                  <View
-                    style={[
-                      styles.itemRow,
-                      index < group.items.length - 1 && [
-                        styles.itemRowBorder,
-                        { borderBottomColor: semantic.borderLight },
-                      ],
-                    ]}
+        {/* Un panier, une liste. De quelle boutique vient chaque article est
+            l'affaire de la plateforme, pas de l'acheteur : c'est elle qui
+            répartit en commandes derrière. */}
+        {items.length > 0 && (
+          <View style={[styles.supplierSection, { backgroundColor: semantic.bgCard }]}>
+            {items.map((item, index) => (
+              <FadeInView key={item.id} delay={index * 80}>
+                <View
+                  style={[
+                    styles.itemRow,
+                    index < items.length - 1 && [
+                      styles.itemRowBorder,
+                      { borderBottomColor: semantic.borderLight },
+                    ],
+                  ]}
+                >
+                  <TouchableOpacity
+                    onPress={() => onPressItem?.(item.productId)}
+                    disabled={!onPressItem}
+                    activeOpacity={0.8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Voir le produit `}
                   >
-                    <TouchableOpacity
-                      onPress={() => onPressItem?.(item.productId)}
-                      disabled={!onPressItem}
-                      activeOpacity={0.8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Voir le produit `}
-                    >
-                      {item.imageUrl
-                        ? (
-                            <Image
-                              source={{ uri: item.imageUrl }}
-                              style={styles.itemImage}
-                              resizeMode="cover"
-                            />
-                          )
-                        : (
-                            <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
-                              <Package size={24} color={semantic.textTertiary} />
-                            </View>
-                          )}
-                    </TouchableOpacity>
+                    {item.imageUrl
+                      ? (
+                          <Image
+                            source={{ uri: item.imageUrl }}
+                            style={styles.itemImage}
+                            resizeMode="cover"
+                          />
+                        )
+                      : (
+                          <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
+                            <Package size={24} color={semantic.textTertiary} />
+                          </View>
+                        )}
+                  </TouchableOpacity>
 
-                    <View style={styles.itemDetails}>
-                      <View style={styles.itemTopRow}>
-                        <Text
-                          style={[styles.itemName, { color: semantic.textPrimary }]}
-                          numberOfLines={2}
-                          onPress={onPressItem ? () => onPressItem(item.productId) : undefined}
-                          accessibilityRole={onPressItem ? 'link' : undefined}
-                        >
-                          {item.name}
-                        </Text>
-                        <TouchableOpacity
-                          style={styles.removeButton}
-                          onPress={() => onRemoveItem(item.id)}
-                          accessibilityRole="button"
-                          accessibilityLabel={`Supprimer ${item.name}`}
-                          hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                        >
-                          <Trash2 size={16} color={colors.coral[400]} />
-                        </TouchableOpacity>
-                      </View>
-
-                      <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
-                        {formatPrice(item.pricePerUnit)}
-                        {' '}
-                        FCFA /
-                        {' '}
-                        {unitShortLabel(item.unit)}
+                  <View style={styles.itemDetails}>
+                    <View style={styles.itemTopRow}>
+                      <Text
+                        style={[styles.itemName, { color: semantic.textPrimary }]}
+                        numberOfLines={2}
+                        onPress={onPressItem ? () => onPressItem(item.productId) : undefined}
+                        accessibilityRole={onPressItem ? 'link' : undefined}
+                      >
+                        {item.name}
                       </Text>
+                      <TouchableOpacity
+                        style={styles.removeButton}
+                        onPress={() => onRemoveItem(item.id)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Supprimer ${item.name}`}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                      >
+                        <Trash2 size={16} color={colors.coral[400]} />
+                      </TouchableOpacity>
+                    </View>
 
-                      {item.availableVariants.length > 0 && (
-                        <ScrollView
-                          horizontal
-                          showsHorizontalScrollIndicator={false}
-                          contentContainerStyle={styles.variantRow}
-                        >
-                          {item.availableVariants.map((variant) => {
-                            const isSelected = item.selectedVariant?.id === variant.id
-                            return (
-                              <TouchableOpacity
-                                key={variant.id}
+                    <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
+                      {formatPrice(item.pricePerUnit)}
+                      {' '}
+                      FCFA /
+                      {' '}
+                      {unitShortLabel(item.unit)}
+                    </Text>
+
+                    {item.availableVariants.length > 0 && (
+                      <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        contentContainerStyle={styles.variantRow}
+                      >
+                        {item.availableVariants.map((variant) => {
+                          const isSelected = item.selectedVariant?.id === variant.id
+                          return (
+                            <TouchableOpacity
+                              key={variant.id}
+                              style={[
+                                styles.variantChip,
+                                { borderColor: semantic.borderNormal },
+                                isSelected && [styles.variantChipActive, { backgroundColor: semantic.bgPrimaryLight }],
+                              ]}
+                              onPress={() => onSelectVariant(item.id, variant)}
+                              accessibilityRole="radio"
+                              accessibilityState={{ selected: isSelected }}
+                            >
+                              <Text
                                 style={[
-                                  styles.variantChip,
-                                  { borderColor: semantic.borderNormal },
-                                  isSelected && [styles.variantChipActive, { backgroundColor: semantic.bgPrimaryLight }],
+                                  styles.variantChipText,
+                                  { color: semantic.textSecondary },
+                                  isSelected && [styles.variantChipTextActive, { color: semantic.textPrimaryColor }],
                                 ]}
-                                onPress={() => onSelectVariant(item.id, variant)}
-                                accessibilityRole="radio"
-                                accessibilityState={{ selected: isSelected }}
                               >
-                                <Text
-                                  style={[
-                                    styles.variantChipText,
-                                    { color: semantic.textSecondary },
-                                    isSelected && [styles.variantChipTextActive, { color: semantic.textPrimaryColor }],
-                                  ]}
-                                >
-                                  {variant.label}
-                                </Text>
-                              </TouchableOpacity>
-                            )
-                          })}
-                        </ScrollView>
-                      )}
+                                {variant.label}
+                              </Text>
+                            </TouchableOpacity>
+                          )
+                        })}
+                      </ScrollView>
+                    )}
 
-                      <View style={styles.quantityRow}>
-                        <QuantityControl
-                          quantity={item.quantity}
-                          onDecrease={() =>
-                            item.quantity <= 1
-                              ? onRemoveItem(item.id)
-                              : onUpdateQuantity(item.id, item.quantity - 1)}
-                          onIncrease={() =>
-                            onUpdateQuantity(item.id, item.quantity + 1)}
-                        />
-                        <Text style={[styles.itemPrice, { color: semantic.textPrimary }]}>
-                          {formatPrice(item.pricePerUnit * item.quantity)}
-                          {' '}
-                          FCFA
-                        </Text>
-                      </View>
+                    <View style={styles.quantityRow}>
+                      <QuantityControl
+                        quantity={item.quantity}
+                        onDecrease={() =>
+                          item.quantity <= 1
+                            ? onRemoveItem(item.id)
+                            : onUpdateQuantity(item.id, item.quantity - 1)}
+                        onIncrease={() =>
+                          onUpdateQuantity(item.id, item.quantity + 1)}
+                      />
+                      <Text style={[styles.itemPrice, { color: semantic.textPrimary }]}>
+                        {formatPrice(item.pricePerUnit * item.quantity)}
+                        {' '}
+                        FCFA
+                      </Text>
                     </View>
                   </View>
-                </FadeInView>
-              ))}
-
-              {hint && (
-                <View style={[styles.promotionHint, { backgroundColor: semantic.bgPrimaryLight }]}>
-                  <Gift size={14} color={colors.green[600]} strokeWidth={2} />
-                  <Text style={[styles.promotionHintText, { color: colors.green[800] }]}>{hint}</Text>
                 </View>
-              )}
+              </FadeInView>
+            ))}
 
-              {/* Delivery mode */}
-              <View style={styles.deliverySection}>
-                <Text style={[styles.deliveryLabel, { color: semantic.textSecondary }]}>
-                  Mode de livraison
-                </Text>
-                <View style={styles.deliveryOptions}>
-                  <TouchableOpacity
-                    style={[
-                      styles.deliveryOption,
-                      { borderColor: semantic.borderNormal },
-                      deliveryMode === 'PICKUP' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
-                    ]}
-                    onPress={() => onChangeDeliveryMode('PICKUP')}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: deliveryMode === 'PICKUP' }}
-                  >
-                    <Store
-                      size={16}
-                      color={deliveryMode === 'PICKUP' ? colors.green[600] : semantic.textTertiary}
-                    />
-                    <Text
-                      style={[
-                        styles.deliveryOptionText,
-                        { color: semantic.textSecondary },
-                        deliveryMode === 'PICKUP' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
-                      ]}
-                    >
-                      Retrait sur place
-                    </Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={[
-                      styles.deliveryOption,
-                      { borderColor: semantic.borderNormal },
-                      deliveryMode === 'DELIVERY' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
-                    ]}
-                    onPress={() => onChangeDeliveryMode('DELIVERY')}
-                    accessibilityRole="radio"
-                    accessibilityState={{ selected: deliveryMode === 'DELIVERY' }}
-                  >
-                    <Truck
-                      size={16}
-                      color={deliveryMode === 'DELIVERY' ? colors.green[600] : semantic.textTertiary}
-                    />
-                    <Text
-                      style={[
-                        styles.deliveryOptionText,
-                        { color: semantic.textSecondary },
-                        deliveryMode === 'DELIVERY' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
-                      ]}
-                    >
-                      Livraison
-                    </Text>
-                  </TouchableOpacity>
-                </View>
+            {cartHint && (
+              <View style={[styles.promotionHint, { backgroundColor: semantic.bgPrimaryLight }]}>
+                <Gift size={14} color={colors.green[600]} strokeWidth={2} />
+                <Text style={[styles.promotionHintText, { color: colors.green[800] }]}>{cartHint}</Text>
               </View>
+            )}
 
-              {/* Sous-total de la boutique, à titre indicatif : la commande
-                  se passe une fois, en bas, pour le panier entier. */}
-              <View style={[styles.groupFooter, { borderTopColor: semantic.borderLight }]}>
-                <View style={styles.groupTotalRow}>
-                  <Text style={[styles.groupTotalLabel, { color: semantic.textSecondary }]}>
-                    Sous-total
+            {/* Delivery mode */}
+            <View style={styles.deliverySection}>
+              <Text style={[styles.deliveryLabel, { color: semantic.textSecondary }]}>
+                Mode de livraison
+              </Text>
+              <View style={styles.deliveryOptions}>
+                <TouchableOpacity
+                  style={[
+                    styles.deliveryOption,
+                    { borderColor: semantic.borderNormal },
+                    deliveryMode === 'PICKUP' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
+                  ]}
+                  onPress={() => onChangeDeliveryMode('PICKUP')}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: deliveryMode === 'PICKUP' }}
+                >
+                  <Store
+                    size={16}
+                    color={deliveryMode === 'PICKUP' ? colors.green[600] : semantic.textTertiary}
+                  />
+                  <Text
+                    style={[
+                      styles.deliveryOptionText,
+                      { color: semantic.textSecondary },
+                      deliveryMode === 'PICKUP' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
+                    ]}
+                  >
+                    Retrait sur place
                   </Text>
-                  <Text style={[styles.groupTotalValue, { color: semantic.textPrimary }]}>
-                    {formatPrice(groupTotal)}
-                    {' '}
-                    FCFA
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.deliveryOption,
+                    { borderColor: semantic.borderNormal },
+                    deliveryMode === 'DELIVERY' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
+                  ]}
+                  onPress={() => onChangeDeliveryMode('DELIVERY')}
+                  accessibilityRole="radio"
+                  accessibilityState={{ selected: deliveryMode === 'DELIVERY' }}
+                >
+                  <Truck
+                    size={16}
+                    color={deliveryMode === 'DELIVERY' ? colors.green[600] : semantic.textTertiary}
+                  />
+                  <Text
+                    style={[
+                      styles.deliveryOptionText,
+                      { color: semantic.textSecondary },
+                      deliveryMode === 'DELIVERY' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
+                    ]}
+                  >
+                    Livraison
                   </Text>
-                </View>
+                </TouchableOpacity>
               </View>
             </View>
-          )
-        })}
+
+          </View>
+        )}
       </ScrollView>
 
       {/* Total et commande : la barre d'onglets flotte au-dessus du contenu,
@@ -456,7 +411,7 @@ export function CartScreen({
               {totalItemCount}
               {' article'}
               {totalItemCount > 1 ? 's' : ''}
-              {groups.length > 1 ? ` · ${groups.length} boutiques` : ''}
+
             </Text>
             <Text style={[styles.grandTotalValue, { color: semantic.textPrimary }]}>
               {formatPrice(grandTotal)}
