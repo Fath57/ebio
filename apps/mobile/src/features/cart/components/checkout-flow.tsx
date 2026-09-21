@@ -81,8 +81,17 @@ function formatKm(value: number): string {
   return `${value.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} km`
 }
 
-/** Delivery reasons for which the API refuses the order: nothing to charge until they change. */
-const BLOCKING_DELIVERY_REASONS: PreviewDeliveryReason[] = ['NO_POSITION', 'NO_SHOP_POSITION', 'OUT_OF_RANGE']
+/**
+ * Motifs pour lesquels l'API refuse réellement la commande — elle ne sait pas
+ * en chiffrer la livraison (`deliveryPriceable`, orders.service.ts).
+ *
+ * `NO_SHOP_POSITION` n'en fait pas partie : quand c'est la *boutique* qui n'a
+ * pas de position, le serveur applique le forfait et accepte la commande.
+ * Bloquer ici interdisait l'achat pour une donnée manquante côté vendeur, que
+ * l'acheteur ne peut pas fournir — il repointait sa position sur la carte sans
+ * que le message change jamais.
+ */
+const BLOCKING_DELIVERY_REASONS: PreviewDeliveryReason[] = ['NO_POSITION', 'OUT_OF_RANGE']
 
 /** Label of the confirm button; a blocking delivery reason replaces the payment verb. */
 function confirmLabel(choice: PaymentChoice, blockedReason: PreviewDeliveryReason | null): string {
@@ -114,9 +123,18 @@ function DeliveryFeeValue({ preview, loading, textColor, mutedColor }: DeliveryF
     return <Text style={[styles.feeValue, { color: mutedColor }]}>…</Text>
   }
   const { deliveryReason, deliveryFee, deliveryDistanceKm } = preview
-  // NO_POSITION and NO_SHOP_POSITION alike: nothing to charge until a point exists.
-  if (deliveryReason === 'NO_POSITION' || deliveryReason === 'NO_SHOP_POSITION') {
-    return <Text style={[styles.feeValue, styles.feeBlocked]}>Choisissez votre point de livraison</Text>
+  if (deliveryReason === 'NO_POSITION') {
+    return <Text style={[styles.feeValue, styles.feeBlocked]}>Position à choisir</Text>
+  }
+  // La boutique n'est pas localisée : le serveur facture le forfait. Le montant
+  // est réel, l'acheteur a le droit de le voir plutôt qu'un blocage.
+  if (deliveryReason === 'NO_SHOP_POSITION') {
+    return (
+      <Text style={[styles.feeValue, { color: textColor }]}>
+        {`${formatPrice(deliveryFee ?? 0)} FCFA`}
+        <Text style={[styles.feeDistance, { color: mutedColor }]}> · forfait</Text>
+      </Text>
+    )
   }
   if (deliveryReason === 'OUT_OF_RANGE') {
     const detail = deliveryDistanceKm !== null ? ` (${formatKm(deliveryDistanceKm)})` : ''
@@ -803,6 +821,16 @@ export function CheckoutFlow({
               </View>
             )}
 
+            {/* Le motif seul ne dit pas quoi faire : on nomme le geste et le
+                bouton exact à utiliser, plus haut dans la page. */}
+            {blockedReason !== null && (
+              <Text style={styles.blockedHelp}>
+                {blockedReason === 'OUT_OF_RANGE'
+                  ? `Votre position est trop loin de la boutique pour être livrée. Choisissez « Retrait sur place » plus haut, ou déplacez le repère avec « Modifier ma position sur la carte ».`
+                  : `Appuyez sur « Choisir ma position sur la carte », plus haut, et placez le repère à votre porte : les frais de livraison se calculent depuis ce point.`}
+              </Text>
+            )}
+
             <View style={[styles.totalRow, { borderTopColor: semantic.borderNormal }]}>
               <Text style={[styles.totalLabel, { color: semantic.textPrimary }]}>Total</Text>
               <Text style={styles.totalValue}>
@@ -1204,6 +1232,11 @@ const styles = StyleSheet.create({
   feeValue: {
     fontFamily: fonts.sansSb,
     fontSize: 14,
+  },
+  blockedHelp: {
+    ...typography.bodyS,
+    color: colors.coral[600],
+    marginTop: spacing[2],
   },
   feeBlocked: {
     color: colors.coral[600],
