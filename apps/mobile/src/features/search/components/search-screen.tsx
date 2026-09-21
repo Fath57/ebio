@@ -35,6 +35,7 @@ type ViewMode = 'list' | 'map'
 
 interface SearchScreenProps {
   onNavigateToSupplier?: (supplierId: string) => void
+  onNavigateToProduct?: (productId: string) => void
   onGoBack?: () => void
   initialQuery?: string
   initialCategory?: string
@@ -47,7 +48,7 @@ interface SearchScreenProps {
   initialAutoFocus?: boolean
 }
 
-export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
+export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
   const { semantic } = useTheme()
   const { data: session } = useSession()
   const firstName = session?.user?.name?.split(' ')[0]
@@ -134,8 +135,13 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
     performSearch({ q: term })
   }
 
-  function handleCardPress(supplierId: string) {
+  function handleOpenSupplier(supplierId: string) {
     onNavigateToSupplier?.(supplierId)
+  }
+
+  /** La carte montre un produit : elle ouvre sa fiche, comme sur l'accueil. */
+  function handleCardPress(productId: string, _supplierId: string) {
+    onNavigateToProduct?.(productId)
   }
 
   function handleApplyFilters(filters: {
@@ -444,7 +450,7 @@ export function SearchScreen({ onNavigateToSupplier, onGoBack, initialQuery, ini
           )
         : (
             <MapScreen
-              onNavigateToSupplier={handleCardPress}
+              onNavigateToSupplier={handleOpenSupplier}
               radiusKm={appliedFilters.radius}
               categories={appliedFilters.categories}
               maxPrice={appliedFilters.maxPrice}

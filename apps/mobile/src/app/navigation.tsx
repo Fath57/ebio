@@ -1,5 +1,10 @@
 // eslint-disable-next-line ts/ban-ts-comment
 // @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
+// Les deux directives ci-dessus doivent rester en tête de fichier : un import
+// placé avant elles désactive le `@ts-nocheck` et réveille les incompatibilités
+// de types de React Navigation.
+import type { ProductDetailProduct, ProductDetailSupplier } from '../features/catalog/components/product-detail-screen'
+import type { ApiProductDetail, ApiSupplierDetail } from '../features/catalog/product-detail-mapping'
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { getFocusedRouteNameFromRoute, NavigationContainer, StackActions } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -21,6 +26,7 @@ import { CartCtaBar } from '../features/cart/components/cart-cta-bar'
 import { CartScreen } from '../features/cart/components/cart-screen'
 import { CheckoutFlow } from '../features/cart/components/checkout-flow'
 import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
+import { toDetailProduct, toDetailSupplier } from '../features/catalog/product-detail-mapping'
 import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
 import { ConversationList } from '../features/chat/components/conversation-list'
 import { openDeliveryConversation } from '../features/chat/delivery-chat'
@@ -105,6 +111,7 @@ function SearchResultsWrapper({ route, navigation }: any) {
       <SearchScreen
         onGoBack={() => navigation.goBack()}
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
+        onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         initialQuery={params.query}
         initialCategory={params.category}
         initialValidatedOnly={params.validatedOnly}
@@ -198,8 +205,10 @@ function SupplierProfileWrapper({ route, navigation }: any) {
 
 function ProductDetailWrapper({ route, navigation }: any) {
   const { productId } = route.params ?? {}
-  const [loaded, setLoaded] = React.useState<{ product: any, supplier: any } | null>(null)
-  const { addItem } = useCart()
+  const [loaded, setLoaded] = React.useState<{
+    product: ProductDetailProduct
+    supplier: ProductDetailSupplier | null
+  } | null>(null)
 
   // Une bannière ne transporte qu'un identifiant : on complète nous-mêmes le
   // produit et son fournisseur, que l'écran attend en objets.
@@ -212,13 +221,13 @@ function ProductDetailWrapper({ route, navigation }: any) {
         const productRes = await apiFetch(`/api/products/${productId}`)
         if (!productRes.ok)
           return
-        const p = await productRes.json()
-        const supplierRes = await apiFetch(`/api/suppliers/${p.supplierId}`)
-        const s = supplierRes.ok ? await supplierRes.json() : null
+        const rawProduct = await productRes.json() as ApiProductDetail
+        const supplierRes = await apiFetch(`/api/suppliers/${rawProduct.supplierId}`)
+        const rawSupplier = supplierRes.ok ? await supplierRes.json() as ApiSupplierDetail : null
         if (!cancelled) {
           setLoaded({
-            product: { ...p, imageUrl: p.photos?.[0] ?? null },
-            supplier: s,
+            product: toDetailProduct(rawProduct),
+            supplier: rawSupplier && toDetailSupplier(rawSupplier),
           })
         }
       }
@@ -251,20 +260,6 @@ function ProductDetailWrapper({ route, navigation }: any) {
         product={product}
         supplier={supplier}
         onGoBack={() => navigation.goBack()}
-        onAddToCart={(productId, quantity, promotionTypes) => {
-          addItem({
-            productId,
-            supplierId: supplier.id,
-            supplierName: supplier.shopName,
-            name: product.name,
-            imageUrl: product.imageUrl,
-            pricePerUnit: product.promotionalPrice ?? product.pricePerUnit,
-            unit: product.unit,
-            quantity,
-            promotionTypes,
-          })
-          navigation.goBack()
-        }}
         onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
         onOpenProduct={id => navigation.push('ProductDetail', { productId: id })}
       />

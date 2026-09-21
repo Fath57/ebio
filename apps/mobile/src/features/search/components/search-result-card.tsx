@@ -17,7 +17,12 @@ import { promotionChipLabels } from '../../catalog/promotions'
 
 interface SearchResultCardProps {
   item: SearchResult
-  onPress: (supplierId: string) => void
+  /**
+   * La carte montre un produit : elle annonce les deux identifiants et laisse
+   * l'écran appelant décider où il emmène. L'accueil ouvre la fiche produit,
+   * les résultats de recherche ouvrent la boutique.
+   */
+  onPress: (productId: string, supplierId: string) => void
 }
 
 export function formatPrice(value: number): string {
@@ -41,7 +46,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
   return (
     <ScalePressable
       style={[styles.card, { backgroundColor: semantic.bgCard }]}
-      onPress={() => onPress(supplier.id)}
+      onPress={() => onPress(product.id, supplier.id)}
       accessibilityRole="button"
       accessibilityLabel={`${product.name} chez ${supplier.shopName}`}
     >
@@ -153,7 +158,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
               <Text style={[styles.badgeText, { color: colors.earth[600] }]}>Top vendeur</Text>
             </View>
           )}
-          <PromotionChips labels={chipLabels} />
+          <PromotionChips labels={chipLabels} maxVisible={2} />
           {supplier.rating !== null && (
             <View style={styles.starsRow}>
               {Array.from({ length: 5 }, (_, i) => (

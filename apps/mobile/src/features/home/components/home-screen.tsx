@@ -123,7 +123,7 @@ export function HomeScreen({
                   iconColor={colors.coral[400]}
                   data={nearby}
                   onSeeAll={() => onSeeAll('nearby')}
-                  onNavigateToSupplier={onNavigateToSupplier}
+                  onNavigateToProduct={onNavigateToProduct}
                   textColor={semantic.textSecondary}
                 />
                 <HomeSection
@@ -132,7 +132,7 @@ export function HomeScreen({
                   iconColor={colors.green[400]}
                   data={validated}
                   onSeeAll={() => onSeeAll('validated')}
-                  onNavigateToSupplier={onNavigateToSupplier}
+                  onNavigateToProduct={onNavigateToProduct}
                   textColor={semantic.textSecondary}
                 />
                 <HomeSection
@@ -141,7 +141,7 @@ export function HomeScreen({
                   iconColor={colors.coral[400]}
                   data={promos}
                   onSeeAll={() => onSeeAll('promo')}
-                  onNavigateToSupplier={onNavigateToSupplier}
+                  onNavigateToProduct={onNavigateToProduct}
                   textColor={semantic.textSecondary}
                 />
               </>
@@ -151,13 +151,13 @@ export function HomeScreen({
   )
 }
 
-function HomeSection({ title, Icon, iconColor, data, onSeeAll, onNavigateToSupplier, textColor }: {
+function HomeSection({ title, Icon, iconColor, data, onSeeAll, onNavigateToProduct, textColor }: {
   title: string
   Icon: typeof MapPin
   iconColor: string
   data: SearchResult[]
   onSeeAll: () => void
-  onNavigateToSupplier: (supplierId: string) => void
+  onNavigateToProduct: (productId: string) => void
   textColor: string
 }) {
   if (data.length === 0)
@@ -188,7 +188,7 @@ function HomeSection({ title, Icon, iconColor, data, onSeeAll, onNavigateToSuppl
       >
         {data.slice(0, 10).map(item => (
           <View key={`${item.supplier.id}-${item.product.id}`} style={styles.carouselCard}>
-            <SearchResultCard item={item} onPress={onNavigateToSupplier} />
+            <SearchResultCard item={item} onPress={productId => onNavigateToProduct(productId)} />
           </View>
         ))}
       </ScrollView>

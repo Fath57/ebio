@@ -12,7 +12,6 @@ import Package from 'lucide-react-native/dist/esm/icons/package'
 import Percent from 'lucide-react-native/dist/esm/icons/percent'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Share2 from 'lucide-react-native/dist/esm/icons/share-2'
-import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
@@ -31,7 +30,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
-import { useCart } from '../../cart/cart-context'
+import { MAX_ITEM_QUANTITY, useCart } from '../../cart/cart-context'
 import { BasketSuggestions } from '../../cart/components/basket-suggestions'
 import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
@@ -43,33 +42,43 @@ import { PromotionChips } from './promotion-chips'
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const HERO_HEIGHT = 380
 
+/**
+ * Ce que la fiche attend. Exporté pour que les écrans appelants composent ces
+ * objets par une fonction de mappage typée : un champ mal nommé se voyait
+ * jusqu'ici à l'exécution, sous forme de note manquante ou de produit déclaré
+ * indisponible, jamais à la compilation.
+ */
+export interface ProductDetailProduct {
+  id: string
+  name: string
+  imageUrl: string | null
+  pricePerUnit: number
+  promotionalPrice: number | null
+  /** Live promotion types from the list row; the detail fetch refines them. */
+  promotionTypes?: string[]
+  unit: string
+  isInStock: boolean
+  categoryName?: string
+  description?: string
+  stock?: number
+}
+
+export interface ProductDetailSupplier {
+  id: string
+  shopName: string
+  rating: number | null
+  /** Absente quand l'écran est ouvert sans position connue (bannière, accueil). */
+  distance?: number
+  mode: 'CONTACT' | 'ORDER'
+  isValidated: boolean
+  profilePhoto?: string | null
+  reviewCount?: number
+}
+
 interface ProductDetailScreenProps {
-  product: {
-    id: string
-    name: string
-    imageUrl: string | null
-    pricePerUnit: number
-    promotionalPrice: number | null
-    /** Live promotion types from the list row; the detail fetch refines them. */
-    promotionTypes?: string[]
-    unit: string
-    isInStock: boolean
-    categoryName?: string
-    description?: string
-    stock?: number
-  }
-  supplier: {
-    id: string
-    shopName: string
-    rating: number | null
-    distance: number
-    mode: 'CONTACT' | 'ORDER'
-    isValidated: boolean
-    profilePhoto?: string | null
-    reviewCount?: number
-  }
+  product: ProductDetailProduct
+  supplier: ProductDetailSupplier
   onGoBack: () => void
-  onAddToCart: (productId: string, quantity: number, promotionTypes: string[]) => void
   onNavigateToSupplier: (supplierId: string) => void
   /** Opens another product of the shop (suggestions rail). */
   onOpenProduct?: (productId: string) => void
@@ -79,17 +88,15 @@ export function ProductDetailScreen({
   product,
   supplier,
   onGoBack,
-  onAddToCart,
   onNavigateToSupplier,
   onOpenProduct,
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
   const { shortLabel } = useProductUnits()
   const insets = useSafeAreaInsets()
-  const { getItemCount } = useCart()
-  // Keep the add-to-cart card reachable above the floating cart bar.
+  const { getItemCount, groups, addItem, updateQuantity } = useCart()
+  // Keep the content clear of the floating cart bar.
   const cartBarClearance = getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
-  const [quantity, setQuantity] = useState(1)
   const [isFavorite, setIsFavorite] = useState(false)
   const [composition, setComposition] = useState<ProductCompositionData | null>(null)
   // Null until the detail fetch answers: the list row's types stand in meanwhile.
@@ -132,7 +139,6 @@ export function ProductDetailScreen({
 
   const hasPromo = product.promotionalPrice !== null && product.promotionalPrice < product.pricePerUnit
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
-  const totalPrice = displayPrice * quantity
   const discount = hasPromo ? Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100) : 0
   const unitLabel = shortLabel(product.unit)
   const promotionTypes = useMemo(
@@ -142,19 +148,43 @@ export function ProductDetailScreen({
   const chipLabels = promotions ? promotionChipLabelsFor(promotions) : promotionChipLabels(promotionTypes)
   const suggestionSeed = useMemo(() => [product.id], [product.id])
 
-  const handleDecrement = useCallback(() => {
-    setQuantity(prev => Math.max(1, prev - 1))
-  }, [])
-
-  const handleIncrement = useCallback(() => {
-    setQuantity(prev => Math.min(99, prev + 1))
-  }, [])
-
-  const handleAddToCart = useCallback(() => {
-    if (product.isInStock) {
-      onAddToCart(product.id, quantity, promotionTypes)
+  /** La quantité affichée est celle du panier : il n'y a plus d'état local. */
+  const cartItem = useMemo(() => {
+    for (const group of groups) {
+      const found = group.items.find(item => item.productId === product.id)
+      if (found) {
+        return found
+      }
     }
-  }, [product.id, product.isInStock, quantity, promotionTypes, onAddToCart])
+    return null
+  }, [groups, product.id])
+
+  const handleAdd = useCallback(() => {
+    if (!product.isInStock) {
+      return
+    }
+    if (cartItem) {
+      updateQuantity(cartItem.id, cartItem.quantity + 1)
+      return
+    }
+    addItem({
+      productId: product.id,
+      supplierId: supplier.id,
+      supplierName: supplier.shopName,
+      name: product.name,
+      imageUrl: product.imageUrl,
+      pricePerUnit: displayPrice,
+      unit: product.unit,
+      quantity: 1,
+      promotionTypes,
+    })
+  }, [cartItem, product, supplier, displayPrice, promotionTypes, addItem, updateQuantity])
+
+  const handleRemove = useCallback(() => {
+    if (cartItem) {
+      updateQuantity(cartItem.id, cartItem.quantity - 1)
+    }
+  }, [cartItem, updateQuantity])
 
   // Scroll-driven animations
   const headerBg = scrollY.interpolate({
@@ -348,36 +378,51 @@ export function ProductDetailScreen({
 
           {/* Price block — editorial treatment */}
           <View style={styles.priceBlock}>
-            <View style={styles.priceMainRow}>
-              <Text style={[styles.priceAmount, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>
-                {formatPrice(displayPrice)}
-              </Text>
-              <Text style={[styles.priceCurrency, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>FCFA</Text>
-            </View>
-            <View style={styles.priceMetaRow}>
-              <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
-                /
-                {' '}
-                {unitLabel}
-              </Text>
-              {hasPromo && (
-                <>
-                  <View style={[styles.priceDot, { backgroundColor: semantic.textTertiary }]} />
-                  <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
-                    {formatPrice(product.pricePerUnit)}
-                    {' '}
-                    FCFA
+            <View style={styles.priceHeaderRow}>
+              <View style={styles.priceTexts}>
+                <View style={styles.priceMainRow}>
+                  <Text style={[styles.priceAmount, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>
+                    {formatPrice(displayPrice)}
                   </Text>
-                  <View style={styles.discountPill}>
-                    <Text style={styles.discountPillText}>
-                      −
-                      {discount}
-                      %
-                    </Text>
-                  </View>
-                </>
+                  <Text style={[styles.priceCurrency, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>FCFA</Text>
+                </View>
+                <View style={styles.priceMetaRow}>
+                  <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
+                    /
+                    {' '}
+                    {unitLabel}
+                  </Text>
+                  {hasPromo && (
+                    <>
+                      <View style={[styles.priceDot, { backgroundColor: semantic.textTertiary }]} />
+                      <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
+                        {formatPrice(product.pricePerUnit)}
+                        {' '}
+                        FCFA
+                      </Text>
+                      <View style={styles.discountPill}>
+                        <Text style={styles.discountPillText}>
+                          −
+                          {discount}
+                          %
+                        </Text>
+                      </View>
+                    </>
+                  )}
+                  <PromotionChips labels={chipLabels} />
+                </View>
+              </View>
+
+              {/* Le geste d'achat est ici, à hauteur du prix : il n'y a plus de
+                  bouton à aller chercher au bas d'une longue fiche. */}
+              {product.isInStock && (
+                <CartControl
+                  quantity={cartItem?.quantity ?? 0}
+                  unitLabel={unitLabel}
+                  onAdd={handleAdd}
+                  onRemove={handleRemove}
+                />
               )}
-              <PromotionChips labels={chipLabels} />
             </View>
           </View>
 
@@ -464,7 +509,7 @@ export function ProductDetailScreen({
               </View>
 
               <View style={styles.supplierMeta}>
-                {supplier.rating !== null && (
+                {supplier.rating != null && (
                   <View style={styles.metaItem}>
                     <Star size={12} color={colors.earth[400]} fill={colors.earth[400]} strokeWidth={0} />
                     <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
@@ -479,12 +524,14 @@ export function ProductDetailScreen({
                     )}
                   </View>
                 )}
-                <View style={styles.metaItem}>
-                  <MapPin size={12} color={semantic.textTertiary} strokeWidth={2} />
-                  <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
-                    {formatDistance(supplier.distance)}
-                  </Text>
-                </View>
+                {supplier.distance !== undefined && (
+                  <View style={styles.metaItem}>
+                    <MapPin size={12} color={semantic.textTertiary} strokeWidth={2} />
+                    <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
+                      {formatDistance(supplier.distance)}
+                    </Text>
+                  </View>
+                )}
               </View>
 
               {/* Delivery / Contact mode */}
@@ -517,74 +564,6 @@ export function ProductDetailScreen({
             Prix et disponibilité indicatifs. Contactez le fournisseur pour tout détail.
           </Text>
         </View>
-
-        {/* ============================================================== */}
-        {/* QUANTITÉ + CTA — card premium                                   */}
-        {/* ============================================================== */}
-        {product.isInStock && (
-          <View style={styles.ctaSection}>
-            <View style={[styles.ctaCard, { backgroundColor: semantic.bgPage, borderColor: semantic.borderLight }]}>
-              {/* Stepper row with price recap */}
-              <View style={styles.stepperRow}>
-                <View style={styles.stepper}>
-                  <StepperButton
-                    onPress={handleDecrement}
-                    disabled={quantity <= 1}
-                  >
-                    <Minus
-                      size={16}
-                      color={quantity <= 1 ? semantic.textTertiary : colors.green[800]}
-                      strokeWidth={2.5}
-                    />
-                  </StepperButton>
-                  <View style={styles.stepperValueWrap}>
-                    <Text style={styles.stepperValue}>
-                      {quantity}
-                    </Text>
-                    <Text style={styles.stepperUnit}>
-                      {unitLabel}
-                    </Text>
-                  </View>
-                  <StepperButton
-                    onPress={handleIncrement}
-                    disabled={quantity >= 99}
-                  >
-                    <Plus
-                      size={16}
-                      color={quantity >= 99 ? semantic.textTertiary : colors.green[800]}
-                      strokeWidth={2.5}
-                    />
-                  </StepperButton>
-                </View>
-
-                <View style={styles.subtotalBlock}>
-                  <Text style={[styles.subtotalLabel, { color: semantic.textTertiary }]}>
-                    Sous-total
-                  </Text>
-                  <Text style={[styles.subtotalValue, { color: semantic.textPrimary }]}>
-                    {formatPrice(totalPrice)}
-                    <Text style={[styles.subtotalCurrency, { color: semantic.textSecondary }]}> FCFA</Text>
-                  </Text>
-                </View>
-              </View>
-
-              {/* Primary CTA */}
-              <Pressable
-                style={({ pressed }) => [
-                  styles.primaryCta,
-                  { backgroundColor: colors.green[600], transform: [{ scale: pressed ? 0.985 : 1 }] },
-                ]}
-                onPress={handleAddToCart}
-                accessibilityRole="button"
-                accessibilityLabel={`Ajouter ${quantity} au panier, total ${formatPrice(totalPrice)} FCFA`}
-              >
-                <ShoppingBag size={18} color={colors.neutral[0]} strokeWidth={2.5} />
-                <Text style={styles.primaryCtaText}>Ajouter au panier</Text>
-                <ChevronRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />
-              </Pressable>
-            </View>
-          </View>
-        )}
 
         {/* Out of stock CTA */}
         {!product.isInStock && (
@@ -626,34 +605,65 @@ function HeaderIcon({
   )
 }
 
-function StepperButton({
-  onPress,
-  disabled,
-  children,
-}: {
-  onPress: () => void
-  disabled: boolean
-  children: React.ReactNode
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      disabled={disabled}
-      hitSlop={6}
-      style={({ pressed }) => [
-        styles.stepperButton,
-        {
-          backgroundColor: disabled ? 'transparent' : colors.neutral[0],
-          opacity: pressed ? 0.7 : 1,
-        },
-      ]}
-    >
-      {children}
-    </Pressable>
-  )
+interface CartControlProps {
+  /** Quantité au panier. 0 = le produit n'y est pas encore. */
+  quantity: number
+  unitLabel: string
+  onAdd: () => void
+  onRemove: () => void
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
+/**
+ * Même geste que sur les cartes produit : un « + » tant que rien n'est au
+ * panier, puis un compteur branché directement dessus. Pas de bouton
+ * « Ajouter au panier » à valider — la quantité affichée EST celle du panier.
+ */
+function CartControl({ quantity, unitLabel, onAdd, onRemove }: CartControlProps) {
+  const isAtMax = quantity >= MAX_ITEM_QUANTITY
+
+  if (quantity === 0) {
+    return (
+      <Pressable
+        onPress={onAdd}
+        style={({ pressed }) => [
+          styles.cartAddButton,
+          { backgroundColor: colors.green[600], transform: [{ scale: pressed ? 0.94 : 1 }] },
+        ]}
+        accessibilityRole="button"
+        accessibilityLabel="Ajouter au panier"
+      >
+        <Plus size={22} color={colors.neutral[0]} strokeWidth={2.8} />
+      </Pressable>
+    )
+  }
+
+  return (
+    <View style={[styles.cartStepper, { backgroundColor: colors.green[600] }]}>
+      <Pressable
+        onPress={onRemove}
+        style={styles.cartStepperButton}
+        accessibilityRole="button"
+        accessibilityLabel={quantity === 1 ? 'Retirer du panier' : 'Diminuer la quantité'}
+      >
+        <Minus size={16} color={colors.neutral[0]} strokeWidth={2.8} />
+      </Pressable>
+      <View style={styles.cartStepperValueWrap}>
+        <Text style={styles.cartStepperValue}>{quantity}</Text>
+        <Text style={styles.cartStepperUnit}>{unitLabel}</Text>
+      </View>
+      <Pressable
+        onPress={onAdd}
+        disabled={isAtMax}
+        style={[styles.cartStepperButton, isAtMax && styles.cartStepperButtonDisabled]}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: isAtMax }}
+        accessibilityLabel={isAtMax ? `Quantité maximale de ${MAX_ITEM_QUANTITY} atteinte` : 'Augmenter la quantité'}
+      >
+        <Plus size={16} color={colors.neutral[0]} strokeWidth={2.8} />
+      </Pressable>
+    </View>
+  )
+}
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -829,6 +839,51 @@ const styles = StyleSheet.create({
   },
 
   // Price — editorial
+  priceHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing[4],
+  },
+  priceTexts: {
+    flex: 1,
+  },
+  cartAddButton: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: 52,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[1],
+  },
+  cartStepperButton: {
+    width: 44,
+    height: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cartStepperButtonDisabled: {
+    opacity: 0.4,
+  },
+  cartStepperValueWrap: {
+    minWidth: 44,
+    alignItems: 'center',
+  },
+  cartStepperValue: {
+    ...typography.h3,
+    color: colors.neutral[0],
+  },
+  cartStepperUnit: {
+    ...typography.caption,
+    fontSize: 10,
+    color: 'rgba(255, 255, 255, 0.75)',
+  },
   priceBlock: {
     marginTop: spacing[3],
     gap: spacing[1],
