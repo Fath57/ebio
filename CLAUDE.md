@@ -32,6 +32,7 @@ against the same checklist.
 - PostgreSQL (champs TikTok sur `Supplier`) ; Redis (cache liste vidéos, TTL court). (002-tiktok-videos)
 - TypeScript strict, Node.js 24.13.0 (API/web) ; React Native 0.81.5 / Expo SDK 54, React 19.1 (mobile) + API — NestJS, MikroORM 6 (PostgreSQL + PostGIS), Zod + nzoth (`@TypedBody`), Better Auth, firebase-admin (FCM), `@nestjs/schedule` (cron). Mobile — Expo (npm hors workspace pnpm, `legacy-peer-deps`), React Navigation 7, `expo-location`, `expo-notifications` (token FCM natif), `react-native-mmkv` (file hors-ligne), `@react-native-community/netinfo`, socket.io-client (chat uniquement). Web-spa — React 19 + SDK généré `@boilerstone/openapi-generator`. (005-split-three-apps)
 - PostgreSQL + PostGIS (`geography(Point,4326)` en SQL brut, pattern `suppliers.service.ts`) ; Redis (cache) ; media via module `media` existant (R2/MinIO) (005-split-three-apps)
+- Aucune technologie nouvelle : pile identique à 005. Deux tables PostgreSQL ajoutées — `checkouts` (un paiement couvre N commandes) et `delivery_runs` (une tournée regroupe N livraisons). `Order`, `Payment.order` et `Delivery.order` restent inchangés. (006-unified-cart)
 
 ## Lint rules — avoid these 8 repeat offenders
 
@@ -49,6 +50,6 @@ Project uses `@antfu/eslint-config` strict. Run `pnpm lint` before declaring wor
 React Compiler rules (`react-hooks/refs`, `react-hooks/set-state-in-effect`, `react-hooks-extra/no-direct-set-state-in-use-effect`, etc.) are **intentionally disabled** — they produce false positives on legitimate patterns (RN Animated API, initial-data-fetch effects). Don't try to refactor around them.
 
 ## Recent Changes
+- 006-unified-cart: panier unifié multi-boutiques — un passage en caisse crée N commandes ; regroupement par `checkouts` et `delivery_runs`, sans toucher aux entités par commande.
 - 005-split-three-apps: Added TypeScript strict, Node.js 24.13.0 (API/web) ; React Native 0.81.5 / Expo SDK 54, React 19.1 (mobile) + API — NestJS, MikroORM 6 (PostgreSQL + PostGIS), Zod + nzoth (`@TypedBody`), Better Auth, firebase-admin (FCM), `@nestjs/schedule` (cron). Mobile — Expo (npm hors workspace pnpm, `legacy-peer-deps`), React Navigation 7, `expo-location`, `expo-notifications` (token FCM natif), `react-native-mmkv` (file hors-ligne), `@react-native-community/netinfo`, socket.io-client (chat uniquement). Web-spa — React 19 + SDK généré `@boilerstone/openapi-generator`.
 - 002-tiktok-videos: Added TypeScript strict, Node.js 24.13.0 + API — NestJS, MikroORM 6, Zod (contrats), Redis (cache), `node:crypto` (AES-256-GCM). Mobile — React Native/Expo, `react-native-webview` (présent), `expo-web-browser` + `expo-auth-session` (à ajouter), `expo-crypto` (PKCE, à confirmer).
-- 001-ebio-marketplace-v1: Added TypeScript (strict mode) on Node.js 24.13.0
