@@ -698,11 +698,14 @@ const styles = StyleSheet.create({
   },
   orderButton: {
     flexDirection: 'row',
-    minHeight: 48,
+    minHeight: 52,
     backgroundColor: colors.green[400],
     borderRadius: radius.pill,
     justifyContent: 'center',
     alignItems: 'center',
+    // Without it the label and its arrow sit flush against the pill's edge.
+    paddingHorizontal: spacing[5],
+    paddingVertical: spacing[3],
     gap: spacing[2],
     ...shadows.md,
   },

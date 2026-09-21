@@ -15,6 +15,7 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { useTheme } from '../../../theme/theme-context'
 import { useLocation } from '../../common/location-context'
 import { useNearbySuppliers } from '../hooks/use-nearby-suppliers'
+import { SalesPointMarker } from './sales-point-marker'
 import { SupplierMarker } from './supplier-marker'
 import { SupplierSheet } from './supplier-sheet'
 
@@ -139,10 +140,17 @@ export function MapScreen({ onNavigateToSupplier, radiusKm, categories, maxPrice
               onPress={() => handleMarkerPress(placeId, supplier.latitude, supplier.longitude)}
               accessibilityLabel={supplier.salesPointName ? `${supplier.shopName} — ${supplier.salesPointName}` : supplier.shopName}
             >
-              <SupplierMarker
-                isValidated={supplier.isValidated}
-                isSelected={placeId === selectedId}
-              />
+              {/* A sales point is a stall the shop holds elsewhere, not the
+                  shop itself: it gets its own silhouette and its own colour,
+                  otherwise the two are indistinguishable on a busy map. */}
+              {supplier.salesPointId
+                ? <SalesPointMarker isSelected={placeId === selectedId} />
+                : (
+                    <SupplierMarker
+                      isValidated={supplier.isValidated}
+                      isSelected={placeId === selectedId}
+                    />
+                  )}
             </Marker>
           )
         })}
