@@ -1,5 +1,5 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
-import type { InitiateCheckoutInput, InitiatePayment, VerifyCheckoutInput } from './contracts/payment.contract'
+import type { InitiateCartPayment, InitiateCheckoutInput, InitiatePayment, VerifyCartPayment, VerifyCheckoutInput } from './contracts/payment.contract'
 import {
   TypedBody,
   TypedParam,
@@ -14,15 +14,7 @@ import { CanCreate, CanRead } from '../../common/decorators/check-permissions.de
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
-import {
-  checkoutVerifyResultSchema,
-  initiateCheckoutSchema,
-  initiatePaymentSchema,
-  noRedirectPaymentResultSchema,
-  paymentInfoSchema,
-  paymentStatusResponseSchema,
-  verifyCheckoutSchema,
-} from './contracts/payment.contract'
+import { cartPaymentResultSchema, checkoutVerifyResultSchema, initiateCartPaymentSchema, initiateCheckoutSchema, initiatePaymentSchema, noRedirectPaymentResultSchema, paymentInfoSchema, paymentStatusResponseSchema, verifyCartPaymentSchema, verifyCheckoutSchema } from './contracts/payment.contract'
 import { PaymentsService } from './payments.service'
 
 @Controller('payments')
@@ -57,6 +49,26 @@ export class PaymentsController {
     @TypedBody(initiateCheckoutSchema) body: InitiateCheckoutInput,
   ) {
     return this.paymentsService.initiateCheckoutPayment(session.user.id, body)
+  }
+
+  /** Un panier multi-boutiques : un montant, une transaction. */
+  @TypedRoute.Post('cart/initiate', cartPaymentResultSchema)
+  @CanCreate('Payment')
+  async initiateCartPayment(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedBody(initiateCartPaymentSchema) body: InitiateCartPayment,
+  ) {
+    return this.paymentsService.initiateCartPayment(session.user.id, body)
+  }
+
+  /** Confirme l'encaissement unique et crée un paiement par commande. */
+  @TypedRoute.Post('cart/verify', cartPaymentResultSchema)
+  @CanCreate('Payment')
+  async verifyCartPayment(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedBody(verifyCartPaymentSchema) body: VerifyCartPayment,
+  ) {
+    return this.paymentsService.verifyCartPayment(session.user.id, body)
   }
 
   @TypedRoute.Post('verify-checkout', checkoutVerifyResultSchema)

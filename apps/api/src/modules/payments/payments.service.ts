@@ -1,4 +1,4 @@
-import type { InitiateCheckoutInput, InitiatePayment, VerifyCheckoutInput } from './contracts/payment.contract'
+import type { InitiateCartPayment, InitiateCheckoutInput, InitiatePayment, VerifyCartPayment, VerifyCheckoutInput } from './contracts/payment.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
@@ -16,6 +16,7 @@ import { WalletTransactionType } from '../wallet/entities/wallet-transaction.ent
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { CommissionService } from './commission.service'
+import { Checkout, CheckoutStatus } from './entities/checkout.entity'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
 import { Payment, PaymentProvider, PaymentStatus } from './payment.entity'
@@ -251,6 +252,120 @@ export class PaymentsService {
     return {
       paymentId: payment.id,
       status: 'completed' as const,
+    }
+  }
+
+  /**
+   * Ouvre un paiement unique pour un panier multi-boutiques.
+   *
+   * Rien n'est créé côté `Payment` à ce stade : celui-ci est propriétaire d'un
+   * `@OneToOne(Order)` et n'existe donc que par commande. Le passage en caisse
+   * porte la transaction du prestataire, et les paiements par commande naissent
+   * à la confirmation — un par commande, chacun avec son escrow, pour qu'une
+   * boutique soit payée au rythme de la sienne et non de la plus lente.
+   */
+  async initiateCartPayment(userId: string, data: InitiateCartPayment) {
+    const checkout = await this.em.findOneOrFail(Checkout, { id: data.checkoutId }, { populate: ['buyer'] })
+    if (checkout.buyer.id !== userId) {
+      throw new BadRequestException('Vous ne pouvez payer que votre propre panier')
+    }
+    if (checkout.status !== CheckoutStatus.PENDING) {
+      throw new BadRequestException('Ce panier a déjà été payé')
+    }
+
+    const orders = await this.em.find(Order, { checkout: { id: checkout.id } })
+    if (orders.length === 0) {
+      throw new BadRequestException('Ce panier ne contient aucune commande')
+    }
+
+    return {
+      checkoutId: checkout.id,
+      amount: checkout.totalAmount,
+      status: 'pending' as const,
+      paymentIds: [],
+    }
+  }
+
+  /**
+   * Confirme le paiement unique, puis crée un paiement par commande.
+   *
+   * Le montant vérifié est celui du panier ; il est ensuite ventilé entre les
+   * commandes au prorata de leur total, de sorte que la somme des paiements
+   * égale exactement ce qui a été encaissé, au franc près.
+   */
+  async verifyCartPayment(userId: string, data: VerifyCartPayment) {
+    const checkout = await this.em.findOneOrFail(Checkout, { id: data.checkoutId }, { populate: ['buyer'] })
+    if (checkout.buyer.id !== userId) {
+      throw new BadRequestException('Vous ne pouvez payer que votre propre panier')
+    }
+
+    const orders = await this.em.find(Order, { checkout: { id: checkout.id } }, { populate: ['buyer'] })
+    if (orders.length === 0) {
+      throw new BadRequestException('Ce panier ne contient aucune commande')
+    }
+
+    // Rejouer la confirmation ne doit pas créer un second jeu de paiements.
+    if (checkout.status !== CheckoutStatus.PENDING) {
+      const existing = await this.em.find(Payment, { checkout: { id: checkout.id } })
+      return {
+        checkoutId: checkout.id,
+        amount: checkout.totalAmount,
+        status: 'completed' as const,
+        paymentIds: existing.map(payment => payment.id),
+      }
+    }
+
+    const gateway = this.gatewayFactory.createGateway(PaymentProvider.FEDAPAY)
+    const checkResult = await gateway.checkStatus(data.fedapayTransactionId)
+    if (checkResult.status !== 'completed') {
+      throw new BadRequestException(`Paiement non confirmé. Statut : ${checkResult.status}`)
+    }
+
+    checkout.providerTransactionId = data.fedapayTransactionId
+    checkout.status = CheckoutStatus.PAID
+
+    const payments = splitCheckoutAmount(checkout.totalAmount, orders).map(({ order, amount }) =>
+      this.em.create(Payment, {
+        checkout,
+        order,
+        amount,
+        provider: PaymentProvider.FEDAPAY,
+        paymentMethod: 'fedapay_checkout',
+        providerTransactionId: data.fedapayTransactionId,
+        providerReference: checkResult.reference,
+        providerPaymentMethodId: checkResult.providerPaymentMethodId,
+        status: PaymentStatus.CAPTURED,
+        paidAt: checkResult.paidAt ?? new Date(),
+      }),
+    )
+
+    for (const order of orders) {
+      if (order.status === OrderStatus.PENDING_PAYMENT) {
+        order.status = OrderStatus.PLACED
+      }
+    }
+
+    await this.em.flush()
+
+    await this.notificationsService.send({
+      user: checkout.buyer,
+      type: NotificationType.PAYMENT_RECEIVED,
+      title: 'Paiement reçu',
+      body: `Votre paiement de ${checkout.totalAmount} FCFA a été confirmé`,
+      data: { checkoutId: checkout.id },
+      channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+    })
+
+    for (const order of orders) {
+      await this.sendOrderPlacedNotifications(order.id)
+      void this.orderEmails.sendOrderPlaced(order.id)
+    }
+
+    return {
+      checkoutId: checkout.id,
+      amount: checkout.totalAmount,
+      status: 'completed' as const,
+      paymentIds: payments.map(payment => payment.id),
     }
   }
 
@@ -505,4 +620,31 @@ export class PaymentsService {
   async findByOrderId(orderId: string): Promise<Payment | null> {
     return this.em.findOne(Payment, { order: { id: orderId } })
   }
+}
+
+/**
+ * Ventile le montant encaissé entre les commandes, au prorata de leur total.
+ *
+ * Les arrondis ne doivent rien perdre ni rien inventer : le dernier reçoit le
+ * reliquat, de sorte que la somme des parts égale exactement l'encaissement.
+ * Sans ça, un panier à trois boutiques peut se solder par un franc en trop ou
+ * en moins dans les livres, et ce franc-là se retrouve dans un portefeuille.
+ */
+export function splitCheckoutAmount<T extends { totalAmount: number }>(
+  total: number,
+  orders: T[],
+): Array<{ order: T, amount: number }> {
+  const ordersTotal = orders.reduce((sum, order) => sum + order.totalAmount, 0)
+  if (ordersTotal <= 0) {
+    return orders.map(order => ({ order, amount: 0 }))
+  }
+  let allocated = 0
+  return orders.map((order, index) => {
+    const isLast = index === orders.length - 1
+    const amount = isLast
+      ? total - allocated
+      : Math.round((total * order.totalAmount) / ordersTotal)
+    allocated += amount
+    return { order, amount }
+  })
 }

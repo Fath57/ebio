@@ -54,6 +54,37 @@ export const initiateCheckoutSchema = z.object({
 
 export type InitiateCheckoutInput = z.infer<typeof initiateCheckoutSchema>
 
+/**
+ * Paiement d'un panier entier : un montant, une transaction, quel que soit le
+ * nombre de boutiques. Les paiements par commande ne naissent qu'à la
+ * confirmation, pour que chacun garde son escrow.
+ */
+export const initiateCartPaymentSchema = z.object({
+  checkoutId: z.string().uuid(),
+}).meta({
+  title: 'InitiateCartPaymentInput',
+  description: 'Ouvre un paiement unique pour un panier multi-boutiques',
+})
+
+export const verifyCartPaymentSchema = z.object({
+  checkoutId: z.string().uuid(),
+  fedapayTransactionId: z.string().min(1),
+}).meta({
+  title: 'VerifyCartPaymentInput',
+  description: 'Confirme le paiement unique et crée les paiements par commande',
+})
+
+export const cartPaymentResultSchema = z.object({
+  checkoutId: z.string().uuid(),
+  amount: z.number(),
+  status: z.enum(['pending', 'completed']),
+  /** Un paiement par commande, créé à la confirmation seulement. */
+  paymentIds: z.array(z.string().uuid()),
+}).meta({ title: 'CartPaymentResult' })
+
+export type InitiateCartPayment = z.infer<typeof initiateCartPaymentSchema>
+export type VerifyCartPayment = z.infer<typeof verifyCartPaymentSchema>
+
 export const initiateCheckoutResultSchema = z.object({
   paymentId: z.uuid(),
   status: z.literal('pending'),
