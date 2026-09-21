@@ -22,11 +22,16 @@ export interface CartItem {
 
 export type DeliveryMode = 'PICKUP' | 'DELIVERY'
 
+/**
+ * Regroupement par boutique. Ce n'est plus un état, c'est une **vue dérivée**
+ * des articles : l'acheteur a un panier, pas un panier par boutique, et le
+ * mode de remise vaut pour l'ensemble. Les écrans qui affichent d'où vient
+ * chaque ligne s'en servent encore, mais rien ne s'y écrit.
+ */
 export interface SupplierCartGroup {
   supplierId: string
   supplierName: string
   items: CartItem[]
-  deliveryMode: DeliveryMode
 }
 
 export interface AddItemInput {
@@ -46,16 +51,18 @@ export interface AddItemInput {
 // ---------------------------------------------------------------------------
 
 interface CartState {
-  groups: SupplierCartGroup[]
+  items: CartItem[]
+  /** Un seul mode pour tout le panier : le mode mixte est hors périmètre. */
+  deliveryMode: DeliveryMode
   hydrated: boolean
 }
 
 type CartAction
-  = | { type: 'HYDRATE', groups: SupplierCartGroup[] }
+  = | { type: 'HYDRATE', items: CartItem[], deliveryMode: DeliveryMode }
     | { type: 'ADD_ITEM', input: AddItemInput }
     | { type: 'UPDATE_QUANTITY', itemId: string, quantity: number }
     | { type: 'REMOVE_ITEM', itemId: string }
-    | { type: 'CHANGE_DELIVERY_MODE', supplierId: string, mode: DeliveryMode }
+    | { type: 'SET_DELIVERY_MODE', mode: DeliveryMode }
     | { type: 'CLEAR_SUPPLIER', supplierId: string }
     | { type: 'CLEAR_ALL' }
 
@@ -76,125 +83,121 @@ function capQuantity(quantity: number): number {
   return Math.min(quantity, MAX_ITEM_QUANTITY)
 }
 
-function removeEmptyGroups(groups: SupplierCartGroup[]): SupplierCartGroup[] {
-  return groups.filter(g => g.items.length > 0)
+interface StoredCart {
+  items: CartItem[]
+  deliveryMode: DeliveryMode
+}
+
+/**
+ * Relit le panier persisté, quel que soit son âge.
+ *
+ * Jusqu'ici le panier était stocké groupé par boutique, avec un mode de remise
+ * par groupe. Un acheteur qui met l'application à jour ne doit pas perdre son
+ * panier : l'ancien format est aplati, et si les modes divergeaient on retient
+ * la livraison — c'est le défaut de l'ancien code et le moins surprenant.
+ */
+function readStoredCart(raw: string | null): StoredCart {
+  const empty: StoredCart = { items: [], deliveryMode: 'DELIVERY' }
+  if (!raw) {
+    return empty
+  }
+  const parsed = JSON.parse(raw) as unknown
+  if (Array.isArray(parsed)) {
+    const groups = parsed as Array<{ items?: CartItem[], deliveryMode?: DeliveryMode }>
+    return {
+      items: groups.flatMap(group => group.items ?? []),
+      deliveryMode: groups.every(group => group.deliveryMode === 'PICKUP') && groups.length > 0
+        ? 'PICKUP'
+        : 'DELIVERY',
+    }
+  }
+  const stored = parsed as Partial<StoredCart>
+  return {
+    items: Array.isArray(stored.items) ? stored.items : [],
+    deliveryMode: stored.deliveryMode === 'PICKUP' ? 'PICKUP' : 'DELIVERY',
+  }
+}
+
+/** Vue par boutique, reconstruite à la demande depuis la liste à plat. */
+export function groupBySupplier(items: CartItem[]): SupplierCartGroup[] {
+  const groups: SupplierCartGroup[] = []
+  for (const item of items) {
+    const existing = groups.find(group => group.supplierId === item.supplierId)
+    if (existing) {
+      existing.items.push(item)
+    }
+    else {
+      groups.push({ supplierId: item.supplierId, supplierName: item.supplierName, items: [item] })
+    }
+  }
+  return groups
 }
 
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'HYDRATE': {
-      return { groups: action.groups, hydrated: true }
+      return { items: action.items, deliveryMode: action.deliveryMode, hydrated: true }
     }
 
     case 'ADD_ITEM': {
       const { input } = action
       const qty = capQuantity(input.quantity ?? 1)
-      const groups = [...state.groups]
-      const groupIndex = groups.findIndex(g => g.supplierId === input.supplierId)
+      const existingIndex = state.items.findIndex(item => item.productId === input.productId)
 
-      if (groupIndex === -1) {
-        groups.push({
+      if (existingIndex !== -1) {
+        const items = [...state.items]
+        const existing = items[existingIndex]
+        items[existingIndex] = {
+          ...existing,
+          quantity: capQuantity(existing.quantity + qty),
+          promotionTypes: input.promotionTypes ?? existing.promotionTypes,
+        }
+        return { ...state, items }
+      }
+
+      return {
+        ...state,
+        items: [...state.items, {
+          id: generateId(),
+          productId: input.productId,
           supplierId: input.supplierId,
           supplierName: input.supplierName,
-          // Delivery is what most buyers want; pickup stays one tap away.
-          deliveryMode: 'DELIVERY',
-          items: [
-            {
-              id: generateId(),
-              productId: input.productId,
-              supplierId: input.supplierId,
-              supplierName: input.supplierName,
-              name: input.name,
-              imageUrl: input.imageUrl,
-              pricePerUnit: input.pricePerUnit,
-              unit: input.unit,
-              quantity: qty,
-              promotionTypes: input.promotionTypes,
-            },
-          ],
-        })
+          name: input.name,
+          imageUrl: input.imageUrl,
+          pricePerUnit: input.pricePerUnit,
+          unit: input.unit,
+          quantity: qty,
+          promotionTypes: input.promotionTypes,
+        }],
       }
-      else {
-        const group = { ...groups[groupIndex], items: [...groups[groupIndex].items] }
-        const existingIndex = group.items.findIndex(i => i.productId === input.productId)
-
-        if (existingIndex !== -1) {
-          const existing = group.items[existingIndex]
-          group.items[existingIndex] = {
-            ...existing,
-            quantity: capQuantity(existing.quantity + qty),
-            promotionTypes: input.promotionTypes ?? existing.promotionTypes,
-          }
-        }
-        else {
-          group.items.push({
-            id: generateId(),
-            productId: input.productId,
-            supplierId: input.supplierId,
-            supplierName: input.supplierName,
-            name: input.name,
-            imageUrl: input.imageUrl,
-            pricePerUnit: input.pricePerUnit,
-            unit: input.unit,
-            quantity: qty,
-            promotionTypes: input.promotionTypes,
-          })
-        }
-
-        groups[groupIndex] = group
-      }
-
-      return { ...state, groups }
     }
 
     case 'UPDATE_QUANTITY': {
-      const groups = state.groups.map((group) => {
-        const itemIndex = group.items.findIndex(i => i.id === action.itemId)
-        if (itemIndex === -1)
-          return group
-
-        if (action.quantity <= 0) {
-          return {
-            ...group,
-            items: group.items.filter(i => i.id !== action.itemId),
-          }
-        }
-
-        const items = [...group.items]
-        items[itemIndex] = { ...items[itemIndex], quantity: capQuantity(action.quantity) }
-        return { ...group, items }
-      })
-
-      return { ...state, groups: removeEmptyGroups(groups) }
-    }
-
-    case 'REMOVE_ITEM': {
-      const groups = state.groups.map(group => ({
-        ...group,
-        items: group.items.filter(i => i.id !== action.itemId),
-      }))
-
-      return { ...state, groups: removeEmptyGroups(groups) }
-    }
-
-    case 'CHANGE_DELIVERY_MODE': {
-      const groups = state.groups.map(group =>
-        group.supplierId === action.supplierId
-          ? { ...group, deliveryMode: action.mode }
-          : group,
-      )
-      return { ...state, groups }
-    }
-
-    case 'CLEAR_SUPPLIER': {
+      if (action.quantity <= 0) {
+        return { ...state, items: state.items.filter(item => item.id !== action.itemId) }
+      }
       return {
         ...state,
-        groups: state.groups.filter(g => g.supplierId !== action.supplierId),
+        items: state.items.map(item =>
+          item.id === action.itemId ? { ...item, quantity: capQuantity(action.quantity) } : item,
+        ),
       }
     }
 
+    case 'REMOVE_ITEM': {
+      return { ...state, items: state.items.filter(item => item.id !== action.itemId) }
+    }
+
+    case 'SET_DELIVERY_MODE': {
+      return { ...state, deliveryMode: action.mode }
+    }
+
+    case 'CLEAR_SUPPLIER': {
+      return { ...state, items: state.items.filter(item => item.supplierId !== action.supplierId) }
+    }
+
     case 'CLEAR_ALL': {
-      return { ...state, groups: [] }
+      return { ...state, items: [] }
     }
 
     default:
@@ -207,12 +210,17 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 // ---------------------------------------------------------------------------
 
 interface CartContextValue {
+  /** Le panier, à plat. Source de vérité. */
+  items: CartItem[]
+  /** Vue par boutique, dérivée des articles : pour l'affichage seulement. */
   groups: SupplierCartGroup[]
+  /** Un seul mode pour tout le panier. */
+  deliveryMode: DeliveryMode
   hydrated: boolean
   addItem: (input: AddItemInput) => void
   updateQuantity: (itemId: string, quantity: number) => void
   removeItem: (itemId: string) => void
-  changeDeliveryMode: (supplierId: string, mode: DeliveryMode) => void
+  setDeliveryMode: (mode: DeliveryMode) => void
   clearSupplierCart: (supplierId: string) => void
   clearAll: () => void
   getItemCount: () => number
@@ -220,12 +228,14 @@ interface CartContextValue {
 }
 
 const CartContext = createContext<CartContextValue>({
+  items: [],
   groups: [],
+  deliveryMode: 'DELIVERY',
   hydrated: false,
   addItem: () => {},
   updateQuantity: () => {},
   removeItem: () => {},
-  changeDeliveryMode: () => {},
+  setDeliveryMode: () => {},
   clearSupplierCart: () => {},
   clearAll: () => {},
   getItemCount: () => 0,
@@ -237,7 +247,7 @@ const CartContext = createContext<CartContextValue>({
 // ---------------------------------------------------------------------------
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, { groups: [], hydrated: false })
+  const [state, dispatch] = useReducer(cartReducer, { items: [], deliveryMode: 'DELIVERY', hydrated: false })
   const isFirstRender = useRef(true)
 
   // Hydrate from AsyncStorage on mount
@@ -245,16 +255,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     async function hydrate() {
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY)
-        if (raw) {
-          const groups = JSON.parse(raw) as SupplierCartGroup[]
-          dispatch({ type: 'HYDRATE', groups })
-        }
-        else {
-          dispatch({ type: 'HYDRATE', groups: [] })
-        }
+        dispatch({ type: 'HYDRATE', ...readStoredCart(raw) })
       }
       catch {
-        dispatch({ type: 'HYDRATE', groups: [] })
+        dispatch({ type: 'HYDRATE', items: [], deliveryMode: 'DELIVERY' })
       }
     }
     hydrate()
@@ -269,10 +273,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!state.hydrated)
       return
 
-    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(state.groups)).catch(() => {
+    const stored: StoredCart = { items: state.items, deliveryMode: state.deliveryMode }
+    AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored)).catch(() => {
       // Silently ignore persistence errors
     })
-  }, [state.groups, state.hydrated])
+  }, [state.items, state.deliveryMode, state.hydrated])
 
   const addItem = useCallback((input: AddItemInput) => {
     dispatch({ type: 'ADD_ITEM', input })
@@ -286,8 +291,8 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'REMOVE_ITEM', itemId })
   }, [])
 
-  const changeDeliveryMode = useCallback((supplierId: string, mode: DeliveryMode) => {
-    dispatch({ type: 'CHANGE_DELIVERY_MODE', supplierId, mode })
+  const setDeliveryMode = useCallback((mode: DeliveryMode) => {
+    dispatch({ type: 'SET_DELIVERY_MODE', mode })
   }, [])
 
   const clearSupplierCart = useCallback((supplierId: string) => {
@@ -299,38 +304,37 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const getItemCount = useCallback(() => {
-    return state.groups.reduce(
-      (total, group) => total + group.items.reduce((sum, item) => sum + item.quantity, 0),
-      0,
-    )
-  }, [state.groups])
+    return state.items.reduce((sum, item) => sum + item.quantity, 0)
+  }, [state.items])
 
   const getTotal = useCallback(() => {
-    return state.groups.reduce(
-      (total, group) =>
-        total + group.items.reduce((sum, item) => sum + item.pricePerUnit * item.quantity, 0),
-      0,
-    )
-  }, [state.groups])
+    return state.items.reduce((sum, item) => sum + item.pricePerUnit * item.quantity, 0)
+  }, [state.items])
+
+  const groups = useMemo(() => groupBySupplier(state.items), [state.items])
 
   const value = useMemo<CartContextValue>(() => ({
-    groups: state.groups,
+    items: state.items,
+    groups,
+    deliveryMode: state.deliveryMode,
     hydrated: state.hydrated,
     addItem,
     updateQuantity,
     removeItem,
-    changeDeliveryMode,
+    setDeliveryMode,
     clearSupplierCart,
     clearAll,
     getItemCount,
     getTotal,
   }), [
-    state.groups,
+    state.items,
+    state.deliveryMode,
+    groups,
     state.hydrated,
     addItem,
     updateQuantity,
     removeItem,
-    changeDeliveryMode,
+    setDeliveryMode,
     clearSupplierCart,
     clearAll,
     getItemCount,

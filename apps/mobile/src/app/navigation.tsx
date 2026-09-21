@@ -322,7 +322,7 @@ function CartStackScreen() {
 }
 
 function CartHomeWrapper({ navigation }: any) {
-  const { groups, updateQuantity, removeItem, changeDeliveryMode } = useCart()
+  const { groups, deliveryMode, updateQuantity, removeItem, setDeliveryMode } = useCart()
   const { data: session } = useSession()
   const mappedGroups = groups.map(g => ({
     ...g,
@@ -348,7 +348,9 @@ function CartHomeWrapper({ navigation }: any) {
         pricePerUnit: i.pricePerUnit,
         unit: i.unit,
       })),
-      deliveryMode: group.deliveryMode,
+      // Le mode de remise appartient au panier, plus au groupe : l'acheteur
+      // choisit une fois pour tout ce qu'il commande.
+      deliveryMode,
       total: group.items.reduce((s, i) => s + i.pricePerUnit * i.quantity, 0),
     }
 
@@ -365,9 +367,10 @@ function CartHomeWrapper({ navigation }: any) {
     <SafeScreen>
       <CartScreen
         groups={mappedGroups}
+        deliveryMode={deliveryMode}
         onUpdateQuantity={updateQuantity}
         onSelectVariant={() => {}}
-        onChangeDeliveryMode={changeDeliveryMode}
+        onChangeDeliveryMode={setDeliveryMode}
         onCheckout={handleCheckout}
         onRemoveItem={removeItem}
         onPressItem={productId => navigation.navigate('Accueil', { screen: 'ProductDetail', params: { productId } })}

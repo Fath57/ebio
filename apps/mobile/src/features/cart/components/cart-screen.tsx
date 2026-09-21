@@ -44,18 +44,20 @@ interface CartItem {
   promotionTypes?: string[]
 }
 
+/** Vue par boutique, dérivée du panier : le mode de remise n'y vit plus. */
 interface SupplierCartGroup {
   supplierId: string
   supplierName: string
   items: CartItem[]
-  deliveryMode: DeliveryMode
 }
 
 interface CartScreenProps {
   groups: SupplierCartGroup[]
+  /** Un seul mode pour tout le panier : l'acheteur n'en a qu'un. */
+  deliveryMode: DeliveryMode
   onUpdateQuantity: (itemId: string, quantity: number) => void
   onSelectVariant: (itemId: string, variant: CartVariant) => void
-  onChangeDeliveryMode: (supplierId: string, mode: DeliveryMode) => void
+  onChangeDeliveryMode: (mode: DeliveryMode) => void
   onCheckout: (supplierId: string) => void
   onRemoveItem: (itemId: string) => void
   onContinueShopping?: () => void
@@ -150,6 +152,7 @@ export function CartScreen({
   onUpdateQuantity,
   onSelectVariant,
   onChangeDeliveryMode,
+  deliveryMode,
   onCheckout,
   onRemoveItem,
   onContinueShopping,
@@ -375,21 +378,21 @@ export function CartScreen({
                     style={[
                       styles.deliveryOption,
                       { borderColor: semantic.borderNormal },
-                      group.deliveryMode === 'PICKUP' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
+                      deliveryMode === 'PICKUP' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
                     ]}
-                    onPress={() => onChangeDeliveryMode(group.supplierId, 'PICKUP')}
+                    onPress={() => onChangeDeliveryMode('PICKUP')}
                     accessibilityRole="radio"
-                    accessibilityState={{ selected: group.deliveryMode === 'PICKUP' }}
+                    accessibilityState={{ selected: deliveryMode === 'PICKUP' }}
                   >
                     <Store
                       size={16}
-                      color={group.deliveryMode === 'PICKUP' ? colors.green[600] : semantic.textTertiary}
+                      color={deliveryMode === 'PICKUP' ? colors.green[600] : semantic.textTertiary}
                     />
                     <Text
                       style={[
                         styles.deliveryOptionText,
                         { color: semantic.textSecondary },
-                        group.deliveryMode === 'PICKUP' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
+                        deliveryMode === 'PICKUP' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
                       ]}
                     >
                       Retrait sur place
@@ -399,21 +402,21 @@ export function CartScreen({
                     style={[
                       styles.deliveryOption,
                       { borderColor: semantic.borderNormal },
-                      group.deliveryMode === 'DELIVERY' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
+                      deliveryMode === 'DELIVERY' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
                     ]}
-                    onPress={() => onChangeDeliveryMode(group.supplierId, 'DELIVERY')}
+                    onPress={() => onChangeDeliveryMode('DELIVERY')}
                     accessibilityRole="radio"
-                    accessibilityState={{ selected: group.deliveryMode === 'DELIVERY' }}
+                    accessibilityState={{ selected: deliveryMode === 'DELIVERY' }}
                   >
                     <Truck
                       size={16}
-                      color={group.deliveryMode === 'DELIVERY' ? colors.green[600] : semantic.textTertiary}
+                      color={deliveryMode === 'DELIVERY' ? colors.green[600] : semantic.textTertiary}
                     />
                     <Text
                       style={[
                         styles.deliveryOptionText,
                         { color: semantic.textSecondary },
-                        group.deliveryMode === 'DELIVERY' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
+                        deliveryMode === 'DELIVERY' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
                       ]}
                     >
                       Livraison
