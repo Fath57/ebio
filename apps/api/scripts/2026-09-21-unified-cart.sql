@@ -14,7 +14,7 @@ BEGIN;
 
 CREATE TABLE IF NOT EXISTS "checkouts" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      "buyer_id" uuid NOT NULL REFERENCES "user" ("id"),
+      "buyer_id" uuid NOT NULL REFERENCES "users" ("id"),
       "total_amount" numeric(12,2) NOT NULL,
       "items_total" numeric(12,2) NOT NULL,
       "delivery_fee" numeric(12,2) NOT NULL DEFAULT 0,
@@ -89,6 +89,10 @@ CREATE INDEX IF NOT EXISTS "delivery_runs_courier_idx" ON "delivery_runs" ("cour
 
 CREATE INDEX IF NOT EXISTS "delivery_runs_dispatch_idx"
       ON "delivery_runs" ("status", "dispatch_phase");
+
+ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");
+
+CREATE INDEX IF NOT EXISTS "orders_checkout_idx" ON "orders" ("checkout_id");
 
 ALTER TABLE "payments" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");
 

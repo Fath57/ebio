@@ -19,6 +19,8 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { SuppliersService } from '../suppliers/suppliers.service'
+import { CheckoutService } from './checkout.service'
+import { checkoutPreviewSchema, createCheckoutSchema } from './contracts/checkout.contract'
 import {
   createDisputeSchema,
   createOrderSchema,
@@ -35,8 +37,37 @@ import { OrdersService } from './orders.service'
 export class OrdersController {
   constructor(
     private readonly ordersService: OrdersService,
+    private readonly checkoutService: CheckoutService,
     private readonly suppliersService: SuppliersService,
   ) {}
+
+  /**
+   * Le panier entier tel qu'il serait facturé — toutes boutiques confondues,
+   * frais de livraison uniques. Rien n'est créé.
+   *
+   * Vit à côté de `preview`, qui chiffre une seule boutique : les deux se
+   * répondent tant que l'application mobile n'a pas basculé.
+   */
+  @Post('checkout/preview')
+  @UseGuards(CaslGuard)
+  @CanCreate('Order')
+  async previewCheckout(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedBody(checkoutPreviewSchema) body: z.infer<typeof checkoutPreviewSchema>,
+  ) {
+    return this.checkoutService.preview(session.user.id, body)
+  }
+
+  /** Valide le panier entier : un paiement, N commandes. */
+  @Post('checkout')
+  @UseGuards(CaslGuard)
+  @CanCreate('Order')
+  async createCheckout(
+    @Session() session: LoggedInBetterAuthSession,
+    @TypedBody(createCheckoutSchema) body: z.infer<typeof createCheckoutSchema>,
+  ) {
+    return this.checkoutService.create(session.user.id, body)
+  }
 
   @Post()
   @UseGuards(CaslGuard)

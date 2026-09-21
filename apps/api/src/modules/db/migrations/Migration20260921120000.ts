@@ -38,7 +38,7 @@ export class Migration20260921120000 extends Migration {
   override async up(): Promise<void> {
     this.addSql(`CREATE TABLE IF NOT EXISTS "checkouts" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      "buyer_id" uuid NOT NULL REFERENCES "user" ("id"),
+      "buyer_id" uuid NOT NULL REFERENCES "users" ("id"),
       "total_amount" numeric(12,2) NOT NULL,
       "items_total" numeric(12,2) NOT NULL,
       "delivery_fee" numeric(12,2) NOT NULL DEFAULT 0,
@@ -99,6 +99,12 @@ export class Migration20260921120000 extends Migration {
     this.addSql(`CREATE INDEX IF NOT EXISTS "delivery_runs_dispatch_idx"
       ON "delivery_runs" ("status", "dispatch_phase");`)
 
+    // Le rattachement vit sur la commande, pas sur le paiement : en espèces à
+    // la livraison aucun paiement n'est créé — l'argent passe à la porte — et
+    // les commandes se retrouveraient orphelines de leur passage en caisse.
+    this.addSql(`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");`)
+    this.addSql(`CREATE INDEX IF NOT EXISTS "orders_checkout_idx" ON "orders" ("checkout_id");`)
+
     this.addSql(`ALTER TABLE "payments" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");`)
     this.addSql(`CREATE INDEX IF NOT EXISTS "payments_checkout_idx" ON "payments" ("checkout_id");`)
 
@@ -109,6 +115,8 @@ export class Migration20260921120000 extends Migration {
   override async down(): Promise<void> {
     this.addSql(`DROP INDEX IF EXISTS "deliveries_run_idx";`)
     this.addSql(`ALTER TABLE "deliveries" DROP COLUMN IF EXISTS "delivery_run_id";`)
+    this.addSql(`DROP INDEX IF EXISTS "orders_checkout_idx";`)
+    this.addSql(`ALTER TABLE "orders" DROP COLUMN IF EXISTS "checkout_id";`)
     this.addSql(`DROP INDEX IF EXISTS "payments_checkout_idx";`)
     this.addSql(`ALTER TABLE "payments" DROP COLUMN IF EXISTS "checkout_id";`)
     this.addSql(`DROP TABLE IF EXISTS "delivery_runs";`)

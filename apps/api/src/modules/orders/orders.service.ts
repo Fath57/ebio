@@ -217,6 +217,7 @@ export class OrdersService {
       orderNumber,
       buyer,
       supplier,
+      checkout: checkoutContext?.checkout,
       // An online payment may never come: until FedaPay confirms it, the
       // order stays PENDING_PAYMENT and the shop does not see it.
       status: data.paymentMethod === PaymentMethod.FEDAPAY

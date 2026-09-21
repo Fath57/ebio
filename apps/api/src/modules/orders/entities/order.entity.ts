@@ -1,6 +1,7 @@
 import type { Rel } from '@mikro-orm/core'
-import { Collection, Entity, Enum, ManyToOne, OneToMany, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
+import { Collection, Entity, Enum, Index, ManyToOne, OneToMany, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
+import { Checkout } from '../../payments/entities/checkout.entity'
 import { Supplier } from '../../suppliers/supplier.entity'
 import { OrderItem } from './order-item.entity'
 
@@ -43,6 +44,18 @@ export class Order {
 
   @ManyToOne(() => Supplier, { fieldName: 'supplier_id' })
   supplier!: Rel<Supplier>
+
+  /**
+   * Le passage en caisse dont cette commande fait partie, quand elle vient
+   * d'un panier multi-boutiques. Nul sur une commande isolée et sur tout
+   * l'historique.
+   *
+   * Le lien vit ici et non sur le paiement : en espèces à la livraison aucun
+   * paiement n'est créé, et les commandes seraient orphelines de leur panier.
+   */
+  @Index()
+  @ManyToOne(() => Checkout, { fieldName: 'checkout_id', nullable: true })
+  checkout?: Rel<Checkout>
 
   @Enum({ items: () => OrderStatus, default: OrderStatus.PLACED })
   status: OrderStatus = OrderStatus.PLACED
