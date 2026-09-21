@@ -503,7 +503,11 @@ export class DeliveriesService {
               r.pickup_order, r.offered_at,
               c.delivery_address AS dropoff_address,
               c.delivery_latitude AS dropoff_latitude, c.delivery_longitude AS dropoff_longitude,
-              c.payment_method, c.total_amount,
+              c.payment_method,
+              (SELECT COALESCE(SUM(o.total_amount), 0) + r.delivery_fee
+               FROM deliveries d
+               JOIN orders o ON o.id = d.order_id
+               WHERE d.delivery_run_id = r.id) AS total_amount,
               (r.offered_to_courier_id = ?) AS is_targeted,
               CASE WHEN r.offered_to_courier_id = ? THEN r.offer_expires_at END AS offer_expires_at,
               CASE WHEN r.pickup_location IS NOT NULL AND me.loc IS NOT NULL
@@ -525,6 +529,10 @@ export class DeliveriesService {
        JOIN checkouts c ON c.id = r.checkout_id
        CROSS JOIN me
        WHERE r.status = 'AWAITING_COURIER'
+         -- Jamais entrée dans la boucle de diffusion : ses boutiques n'ont pas
+         -- toutes préparé, il n'y a encore rien à collecter. La proposer
+         -- laisserait un livreur accepter une tournée vide.
+         AND r.dispatch_started_at IS NOT NULL
          AND (
            (r.offered_to_courier_id = ? AND r.offer_expires_at > NOW())
            OR (
@@ -605,6 +613,7 @@ export class DeliveriesService {
        SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(),
            offered_to_courier_id = NULL, offer_expires_at = NULL, outcome = 'ACCEPTED', "updatedAt" = NOW()
        WHERE id = ? AND courier_id IS NULL AND status = 'AWAITING_COURIER'
+         AND dispatch_started_at IS NOT NULL
          AND (dispatch_phase = 'BROADCAST' OR (offered_to_courier_id = ? AND offer_expires_at > NOW()))
        RETURNING id`,
       [profile.id, runId, profile.id],
@@ -943,7 +952,11 @@ export class DeliveriesService {
               r.total_distance_km, r.confirmation_code, r.pickup_order,
               c.delivery_address AS dropoff_address,
               c.delivery_latitude AS dropoff_latitude, c.delivery_longitude AS dropoff_longitude,
-              c.payment_method, c.total_amount,
+              c.payment_method,
+              (SELECT COALESCE(SUM(o.total_amount), 0) + r.delivery_fee
+               FROM deliveries d
+               JOIN orders o ON o.id = d.order_id
+               WHERE d.delivery_run_id = r.id) AS total_amount,
               (SELECT jsonb_agg(stop ORDER BY stop->>'position')
                FROM (
                  SELECT jsonb_build_object(
@@ -970,6 +983,7 @@ export class DeliveriesService {
        JOIN checkouts c ON c.id = r.checkout_id
        WHERE r.courier_id = ?
          AND r.status IN ('ACCEPTED', 'COLLECTING', 'DELIVERING')
+         AND EXISTS (SELECT 1 FROM deliveries d WHERE d.delivery_run_id = r.id)
        ORDER BY r."updatedAt" DESC
        LIMIT 1`,
       [profile.id],

@@ -188,6 +188,20 @@ describe('diffusion d\'une tournée (e2e)', () => {
     expect(rows.every(row => row.status === 'ACCEPTED' && row.courier_id === fixture.courierId)).toBe(true)
   })
 
+  it('ne propose pas une tournée jamais diffusée', async (context) => {
+    const { app, em } = context
+    const fixture = await seed(em as EntityManager)
+    const deliveries = app.get(DeliveriesService)
+
+    // La tournée existe, mais aucune boutique n'a encore préparé : il n'y a
+    // rien à collecter. La proposer laisserait un livreur accepter le vide.
+    const tournees = await deliveries.getRunOffers(fixture.courierUserId)
+    expect(tournees.map(row => row.id)).not.toContain(fixture.runId)
+
+    await expect(
+      deliveries.acceptRun(fixture.runId, fixture.courierUserId),
+    ).rejects.toThrow()
+  })
   it('garde les livraisons d\'une tournée hors de la liste des courses isolées', async (context) => {
     const { em, app } = context
     const fixture = await seed(em as EntityManager)
@@ -205,6 +219,10 @@ describe('diffusion d\'une tournée (e2e)', () => {
     expect(proposee).toBeDefined()
     expect(proposee?.stops).toHaveLength(2)
     expect(Number(proposee?.courier_earning)).toBe(720)
+    // Les espèces sont celles de CETTE tournée : la somme de ses commandes
+    // plus son frais, et non le total du panier, qui couvre aussi les
+    // tournées que ce livreur ne transporte pas.
+    expect(Number(proposee?.total_amount)).toBe(2600 + 2600 + 800)
   })
 
   describe('collecte et remise', () => {

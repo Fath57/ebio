@@ -1,7 +1,8 @@
 import type { TransitionResult } from '../hooks/use-offline-queue'
 import type { ActiveRun, ActiveRunStop } from '../types'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
-import CheckCircle2 from 'lucide-react-native/dist/esm/icons/check-circle-2'
+import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Navigation from 'lucide-react-native/dist/esm/icons/navigation'
@@ -60,7 +61,7 @@ function StopRow({ stop, index, isNext, onCollect }: StopRowProps) {
       <View style={styles.stopHead}>
         <View style={[styles.stopIndex, done ? styles.stopIndexDone : null]}>
           {done
-            ? <CheckCircle2 size={14} color={colors.neutral[0]} strokeWidth={2.4} />
+            ? <CircleCheck size={14} color={colors.neutral[0]} strokeWidth={2.4} />
             : <Text style={styles.stopIndexText}>{index + 1}</Text>}
         </View>
         <View style={styles.stopBody}>
@@ -108,6 +109,8 @@ function StopRow({ stop, index, isNext, onCollect }: StopRowProps) {
  */
 export function ActiveRunScreen({ run, pendingCount, onCollect, onDeliver, onChanged }: ActiveRunScreenProps) {
   const { semantic } = useTheme()
+  // Même réserve que la liste des propositions : la barre d'onglets flotte.
+  const tabBarHeight = useBottomTabBarHeight()
   useLiveLocation(run.status === 'ACCEPTED' || run.status === 'COLLECTING' || run.status === 'DELIVERING')
 
   const isCash = run.paymentMethod === 'CASH_ON_DELIVERY'
@@ -130,7 +133,7 @@ export function ActiveRunScreen({ run, pendingCount, onCollect, onDeliver, onCha
   }
 
   return (
-    <ScrollView style={{ backgroundColor: semantic.bgPage }} contentContainerStyle={styles.content}>
+    <ScrollView style={{ backgroundColor: semantic.bgPage }} contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}>
       <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
         <Text style={[styles.progress, { color: semantic.textPrimaryColor }]}>
           {allCollected

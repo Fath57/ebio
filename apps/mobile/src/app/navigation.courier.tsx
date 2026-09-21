@@ -320,7 +320,13 @@ function CoursesHomeWrapper({ navigation }: any) {
         onRefresh={offers.refresh}
         onAccept={offers.accept}
         onDecline={offers.decline}
-        onAccepted={refresh}
+        onAccepted={() => {
+          // Une tournée acceptée doit remplacer la liste tout de suite : ne
+          // rafraîchir que la course laissait l'ancien écran, avec un gain à
+          // zéro puisque le frais vit sur la tournée.
+          refreshRun()
+          refresh()
+        }}
         onOpenWallet={() => navigation.navigate('Portefeuille')}
       />
     </SafeScreen>

@@ -1,5 +1,6 @@
 import type { AcceptResult, DebtBlock, DeclineResult } from '../hooks/use-offers'
 import type { CourierOffer, DeliveryOffer, RunOffer } from '../types'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
@@ -126,6 +127,9 @@ function Countdown({ expiresAt }: CountdownProps) {
 /** Feed of nearby deliveries awaiting a courier. Targeted offers first, then first to accept wins. */
 export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOfZoneKm, onRefresh, onAccept, onDecline, onAccepted, onOpenWallet }: OffersScreenProps) {
   const { semantic, isDark } = useTheme()
+  // La barre d'onglets flotte au-dessus de la liste : sans cette réserve, le
+  // bouton de la dernière carte passe dessous et devient intouchable.
+  const tabBarHeight = useBottomTabBarHeight()
 
   async function accept(offer: CourierOffer) {
     const result = await onAccept(offer)
@@ -188,9 +192,11 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
           : null}
         <View style={styles.cardHeader}>
           <View style={styles.cardHeaderLeft}>
-            <View style={styles.runBadge} accessibilityLabel={`Tournée de ${item.shopCount} boutiques`}>
+            <View style={styles.runBadge} accessibilityLabel={`Tournée de ${item.shopCount} boutique${item.shopCount > 1 ? 's' : ''}`}>
               <Route size={12} color={colors.neutral[0]} strokeWidth={2.4} />
-              <Text style={styles.runBadgeText}>{`${item.shopCount} boutiques`}</Text>
+              <Text style={styles.runBadgeText}>
+                {`${item.shopCount} boutique${item.shopCount > 1 ? 's' : ''}`}
+              </Text>
             </View>
             {isCash
               ? (
@@ -423,7 +429,7 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
   return (
     <FlatList
       style={{ backgroundColor: semantic.bgPage }}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + spacing[6] }]}
       data={offers}
       keyExtractor={item => item.id}
       renderItem={renderOffer}
@@ -457,7 +463,6 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
 const styles = StyleSheet.create({
   list: {
     padding: spacing[4],
-    paddingBottom: spacing[12],
     flexGrow: 1,
   },
   zoneBanner: {
