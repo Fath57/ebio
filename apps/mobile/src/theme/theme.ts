@@ -106,27 +106,42 @@ export const lightTheme = {
   bgPrimaryLight: colors.green[50],
 } as const
 
+/**
+ * Elevation is a last resort, not a way to group content.
+ *
+ * Android renders `elevation` far heavier than the iOS shadow of the same
+ * opacity: a scale built for iOS turned every surface into a slab here. What
+ * separates content is, in order: whitespace, a hairline, then — only for
+ * something that genuinely floats over the page — a shadow.
+ *
+ * `none` is the default for a surface that merely groups; reach for `md` or
+ * `lg` only when the element overlaps what it covers.
+ */
 export const shadows = {
+  none: {},
+  /** Barely there: a surface resting on the page, not above it. */
   sm: {
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.04,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.03,
+    shadowRadius: 3,
+    elevation: 0,
   },
+  /** Genuinely raised: sheets, menus, a bar overlapping the content. */
   md: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.06,
-    shadowRadius: 12,
-    elevation: 4,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
+  /** Floating over everything: modals and the bars anchored to the screen. */
   lg: {
     shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.10,
-    shadowRadius: 24,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    elevation: 4,
   },
 } as const
 

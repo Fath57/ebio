@@ -82,6 +82,13 @@ function promotionHint(items: CartItem[]): string | null {
   return null
 }
 
+/**
+ * One compact pill rather than two separate buttons.
+ *
+ * At one unit the minus becomes a bin: removing a line is the same gesture as
+ * decreasing it, so it belongs in the same control rather than in an icon
+ * exiled to the far end of the row.
+ */
 function QuantityControl({
   quantity,
   onDecrease,
@@ -92,25 +99,28 @@ function QuantityControl({
   onIncrease: () => void
 }) {
   const { semantic } = useTheme()
+  const isLast = quantity <= 1
 
   return (
-    <View style={[quantityStyles.container, { backgroundColor: semantic.bgSurface }]}>
+    <View style={[quantityStyles.container, { backgroundColor: semantic.bgPage }]}>
       <TouchableOpacity
-        style={[quantityStyles.button, { backgroundColor: semantic.bgPage }]}
+        style={quantityStyles.button}
         onPress={onDecrease}
         accessibilityRole="button"
-        accessibilityLabel="Diminuer la quantité"
+        accessibilityLabel={isLast ? 'Retirer du panier' : 'Diminuer la quantité'}
       >
-        <Minus size={16} color={semantic.textPrimary} />
+        {isLast
+          ? <Trash2 size={16} color={colors.coral[400]} strokeWidth={2} />
+          : <Minus size={16} color={semantic.textPrimary} strokeWidth={2.2} />}
       </TouchableOpacity>
       <Text style={[quantityStyles.value, { color: semantic.textPrimary }]}>{quantity}</Text>
       <TouchableOpacity
-        style={[quantityStyles.button, quantityStyles.buttonPrimary]}
+        style={quantityStyles.button}
         onPress={onIncrease}
         accessibilityRole="button"
         accessibilityLabel="Augmenter la quantité"
       >
-        <Plus size={16} color={colors.neutral[0]} />
+        <Plus size={16} color={colors.green[600]} strokeWidth={2.2} />
       </TouchableOpacity>
     </View>
   )
@@ -120,25 +130,18 @@ const quantityStyles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[1],
-    borderRadius: radius.md,
-    padding: 2,
+    borderRadius: radius.pill,
   },
   button: {
-    width: 36,
-    height: 36,
+    width: 44,
+    height: 44,
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: radius.sm,
-  },
-  buttonPrimary: {
-    backgroundColor: colors.green[400],
   },
   value: {
     fontFamily: fonts.mono,
     fontSize: 16,
-    color: colors.neutral[800],
-    minWidth: 28,
+    minWidth: 24,
     textAlign: 'center',
   },
 })
@@ -215,42 +218,42 @@ export function CartScreen({
             l'affaire de la plateforme, pas de l'acheteur : c'est elle qui
             répartit en commandes derrière. */}
         {items.length > 0 && (
-          <View style={[styles.supplierSection, { backgroundColor: semantic.bgCard }]}>
-            {items.map((item, index) => (
-              <FadeInView key={item.id} delay={index * 80}>
-                <View
-                  style={[
-                    styles.itemRow,
-                    index < items.length - 1 && [
-                      styles.itemRowBorder,
-                      { borderBottomColor: semantic.borderLight },
-                    ],
-                  ]}
-                >
-                  <TouchableOpacity
-                    onPress={() => onPressItem?.(item.productId)}
-                    disabled={!onPressItem}
-                    activeOpacity={0.8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Voir le produit `}
+          <>
+            <View style={[styles.supplierSection, { backgroundColor: semantic.bgCard }]}>
+              {items.map((item, index) => (
+                <FadeInView key={item.id} delay={index * 80}>
+                  <View
+                    style={[
+                      styles.itemRow,
+                      index < items.length - 1 && [
+                        styles.itemRowBorder,
+                        { borderBottomColor: semantic.borderLight },
+                      ],
+                    ]}
                   >
-                    {item.imageUrl
-                      ? (
-                          <Image
-                            source={{ uri: item.imageUrl }}
-                            style={styles.itemImage}
-                            resizeMode="cover"
-                          />
-                        )
-                      : (
-                          <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
-                            <Package size={24} color={semantic.textTertiary} />
-                          </View>
-                        )}
-                  </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={() => onPressItem?.(item.productId)}
+                      disabled={!onPressItem}
+                      activeOpacity={0.8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Voir le produit `}
+                    >
+                      {item.imageUrl
+                        ? (
+                            <Image
+                              source={{ uri: item.imageUrl }}
+                              style={styles.itemImage}
+                              resizeMode="cover"
+                            />
+                          )
+                        : (
+                            <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
+                              <Package size={24} color={semantic.textTertiary} />
+                            </View>
+                          )}
+                    </TouchableOpacity>
 
-                  <View style={styles.itemDetails}>
-                    <View style={styles.itemTopRow}>
+                    <View style={styles.itemDetails}>
                       <Text
                         style={[styles.itemName, { color: semantic.textPrimary }]}
                         numberOfLines={2}
@@ -259,90 +262,83 @@ export function CartScreen({
                       >
                         {item.name}
                       </Text>
-                      <TouchableOpacity
-                        style={styles.removeButton}
-                        onPress={() => onRemoveItem(item.id)}
-                        accessibilityRole="button"
-                        accessibilityLabel={`Supprimer ${item.name}`}
-                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
-                      >
-                        <Trash2 size={16} color={colors.coral[400]} />
-                      </TouchableOpacity>
-                    </View>
 
-                    <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
-                      {formatPrice(item.pricePerUnit)}
-                      {' '}
-                      FCFA /
-                      {' '}
-                      {unitShortLabel(item.unit)}
-                    </Text>
-
-                    {item.availableVariants.length > 0 && (
-                      <ScrollView
-                        horizontal
-                        showsHorizontalScrollIndicator={false}
-                        contentContainerStyle={styles.variantRow}
-                      >
-                        {item.availableVariants.map((variant) => {
-                          const isSelected = item.selectedVariant?.id === variant.id
-                          return (
-                            <TouchableOpacity
-                              key={variant.id}
-                              style={[
-                                styles.variantChip,
-                                { borderColor: semantic.borderNormal },
-                                isSelected && [styles.variantChipActive, { backgroundColor: semantic.bgPrimaryLight }],
-                              ]}
-                              onPress={() => onSelectVariant(item.id, variant)}
-                              accessibilityRole="radio"
-                              accessibilityState={{ selected: isSelected }}
-                            >
-                              <Text
-                                style={[
-                                  styles.variantChipText,
-                                  { color: semantic.textSecondary },
-                                  isSelected && [styles.variantChipTextActive, { color: semantic.textPrimaryColor }],
-                                ]}
-                              >
-                                {variant.label}
-                              </Text>
-                            </TouchableOpacity>
-                          )
-                        })}
-                      </ScrollView>
-                    )}
-
-                    <View style={styles.quantityRow}>
-                      <QuantityControl
-                        quantity={item.quantity}
-                        onDecrease={() =>
-                          item.quantity <= 1
-                            ? onRemoveItem(item.id)
-                            : onUpdateQuantity(item.id, item.quantity - 1)}
-                        onIncrease={() =>
-                          onUpdateQuantity(item.id, item.quantity + 1)}
-                      />
-                      <Text style={[styles.itemPrice, { color: semantic.textPrimary }]}>
-                        {formatPrice(item.pricePerUnit * item.quantity)}
+                      <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
+                        {formatPrice(item.pricePerUnit)}
                         {' '}
-                        FCFA
+                        FCFA /
+                        {' '}
+                        {unitShortLabel(item.unit)}
                       </Text>
+
+                      {item.availableVariants.length > 0 && (
+                        <ScrollView
+                          horizontal
+                          showsHorizontalScrollIndicator={false}
+                          contentContainerStyle={styles.variantRow}
+                        >
+                          {item.availableVariants.map((variant) => {
+                            const isSelected = item.selectedVariant?.id === variant.id
+                            return (
+                              <TouchableOpacity
+                                key={variant.id}
+                                style={[
+                                  styles.variantChip,
+                                  { borderColor: semantic.borderNormal },
+                                  isSelected && [styles.variantChipActive, { backgroundColor: semantic.bgPrimaryLight }],
+                                ]}
+                                onPress={() => onSelectVariant(item.id, variant)}
+                                accessibilityRole="radio"
+                                accessibilityState={{ selected: isSelected }}
+                              >
+                                <Text
+                                  style={[
+                                    styles.variantChipText,
+                                    { color: semantic.textSecondary },
+                                    isSelected && [styles.variantChipTextActive, { color: semantic.textPrimaryColor }],
+                                  ]}
+                                >
+                                  {variant.label}
+                                </Text>
+                              </TouchableOpacity>
+                            )
+                          })}
+                        </ScrollView>
+                      )}
+
+                      <View style={styles.quantityRow}>
+                        <QuantityControl
+                          quantity={item.quantity}
+                          onDecrease={() =>
+                            item.quantity <= 1
+                              ? onRemoveItem(item.id)
+                              : onUpdateQuantity(item.id, item.quantity - 1)}
+                          onIncrease={() =>
+                            onUpdateQuantity(item.id, item.quantity + 1)}
+                        />
+                        <Text style={[styles.itemPrice, { color: semantic.textPrimary }]}>
+                          {formatPrice(item.pricePerUnit * item.quantity)}
+                          {' '}
+                          FCFA
+                        </Text>
+                      </View>
                     </View>
                   </View>
+                </FadeInView>
+              ))}
+
+              {cartHint && (
+                <View style={[styles.promotionHint, { backgroundColor: semantic.bgPrimaryLight }]}>
+                  <Gift size={14} color={colors.green[600]} strokeWidth={2} />
+                  <Text style={[styles.promotionHintText, { color: colors.green[800] }]}>{cartHint}</Text>
                 </View>
-              </FadeInView>
-            ))}
+              )}
 
-            {cartHint && (
-              <View style={[styles.promotionHint, { backgroundColor: semantic.bgPrimaryLight }]}>
-                <Gift size={14} color={colors.green[600]} strokeWidth={2} />
-                <Text style={[styles.promotionHintText, { color: colors.green[800] }]}>{cartHint}</Text>
-              </View>
-            )}
+            </View>
 
-            {/* Delivery mode */}
-            <View style={styles.deliverySection}>
+            {/* Its own band: the page showing between the two is what separates
+              them now, in place of a card outline. */}
+            <View style={[styles.deliverySection, { backgroundColor: semantic.bgCard }]}>
               <Text style={[styles.deliveryLabel, { color: semantic.textSecondary }]}>
                 Mode de livraison
               </Text>
@@ -397,8 +393,7 @@ export function CartScreen({
                 </TouchableOpacity>
               </View>
             </View>
-
-          </View>
+          </>
         )}
       </ScrollView>
 
@@ -443,10 +438,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingTop: spacing[4],
-    paddingHorizontal: spacing[4],
-    // The total bar sits right below the list: without this gap the last
-    // product row and the bar touch, and the cart reads as one cramped block.
+    // No horizontal padding: the surfaces run edge to edge and the page shows
+    // between them, which is what parts the sections now that nothing floats.
     paddingBottom: spacing[8],
   },
 
@@ -517,10 +510,7 @@ const styles = StyleSheet.create({
 
   /* Supplier section card */
   supplierSection: {
-    borderRadius: radius.lg,
-    marginBottom: spacing[4],
-    overflow: 'hidden',
-    ...shadows.sm,
+    marginBottom: spacing[2],
   },
   supplierHeader: {
     flexDirection: 'row',
@@ -550,7 +540,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
   },
   itemRowBorder: {
-    borderBottomWidth: 1,
+    borderBottomWidth: StyleSheet.hairlineWidth,
   },
   itemImage: {
     width: 80,
@@ -639,9 +629,7 @@ const styles = StyleSheet.create({
   deliverySection: {
     gap: spacing[2],
     paddingHorizontal: spacing[4],
-    paddingTop: spacing[2],
-    // Last block of the card: without it the mode toggle sits flush against
-    // the card edge, and the whole cart reads as one dense slab.
+    paddingTop: spacing[4],
     paddingBottom: spacing[4],
   },
   deliveryLabel: {
