@@ -42,7 +42,6 @@ export interface OrderPreview {
 }
 
 export interface OrderPreviewInput {
-  supplierId: string
   pickupMode: 'DELIVERY' | 'ON_SITE'
   position: { latitude: number, longitude: number } | null
   promoCode: string | null
@@ -141,10 +140,11 @@ export function useOrderPreview(input: OrderPreviewInput | null): OrderPreviewSt
     setLoading(true)
     const timer = setTimeout(async () => {
       try {
-        const res = await apiFetch('/api/orders/preview', {
+        // Le panier entier, toutes boutiques confondues : le serveur le
+        // répartit et n'annonce qu'un seul frais de livraison.
+        const res = await apiFetch('/api/orders/checkout/preview', {
           method: 'POST',
           body: JSON.stringify({
-            supplierId: body.supplierId,
             pickupMode: body.pickupMode,
             ...(body.position ? { deliveryLatitude: body.position.latitude, deliveryLongitude: body.position.longitude } : {}),
             ...(body.promoCode ? { promoCode: body.promoCode } : {}),

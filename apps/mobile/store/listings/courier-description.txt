@@ -1,0 +1,34 @@
+eBio Livreur est l'application des livreurs indépendants qui transportent les commandes passées sur eBio, la carte des produits bio et locaux du Bénin.
+
+Inscrivez-vous, faites valider votre profil et passez disponible : les courses proches de vous s'affichent sur votre téléphone. Vous choisissez celles que vous acceptez, vous gagnez à chaque livraison réussie.
+
+VOS COURSES
+• Notification à chaque nouvelle course disponible autour de vous.
+• Pour chaque course : boutique de retrait, adresse du client, distance, nombre d'articles et ce que vous gagnez.
+• Acceptez en un geste, la course est à vous. Premier arrivé, premier servi.
+• Itinéraire vers la boutique puis vers le client, appel et messagerie intégrés.
+
+VOTRE LIVRAISON
+• Étapes claires : acceptée, récupérée, en livraison, livrée.
+• Code de confirmation remis par le client pour clôturer la livraison sans litige.
+• Position partagée en direct avec le client pendant la course.
+• Signalement d'un problème (client absent, adresse introuvable) directement depuis l'application.
+
+VOS GAINS
+• Portefeuille eBio avec le détail de chaque course.
+• Reversements vers votre numéro Mobile Money (MTN, Moov).
+• Historique complet de vos livraisons.
+
+VOTRE ACTIVITÉ
+• Zone d'intervention définie sur la carte, courses proposées selon votre position réelle.
+• Disponible ou hors ligne en un geste, vous gardez la main sur vos horaires.
+• Moto, vélo, voiture ou à pied : indiquez votre moyen de transport.
+
+POURQUOI EBIO
+eBio met en relation les consommateurs et les producteurs bio et locaux du Bénin. Les livreurs eBio sont le maillon qui rend les circuits courts possibles en ville.
+
+Cette application est réservée aux livreurs. Pour acheter des produits, téléchargez l'application eBio. Pour vendre vos produits, téléchargez eBio Fournisseur.
+
+Une question ? Écrivez-nous à contact@e-bio.org.
+Conditions d'utilisation : https://e-bio.org/cgu
+Politique de confidentialité : https://e-bio.org/confidentialite

@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
@@ -58,7 +59,8 @@ interface CartScreenProps {
   onUpdateQuantity: (itemId: string, quantity: number) => void
   onSelectVariant: (itemId: string, variant: CartVariant) => void
   onChangeDeliveryMode: (mode: DeliveryMode) => void
-  onCheckout: (supplierId: string) => void
+  /** Un seul passage en caisse, pour tout le panier. */
+  onCheckout: () => void
   onRemoveItem: (itemId: string) => void
   onContinueShopping?: () => void
   /** Ouvre la fiche du produit (image ou nom touché). */
@@ -159,6 +161,7 @@ export function CartScreen({
   onPressItem,
 }: CartScreenProps) {
   const { semantic } = useTheme()
+  const tabBarHeight = useBottomTabBarHeight()
 
   const totalItemCount = groups.reduce(
     (sum, group) => sum + group.items.reduce((s, item) => s + item.quantity, 0),
@@ -425,7 +428,8 @@ export function CartScreen({
                 </View>
               </View>
 
-              {/* Group total + checkout */}
+              {/* Sous-total de la boutique, à titre indicatif : la commande
+                  se passe une fois, en bas, pour le panier entier. */}
               <View style={[styles.groupFooter, { borderTopColor: semantic.borderLight }]}>
                 <View style={styles.groupTotalRow}>
                   <Text style={[styles.groupTotalLabel, { color: semantic.textSecondary }]}>
@@ -437,29 +441,22 @@ export function CartScreen({
                     FCFA
                   </Text>
                 </View>
-
-                <TouchableOpacity
-                  style={styles.orderButton}
-                  onPress={() => onCheckout(group.supplierId)}
-                  activeOpacity={0.8}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Commander chez ${group.supplierName}`}
-                >
-                  <Text style={styles.orderButtonText}>Commander</Text>
-                  <ArrowRight size={18} color={colors.neutral[0]} />
-                </TouchableOpacity>
               </View>
             </View>
           )
         })}
       </ScrollView>
 
-      {/* Grand total bar */}
+      {/* Total et commande : la barre d'onglets flotte au-dessus du contenu,
+          il faut lui laisser sa hauteur sous peine de cacher le bouton. */}
       <FadeInView delay={300}>
-        <View style={[styles.grandTotalBar, { backgroundColor: semantic.bgCard }]}>
+        <View style={[styles.grandTotalBar, { backgroundColor: semantic.bgCard, paddingBottom: tabBarHeight + spacing[3] }]}>
           <View>
             <Text style={[styles.grandTotalLabel, { color: semantic.textSecondary }]}>
-              Total général
+              {totalItemCount}
+              {' article'}
+              {totalItemCount > 1 ? 's' : ''}
+              {groups.length > 1 ? ` · ${groups.length} boutiques` : ''}
             </Text>
             <Text style={[styles.grandTotalValue, { color: semantic.textPrimary }]}>
               {formatPrice(grandTotal)}
@@ -467,14 +464,16 @@ export function CartScreen({
               FCFA
             </Text>
           </View>
-          <View style={styles.grandTotalItemCount}>
-            <Text style={[styles.grandTotalItemCountText, { color: semantic.textTertiary }]}>
-              {totalItemCount}
-              {' '}
-              article
-              {totalItemCount > 1 ? 's' : ''}
-            </Text>
-          </View>
+          <TouchableOpacity
+            style={styles.orderButton}
+            onPress={onCheckout}
+            activeOpacity={0.8}
+            accessibilityRole="button"
+            accessibilityLabel={`Commander, ${totalItemCount} article${totalItemCount > 1 ? 's' : ''}, ${formatPrice(grandTotal)} FCFA`}
+          >
+            <Text style={styles.orderButtonText}>Commander</Text>
+            <ArrowRight size={18} color={colors.neutral[0]} />
+          </TouchableOpacity>
         </View>
       </FadeInView>
     </View>

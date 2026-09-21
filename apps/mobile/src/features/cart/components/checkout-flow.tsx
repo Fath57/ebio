@@ -45,11 +45,19 @@ type PaymentChoice = 'FEDAPAY' | 'WALLET' | 'CASH'
 // Mirrors the API contract (createOrderSchema.deliveryAddress).
 const MIN_ADDRESS_LENGTH = 3
 
+/** Ce que renvoie `POST /orders/checkout` : un panier, N commandes. */
+interface CheckoutResult {
+  checkoutId: string
+  orders: Array<{ orderId: string, orderNumber: string, total: number }>
+}
+
 interface OrderSummary {
-  supplierId: string
-  supplierName: string
+  /** Les boutiques du panier, pour l'en-tête. Une seule le plus souvent. */
+  shopNames: string[]
   items: Array<{
     productId: string
+    supplierId: string
+    supplierName: string
     variantId?: string
     name: string
     quantity: number
@@ -344,7 +352,8 @@ export function CheckoutFlow({
   const [appliedPromo, setAppliedPromo] = useState<{ code: string } | null>(null)
   const [promoError, setPromoError] = useState<string | null>(null)
   const [checkingPromo, setCheckingPromo] = useState(false)
-  const [pendingPaymentId, setPendingPaymentId] = useState<string | null>(null)
+  /** Le passage en caisse en cours de paiement : un pour tout le panier. */
+  const [pendingCheckoutId, setPendingCheckoutId] = useState<string | null>(null)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   // Amount as the server settled it, delivery fee included. The payment widget
@@ -354,26 +363,28 @@ export function CheckoutFlow({
   const isPickup = orderSummary.deliveryMode === 'PICKUP'
   // `orderSummary` is a snapshot taken when leaving the cart; the basket keeps
   // living in the cart context (suggestions add to it from this very screen).
-  const { groups: cartGroups } = useCart()
-  const liveGroup = cartGroups.find(group => group.supplierId === orderSummary.supplierId)
+  const { items: liveItems } = useCart()
   const basketItems = useMemo<OrderSummary['items']>(
-    () => liveGroup
-      ? liveGroup.items.map(item => ({
+    () => liveItems.length > 0
+      ? liveItems.map(item => ({
           productId: item.productId,
+          supplierId: item.supplierId,
+          supplierName: item.supplierName,
           name: item.name,
           quantity: item.quantity,
           pricePerUnit: item.pricePerUnit,
           unit: item.unit,
         }))
       : orderSummary.items,
-    [liveGroup, orderSummary.items],
+    [liveItems, orderSummary.items],
   )
   const basketProductIds = useMemo(() => basketItems.map(item => item.productId), [basketItems])
-  const { items: upsellItems } = useRecommendations(orderSummary.supplierId, basketProductIds, 4)
+  // Les suggestions restent celles de la première boutique du panier : elles
+  // n'ont de sens que rapportées à un catalogue.
+  const { items: upsellItems } = useRecommendations(basketItems[0]?.supplierId ?? '', basketProductIds, 4)
   // Single source of truth for the summary: promotions, gifts, promo code and
   // delivery fee are all priced by the API.
   const previewInput = useMemo(() => ({
-    supplierId: orderSummary.supplierId,
     pickupMode: isPickup ? 'ON_SITE' as const : 'DELIVERY' as const,
     position: isPickup ? null : deliveryPosition,
     promoCode: appliedPromo?.code ?? null,
@@ -382,7 +393,7 @@ export function CheckoutFlow({
       ...(item.variantId ? { variantId: item.variantId } : {}),
       quantity: item.quantity,
     })),
-  }), [orderSummary.supplierId, basketItems, isPickup, deliveryPosition, appliedPromo?.code])
+  }), [basketItems, isPickup, deliveryPosition, appliedPromo?.code])
   const { preview, loading: previewLoading, error: previewError } = useOrderPreview(previewInput)
 
   useEffect(() => {
@@ -452,7 +463,9 @@ export function CheckoutFlow({
     try {
       const res = await apiFetch('/api/promo-codes/validate', {
         method: 'POST',
-        body: JSON.stringify({ code, supplierId: orderSummary.supplierId, itemsTotal: orderSummary.total }),
+        // Un code appartient à une boutique : on vérifie contre la première.
+        // Au-delà d'une boutique, le serveur refuse le code à la validation.
+        body: JSON.stringify({ code, supplierId: basketItems[0]?.supplierId, itemsTotal: orderSummary.total }),
       })
       const data = await res.json().catch(() => null) as { valid?: boolean, message?: string | null } | null
       if (res.ok && data?.valid) {
@@ -470,7 +483,7 @@ export function CheckoutFlow({
     finally {
       setCheckingPromo(false)
     }
-  }, [promoInput, orderSummary.supplierId, orderSummary.total])
+  }, [promoInput, basketItems, orderSummary.total])
 
   const handleProceedToPayment = useCallback(async () => {
     const trimmedAddress = deliveryAddress.trim()
@@ -517,10 +530,11 @@ export function CheckoutFlow({
     setIsSubmitting(true)
     try {
       // Create order
-      const orderRes = await apiFetch('/api/orders', {
+      // Un seul appel pour tout le panier : le serveur crée une commande par
+      // boutique et n'encaisse qu'une fois.
+      const orderRes = await apiFetch('/api/orders/checkout', {
         method: 'POST',
         body: JSON.stringify({
-          supplierId: orderSummary.supplierId,
           pickupMode: orderSummary.deliveryMode === 'PICKUP' ? 'ON_SITE' : 'DELIVERY',
           paymentMethod: effectiveChoice === 'CASH'
             ? 'CASH_ON_DELIVERY'
@@ -540,10 +554,22 @@ export function CheckoutFlow({
         }),
       })
 
+      let checkout: CheckoutResult | null = null
       let order: { id: string, orderNumber?: string, totalAmount?: number }
 
       if (orderRes.ok) {
-        order = await orderRes.json()
+        const created = await orderRes.json() as CheckoutResult
+        checkout = created
+        // Le suivi reste par commande : on retient la première pour l'écran de
+        // confirmation, et le montant est celui du panier.
+        const first = created.orders[0]
+        order = {
+          id: first.orderId,
+          orderNumber: created.orders.length > 1
+            ? `${created.orders.length} commandes`
+            : first.orderNumber,
+          totalAmount: created.orders.reduce((sum, entry) => sum + entry.total, 0),
+        }
       }
       else if (orderRes.status === 409) {
         // Duplicate — find the existing order still waiting (placed, or an
@@ -552,7 +578,7 @@ export function CheckoutFlow({
         const orders = listRes.ok ? await listRes.json() : []
         const existing = (orders.data ?? orders)
           .find((o: { supplierId: string, status?: string }) =>
-            o.supplierId === orderSummary.supplierId
+            basketItems.some(item => item.supplierId === o.supplierId)
             && (o.status === 'PLACED' || o.status === 'PENDING_PAYMENT'))
         if (!existing) {
           appAlert('Erreur', 'Commande existante introuvable. Veuillez réessayer dans 2 minutes.')
@@ -586,10 +612,11 @@ export function CheckoutFlow({
         return
       }
 
-      // Initiate FedaPay checkout payment
-      const paymentRes = await apiFetch('/api/payments/initiate-checkout', {
+      // Un seul encaissement pour le panier, quel que soit le nombre de
+      // boutiques : c'est toute la promesse de cet écran.
+      const paymentRes = await apiFetch('/api/payments/cart/initiate', {
         method: 'POST',
-        body: JSON.stringify({ orderId: order.id }),
+        body: JSON.stringify({ checkoutId: checkout?.checkoutId }),
       })
 
       if (!paymentRes.ok) {
@@ -598,8 +625,10 @@ export function CheckoutFlow({
         return
       }
 
-      const payment = await paymentRes.json()
-      setPendingPaymentId(payment.paymentId)
+      // Le paiement lui-même n'existe pas encore : il naît à la confirmation,
+      // un par commande. Ce qu'on retient ici est le passage en caisse.
+      await paymentRes.json()
+      setPendingCheckoutId(checkout?.checkoutId ?? null)
       setCurrentStep('PAYMENT')
     }
     catch {
@@ -614,13 +643,13 @@ export function CheckoutFlow({
     try {
       const data = JSON.parse(event.nativeEvent.data)
 
-      if (data.type === 'completed' && pendingPaymentId && pendingOrderId) {
-        // Verify payment
-        await apiFetch('/api/payments/verify-checkout', {
+      if (data.type === 'completed' && pendingCheckoutId) {
+        // Confirme l'encaissement unique ; le serveur crée alors un paiement
+        // par commande, chacun avec son escrow.
+        await apiFetch('/api/payments/cart/verify', {
           method: 'POST',
           body: JSON.stringify({
-            orderId: pendingOrderId,
-            paymentId: pendingPaymentId,
+            checkoutId: pendingCheckoutId,
             fedapayTransactionId: data.transactionId,
           }),
         })
@@ -645,7 +674,7 @@ export function CheckoutFlow({
     catch {
       // Ignore parse errors
     }
-  }, [pendingPaymentId, pendingOrderId, orderNumber, onComplete])
+  }, [pendingCheckoutId, pendingOrderId, orderNumber, onComplete])
 
   // ─── STEP: SUMMARY ─────────────────────────────────────────────────────────
 
@@ -666,7 +695,9 @@ export function CheckoutFlow({
                 <Store size={16} color={colors.green[600]} strokeWidth={2} />
               </View>
               <Text style={[styles.supplierName, { color: semantic.textPrimary }]}>
-                {orderSummary.supplierName}
+                {orderSummary.shopNames.length > 1
+                  ? `${orderSummary.shopNames.length} boutiques`
+                  : orderSummary.shopNames[0] ?? ''}
               </Text>
             </View>
           </View>
@@ -955,8 +986,8 @@ export function CheckoutFlow({
                 Ces produits accompagnent souvent une commande comme la vôtre. Ajoutez-les en un geste, votre total se met à jour.
               </Text>
               <BasketSuggestions
-                supplierId={orderSummary.supplierId}
-                supplierName={orderSummary.supplierName}
+                supplierId={basketItems[0]?.supplierId ?? ''}
+                supplierName={basketItems[0]?.supplierName ?? ''}
                 productIds={basketProductIds}
                 items={upsellItems}
                 hideTitle
@@ -995,12 +1026,14 @@ export function CheckoutFlow({
 
   // ─── STEP: PAYMENT (FedaPay WebView) ───────────────────────────────────────
 
-  if (currentStep === 'PAYMENT' && fedapayPublicKey && pendingPaymentId) {
+  if (currentStep === 'PAYMENT' && fedapayPublicKey && pendingCheckoutId) {
     const checkoutHtml = buildFedaPayCheckoutHtml(
       fedapayPublicKey,
       amountDue ?? orderTotal,
-      `Commande eBio - ${orderSummary.supplierName}`,
-      pendingPaymentId,
+      orderSummary.shopNames.length > 1
+        ? `Panier eBio — ${orderSummary.shopNames.length} boutiques`
+        : `Commande eBio - ${orderSummary.shopNames[0] ?? ''}`,
+      pendingCheckoutId,
       customer,
     )
 

@@ -322,7 +322,7 @@ function CartStackScreen() {
 }
 
 function CartHomeWrapper({ navigation }: any) {
-  const { groups, deliveryMode, updateQuantity, removeItem, setDeliveryMode } = useCart()
+  const { items, groups, deliveryMode, updateQuantity, removeItem, setDeliveryMode } = useCart()
   const { data: session } = useSession()
   const mappedGroups = groups.map(g => ({
     ...g,
@@ -333,25 +333,26 @@ function CartHomeWrapper({ navigation }: any) {
     })),
   }))
 
-  function handleCheckout(supplierId: string) {
-    const group = groups.find(g => g.supplierId === supplierId)
-    if (!group)
+  function handleCheckout() {
+    if (items.length === 0)
       return
 
+    // Le récapitulatif est celui du panier, toutes boutiques confondues. Chaque
+    // ligne porte sa boutique pour l'affichage ; la répartition en commandes
+    // est l'affaire du serveur.
     const orderSummary = {
-      supplierId: group.supplierId,
-      supplierName: group.supplierName,
-      items: group.items.map(i => ({
+      shopNames: groups.map(g => g.supplierName),
+      items: items.map(i => ({
         productId: i.productId,
+        supplierId: i.supplierId,
+        supplierName: i.supplierName,
         name: i.name,
         quantity: i.quantity,
         pricePerUnit: i.pricePerUnit,
         unit: i.unit,
       })),
-      // Le mode de remise appartient au panier, plus au groupe : l'acheteur
-      // choisit une fois pour tout ce qu'il commande.
       deliveryMode,
-      total: group.items.reduce((s, i) => s + i.pricePerUnit * i.quantity, 0),
+      total: items.reduce((s, i) => s + i.pricePerUnit * i.quantity, 0),
     }
 
     if (!session?.user) {
