@@ -145,6 +145,8 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 ### API — tournée et diffusion
 
 - [x] T030 [US2] Créer la tournée à la création du checkout en mode `DELIVERY`, dans `apps/api/src/modules/orders/orders.service.ts`, en n'en créant aucune en `ON_SITE`
+- [ ] T030a [US2] Borner une tournée à deux boutiques (FR-020) : au-delà, le checkout produit plusieurs tournées, chacune avec son devis, et le total annoncé avant paiement les couvre toutes — `apps/api/src/modules/orders/checkout.service.ts`
+- [ ] T030b [US2] Exposer la limite en réglage back-office dans `apps/api/src/modules/settings/platform-settings.service.ts`, deux par défaut
 - [ ] T031 [US2] Calculer l'ordre de passage et le stocker dans `pickup_order`, dans `apps/api/src/modules/deliveries/deliveries.service.ts`
 - [ ] T032 [US2] Porter `findEligibleCouriers` et `rankCandidates` de `dispatch.service.ts` au niveau tournée, en prenant le premier point de collecte comme origine
 - [ ] T033 [US2] Porter `startDispatch`, `offerNext`, `respondToOffer` et `cancelPendingOffer` au niveau tournée, en conservant la bascule ciblé → diffusion large
@@ -184,7 +186,8 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 - [ ] T048 [US3] Recalculer le frais de tournée après retrait d'une boutique et créditer l'écart s'il y a lieu
 - [ ] T049 [US3] Faire évoluer le statut du checkout vers `PARTIALLY_REFUNDED`, puis `REFUNDED` quand plus aucune commande ne survit
 - [ ] T050 [US3] Déclencher l'alerte back-office à 15 minutes sans preneur (`escalated_at`) et la rendre visible dans l'écran d'attribution manuelle existant
-- [ ] T051 [US3] Rendre la décision à l'acheteur à 30 minutes (`buyer_prompted_at`) et écrire `POST /api/runs/:id/buyer-decision`
+- [ ] T051 [US3] Dégrouper la tournée à 30 minutes sans preneur (FR-022a) : libérer ses livraisons, les rediffuser une par une, passer la tournée en `CANCELLED` / `UNSERVED`, prévenir l'acheteur qu'il recevra en plusieurs fois et lui créditer l'écart de frais
+- [ ] T051a [US3] Rendre la décision à l'acheteur (`buyer_prompted_at`) seulement lorsque les livraisons dégroupées restent elles aussi sans preneur (FR-022c), et écrire `POST /api/runs/:id/buyer-decision`
 - [ ] T052 [US3] Sur `CANCEL`, créditer l'intégralité du montant frais compris et prévenir les boutiques concernées
 - [ ] T053 [US3] Poursuivre la tournée quand une boutique annule alors que la collecte a commencé ailleurs, en ne créditant que la part annulée
 
@@ -276,13 +279,19 @@ décrite était le passage en caisse répété, pas le nombre de livraisons. Cet
 - **T050** : l'alerte back-office se branche sur l'attribution manuelle
   existante ; vérifier qu'elle sait traiter une tournée et pas seulement une
   course.
+- **T030a, critère de distance** : la limite arrêtée porte sur le nombre de
+  boutiques. Faut-il aussi borner l'écart entre points de collecte, comme le
+  fait Uber Eats ? Bloquant pour la mise en service de US2, pas pour T030a.
 
 ---
 
 ## Notes
 
-- Le risque assumé de FR-020 — aucune limite de regroupement — n'a pas de tâche
-  de contrôle, par construction. Il a une tâche de **mesure** (T039), qui est le
-  seul moyen de poser ces limites plus tard sur des faits.
+- La limite de regroupement est passée d'un risque assumé à une règle : deux
+  boutiques par tournée (T030a), réglable (T030b). La mesure (T039) reste, pour
+  ajuster ce seuil sur des faits plutôt que pour le découvrir.
+- **Ce que la limite ne couvre pas** : l'écart entre points de collecte. Deux
+  boutiques aux extrémités de la ville restent groupables. Uber Eats contraint les
+  deux ; à trancher avant la mise en service de US2.
 - Aucune tâche ne touche `Order`, ni les écrans fournisseur. Si une tâche en
   vient à l'exiger, c'est que l'architecture a dérivé et qu'il faut y revenir.

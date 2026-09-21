@@ -19,8 +19,18 @@ Côté vendeur, rien ne change : chaque boutique continue de recevoir sa command
 
 - Q: En cas de refus d'une boutique après encaissement, comment l'acheteur est-il remboursé ? → A: Encaisser tout de suite, créditer la part refusée sur le portefeuille eBio de l'acheteur, avec retrait possible.
 - Q: Le paiement en espèces à la livraison reste-t-il possible sur un panier multi-boutiques ? → A: Oui, avec le plafond appliqué au total de la tournée et non à chaque commande.
-- Q: Quelles limites au regroupement des boutiques dans une tournée ? → A: Aucune limite en v1 — tout ce qui est payé ensemble part en une tournée, les limites seront posées à l'usage.
+- Q: Quelles limites au regroupement des boutiques dans une tournée ? → A: ~~Aucune limite en v1~~ — **révisé en seconde passe, voir ci-dessous**.
 - Q: Que se passe-t-il quand aucun livreur n'accepte une tournée ? → A: Alerte du back-office à 15 minutes pour attribution manuelle, puis à 30 minutes la décision revient à l'acheteuse — attendre ou annuler et être créditée.
+
+### Session 2026-09-21 (seconde passe)
+
+Revient sur la troisième réponse ci-dessus, à la lumière de ce que font les
+plateformes comparables : Uber Eats n'accepte que deux commerces proches l'un
+de l'autre, DoorDash n'autorise qu'une seule boutique d'appoint et **bascule
+sur deux livreurs** quand le lot n'a pas de sens.
+
+- Q: Faut-il finalement limiter le regroupement ? → A: Oui, deux boutiques par tournée.
+- Q: Que faire quand une tournée ne trouve pas preneur ? → A: La dégrouper en livraisons séparées, plutôt que de faire attendre.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -87,9 +97,10 @@ Entre le paiement et la préparation, une boutique ferme, annule ou n'a plus le 
 - **Seuil de livraison gratuite** : chaque boutique a le sien ; avec un frais unique, le seuil doit être évalué sur un périmètre défini et compréhensible.
 - **Panier mono-boutique** : le cas le plus fréquent ne doit pas être alourdi par la mécanique multi-boutiques.
 - **Une seule boutique dans la tournée** : la tournée ne doit pas rendre plus lent ou plus cher ce qui fonctionne aujourd'hui.
-- **Aucun livreur ne prend la tournée** : deux temps, 15 puis 30 minutes (FR-022). Sans limite de regroupement (FR-020), c'est le principal filet de sécurité : une tournée dispersée trouvera difficilement preneur.
+- **Aucun livreur ne prend la tournée** : trois temps — alerte back-office à 15 minutes, dégroupage à 30, main rendue à l'acheteur si même séparées les courses ne trouvent personne (FR-022).
+- **Panier de plus de deux boutiques** : plusieurs tournées, donc plusieurs frais. Le total doit être annoncé avant paiement, sans que l'acheteur ait à comprendre le découpage.
 - **L'acheteuse choisit d'attendre, puis se ravise** : l'issue « annuler » doit rester ouverte tant que la marchandise n'est pas collectée.
-- **Tournée très dispersée** : rien n'empêche un panier de réunir des boutiques éloignées. La marchandise ne doit pas attendre indéfiniment chez les boutiques qui, elles, ont déjà préparé.
+- **Tournée très dispersée** : la limite porte sur le nombre de boutiques, pas sur l'écart entre elles — deux boutiques aux extrémités de la ville restent groupables. La marchandise ne doit pas attendre indéfiniment chez celle qui a déjà préparé (voir Risks).
 - **Panier en espèces au-dessus du plafond** : le refus seul ne suffit pas, l'acheteuse doit savoir de combien elle dépasse et ce qu'elle peut faire.
 
 ## Requirements *(mandatory)*
@@ -125,12 +136,14 @@ Entre le paiement et la préparation, une boutique ferme, annule ou n'a plus le 
 - **FR-017** : Le système MUST refléter la collecte chez une boutique sur la commande de cette boutique seule, et la remise finale sur toutes les commandes de la tournée.
 - **FR-018** : L'acheteur MUST suivre l'avancement d'une tournée comme une progression unique.
 - **FR-019** : Le système MUST rémunérer le livreur au titre de la tournée, et non par commande transportée.
-- **FR-020** : Le système MUST regrouper en une tournée l'ensemble des livraisons d'un même passage en caisse, sans limite de nombre de boutiques ni d'écart entre les points de collecte. Les limites seront posées plus tard, sur constat d'usage.
+- **FR-020** : Le système MUST limiter une tournée à **deux boutiques**. Au-delà, le panier produit plusieurs tournées, chacune avec ses frais, et le total est annoncé avant paiement comme tout le reste. La limite MUST être réglable depuis le back-office : deux est un point de départ, pas une vérité.
 - **FR-020a** : Le système MUST enregistrer, pour chaque tournée, le nombre de boutiques, la distance parcourue et l'issue de la diffusion — acceptée, refusée, sans preneur — afin que ces limites puissent être fixées sur des faits et non sur une intuition.
+- **FR-020b** : Le système MUST pouvoir **dégrouper** une tournée en livraisons individuelles lorsqu'elle ne trouve pas preneur. Faire attendre l'acheteur pendant que la marchandise est prête chez des boutiques qui, elles, ont préparé, est le pire des dénouements.
 - **FR-021** : Le système MUST gérer le retrait d'une boutique d'une tournée déjà acceptée sans interrompre la livraison des autres.
 - **FR-022** : Le système MUST alerter le back-office lorsqu'une tournée reste sans preneur au bout de 15 minutes, afin qu'un administrateur puisse attribuer un livreur à la main.
-- **FR-022a** : Le système MUST rendre la décision à l'acheteur lorsque la tournée reste sans preneur au bout de 30 minutes, en lui proposant explicitement d'attendre ou d'annuler.
+- **FR-022a** : Le système MUST dégrouper la tournée en livraisons individuelles lorsqu'elle reste sans preneur au bout de 30 minutes, et les diffuser séparément. L'acheteur MUST en être informé : il recevra en plusieurs fois, et l'écart de frais éventuel lui est crédité.
 - **FR-022b** : Lorsque l'acheteur choisit d'annuler faute de livreur, le système MUST créditer l'intégralité du montant, frais compris, et prévenir les boutiques concernées.
+- **FR-022c** : Le système MUST rendre la décision à l'acheteur lorsque les livraisons dégroupées ne trouvent pas preneur non plus, en lui proposant explicitement d'attendre ou d'annuler.
 
 #### Continuité
 
@@ -182,7 +195,8 @@ Ces choix ont été retenus faute de contre-indication ; ils sont à confirmer a
 
 ## Risks
 
-- **Regroupement sans limite (FR-020)** : une tournée peut réunir des boutiques trop éloignées pour qu'un livreur l'accepte. Le risque est assumé pour la v1 et surveillé par FR-020a ; il se matérialise en délais de livraison, pas en perte d'argent, le filet de FR-022 rendant la main à l'acheteuse.
+- **Le frais unique est à la charge de la plateforme** : plus une tournée s'étire, plus eBio paie un livreur pour un trajet que l'acheteur ne finance pas. La limite de deux boutiques (FR-020) borne cette exposition ; FR-020a la mesure, pour ajuster le seuil sur des faits.
+- **Deux boutiques peuvent être proches sur le papier et loin en pratique.** La limite porte sur le nombre, pas encore sur l'écart entre points de collecte. Uber Eats impose les deux. À trancher avant la mise en service : sans critère de distance, deux boutiques aux extrémités de la ville restent groupables.
 
 ## Out of Scope
 

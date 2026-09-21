@@ -141,9 +141,21 @@ actuel et le moins surprenant.
 limite** en v1 et de les fixer à l'usage. Sans mesure, « à l'usage » n'a rien
 sur quoi s'appuyer.
 
-**Décision** : chaque tournée enregistre le nombre de boutiques, la distance
-totale, et l'issue de la diffusion — acceptée par qui et après combien de
-propositions, refusée, ou sans preneur au bout des 15 et 30 minutes de FR-022.
+**Décision initiale** : chaque tournée enregistre le nombre de boutiques, la
+distance totale, et l'issue de la diffusion — acceptée par qui et après combien
+de propositions, refusée, ou sans preneur.
+
+**Révision du 2026-09-21** : la limite ne sera pas posée « plus tard ». Les
+plateformes comparables la fixent d'emblée — Uber Eats n'accepte que deux
+commerces proches, DoorDash une seule boutique d'appoint — et pour une raison
+qui tient à l'argent : le frais unique est à la charge de la plateforme, donc
+une tournée qui s'étire est payée par eBio. Deux boutiques par tournée,
+réglable. La mesure reste, pour ajuster ce seuil plutôt que pour le découvrir.
+
+**Ajout** : DoorDash bascule sur deux livreurs quand le lot n'a pas de sens.
+Notre modèle ne savait que faire attendre ; il sait désormais dégrouper
+(FR-020b, FR-022a). Un repli qui dégroupe change la façon d'écrire la
+diffusion — il fallait le décider avant de l'écrire, pas après.
 
 **Rationale** : ce sont les trois variables dont dépendra le seuil. Les
 enregistrer coûte trois colonnes et une ligne à l'acceptation ; ne pas les

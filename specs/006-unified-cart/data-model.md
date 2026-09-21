@@ -102,8 +102,12 @@ peut encore accepter pendant ces deux états.
 - `pickup_order` MUST contenir exactement les identifiants des `Delivery`
   rattachées, sans doublon.
 - Une tournée `DELIVERED` MUST avoir toutes ses livraisons en `DELIVERED`.
-- Aucune limite de `shop_count` ni de `total_distance_km` (FR-020) — les deux
-  sont enregistrés pour mesure, pas pour contrôle.
+- `shop_count` MUST respecter la limite de regroupement (deux par défaut,
+  réglable). `total_distance_km` reste une mesure, pas un contrôle — tant
+  qu'aucun critère de distance n'est arrêté.
+- Une tournée dégroupée (FR-020b) libère ses livraisons, qui repartent en
+  diffusion individuelle : la tournée passe en `CANCELLED` avec l'issue
+  `UNSERVED`, elle n'est pas supprimée — son échec est une donnée.
 
 ---
 
