@@ -23,6 +23,7 @@ import { RouteMapService } from '../email/route-map.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
+import { Checkout } from '../payments/entities/checkout.entity'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { ProductPromotion, PromotionType } from '../products/entities/product-promotion.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
@@ -110,6 +111,14 @@ interface BasketLine {
   isGift: boolean
 }
 
+/**
+ * Passé par le service de passage en caisse quand la commande fait partie d'un
+ * panier unifié. Voir `create`.
+ */
+export interface CheckoutOrderContext {
+  checkout: Checkout
+}
+
 interface BasketPricing {
   itemEntities: BasketLine[]
   totalAmount: number
@@ -149,7 +158,16 @@ export class OrdersService {
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
 
-  async create(buyerId: string, data: CreateOrder): Promise<Order> {
+  /**
+   * Ce qu'un passage en caisse unifié impose à la création d'une commande.
+   *
+   * Sans ce contexte, `create` chiffre sa propre livraison et contrôle son
+   * propre plafond d'espèces — corrects pour une commande isolée, faux dès que
+   * plusieurs boutiques partagent une tournée et un paiement : les frais
+   * seraient facturés N fois et le plafond, qui borne l'avance du livreur,
+   * s'appliquerait à chaque commande au lieu de la tournée.
+   */
+  async create(buyerId: string, data: CreateOrder, checkoutContext?: CheckoutOrderContext): Promise<Order> {
     const buyer = await this.em.findOneOrFail(User, { id: buyerId })
 
     const supplier = await this.em.findOne(Supplier, { id: data.supplierId }, { populate: ['user'] })
@@ -167,8 +185,11 @@ export class OrdersService {
 
     const orderNumber = await this.generateOrderNumber()
     const pricing = await this.priceBasket(buyer, supplier, products, data)
-    const { itemEntities, discount, discountedItemsTotal, commission, appliedPromo, deliveryFee } = pricing
-    if (!pricing.deliveryPriceable) {
+    const { itemEntities, discount, discountedItemsTotal, commission, appliedPromo } = pricing
+    // Dans un panier unifié, la livraison est facturée une fois, au niveau du
+    // checkout : les commandes qu'il regroupe n'en portent aucune part.
+    const deliveryFee = checkoutContext ? 0 : pricing.deliveryFee
+    if (!checkoutContext && !pricing.deliveryPriceable) {
       if (pricing.deliveryReason === 'OUT_OF_RANGE') {
         const km = (pricing.deliveryDistanceKm ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })
         throw new BadRequestException(`Adresse hors zone de livraison (${km} km, maximum ${pricing.deliveryMaxKm} km). Choisissez le retrait sur place ou une autre adresse.`)
@@ -177,8 +198,10 @@ export class OrdersService {
     }
 
     // Cash: the courier fronts the goods and collects the total at the door,
-    // so the platform caps what one order may put in a courier's hands.
-    if (data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
+    // so the platform caps what one order may put in a courier's hands. En
+    // panier unifié, cette avance est celle de la tournée : le contrôle a déjà
+    // eu lieu sur le total du checkout.
+    if (!checkoutContext && data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
       const cashLimit = await this.platformSettings.getCashOnDeliveryMaxAmount()
       if (cashLimit <= 0) {
         throw new BadRequestException('Le paiement en espèces n\'est pas disponible pour le moment')
@@ -265,6 +288,7 @@ export class OrdersService {
         throw error
       }
       this.em.create(Payment, {
+        checkout: checkoutContext?.checkout,
         order,
         amount: order.totalAmount,
         provider: PaymentProvider.FEDAPAY,

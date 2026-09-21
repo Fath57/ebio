@@ -40,12 +40,33 @@ export const deliveryQuoteRequestSchema = z.object({
   description: 'What the buyer would pay to have this basket delivered to this point',
 })
 
+/**
+ * Pourquoi la livraison coûte ce qu'elle coûte — ou pourquoi elle ne peut pas
+ * être chiffrée. Reflet de `DeliveryFeeReason` (common/delivery-fee.ts).
+ *
+ * `NO_SHOP_POSITION` n'est pas bloquant : le forfait s'applique et la commande
+ * passe. Seul `NO_POSITION`, qui désigne l'acheteur, l'est.
+ */
+export const deliveryReasonEnum = z.enum([
+  'PICKUP',
+  'FREE_THRESHOLD',
+  'FLAT',
+  'DISTANCE',
+  'ZONE',
+  'NO_POSITION',
+  'NO_SHOP_POSITION',
+  'OUT_OF_RANGE',
+]).meta({
+  title: 'DeliveryReason',
+  description: 'Motif du tarif de livraison retenu',
+})
+
 export const deliveryQuoteResponseSchema = z.object({
   mode: deliveryPricingModeEnum,
   /** Null when the delivery cannot be priced (see reason). */
   fee: z.number().nullable(),
   distanceKm: z.number().nullable(),
-  reason: z.enum(['PICKUP', 'FREE_THRESHOLD', 'FLAT', 'DISTANCE', 'ZONE', 'NO_POSITION', 'NO_SHOP_POSITION', 'OUT_OF_RANGE']),
+  reason: deliveryReasonEnum,
   /** True when the buyer must pick a drop-off point before a fee can be shown. */
   requiresPosition: z.boolean(),
   maxDistanceKm: z.number(),
