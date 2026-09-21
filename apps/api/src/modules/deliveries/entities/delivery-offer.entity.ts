@@ -1,6 +1,7 @@
 import type { Rel } from '@mikro-orm/core'
 import { Entity, Index, ManyToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { CourierProfile } from './courier-profile.entity'
+import { DeliveryRun } from './delivery-run.entity'
 import { Delivery } from './delivery.entity'
 
 export enum DeliveryOfferResponse {
@@ -23,9 +24,18 @@ export class DeliveryOffer {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @ManyToOne(() => Delivery, { fieldName: 'delivery_id', deleteRule: 'cascade' })
+  /**
+   * L'objet proposé : une course isolée, ou une tournée. Jamais les deux —
+   * une contrainte en base le garantit, parce que deux cibles pour une offre
+   * laisseraient deux réponses possibles pour un seul refus.
+   */
+  @ManyToOne(() => Delivery, { fieldName: 'delivery_id', deleteRule: 'cascade', nullable: true })
   @Index()
-  delivery!: Rel<Delivery>
+  delivery?: Rel<Delivery> | null
+
+  @ManyToOne(() => DeliveryRun, { fieldName: 'delivery_run_id', deleteRule: 'cascade', nullable: true })
+  @Index()
+  deliveryRun?: Rel<DeliveryRun> | null
 
   @ManyToOne(() => CourierProfile, { fieldName: 'courier_id', deleteRule: 'cascade' })
   courier!: Rel<CourierProfile>

@@ -32,6 +32,37 @@ export interface OfferRow {
   pickup_ready_at: Date | string | null
 }
 
+/** Une collecte d'une tournée, telle que le livreur la voit. */
+export interface RunStopRow {
+  deliveryId: string
+  shopName: string
+  pickupAddress: string
+  orderNumber: string
+}
+
+/**
+ * Une tournée proposée. Contrairement à `OfferRow`, rien n'y est par commande :
+ * un gain, une adresse de remise, une suite de collectes — c'est exactement ce
+ * que le livreur décide d'accepter ou non.
+ */
+export interface RunOfferRow {
+  id: string
+  shop_count: number
+  courier_earning: number | string
+  delivery_fee: number | string
+  total_distance_km: number | string | null
+  distance_km: string | number | null
+  dropoff_address: string | null
+  dropoff_latitude: number | null
+  dropoff_longitude: number | null
+  payment_method: string
+  total_amount: number | string
+  offered_at: Date
+  is_targeted: boolean | null
+  offer_expires_at: Date | string | null
+  stops: RunStopRow[] | null
+}
+
 /**
  * Cash run: the courier fronts the goods to the shop at pickup and collects
  * the whole total at the door, keeping the delivery fee as their own.
@@ -65,6 +96,33 @@ export class DeliveriesMapper {
       dispatchBlock,
       validatedAt: profile.validatedAt?.toISOString() ?? null,
       createdAt: profile.createdAt.toISOString(),
+    }
+  }
+
+  /**
+   * Une tournée proposée au livreur. Le gain est celui de la tournée entière —
+   * c'est FR-019 : on rémunère un trajet, pas un nombre de commandes.
+   */
+  static toRunOffer(row: RunOfferRow) {
+    const total = Number(row.total_amount)
+    return {
+      id: row.id,
+      shopCount: Number(row.shop_count),
+      courierFee: Number(row.courier_earning),
+      deliveryFee: Number(row.delivery_fee),
+      dropoffAddress: row.dropoff_address ?? '',
+      dropoffPosition: row.dropoff_latitude != null && row.dropoff_longitude != null
+        ? { latitude: Number(row.dropoff_latitude), longitude: Number(row.dropoff_longitude) }
+        : null,
+      distanceKm: row.distance_km === null ? null : Number(row.distance_km),
+      routeKm: row.total_distance_km === null ? null : Number(row.total_distance_km),
+      paymentMethod: row.payment_method,
+      totalAmount: total,
+      ...cashAmounts(row.payment_method, total, Number(row.delivery_fee)),
+      stops: row.stops ?? [],
+      isTargeted: row.is_targeted === true,
+      expiresAt: row.offer_expires_at ? new Date(row.offer_expires_at).toISOString() : null,
+      offeredAt: new Date(row.offered_at).toISOString(),
     }
   }
 

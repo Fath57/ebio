@@ -13,12 +13,13 @@ import { DeliveriesController } from './deliveries.controller'
 import { DeliveriesService } from './deliveries.service'
 import { ORDER_DELIVERY_HOOKS } from './deliveries.tokens'
 import { DispatchService } from './dispatch.service'
+import { RunsController } from './runs.controller'
 
 // forwardRef at the module level only: OrdersService reaches DeliveriesService
 // through the ORDER_DELIVERY_HOOKS token (no service-level import cycle).
 @Module({
   imports: [MediaModule, NotificationsModule, WalletModule, PlatformSettingsModule, forwardRef(() => OrdersModule)],
-  controllers: [CouriersController, DeliveriesController, AdminCouriersController],
+  controllers: [CouriersController, DeliveriesController, RunsController, AdminCouriersController],
   providers: [
     DeliveriesService,
     DispatchService,

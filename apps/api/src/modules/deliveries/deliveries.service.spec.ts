@@ -104,6 +104,7 @@ describe('deliveriesService', () => {
       const { service, em, execute } = buildService()
       em.findOne
         .mockResolvedValueOnce(validProfile)
+        .mockResolvedValueOnce(buildDelivery(DeliveryStatus.AWAITING_COURIER))
         .mockResolvedValueOnce(buildDelivery(DeliveryStatus.ACCEPTED))
       execute.mockResolvedValueOnce([])
       await expect(service.accept('delivery-1', 'user-1')).rejects.toBeInstanceOf(ConflictException)
@@ -114,8 +115,19 @@ describe('deliveriesService', () => {
       em.findOne
         .mockResolvedValueOnce(validProfile)
         .mockResolvedValueOnce(buildDelivery(DeliveryStatus.CANCELLED))
+        .mockResolvedValueOnce(buildDelivery(DeliveryStatus.CANCELLED))
       execute.mockResolvedValueOnce([])
       await expect(service.accept('delivery-1', 'user-1')).rejects.toBeInstanceOf(GoneException)
+    })
+
+    it('refuse la prise d\'une course qui appartient à une tournée', async () => {
+      const { service, em } = buildService()
+      em.findOne
+        .mockResolvedValueOnce(validProfile)
+        .mockResolvedValueOnce(buildDelivery(DeliveryStatus.AWAITING_COURIER, { deliveryRun: { id: 'run-1' } }))
+      // Sans ce refus, un livreur prendrait la moitié d'une tournée et le
+      // frais unique promis à l'acheteur ne couvrirait plus le trajet.
+      await expect(service.accept('delivery-1', 'user-1')).rejects.toBeInstanceOf(ConflictException)
     })
 
     it('refuses a courier that is offline', async () => {
@@ -129,6 +141,7 @@ describe('deliveriesService', () => {
       const delivery = buildDelivery(DeliveryStatus.ACCEPTED)
       em.findOne
         .mockResolvedValueOnce(validProfile)
+        .mockResolvedValueOnce(buildDelivery(DeliveryStatus.AWAITING_COURIER))
         .mockResolvedValueOnce(delivery)
       execute.mockResolvedValueOnce([{ id: 'delivery-1' }])
       const result = await service.accept('delivery-1', 'user-1')

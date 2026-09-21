@@ -4,7 +4,7 @@ import type {
   RegisterCourier,
   UpdateCourier,
 } from './contracts/delivery.contract'
-import type { DeliveryAudience, OfferRow } from './deliveries.mapper'
+import type { DeliveryAudience, OfferRow, RunOfferRow } from './deliveries.mapper'
 import { randomInt } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
@@ -19,7 +19,7 @@ import {
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common'
-import { computeCourierFee } from '../../common/delivery-fee'
+import { computeCourierFee, orderPickups } from '../../common/delivery-fee'
 import { User, UserRole } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -35,7 +35,7 @@ import { DispatchService } from './dispatch.service'
 import { CourierProfile, VehicleType } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOfferResponse } from './entities/delivery-offer.entity'
-import { DeliveryRun } from './entities/delivery-run.entity'
+import { DeliveryRun, DeliveryRunStatus } from './entities/delivery-run.entity'
 import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const ACTIVE_STATUSES = [DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.IN_TRANSIT]
@@ -379,6 +379,9 @@ export class DeliveriesService {
        JOIN suppliers s ON s.id = o.supplier_id
        CROSS JOIN me
        WHERE d.status = 'AWAITING_COURIER'
+         -- Une livraison de tournée ne se propose pas seule : sa tournée est
+         -- proposée d'un bloc, sans quoi un livreur en prendrait la moitié.
+         AND d.delivery_run_id IS NULL
          AND (
            -- Exclusive offer still open for me: shown whatever the radius.
            (d.offered_to_courier_id = ? AND d.offer_expires_at > NOW())
@@ -402,6 +405,11 @@ export class DeliveriesService {
       throw new ForbiddenException('Passez disponible pour accepter une course')
     }
     await this.assertNotBlocked(profile.id)
+
+    const attached = await this.em.findOne(Delivery, { id: deliveryId }, { populate: ['deliveryRun'] })
+    if (attached?.deliveryRun) {
+      throw new ConflictException('Cette course fait partie d\'une tournée : acceptez la tournée entière')
+    }
 
     // Targeted phase: only the courier holding the open offer may claim.
     const claimed = await this.em.getConnection().execute(
@@ -461,6 +469,229 @@ export class DeliveriesService {
     ])
 
     return delivery
+  }
+
+  /**
+   * Les tournées proposées à ce livreur : celles qu'il tient en exclusivité, et
+   * celles que la diffusion large a poussées dans son rayon.
+   *
+   * Même point de référence que pour les courses isolées — position réelle de
+   * moins de 12 h, à défaut la zone déclarée — et mêmes règles de visibilité.
+   */
+  async getRunOffers(userId: string): Promise<RunOfferRow[]> {
+    const profile = await this.getMyProfile(userId)
+    if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
+      throw new ForbiddenException('Passez disponible pour voir les tournées proposées')
+    }
+    await this.assertNotBlocked(profile.id)
+
+    return this.em.getConnection().execute(
+      `WITH me AS (
+         SELECT
+           COALESCE(
+             CASE WHEN last_location_at > NOW() - INTERVAL '12 hours' THEN last_known_location END,
+             CASE WHEN zone_latitude IS NOT NULL
+               THEN ST_SetSRID(ST_MakePoint(zone_longitude, zone_latitude), 4326)::geography
+             END
+           ) AS loc,
+           GREATEST(COALESCE(zone_radius_km, 0) * 1000, 0) AS zone_radius_m
+         FROM courier_profiles WHERE id = ?
+       )
+       SELECT r.id, r.shop_count, r.courier_earning, r.delivery_fee, r.total_distance_km,
+              r.pickup_order, r.offered_at,
+              c.delivery_address AS dropoff_address,
+              c.delivery_latitude AS dropoff_latitude, c.delivery_longitude AS dropoff_longitude,
+              c.payment_method, c.total_amount,
+              (r.offered_to_courier_id = ?) AS is_targeted,
+              CASE WHEN r.offered_to_courier_id = ? THEN r.offer_expires_at END AS offer_expires_at,
+              CASE WHEN r.pickup_location IS NOT NULL AND me.loc IS NOT NULL
+                THEN ROUND((ST_Distance(r.pickup_location, me.loc) / 1000)::numeric, 2)
+              END AS distance_km,
+              (SELECT jsonb_agg(jsonb_build_object(
+                 'deliveryId', d.id,
+                 'shopName', s.shop_name,
+                 'pickupAddress', d.pickup_address,
+                 'orderNumber', o.order_number
+               ) ORDER BY array_position(
+                 ARRAY(SELECT jsonb_array_elements_text(r.pickup_order))::uuid[], d.id
+               ))
+               FROM deliveries d
+               JOIN orders o ON o.id = d.order_id
+               JOIN suppliers s ON s.id = o.supplier_id
+               WHERE d.delivery_run_id = r.id) AS stops
+       FROM delivery_runs r
+       JOIN checkouts c ON c.id = r.checkout_id
+       CROSS JOIN me
+       WHERE r.status = 'AWAITING_COURIER'
+         AND (
+           (r.offered_to_courier_id = ? AND r.offer_expires_at > NOW())
+           OR (
+             r.dispatch_phase = 'BROADCAST'
+             AND (
+               r.pickup_location IS NULL
+               OR (me.loc IS NOT NULL AND ST_DWithin(r.pickup_location, me.loc, GREATEST(r.broadcast_radius_km * 1000, me.zone_radius_m)))
+             )
+           )
+         )
+       ORDER BY is_targeted DESC, distance_km ASC NULLS LAST, r.offered_at ASC`,
+      [profile.id, profile.id, profile.id, profile.id],
+    )
+  }
+
+  /**
+   * Ordonne les collectes d'une tournée depuis un point de départ.
+   *
+   * Appelé deux fois : à l'ouverture, sans livreur connu, pour que l'offre
+   * montre un ordre plausible ; puis à l'acceptation, depuis la position réelle
+   * du livreur — c'est celui-là qui fait foi, et c'est lui que le livreur suit.
+   */
+  private async applyPickupOrder(run: DeliveryRun, origin: { latitude: number, longitude: number } | null): Promise<void> {
+    const deliveries = run.deliveries.isInitialized()
+      ? run.deliveries.getItems()
+      : await this.em.find(Delivery, { deliveryRun: { id: run.id } })
+    if (deliveries.length === 0) {
+      return
+    }
+    // Le point de chute est celui du panier : une tournée n'en a qu'un, c'est
+    // toute la raison pour laquelle elle existe.
+    const checkout = await this.em.findOne(Checkout, { id: run.checkout.id })
+    run.pickupOrder = orderPickups(
+      deliveries.map(delivery => ({
+        id: delivery.id,
+        latitude: delivery.pickupLatitude ?? null,
+        longitude: delivery.pickupLongitude ?? null,
+      })),
+      origin,
+      { latitude: checkout?.deliveryLatitude ?? null, longitude: checkout?.deliveryLongitude ?? null },
+    )
+    await this.em.flush()
+  }
+
+  /** Dernière position connue d'un livreur, si elle est encore fraîche. */
+  private async courierPosition(courierId: string): Promise<{ latitude: number, longitude: number } | null> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT ST_Y(last_known_location::geometry) AS latitude,
+              ST_X(last_known_location::geometry) AS longitude
+       FROM courier_profiles
+       WHERE id = ? AND last_known_location IS NOT NULL
+         AND last_location_at > NOW() - INTERVAL '12 hours'`,
+      [courierId],
+    ) as Array<{ latitude: number | string, longitude: number | string }>
+    if (rows.length === 0) {
+      return null
+    }
+    return { latitude: Number(rows[0].latitude), longitude: Number(rows[0].longitude) }
+  }
+
+  /**
+   * Un livreur prend une tournée entière. Comme pour une course isolée, la
+   * garde `courier_id IS NULL` est le verrou : le premier à écrire gagne.
+   *
+   * L'acceptation porte sur le tout — c'est FR-015, et c'est ce qui rend le
+   * frais unique tenable. Les livraisons suivent la tournée, elles ne sont pas
+   * acceptées une à une.
+   */
+  async acceptRun(runId: string, userId: string): Promise<DeliveryRun> {
+    const profile = await this.getMyProfile(userId)
+    if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
+      throw new ForbiddenException('Passez disponible pour accepter une tournée')
+    }
+    await this.assertNotBlocked(profile.id)
+
+    const claimed = await this.em.getConnection().execute(
+      `UPDATE delivery_runs
+       SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(),
+           offered_to_courier_id = NULL, offer_expires_at = NULL, outcome = 'ACCEPTED', "updatedAt" = NOW()
+       WHERE id = ? AND courier_id IS NULL AND status = 'AWAITING_COURIER'
+         AND (dispatch_phase = 'BROADCAST' OR (offered_to_courier_id = ? AND offer_expires_at > NOW()))
+       RETURNING id`,
+      [profile.id, runId, profile.id],
+    )
+
+    if (claimed.length === 0) {
+      const existing = await this.em.findOne(DeliveryRun, { id: runId })
+      if (!existing) {
+        throw new NotFoundException('Tournée introuvable')
+      }
+      if (existing.status === DeliveryRunStatus.CANCELLED) {
+        throw new GoneException('Cette tournée a été annulée')
+      }
+      if (existing.status === DeliveryRunStatus.AWAITING_COURIER) {
+        throw new ConflictException('Cette tournée est proposée à un autre livreur pour le moment')
+      }
+      throw new ConflictException('Cette tournée a déjà été prise par un autre livreur')
+    }
+
+    await this.dispatchService.respondToRunOffer(runId, profile.id, DeliveryOfferResponse.ACCEPTED)
+
+    // `refresh` n'est pas un détail : la prise est écrite en SQL brut, donc
+    // l'entité déjà chargée dans le contexte porte encore l'état d'avant. Sans
+    // relecture, l'appelant reçoit une tournée « en attente » qu'il vient
+    // pourtant d'accepter.
+    const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['deliveries'], refresh: true })
+    if (!run) {
+      throw new NotFoundException('Tournée introuvable')
+    }
+
+    // L'ordre de passage se fige maintenant : c'est le seul moment où l'on
+    // sait d'où le livreur part.
+    await this.applyPickupOrder(run, await this.courierPosition(profile.id))
+
+    // Chaque livraison suit sa tournée. Le statut par commande ne change pas
+    // de forme — c'est ce qui laisse l'app fournisseur intacte.
+    const deliveries = run.deliveries.getItems()
+    for (const delivery of deliveries) {
+      delivery.courier = profile
+      delivery.status = DeliveryStatus.ACCEPTED
+      delivery.acceptedAt = new Date()
+      delivery.offeredToCourier = null
+      delivery.offerExpiresAt = null
+      this.em.create(DeliveryEvent, {
+        delivery,
+        type: DeliveryEventType.ACCEPTED,
+        actorUserId: userId,
+        payload: { courierId: profile.id, deliveryRunId: run.id },
+      })
+      await this.dispatchService.cancelPendingOffer(delivery.id)
+    }
+    await this.em.flush()
+
+    await Promise.all(deliveries.map(async (delivery) => {
+      const loaded = await this.loadDelivery(delivery.id)
+      const supplierUser = await this.resolveSupplierUser(loaded.order)
+      await Promise.all([
+        supplierUser
+          ? this.notificationsService.send({
+              user: supplierUser,
+              type: NotificationType.DELIVERY_ASSIGNED,
+              title: 'Livreur trouvé',
+              body: `${profile.fullName} prend en charge la commande ${loaded.order.orderNumber}`,
+              data: { deliveryId: loaded.id, orderId: loaded.order.id, deliveryRunId: run.id },
+              channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+            })
+          : Promise.resolve(),
+        this.notificationsService.send({
+          user: loaded.order.buyer,
+          type: NotificationType.DELIVERY_ASSIGNED,
+          title: 'Livreur en route',
+          body: `${profile.fullName} livrera votre commande ${loaded.order.orderNumber}`,
+          data: { deliveryId: loaded.id, orderId: loaded.order.id, deliveryRunId: run.id },
+          channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+        }),
+      ])
+    }))
+
+    return run
+  }
+
+  /** Le livreur sollicité passe : le suivant du classement est sollicité. */
+  async declineRun(runId: string, userId: string): Promise<void> {
+    const profile = await this.getMyProfile(userId)
+    const run = await this.em.findOne(DeliveryRun, { id: runId })
+    if (!run) {
+      throw new NotFoundException('Tournée introuvable')
+    }
+    await this.dispatchService.respondToRunOffer(runId, profile.id, DeliveryOfferResponse.DECLINED)
   }
 
   /** The targeted courier passes: the next ranked courier is asked at once. */

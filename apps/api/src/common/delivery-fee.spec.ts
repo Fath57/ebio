@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeCourierFee, computeDeliveryFee, computeRunDistance, DEFAULT_DELIVERY_PRICING, DEFAULT_RUN_GROUPING, groupShopsIntoRuns } from './delivery-fee'
+import { computeCourierFee, computeDeliveryFee, computeRunDistance, DEFAULT_DELIVERY_PRICING, DEFAULT_RUN_GROUPING, groupShopsIntoRuns, orderPickups } from './delivery-fee'
 
 const base = { isDelivery: true, itemsTotal: 5_000, hasShopPosition: true }
 
@@ -142,5 +142,48 @@ describe('groupShopsIntoRuns', () => {
 
   it('n\'ouvre aucune tournée pour un panier vide', () => {
     expect(groupShopsIntoRuns([], DEFAULT_RUN_GROUPING)).toEqual([])
+  })
+})
+
+describe('orderPickups', () => {
+  // Une rue : le livreur est à l'ouest, l'acheteur à l'est.
+  const ouest = { id: 'ouest', latitude: 6.3600, longitude: 2.4100 }
+  const est = { id: 'est', latitude: 6.3600, longitude: 2.4300 }
+  const acheteur = { latitude: 6.3600, longitude: 2.4400 }
+
+  it('fait commencer le livreur par la boutique la plus proche de lui', () => {
+    const depuisLOuest = { latitude: 6.3600, longitude: 2.4000 }
+    expect(orderPickups([est, ouest], depuisLOuest, acheteur)).toEqual(['ouest', 'est'])
+  })
+
+  it('inverse l\'ordre quand le livreur arrive de l\'autre côté', () => {
+    const depuisLEst = { latitude: 6.3600, longitude: 2.4350 }
+    expect(orderPickups([ouest, est], depuisLEst, acheteur)).toEqual(['est', 'ouest'])
+  })
+
+  it('sans livreur connu, garde le dernier tronçon le plus court', () => {
+    // La boutique la plus éloignée de l'acheteur passe en premier : ce qui
+    // voyage chargé, c'est la fin de la tournée.
+    expect(orderPickups([est, ouest], null, acheteur)).toEqual(['ouest', 'est'])
+  })
+
+  it('laisse une collecte sans position en dernier', () => {
+    const inconnue = { id: 'inconnue', latitude: null, longitude: null }
+    const depuisLOuest = { latitude: 6.3600, longitude: 2.4000 }
+    expect(orderPickups([inconnue, est, ouest], depuisLOuest, acheteur)).toEqual(['ouest', 'est', 'inconnue'])
+  })
+
+  it('ne change rien à une tournée d\'une seule boutique', () => {
+    expect(orderPickups([ouest], null, acheteur)).toEqual(['ouest'])
+    expect(orderPickups([], null, acheteur)).toEqual([])
+  })
+
+  it('rend un ordre qui raccourcit bien le trajet', () => {
+    const depuisLOuest = { latitude: 6.3600, longitude: 2.4000 }
+    const ordre = orderPickups([est, ouest], depuisLOuest, acheteur)
+    const parOrdre = new Map([[ouest.id, ouest], [est.id, est]])
+    const bon = computeRunDistance(ordre.map(id => parOrdre.get(id)!), acheteur)!
+    const mauvais = computeRunDistance([est, ouest], acheteur)!
+    expect(bon).toBeLessThan(mauvais)
   })
 })

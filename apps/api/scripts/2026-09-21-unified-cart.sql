@@ -4,7 +4,8 @@
 -- conteneur : le registre `mikro_orm_migrations` de production ne contient que
 -- les migrations récentes, donc `migration:up` sans `--only` échoue sur les
 -- anciennes. Une fois ce fichier joué, enregistrer le nom de la migration avec
--- `migration:up --only Migration20260921120000 Migration20260921190000` (les
+-- `migration:up --only Migration20260921120000 Migration20260921190000
+--  Migration20260922090000` (les
 -- ordres sont idempotents).
 --
 -- Couvre les deux migrations : les tables de regroupement, et le bornage des
@@ -39,6 +40,8 @@ ALTER TABLE "checkouts" DROP CONSTRAINT IF EXISTS "checkouts_status_check";
 
 ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_status_check"
       CHECK ("status" = ANY (ARRAY['PENDING', 'PAID', 'DISPATCHED', 'PARTIALLY_REFUNDED', 'REFUNDED', 'FAILED']::text[]));
+
+ALTER TABLE "checkouts" DROP CONSTRAINT IF EXISTS "checkouts_delivery_mode_check";
 
 ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_delivery_mode_check"
       CHECK ("delivery_mode" = ANY (ARRAY['DELIVERY', 'ON_SITE']::text[]));
@@ -81,6 +84,8 @@ ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_status_chec
 ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_status_check"
       CHECK ("status" = ANY (ARRAY['AWAITING_COURIER', 'ESCALATED', 'BUYER_DECISION', 'ACCEPTED', 'COLLECTING', 'DELIVERING', 'DELIVERED', 'CANCELLED']::text[]));
 
+ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_dispatch_phase_check";
+
 ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_dispatch_phase_check"
       CHECK ("dispatch_phase" = ANY (ARRAY['SCHEDULED', 'TARGETED', 'BROADCAST']::text[]));
 
@@ -91,6 +96,39 @@ ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_outcome_check"
 
 CREATE INDEX IF NOT EXISTS "delivery_runs_dispatch_idx"
       ON "delivery_runs" ("status", "dispatch_phase");
+
+CREATE INDEX IF NOT EXISTS "delivery_runs_checkout_idx" ON "delivery_runs" ("checkout_id");
+
+CREATE INDEX IF NOT EXISTS "delivery_runs_courier_idx" ON "delivery_runs" ("courier_id");
+
+-- La tournée devient l'unité de diffusion : mêmes colonnes que la livraison,
+-- parce que c'est le même mécanisme, seul l'objet diffusé change.
+ALTER TABLE "delivery_runs"
+      ADD COLUMN IF NOT EXISTS "pickup_location" geography(Point, 4326) NULL,
+      ADD COLUMN IF NOT EXISTS "offer_round" integer NOT NULL DEFAULT 0,
+      ADD COLUMN IF NOT EXISTS "offered_to_courier_id" uuid NULL REFERENCES "courier_profiles" ("id"),
+      ADD COLUMN IF NOT EXISTS "offered_at" timestamptz NULL,
+      ADD COLUMN IF NOT EXISTS "dispatch_started_at" timestamptz NULL,
+      ADD COLUMN IF NOT EXISTS "accepted_at" timestamptz NULL,
+      ADD COLUMN IF NOT EXISTS "broadcast_radius_km" double precision NOT NULL DEFAULT 5;
+
+CREATE INDEX IF NOT EXISTS "delivery_runs_pickup_gix"
+      ON "delivery_runs" USING GIST ("pickup_location");
+
+-- Une offre porte sur une course isolée ou sur une tournée, jamais les deux.
+-- Elles restent dans la même table pour que le taux d'acceptation d'un livreur
+-- compte les deux : un refus est un refus.
+ALTER TABLE "delivery_offers" ALTER COLUMN "delivery_id" DROP NOT NULL;
+
+ALTER TABLE "delivery_offers" ADD COLUMN IF NOT EXISTS "delivery_run_id" uuid NULL
+      REFERENCES "delivery_runs" ("id") ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS "delivery_offers_run_idx" ON "delivery_offers" ("delivery_run_id");
+
+ALTER TABLE "delivery_offers" DROP CONSTRAINT IF EXISTS "delivery_offers_target_check";
+
+ALTER TABLE "delivery_offers" ADD CONSTRAINT "delivery_offers_target_check"
+      CHECK (("delivery_id" IS NULL) <> ("delivery_run_id" IS NULL));
 
 ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");
 

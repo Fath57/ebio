@@ -2,13 +2,16 @@ import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
+import { orderPickups } from '../../common/delivery-fee'
 import { User } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
+import { Checkout } from '../payments/entities/checkout.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { CourierProfile } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOffer, DeliveryOfferResponse } from './entities/delivery-offer.entity'
+import { DeliveryRun, DeliveryRunStatus } from './entities/delivery-run.entity'
 import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
@@ -35,6 +38,13 @@ interface CandidateRow {
   active_deliveries: string
   rating_avg: number | null
   acceptance_rate: string | null
+}
+
+/** Ce que la diffusion propose : une course isolée, ou une tournée. */
+export interface DispatchTarget {
+  kind: 'DELIVERY' | 'RUN'
+  id: string
+  broadcastRadiusKm: number
 }
 
 export interface RankedCourier {
@@ -89,44 +99,60 @@ export class DispatchService {
   }
 
   /**
+   * Ce qu'il faut savoir d'un objet à diffuser pour chercher un livreur : d'où
+   * l'on part, et jusqu'où l'on cherche.
+   *
+   * Une course isolée et une tournée n'ont plus de chemin séparé ici. Dupliquer
+   * cette recherche aurait créé deux systèmes de diffusion qui divergent au
+   * premier correctif ; ce sont deux appelants d'une même fonction.
+   */
+  private async targetOrigin(target: DispatchTarget): Promise<{ latitude: number, longitude: number } | null> {
+    const table = target.kind === 'RUN' ? 'delivery_runs' : 'deliveries'
+    const rows = await this.em.getConnection().execute(
+      `SELECT ST_Y(pickup_location::geometry) AS latitude,
+              ST_X(pickup_location::geometry) AS longitude
+       FROM "${table}" WHERE id = ? AND pickup_location IS NOT NULL`,
+      [target.id],
+    ) as Array<{ latitude: number | string, longitude: number | string }>
+    if (rows.length === 0) {
+      return null
+    }
+    return { latitude: Number(rows[0].latitude), longitude: Number(rows[0].longitude) }
+  }
+
+  /**
    * Validated + available couriers with a fresh (<12h) position inside the
-   * delivery's current radius. A delivery without a pickup location falls back
+   * target's current radius. A target without a pickup location falls back
    * to every available courier, distance-free.
    */
-  async findEligibleCouriers(deliveryId: string): Promise<EligibleCourier[]> {
-    const hasLocation = await this.em.getConnection().execute(
-      `SELECT pickup_location IS NOT NULL AS has_location FROM deliveries WHERE id = ?`,
-      [deliveryId],
-    )
-    if (hasLocation.length === 0) {
-      return []
-    }
-
+  async findEligibleFor(target: DispatchTarget): Promise<EligibleCourier[]> {
     const debt = await this.debtFilter()
-    if (hasLocation[0].has_location) {
+    const origin = await this.targetOrigin(target)
+
+    if (origin) {
       // Fresh live position first; declared zone circle as fallback so a
       // courier who has not opened the app today still gets nearby offers.
       return this.em.getConnection().execute(
         `SELECT cp.id, cp.user_id
-         FROM courier_profiles cp, deliveries d
-         WHERE d.id = ?
-           AND cp.validation_status = 'VALIDATED'
+         FROM courier_profiles cp,
+              LATERAL (SELECT ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography AS pickup) p
+         WHERE cp.validation_status = 'VALIDATED'
            AND cp.is_available = true${debt.sql}
            AND (
              (cp.last_known_location IS NOT NULL
                AND cp.last_location_at > NOW() - INTERVAL '12 hours'
-               AND ST_DWithin(cp.last_known_location, d.pickup_location, d.broadcast_radius_km * 1000))
+               AND ST_DWithin(cp.last_known_location, p.pickup, ? * 1000))
              OR (
                (cp.last_known_location IS NULL OR cp.last_location_at <= NOW() - INTERVAL '12 hours')
                AND cp.zone_latitude IS NOT NULL
                AND ST_DWithin(
                  ST_SetSRID(ST_MakePoint(cp.zone_longitude, cp.zone_latitude), 4326)::geography,
-                 d.pickup_location,
-                 GREATEST(d.broadcast_radius_km * 1000, COALESCE(cp.zone_radius_km, 0) * 1000)
+                 p.pickup,
+                 GREATEST(? * 1000, COALESCE(cp.zone_radius_km, 0) * 1000)
                )
              )
            )`,
-        [deliveryId, ...debt.params],
+        [origin.longitude, origin.latitude, ...debt.params, target.broadcastRadiusKm, target.broadcastRadiusKm],
       )
     }
 
@@ -138,19 +164,51 @@ export class DispatchService {
     )
   }
 
+  /** Une course isolée, telle que la diffusion la voit. */
+  private async deliveryTarget(deliveryId: string): Promise<DispatchTarget | null> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT broadcast_radius_km FROM deliveries WHERE id = ?`,
+      [deliveryId],
+    ) as Array<{ broadcast_radius_km: number | string }>
+    if (rows.length === 0) {
+      return null
+    }
+    return { kind: 'DELIVERY', id: deliveryId, broadcastRadiusKm: Number(rows[0].broadcast_radius_km) }
+  }
+
+  /** Une tournée, telle que la diffusion la voit. */
+  private async runTarget(runId: string): Promise<DispatchTarget | null> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT broadcast_radius_km FROM delivery_runs WHERE id = ?`,
+      [runId],
+    ) as Array<{ broadcast_radius_km: number | string }>
+    if (rows.length === 0) {
+      return null
+    }
+    return { kind: 'RUN', id: runId, broadcastRadiusKm: Number(rows[0].broadcast_radius_km) }
+  }
+
+  async findEligibleCouriers(deliveryId: string): Promise<EligibleCourier[]> {
+    const target = await this.deliveryTarget(deliveryId)
+    return target ? this.findEligibleFor(target) : []
+  }
+
   /**
-   * Eligible couriers not yet asked for this run, ranked by scoreCandidate.
-   * Acceptance rate = share of answered targeted offers accepted over 30 days.
+   * Eligible couriers not yet asked for this target, ranked by scoreCandidate.
+   * Acceptance rate = share of answered targeted offers accepted over 30 days,
+   * courses isolées et tournées confondues : un refus est un refus.
    */
-  async rankCandidates(deliveryId: string): Promise<RankedCourier[]> {
-    const eligible = await this.findEligibleCouriers(deliveryId)
+  async rankCandidatesFor(target: DispatchTarget): Promise<RankedCourier[]> {
+    const eligible = await this.findEligibleFor(target)
     if (eligible.length === 0) {
       return []
     }
+    const origin = await this.targetOrigin(target)
+    const askedColumn = target.kind === 'RUN' ? 'delivery_run_id' : 'delivery_id'
     const rows = await this.em.getConnection().execute(
       `SELECT cp.id, cp.user_id, cp.full_name, cp.rating_avg,
-              CASE WHEN d.pickup_location IS NOT NULL AND l.loc IS NOT NULL
-                THEN ROUND((ST_Distance(l.loc, d.pickup_location) / 1000)::numeric, 2)
+              CASE WHEN p.pickup IS NOT NULL AND l.loc IS NOT NULL
+                THEN ROUND((ST_Distance(l.loc, p.pickup) / 1000)::numeric, 2)
               END AS distance_km,
               (SELECT COUNT(*) FROM deliveries a
                 WHERE a.courier_id = cp.id AND a.status IN ('ACCEPTED', 'PICKED_UP', 'IN_TRANSIT')) AS active_deliveries,
@@ -160,7 +218,11 @@ export class DispatchService {
                   AND o.response IN ('ACCEPTED', 'DECLINED', 'EXPIRED')
                   AND o.offered_at > NOW() - INTERVAL '30 days') AS acceptance_rate
        FROM courier_profiles cp
-       CROSS JOIN deliveries d
+       CROSS JOIN LATERAL (
+         SELECT CASE WHEN ?::boolean
+           THEN ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+         END AS pickup
+       ) p
        CROSS JOIN LATERAL (
          SELECT COALESCE(
            CASE WHEN cp.last_location_at > NOW() - INTERVAL '12 hours' THEN cp.last_known_location END,
@@ -169,11 +231,16 @@ export class DispatchService {
            END
          ) AS loc
        ) l
-       WHERE d.id = ?
-         AND cp.id = ANY(?::uuid[])
-         AND NOT EXISTS (SELECT 1 FROM delivery_offers o WHERE o.delivery_id = d.id AND o.courier_id = cp.id)`,
-      // knex would expand a JS array into a comma list; Postgres wants the literal form.
-      [deliveryId, `{${eligible.map(c => c.id).join(',')}}`],
+       WHERE cp.id = ANY(?::uuid[])
+         AND NOT EXISTS (SELECT 1 FROM delivery_offers o WHERE o.${askedColumn} = ? AND o.courier_id = cp.id)`,
+      [
+        origin !== null,
+        origin?.longitude ?? 0,
+        origin?.latitude ?? 0,
+        // knex would expand a JS array into a comma list; Postgres wants the literal form.
+        `{${eligible.map(c => c.id).join(',')}}`,
+        target.id,
+      ],
     ) as CandidateRow[]
 
     return rows
@@ -192,10 +259,26 @@ export class DispatchService {
       .sort((a, b) => a.score - b.score)
   }
 
-  /** Entry point for a new or re-opened run: targeted rounds first. */
+  async rankCandidates(deliveryId: string): Promise<RankedCourier[]> {
+    const target = await this.deliveryTarget(deliveryId)
+    return target ? this.rankCandidatesFor(target) : []
+  }
+
+  /**
+   * Entry point for a new or re-opened delivery: targeted rounds first.
+   *
+   * Une livraison qui appartient à une tournée n'entre pas ici : c'est la
+   * tournée qui est proposée, d'un bloc. La diffuser aussi séparément
+   * permettrait à un livreur d'en prendre une moitié, et le frais unique
+   * promis à l'acheteur ne couvrirait plus rien.
+   */
   async startDispatch(deliveryId: string): Promise<void> {
     const delivery = await this.em.findOne(Delivery, { id: deliveryId })
     if (!delivery || delivery.status !== DeliveryStatus.AWAITING_COURIER) {
+      return
+    }
+    if (delivery.deliveryRun) {
+      await this.startRunDispatch(delivery.deliveryRun.id)
       return
     }
     delivery.dispatchPhase = DispatchPhase.TARGETED
@@ -214,6 +297,8 @@ export class DispatchService {
       dispatchPhase: DispatchPhase.SCHEDULED,
       dispatchAt: { $lte: new Date() },
     })
+    // Une livraison de tournée passe par `startDispatch`, qui la renvoie vers
+    // sa tournée : la sortir de l'attente ici suffit.
     for (const delivery of due) {
       await this.startDispatch(delivery.id)
     }
@@ -223,6 +308,9 @@ export class DispatchService {
   @EnsureRequestContext()
   async startScheduledCron(): Promise<void> {
     await this.startScheduled()
+    // Une tournée n'attend pas une heure mais la dernière de ses boutiques :
+    // c'est ici qu'on regarde si elle est complète.
+    await this.startReadyRuns()
   }
 
   /**
@@ -273,6 +361,274 @@ export class DispatchService {
       })
     }
     this.logger.log(`Offered delivery ${delivery.id} to courier ${best.id} (round ${round}, score ${best.score.toFixed(2)})`)
+  }
+
+  /**
+   * Ouvre la recherche d'un livreur pour une tournée.
+   *
+   * Une tournée n'est diffusée que lorsque **toutes** ses boutiques ont
+   * préparé. Partir avant, c'est envoyer le livreur attendre devant la seconde
+   * — et c'est lui, pas la plateforme, qui paierait cette attente.
+   */
+  async startRunDispatch(runId: string): Promise<void> {
+    const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['deliveries'] })
+    if (!run || run.status !== DeliveryRunStatus.AWAITING_COURIER) {
+      return
+    }
+    if (!this.isRunReady(run)) {
+      return
+    }
+    // Ordre provisoire d'abord — sans lui, le premier point de collecte n'est
+    // pas défini et la recherche partirait d'une boutique au hasard.
+    await this.applyProvisionalPickupOrder(run)
+    await this.refreshRunPickupPoint(run)
+    run.dispatchPhase = DispatchPhase.TARGETED
+    run.offerRound = 0
+    run.offeredToCourier = null
+    run.offerExpiresAt = null
+    run.dispatchStartedAt = run.dispatchStartedAt ?? new Date()
+    await this.em.flush()
+    await this.offerNextRun(runId)
+  }
+
+  /**
+   * Toutes les boutiques de la tournée ont-elles remis leur colis à la
+   * recherche ? Une tournée dont une livraison manque encore — la commande
+   * n'est pas prête — n'est pas diffusable.
+   */
+  private isRunReady(run: DeliveryRun): boolean {
+    const deliveries = run.deliveries.getItems()
+    if (deliveries.length === 0 || deliveries.length < run.shopCount) {
+      return false
+    }
+    return deliveries.every(delivery => (
+      delivery.status === DeliveryStatus.AWAITING_COURIER
+      && delivery.dispatchPhase !== DispatchPhase.SCHEDULED
+    ))
+  }
+
+  /**
+   * Ordre de passage provisoire, tant qu'aucun livreur n'est connu : la
+   * boutique la plus éloignée du point de chute en premier, pour que le
+   * dernier tronçon soit le plus court. Il se recalcule à l'acceptation,
+   * depuis la position réelle du livreur.
+   */
+  private async applyProvisionalPickupOrder(run: DeliveryRun): Promise<void> {
+    const deliveries = run.deliveries.getItems()
+    if (deliveries.length === 0) {
+      return
+    }
+    const checkout = await this.em.findOne(Checkout, { id: run.checkout.id })
+    run.pickupOrder = orderPickups(
+      deliveries.map(delivery => ({
+        id: delivery.id,
+        latitude: delivery.pickupLatitude ?? null,
+        longitude: delivery.pickupLongitude ?? null,
+      })),
+      null,
+      { latitude: checkout?.deliveryLatitude ?? null, longitude: checkout?.deliveryLongitude ?? null },
+    )
+    await this.em.flush()
+  }
+
+  /**
+   * Le point de départ de la tournée : la première collecte de l'ordre de
+   * passage. Recopié sur la tournée pour que la recherche de livreurs parte du
+   * même endroit que lui.
+   */
+  private async refreshRunPickupPoint(run: DeliveryRun): Promise<void> {
+    const firstId = run.pickupOrder[0] ?? run.deliveries.getItems()[0]?.id
+    if (!firstId) {
+      return
+    }
+    await this.em.getConnection().execute(
+      `UPDATE delivery_runs SET pickup_location = (SELECT pickup_location FROM deliveries WHERE id = ?)
+       WHERE id = ?`,
+      [firstId, run.id],
+    )
+  }
+
+  /**
+   * Propose la tournée au meilleur livreur restant, ou la passe en diffusion
+   * large quand les tours sont épuisés ou qu'il n'y a plus personne à solliciter.
+   */
+  async offerNextRun(runId: string): Promise<void> {
+    const run = await this.em.findOne(DeliveryRun, { id: runId })
+    if (!run || run.status !== DeliveryRunStatus.AWAITING_COURIER) {
+      return
+    }
+    const target = await this.runTarget(runId)
+    if (!target) {
+      return
+    }
+    if (run.offerRound >= TARGETED_ROUNDS) {
+      await this.switchRunToBroadcast(run)
+      return
+    }
+    const [best] = await this.rankCandidatesFor(target)
+    if (!best) {
+      await this.switchRunToBroadcast(run)
+      return
+    }
+
+    const round = run.offerRound + 1
+    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_S * 1000)
+    const courier = this.em.getReference(CourierProfile, best.id)
+    this.em.create(DeliveryOffer, { deliveryRun: run, courier, round, score: best.score, expiresAt })
+    run.dispatchPhase = DispatchPhase.TARGETED
+    run.offerRound = round
+    run.offeredToCourier = courier
+    run.offerExpiresAt = expiresAt
+    run.offersSent += 1
+    await this.em.flush()
+
+    const user = await this.em.findOne(User, { id: best.userId })
+    if (user) {
+      await this.notificationsService.send({
+        user,
+        type: NotificationType.DELIVERY_OFFER,
+        title: 'Tournée proposée en priorité',
+        body: `${this.runLabel(run)} — répondez dans les ${OFFER_TIMEOUT_S} s`,
+        data: { deliveryRunId: run.id, expiresAt: expiresAt.toISOString(), targeted: true },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+    this.logger.log(`Offered run ${run.id} to courier ${best.id} (round ${round}, score ${best.score.toFixed(2)})`)
+  }
+
+  /** Comment une tournée se présente à un livreur, en une ligne. */
+  private runLabel(run: DeliveryRun): string {
+    return run.shopCount > 1
+      ? `Tournée de ${run.shopCount} boutiques`
+      : 'Course à retirer'
+  }
+
+  /** Le livreur sollicité a répondu, ou le délai a expiré. */
+  async respondToRunOffer(runId: string, courierId: string, response: DeliveryOfferResponse): Promise<void> {
+    const offer = await this.em.findOne(DeliveryOffer, {
+      deliveryRun: { id: runId },
+      courier: { id: courierId },
+      respondedAt: null,
+    }, { orderBy: { offeredAt: 'DESC' } })
+    if (!offer) {
+      return
+    }
+    offer.respondedAt = new Date()
+    offer.response = response
+    const run = await this.em.findOne(DeliveryRun, { id: runId })
+    if (run && run.offeredToCourier?.id === courierId && response !== DeliveryOfferResponse.ACCEPTED) {
+      run.offeredToCourier = null
+      run.offerExpiresAt = null
+    }
+    await this.em.flush()
+    if (response === DeliveryOfferResponse.DECLINED || response === DeliveryOfferResponse.EXPIRED) {
+      await this.offerNextRun(runId)
+    }
+  }
+
+  /** Ferme l'offre en cours quand la tournée sort de la boucle autrement. */
+  async cancelPendingRunOffer(runId: string): Promise<void> {
+    const pending = await this.em.find(DeliveryOffer, { deliveryRun: { id: runId }, respondedAt: null })
+    for (const offer of pending) {
+      offer.respondedAt = new Date()
+      offer.response = DeliveryOfferResponse.SUPERSEDED
+    }
+    const run = await this.em.findOne(DeliveryRun, { id: runId })
+    if (run) {
+      run.offeredToCourier = null
+      run.offerExpiresAt = null
+    }
+    await this.em.flush()
+  }
+
+  private async switchRunToBroadcast(run: DeliveryRun): Promise<void> {
+    run.dispatchPhase = DispatchPhase.BROADCAST
+    run.offeredToCourier = null
+    run.offerExpiresAt = null
+    run.offeredAt = new Date()
+    await this.em.flush()
+    await this.broadcastRun(run.id)
+  }
+
+  /** Pousse la tournée à tous les livreurs éligibles. */
+  async broadcastRun(runId: string): Promise<number> {
+    const run = await this.em.findOne(DeliveryRun, { id: runId })
+    if (!run || run.status !== DeliveryRunStatus.AWAITING_COURIER) {
+      return 0
+    }
+    const target = await this.runTarget(runId)
+    if (!target) {
+      return 0
+    }
+
+    const couriers = await this.findEligibleFor(target)
+    const users = couriers.length > 0
+      ? await this.em.find(User, { id: { $in: couriers.map(c => c.user_id) } })
+      : []
+
+    await Promise.all(users.map(user => this.notificationsService.send({
+      user,
+      type: NotificationType.DELIVERY_OFFER,
+      title: 'Nouvelle tournée disponible',
+      body: `${this.runLabel(run)} — ${run.courierEarning.toLocaleString('fr-FR')} FCFA`,
+      data: { deliveryRunId: run.id },
+      channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+    })))
+    await this.em.flush()
+
+    this.logger.log(`Broadcast run ${run.id} to ${users.length} courier(s) (radius ${run.broadcastRadiusKm} km)`)
+    return users.length
+  }
+
+  /** Offres de tournée hors délai : journaliser et solliciter le suivant. */
+  async expireRunOffers(): Promise<void> {
+    const expired = await this.em.find(DeliveryRun, {
+      status: DeliveryRunStatus.AWAITING_COURIER,
+      dispatchPhase: DispatchPhase.TARGETED,
+      $or: [{ offerExpiresAt: { $lt: new Date() } }, { offerExpiresAt: null }],
+    }, { populate: ['offeredToCourier'] })
+    for (const run of expired) {
+      const courierId = run.offeredToCourier?.id
+      if (courierId) {
+        await this.respondToRunOffer(run.id, courierId, DeliveryOfferResponse.EXPIRED)
+      }
+      else {
+        await this.offerNextRun(run.id)
+      }
+    }
+  }
+
+  /** Tournée sans preneur depuis 10 min : élargir le rayon et repousser. */
+  async rebroadcastStaleRuns(): Promise<void> {
+    const cutoff = new Date(Date.now() - TEN_MINUTES_MS)
+    const stale = await this.em.find(DeliveryRun, {
+      status: DeliveryRunStatus.AWAITING_COURIER,
+      dispatchPhase: DispatchPhase.BROADCAST,
+      offeredAt: { $lt: cutoff },
+    })
+    for (const run of stale) {
+      run.broadcastRadiusKm = Math.min(run.broadcastRadiusKm + RADIUS_STEP_KM, RADIUS_CAP_KM)
+      run.offeredAt = new Date()
+      await this.em.flush()
+      await this.broadcastRun(run.id)
+    }
+  }
+
+  /**
+   * Tournées dont la dernière boutique vient de préparer. Le déclencheur ne
+   * peut pas vivre au moment où une livraison naît : c'est la *dernière* qui
+   * ouvre la diffusion, et aucune d'elles ne sait qu'elle est la dernière.
+   */
+  async startReadyRuns(): Promise<void> {
+    const waiting = await this.em.find(DeliveryRun, {
+      status: DeliveryRunStatus.AWAITING_COURIER,
+      dispatchStartedAt: null,
+    }, { populate: ['deliveries'] })
+    for (const run of waiting) {
+      if (this.isRunReady(run)) {
+        await this.startRunDispatch(run.id)
+      }
+    }
   }
 
   /** The targeted courier answered (or the clock ran out): journal and move on. */
@@ -334,6 +690,7 @@ export class DispatchService {
     const expired = await this.em.find(Delivery, {
       status: DeliveryStatus.AWAITING_COURIER,
       dispatchPhase: DispatchPhase.TARGETED,
+      deliveryRun: null,
       $or: [{ offerExpiresAt: { $lt: new Date() } }, { offerExpiresAt: null }],
     }, { populate: ['offeredToCourier'] })
     for (const delivery of expired) {
@@ -351,6 +708,7 @@ export class DispatchService {
   @EnsureRequestContext()
   async expireOffersCron(): Promise<void> {
     await this.expireOffers()
+    await this.expireRunOffers()
   }
 
   /** Pushes the offer to eligible couriers and journals the broadcast. */
@@ -392,6 +750,7 @@ export class DispatchService {
   @EnsureRequestContext()
   async rebroadcastStaleCron(): Promise<void> {
     await this.rebroadcastStale()
+    await this.rebroadcastStaleRuns()
   }
 
   @Cron('*/2 * * * *')
@@ -406,6 +765,7 @@ export class DispatchService {
     const stale = await this.em.find(Delivery, {
       status: DeliveryStatus.AWAITING_COURIER,
       dispatchPhase: DispatchPhase.BROADCAST,
+      deliveryRun: null,
       offeredAt: { $lt: cutoff },
     })
 

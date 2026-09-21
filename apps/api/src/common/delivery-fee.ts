@@ -305,3 +305,65 @@ export function groupShopsIntoRuns(shops: GroupableShop[], config: RunGroupingCo
 
   return groups
 }
+
+/** Une collecte à ordonner : son identifiant et son point. */
+export interface PickupStop extends RunPoint {
+  id: string
+}
+
+/**
+ * Ordre de passage d'une tournée : le plus proche du livreur d'abord, puis de
+ * proche en proche.
+ *
+ * C'est la règle qui minimise l'attente de la première boutique, et celle que
+ * le livreur trouve naturelle — il commence par ce qu'il a sous la main. Le
+ * trajet obtenu n'est pas toujours le plus court possible, mais avec deux ou
+ * trois collectes l'écart est négligeable, et un ordre contre-intuitif coûte
+ * plus cher en refus qu'il ne rapporte en kilomètres.
+ *
+ * Tant qu'aucun livreur n'a accepté, `origin` est nul : on passe alors par la
+ * boutique la plus éloignée du point de chute en premier, pour que le dernier
+ * tronçon — celui qui porte la marchandise de toutes les boutiques — soit le
+ * plus court. Cet ordre est provisoire et se recalcule à l'acceptation.
+ */
+export function orderPickups(stops: PickupStop[], origin: RunPoint | null, dropoff: RunPoint): string[] {
+  if (stops.length <= 1) {
+    return stops.map(stop => stop.id)
+  }
+
+  const remaining = [...stops]
+  const ordered: string[] = []
+
+  if (origin === null) {
+    remaining.sort((a, b) => {
+      const da = haversineKm(a, dropoff)
+      const db = haversineKm(b, dropoff)
+      // Une boutique non située part en dernier : on ne sait pas la placer.
+      if (da === null || db === null) {
+        return (da === null ? 1 : 0) - (db === null ? 1 : 0) || a.id.localeCompare(b.id)
+      }
+      return db - da || a.id.localeCompare(b.id)
+    })
+    return remaining.map(stop => stop.id)
+  }
+
+  let from: RunPoint = origin
+  while (remaining.length > 0) {
+    let bestIndex = 0
+    let bestDistance = Number.POSITIVE_INFINITY
+    for (const [index, stop] of remaining.entries()) {
+      const distance = haversineKm(from, stop)
+      // Une collecte dont on ignore la position ne peut pas être « la plus
+      // proche » : elle attend que les autres soient placées.
+      const value = distance === null ? Number.POSITIVE_INFINITY : distance
+      if (value < bestDistance) {
+        bestIndex = index
+        bestDistance = value
+      }
+    }
+    const [next] = remaining.splice(bestIndex, 1)
+    ordered.push(next.id)
+    from = next
+  }
+  return ordered
+}

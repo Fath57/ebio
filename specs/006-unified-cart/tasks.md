@@ -140,7 +140,7 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 ### Tests
 
-- [ ] T029 [P] [US2] Mettre à jour `apps/api/src/modules/deliveries/dispatch.service.spec.ts` : l'unité de diffusion devient la tournée, l'éligibilité s'évalue depuis le premier point de collecte
+- [x] T029 [P] [US2] Mettre à jour `apps/api/src/modules/deliveries/dispatch.service.spec.ts` : l'unité de diffusion devient la tournée, l'éligibilité s'évalue depuis le premier point de collecte
 
 ### API — tournée et diffusion
 
@@ -149,11 +149,11 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 - [x] T030b [US2] Refuser de grouper deux boutiques distantes de plus de 3 km (FR-020c) : mesurer l'écart en `ST_Distance` sur les `geography` des boutiques, comme le devis, et isoler toute boutique sans position (FR-020d) — `apps/api/src/modules/orders/checkout.service.ts`
 - [x] T030c [US2] Exposer les deux seuils en réglage back-office dans `apps/api/src/modules/settings/` — deux boutiques et 3 km par défaut, le second plafonné par `maxDistanceKm`
 - [x] T030d [P] [US2] Tester le découpage en tournées dans `apps/api/src/modules/orders/checkout.service.spec.ts` : trois boutiques proches → deux tournées, deux boutiques à 5 km → deux tournées, boutique sans position → tournée seule
-- [ ] T031 [US2] Calculer l'ordre de passage et le stocker dans `pickup_order`, dans `apps/api/src/modules/deliveries/deliveries.service.ts`
-- [ ] T032 [US2] Porter `findEligibleCouriers` et `rankCandidates` de `dispatch.service.ts` au niveau tournée, en prenant le premier point de collecte comme origine
-- [ ] T033 [US2] Porter `startDispatch`, `offerNext`, `respondToOffer` et `cancelPendingOffer` au niveau tournée, en conservant la bascule ciblé → diffusion large
-- [ ] T034 [US2] Adapter le cron `@Cron('*/30 * * * * *')` et `expireOffers` pour traiter des tournées
-- [ ] T035 [US2] Écrire `GET /api/couriers/me/runs/offered` et `POST /api/couriers/me/runs/:id/respond` dans `apps/api/src/modules/deliveries/couriers.controller.ts`, l'acceptation portant sur toute la tournée
+- [x] T031 [US2] Calculer l'ordre de passage — **le plus proche du livreur d'abord** (arbitrage rendu le 2026-09-21) : ordre provisoire à l'ouverture de la diffusion, figé à l'acceptation depuis la position réelle du livreur, dans `apps/api/src/common/delivery-fee.ts` (`orderPickups`) et `apps/api/src/modules/deliveries/deliveries.service.ts`
+- [x] T032 [US2] Porter `findEligibleCouriers` et `rankCandidates` de `dispatch.service.ts` au niveau tournée, en prenant le premier point de collecte comme origine
+- [x] T033 [US2] Porter `startDispatch`, `offerNext`, `respondToOffer` et `cancelPendingOffer` au niveau tournée, en conservant la bascule ciblé → diffusion large
+- [x] T034 [US2] Adapter le cron `@Cron('*/30 * * * * *')` et `expireOffers` pour traiter des tournées
+- [x] T035 [US2] Écrire `GET /api/couriers/me/runs/offered` et `POST /api/couriers/me/runs/:id/respond` dans `apps/api/src/modules/deliveries/couriers.controller.ts`, l'acceptation portant sur toute la tournée
 - [ ] T036 [US2] Écrire `POST /api/deliveries/:id/collect` : seule la commande de cette boutique passe en « récupérée » ; la tournée passe en `DELIVERING` à la dernière collecte
 - [ ] T037 [US2] Écrire `POST /api/runs/:id/deliver` : un seul code, toutes les commandes de la tournée passent en « livrée », encaissement espèces sur le total
 - [x] T038 [US2] Définir et implémenter la rémunération d'une tournée dans `apps/api/src/modules/deliveries/deliveries.service.ts` — **la formule n'est définie ni par la spec ni par l'existant, elle doit être arbitrée avant cette tâche**
@@ -276,8 +276,6 @@ décrite était le passage en caisse répété, pas le nombre de livraisons. Cet
 
 ### Arbitrages à rendre avant de coder
 
-- **T038, rémunération d'une tournée** : aucune formule n'existe. Bloquant pour
-  US2.
 - **T050** : l'alerte back-office se branche sur l'attribution manuelle
   existante ; vérifier qu'elle sait traiter une tournée et pas seulement une
   course.

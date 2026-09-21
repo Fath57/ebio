@@ -36,7 +36,7 @@ export enum DeliveryRunOutcome {
 
 @Entity({ tableName: 'delivery_runs' })
 export class DeliveryRun {
-  [OptionalProps]?: 'id' | 'status' | 'pickupOrder' | 'supplierIds' | 'deliveryFee' | 'courierEarning' | 'dispatchPhase' | 'shopCount' | 'offersSent' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'pickupOrder' | 'supplierIds' | 'deliveryFee' | 'courierEarning' | 'dispatchPhase' | 'offerRound' | 'broadcastRadiusKm' | 'shopCount' | 'offersSent' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -87,8 +87,41 @@ export class DeliveryRun {
   @Enum({ items: () => DispatchPhase, fieldName: 'dispatch_phase', default: DispatchPhase.TARGETED })
   dispatchPhase: DispatchPhase = DispatchPhase.TARGETED
 
-  @Property({ fieldName: 'offer_expires_at', nullable: true })
-  offerExpiresAt?: Date
+  /*
+   * L'état de diffusion, repris trait pour trait de `Delivery` : le mécanisme
+   * ne change pas, seul l'objet diffusé change.
+   */
+
+  /**
+   * Premier point de collecte, écrit en SQL brut comme tout accès géographique.
+   * Null quand aucune boutique de la tournée n'est située : la diffusion vise
+   * alors tous les livreurs disponibles, sans critère de distance.
+   */
+  @Property({ columnType: 'geography(Point, 4326)', fieldName: 'pickup_location', nullable: true })
+  pickupLocation?: string
+
+  @Property({ fieldName: 'offer_round', type: 'int', default: 0 })
+  offerRound: number = 0
+
+  /** Livreur qui tient l'offre exclusive, jusqu'à `offerExpiresAt`. */
+  @ManyToOne(() => CourierProfile, { fieldName: 'offered_to_courier_id', nullable: true })
+  offeredToCourier?: Rel<CourierProfile> | null
+
+  @Property({ fieldName: 'offer_expires_at', type: 'Date', nullable: true })
+  offerExpiresAt?: Date | null
+
+  @Property({ fieldName: 'offered_at', type: 'Date', nullable: true })
+  offeredAt?: Date | null
+
+  @Property({ fieldName: 'dispatch_started_at', type: 'Date', nullable: true })
+  dispatchStartedAt?: Date | null
+
+  @Property({ fieldName: 'accepted_at', type: 'Date', nullable: true })
+  acceptedAt?: Date | null
+
+  /** Rayon de diffusion courant, élargi par le cron jusqu'à 25 km. */
+  @Property({ fieldName: 'broadcast_radius_km', type: 'float', default: 5 })
+  broadcastRadiusKm: number = 5
 
   @Property({ fieldName: 'escalated_at', nullable: true })
   escalatedAt?: Date
