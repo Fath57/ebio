@@ -11,6 +11,11 @@ import {
 } from '@mikro-orm/core'
 import { Order } from '../../orders/entities/order.entity'
 import { CourierProfile } from './courier-profile.entity'
+import { DeliveryRun } from './delivery-run.entity'
+import { DispatchPhase } from './dispatch-phase.enum'
+
+// Réexporté pour ne pas casser les importateurs existants.
+export { DispatchPhase }
 
 /**
  * Delivery lifecycle is deliberately separate from OrderStatus: published
@@ -26,16 +31,6 @@ export enum DeliveryStatus {
   FAILED = 'FAILED',
   /** Terminal: order cancelled or supplier self-delivered. */
   CANCELLED = 'CANCELLED',
-}
-
-/** How the run is currently being offered to couriers. */
-export enum DispatchPhase {
-  /** Created while the shop prepares; the search starts at dispatchAt. */
-  SCHEDULED = 'SCHEDULED',
-  /** One ranked courier at a time, 40 s each. */
-  TARGETED = 'TARGETED',
-  /** Everyone in the radius, first to accept wins. */
-  BROADCAST = 'BROADCAST',
 }
 
 export enum DeliveryProofType {
@@ -59,6 +54,14 @@ export class Delivery {
 
   @OneToOne(() => Order, { fieldName: 'order_id', owner: true, unique: true })
   order!: Rel<Order>
+
+  /**
+   * La tournée qui regroupe cette livraison. Nulle sur l'historique et sur
+   * toute livraison née d'une commande isolée.
+   */
+  @Index()
+  @ManyToOne(() => DeliveryRun, { fieldName: 'delivery_run_id', nullable: true })
+  deliveryRun?: Rel<DeliveryRun>
 
   /** Null until a courier wins the atomic claim (WHERE courier_id IS NULL). */
   @ManyToOne(() => CourierProfile, { fieldName: 'courier_id', nullable: true })

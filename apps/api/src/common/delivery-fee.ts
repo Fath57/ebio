@@ -3,8 +3,13 @@
  *
  * Pricing is platform-wide (admin-tuned, see PlatformSettingsService), never
  * per shop: one of three modes, a basket threshold for free delivery, and a
- * hard distance limit. Distances are shop → drop-off point, computed by the
- * caller (PostGIS) and passed in.
+ * hard distance limit. Distances are computed by the caller and passed in.
+ *
+ * Depuis le panier unifié, cette distance est celle de la **tournée complète**
+ * — collecte à collecte, puis dernière collecte jusqu'au point de chute (voir
+ * `computeRunDistance`). C'est le trajet que le livreur parcourt réellement,
+ * donc la seule base honnête pour le tarif comme pour sa rémunération. Une
+ * tournée d'une seule boutique retombe exactement sur l'ancien calcul.
  */
 
 export type DeliveryPricingMode = 'FLAT' | 'DISTANCE' | 'ZONES'
@@ -60,10 +65,19 @@ export type DeliveryFeeReason
 
 export interface DeliveryFeeInput {
   isDelivery: boolean
-  /** Items only: the fee never counts toward its own waiver. */
+  /**
+   * Items only: the fee never counts toward its own waiver. Sur un panier
+   * multi-boutiques, c'est le total du panier entier — le seuil de gratuité
+   * s'évalue sur ce que l'acheteur voit, c'est-à-dire un panier.
+   */
   itemsTotal: number
-  /** Shop → drop-off, km; null when either side has no position. */
+  /** Distance de la tournée, km ; null quand un point manque. */
   distanceKm: number | null
+  /**
+   * Toutes les boutiques de la tournée sont localisées. Une seule qui ne l'est
+   * pas suffit à rendre la distance incalculable : le forfait s'applique, et
+   * la commande passe quand même (`NO_SHOP_POSITION` n'est pas bloquant).
+   */
   hasShopPosition: boolean
 }
 
@@ -123,4 +137,55 @@ export function computeCourierFee(deliveryFee: number, rate: number): number {
   }
   const safeRate = Math.min(Math.max(rate, 0), 1)
   return Math.round(deliveryFee * (1 - safeRate))
+}
+
+/** Un point de la tournée : une boutique à collecter, ou le point de chute. */
+export interface RunPoint {
+  latitude: number | null
+  longitude: number | null
+}
+
+const EARTH_RADIUS_KM = 6371
+
+function haversineKm(from: RunPoint, to: RunPoint): number | null {
+  if (from.latitude === null || from.longitude === null || to.latitude === null || to.longitude === null) {
+    return null
+  }
+  const toRad = (deg: number): number => (deg * Math.PI) / 180
+  const dLat = toRad(to.latitude - from.latitude)
+  const dLng = toRad(to.longitude - from.longitude)
+  const a = Math.sin(dLat / 2) ** 2
+    + Math.cos(toRad(from.latitude)) * Math.cos(toRad(to.latitude)) * Math.sin(dLng / 2) ** 2
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(a)))
+}
+
+/**
+ * Distance d'une tournée : collecte à collecte dans l'ordre de passage, puis
+ * dernière collecte jusqu'au point de chute.
+ *
+ * C'est le trajet réel du livreur, et non la somme des distances
+ * boutique → acheteur : deux boutiques voisines ne doivent pas coûter deux
+ * fois le même trajet. Une seule boutique redonne la distance
+ * boutique → acheteur, donc le comportement d'avant le panier unifié.
+ *
+ * Renvoie `null` dès qu'un point manque : la distance n'a alors aucun sens, et
+ * `computeDeliveryFee` retombe sur le forfait.
+ */
+export function computeRunDistance(pickups: RunPoint[], dropoff: RunPoint): number | null {
+  if (pickups.length === 0) {
+    return null
+  }
+  let total = 0
+  for (let i = 0; i < pickups.length - 1; i++) {
+    const leg = haversineKm(pickups[i], pickups[i + 1])
+    if (leg === null) {
+      return null
+    }
+    total += leg
+  }
+  const lastLeg = haversineKm(pickups[pickups.length - 1], dropoff)
+  if (lastLeg === null) {
+    return null
+  }
+  return total + lastLeg
 }

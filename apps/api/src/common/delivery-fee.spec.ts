@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeCourierFee, computeDeliveryFee, DEFAULT_DELIVERY_PRICING } from './delivery-fee'
+import { computeCourierFee, computeDeliveryFee, computeRunDistance, DEFAULT_DELIVERY_PRICING } from './delivery-fee'
 
 const base = { isDelivery: true, itemsTotal: 5_000, hasShopPosition: true }
 
@@ -46,5 +46,39 @@ describe('computeCourierFee', () => {
     expect(computeCourierFee(1000, 0.1)).toBe(900)
     expect(computeCourierFee(0, 0.1)).toBe(0)
     expect(computeCourierFee(1000, 1.5)).toBe(0)
+  })
+})
+
+describe('computeRunDistance', () => {
+  // Cotonou. Environ 1,1 km entre chaque point sur cet axe.
+  const shopA = { latitude: 6.3700, longitude: 2.3912 }
+  const shopB = { latitude: 6.3800, longitude: 2.3912 }
+  const buyer = { latitude: 6.3900, longitude: 2.3912 }
+
+  it('mesure le trajet réel du livreur, pas la somme boutique → acheteur', () => {
+    const run = computeRunDistance([shopA, shopB], buyer)
+    // A→B puis B→acheteur, soit deux tronçons — et non A→acheteur plus
+    // B→acheteur, qui compterait le même chemin deux fois.
+    expect(run).toBeCloseTo(2.22, 1)
+    const naiveSum = computeRunDistance([shopA], buyer)! + computeRunDistance([shopB], buyer)!
+    expect(run!).toBeLessThan(naiveSum)
+  })
+
+  it('retombe sur la distance boutique → acheteur quand il n\'y a qu\'une boutique', () => {
+    expect(computeRunDistance([shopA], buyer)).toBeCloseTo(2.22, 1)
+  })
+
+  it('ne renvoie rien dès qu\'un point manque', () => {
+    expect(computeRunDistance([], buyer)).toBeNull()
+    expect(computeRunDistance([shopA, { latitude: null, longitude: null }], buyer)).toBeNull()
+    expect(computeRunDistance([shopA], { latitude: null, longitude: null })).toBeNull()
+  })
+
+  it('tarife une tournée comme n\'importe quelle distance, forfait si un point manque', () => {
+    const run = computeRunDistance([shopA, shopB], buyer)
+    expect(computeDeliveryFee(DEFAULT_DELIVERY_PRICING, { ...base, distanceKm: run })).toMatchObject({ reason: 'DISTANCE' })
+    // Une seule boutique non localisée dans la tournée : forfait, pas blocage.
+    expect(computeDeliveryFee(DEFAULT_DELIVERY_PRICING, { ...base, hasShopPosition: false, distanceKm: null }))
+      .toMatchObject({ fee: 500, reason: 'NO_SHOP_POSITION' })
   })
 })

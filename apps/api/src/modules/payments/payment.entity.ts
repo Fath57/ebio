@@ -1,6 +1,7 @@
 import type { Rel } from '@mikro-orm/core'
-import { Entity, Enum, Index, OneToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
+import { Entity, Enum, Index, ManyToOne, OneToOne, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 import { Order } from '../orders/entities/order.entity'
+import { Checkout } from './entities/checkout.entity'
 
 export enum PaymentStatus {
   PENDING = 'PENDING',
@@ -38,6 +39,15 @@ export class Payment {
 
   @OneToOne(() => Order, { fieldName: 'order_id', owner: true })
   order!: Rel<Order>
+
+  /**
+   * Le passage en caisse dont ce paiement fait partie. Nul sur tout
+   * l'historique antérieur au panier unifié, ce que le code lit comme
+   * « paiement d'une commande isolée ».
+   */
+  @Index()
+  @ManyToOne(() => Checkout, { fieldName: 'checkout_id', nullable: true })
+  checkout?: Rel<Checkout>
 
   @Property({ type: 'float' })
   amount!: number
