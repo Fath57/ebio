@@ -145,10 +145,10 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 ### API — tournée et diffusion
 
 - [x] T030 [US2] Créer la tournée à la création du checkout en mode `DELIVERY`, dans `apps/api/src/modules/orders/orders.service.ts`, en n'en créant aucune en `ON_SITE`
-- [ ] T030a [US2] Borner une tournée à deux boutiques (FR-020) : au-delà, le checkout produit plusieurs tournées, chacune avec son devis, et le total annoncé avant paiement les couvre toutes — `apps/api/src/modules/orders/checkout.service.ts`
-- [ ] T030b [US2] Refuser de grouper deux boutiques distantes de plus de 3 km (FR-020c) : mesurer l'écart en `ST_Distance` sur les `geography` des boutiques, comme le devis, et isoler toute boutique sans position (FR-020d) — `apps/api/src/modules/orders/checkout.service.ts`
-- [ ] T030c [US2] Exposer les deux seuils en réglage back-office dans `apps/api/src/modules/settings/` — deux boutiques et 3 km par défaut, le second plafonné par `maxDistanceKm`
-- [ ] T030d [P] [US2] Tester le découpage en tournées dans `apps/api/src/modules/orders/checkout.service.spec.ts` : trois boutiques proches → deux tournées, deux boutiques à 5 km → deux tournées, boutique sans position → tournée seule
+- [x] T030a [US2] Borner une tournée à deux boutiques (FR-020) : au-delà, le checkout produit plusieurs tournées, chacune avec son devis, et le total annoncé avant paiement les couvre toutes — `apps/api/src/modules/orders/checkout.service.ts`
+- [x] T030b [US2] Refuser de grouper deux boutiques distantes de plus de 3 km (FR-020c) : mesurer l'écart en `ST_Distance` sur les `geography` des boutiques, comme le devis, et isoler toute boutique sans position (FR-020d) — `apps/api/src/modules/orders/checkout.service.ts`
+- [x] T030c [US2] Exposer les deux seuils en réglage back-office dans `apps/api/src/modules/settings/` — deux boutiques et 3 km par défaut, le second plafonné par `maxDistanceKm`
+- [x] T030d [P] [US2] Tester le découpage en tournées dans `apps/api/src/modules/orders/checkout.service.spec.ts` : trois boutiques proches → deux tournées, deux boutiques à 5 km → deux tournées, boutique sans position → tournée seule
 - [ ] T031 [US2] Calculer l'ordre de passage et le stocker dans `pickup_order`, dans `apps/api/src/modules/deliveries/deliveries.service.ts`
 - [ ] T032 [US2] Porter `findEligibleCouriers` et `rankCandidates` de `dispatch.service.ts` au niveau tournée, en prenant le premier point de collecte comme origine
 - [ ] T033 [US2] Porter `startDispatch`, `offerNext`, `respondToOffer` et `cancelPendingOffer` au niveau tournée, en conservant la bascule ciblé → diffusion large

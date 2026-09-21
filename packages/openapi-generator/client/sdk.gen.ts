@@ -318,6 +318,8 @@ import type {
   OrdersControllerConfirmDeliveryPostData,
   OrdersControllerConfirmDeliveryPostResponses,
   OrdersControllerConfirmDeliveryResponses,
+  OrdersControllerCreateCheckoutData,
+  OrdersControllerCreateCheckoutResponses,
   OrdersControllerCreateData,
   OrdersControllerCreateDisputeData,
   OrdersControllerCreateDisputeResponses,
@@ -328,6 +330,8 @@ import type {
   OrdersControllerFindByIdResponses,
   OrdersControllerInvoiceData,
   OrdersControllerInvoiceResponses,
+  OrdersControllerPreviewCheckoutData,
+  OrdersControllerPreviewCheckoutResponses,
   OrdersControllerPreviewData,
   OrdersControllerPreviewResponses,
   OrdersControllerRejectData,
@@ -376,10 +380,14 @@ import type {
   PaymentsControllerGetPaymentInfoResponses,
   PaymentsControllerGetPaymentStatusData,
   PaymentsControllerGetPaymentStatusResponses,
+  PaymentsControllerInitiateCartPaymentData,
+  PaymentsControllerInitiateCartPaymentResponses,
   PaymentsControllerInitiateCheckoutPaymentData,
   PaymentsControllerInitiateCheckoutPaymentResponses,
   PaymentsControllerInitiateNoRedirectPaymentData,
   PaymentsControllerInitiateNoRedirectPaymentResponses,
+  PaymentsControllerVerifyCartPaymentData,
+  PaymentsControllerVerifyCartPaymentResponses,
   PaymentsControllerVerifyCheckoutPaymentData,
   PaymentsControllerVerifyCheckoutPaymentResponses,
   PaymentsWebhookControllerHandleFedaPayWebhookData,
@@ -3164,6 +3172,42 @@ export const recommendationsControllerList = <
     ThrowOnError
   >({ url: "/api/recommendations", ...options });
 
+export const ordersControllerPreviewCheckout = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerPreviewCheckoutData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerPreviewCheckoutResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/checkout/preview",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerCreateCheckout = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerCreateCheckoutData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerCreateCheckoutResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/checkout",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const ordersControllerFindAll = <ThrowOnError extends boolean = false>(
   options: Options<OrdersControllerFindAllData, ThrowOnError>,
 ) =>
@@ -3349,6 +3393,42 @@ export const paymentsControllerInitiateCheckoutPayment = <
     ThrowOnError
   >({
     url: "/api/payments/initiate-checkout",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerInitiateCartPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerInitiateCartPaymentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerInitiateCartPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/cart/initiate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerVerifyCartPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerVerifyCartPaymentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerVerifyCartPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/cart/verify",
     ...options,
     headers: {
       "Content-Type": "application/json",

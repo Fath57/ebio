@@ -1130,7 +1130,16 @@
           "outOfRange": "{{km}} km → hors zone"
         },
         "saved": "Tarification enregistrée",
-        "error": "Impossible d’enregistrer la tarification. Vérifiez les valeurs et réessayez."
+        "error": "Impossible d’enregistrer la tarification. Vérifiez les valeurs et réessayez.",
+        "grouping": {
+          "title": "Regroupement des livraisons",
+          "description": "Quand un panier couvre plusieurs boutiques, un seul livreur passe chez chacune puis livre une fois, et l’acheteur ne paie qu’un frais. Ce frais est à la charge d’eBio dès que la tournée s’allonge : ces deux seuils bornent cette exposition.",
+          "maxShops": "Boutiques par tournée",
+          "maxShopsHint": "Entre 1 et 5. Au-delà, le panier produit plusieurs tournées, chacune avec ses frais.",
+          "maxPickupSpreadKm": "Écart maximal entre boutiques (km)",
+          "maxPickupSpreadKmHint": "Deux boutiques plus éloignées que cela ne sont pas regroupées. Ne peut pas dépasser la distance maximale.",
+          "spreadOverMaxDistance": "L’écart entre boutiques ne peut pas dépasser la distance maximale de livraison"
+        }
       },
       "bannerOffers": {
         "title": "Offres de bannière",

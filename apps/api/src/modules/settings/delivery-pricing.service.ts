@@ -1,7 +1,7 @@
 import type { DeliveryQuoteResponse } from './contracts/delivery-pricing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
-import { computeDeliveryFee, computeRunDistance } from '../../common/delivery-fee'
+import { computeDeliveryFee, computeRunDistance, groupShopsIntoRuns } from '../../common/delivery-fee'
 import { PlatformSettingsService } from './platform-settings.service'
 
 /** Chiffrage d'une tournée : plusieurs collectes, un seul point de chute. */
@@ -11,6 +11,24 @@ export interface RunQuoteInput {
   isDelivery: boolean
   latitude?: number | null
   longitude?: number | null
+}
+
+/** Une tournée chiffrée : ses boutiques, son frais, son écart de collecte. */
+export interface RunQuote extends DeliveryQuoteResponse {
+  supplierIds: string[]
+  pickupSpreadKm: number | null
+}
+
+/** Le chiffrage d'un panier entier : ses tournées, et leur somme. */
+export interface CartQuote {
+  runs: RunQuote[]
+  /** Somme des frais ; null dès qu'une tournée ne peut pas être chiffrée. */
+  fee: number | null
+  /** Somme des distances ; null dès qu'une tournée n'est pas mesurable. */
+  distanceKm: number | null
+  /** Motif de la tournée bloquante, ou de la première à défaut. */
+  reason: DeliveryQuoteResponse['reason']
+  maxDistanceKm: number
 }
 
 export interface QuoteInput {
@@ -102,6 +120,53 @@ export class DeliveryPricingService {
       requiresPosition: config.mode !== 'FLAT' && hasAllPositions,
       maxDistanceKm: config.maxDistanceKm,
       freeFrom: config.freeFrom,
+    }
+  }
+
+  /**
+   * Découpe les boutiques d'un panier en tournées, puis chiffre chacune.
+   *
+   * Deux critères bornent le regroupement : le nombre de boutiques et l'écart
+   * entre leurs points de collecte. Ils se vérifient ici, à la constitution du
+   * devis, et non à la diffusion — un contrôle posé plus tard arriverait après
+   * l'encaissement, quand il n'est plus possible de refuser quoi que ce soit.
+   *
+   * Le seuil de gratuité, lui, reste évalué sur le panier entier : c'est ce
+   * que l'acheteur voit, et un panier découpé en deux tournées ne doit pas
+   * perdre une gratuité déjà acquise.
+   */
+  async quoteCart(input: RunQuoteInput): Promise<CartQuote> {
+    const config = await this.platformSettings.getDeliveryPricing()
+    const positions = await this.supplierPositions(input.supplierIds)
+    const groups = groupShopsIntoRuns(
+      input.supplierIds.map(id => ({
+        supplierId: id,
+        latitude: positions.get(id)?.latitude ?? null,
+        longitude: positions.get(id)?.longitude ?? null,
+      })),
+      config.grouping,
+    )
+
+    const runs = []
+    for (const group of groups) {
+      const quote = await this.quoteRun({ ...input, supplierIds: group.supplierIds })
+      runs.push({ ...quote, supplierIds: group.supplierIds, pickupSpreadKm: group.pickupSpreadKm })
+    }
+
+    // Un seul chiffrage impossible rend le panier impayable : mieux vaut le
+    // dire avec son motif que d'annoncer un total qui ignore une tournée.
+    const blocked = runs.find(run => run.fee === null) ?? null
+    const totalFee = blocked ? null : runs.reduce((sum, run) => sum + (run.fee ?? 0), 0)
+    const totalDistanceKm = runs.every(run => run.distanceKm !== null)
+      ? runs.reduce((sum, run) => sum + (run.distanceKm ?? 0), 0)
+      : null
+
+    return {
+      runs,
+      fee: totalFee,
+      distanceKm: totalDistanceKm,
+      reason: (blocked ?? runs[0])?.reason ?? 'PICKUP',
+      maxDistanceKm: config.maxDistanceKm,
     }
   }
 

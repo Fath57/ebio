@@ -173,23 +173,31 @@ export class DeliveriesService {
    * du trajet qu'il parcourt réellement, et non une part par commande
    * transportée, ce qui le paierait trois fois pour un seul déplacement.
    */
+  /**
+   * Un panier ouvre autant de tournées que son découpage en compte. L'unicité
+   * n'est donc plus celle du panier mais celle du lot de boutiques : rejouer
+   * la création ne doit pas ouvrir deux fois la même tournée.
+   */
   async createRunForCheckout(input: {
     checkoutId: string
     supplierIds: string[]
     deliveryFee: number
     distanceKm: number | null
+    pickupSpreadKm: number | null
   }): Promise<DeliveryRun | null> {
-    const existing = await this.em.findOne(DeliveryRun, { checkout: { id: input.checkoutId } })
+    const siblings = await this.em.find(DeliveryRun, { checkout: { id: input.checkoutId } })
+    const existing = siblings.find(run => input.supplierIds.some(id => run.supplierIds.includes(id)))
     if (existing) {
       return existing
     }
     const rate = await this.platformSettings.getDeliveryCommissionRate()
     const run = this.em.create(DeliveryRun, {
       checkout: this.em.getReference(Checkout, input.checkoutId),
+      supplierIds: input.supplierIds,
+      deliveryFee: input.deliveryFee,
       courierEarning: computeCourierFee(input.deliveryFee, rate),
       totalDistanceKm: input.distanceKm ?? undefined,
-      // Mesure : le regroupement est sans limite en v1, ces chiffres sont le
-      // seul moyen d'en poser plus tard sur des faits.
+      pickupSpreadKm: input.pickupSpreadKm ?? undefined,
       shopCount: input.supplierIds.length,
     })
     await this.em.flush()
@@ -231,9 +239,12 @@ export class DeliveriesService {
     // in full: the snapshot is the real fee, whoever covers it.
     const deliveryFee = (order.deliveryFee || order.sponsoredDeliveryFee) ?? 0
     const rate = await this.platformSettings.getDeliveryCommissionRate()
-    // La livraison rejoint la tournée du panier dont sa commande est issue.
+    // La livraison rejoint la tournée qui collecte chez sa boutique — un panier
+    // peut en compter plusieurs, et se tromper de tournée enverrait le livreur
+    // à la mauvaise adresse.
     const run = order.checkout
-      ? await this.em.findOne(DeliveryRun, { checkout: { id: order.checkout.id } })
+      ? (await this.em.find(DeliveryRun, { checkout: { id: order.checkout.id } }))
+          .find(candidate => candidate.supplierIds.includes(supplier.id)) ?? null
       : null
     const delivery = this.em.create(Delivery, {
       order,

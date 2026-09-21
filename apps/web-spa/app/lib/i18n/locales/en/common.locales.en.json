@@ -1130,7 +1130,16 @@
           "outOfRange": "{{km}} km → out of range"
         },
         "saved": "Pricing saved",
-        "error": "Could not save the pricing. Check the values and try again."
+        "error": "Could not save the pricing. Check the values and try again.",
+        "grouping": {
+          "title": "Delivery grouping",
+          "description": "When a cart spans several shops, one courier collects from each then delivers once, and the buyer pays a single fee. That fee is borne by eBio as soon as the run stretches: these two thresholds bound the exposure.",
+          "maxShops": "Shops per run",
+          "maxShopsHint": "Between 1 and 5. Beyond that, the cart produces several runs, each with its own fee.",
+          "maxPickupSpreadKm": "Maximum gap between shops (km)",
+          "maxPickupSpreadKmHint": "Two shops further apart than this are not grouped. Cannot exceed the maximum distance.",
+          "spreadOverMaxDistance": "The gap between shops cannot exceed the maximum delivery distance"
+        }
       },
       "bannerOffers": {
         "title": "Banner offers",

@@ -45,6 +45,10 @@ const deliveryPricingSchema = z.object({
   // Empty means delivery is never waived, which the API stores as null.
   freeFrom: z.coerce.number().int().min(0).nullable(),
   maxDistanceKm: z.coerce.number().min(0.5).max(500),
+  grouping: z.object({
+    maxShops: z.coerce.number().int().min(1).max(5),
+    maxPickupSpreadKm: z.coerce.number().min(0.1).max(500),
+  }),
 })
 
 export type DeliveryPricingFormData = z.infer<typeof deliveryPricingSchema>
@@ -84,6 +88,12 @@ function toPreviewConfig(values: DeliveryPricingFormData): DeliveryPricingConfig
     })),
     freeFrom: null,
     maxDistanceKm: toNumber(values.maxDistanceKm, Number.MAX_SAFE_INTEGER),
+    // Sans effet sur le tarif d'une distance donnée : l'aperçu chiffre une
+    // course, le regroupement décide seulement combien il y en a.
+    grouping: {
+      maxShops: toNumber(values.grouping?.maxShops, 2),
+      maxPickupSpreadKm: toNumber(values.grouping?.maxPickupSpreadKm, 3),
+    },
   }
 }
 
@@ -97,10 +107,17 @@ export function DeliveryPricingForm({ config, onSubmit, isPending }: DeliveryPri
   const { t } = useTranslation()
 
   // The min/max consistency rule needs a translated message, hence the memo.
-  const schema = useMemo(() => deliveryPricingSchema.refine(
-    data => data.distance.minFee <= data.distance.maxFee,
-    { path: ['distance', 'minFee'], message: t('admin.settings.deliveryPricing.distance.minMaxError') },
-  ), [t])
+  const schema = useMemo(() => deliveryPricingSchema
+    .refine(
+      data => data.distance.minFee <= data.distance.maxFee,
+      { path: ['distance', 'minFee'], message: t('admin.settings.deliveryPricing.distance.minMaxError') },
+    )
+    // Grouper plus loin qu'on ne livre n'aurait pas de sens. Même règle côté
+    // API : le refus doit se voir ici, avant l'aller-retour.
+    .refine(
+      data => data.grouping.maxPickupSpreadKm <= data.maxDistanceKm,
+      { path: ['grouping', 'maxPickupSpreadKm'], message: t('admin.settings.deliveryPricing.grouping.spreadOverMaxDistance') },
+    ), [t])
 
   const form = useForm<DeliveryPricingFormData>({
     resolver: zodResolver(schema) as Resolver<DeliveryPricingFormData>,
@@ -387,6 +404,46 @@ export function DeliveryPricingForm({ config, onSubmit, isPending }: DeliveryPri
               </FormItem>
             )}
           />
+        </div>
+
+        <div className="space-y-3 border-t pt-6">
+          <div>
+            <p className="text-sm font-medium">{t('admin.settings.deliveryPricing.grouping.title')}</p>
+            <p className="text-muted-foreground text-sm">{t('admin.settings.deliveryPricing.grouping.description')}</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <FormField
+              control={form.control}
+              name="grouping.maxShops"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="delivery-pricing-max-shops">{t('admin.settings.deliveryPricing.grouping.maxShops')}</FormLabel>
+                  <FormControl>
+                    <Input id="delivery-pricing-max-shops" type="number" min={1} max={5} step={1} {...field} />
+                  </FormControl>
+                  <FormDescription>{t('admin.settings.deliveryPricing.grouping.maxShopsHint')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="grouping.maxPickupSpreadKm"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel htmlFor="delivery-pricing-max-spread">{t('admin.settings.deliveryPricing.grouping.maxPickupSpreadKm')}</FormLabel>
+                  <FormControl>
+                    <div className="flex items-center gap-2">
+                      <Input id="delivery-pricing-max-spread" type="number" min={0.1} max={500} step={0.1} {...field} />
+                      <span className="text-muted-foreground text-sm">km</span>
+                    </div>
+                  </FormControl>
+                  <FormDescription>{t('admin.settings.deliveryPricing.grouping.maxPickupSpreadKmHint')}</FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
         </div>
 
         <p className="text-muted-foreground text-sm" aria-live="polite">

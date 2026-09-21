@@ -1,5 +1,5 @@
 import type { Rel } from '@mikro-orm/core'
-import { Collection, Entity, Enum, Index, ManyToOne, OneToMany, OneToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
+import { Collection, Entity, Enum, Index, ManyToOne, OneToMany, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { Checkout } from '../../payments/entities/checkout.entity'
 import { CourierProfile } from './courier-profile.entity'
 import { Delivery } from './delivery.entity'
@@ -36,13 +36,31 @@ export enum DeliveryRunOutcome {
 
 @Entity({ tableName: 'delivery_runs' })
 export class DeliveryRun {
-  [OptionalProps]?: 'id' | 'status' | 'pickupOrder' | 'courierEarning' | 'dispatchPhase' | 'shopCount' | 'offersSent' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'pickupOrder' | 'supplierIds' | 'deliveryFee' | 'courierEarning' | 'dispatchPhase' | 'shopCount' | 'offersSent' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @OneToOne(() => Checkout, { fieldName: 'checkout_id', owner: true, unique: true })
+  /**
+   * Un panier produit autant de tournées que le regroupement en autorise : au
+   * delà de deux boutiques, ou au delà de l'écart admis entre elles, il en
+   * naît une seconde. Le lien n'est donc plus 1-1.
+   */
+  @Index()
+  @ManyToOne(() => Checkout, { fieldName: 'checkout_id' })
   checkout!: Rel<Checkout>
+
+  /**
+   * Les boutiques que cette tournée collecte. Renseigné à l'ouverture, avant
+   * qu'aucune livraison n'existe : c'est ce qui permet à chaque livraison de
+   * rejoindre la bonne tournée quand sa commande naît.
+   */
+  @Property({ fieldName: 'supplier_ids', type: 'jsonb' })
+  supplierIds: string[] = []
+
+  /** Frais de cette tournée. Le panier en porte la somme, pas le détail. */
+  @Property({ fieldName: 'delivery_fee', columnType: 'numeric(12,2)', default: 0 })
+  deliveryFee: number = 0
 
   @Index()
   @ManyToOne(() => CourierProfile, { fieldName: 'courier_id', nullable: true })
@@ -79,13 +97,17 @@ export class DeliveryRun {
   buyerPromptedAt?: Date
 
   /*
-   * Mesure. Le regroupement est volontairement sans limite en v1 : ces trois
-   * colonnes sont le seul moyen de poser ces limites plus tard sur des faits
+   * Mesure. Les seuils de regroupement — deux boutiques, 3 km entre elles —
+   * sont posés, pas devinés ; ces colonnes servent à les ajuster sur des faits
    * plutôt que sur une intuition.
    */
 
   @Property({ fieldName: 'shop_count', default: 0 })
   shopCount: number = 0
+
+  /** Écart entre les deux collectes les plus éloignées ; null si une position manque. */
+  @Property({ fieldName: 'pickup_spread_km', type: 'double', nullable: true })
+  pickupSpreadKm?: number
 
   @Property({ fieldName: 'offers_sent', default: 0 })
   offersSent: number = 0

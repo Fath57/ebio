@@ -24,7 +24,18 @@ export const deliveryPricingConfigSchema = z.object({
   /** Items subtotal above which delivery is free; null disables. */
   freeFrom: z.number().int().min(0).nullable(),
   maxDistanceKm: z.number().min(0.5).max(500),
-}).refine(c => c.distance.minFee <= c.distance.maxFee, { message: 'Le plancher doit être inférieur ou égal au plafond', path: ['distance', 'minFee'] }).meta({
+  /**
+   * Regroupement des boutiques en tournées. Les valeurs par défaut valent pour
+   * une configuration écrite avant que ces seuils n'existent.
+   *
+   * `maxPickupSpreadKm` est plafonné par `maxDistanceKm` — vérifié plus bas :
+   * grouper deux boutiques plus éloignées qu'on ne livre n'aurait pas de sens.
+   */
+  grouping: z.object({
+    maxShops: z.number().int().min(1).max(5),
+    maxPickupSpreadKm: z.number().min(0.1).max(500),
+  }).default({ maxShops: 2, maxPickupSpreadKm: 3 }),
+}).refine(c => c.distance.minFee <= c.distance.maxFee, { message: 'Le plancher doit être inférieur ou égal au plafond', path: ['distance', 'minFee'] }).refine(c => c.grouping.maxPickupSpreadKm <= c.maxDistanceKm, { message: 'L\'écart entre boutiques ne peut pas dépasser le rayon de livraison', path: ['grouping', 'maxPickupSpreadKm'] }).meta({
   title: 'DeliveryPricingConfig',
   description: 'Platform-wide delivery pricing rules (admin-tuned)',
 })

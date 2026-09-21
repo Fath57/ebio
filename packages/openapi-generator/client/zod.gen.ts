@@ -3,28 +3,6 @@
 import { z } from "zod";
 
 /**
- * CompleteUpload
- *
- * Finalise un upload multipart et déclenche l'optimisation
- */
-export const zCompleteUpload = z.object({
-  mediaId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  uploadId: z.optional(z.string()),
-  parts: z.optional(
-    z.array(
-      z.object({
-        partNumber: z.number(),
-        etag: z.string(),
-      }),
-    ),
-  ),
-});
-
-/**
  * DeliveryQuoteRequest
  *
  * What the buyer would pay to have this basket delivered to this point
@@ -339,6 +317,33 @@ export const zInitiateCheckoutInput = z.object({
     .regex(
       /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
     ),
+});
+
+/**
+ * InitiateCartPaymentInput
+ *
+ * Ouvre un paiement unique pour un panier multi-boutiques
+ */
+export const zInitiateCartPaymentInput = z.object({
+  checkoutId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+});
+
+/**
+ * VerifyCartPaymentInput
+ *
+ * Confirme le paiement unique et crée les paiements par commande
+ */
+export const zVerifyCartPaymentInput = z.object({
+  checkoutId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  fedapayTransactionId: z.string().min(1),
 });
 
 /**
@@ -1032,6 +1037,26 @@ export const zNoRedirectPaymentResult = z.object({
 });
 
 /**
+ * CartPaymentResult
+ */
+export const zCartPaymentResult = z.object({
+  checkoutId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  amount: z.number(),
+  status: z.enum(["pending", "completed"]),
+  paymentIds: z.array(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+});
+
+/**
  * CheckoutVerifyResult
  *
  * Result after verifying a Checkout.js payment
@@ -1575,6 +1600,41 @@ export const zInitiateUpload = z.object({
 });
 
 /**
+ * ImageCrop
+ *
+ * Zone de recadrage, en fractions de l'image (0 à 1)
+ */
+export const zImageCrop = z.object({
+  x: z.number().gte(0).lte(1),
+  y: z.number().gte(0).lte(1),
+  width: z.number().gte(0.01).lte(1),
+  height: z.number().gte(0.01).lte(1),
+});
+
+/**
+ * CompleteUpload
+ *
+ * Finalise un upload multipart et déclenche l'optimisation
+ */
+export const zCompleteUpload = z.object({
+  mediaId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  uploadId: z.optional(z.string()),
+  parts: z.optional(
+    z.array(
+      z.object({
+        partNumber: z.number(),
+        etag: z.string(),
+      }),
+    ),
+  ),
+  crop: z.optional(zImageCrop),
+});
+
+/**
  * DeliveryPricingMode
  *
  * How the platform prices a delivery: one fee, base + per-km, or distance rings
@@ -1609,6 +1669,12 @@ export const zDeliveryPricingConfig = z.object({
     .max(10),
   freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
   maxDistanceKm: z.number().gte(0.5).lte(500),
+  grouping: z
+    .object({
+      maxShops: z.int().gte(1).lte(5),
+      maxPickupSpreadKm: z.number().gte(0.1).lte(500),
+    })
+    .default({ maxShops: 2, maxPickupSpreadKm: 3 }),
 });
 
 /**
@@ -2129,20 +2195,6 @@ export const zUpdatePromoCode = z.object({
 });
 
 /**
- * PickupMode
- *
- * How the buyer will receive the order
- */
-export const zPickupMode = z.enum(["ON_SITE", "DELIVERY"]);
-
-/**
- * PaymentMethod
- *
- * Payment method for the order
- */
-export const zPaymentMethod = z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]);
-
-/**
  * OrderItemInput
  *
  * A single item in the order
@@ -2164,24 +2216,23 @@ export const zOrderItemInput = z.object({
 });
 
 /**
- * CreateOrder
+ * PickupMode
  *
- * Data required to place a new order
+ * How the buyer will receive the order
  */
-export const zCreateOrder = z.object({
-  supplierId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
+export const zPickupMode = z.enum(["ON_SITE", "DELIVERY"]);
+
+/**
+ * CheckoutPreview
+ *
+ * Demande de chiffrage d'un panier multi-boutiques
+ */
+export const zCheckoutPreview = z.object({
+  items: z.array(zOrderItemInput).min(1),
   pickupMode: zPickupMode,
-  paymentMethod: zPaymentMethod,
-  deliveryAddress: z.optional(z.string().min(3).max(500)),
   deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
-  deliverySlot: z.optional(z.string().max(200)),
-  promoCode: z.optional(z.string().min(1).max(30)),
-  items: z.array(zOrderItemInput).min(1),
+  promoCode: z.optional(z.string().max(50)),
 });
 
 /**
@@ -2198,6 +2249,56 @@ export const zPreviewOrder = z.object({
   pickupMode: zPickupMode,
   deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+  promoCode: z.optional(z.string().min(1).max(30)),
+  items: z.array(zOrderItemInput).min(1),
+});
+
+/**
+ * PaymentMethod
+ *
+ * Payment method for the order
+ */
+export const zPaymentMethod = z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]);
+
+/**
+ * CreateCheckout
+ *
+ * Valide un panier multi-boutiques en une seule opération
+ */
+export const zCreateCheckout = z.object({
+  items: z.array(zOrderItemInput).min(1),
+  pickupMode: zPickupMode,
+  deliveryAddress: z.optional(z.string().min(10).max(500)),
+  deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+  deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+  paymentMethod: zPaymentMethod,
+  promoCode: z.optional(z.string().max(50)),
+  deliverySlot: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+      ),
+  ),
+});
+
+/**
+ * CreateOrder
+ *
+ * Data required to place a new order
+ */
+export const zCreateOrder = z.object({
+  supplierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  pickupMode: zPickupMode,
+  paymentMethod: zPaymentMethod,
+  deliveryAddress: z.optional(z.string().min(3).max(500)),
+  deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+  deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+  deliverySlot: z.optional(z.string().max(200)),
   promoCode: z.optional(z.string().min(1).max(30)),
   items: z.array(zOrderItemInput).min(1),
 });
@@ -3984,6 +4085,12 @@ export const zAdminDeliveryPricingControllerUpdateData = z.object({
       .max(10),
     freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
     maxDistanceKm: z.number().gte(0.5).lte(500),
+    grouping: z
+      .object({
+        maxShops: z.int().gte(1).lte(5),
+        maxPickupSpreadKm: z.number().gte(0.1).lte(500),
+      })
+      .default({ maxShops: 2, maxPickupSpreadKm: 3 }),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -4707,6 +4814,14 @@ export const zMediaControllerCompleteUploadData = z.object({
           etag: z.string(),
         }),
       ),
+    ),
+    crop: z.optional(
+      z.object({
+        x: z.number().gte(0).lte(1),
+        y: z.number().gte(0).lte(1),
+        width: z.number().gte(0.01).lte(1),
+        height: z.number().gte(0.01).lte(1),
+      }),
     ),
   }),
   path: z.optional(z.never()),
@@ -5667,6 +5782,75 @@ export const zRecommendationsControllerListData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zOrdersControllerPreviewCheckoutData = z.object({
+  body: z.object({
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gte(1).lte(9007199254740991),
+        }),
+      )
+      .min(1),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+    promoCode: z.optional(z.string().max(50)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerCreateCheckoutData = z.object({
+  body: z.object({
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gte(1).lte(9007199254740991),
+        }),
+      )
+      .min(1),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    deliveryAddress: z.optional(z.string().min(10).max(500)),
+    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
+    promoCode: z.optional(z.string().max(50)),
+    deliverySlot: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zOrdersControllerFindAllData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -5880,6 +6064,42 @@ export const zPaymentsControllerInitiateCheckoutPaymentData = z.object({
  */
 export const zPaymentsControllerInitiateCheckoutPaymentResponse =
   zNoRedirectPaymentResult;
+
+export const zPaymentsControllerInitiateCartPaymentData = z.object({
+  body: z.object({
+    checkoutId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Successful response
+ */
+export const zPaymentsControllerInitiateCartPaymentResponse =
+  zCartPaymentResult;
+
+export const zPaymentsControllerVerifyCartPaymentData = z.object({
+  body: z.object({
+    checkoutId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    fedapayTransactionId: z.string().min(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Successful response
+ */
+export const zPaymentsControllerVerifyCartPaymentResponse = zCartPaymentResult;
 
 export const zPaymentsControllerVerifyCheckoutPaymentData = z.object({
   body: z.object({

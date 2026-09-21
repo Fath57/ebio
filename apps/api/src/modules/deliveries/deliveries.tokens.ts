@@ -11,14 +11,17 @@ export const ORDER_DELIVERY_HOOKS = Symbol('ORDER_DELIVERY_HOOKS')
 
 export interface OrderDeliveryHooks {
   /**
-   * Ouvre la tournée d'un passage en caisse livré. Les livraisons s'y
-   * rattachent au fur et à mesure qu'elles naissent, commande par commande.
+   * Ouvre une tournée d'un passage en caisse livré. Un panier en ouvre
+   * plusieurs dès que le regroupement ne tient pas en une seule. Les
+   * livraisons s'y rattachent au fur et à mesure qu'elles naissent, chacune
+   * rejoignant la tournée qui collecte chez sa boutique.
    */
   createRunForCheckout: (input: {
     checkoutId: string
     supplierIds: string[]
     deliveryFee: number
     distanceKm: number | null
+    pickupSpreadKm: number | null
   }) => Promise<{ id: string } | null>
   createForOrder: (order: Order) => Promise<Delivery | null>
   /** PREPARING with a readiness estimate: create the run now, search later. */

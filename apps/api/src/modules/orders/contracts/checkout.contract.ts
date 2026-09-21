@@ -40,15 +40,35 @@ export const checkoutSupplierBlockSchema = z.object({
   blocked: z.enum(['OUT_OF_RANGE', 'CLOSED', 'OUT_OF_STOCK']).nullable(),
 }).meta({ title: 'CheckoutSupplierBlock' })
 
+/**
+ * Une tournée du panier. Un panier de deux boutiques proches en produit une ;
+ * au-delà de deux boutiques, ou au-delà de l'écart admis entre elles, il en
+ * produit plusieurs, chacune avec ses frais.
+ */
+export const checkoutRunBlockSchema = z.object({
+  supplierIds: z.array(z.string().uuid()).min(1),
+  fee: z.number().nullable(),
+  reason: deliveryReasonEnum,
+  distanceKm: z.number().nullable(),
+  /** Écart entre les deux collectes les plus éloignées ; null si une position manque. */
+  pickupSpreadKm: z.number().nullable(),
+}).meta({ title: 'CheckoutRunBlock' })
+
 export const checkoutPreviewResponseSchema = z.object({
   suppliers: z.array(checkoutSupplierBlockSchema),
   itemsTotal: z.number(),
   discount: z.number(),
-  /** Frais uniques de la tournée, pas la somme des frais par boutique. */
+  /**
+   * Total des frais de livraison du panier, toutes tournées confondues. Un
+   * seul chiffre : le découpage en tournées est l'affaire de la plateforme,
+   * l'acheteur n'a pas à le comprendre pour savoir ce qu'il paie.
+   */
   deliveryFee: z.number().nullable(),
   deliveryReason: deliveryReasonEnum,
-  /** Distance de la tournée complète, collectes comprises. */
+  /** Distance cumulée des tournées, collectes comprises. */
   deliveryDistanceKm: z.number().nullable(),
+  /** Le détail, pour le back-office et le suivi. Vide en retrait sur place. */
+  runs: z.array(checkoutRunBlockSchema),
   total: z.number(),
   /**
    * De combien le panier dépasse le plafond des espèces, le cas échéant. Le
@@ -84,8 +104,11 @@ export const createCheckoutResponseSchema = z.object({
     shopName: z.string(),
     total: z.number(),
   })).min(1),
-  /** Absent en retrait sur place : aucune tournée n'est créée. */
-  deliveryRunId: z.string().uuid().nullable(),
+  /**
+   * Les tournées ouvertes par ce passage en caisse, dans l'ordre de leur
+   * découpage. Vide en retrait sur place : rien n'est à regrouper.
+   */
+  deliveryRunIds: z.array(z.string().uuid()),
 }).meta({
   title: 'CreateCheckoutResponse',
   description: 'Le passage en caisse et les commandes qu\'il a créées',

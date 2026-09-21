@@ -3685,6 +3685,30 @@
                     "type": "number",
                     "minimum": 0.5,
                     "maximum": 500
+                  },
+                  "grouping": {
+                    "default": {
+                      "maxShops": 2,
+                      "maxPickupSpreadKm": 3
+                    },
+                    "type": "object",
+                    "properties": {
+                      "maxShops": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "maximum": 5
+                      },
+                      "maxPickupSpreadKm": {
+                        "type": "number",
+                        "minimum": 0.1,
+                        "maximum": 500
+                      }
+                    },
+                    "required": [
+                      "maxShops",
+                      "maxPickupSpreadKm"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -3693,7 +3717,8 @@
                   "distance",
                   "zones",
                   "freeFrom",
-                  "maxDistanceKm"
+                  "maxDistanceKm",
+                  "grouping"
                 ],
                 "additionalProperties": false,
                 "title": "DeliveryPricingConfig",
@@ -6200,6 +6225,40 @@
                       ],
                       "additionalProperties": false
                     }
+                  },
+                  "crop": {
+                    "type": "object",
+                    "properties": {
+                      "x": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "y": {
+                        "type": "number",
+                        "minimum": 0,
+                        "maximum": 1
+                      },
+                      "width": {
+                        "type": "number",
+                        "minimum": 0.01,
+                        "maximum": 1
+                      },
+                      "height": {
+                        "type": "number",
+                        "minimum": 0.01,
+                        "maximum": 1
+                      }
+                    },
+                    "required": [
+                      "x",
+                      "y",
+                      "width",
+                      "height"
+                    ],
+                    "additionalProperties": false,
+                    "title": "ImageCrop",
+                    "description": "Zone de recadrage, en fractions de l'image (0 à 1)"
                   }
                 },
                 "required": [
@@ -9075,6 +9134,203 @@
         }
       }
     },
+    "/api/orders/checkout/preview": {
+      "post": {
+        "operationId": "OrdersController_previewCheckout",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Demande de chiffrage d'un panier multi-boutiques",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "OrderItemInput",
+                      "description": "A single item in the order"
+                    }
+                  },
+                  "pickupMode": {
+                    "type": "string",
+                    "enum": [
+                      "ON_SITE",
+                      "DELIVERY"
+                    ],
+                    "title": "PickupMode",
+                    "description": "How the buyer will receive the order"
+                  },
+                  "deliveryLatitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "deliveryLongitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "promoCode": {
+                    "type": "string",
+                    "maxLength": 50
+                  }
+                },
+                "required": [
+                  "items",
+                  "pickupMode"
+                ],
+                "additionalProperties": false,
+                "title": "CheckoutPreview",
+                "description": "Demande de chiffrage d'un panier multi-boutiques"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/checkout": {
+      "post": {
+        "operationId": "OrdersController_createCheckout",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Valide un panier multi-boutiques en une seule opération",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "minItems": 1,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "OrderItemInput",
+                      "description": "A single item in the order"
+                    }
+                  },
+                  "pickupMode": {
+                    "type": "string",
+                    "enum": [
+                      "ON_SITE",
+                      "DELIVERY"
+                    ],
+                    "title": "PickupMode",
+                    "description": "How the buyer will receive the order"
+                  },
+                  "deliveryAddress": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500
+                  },
+                  "deliveryLatitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "deliveryLongitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  },
+                  "paymentMethod": {
+                    "type": "string",
+                    "enum": [
+                      "FEDAPAY",
+                      "CASH_ON_DELIVERY",
+                      "WALLET"
+                    ],
+                    "title": "PaymentMethod",
+                    "description": "Payment method for the order"
+                  },
+                  "promoCode": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "deliverySlot": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                  }
+                },
+                "required": [
+                  "items",
+                  "pickupMode",
+                  "paymentMethod"
+                ],
+                "additionalProperties": false,
+                "title": "CreateCheckout",
+                "description": "Valide un panier multi-boutiques en une seule opération"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/orders": {
       "post": {
         "operationId": "OrdersController_create",
@@ -9731,6 +9987,101 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/NoRedirectPaymentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/cart/initiate": {
+      "post": {
+        "operationId": "PaymentsController_initiateCartPayment",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Ouvre un paiement unique pour un panier multi-boutiques",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkoutId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "checkoutId"
+                ],
+                "additionalProperties": false,
+                "title": "InitiateCartPaymentInput",
+                "description": "Ouvre un paiement unique pour un panier multi-boutiques"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartPaymentResult"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/payments/cart/verify": {
+      "post": {
+        "operationId": "PaymentsController_verifyCartPayment",
+        "tags": [
+          "Payments"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Confirme le paiement unique et crée les paiements par commande",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "checkoutId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "fedapayTransactionId": {
+                    "type": "string",
+                    "minLength": 1
+                  }
+                },
+                "required": [
+                  "checkoutId",
+                  "fedapayTransactionId"
+                ],
+                "additionalProperties": false,
+                "title": "VerifyCartPaymentInput",
+                "description": "Confirme le paiement unique et crée les paiements par commande"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CartPaymentResult"
                 }
               }
             }
@@ -13627,6 +13978,9 @@
               ],
               "additionalProperties": false
             }
+          },
+          "crop": {
+            "$ref": "#/components/schemas/ImageCrop"
           }
         },
         "required": [
@@ -13766,6 +14120,30 @@
             "type": "number",
             "minimum": 0.5,
             "maximum": 500
+          },
+          "grouping": {
+            "default": {
+              "maxShops": 2,
+              "maxPickupSpreadKm": 3
+            },
+            "type": "object",
+            "properties": {
+              "maxShops": {
+                "type": "integer",
+                "minimum": 1,
+                "maximum": 5
+              },
+              "maxPickupSpreadKm": {
+                "type": "number",
+                "minimum": 0.1,
+                "maximum": 500
+              }
+            },
+            "required": [
+              "maxShops",
+              "maxPickupSpreadKm"
+            ],
+            "additionalProperties": false
           }
         },
         "required": [
@@ -13774,7 +14152,8 @@
           "distance",
           "zones",
           "freeFrom",
-          "maxDistanceKm"
+          "maxDistanceKm",
+          "grouping"
         ],
         "additionalProperties": false,
         "title": "DeliveryPricingConfig",
@@ -14805,6 +15184,43 @@
         "title": "InitiateCheckoutInput",
         "description": "Input for creating a pending payment before opening Checkout.js"
       },
+      "InitiateCartPaymentInput": {
+        "type": "object",
+        "properties": {
+          "checkoutId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "checkoutId"
+        ],
+        "additionalProperties": false,
+        "title": "InitiateCartPaymentInput",
+        "description": "Ouvre un paiement unique pour un panier multi-boutiques"
+      },
+      "VerifyCartPaymentInput": {
+        "type": "object",
+        "properties": {
+          "checkoutId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "fedapayTransactionId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "checkoutId",
+          "fedapayTransactionId"
+        ],
+        "additionalProperties": false,
+        "title": "VerifyCartPaymentInput",
+        "description": "Confirme le paiement unique et crée les paiements par commande"
+      },
       "VerifyCheckoutInput": {
         "type": "object",
         "properties": {
@@ -15475,6 +15891,92 @@
         "additionalProperties": false,
         "title": "UpdatePromoCode",
         "description": "Editable fields — the code itself is immutable once created"
+      },
+      "CheckoutPreview": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            }
+          },
+          "pickupMode": {
+            "$ref": "#/components/schemas/PickupMode"
+          },
+          "deliveryLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "deliveryLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "promoCode": {
+            "type": "string",
+            "maxLength": 50
+          }
+        },
+        "required": [
+          "items",
+          "pickupMode"
+        ],
+        "additionalProperties": false,
+        "title": "CheckoutPreview",
+        "description": "Demande de chiffrage d'un panier multi-boutiques"
+      },
+      "CreateCheckout": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderItemInput"
+            }
+          },
+          "pickupMode": {
+            "$ref": "#/components/schemas/PickupMode"
+          },
+          "deliveryAddress": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "deliveryLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "deliveryLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "promoCode": {
+            "type": "string",
+            "maxLength": 50
+          },
+          "deliverySlot": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "items",
+          "pickupMode",
+          "paymentMethod"
+        ],
+        "additionalProperties": false,
+        "title": "CreateCheckout",
+        "description": "Valide un panier multi-boutiques en une seule opération"
       },
       "CreateOrder": {
         "type": "object",
@@ -17243,6 +17745,42 @@
         "title": "NoRedirectPaymentResult",
         "description": "Result after initiating a no-redirect payment"
       },
+      "CartPaymentResult": {
+        "type": "object",
+        "properties": {
+          "checkoutId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "amount": {
+            "type": "number"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "completed"
+            ]
+          },
+          "paymentIds": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "checkoutId",
+          "amount",
+          "status",
+          "paymentIds"
+        ],
+        "additionalProperties": false,
+        "title": "CartPaymentResult"
+      },
       "CheckoutVerifyResult": {
         "type": "object",
         "properties": {
@@ -18475,6 +19013,40 @@
         "title": "MediaContext",
         "description": "Contexte d'utilisation du média"
       },
+      "ImageCrop": {
+        "type": "object",
+        "properties": {
+          "x": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "y": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1
+          },
+          "width": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1
+          },
+          "height": {
+            "type": "number",
+            "minimum": 0.01,
+            "maximum": 1
+          }
+        },
+        "required": [
+          "x",
+          "y",
+          "width",
+          "height"
+        ],
+        "additionalProperties": false,
+        "title": "ImageCrop",
+        "description": "Zone de recadrage, en fractions de l'image (0 à 1)"
+      },
       "DeliveryPricingMode": {
         "type": "string",
         "enum": [
@@ -18735,25 +19307,6 @@
         "title": "PromoType",
         "description": "Discount type: percentage of the items subtotal, or fixed amount"
       },
-      "PickupMode": {
-        "type": "string",
-        "enum": [
-          "ON_SITE",
-          "DELIVERY"
-        ],
-        "title": "PickupMode",
-        "description": "How the buyer will receive the order"
-      },
-      "PaymentMethod": {
-        "type": "string",
-        "enum": [
-          "FEDAPAY",
-          "CASH_ON_DELIVERY",
-          "WALLET"
-        ],
-        "title": "PaymentMethod",
-        "description": "Payment method for the order"
-      },
       "OrderItemInput": {
         "type": "object",
         "properties": {
@@ -18780,6 +19333,25 @@
         "additionalProperties": false,
         "title": "OrderItemInput",
         "description": "A single item in the order"
+      },
+      "PickupMode": {
+        "type": "string",
+        "enum": [
+          "ON_SITE",
+          "DELIVERY"
+        ],
+        "title": "PickupMode",
+        "description": "How the buyer will receive the order"
+      },
+      "PaymentMethod": {
+        "type": "string",
+        "enum": [
+          "FEDAPAY",
+          "CASH_ON_DELIVERY",
+          "WALLET"
+        ],
+        "title": "PaymentMethod",
+        "description": "Payment method for the order"
       },
       "ValidationAction": {
         "type": "string",

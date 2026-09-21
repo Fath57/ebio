@@ -4,7 +4,12 @@
 -- conteneur : le registre `mikro_orm_migrations` de production ne contient que
 -- les migrations récentes, donc `migration:up` sans `--only` échoue sur les
 -- anciennes. Une fois ce fichier joué, enregistrer le nom de la migration avec
--- `migration:up --only Migration20260921120000` (les ordres sont idempotents).
+-- `migration:up --only Migration20260921120000 Migration20260921190000` (les
+-- ordres sont idempotents).
+--
+-- Couvre les deux migrations : les tables de regroupement, et le bornage des
+-- tournées (deux boutiques, 3 km entre elles) qui fait qu'un panier peut en
+-- ouvrir plusieurs — d'où `checkout_id` sans unicité.
 --
 -- Purement additif : aucune colonne supprimée, aucun lien existant modifié.
 --
@@ -33,9 +38,7 @@ CREATE TABLE IF NOT EXISTS "checkouts" (
 ALTER TABLE "checkouts" DROP CONSTRAINT IF EXISTS "checkouts_status_check";
 
 ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_status_check"
-      CHECK ("status" = ANY (ARRAY[${CHECKOUT_STATUSES.map(s => `'${s}'
-
-ALTER TABLE "checkouts" DROP CONSTRAINT IF EXISTS "checkouts_delivery_mode_check";
+      CHECK ("status" = ANY (ARRAY['PENDING', 'PAID', 'DISPATCHED', 'PARTIALLY_REFUNDED', 'REFUNDED', 'FAILED']::text[]));
 
 ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_delivery_mode_check"
       CHECK ("delivery_mode" = ANY (ARRAY['DELIVERY', 'ON_SITE']::text[]));
@@ -53,7 +56,7 @@ CREATE INDEX IF NOT EXISTS "checkouts_provider_transaction_idx"
 
 CREATE TABLE IF NOT EXISTS "delivery_runs" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-      "checkout_id" uuid NOT NULL UNIQUE REFERENCES "checkouts" ("id"),
+      "checkout_id" uuid NOT NULL REFERENCES "checkouts" ("id"),
       "courier_id" uuid NULL REFERENCES "courier_profiles" ("id"),
       "status" varchar(32) NOT NULL DEFAULT 'AWAITING_COURIER',
       "pickup_order" jsonb NOT NULL DEFAULT '[]'::jsonb,
@@ -63,6 +66,9 @@ CREATE TABLE IF NOT EXISTS "delivery_runs" (
       "offer_expires_at" timestamptz NULL,
       "escalated_at" timestamptz NULL,
       "buyer_prompted_at" timestamptz NULL,
+      "supplier_ids" jsonb NOT NULL DEFAULT '[]'::jsonb,
+      "delivery_fee" numeric(12,2) NOT NULL DEFAULT 0,
+      "pickup_spread_km" double precision NULL,
       "shop_count" integer NOT NULL DEFAULT 0,
       "offers_sent" integer NOT NULL DEFAULT 0,
       "outcome" varchar(16) NULL,
@@ -73,9 +79,7 @@ CREATE TABLE IF NOT EXISTS "delivery_runs" (
 ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_status_check";
 
 ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_status_check"
-      CHECK ("status" = ANY (ARRAY[${RUN_STATUSES.map(s => `'${s}'
-
-ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_dispatch_phase_check";
+      CHECK ("status" = ANY (ARRAY['AWAITING_COURIER', 'ESCALATED', 'BUYER_DECISION', 'ACCEPTED', 'COLLECTING', 'DELIVERING', 'DELIVERED', 'CANCELLED']::text[]));
 
 ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_dispatch_phase_check"
       CHECK ("dispatch_phase" = ANY (ARRAY['SCHEDULED', 'TARGETED', 'BROADCAST']::text[]));
@@ -83,9 +87,7 @@ ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_dispatch_phase_check"
 ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_outcome_check";
 
 ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_outcome_check"
-      CHECK ("outcome" IS NULL OR "outcome" = ANY (ARRAY[${RUN_OUTCOMES.map(o => `'${o}'
-
-CREATE INDEX IF NOT EXISTS "delivery_runs_courier_idx" ON "delivery_runs" ("courier_id");
+      CHECK ("outcome" IS NULL OR "outcome" = ANY (ARRAY['ACCEPTED', 'REFUSED_ALL', 'UNSERVED', 'CANCELLED']::text[]));
 
 CREATE INDEX IF NOT EXISTS "delivery_runs_dispatch_idx"
       ON "delivery_runs" ("status", "dispatch_phase");

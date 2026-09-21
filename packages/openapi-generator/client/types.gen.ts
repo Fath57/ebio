@@ -31,6 +31,7 @@ export type CompleteUpload = {
     partNumber: number;
     etag: string;
   }>;
+  crop?: ImageCrop;
 };
 
 /**
@@ -68,6 +69,10 @@ export type DeliveryPricingConfig = {
   }>;
   freeFrom: number | null;
   maxDistanceKm: number;
+  grouping: {
+    maxShops: number;
+    maxPickupSpreadKm: number;
+  };
 };
 
 /**
@@ -446,6 +451,25 @@ export type InitiateCheckoutInput = {
 };
 
 /**
+ * InitiateCartPaymentInput
+ *
+ * Ouvre un paiement unique pour un panier multi-boutiques
+ */
+export type InitiateCartPaymentInput = {
+  checkoutId: string;
+};
+
+/**
+ * VerifyCartPaymentInput
+ *
+ * Confirme le paiement unique et crée les paiements par commande
+ */
+export type VerifyCartPaymentInput = {
+  checkoutId: string;
+  fedapayTransactionId: string;
+};
+
+/**
  * VerifyCheckoutInput
  *
  * Input for verifying a payment made via Checkout.js
@@ -640,6 +664,35 @@ export type UpdatePromoCode = {
   maxUses?: number | null;
   maxUsesPerUser?: number;
   isActive?: boolean;
+};
+
+/**
+ * CheckoutPreview
+ *
+ * Demande de chiffrage d'un panier multi-boutiques
+ */
+export type CheckoutPreview = {
+  items: Array<OrderItemInput>;
+  pickupMode: PickupMode;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  promoCode?: string;
+};
+
+/**
+ * CreateCheckout
+ *
+ * Valide un panier multi-boutiques en une seule opération
+ */
+export type CreateCheckout = {
+  items: Array<OrderItemInput>;
+  pickupMode: PickupMode;
+  deliveryAddress?: string;
+  deliveryLatitude?: number;
+  deliveryLongitude?: number;
+  paymentMethod: PaymentMethod;
+  promoCode?: string;
+  deliverySlot?: Date;
 };
 
 /**
@@ -1363,6 +1416,16 @@ export type NoRedirectPaymentResult = {
 };
 
 /**
+ * CartPaymentResult
+ */
+export type CartPaymentResult = {
+  checkoutId: string;
+  amount: number;
+  status: "pending" | "completed";
+  paymentIds: Array<string>;
+};
+
+/**
  * CheckoutVerifyResult
  *
  * Result after verifying a Checkout.js payment
@@ -1831,6 +1894,18 @@ export const MediaContext = {
 export type MediaContext = (typeof MediaContext)[keyof typeof MediaContext];
 
 /**
+ * ImageCrop
+ *
+ * Zone de recadrage, en fractions de l'image (0 à 1)
+ */
+export type ImageCrop = {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+};
+
+/**
  * DeliveryPricingMode
  *
  * How the platform prices a delivery: one fee, base + per-km, or distance rings
@@ -2092,6 +2167,17 @@ export const PromoType = { PERCENT: "PERCENT", FIXED: "FIXED" } as const;
 export type PromoType = (typeof PromoType)[keyof typeof PromoType];
 
 /**
+ * OrderItemInput
+ *
+ * A single item in the order
+ */
+export type OrderItemInput = {
+  productId: string;
+  variantId?: string;
+  quantity: number;
+};
+
+/**
  * PickupMode
  *
  * How the buyer will receive the order
@@ -2122,17 +2208,6 @@ export const PaymentMethod = {
  * Payment method for the order
  */
 export type PaymentMethod = (typeof PaymentMethod)[keyof typeof PaymentMethod];
-
-/**
- * OrderItemInput
- *
- * A single item in the order
- */
-export type OrderItemInput = {
-  productId: string;
-  variantId?: string;
-  quantity: number;
-};
 
 /**
  * ValidationAction
@@ -4264,6 +4339,10 @@ export type AdminDeliveryPricingControllerUpdateData = {
     }>;
     freeFrom: number | null;
     maxDistanceKm: number;
+    grouping: {
+      maxShops: number;
+      maxPickupSpreadKm: number;
+    };
   };
   path?: never;
   query?: never;
@@ -5392,6 +5471,17 @@ export type MediaControllerCompleteUploadData = {
       partNumber: number;
       etag: string;
     }>;
+    /**
+     * ImageCrop
+     *
+     * Zone de recadrage, en fractions de l'image (0 à 1)
+     */
+    crop?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
   };
   path?: never;
   query?: never;
@@ -6620,6 +6710,76 @@ export type RecommendationsControllerListResponses = {
   200: unknown;
 };
 
+export type OrdersControllerPreviewCheckoutData = {
+  /**
+   * CheckoutPreview
+   *
+   * Demande de chiffrage d'un panier multi-boutiques
+   */
+  body: {
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
+    promoCode?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders/checkout/preview";
+};
+
+export type OrdersControllerPreviewCheckoutResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerCreateCheckoutData = {
+  /**
+   * CreateCheckout
+   *
+   * Valide un panier multi-boutiques en une seule opération
+   */
+  body: {
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    deliveryAddress?: string;
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
+    /**
+     * PaymentMethod
+     *
+     * Payment method for the order
+     */
+    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
+    promoCode?: string;
+    deliverySlot?: Date;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders/checkout";
+};
+
+export type OrdersControllerCreateCheckoutResponses = {
+  201: unknown;
+};
+
 export type OrdersControllerFindAllData = {
   body?: never;
   path?: never;
@@ -6902,6 +7062,55 @@ export type PaymentsControllerInitiateCheckoutPaymentResponses = {
 
 export type PaymentsControllerInitiateCheckoutPaymentResponse =
   PaymentsControllerInitiateCheckoutPaymentResponses[keyof PaymentsControllerInitiateCheckoutPaymentResponses];
+
+export type PaymentsControllerInitiateCartPaymentData = {
+  /**
+   * InitiateCartPaymentInput
+   *
+   * Ouvre un paiement unique pour un panier multi-boutiques
+   */
+  body: {
+    checkoutId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/cart/initiate";
+};
+
+export type PaymentsControllerInitiateCartPaymentResponses = {
+  /**
+   * Successful response
+   */
+  200: CartPaymentResult;
+};
+
+export type PaymentsControllerInitiateCartPaymentResponse =
+  PaymentsControllerInitiateCartPaymentResponses[keyof PaymentsControllerInitiateCartPaymentResponses];
+
+export type PaymentsControllerVerifyCartPaymentData = {
+  /**
+   * VerifyCartPaymentInput
+   *
+   * Confirme le paiement unique et crée les paiements par commande
+   */
+  body: {
+    checkoutId: string;
+    fedapayTransactionId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/cart/verify";
+};
+
+export type PaymentsControllerVerifyCartPaymentResponses = {
+  /**
+   * Successful response
+   */
+  200: CartPaymentResult;
+};
+
+export type PaymentsControllerVerifyCartPaymentResponse =
+  PaymentsControllerVerifyCartPaymentResponses[keyof PaymentsControllerVerifyCartPaymentResponses];
 
 export type PaymentsControllerVerifyCheckoutPaymentData = {
   /**

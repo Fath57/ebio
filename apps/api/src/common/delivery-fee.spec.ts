@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { computeCourierFee, computeDeliveryFee, computeRunDistance, DEFAULT_DELIVERY_PRICING } from './delivery-fee'
+import { computeCourierFee, computeDeliveryFee, computeRunDistance, DEFAULT_DELIVERY_PRICING, DEFAULT_RUN_GROUPING, groupShopsIntoRuns } from './delivery-fee'
 
 const base = { isDelivery: true, itemsTotal: 5_000, hasShopPosition: true }
 
@@ -80,5 +80,67 @@ describe('computeRunDistance', () => {
     // Une seule boutique non localisée dans la tournée : forfait, pas blocage.
     expect(computeDeliveryFee(DEFAULT_DELIVERY_PRICING, { ...base, hasShopPosition: false, distanceKm: null }))
       .toMatchObject({ fee: 500, reason: 'NO_SHOP_POSITION' })
+  })
+})
+
+describe('groupShopsIntoRuns', () => {
+  // Cotonou : Ganhi, Jéricho et Calavi. Les deux premières sont voisines, la
+  // troisième est de l'autre côté du lac.
+  const ganhi = { supplierId: 'ganhi', latitude: 6.3600, longitude: 2.4300 }
+  const jericho = { supplierId: 'jericho', latitude: 6.3660, longitude: 2.4100 }
+  const proche = { supplierId: 'proche', latitude: 6.3610, longitude: 2.4320 }
+  const calavi = { supplierId: 'calavi', latitude: 6.4500, longitude: 2.3500 }
+
+  it('laisse une boutique seule dans sa tournée', () => {
+    expect(groupShopsIntoRuns([ganhi], DEFAULT_RUN_GROUPING)).toEqual([
+      { supplierIds: ['ganhi'], pickupSpreadKm: 0 },
+    ])
+  })
+
+  it('réunit deux boutiques proches', () => {
+    const groups = groupShopsIntoRuns([ganhi, jericho], DEFAULT_RUN_GROUPING)
+    expect(groups).toHaveLength(1)
+    expect(groups[0].supplierIds).toHaveLength(2)
+    expect(groups[0].pickupSpreadKm).toBeLessThan(DEFAULT_RUN_GROUPING.maxPickupSpreadKm)
+  })
+
+  it('sépare deux boutiques trop éloignées, même si elles ne sont que deux', () => {
+    const groups = groupShopsIntoRuns([ganhi, calavi], DEFAULT_RUN_GROUPING)
+    expect(groups).toHaveLength(2)
+    expect(groups.map(group => group.supplierIds)).toEqual([['calavi'], ['ganhi']])
+  })
+
+  it('coupe au-delà de deux boutiques, même toutes proches', () => {
+    const groups = groupShopsIntoRuns([ganhi, jericho, proche], DEFAULT_RUN_GROUPING)
+    expect(groups).toHaveLength(2)
+    expect(groups.flatMap(group => group.supplierIds).sort()).toEqual(['ganhi', 'jericho', 'proche'])
+    expect(groups.every(group => group.supplierIds.length <= 2)).toBe(true)
+  })
+
+  it('isole une boutique sans position : son écart n\'est pas mesurable', () => {
+    const groups = groupShopsIntoRuns(
+      [{ supplierId: 'inconnue', latitude: null, longitude: null }, ganhi, jericho],
+      DEFAULT_RUN_GROUPING,
+    )
+    expect(groups).toContainEqual({ supplierIds: ['inconnue'], pickupSpreadKm: null })
+    expect(groups.find(group => group.supplierIds.includes('ganhi'))?.supplierIds).toHaveLength(2)
+  })
+
+  it('rend le même découpage quel que soit l\'ordre du panier', () => {
+    const forward = groupShopsIntoRuns([ganhi, jericho, proche, calavi], DEFAULT_RUN_GROUPING)
+    const backward = groupShopsIntoRuns([calavi, proche, jericho, ganhi], DEFAULT_RUN_GROUPING)
+    expect(backward).toEqual(forward)
+  })
+
+  it('respecte une limite relevée, seuil d\'écart compris', () => {
+    const groups = groupShopsIntoRuns([ganhi, jericho, proche], { maxShops: 3, maxPickupSpreadKm: 3 })
+    expect(groups).toHaveLength(1)
+    expect(groups[0].supplierIds).toHaveLength(3)
+    // L'écart retenu est celui de la paire la plus large du lot, pas du dernier ajout.
+    expect(groups[0].pickupSpreadKm).toBeGreaterThan(0)
+  })
+
+  it('n\'ouvre aucune tournée pour un panier vide', () => {
+    expect(groupShopsIntoRuns([], DEFAULT_RUN_GROUPING)).toEqual([])
   })
 })

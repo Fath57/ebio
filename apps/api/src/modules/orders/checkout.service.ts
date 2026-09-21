@@ -123,7 +123,10 @@ export class CheckoutService {
       })
     }
 
-    const quote = await this.deliveryPricing.quoteRun({
+    // Le panier peut se découper en plusieurs tournées — deux boutiques par
+    // tournée, et pas au-delà de l'écart admis entre leurs points de collecte.
+    // L'acheteur n'en voit qu'un total : le découpage regarde la plateforme.
+    const quote = await this.deliveryPricing.quoteCart({
       supplierIds: baskets.map(basket => basket.supplier.id),
       itemsTotal,
       isDelivery,
@@ -139,6 +142,15 @@ export class CheckoutService {
       deliveryFee: quote.fee,
       deliveryReason: quote.reason,
       deliveryDistanceKm: quote.distanceKm,
+      runs: isDelivery
+        ? quote.runs.map(run => ({
+            supplierIds: run.supplierIds,
+            fee: run.fee,
+            reason: run.reason,
+            distanceKm: run.distanceKm,
+            pickupSpreadKm: run.pickupSpreadKm,
+          }))
+        : [],
       total,
       cashLimitExceededBy: data.pickupMode === 'DELIVERY' ? await this.cashOverflow(total) : null,
     }
@@ -267,17 +279,24 @@ export class CheckoutService {
 
     void createdOrders
 
-    // La tournée n'a de sens qu'en livraison : un retrait sur place se fait
+    // Les tournées n'ont de sens qu'en livraison : un retrait sur place se fait
     // boutique par boutique, rien n'est à regrouper.
-    const run = isDelivery
-      ? await this.deliveriesService.createRunForCheckout({
+    const runIds: string[] = []
+    if (isDelivery) {
+      for (const run of quote.runs) {
+        const created = await this.deliveriesService.createRunForCheckout({
           checkoutId: checkout.id,
-          supplierIds: baskets.map(basket => basket.supplier.id),
-          deliveryFee: quote.deliveryFee ?? 0,
-          distanceKm: quote.deliveryDistanceKm,
+          supplierIds: run.supplierIds,
+          deliveryFee: run.fee ?? 0,
+          distanceKm: run.distanceKm,
+          pickupSpreadKm: run.pickupSpreadKm,
         })
-      : null
+        if (created) {
+          runIds.push(created.id)
+        }
+      }
+    }
 
-    return { checkoutId: checkout.id, orders, deliveryRunId: run?.id ?? null }
+    return { checkoutId: checkout.id, orders, deliveryRunIds: runIds }
   }
 }

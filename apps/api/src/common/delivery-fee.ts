@@ -20,6 +20,25 @@ export interface DeliveryZone {
   fee: number
 }
 
+/**
+ * Combien de boutiques une tournée réunit, et jusqu'à quelle distance.
+ *
+ * Deux critères, pas un. Compter les boutiques ne dit rien du trajet : ce que
+ * la plateforme paie, c'est le kilomètre entre elles, puisque l'acheteur ne
+ * règle qu'un frais unique. Un seuil d'écart borne cette exposition.
+ */
+export interface RunGroupingConfig {
+  /** Nombre maximal de boutiques dans une tournée. */
+  maxShops: number
+  /** Écart maximal, en km, entre deux points de collecte d'une même tournée. */
+  maxPickupSpreadKm: number
+}
+
+export const DEFAULT_RUN_GROUPING: RunGroupingConfig = {
+  maxShops: 2,
+  maxPickupSpreadKm: 3,
+}
+
 export interface DeliveryPricingConfig {
   mode: DeliveryPricingMode
   flat: { fee: number }
@@ -36,6 +55,8 @@ export interface DeliveryPricingConfig {
   freeFrom: number | null
   /** Beyond this distance the order is refused. */
   maxDistanceKm: number
+  /** Combien de boutiques une tournée réunit, et jusqu'à quel écart. */
+  grouping: RunGroupingConfig
 }
 
 export const DEFAULT_DELIVERY_PRICING: DeliveryPricingConfig = {
@@ -49,6 +70,7 @@ export const DEFAULT_DELIVERY_PRICING: DeliveryPricingConfig = {
   ],
   freeFrom: null,
   maxDistanceKm: 25,
+  grouping: DEFAULT_RUN_GROUPING,
 }
 
 export type DeliveryFeeReason
@@ -188,4 +210,98 @@ export function computeRunDistance(pickups: RunPoint[], dropoff: RunPoint): numb
     return null
   }
   return total + lastLeg
+}
+
+/** Une boutique à collecter, telle que PostGIS la connaît. */
+export interface GroupableShop {
+  supplierId: string
+  latitude: number | null
+  longitude: number | null
+}
+
+/** Une tournée en projet : ses boutiques, et l'écart qui les sépare. */
+export interface ShopGroup {
+  supplierIds: string[]
+  /** Plus grand écart entre deux collectes ; 0 pour une boutique seule, null si une position manque. */
+  pickupSpreadKm: number | null
+}
+
+/** Le plus grand écart entre deux boutiques du lot, ou null si l'une n'est pas située. */
+function widestSpread(shops: GroupableShop[]): number | null {
+  let widest = 0
+  for (let i = 0; i < shops.length; i++) {
+    for (let j = i + 1; j < shops.length; j++) {
+      const gap = haversineKm(shops[i], shops[j])
+      if (gap === null) {
+        return null
+      }
+      widest = Math.max(widest, gap)
+    }
+  }
+  return widest
+}
+
+/**
+ * Répartit les boutiques d'un panier en tournées.
+ *
+ * Deux règles, vérifiées ici et nulle part ailleurs — un contrôle posé plus
+ * tard, à la diffusion, arriverait après l'encaissement :
+ *
+ * 1. Une boutique sans position connue n'est pas groupable. Son écart n'est
+ *    pas mesurable, et le forfait qui s'applique alors ne couvre pas un détour
+ *    inconnu : elle prend sa propre tournée.
+ * 2. Deux boutiques ne se rejoignent que si **toutes** les paires du lot
+ *    restent sous le seuil d'écart. Avec deux boutiques par tournée il n'y a
+ *    qu'une paire, mais le seuil doit tenir si la limite est relevée.
+ *
+ * Le parcours est glouton et déterministe : on part de la boutique restante la
+ * plus au nord-ouest, on lui adjoint la plus proche qui respecte le seuil, et
+ * on recommence. L'optimum n'est pas recherché — il coûterait cher pour un
+ * panier qui compte rarement plus de trois boutiques, et la limite de nombre
+ * borne déjà le gain possible.
+ */
+export function groupShopsIntoRuns(shops: GroupableShop[], config: RunGroupingConfig): ShopGroup[] {
+  const maxShops = Math.max(1, Math.floor(config.maxShops))
+  const groups: ShopGroup[] = []
+
+  const located: GroupableShop[] = []
+  for (const shop of shops) {
+    if (shop.latitude === null || shop.longitude === null) {
+      groups.push({ supplierIds: [shop.supplierId], pickupSpreadKm: null })
+    }
+    else {
+      located.push(shop)
+    }
+  }
+
+  // Ordre stable : la position d'abord, l'identifiant pour départager, afin
+  // qu'un même panier produise toujours le même découpage.
+  const remaining = [...located].sort((a, b) => (
+    b.latitude! - a.latitude! || a.longitude! - b.longitude! || a.supplierId.localeCompare(b.supplierId)
+  ))
+
+  while (remaining.length > 0) {
+    const group = [remaining.shift()!]
+    while (group.length < maxShops) {
+      let bestIndex = -1
+      let bestSpread = Number.POSITIVE_INFINITY
+      for (const [index, candidate] of remaining.entries()) {
+        const spread = widestSpread([...group, candidate])
+        if (spread !== null && spread <= config.maxPickupSpreadKm && spread < bestSpread) {
+          bestIndex = index
+          bestSpread = spread
+        }
+      }
+      if (bestIndex === -1) {
+        break
+      }
+      group.push(remaining.splice(bestIndex, 1)[0])
+    }
+    groups.push({
+      supplierIds: group.map(shop => shop.supplierId),
+      pickupSpreadKm: widestSpread(group),
+    })
+  }
+
+  return groups
 }
