@@ -152,6 +152,15 @@ qui tient à l'argent : le frais unique est à la charge de la plateforme, donc
 une tournée qui s'étire est payée par eBio. Deux boutiques par tournée,
 réglable. La mesure reste, pour ajuster ce seuil plutôt que pour le découvrir.
 
+**Second critère** : le nombre ne dit rien du trajet. Deux boutiques comptées
+comme deux peuvent être aux deux bouts de la ville, et c'est le trajet entre
+elles que la plateforme paie. Seuil d'écart entre points de collecte : **3 km**,
+réglable, plafonné par le rayon de livraison existant (`maxDistanceKm` de
+`delivery-pricing.service.ts`). La mesure réutilise `ST_Distance` sur les
+`geography(Point,4326)` des boutiques — même fonction que le devis, donc même
+distance à vol d'oiseau, avec la même imprécision assumée. Une boutique sans
+position n'est pas groupable : son écart n'est pas mesurable.
+
 **Ajout** : DoorDash bascule sur deux livreurs quand le lot n'a pas de sens.
 Notre modèle ne savait que faire attendre ; il sait désormais dégrouper
 (FR-020b, FR-022a). Un repli qui dégroupe change la façon d'écrire la

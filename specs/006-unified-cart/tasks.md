@@ -146,7 +146,9 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 - [x] T030 [US2] Créer la tournée à la création du checkout en mode `DELIVERY`, dans `apps/api/src/modules/orders/orders.service.ts`, en n'en créant aucune en `ON_SITE`
 - [ ] T030a [US2] Borner une tournée à deux boutiques (FR-020) : au-delà, le checkout produit plusieurs tournées, chacune avec son devis, et le total annoncé avant paiement les couvre toutes — `apps/api/src/modules/orders/checkout.service.ts`
-- [ ] T030b [US2] Exposer la limite en réglage back-office dans `apps/api/src/modules/settings/platform-settings.service.ts`, deux par défaut
+- [ ] T030b [US2] Refuser de grouper deux boutiques distantes de plus de 3 km (FR-020c) : mesurer l'écart en `ST_Distance` sur les `geography` des boutiques, comme le devis, et isoler toute boutique sans position (FR-020d) — `apps/api/src/modules/orders/checkout.service.ts`
+- [ ] T030c [US2] Exposer les deux seuils en réglage back-office dans `apps/api/src/modules/settings/` — deux boutiques et 3 km par défaut, le second plafonné par `maxDistanceKm`
+- [ ] T030d [P] [US2] Tester le découpage en tournées dans `apps/api/src/modules/orders/checkout.service.spec.ts` : trois boutiques proches → deux tournées, deux boutiques à 5 km → deux tournées, boutique sans position → tournée seule
 - [ ] T031 [US2] Calculer l'ordre de passage et le stocker dans `pickup_order`, dans `apps/api/src/modules/deliveries/deliveries.service.ts`
 - [ ] T032 [US2] Porter `findEligibleCouriers` et `rankCandidates` de `dispatch.service.ts` au niveau tournée, en prenant le premier point de collecte comme origine
 - [ ] T033 [US2] Porter `startDispatch`, `offerNext`, `respondToOffer` et `cancelPendingOffer` au niveau tournée, en conservant la bascule ciblé → diffusion large
@@ -279,19 +281,19 @@ décrite était le passage en caisse répété, pas le nombre de livraisons. Cet
 - **T050** : l'alerte back-office se branche sur l'attribution manuelle
   existante ; vérifier qu'elle sait traiter une tournée et pas seulement une
   course.
-- **T030a, critère de distance** : la limite arrêtée porte sur le nombre de
-  boutiques. Faut-il aussi borner l'écart entre points de collecte, comme le
-  fait Uber Eats ? Bloquant pour la mise en service de US2, pas pour T030a.
 
 ---
 
 ## Notes
 
-- La limite de regroupement est passée d'un risque assumé à une règle : deux
-  boutiques par tournée (T030a), réglable (T030b). La mesure (T039) reste, pour
-  ajuster ce seuil sur des faits plutôt que pour le découvrir.
-- **Ce que la limite ne couvre pas** : l'écart entre points de collecte. Deux
-  boutiques aux extrémités de la ville restent groupables. Uber Eats contraint les
-  deux ; à trancher avant la mise en service de US2.
+- Le regroupement est passé d'un risque assumé à deux règles : deux boutiques par
+  tournée (T030a) et 3 km entre elles (T030b), toutes deux réglables (T030c). La
+  mesure (T039) reste, pour ajuster ces seuils sur des faits plutôt que pour les
+  découvrir.
+- **Deux critères, un seul endroit** : nombre (T030a) et écart entre points de
+  collecte (T030b) se vérifient tous les deux à la constitution de la tournée. Un
+  contrôle posé plus tard, à la diffusion, arriverait après l'encaissement.
+- **Ce que le seuil ne couvre pas** : la distance est à vol d'oiseau, comme tout le
+  reste de la tarification. Deux boutiques séparées par une lagune passent le seuil.
 - Aucune tâche ne touche `Order`, ni les écrans fournisseur. Si une tâche en
   vient à l'exiger, c'est que l'architecture a dérivé et qu'il faut y revenir.

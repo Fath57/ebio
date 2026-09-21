@@ -31,6 +31,7 @@ sur deux livreurs** quand le lot n'a pas de sens.
 
 - Q: Faut-il finalement limiter le regroupement ? → A: Oui, deux boutiques par tournée.
 - Q: Que faire quand une tournée ne trouve pas preneur ? → A: La dégrouper en livraisons séparées, plutôt que de faire attendre.
+- Q: La limite porte-t-elle aussi sur l'écart entre les points de collecte ? → A: Oui, deux boutiques ne se groupent que si elles sont distantes de 3 km au plus, réglable.
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -100,7 +101,7 @@ Entre le paiement et la préparation, une boutique ferme, annule ou n'a plus le 
 - **Aucun livreur ne prend la tournée** : trois temps — alerte back-office à 15 minutes, dégroupage à 30, main rendue à l'acheteur si même séparées les courses ne trouvent personne (FR-022).
 - **Panier de plus de deux boutiques** : plusieurs tournées, donc plusieurs frais. Le total doit être annoncé avant paiement, sans que l'acheteur ait à comprendre le découpage.
 - **L'acheteuse choisit d'attendre, puis se ravise** : l'issue « annuler » doit rester ouverte tant que la marchandise n'est pas collectée.
-- **Tournée très dispersée** : la limite porte sur le nombre de boutiques, pas sur l'écart entre elles — deux boutiques aux extrémités de la ville restent groupables. La marchandise ne doit pas attendre indéfiniment chez celle qui a déjà préparé (voir Risks).
+- **Deux boutiques éloignées l'une de l'autre** : le panier reste valide, mais il produit deux tournées et deux frais. L'acheteur doit voir le total avant de payer, sans avoir à comprendre pourquoi le découpage tombe là.
 - **Panier en espèces au-dessus du plafond** : le refus seul ne suffit pas, l'acheteuse doit savoir de combien elle dépasse et ce qu'elle peut faire.
 
 ## Requirements *(mandatory)*
@@ -136,9 +137,11 @@ Entre le paiement et la préparation, une boutique ferme, annule ou n'a plus le 
 - **FR-017** : Le système MUST refléter la collecte chez une boutique sur la commande de cette boutique seule, et la remise finale sur toutes les commandes de la tournée.
 - **FR-018** : L'acheteur MUST suivre l'avancement d'une tournée comme une progression unique.
 - **FR-019** : Le système MUST rémunérer le livreur au titre de la tournée, et non par commande transportée.
-- **FR-020** : Le système MUST limiter une tournée à **deux boutiques**. Au-delà, le panier produit plusieurs tournées, chacune avec ses frais, et le total est annoncé avant paiement comme tout le reste. La limite MUST être réglable depuis le back-office : deux est un point de départ, pas une vérité.
-- **FR-020a** : Le système MUST enregistrer, pour chaque tournée, le nombre de boutiques, la distance parcourue et l'issue de la diffusion — acceptée, refusée, sans preneur — afin que ces limites puissent être fixées sur des faits et non sur une intuition.
+- **FR-020** : Le système MUST limiter une tournée à **deux boutiques** (le second critère, la distance qui les sépare, est en FR-020c). Au-delà, le panier produit plusieurs tournées, chacune avec ses frais, et le total est annoncé avant paiement comme tout le reste. La limite MUST être réglable depuis le back-office : deux est un point de départ, pas une vérité.
+- **FR-020a** : Le système MUST enregistrer, pour chaque tournée, le nombre de boutiques, l'écart entre points de collecte, la distance parcourue et l'issue de la diffusion — acceptée, refusée, sans preneur — afin que les seuils de FR-020 et FR-020c soient ajustés sur des faits et non sur une intuition.
 - **FR-020b** : Le système MUST pouvoir **dégrouper** une tournée en livraisons individuelles lorsqu'elle ne trouve pas preneur. Faire attendre l'acheteur pendant que la marchandise est prête chez des boutiques qui, elles, ont préparé, est le pire des dénouements.
+- **FR-020c** : Le système MUST refuser de grouper deux boutiques dont les points de collecte sont distants de plus d'un seuil réglable, **3 km par défaut**. Deux boutiques comptées comme deux ne suffisent pas : ce qui coûte au livreur, et donc à la plateforme, c'est le trajet entre elles. Au-delà du seuil, les boutiques partent en tournées séparées, comme au-delà de la limite de nombre. Le seuil MUST rester inférieur ou égal au rayon de livraison de la plateforme — grouper plus loin qu'on ne livre n'aurait pas de sens.
+- **FR-020d** : Lorsqu'une boutique n'a pas de position connue, le système MUST la traiter comme non groupable et lui donner sa propre tournée. L'écart avec les autres n'est pas mesurable, et le forfait appliqué dans ce cas (FR-013) ne couvre pas un détour inconnu.
 - **FR-021** : Le système MUST gérer le retrait d'une boutique d'une tournée déjà acceptée sans interrompre la livraison des autres.
 - **FR-022** : Le système MUST alerter le back-office lorsqu'une tournée reste sans preneur au bout de 15 minutes, afin qu'un administrateur puisse attribuer un livreur à la main.
 - **FR-022a** : Le système MUST dégrouper la tournée en livraisons individuelles lorsqu'elle reste sans preneur au bout de 30 minutes, et les diffuser séparément. L'acheteur MUST en être informé : il recevra en plusieurs fois, et l'écart de frais éventuel lui est crédité.
@@ -195,8 +198,8 @@ Ces choix ont été retenus faute de contre-indication ; ils sont à confirmer a
 
 ## Risks
 
-- **Le frais unique est à la charge de la plateforme** : plus une tournée s'étire, plus eBio paie un livreur pour un trajet que l'acheteur ne finance pas. La limite de deux boutiques (FR-020) borne cette exposition ; FR-020a la mesure, pour ajuster le seuil sur des faits.
-- **Deux boutiques peuvent être proches sur le papier et loin en pratique.** La limite porte sur le nombre, pas encore sur l'écart entre points de collecte. Uber Eats impose les deux. À trancher avant la mise en service : sans critère de distance, deux boutiques aux extrémités de la ville restent groupables.
+- **Le frais unique est à la charge de la plateforme** : plus une tournée s'étire, plus eBio paie un livreur pour un trajet que l'acheteur ne finance pas. Les deux seuils — deux boutiques (FR-020), 3 km entre elles (FR-020c) — bornent cette exposition ; FR-020a la mesure, pour les ajuster sur des faits.
+- **La distance est mesurée à vol d'oiseau**, comme tout le reste de la tarification (`ST_Distance` sur des points). Deux boutiques séparées par une lagune sont proches au sens du seuil et loin au sens de la route. Le risque est borné par un seuil bas, pas éliminé ; FR-020a le mesure.
 
 ## Out of Scope
 
