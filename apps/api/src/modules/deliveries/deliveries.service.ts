@@ -25,6 +25,7 @@ import { NotificationChannel, NotificationType } from '../notifications/notifica
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, OrderStatus, PaymentMethod } from '../orders/entities/order.entity'
 import { OrdersService } from '../orders/orders.service'
+import { Checkout } from '../payments/entities/checkout.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
@@ -34,6 +35,7 @@ import { DispatchService } from './dispatch.service'
 import { CourierProfile, VehicleType } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOfferResponse } from './entities/delivery-offer.entity'
+import { DeliveryRun } from './entities/delivery-run.entity'
 import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const ACTIVE_STATUSES = [DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.IN_TRANSIT]
@@ -159,6 +161,41 @@ export class DeliveriesService {
    * supplier position (may be null — the broadcast then targets everyone and
    * the supplier is nudged to set a location).
    */
+  /**
+   * Ouvre la tournée d'un passage en caisse livré.
+   *
+   * Elle naît vide : les livraisons s'y rattachent au fur et à mesure qu'elles
+   * sont créées, commande par commande, quand chaque boutique accepte. La
+   * diffusion n'a lieu qu'une fois toutes les collectes connues.
+   *
+   * La rémunération suit la règle existante — `computeCourierFee` sur les
+   * frais — appliquée au frais unique de la tournée. Le livreur touche sa part
+   * du trajet qu'il parcourt réellement, et non une part par commande
+   * transportée, ce qui le paierait trois fois pour un seul déplacement.
+   */
+  async createRunForCheckout(input: {
+    checkoutId: string
+    supplierIds: string[]
+    deliveryFee: number
+    distanceKm: number | null
+  }): Promise<DeliveryRun | null> {
+    const existing = await this.em.findOne(DeliveryRun, { checkout: { id: input.checkoutId } })
+    if (existing) {
+      return existing
+    }
+    const rate = await this.platformSettings.getDeliveryCommissionRate()
+    const run = this.em.create(DeliveryRun, {
+      checkout: this.em.getReference(Checkout, input.checkoutId),
+      courierEarning: computeCourierFee(input.deliveryFee, rate),
+      totalDistanceKm: input.distanceKm ?? undefined,
+      // Mesure : le regroupement est sans limite en v1, ces chiffres sont le
+      // seul moyen d'en poser plus tard sur des faits.
+      shopCount: input.supplierIds.length,
+    })
+    await this.em.flush()
+    return run
+  }
+
   async createForOrder(order: Order): Promise<Delivery | null> {
     const existing = await this.em.findOne(Delivery, { order: { id: order.id } })
     if (existing) {
@@ -194,8 +231,13 @@ export class DeliveriesService {
     // in full: the snapshot is the real fee, whoever covers it.
     const deliveryFee = (order.deliveryFee || order.sponsoredDeliveryFee) ?? 0
     const rate = await this.platformSettings.getDeliveryCommissionRate()
+    // La livraison rejoint la tournée du panier dont sa commande est issue.
+    const run = order.checkout
+      ? await this.em.findOne(DeliveryRun, { checkout: { id: order.checkout.id } })
+      : null
     const delivery = this.em.create(Delivery, {
       order,
+      deliveryRun: run ?? undefined,
       pickupAddress: supplier.address ?? supplier.shopName,
       dropoffAddress: order.deliveryAddress ?? '',
       offeredAt: new Date(),

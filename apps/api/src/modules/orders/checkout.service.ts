@@ -1,7 +1,9 @@
+import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
 import type { CheckoutPreview, CheckoutPreviewResponse, CreateCheckout, CreateCheckoutResponse } from './contracts/checkout.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
+import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
 import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from '../payments/entities/checkout.entity'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { splitCheckoutAmount } from '../payments/payments.service'
@@ -36,6 +38,8 @@ export class CheckoutService {
     private readonly deliveryPricing: DeliveryPricingService,
     private readonly platformSettings: PlatformSettingsService,
     private readonly walletService: WalletService,
+    @Inject(ORDER_DELIVERY_HOOKS)
+    private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
 
   /** Regroupe les articles par boutique, en refusant ce qui n'est pas vendable. */
@@ -262,6 +266,18 @@ export class CheckoutService {
     })
 
     void createdOrders
-    return { checkoutId: checkout.id, orders, deliveryRunId: null }
+
+    // La tournée n'a de sens qu'en livraison : un retrait sur place se fait
+    // boutique par boutique, rien n'est à regrouper.
+    const run = isDelivery
+      ? await this.deliveriesService.createRunForCheckout({
+          checkoutId: checkout.id,
+          supplierIds: baskets.map(basket => basket.supplier.id),
+          deliveryFee: quote.deliveryFee ?? 0,
+          distanceKm: quote.deliveryDistanceKm,
+        })
+      : null
+
+    return { checkoutId: checkout.id, orders, deliveryRunId: run?.id ?? null }
   }
 }

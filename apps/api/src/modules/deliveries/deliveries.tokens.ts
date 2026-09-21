@@ -10,6 +10,16 @@ import type { Delivery } from './entities/delivery.entity'
 export const ORDER_DELIVERY_HOOKS = Symbol('ORDER_DELIVERY_HOOKS')
 
 export interface OrderDeliveryHooks {
+  /**
+   * Ouvre la tournée d'un passage en caisse livré. Les livraisons s'y
+   * rattachent au fur et à mesure qu'elles naissent, commande par commande.
+   */
+  createRunForCheckout: (input: {
+    checkoutId: string
+    supplierIds: string[]
+    deliveryFee: number
+    distanceKm: number | null
+  }) => Promise<{ id: string } | null>
   createForOrder: (order: Order) => Promise<Delivery | null>
   /** PREPARING with a readiness estimate: create the run now, search later. */
   scheduleForOrder: (order: Order) => Promise<Delivery | null>
