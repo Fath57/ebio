@@ -78,6 +78,13 @@ export class WalletTransaction {
   @Property({ fieldName: 'delivery_id', type: 'uuid', nullable: true })
   deliveryId?: string | null
 
+  /**
+   * La tournée que cette écriture solde. Une tournée se règle une fois, sur
+   * son frais à elle : les commandes d'un panier unifié en portent zéro.
+   */
+  @Property({ fieldName: 'delivery_run_id', type: 'uuid', nullable: true })
+  deliveryRunId?: string | null
+
   @Property()
   description!: string
 

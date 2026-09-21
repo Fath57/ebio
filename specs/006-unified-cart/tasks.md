@@ -154,8 +154,8 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 - [x] T033 [US2] Porter `startDispatch`, `offerNext`, `respondToOffer` et `cancelPendingOffer` au niveau tournée, en conservant la bascule ciblé → diffusion large
 - [x] T034 [US2] Adapter le cron `@Cron('*/30 * * * * *')` et `expireOffers` pour traiter des tournées
 - [x] T035 [US2] Écrire `GET /api/couriers/me/runs/offered` et `POST /api/couriers/me/runs/:id/respond` dans `apps/api/src/modules/deliveries/couriers.controller.ts`, l'acceptation portant sur toute la tournée
-- [ ] T036 [US2] Écrire `POST /api/deliveries/:id/collect` : seule la commande de cette boutique passe en « récupérée » ; la tournée passe en `DELIVERING` à la dernière collecte
-- [ ] T037 [US2] Écrire `POST /api/runs/:id/deliver` : un seul code, toutes les commandes de la tournée passent en « livrée », encaissement espèces sur le total
+- [x] T036 [US2] Écrire `POST /api/deliveries/:id/collect` : seule la commande de cette boutique passe en « récupérée » ; la tournée passe en `DELIVERING` à la dernière collecte
+- [x] T037 [US2] Écrire `POST /api/runs/:id/deliver` : un seul code, toutes les commandes de la tournée passent en « livrée », encaissement espèces sur le total
 - [x] T038 [US2] Définir et implémenter la rémunération d'une tournée dans `apps/api/src/modules/deliveries/deliveries.service.ts` — **la formule n'est définie ni par la spec ni par l'existant, elle doit être arbitrée avant cette tâche**
 - [x] T039 [US2] Renseigner `shop_count`, `total_distance_km` et `offers_sent` à chaque étape, et `outcome` à l'issue (FR-020a)
 

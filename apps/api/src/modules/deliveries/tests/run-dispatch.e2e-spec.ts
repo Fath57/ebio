@@ -1,4 +1,5 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
+import type { INestApplication } from '@nestjs/common'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createUserData } from '../../../factories/user.factory'
 /**
@@ -128,7 +129,9 @@ async function seed(em: EntityManager): Promise<Fixture> {
 
 describe('diffusion d\'une tournée (e2e)', () => {
   beforeEach(async (context) => {
-    const { orm, app } = await initializeTestApp({ orm: context.orm }, {
+    // Deux connexions : le règlement du livreur ouvre sa propre transaction
+    // pendant que la remise tient la sienne.
+    const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
       // Deux modules que l'application enregistre globalement et qu'il faut
       // nommer ici : les rôles (pour le garde CASL) et l'audit.
       imports: [RolesModule, AuditModule, DeliveriesModule],
@@ -198,5 +201,168 @@ describe('diffusion d\'une tournée (e2e)', () => {
     expect(proposee).toBeDefined()
     expect(proposee?.stops).toHaveLength(2)
     expect(Number(proposee?.courier_earning)).toBe(720)
+  })
+
+  describe('collecte et remise', () => {
+    async function tourneeAcceptee(context: { em: unknown, app: INestApplication }) {
+      const em = context.em as EntityManager
+      const fixture = await seed(em)
+      await context.app.get(DispatchService).startRunDispatch(fixture.runId)
+      await context.app.get(DeliveriesService).acceptRun(fixture.runId, fixture.courierUserId)
+      return fixture
+    }
+
+    it('ne fait avancer que la commande de la boutique collectée', async (context) => {
+      const { em, app } = context
+      const fixture = await tourneeAcceptee(context)
+      const deliveries = app.get(DeliveriesService)
+
+      await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
+
+      const rows = await (em as EntityManager).getConnection().execute(
+        `SELECT d.id, d.status, o.status AS order_status
+         FROM deliveries d JOIN orders o ON o.id = d.order_id
+         WHERE d.delivery_run_id = ? ORDER BY d.id = ? DESC`,
+        [fixture.runId, fixture.deliveryIds[0]],
+      ) as Array<{ id: string, status: string, order_status: string }>
+
+      const collectee = rows.find(row => row.id === fixture.deliveryIds[0])!
+      const autre = rows.find(row => row.id !== fixture.deliveryIds[0])!
+      expect(collectee.status).toBe('PICKED_UP')
+      expect(collectee.order_status).toBe('IN_DELIVERY')
+      // L'autre boutique n'a rien vu passer : c'est FR-017.
+      expect(autre.status).toBe('ACCEPTED')
+      expect(autre.order_status).toBe('READY')
+
+      const [run] = await (em as EntityManager).getConnection().execute(
+        `SELECT status, confirmation_code FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, confirmation_code: string | null }>
+      expect(run.status).toBe('COLLECTING')
+      expect(run.confirmation_code).toMatch(/^\d{4}$/)
+    })
+
+    it('met la tournée en route à la dernière collecte, avec un seul code', async (context) => {
+      const { em, app } = context
+      const fixture = await tourneeAcceptee(context)
+      const deliveries = app.get(DeliveriesService)
+
+      await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
+      const [apresPremiere] = await (em as EntityManager).getConnection().execute(
+        `SELECT confirmation_code FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ confirmation_code: string }>
+
+      await deliveries.collect(fixture.deliveryIds[1], fixture.courierUserId)
+
+      const [run] = await (em as EntityManager).getConnection().execute(
+        `SELECT status, confirmation_code FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, confirmation_code: string }>
+      expect(run.status).toBe('DELIVERING')
+      // Le code ne change pas en cours de route.
+      expect(run.confirmation_code).toBe(apresPremiere.confirmation_code)
+
+      const courses = await (em as EntityManager).getConnection().execute(
+        `SELECT status, confirmation_code FROM deliveries WHERE delivery_run_id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, confirmation_code: string }>
+      expect(courses.every(row => row.status === 'IN_TRANSIT')).toBe(true)
+      expect(new Set(courses.map(row => row.confirmation_code))).toEqual(new Set([run.confirmation_code]))
+    })
+
+    it('refuse un mauvais code, puis livre toutes les commandes d\'un coup', async (context) => {
+      const { em, app } = context
+      const fixture = await tourneeAcceptee(context)
+      const deliveries = app.get(DeliveriesService)
+      await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
+      await deliveries.collect(fixture.deliveryIds[1], fixture.courierUserId)
+
+      const [run] = await (em as EntityManager).getConnection().execute(
+        `SELECT confirmation_code FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ confirmation_code: string }>
+      const faux = run.confirmation_code === '0000' ? '1111' : '0000'
+
+      await expect(
+        deliveries.deliverRun(fixture.runId, fixture.courierUserId, { proofType: 'CODE', code: faux }),
+      ).rejects.toThrow()
+
+      // Un code refusé ne laisse rien derrière lui : la tournée roule encore.
+      const [avant] = await (em as EntityManager).getConnection().execute(
+        `SELECT status FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string }>
+      expect(avant.status).toBe('DELIVERING')
+
+      await deliveries.deliverRun(fixture.runId, fixture.courierUserId, {
+        proofType: 'CODE',
+        code: run.confirmation_code,
+      })
+
+      const courses = await (em as EntityManager).getConnection().execute(
+        `SELECT d.status, o.status AS order_status
+         FROM deliveries d JOIN orders o ON o.id = d.order_id
+         WHERE d.delivery_run_id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, order_status: string }>
+      expect(courses).toHaveLength(2)
+      expect(courses.every(row => row.status === 'DELIVERED')).toBe(true)
+      expect(courses.every(row => row.order_status === 'DELIVERED')).toBe(true)
+
+      const [apres] = await (em as EntityManager).getConnection().execute(
+        `SELECT status, delivered_at FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, delivered_at: string | null }>
+      expect(apres.status).toBe('DELIVERED')
+      expect(apres.delivered_at).not.toBeNull()
+    })
+
+    it('règle le livreur une seule fois, sur le gain de la tournée', async (context) => {
+      const { em, app } = context
+      const fixture = await tourneeAcceptee(context)
+      const deliveries = app.get(DeliveriesService)
+      await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
+      await deliveries.collect(fixture.deliveryIds[1], fixture.courierUserId)
+
+      const [run] = await (em as EntityManager).getConnection().execute(
+        `SELECT confirmation_code FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ confirmation_code: string }>
+      const remettre = () => deliveries.deliverRun(fixture.runId, fixture.courierUserId, {
+        proofType: 'CODE',
+        code: run.confirmation_code,
+      })
+
+      await remettre()
+
+      // Le gain est celui de la tournée (720), pas la somme de frais par
+      // commande — les commandes d'un panier unifié en portent zéro.
+      const gains = await (em as EntityManager).getConnection().execute(
+        `SELECT amount FROM wallet_transactions
+         WHERE delivery_run_id = ? AND type = 'DELIVERY_EARNING'`,
+        [fixture.runId],
+      ) as Array<{ amount: string }>
+      expect(gains).toHaveLength(1)
+      expect(Number(gains[0].amount)).toBe(720)
+
+      // Et la part d'eBio : 800 de frais moins 720 de gain.
+      const part = await (em as EntityManager).getConnection().execute(
+        `SELECT amount FROM wallet_transactions
+         WHERE delivery_run_id = ? AND type = 'PLATFORM_DELIVERY_SHARE'`,
+        [fixture.runId],
+      ) as Array<{ amount: string }>
+      expect(part).toHaveLength(1)
+      expect(Number(part[0].amount)).toBe(80)
+
+      // Rejouer la remise ne paie pas deux fois.
+      await remettre().catch(() => undefined)
+      const apres = await (em as EntityManager).getConnection().execute(
+        `SELECT count(*)::int AS n FROM wallet_transactions
+         WHERE delivery_run_id = ? AND type = 'DELIVERY_EARNING'`,
+        [fixture.runId],
+      ) as Array<{ n: number }>
+      expect(apres[0].n).toBe(1)
+    })
   })
 })

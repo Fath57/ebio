@@ -15,6 +15,8 @@ export interface WalletMovement {
   paymentId?: string
   withdrawalId?: string
   deliveryId?: string
+  /** Règlement d'une tournée entière, et non d'une course. */
+  deliveryRunId?: string
   /** COMMISSION_DEBIT / DELIVERY_COMMISSION may push the balance below zero (cash debt). */
   allowNegative?: boolean
 }
@@ -147,6 +149,7 @@ export class WalletService {
         payment: movement.paymentId ?? null,
         withdrawalId: movement.withdrawalId ?? null,
         deliveryId: movement.deliveryId ?? null,
+        deliveryRunId: movement.deliveryRunId ?? null,
         description: movement.description,
       })
 

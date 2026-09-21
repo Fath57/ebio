@@ -119,6 +119,23 @@ export class DeliveryRun {
   @Property({ fieldName: 'accepted_at', type: 'Date', nullable: true })
   acceptedAt?: Date | null
 
+  @Property({ fieldName: 'collecting_at', type: 'Date', nullable: true })
+  collectingAt?: Date | null
+
+  @Property({ fieldName: 'delivering_at', type: 'Date', nullable: true })
+  deliveringAt?: Date | null
+
+  @Property({ fieldName: 'delivered_at', type: 'Date', nullable: true })
+  deliveredAt?: Date | null
+
+  /**
+   * Code de remise, à quatre chiffres, tiré à la première collecte et montré
+   * à l'acheteur. Un seul pour toute la tournée : l'acheteur reçoit une fois,
+   * il n'a pas à réciter un code par boutique.
+   */
+  @Property({ fieldName: 'confirmation_code', length: 4, nullable: true })
+  confirmationCode?: string | null
+
   /** Rayon de diffusion courant, élargi par le cron jusqu'à 25 km. */
   @Property({ fieldName: 'broadcast_radius_km', type: 'float', default: 5 })
   broadcastRadiusKm: number = 5

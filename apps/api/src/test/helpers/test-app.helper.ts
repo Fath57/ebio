@@ -29,6 +29,13 @@ export interface TestAppContext {
 
 interface InitializeTestAppOptions {
   orm: MikroORM
+  /**
+   * Taille du pool de connexions. Une seule suffit à la plupart des tests et
+   * garde l'isolation stricte, mais un flux qui ouvre sa propre transaction —
+   * le portefeuille, par exemple — en réclame une seconde et resterait sinon
+   * bloqué jusqu'au délai de knex.
+   */
+  poolMax?: number
 }
 
 /**
@@ -48,7 +55,7 @@ export async function initializeTestApp(options: InitializeTestAppOptions, metad
       contextName: undefined,
       pool: {
         min: 0,
-        max: 1,
+        max: options.poolMax ?? 1,
       },
     }
     const mikroOrmModule = await MikroOrmModule.forRoot(testOrmOptions)

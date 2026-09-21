@@ -5,7 +5,7 @@
 -- les migrations récentes, donc `migration:up` sans `--only` échoue sur les
 -- anciennes. Une fois ce fichier joué, enregistrer le nom de la migration avec
 -- `migration:up --only Migration20260921120000 Migration20260921190000
---  Migration20260922090000` (les
+--  Migration20260922090000 Migration20260922140000` (les
 -- ordres sont idempotents).
 --
 -- Couvre les deux migrations : les tables de regroupement, et le bornage des
@@ -129,6 +129,22 @@ ALTER TABLE "delivery_offers" DROP CONSTRAINT IF EXISTS "delivery_offers_target_
 
 ALTER TABLE "delivery_offers" ADD CONSTRAINT "delivery_offers_target_check"
       CHECK (("delivery_id" IS NULL) <> ("delivery_run_id" IS NULL));
+
+-- La remise d'une tournée : un seul code, et ses horodatages.
+ALTER TABLE "delivery_runs"
+      ADD COLUMN IF NOT EXISTS "confirmation_code" varchar(4) NULL,
+      ADD COLUMN IF NOT EXISTS "collecting_at" timestamptz NULL,
+      ADD COLUMN IF NOT EXISTS "delivering_at" timestamptz NULL,
+      ADD COLUMN IF NOT EXISTS "delivered_at" timestamptz NULL;
+
+-- Le grand livre apprend la tournée : une tournée se règle une fois, sur son
+-- frais à elle, et cette clé rend le règlement rejouable sans double paiement.
+-- Plain uuid sans clé étrangère, comme `delivery_id` : le module portefeuille
+-- n'importe pas le module livraisons, et c'est délibéré.
+ALTER TABLE "wallet_transactions" ADD COLUMN IF NOT EXISTS "delivery_run_id" uuid NULL;
+
+CREATE INDEX IF NOT EXISTS "wallet_transactions_run_idx"
+      ON "wallet_transactions" ("delivery_run_id");
 
 ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");
 

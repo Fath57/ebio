@@ -741,8 +741,255 @@ export class DeliveriesService {
     return delivery
   }
 
+  /**
+   * Collecte chez une boutique d'une tournée.
+   *
+   * Le statut ne bouge que pour **cette** commande (FR-017) : la boutique voit
+   * sa commande partir, les autres continuent d'attendre le livreur. C'est ce
+   * qui laisse l'app fournisseur inchangée — elle ne sait pas qu'une tournée
+   * existe, et elle n'a pas à le savoir.
+   *
+   * Le code de remise, lui, est celui de la tournée : tiré à la première
+   * collecte, annoncé à l'acheteur quand tout est chargé.
+   */
+  async collect(deliveryId: string, userId: string, occurredAt?: string): Promise<Delivery> {
+    const delivery = await this.loadOwnedDelivery(deliveryId, userId)
+    const run = delivery.deliveryRun
+      ? await this.em.findOne(DeliveryRun, { id: delivery.deliveryRun.id }, { populate: ['deliveries'] })
+      : null
+    if (!run) {
+      // Course isolée : rien de neuf, c'est le retrait d'avant les tournées.
+      return this.pickup(deliveryId, userId, occurredAt)
+    }
+
+    this.assertStatus(delivery, DeliveryStatus.ACCEPTED)
+    if (delivery.order.status === OrderStatus.PREPARING || delivery.order.status === OrderStatus.ACCEPTED) {
+      throw new ConflictException('La commande n\'est pas encore prête : la boutique doit d\'abord la marquer prête')
+    }
+
+    const when = await this.clampOccurredAt(delivery, occurredAt)
+    run.confirmationCode = run.confirmationCode ?? String(randomInt(0, 10000)).padStart(4, '0')
+    if (run.status === DeliveryRunStatus.ACCEPTED) {
+      run.status = DeliveryRunStatus.COLLECTING
+      run.collectingAt = when
+    }
+
+    delivery.status = DeliveryStatus.PICKED_UP
+    delivery.pickedUpAt = when
+    // Le code est recopié sur chaque course pour que les écrans par commande,
+    // qui ignorent la tournée, continuent de l'afficher.
+    delivery.confirmationCode = run.confirmationCode
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.PICKED_UP,
+      actorUserId: userId,
+      occurredAt: when,
+      payload: { deliveryRunId: run.id },
+    })
+    await this.em.flush()
+
+    await this.ordersService.applyStatusFromDelivery(delivery.order.id, OrderStatus.IN_DELIVERY)
+
+    const siblings = run.deliveries.getItems()
+    const allCollected = siblings.every(item => item.status !== DeliveryStatus.ACCEPTED)
+    if (!allCollected) {
+      return delivery
+    }
+
+    // Tout est chargé : la tournée roule, et l'acheteur reçoit son code — une
+    // seule fois, pas une par boutique.
+    run.status = DeliveryRunStatus.DELIVERING
+    run.deliveringAt = when
+    for (const item of siblings) {
+      if (item.status === DeliveryStatus.PICKED_UP) {
+        item.status = DeliveryStatus.IN_TRANSIT
+        item.inTransitAt = when
+        this.em.create(DeliveryEvent, {
+          delivery: item,
+          type: DeliveryEventType.IN_TRANSIT,
+          actorUserId: userId,
+          occurredAt: when,
+          payload: { deliveryRunId: run.id },
+        })
+      }
+    }
+    await this.em.flush()
+
+    await this.notificationsService.send({
+      user: delivery.order.buyer,
+      type: NotificationType.DELIVERY_PICKED_UP,
+      title: 'Commande en route',
+      body: run.shopCount > 1
+        ? `Vos ${run.shopCount} commandes sont récupérées. Code de confirmation : ${run.confirmationCode}`
+        : `Votre commande ${delivery.order.orderNumber} a été récupérée. Code de confirmation : ${run.confirmationCode}`,
+      data: { deliveryRunId: run.id, deliveryId: delivery.id, confirmationCode: run.confirmationCode },
+      channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+    })
+
+    return delivery
+  }
+
+  /**
+   * Remise d'une tournée : un code, toutes les commandes livrées.
+   *
+   * L'acheteur n'a qu'un colis en main, il ne récite pas un code par boutique.
+   * Le règlement du livreur se fait ici, une fois, sur le frais de la tournée —
+   * les commandes d'un panier unifié portent zéro, et un règlement par commande
+   * ne lui paierait rien.
+   */
+  async deliverRun(runId: string, userId: string, data: CompleteDelivery): Promise<DeliveryRun> {
+    const profile = await this.getMyProfile(userId)
+    const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['deliveries', 'courier'] })
+    if (!run) {
+      throw new NotFoundException('Tournée introuvable')
+    }
+    if (run.courier?.id !== profile.id) {
+      throw new ForbiddenException('Cette tournée ne vous appartient pas')
+    }
+    if (run.status !== DeliveryRunStatus.DELIVERING) {
+      throw new BadRequestException('Toutes les boutiques doivent être collectées avant la remise')
+    }
+
+    const cash = await this.isRunCash(run)
+    if (data.proofType === 'CODE') {
+      if (!run.confirmationCode || run.confirmationCode !== data.code) {
+        throw new UnprocessableEntityException('Code de confirmation invalide')
+      }
+    }
+    else if (cash) {
+      // Le code est le reçu de l'acheteur pour l'argent remis : pas de photo.
+      throw new UnprocessableEntityException('Une tournée payée en espèces se clôture avec le code de confirmation du client')
+    }
+
+    const when = new Date()
+    // La preuve vaut pour la tournée entière : une remise, une preuve. Chaque
+    // course la porte tout de même, parce que les écrans par commande la lisent.
+    const proofType = data.proofType === 'CODE' ? DeliveryProofType.CODE : DeliveryProofType.PHOTO
+    const proofMediaId = data.proofType === 'PHOTO' ? data.mediaId : null
+    for (const delivery of run.deliveries.getItems()) {
+      if (delivery.status === DeliveryStatus.DELIVERED) {
+        continue
+      }
+      delivery.status = DeliveryStatus.DELIVERED
+      delivery.deliveredAt = when
+      delivery.proofType = proofType
+      if (proofMediaId) {
+        delivery.proofMediaId = proofMediaId
+      }
+      this.em.create(DeliveryEvent, {
+        delivery,
+        type: DeliveryEventType.DELIVERED,
+        actorUserId: userId,
+        occurredAt: when,
+        payload: { proofType, deliveryRunId: run.id },
+      })
+    }
+    run.status = DeliveryRunStatus.DELIVERED
+    run.deliveredAt = when
+    await this.em.flush()
+
+    // L'argent du livreur d'abord : un échec ici est journalisé, jamais
+    // remonté — la marchandise est remise, quoi qu'en dise le grand livre.
+    await this.settleRunWallet(run, cash)
+
+    for (const delivery of run.deliveries.getItems()) {
+      await this.ordersService.applyStatusFromDelivery(delivery.order.id, OrderStatus.DELIVERED)
+    }
+
+    return run
+  }
+
+  /** Une tournée est en espèces quand son passage en caisse l'est. */
+  private async isRunCash(run: DeliveryRun): Promise<boolean> {
+    const checkout = await this.em.findOne(Checkout, { id: run.checkout.id })
+    return checkout?.paymentMethod === PaymentMethod.CASH_ON_DELIVERY
+  }
+
+  /**
+   * Règle une tournée avec le portefeuille du livreur, une fois pour toutes.
+   *
+   * En ligne : l'acheteur a payé les frais à la plateforme, le livreur est
+   * crédité de sa part. En espèces : il a gardé tout le frais à la porte, donc
+   * la part d'eBio lui est débitée — le solde peut passer sous zéro, c'est à
+   * cela que servent les recharges. Rejouable : l'écriture porte la tournée.
+   */
+  private async settleRunWallet(run: DeliveryRun, isCash: boolean): Promise<void> {
+    const courier = run.courier
+    if (!courier) {
+      return
+    }
+    try {
+      const already = await this.em.getConnection().execute(
+        `SELECT 1 FROM wallet_transactions
+         WHERE delivery_run_id = ? AND type IN ('DELIVERY_EARNING', 'DELIVERY_COMMISSION') LIMIT 1`,
+        [run.id],
+      )
+      if (already.length > 0) {
+        return
+      }
+
+      const deliveryFee = Math.round(run.deliveryFee)
+      const courierFee = Math.round(run.courierEarning)
+      const amount = isCash ? deliveryFee - courierFee : courierFee
+      if (!(amount > 0)) {
+        return
+      }
+
+      const label = run.shopCount > 1 ? `tournée de ${run.shopCount} boutiques` : 'course'
+      const wallet = await this.walletService.getOrCreate({ courierId: courier.id })
+      if (isCash) {
+        await this.walletService.debit(wallet.id, {
+          type: WalletTransactionType.DELIVERY_COMMISSION,
+          amount,
+          description: `Commission eBio sur la ${label}`,
+          deliveryRunId: run.id,
+          allowNegative: true,
+        })
+      }
+      else {
+        await this.walletService.credit(wallet.id, {
+          type: WalletTransactionType.DELIVERY_EARNING,
+          amount,
+          description: `Gain de la ${label}`,
+          deliveryRunId: run.id,
+        })
+      }
+
+      await this.walletService.post(PlatformAccount.DELIVERY_COMMISSION, 'credit', {
+        type: WalletTransactionType.PLATFORM_DELIVERY_SHARE,
+        amount: deliveryFee - courierFee,
+        description: `Part eBio sur la ${label}`,
+        deliveryRunId: run.id,
+      })
+
+      const formatted = amount.toLocaleString('fr-FR')
+      const courierUser = await this.em.findOneOrFail(User, { id: courier.user.id })
+      await this.notificationsService.send({
+        user: courierUser,
+        type: NotificationType.COURIER_EARNING,
+        title: 'Tournée réglée',
+        body: isCash
+          ? `Commission de ${formatted} FCFA prélevée sur votre portefeuille`
+          : `+${formatted} FCFA crédités sur votre portefeuille`,
+        data: { deliveryRunId: run.id, amount: isCash ? -amount : amount },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+    catch (error) {
+      this.logger.error(
+        `Courier wallet settlement failed for run ${run.id}`,
+        error instanceof Error ? error.stack : String(error),
+      )
+    }
+  }
+
   async start(deliveryId: string, userId: string, occurredAt?: string): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
+    if (delivery.deliveryRun) {
+      // Une tournée part quand la dernière boutique est collectée, pas avant :
+      // la décision appartient à la tournée, pas à l'une de ses courses.
+      throw new ConflictException('Cette course fait partie d\'une tournée : elle démarre quand toutes les boutiques sont collectées')
+    }
     this.assertStatus(delivery, DeliveryStatus.PICKED_UP)
 
     const when = await this.clampOccurredAt(delivery, occurredAt)
@@ -761,6 +1008,12 @@ export class DeliveriesService {
 
   async complete(deliveryId: string, userId: string, data: CompleteDelivery): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
+    if (delivery.deliveryRun) {
+      // Clore une course seule réglerait le livreur sur un frais nul — les
+      // commandes d'un panier unifié en portent zéro, le frais est sur la
+      // tournée. La remise se fait d'un bloc, avec un seul code.
+      throw new ConflictException('Cette course fait partie d\'une tournée : remettez la tournée entière')
+    }
     this.assertStatus(delivery, DeliveryStatus.IN_TRANSIT)
 
     if (data.proofType === 'CODE') {
