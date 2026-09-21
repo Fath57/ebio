@@ -26,6 +26,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { Order, OrderStatus, PaymentMethod } from '../orders/entities/order.entity'
 import { OrdersService } from '../orders/orders.service'
 import { Checkout } from '../payments/entities/checkout.entity'
+import { DeliveryPricingService } from '../settings/delivery-pricing.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
@@ -35,7 +36,7 @@ import { DispatchService } from './dispatch.service'
 import { CourierProfile, VehicleType } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOfferResponse } from './entities/delivery-offer.entity'
-import { DeliveryRun, DeliveryRunStatus } from './entities/delivery-run.entity'
+import { DeliveryRun, DeliveryRunOutcome, DeliveryRunStatus } from './entities/delivery-run.entity'
 import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const ACTIVE_STATUSES = [DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.IN_TRANSIT]
@@ -63,6 +64,7 @@ export class DeliveriesService {
     private readonly ordersService: OrdersService,
     private readonly walletService: WalletService,
     private readonly platformSettings: PlatformSettingsService,
+    private readonly deliveryPricing: DeliveryPricingService,
   ) {}
 
   // ===== Courier profile =====
@@ -739,6 +741,192 @@ export class DeliveriesService {
     })
 
     return delivery
+  }
+
+  /**
+   * L'avancement de la tournée d'une livraison, pour l'acheteur.
+   *
+   * Sans cela, deux commandes d'un même panier affichent deux suivis qui se
+   * contredisent, et rien ne dit à l'acheteur qu'on lui rend la main.
+   */
+  async runSummaryFor(delivery: Delivery): Promise<{ id: string, shopCount: number, collectedCount: number, awaitingBuyerDecision: boolean } | null> {
+    const runId = delivery.deliveryRun?.id
+    if (!runId) {
+      return null
+    }
+    const rows = await this.em.getConnection().execute(
+      `SELECT r.shop_count, r.status,
+              COUNT(*) FILTER (WHERE d.status <> 'ACCEPTED' AND d.status <> 'AWAITING_COURIER') AS collected
+       FROM delivery_runs r
+       JOIN deliveries d ON d.delivery_run_id = r.id
+       WHERE r.id = ?
+       GROUP BY r.shop_count, r.status`,
+      [runId],
+    ) as Array<{ shop_count: number | string, status: string, collected: number | string }>
+    if (rows.length === 0) {
+      return null
+    }
+    return {
+      id: runId,
+      shopCount: Number(rows[0].shop_count),
+      collectedCount: Number(rows[0].collected),
+      awaitingBuyerDecision: rows[0].status === 'BUYER_DECISION',
+    }
+  }
+
+  /**
+   * L'acheteur tranche quand plus personne ne prend sa commande : attendre, ou
+   * annuler et être crédité intégralement, frais de livraison compris.
+   *
+   * L'annulation reste ouverte tant que rien n'est collecté. Dès qu'une
+   * boutique a remis sa marchandise au livreur, elle a engagé des frais : la
+   * commande suit son cours et l'acheteur sera livré.
+   */
+  async buyerDecision(runId: string, userId: string, decision: 'WAIT' | 'CANCEL'): Promise<{ cancelledOrders: number }> {
+    const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['checkout'] })
+    if (!run) {
+      throw new NotFoundException('Tournée introuvable')
+    }
+    if (run.checkout.buyer.id !== userId) {
+      throw new ForbiddenException('Cette commande n\'est pas la vôtre')
+    }
+
+    if (decision === 'WAIT') {
+      // La diffusion n'a jamais cessé : rien à relancer, seulement la question
+      // à ne plus reposer tout de suite.
+      run.buyerPromptedAt = new Date()
+      await this.em.flush()
+      return { cancelledOrders: 0 }
+    }
+
+    const orders = await this.em.find(Order, { checkout: { id: run.checkout.id } }, { populate: ['supplier'] })
+    let cancelled = 0
+    for (const order of orders) {
+      if (order.status === OrderStatus.CANCELLED || order.status === OrderStatus.DELIVERED) {
+        continue
+      }
+      // Marchandise déjà collectée : la course est engagée, on ne la défait pas.
+      const delivery = await this.em.findOne(Delivery, { order: { id: order.id } })
+      if (delivery && delivery.status !== DeliveryStatus.AWAITING_COURIER && delivery.status !== DeliveryStatus.ACCEPTED) {
+        continue
+      }
+      await this.ordersService.applyStatusFromDelivery(order.id, OrderStatus.CANCELLED)
+      cancelled += 1
+
+      const supplierUser = await this.resolveSupplierUser(order)
+      if (supplierUser) {
+        await this.notificationsService.send({
+          user: supplierUser,
+          type: NotificationType.ORDER_CANCELLED,
+          title: 'Commande annulée',
+          body: `La commande ${order.orderNumber} est annulée : aucun livreur n'a pu la prendre en charge.`,
+          data: { orderId: order.id },
+          channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+        })
+      }
+    }
+
+    run.status = DeliveryRunStatus.CANCELLED
+    run.outcome = DeliveryRunOutcome.CANCELLED
+    await this.em.flush()
+
+    // Les frais de livraison n'ont rien couvert : ils reviennent en entier,
+    // par-dessus le remboursement des commandes.
+    const fee = Math.round(run.deliveryFee)
+    if (fee > 0 && cancelled > 0) {
+      const wallet = await this.walletService.getOrCreate({ userId })
+      await this.walletService.credit(wallet.id, {
+        type: WalletTransactionType.REFUND,
+        amount: fee,
+        description: 'Remboursement des frais de livraison — aucun livreur disponible',
+        deliveryRunId: run.id,
+      })
+      run.deliveryFee = 0
+      await this.em.flush()
+    }
+
+    return { cancelledOrders: cancelled }
+  }
+
+  /**
+   * Retire une boutique de la tournée d'un panier, et dit ce que l'acheteur
+   * doit récupérer sur les frais.
+   *
+   * Une tournée qui perd une collecte coûte moins cher à faire : garder la
+   * différence reviendrait à facturer un trajet qui n'aura pas lieu. Le
+   * nouveau frais est chiffré par les mêmes règles que le devis initial, sur
+   * les boutiques qui restent.
+   *
+   * Si la collecte a déjà eu lieu, rien ne change : le livreur a fait le
+   * trajet, il est payé pour lui (FR-021 — la tournée continue pour les
+   * autres).
+   */
+  async removeSupplierFromRun(input: { checkoutId: string, supplierId: string }): Promise<{ runId: string, refund: number, remainingShops: number } | null> {
+    // Filtrage en mémoire, et non en SQL : `supplier_ids` est du jsonb, sur
+    // lequel `LIKE` n'existe pas. Un panier compte de toute façon une poignée
+    // de tournées.
+    const runs = await this.em.find(
+      DeliveryRun,
+      { checkout: { id: input.checkoutId } },
+      { populate: ['deliveries'] },
+    )
+    const run = runs.find(candidate => candidate.supplierIds.includes(input.supplierId))
+    if (!run) {
+      return null
+    }
+
+    const deliveries = run.deliveries.getItems()
+    const leaving = deliveries.find(delivery => delivery.order.supplier.id === input.supplierId)
+    const collected = leaving !== undefined && leaving.status !== DeliveryStatus.ACCEPTED
+      && leaving.status !== DeliveryStatus.AWAITING_COURIER
+
+    if (leaving) {
+      leaving.deliveryRun = undefined
+      if (!collected) {
+        leaving.status = DeliveryStatus.CANCELLED
+      }
+    }
+    const remaining = run.supplierIds.filter(id => id !== input.supplierId)
+    run.supplierIds = remaining
+    run.shopCount = remaining.length
+    run.pickupOrder = run.pickupOrder.filter(id => id !== leaving?.id)
+
+    // Plus rien à collecter : la tournée n'a plus d'objet.
+    if (remaining.length === 0) {
+      run.status = DeliveryRunStatus.CANCELLED
+      run.outcome = DeliveryRunOutcome.CANCELLED
+      const refundAll = collected ? 0 : Math.round(run.deliveryFee)
+      run.deliveryFee = collected ? run.deliveryFee : 0
+      await this.em.flush()
+      await this.dispatchService.cancelPendingRunOffer(run.id)
+      return { runId: run.id, refund: refundAll, remainingShops: 0 }
+    }
+
+    // Le livreur a déjà fait ce trajet : on ne le lui reprend pas, et on ne
+    // rend rien non plus — le kilomètre a été parcouru.
+    if (collected) {
+      await this.em.flush()
+      return { runId: run.id, refund: 0, remainingShops: remaining.length }
+    }
+
+    const checkout = await this.em.findOne(Checkout, { id: input.checkoutId })
+    const quote = await this.deliveryPricing.quoteRun({
+      supplierIds: remaining,
+      itemsTotal: checkout?.itemsTotal ?? 0,
+      isDelivery: true,
+      latitude: checkout?.deliveryLatitude,
+      longitude: checkout?.deliveryLongitude,
+    })
+    const nextFee = Math.round(quote.fee ?? run.deliveryFee)
+    const refund = Math.max(0, Math.round(run.deliveryFee) - nextFee)
+
+    const rate = await this.platformSettings.getDeliveryCommissionRate()
+    run.deliveryFee = nextFee
+    run.courierEarning = computeCourierFee(nextFee, rate)
+    run.totalDistanceKm = quote.distanceKm ?? undefined
+    await this.em.flush()
+
+    return { runId: run.id, refund, remainingShops: remaining.length }
   }
 
   /**

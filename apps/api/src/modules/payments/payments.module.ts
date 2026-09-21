@@ -1,10 +1,13 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
-import { Module } from '@nestjs/common'
+import { forwardRef, Module } from '@nestjs/common'
+import { DeliveriesModule } from '../deliveries/deliveries.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { Order } from '../orders/entities/order.entity'
 import { OrderEmailsModule } from '../orders/order-emails.module'
 import { WalletModule } from '../wallet/wallet.module'
+import { CheckoutsController } from './checkouts.controller'
 import { CommissionService } from './commission.service'
+import { CompensationService } from './compensation.service'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { EscrowSchedulerService } from './escrow-scheduler.service'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
@@ -23,9 +26,11 @@ import { ReceiptService } from './receipt.service'
     MikroOrmModule.forFeature([Payment, PaymentMethod, Order]),
     NotificationsModule,
     WalletModule,
+    forwardRef(() => DeliveriesModule),
   ],
   controllers: [
     PaymentsController,
+    CheckoutsController,
     PaymentsWebhookController,
     PaymentMethodAdminController,
     PaymentMethodPublicController,
@@ -37,7 +42,8 @@ import { ReceiptService } from './receipt.service'
     CommissionService,
     ReceiptService,
     EscrowSchedulerService,
+    CompensationService,
   ],
-  exports: [PaymentsService, PaymentMethodService, CommissionService, ReceiptService],
+  exports: [PaymentsService, PaymentMethodService, CommissionService, ReceiptService, CompensationService],
 })
 export class PaymentsModule {}

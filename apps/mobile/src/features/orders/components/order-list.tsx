@@ -36,7 +36,13 @@ interface DeliveryRun {
    * Renseigné quand la livraison fait partie d'une tournée. L'acheteur suit
    * alors une seule progression, même si son panier a produit deux commandes.
    */
-  run: { id: string, shopCount: number, collectedCount: number } | null
+  run: {
+    id: string
+    shopCount: number
+    collectedCount: number
+    /** La plateforme n'a plus de recours : à l'acheteur de trancher. */
+    awaitingBuyerDecision: boolean
+  } | null
 }
 
 /**
@@ -47,8 +53,14 @@ interface DeliveryRun {
  */
 function runProgressLabel(delivery: DeliveryRun): string | null {
   const run = delivery.run
+  if (run !== null && run.awaitingBuyerDecision) {
+    return 'Aucun livreur disponible — attendre ou annuler ?'
+  }
   if (run === null || run.shopCount <= 1) {
     return RUN_LABELS[delivery.status]
+  }
+  if (run.awaitingBuyerDecision) {
+    return 'Aucun livreur disponible — attendre ou annuler ?'
   }
   if (delivery.status === 'AWAITING_COURIER') {
     return `Recherche d’un livreur pour vos ${run.shopCount} boutiques…`

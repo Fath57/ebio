@@ -229,6 +229,7 @@ export class DeliveriesMapper {
     audience: DeliveryAudience,
     events: DeliveryEvent[],
     buyerRating: CourierRating | null = null,
+    run: DeliveryResponse['run'] = null,
   ): DeliveryResponse {
     const order = delivery.order
     const showBuyerContact = audience === 'courier' || audience === 'admin'
@@ -250,6 +251,7 @@ export class DeliveriesMapper {
       pickupAddress: delivery.pickupAddress,
       dropoffAddress: delivery.dropoffAddress,
       supplierShopName: order.supplier.shopName,
+      run,
       buyerContact: showBuyerContact
         ? { name: order.buyer.name, phone: order.buyer.phone ?? null }
         : null,

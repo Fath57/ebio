@@ -39,6 +39,8 @@ function buildService() {
     debit: vi.fn().mockResolvedValue(0),
   }
   const settings = { getDeliveryCommissionRate: vi.fn().mockResolvedValue(0.1), getCourierMaxDebt: vi.fn().mockResolvedValue(0) }
+  // Rechiffrage d'une tournée amputée d'une boutique.
+  const pricing = { quoteRun: vi.fn().mockResolvedValue({ fee: 0, distanceKm: null, reason: 'FLAT' }) }
   const service = new DeliveriesService(
     em as never,
     notifications as never,
@@ -46,8 +48,9 @@ function buildService() {
     orders as never,
     wallet as never,
     settings as never,
+    pricing as never,
   )
-  return { service, em, execute, notifications, dispatch, orders, wallet, settings }
+  return { service, em, execute, notifications, dispatch, orders, wallet, settings, pricing }
 }
 
 const validProfile = {

@@ -19,6 +19,7 @@ import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
 import { OrdersService } from '../../orders/orders.service'
+import { CompensationService } from '../../payments/compensation.service'
 import { DeliveriesMapper } from '../deliveries.mapper'
 import { DeliveriesModule } from '../deliveries.module'
 import { DeliveriesService } from '../deliveries.service'
@@ -363,7 +364,12 @@ describe('diffusion d\'une tournée (e2e)', () => {
       // Les deux commandes pointent la même tournée, au même avancement : c'est
       // ce qui permet à l'acheteur de suivre une progression et non deux.
       for (const summary of avant.values()) {
-        expect(summary.run).toEqual({ id: fixture.runId, shopCount: 2, collectedCount: 0 })
+        expect(summary.run).toEqual({
+          id: fixture.runId,
+          shopCount: 2,
+          collectedCount: 0,
+          awaitingBuyerDecision: false,
+        })
       }
 
       await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
@@ -418,6 +424,123 @@ describe('diffusion d\'une tournée (e2e)', () => {
         [fixture.runId],
       ) as Array<{ n: number }>
       expect(apres[0].n).toBe(1)
+    })
+  })
+
+  describe('quand une boutique défaille', () => {
+    it('rend le montant de la commande et l\'écart de frais, une seule fois', async (context) => {
+      const { em, app } = context
+      const fixture = await seed(em as EntityManager)
+      const compensation = app.get(CompensationService)
+      const db = (em as EntityManager).getConnection()
+
+      const [order] = await db.execute(
+        `SELECT o.id, o.total_amount FROM orders o
+         JOIN deliveries d ON d.order_id = o.id
+         WHERE d.id = ?`,
+        [fixture.deliveryIds[0]],
+      ) as Array<{ id: string, total_amount: string }>
+
+      await db.execute(`UPDATE orders SET status = 'CANCELLED' WHERE id = ?`, [order.id])
+      const result = await compensation.compensateOrder(order.id, 'rupture de stock')
+
+      expect(result.amount).toBe(Math.round(Number(order.total_amount)))
+      expect(result.alreadyDone).toBe(false)
+      // Une commande sur deux est tombée : le panier n'est pas entièrement rendu.
+      expect(result.checkoutStatus).toBe('PARTIALLY_REFUNDED')
+
+      // Un seul remboursement de commande. L'ajustement de frais, lui, porte
+      // la tournée : c'est ce qui l'empêche de passer pour le remboursement.
+      const credits = await db.execute(
+        `SELECT amount FROM wallet_transactions
+         WHERE order_id = ? AND type = 'REFUND' AND delivery_run_id IS NULL`,
+        [order.id],
+      ) as Array<{ amount: string }>
+      expect(credits).toHaveLength(1)
+      expect(Number(credits[0].amount)).toBe(Math.round(Number(order.total_amount)))
+
+      // La boutique quitte la tournée : il n'en reste qu'une.
+      const [run] = await db.execute(
+        `SELECT shop_count, jsonb_array_length(supplier_ids) AS shops FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ shop_count: number, shops: number }>
+      expect(run.shop_count).toBe(1)
+      expect(Number(run.shops)).toBe(1)
+
+      // Rejouer ne crédite pas deux fois.
+      const rejeu = await compensation.compensateOrder(order.id, 'rejeu')
+      expect(rejeu.alreadyDone).toBe(true)
+      const apres = await db.execute(
+        `SELECT count(*)::int AS n FROM wallet_transactions
+         WHERE order_id = ? AND type = 'REFUND' AND delivery_run_id IS NULL`,
+        [order.id],
+      ) as Array<{ n: number }>
+      expect(apres[0].n).toBe(1)
+    })
+
+    it('dégroupe la tournée sans preneur et rediffuse chaque course', async (context) => {
+      const { em, app } = context
+      const fixture = await seed(em as EntityManager)
+      const dispatch = app.get(DispatchService)
+      const db = (em as EntityManager).getConnection()
+
+      await dispatch.startRunDispatch(fixture.runId)
+      // On recule l'ouverture de la diffusion de 31 minutes : le cron doit
+      // alors dégrouper plutôt que de faire attendre.
+      await db.execute(
+        `UPDATE delivery_runs SET dispatch_started_at = NOW() - INTERVAL '31 minutes' WHERE id = ?`,
+        [fixture.runId],
+      )
+
+      await dispatch.escalateStaleRuns()
+
+      const [run] = await db.execute(
+        `SELECT status, outcome, delivery_fee FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, outcome: string, delivery_fee: string }>
+      expect(run.status).toBe('CANCELLED')
+      // L'échec est une donnée : la tournée n'est pas effacée.
+      expect(run.outcome).toBe('UNSERVED')
+
+      const courses = await db.execute(
+        `SELECT delivery_run_id, status, delivery_fee FROM deliveries WHERE id IN (?, ?)`,
+        fixture.deliveryIds,
+      ) as Array<{ delivery_run_id: string | null, status: string, delivery_fee: string }>
+      expect(courses).toHaveLength(2)
+      expect(courses.every(row => row.delivery_run_id === null)).toBe(true)
+      expect(courses.every(row => row.status === 'AWAITING_COURIER')).toBe(true)
+      // Chaque course reprend sa part du frais, sans quoi elle ne serait
+      // payable à personne.
+      expect(courses.every(row => Number(row.delivery_fee) === 400)).toBe(true)
+    })
+
+    it('alerte le back-office à 15 minutes sans dégrouper', async (context) => {
+      const { em, app } = context
+      const fixture = await seed(em as EntityManager)
+      const dispatch = app.get(DispatchService)
+      const db = (em as EntityManager).getConnection()
+
+      await dispatch.startRunDispatch(fixture.runId)
+      await db.execute(
+        `UPDATE delivery_runs SET dispatch_started_at = NOW() - INTERVAL '16 minutes' WHERE id = ?`,
+        [fixture.runId],
+      )
+
+      await dispatch.escalateStaleRuns()
+
+      const [run] = await db.execute(
+        `SELECT status, escalated_at FROM delivery_runs WHERE id = ?`,
+        [fixture.runId],
+      ) as Array<{ status: string, escalated_at: string | null }>
+      expect(run.status).toBe('ESCALATED')
+      expect(run.escalated_at).not.toBeNull()
+
+      // La diffusion continue : les courses restent dans la tournée.
+      const courses = await db.execute(
+        `SELECT delivery_run_id FROM deliveries WHERE id IN (?, ?)`,
+        fixture.deliveryIds,
+      ) as Array<{ delivery_run_id: string | null }>
+      expect(courses.every(row => row.delivery_run_id === fixture.runId)).toBe(true)
     })
   })
 })

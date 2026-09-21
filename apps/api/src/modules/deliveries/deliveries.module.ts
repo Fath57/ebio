@@ -11,7 +11,7 @@ import { CourierFeedbackService } from './courier-feedback.service'
 import { CouriersController } from './couriers.controller'
 import { DeliveriesController } from './deliveries.controller'
 import { DeliveriesService } from './deliveries.service'
-import { ORDER_DELIVERY_HOOKS } from './deliveries.tokens'
+import { DELIVERY_RUN_HOOKS, ORDER_DELIVERY_HOOKS } from './deliveries.tokens'
 import { DispatchService } from './dispatch.service'
 import { RunsController } from './runs.controller'
 
@@ -27,7 +27,8 @@ import { RunsController } from './runs.controller'
     AdminDeliveriesService,
     CourierFeedbackService,
     { provide: ORDER_DELIVERY_HOOKS, useExisting: DeliveriesService },
+    { provide: DELIVERY_RUN_HOOKS, useExisting: DeliveriesService },
   ],
-  exports: [DeliveriesService, DispatchService, ORDER_DELIVERY_HOOKS],
+  exports: [DeliveriesService, DispatchService, ORDER_DELIVERY_HOOKS, DELIVERY_RUN_HOOKS],
 })
 export class DeliveriesModule {}

@@ -23,6 +23,7 @@ import { RouteMapService } from '../email/route-map.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
+import { CompensationService } from '../payments/compensation.service'
 import { Checkout } from '../payments/entities/checkout.entity'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { ProductPromotion, PromotionType } from '../products/entities/product-promotion.entity'
@@ -162,6 +163,7 @@ export class OrdersService {
     private readonly deliveryPricing: DeliveryPricingService,
     private readonly promotionsService: PromotionsService,
     private readonly orderEmails: OrderEmailsService,
+    private readonly compensationService: CompensationService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -360,19 +362,23 @@ export class OrdersService {
     // Avancement des tournées concernées : combien de leurs boutiques sont
     // déjà collectées. L'acheteur suit une progression, pas deux.
     const runIds = [...new Set(deliveries.map(d => d.deliveryRun?.id).filter((id): id is string => id != null))]
-    const progress = new Map<string, { shopCount: number, collectedCount: number }>()
+    const progress = new Map<string, { shopCount: number, collectedCount: number, awaitingBuyerDecision: boolean }>()
     if (runIds.length > 0) {
       const rows = await this.em.getConnection().execute(
-        `SELECT r.id, r.shop_count,
+        `SELECT r.id, r.shop_count, r.status,
                 COUNT(*) FILTER (WHERE d.status <> 'ACCEPTED' AND d.status <> 'AWAITING_COURIER') AS collected
          FROM delivery_runs r
          JOIN deliveries d ON d.delivery_run_id = r.id
          WHERE r.id IN (${runIds.map(() => '?').join(', ')})
-         GROUP BY r.id, r.shop_count`,
+         GROUP BY r.id, r.shop_count, r.status`,
         runIds,
-      ) as Array<{ id: string, shop_count: number | string, collected: number | string }>
+      ) as Array<{ id: string, shop_count: number | string, status: string, collected: number | string }>
       for (const row of rows) {
-        progress.set(row.id, { shopCount: Number(row.shop_count), collectedCount: Number(row.collected) })
+        progress.set(row.id, {
+          shopCount: Number(row.shop_count),
+          collectedCount: Number(row.collected),
+          awaitingBuyerDecision: row.status === 'BUYER_DECISION',
+        })
       }
     }
 
@@ -1198,6 +1204,15 @@ export class OrdersService {
    */
   private async onOrderCancelled(order: Order): Promise<void> {
     await this.promoCodesService.release(order.id)
+
+    // Commande issue d'un panier unifié : l'argent ne peut pas être repris
+    // chez le prestataire — un seul paiement couvre N commandes et le Mobile
+    // Money ne sait pas en rendre une part. Le dédommagement passe par le
+    // portefeuille eBio, et il ajuste aussi les frais de la tournée amputée.
+    if (order.checkout) {
+      await this.compensationService.compensateOrder(order.id, 'commande annulée')
+      return
+    }
 
     if (order.paymentMethod === PaymentMethod.WALLET) {
       const payment = await this.em.findOne(Payment, {

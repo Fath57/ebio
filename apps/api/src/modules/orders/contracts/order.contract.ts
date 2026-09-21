@@ -121,6 +121,11 @@ export const orderDeliverySummarySchema = z.object({
     shopCount: z.number().int().positive(),
     /** Boutiques déjà collectées, sur `shopCount`. */
     collectedCount: z.number().int().min(0),
+    /**
+     * Vrai lorsque la plateforme a épuisé ses recours et rend la main à
+     * l'acheteur : attendre encore, ou annuler et être recrédité (FR-022c).
+     */
+    awaitingBuyerDecision: z.boolean(),
   }).nullable(),
   updatedAt: z.string().datetime(),
 }).meta({

@@ -61,7 +61,8 @@ export class DeliveriesController {
     const { delivery, audience } = await this.deliveriesService.getByOrderForRequester(orderId, session.user.id)
     const events = await this.deliveriesService.getEvents(delivery.id)
     const rating = await this.feedbackService.findRating(delivery.id)
-    return DeliveriesMapper.toResponse(delivery, audience, events, rating)
+    const run = await this.deliveriesService.runSummaryFor(delivery)
+    return DeliveriesMapper.toResponse(delivery, audience, events, rating, run)
   }
 
   @Get(':id')
@@ -74,7 +75,8 @@ export class DeliveriesController {
     const { delivery, audience } = await this.deliveriesService.getForRequester(id, session.user.id)
     const events = await this.deliveriesService.getEvents(delivery.id)
     const rating = await this.feedbackService.findRating(delivery.id)
-    return DeliveriesMapper.toResponse(delivery, audience, events, rating)
+    const run = await this.deliveriesService.runSummaryFor(delivery)
+    return DeliveriesMapper.toResponse(delivery, audience, events, rating, run)
   }
 
   @Post(':id/accept')

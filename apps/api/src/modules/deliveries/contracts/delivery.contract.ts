@@ -263,6 +263,17 @@ export const deliveryResponseSchema = z.object({
   pickupAddress: z.string(),
   dropoffAddress: z.string(),
   supplierShopName: z.string(),
+  /**
+   * La tournée dont cette livraison fait partie. Elle porte l'avancement que
+   * l'acheteur suit — une progression pour tout son panier — et le moment où
+   * la plateforme lui rend la main faute de livreur.
+   */
+  run: z.object({
+    id: z.string().uuid(),
+    shopCount: z.number().int().positive(),
+    collectedCount: z.number().int().min(0),
+    awaitingBuyerDecision: z.boolean(),
+  }).nullable(),
   /** Buyer contact — only present for the assigned courier. */
   buyerContact: deliveryContactSchema.nullable(),
   /** Courier identity — present for supplier/buyer once assigned. */
@@ -408,3 +419,14 @@ export const courierCandidateSchema = z.object({
 
 export type AssignDelivery = z.infer<typeof assignDeliverySchema>
 export type CourierCandidate = z.infer<typeof courierCandidateSchema>
+
+/**
+ * Ce que l'acheteur répond quand aucun livreur ne prend sa commande, même
+ * dégroupée. Deux issues seulement : patienter, ou récupérer son argent.
+ */
+export const buyerDecisionSchema = z.object({
+  decision: z.enum(['WAIT', 'CANCEL']),
+}).meta({
+  title: 'BuyerDecision',
+  description: 'Attendre encore, ou annuler et être recrédité',
+})

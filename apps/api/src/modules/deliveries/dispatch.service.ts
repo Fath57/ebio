@@ -2,7 +2,7 @@ import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
-import { orderPickups } from '../../common/delivery-fee'
+import { computeCourierFee, orderPickups } from '../../common/delivery-fee'
 import { User } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -11,11 +11,17 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { CourierProfile } from './entities/courier-profile.entity'
 import { DeliveryEvent, DeliveryEventType } from './entities/delivery-event.entity'
 import { DeliveryOffer, DeliveryOfferResponse } from './entities/delivery-offer.entity'
-import { DeliveryRun, DeliveryRunStatus } from './entities/delivery-run.entity'
+import { DeliveryRun, DeliveryRunOutcome, DeliveryRunStatus } from './entities/delivery-run.entity'
 import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000
+/** Sans preneur passé ce délai, le back-office est alerté (FR-022). */
+const ESCALATE_AFTER_MS = 15 * 60 * 1000
+/** Sans preneur passé ce délai, la tournée se dégroupe (FR-022a). */
+const UNGROUP_AFTER_MS = 30 * 60 * 1000
+/** Après le dégroupage, délai avant de rendre la main à l'acheteur (FR-022c). */
+const PROMPT_AFTER_UNGROUP_MS = 15 * 60 * 1000
 const RADIUS_STEP_KM = 5
 const RADIUS_CAP_KM = 25
 /** Exclusive offer window per courier, then the next one is asked. */
@@ -629,6 +635,160 @@ export class DispatchService {
         await this.startRunDispatch(run.id)
       }
     }
+  }
+
+  /**
+   * Le sort d'une tournée que personne ne prend, en trois temps.
+   *
+   * 15 minutes : le back-office est alerté et peut attribuer un livreur à la
+   * main. La diffusion continue pendant ce temps — l'alerte n'interrompt rien.
+   *
+   * 30 minutes : la tournée se **dégroupe**. Ses livraisons repartent une par
+   * une, parce que faire attendre l'acheteur pendant que la marchandise est
+   * prête chez des boutiques qui ont préparé est le pire des dénouements. Les
+   * plateformes comparables font de même : quand le lot n'a pas de sens, elles
+   * basculent sur deux livreurs plutôt que sur aucun.
+   *
+   * La main n'est rendue à l'acheteur que si les courses séparées ne trouvent
+   * personne non plus — c'est FR-022c, et c'est le dernier recours.
+   */
+  async escalateStaleRuns(): Promise<void> {
+    const now = Date.now()
+    const waiting = await this.em.find(DeliveryRun, {
+      status: { $in: [DeliveryRunStatus.AWAITING_COURIER, DeliveryRunStatus.ESCALATED] },
+      dispatchStartedAt: { $ne: null },
+    }, { populate: ['deliveries', 'checkout'] })
+
+    for (const run of waiting) {
+      const since = run.dispatchStartedAt ? now - run.dispatchStartedAt.getTime() : 0
+      if (since >= UNGROUP_AFTER_MS) {
+        await this.ungroupRun(run)
+      }
+      else if (since >= ESCALATE_AFTER_MS && run.escalatedAt == null) {
+        run.escalatedAt = new Date()
+        run.status = DeliveryRunStatus.ESCALATED
+        await this.em.flush()
+        this.logger.warn(`Run ${run.id} unserved after 15 min — escalated to the back-office`)
+      }
+    }
+  }
+
+  @Cron('*/60 * * * * *')
+  @EnsureRequestContext()
+  async escalateStaleRunsCron(): Promise<void> {
+    await this.escalateStaleRuns()
+  }
+
+  /**
+   * Dégroupe une tournée : ses livraisons redeviennent des courses isolées et
+   * repartent chacune de son côté.
+   *
+   * La tournée n'est pas supprimée mais close en `UNSERVED` : son échec est
+   * une donnée, c'est elle qui dira plus tard si les seuils de regroupement
+   * sont bien placés.
+   */
+  async ungroupRun(run: DeliveryRun): Promise<void> {
+    const deliveries = run.deliveries.getItems()
+    await this.cancelPendingRunOffer(run.id)
+
+    run.status = DeliveryRunStatus.CANCELLED
+    run.outcome = DeliveryRunOutcome.UNSERVED
+    run.offeredToCourier = null
+    run.offerExpiresAt = null
+    await this.em.flush()
+
+    // Chaque course reprend son propre frais, part de la tournée : c'est ce
+    // qui la rend diffusable seule, et payable seule au livreur.
+    const rate = await this.platformSettings.getDeliveryCommissionRate()
+    const share = deliveries.length > 0 ? Math.round(run.deliveryFee / deliveries.length) : 0
+    for (const delivery of deliveries) {
+      delivery.deliveryRun = undefined
+      delivery.deliveryFee = share
+      delivery.courierFee = computeCourierFee(share, rate)
+      delivery.dispatchPhase = DispatchPhase.TARGETED
+      delivery.offerRound = 0
+      delivery.offeredToCourier = null
+      delivery.offerExpiresAt = null
+      delivery.dispatchStartedAt = new Date()
+      this.em.create(DeliveryEvent, {
+        delivery,
+        type: DeliveryEventType.REASSIGNED,
+        payload: { deliveryRunId: run.id, reason: 'RUN_UNSERVED' },
+      })
+    }
+    await this.em.flush()
+
+    for (const delivery of deliveries) {
+      await this.startDispatch(delivery.id)
+    }
+
+    const buyer = await this.em.findOne(User, { id: run.checkout.buyer.id })
+    if (buyer) {
+      await this.notificationsService.send({
+        user: buyer,
+        type: NotificationType.DELIVERY_REASSIGNED,
+        title: 'Livraison en plusieurs fois',
+        body: `Aucun livreur n'a pu prendre vos ${run.shopCount} boutiques ensemble. Chaque commande part séparément — vous serez livré en plusieurs fois.`,
+        data: { deliveryRunId: run.id },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+    this.logger.warn(`Run ${run.id} ungrouped after 30 min into ${deliveries.length} separate deliveries`)
+  }
+
+  /**
+   * Rendre la main à l'acheteur, mais seulement en dernier recours.
+   *
+   * Une tournée dégroupée dont les courses ne trouvent toujours personne a
+   * épuisé ce que la plateforme sait faire. À ce stade, continuer d'attendre
+   * en silence serait pire que de poser la question : l'acheteur décide
+   * d'attendre encore ou d'annuler et d'être crédité.
+   */
+  async promptBuyersForUnservedRuns(): Promise<void> {
+    const cutoff = new Date(Date.now() - PROMPT_AFTER_UNGROUP_MS)
+    const ungrouped = await this.em.find(DeliveryRun, {
+      status: DeliveryRunStatus.CANCELLED,
+      outcome: DeliveryRunOutcome.UNSERVED,
+      buyerPromptedAt: null,
+      updatedAt: { $lt: cutoff },
+    }, { populate: ['checkout'] })
+
+    for (const run of ungrouped) {
+      // Les courses libérées ont-elles trouvé preneur ? Une seule acceptée
+      // suffit à ne pas déranger l'acheteur : il sera livré.
+      const stillWaiting = await this.em.count(Delivery, {
+        order: { checkout: { id: run.checkout.id } },
+        status: DeliveryStatus.AWAITING_COURIER,
+      })
+      if (stillWaiting === 0) {
+        run.buyerPromptedAt = new Date()
+        await this.em.flush()
+        continue
+      }
+
+      run.buyerPromptedAt = new Date()
+      run.status = DeliveryRunStatus.BUYER_DECISION
+      await this.em.flush()
+
+      const buyer = await this.em.findOne(User, { id: run.checkout.buyer.id })
+      if (buyer) {
+        await this.notificationsService.send({
+          user: buyer,
+          type: NotificationType.DELIVERY_REASSIGNED,
+          title: 'Aucun livreur disponible',
+          body: 'Nous ne trouvons pas de livreur pour votre commande. Vous pouvez attendre encore, ou annuler et être recrédité intégralement.',
+          data: { deliveryRunId: run.id, buyerDecision: true },
+          channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+        })
+      }
+      this.logger.warn(`Run ${run.id} still unserved after ungrouping — buyer asked to decide`)
+    }
+  }
+
+  @Cron('*/60 * * * * *')
+  @EnsureRequestContext()
+  async promptBuyersCron(): Promise<void> {
+    await this.promptBuyersForUnservedRuns()
   }
 
   /** The targeted courier answered (or the clock ran out): journal and move on. */

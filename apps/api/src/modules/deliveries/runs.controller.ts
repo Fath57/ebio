@@ -6,7 +6,7 @@ import { CanRead, CanUpdate } from '../../common/decorators/check-permissions.de
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
-import { completeDeliverySchema } from './contracts/delivery.contract'
+import { buyerDecisionSchema, completeDeliverySchema } from './contracts/delivery.contract'
 import { DeliveriesMapper } from './deliveries.mapper'
 import { DeliveriesService } from './deliveries.service'
 
@@ -64,6 +64,21 @@ export class RunsController {
   ) {
     const run = await this.deliveriesService.deliverRun(id, session.user.id, body)
     return { runId: run.id, status: run.status, deliveredAt: run.deliveredAt?.toISOString() ?? null }
+  }
+
+  /**
+   * L'acheteur tranche quand personne ne prend sa commande : attendre, ou
+   * annuler et être crédité intégralement, frais compris.
+   */
+  @Post(':id/buyer-decision')
+  @UseGuards(CaslGuard)
+  @CanUpdate('Order')
+  async buyerDecision(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+    @TypedBody(buyerDecisionSchema) body: z.infer<typeof buyerDecisionSchema>,
+  ) {
+    return this.deliveriesService.buyerDecision(id, session.user.id, body.decision)
   }
 
   /** Offre ciblée refusée : le suivant du classement est sollicité aussitôt. */

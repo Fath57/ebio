@@ -30,3 +30,24 @@ export interface OrderDeliveryHooks {
   handleSupplierTakeover: (order: Order) => Promise<void>
   closeForOrder: (order: Order) => Promise<void>
 }
+
+/**
+ * Ce que le module paiements demande au module livraisons quand une commande
+ * tombe. Même raison que ci-dessus : un jeton, pas une dépendance de service,
+ * sinon les deux modules s'importent l'un l'autre.
+ */
+export const DELIVERY_RUN_HOOKS = Symbol('DELIVERY_RUN_HOOKS')
+
+export interface DeliveryRunHooks {
+  /**
+   * Retire une boutique de la tournée d'un panier et rechiffre le trajet.
+   *
+   * Renvoie l'écart de frais à rendre à l'acheteur, ou `null` quand il n'y a
+   * pas de tournée — retrait sur place, ou commande d'avant le panier unifié.
+   * Une tournée qui perd sa dernière boutique est annulée.
+   */
+  removeSupplierFromRun: (input: {
+    checkoutId: string
+    supplierId: string
+  }) => Promise<{ runId: string, refund: number, remainingShops: number } | null>
+}

@@ -178,25 +178,25 @@ calcul de la tournée et la répartition. Le reste est vérifié par le quicksta
 
 ### Tests
 
-- [ ] T044 [P] [US3] Tester l'idempotence du dédommagement dans `apps/api/src/modules/payments/compensation.spec.ts` : deux appels pour la même commande ne produisent qu'un crédit
+- [x] T044 [P] [US3] Tester l'idempotence du dédommagement dans `apps/api/src/modules/payments/compensation.spec.ts` : deux appels pour la même commande ne produisent qu'un crédit
 
 ### API
 
-- [ ] T045 [US3] Écrire `POST /api/checkouts/:id/compensate` dans `apps/api/src/modules/payments/payments.controller.ts`
-- [ ] T046 [US3] Créditer le portefeuille acheteur en `WalletTransactionType.REFUND` du montant exact de la commande, dans `apps/api/src/modules/payments/payments.service.ts`
-- [ ] T047 [US3] Rendre le dédommagement idempotent par commande, de sorte qu'un rejeu ne crédite pas deux fois
-- [ ] T048 [US3] Recalculer le frais de tournée après retrait d'une boutique et créditer l'écart s'il y a lieu
-- [ ] T049 [US3] Faire évoluer le statut du checkout vers `PARTIALLY_REFUNDED`, puis `REFUNDED` quand plus aucune commande ne survit
-- [ ] T050 [US3] Déclencher l'alerte back-office à 15 minutes sans preneur (`escalated_at`) et la rendre visible dans l'écran d'attribution manuelle existant
-- [ ] T051 [US3] Dégrouper la tournée à 30 minutes sans preneur (FR-022a) : libérer ses livraisons, les rediffuser une par une, passer la tournée en `CANCELLED` / `UNSERVED`, prévenir l'acheteur qu'il recevra en plusieurs fois et lui créditer l'écart de frais
-- [ ] T051a [US3] Rendre la décision à l'acheteur (`buyer_prompted_at`) seulement lorsque les livraisons dégroupées restent elles aussi sans preneur (FR-022c), et écrire `POST /api/runs/:id/buyer-decision`
-- [ ] T052 [US3] Sur `CANCEL`, créditer l'intégralité du montant frais compris et prévenir les boutiques concernées
-- [ ] T053 [US3] Poursuivre la tournée quand une boutique annule alors que la collecte a commencé ailleurs, en ne créditant que la part annulée
+- [x] T045 [US3] Écrire `POST /api/checkouts/:id/compensate` dans `apps/api/src/modules/payments/payments.controller.ts`
+- [x] T046 [US3] Créditer le portefeuille acheteur en `WalletTransactionType.REFUND` du montant exact de la commande, dans `apps/api/src/modules/payments/payments.service.ts`
+- [x] T047 [US3] Rendre le dédommagement idempotent par commande, de sorte qu'un rejeu ne crédite pas deux fois
+- [x] T048 [US3] Recalculer le frais de tournée après retrait d'une boutique et créditer l'écart s'il y a lieu
+- [x] T049 [US3] Faire évoluer le statut du checkout vers `PARTIALLY_REFUNDED`, puis `REFUNDED` quand plus aucune commande ne survit
+- [x] T050 [US3] Déclencher l'alerte back-office à 15 minutes sans preneur (`escalated_at`) et la rendre visible dans l'écran d'attribution manuelle existant
+- [x] T051 [US3] Dégrouper la tournée à 30 minutes sans preneur (FR-022a) : libérer ses livraisons, les rediffuser une par une, passer la tournée en `CANCELLED` / `UNSERVED`, prévenir l'acheteur qu'il recevra en plusieurs fois et lui créditer l'écart de frais
+- [x] T051a [US3] Rendre la décision à l'acheteur (`buyer_prompted_at`) seulement lorsque les livraisons dégroupées restent elles aussi sans preneur (FR-022c), et écrire `POST /api/runs/:id/buyer-decision`
+- [x] T052 [US3] Sur `CANCEL`, créditer l'intégralité du montant frais compris et prévenir les boutiques concernées
+- [x] T053 [US3] Poursuivre la tournée quand une boutique annule alors que la collecte a commencé ailleurs, en ne créditant que la part annulée
 
 ### Mobile
 
-- [ ] T054 [P] [US3] Informer l'acheteur du crédit porté à son portefeuille, avec le motif, dans `apps/mobile/src/features/orders/`
-- [ ] T055 [US3] Proposer « attendre ou annuler » à l'acheteur quand aucun livreur n'a pris la tournée, l'annulation restant ouverte tant que rien n'est collecté
+- [x] T054 [P] [US3] Informer l'acheteur du crédit porté à son portefeuille, avec le motif, dans `apps/mobile/src/features/orders/`
+- [x] T055 [US3] Proposer « attendre ou annuler » à l'acheteur quand aucun livreur n'a pris la tournée, l'annulation restant ouverte tant que rien n'est collecté
 
 **Checkpoint** : aucun chemin ne laisse l'acheteur sans argent ni sans réponse.
 

@@ -23,6 +23,7 @@ import {
   Image,
   Linking,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -35,6 +36,7 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { formatTime } from '../../../utils/format-time'
+import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { StarRating } from '../../common/components/star-rating'
 
@@ -286,6 +288,14 @@ export function OrderTracking({
             onOpenCourierChat={onOpenCourierChat}
             onTipCourier={() => onTipCourier(order.supplierId)}
             onInfoLoaded={setDeliveryInfo}
+          />
+        )}
+
+        {/* Aucun livreur, même après dégroupage : la main revient à l'acheteur. */}
+        {deliveryInfo?.run?.awaitingBuyerDecision && (
+          <BuyerDecisionCard
+            runId={deliveryInfo.run.id}
+            onResolved={handleRefresh}
           />
         )}
 
@@ -604,6 +614,49 @@ export function OrderTracking({
 const CARD_SHADOW = shadows.sm
 
 const styles = StyleSheet.create({
+  decisionCard: {
+    borderRadius: radius.lg,
+    padding: spacing[4],
+    gap: spacing[2],
+    marginBottom: spacing[3],
+    borderWidth: 1,
+    borderColor: colors.earth[200],
+  },
+  decisionTitle: {
+    ...typography.h3,
+  },
+  decisionBody: {
+    ...typography.bodyS,
+  },
+  decisionActions: {
+    flexDirection: 'row',
+    gap: spacing[2],
+    marginTop: spacing[1],
+  },
+  decisionSecondary: {
+    minHeight: 48,
+    paddingHorizontal: spacing[4],
+    borderRadius: radius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  decisionSecondaryText: {
+    ...typography.bodyS,
+  },
+  decisionPrimary: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.green[600],
+    paddingHorizontal: spacing[4],
+  },
+  decisionPrimaryText: {
+    ...typography.bodyS,
+    color: colors.neutral[0],
+  },
   screen: {
     flex: 1,
   },
@@ -933,6 +986,14 @@ interface DeliveryInfo {
   pickupPosition: { latitude: number, longitude: number } | null
   confirmationCode: string | null
   failReason: string | null
+  /** Renseigné quand la livraison fait partie d'une tournée. */
+  run: {
+    id: string
+    shopCount: number
+    collectedCount: number
+    /** La plateforme n'a plus de recours : à l'acheteur de trancher. */
+    awaitingBuyerDecision: boolean
+  } | null
 }
 
 const VEHICLE_ICONS = {
@@ -1049,6 +1110,73 @@ function DeliveryLiveMap({ info }: { info: DeliveryInfo }) {
  * Courier block of the tracking screen: who delivers, and the 4-digit code the
  * buyer hands to the courier as proof of delivery.
  */
+/**
+ * Aucun livreur ne prend la commande, même une fois la tournée dégroupée.
+ *
+ * La plateforme a épuisé ses recours : alerte du back-office à 15 minutes,
+ * dégroupage à 30. Continuer d'attendre en silence serait pire que de poser la
+ * question — l'acheteur décide, et l'annulation lui rend tout, frais compris.
+ */
+function BuyerDecisionCard({ runId, onResolved }: { runId: string, onResolved: () => void }) {
+  const { semantic } = useTheme()
+  const [submitting, setSubmitting] = useState(false)
+
+  async function decide(decision: 'WAIT' | 'CANCEL') {
+    if (submitting) {
+      return
+    }
+    setSubmitting(true)
+    try {
+      const res = await apiFetch(`/api/runs/${runId}/buyer-decision`, {
+        method: 'POST',
+        body: JSON.stringify({ decision }),
+      })
+      if (!res.ok) {
+        appAlert('Action impossible', 'Votre choix n\'a pas pu être enregistré. Réessayez.')
+        return
+      }
+      onResolved()
+    }
+    catch {
+      appAlert('Hors connexion', 'Vérifiez votre connexion et réessayez.')
+    }
+    finally {
+      setSubmitting(false)
+    }
+  }
+
+  return (
+    <View style={[styles.decisionCard, { backgroundColor: semantic.bgCard }]}>
+      <Text style={[styles.decisionTitle, { color: semantic.textPrimary }]}>Aucun livreur disponible</Text>
+      <Text style={[styles.decisionBody, { color: semantic.textSecondary }]}>
+        Nous cherchons depuis un moment sans trouver personne. Vous pouvez attendre
+        encore, ou annuler : votre paiement vous est alors recrédité en entier,
+        frais de livraison compris.
+      </Text>
+      <View style={styles.decisionActions}>
+        <Pressable
+          style={[styles.decisionSecondary, { borderColor: semantic.borderLight }]}
+          disabled={submitting}
+          onPress={() => decide('WAIT')}
+          accessibilityRole="button"
+          accessibilityLabel="Attendre encore un livreur"
+        >
+          <Text style={[styles.decisionSecondaryText, { color: semantic.textPrimary }]}>Attendre</Text>
+        </Pressable>
+        <Pressable
+          style={styles.decisionPrimary}
+          disabled={submitting}
+          onPress={() => decide('CANCEL')}
+          accessibilityRole="button"
+          accessibilityLabel="Annuler la commande et être recrédité"
+        >
+          <Text style={styles.decisionPrimaryText}>Annuler et être recrédité</Text>
+        </Pressable>
+      </View>
+    </View>
+  )
+}
+
 function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourier, onInfoLoaded }: {
   orderId: string
   isDelivered: boolean
