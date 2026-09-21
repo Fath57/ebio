@@ -65,6 +65,17 @@ function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
 }
 
+/**
+ * Plafond par ligne de panier. La borne basse vit déjà ici — une quantité
+ * tombée à zéro retire l'article — et la haute lui tient compagnie plutôt que
+ * d'être réécrite par chaque écran qui sait incrémenter.
+ */
+export const MAX_ITEM_QUANTITY = 99
+
+function capQuantity(quantity: number): number {
+  return Math.min(quantity, MAX_ITEM_QUANTITY)
+}
+
 function removeEmptyGroups(groups: SupplierCartGroup[]): SupplierCartGroup[] {
   return groups.filter(g => g.items.length > 0)
 }
@@ -77,7 +88,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
     case 'ADD_ITEM': {
       const { input } = action
-      const qty = input.quantity ?? 1
+      const qty = capQuantity(input.quantity ?? 1)
       const groups = [...state.groups]
       const groupIndex = groups.findIndex(g => g.supplierId === input.supplierId)
 
@@ -111,7 +122,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           const existing = group.items[existingIndex]
           group.items[existingIndex] = {
             ...existing,
-            quantity: existing.quantity + qty,
+            quantity: capQuantity(existing.quantity + qty),
             promotionTypes: input.promotionTypes ?? existing.promotionTypes,
           }
         }
@@ -150,7 +161,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         }
 
         const items = [...group.items]
-        items[itemIndex] = { ...items[itemIndex], quantity: action.quantity }
+        items[itemIndex] = { ...items[itemIndex], quantity: capQuantity(action.quantity) }
         return { ...group, items }
       })
 
