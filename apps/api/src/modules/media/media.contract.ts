@@ -60,6 +60,21 @@ export const initiateUploadResponseSchema = z.object({
   description: 'URL(s) signée(s) pour upload. Pour les gros fichiers, plusieurs parts sont retournées.',
 })
 
+/**
+ * Zone à conserver, en fractions de l'image redressée (0 à 1). Le mobile
+ * recadre dans sa propre interface puis envoie ce rectangle : le découpage
+ * réel se fait ici, avec sharp, plutôt que sur le téléphone.
+ */
+export const imageCropSchema = z.object({
+  x: z.number().min(0).max(1),
+  y: z.number().min(0).max(1),
+  width: z.number().min(0.01).max(1),
+  height: z.number().min(0.01).max(1),
+}).meta({
+  title: 'ImageCrop',
+  description: 'Zone de recadrage, en fractions de l\'image (0 à 1)',
+})
+
 // Complete multipart upload
 export const completeUploadSchema = z.object({
   mediaId: z.string().uuid(),
@@ -68,6 +83,7 @@ export const completeUploadSchema = z.object({
     partNumber: z.number(),
     etag: z.string(),
   })).optional(),
+  crop: imageCropSchema.optional(),
 }).meta({
   title: 'CompleteUpload',
   description: 'Finalise un upload multipart et déclenche l\'optimisation',
@@ -94,6 +110,7 @@ export const mediaResponseSchema = z.object({
   description: 'Fichier média avec ses métadonnées',
 })
 
+export type ImageCrop = z.infer<typeof imageCropSchema>
 export type InitiateUpload = z.infer<typeof initiateUploadSchema>
 export type CompleteUpload = z.infer<typeof completeUploadSchema>
 export type MediaResponse = z.infer<typeof mediaResponseSchema>

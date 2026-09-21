@@ -24,6 +24,7 @@ import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
 import { AppAlertHost } from './src/features/common/components/app-alert'
 import { LocationProvider } from './src/features/common/location-context'
+import { ImageCropperHost } from './src/features/media/components/image-cropper'
 import { OnboardingScreen } from './src/features/onboarding/components/onboarding-screen'
 import { colors } from './src/theme/theme'
 import { ThemeProvider } from './src/theme/theme-context'
@@ -102,6 +103,7 @@ export default function App(): React.JSX.Element | null {
             <AppNavigation />
             {accountBlock && <AccountBlockedScreen block={accountBlock} />}
             <AppAlertHost />
+            <ImageCropperHost />
             <StatusBar style="auto" />
             {showOnboarding === true && (
               <OnboardingScreen

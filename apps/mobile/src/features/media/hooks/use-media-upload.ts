@@ -1,8 +1,10 @@
+import type { CropRect } from '../components/image-cropper'
 import * as DocumentPicker from 'expo-document-picker'
 import * as ImagePicker from 'expo-image-picker'
 import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { requestImageCrop } from '../components/image-cropper'
 
 export type MediaContext
   = | 'PRODUCT_PHOTO'
@@ -17,6 +19,19 @@ export type MediaContext
     | 'COMMUNITY_MEDIA'
     | 'DELIVERY_PROOF'
     | 'BANNER_IMAGE'
+
+/**
+ * Format proposé par défaut selon l'usage de l'image. Une pièce d'identité ou
+ * une preuve de livraison n'a rien à gagner à être rognée : on l'ouvre sur
+ * « Image entière ». Les autres s'affichent dans un gabarit connu, autant le
+ * cadrer soi-même plutôt que de laisser l'affichage couper au hasard.
+ */
+const DEFAULT_ASPECT: Partial<Record<MediaContext, [number, number]>> = {
+  PRODUCT_PHOTO: [4, 3],
+  SUPPLIER_COVER: [2, 1],
+  SUPPLIER_PROFILE: [1, 1],
+  BANNER_IMAGE: [2, 1],
+}
 
 interface UploadedMedia {
   mediaId: string
@@ -40,6 +55,26 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
   const [uploadedMedia, setUploadedMedia] = useState<UploadedMedia[]>([])
 
   /**
+   * Ouvre l'écran de recadrage pour une photo choisie ou prise à l'instant.
+   * Une annulation remonte telle quelle : on n'envoie rien.
+   */
+  const cropAsset = useCallback(async (
+    asset: ImagePicker.ImagePickerAsset,
+  ): Promise<{ cancelled: boolean, rect?: CropRect }> => {
+    // Les vidéos et les fichiers non images ne passent pas par le recadrage.
+    if (asset.type != null && asset.type !== 'image') {
+      return { cancelled: false }
+    }
+    const result = await requestImageCrop({
+      uri: asset.uri,
+      width: asset.width,
+      height: asset.height,
+      aspect: options.aspect ?? DEFAULT_ASPECT[options.context],
+    })
+    return { cancelled: result.cancelled, rect: result.crop ?? undefined }
+  }, [options])
+
+  /**
    * Pick image(s) from library and upload via Media module.
    */
   const pickAndUpload = useCallback(async (): Promise<UploadedMedia | null> => {
@@ -51,8 +86,9 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: options.mediaTypes ?? ['images'],
-      allowsEditing: true,
-      aspect: options.aspect,
+      // Le recadrage passe par notre propre écran : l'éditeur natif cachait
+      // ses poignées et ne se comportait pas pareil d'un téléphone à l'autre.
+      allowsEditing: false,
       quality: 0.8,
     })
 
@@ -60,8 +96,18 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
       return null
 
     const asset = result.assets[0]
-    return uploadFile(asset.uri, asset.fileName ?? 'photo.jpg', asset.mimeType ?? 'image/jpeg', asset.fileSize ?? 0)
-  }, [options])
+    const crop = await cropAsset(asset)
+    if (crop.cancelled)
+      return null
+
+    return uploadFile(
+      asset.uri,
+      asset.fileName ?? 'photo.jpg',
+      asset.mimeType ?? 'image/jpeg',
+      asset.fileSize ?? 0,
+      crop.rect,
+    )
+  }, [options, cropAsset])
 
   /**
    * Pick a real file — PDF or image — through the system file picker, for
@@ -106,8 +152,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     }
 
     const result = await ImagePicker.launchCameraAsync({
-      allowsEditing: true,
-      aspect: options.aspect,
+      allowsEditing: false,
       quality: 0.8,
     })
 
@@ -115,8 +160,18 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
       return null
 
     const asset = result.assets[0]
-    return uploadFile(asset.uri, asset.fileName ?? 'photo.jpg', asset.mimeType ?? 'image/jpeg', asset.fileSize ?? 0)
-  }, [options])
+    const crop = await cropAsset(asset)
+    if (crop.cancelled)
+      return null
+
+    return uploadFile(
+      asset.uri,
+      asset.fileName ?? 'photo.jpg',
+      asset.mimeType ?? 'image/jpeg',
+      asset.fileSize ?? 0,
+      crop.rect,
+    )
+  }, [options, cropAsset])
 
   /**
    * Upload any file URI via the Media module.
@@ -127,6 +182,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
     fileName: string,
     mimeType: string,
     fileSize: number,
+    crop?: CropRect,
   ): Promise<UploadedMedia | null> => {
     setUploading(true)
     setProgress(0)
@@ -193,6 +249,7 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
         body: JSON.stringify({
           mediaId,
           uploadId,
+          crop,
         }),
       })
 

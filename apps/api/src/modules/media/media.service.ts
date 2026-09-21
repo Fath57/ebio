@@ -1,4 +1,4 @@
-import type { CompleteUpload, InitiateUpload } from './media.contract'
+import type { CompleteUpload, ImageCrop, InitiateUpload } from './media.contract'
 import { Buffer } from 'node:buffer'
 import { randomUUID } from 'node:crypto'
 import {
@@ -159,7 +159,7 @@ export class MediaService {
     await this.em.flush()
 
     try {
-      await this.processMedia(media)
+      await this.processMedia(media, input.crop)
     }
     catch (err) {
       this.logger.error(`Media processing failed for ${media.id}`, err)
@@ -174,10 +174,10 @@ export class MediaService {
    * - Audio/Video: extract duration
    * - All: generate public URL
    */
-  private async processMedia(media: Media): Promise<void> {
+  private async processMedia(media: Media, crop?: ImageCrop): Promise<void> {
     try {
       if (media.type === MediaType.IMAGE) {
-        await this.optimizeImage(media)
+        await this.optimizeImage(media, crop)
       }
 
       // Generate public URL
@@ -203,7 +203,7 @@ export class MediaService {
    * - Upload optimized version
    * - Generate thumbnail (200x200)
    */
-  async optimizeImage(media: Media): Promise<void> {
+  async optimizeImage(media: Media, crop?: ImageCrop): Promise<void> {
     const { Body } = await this.s3.send(new GetObjectCommand({
       Bucket: media.s3Bucket,
       Key: media.s3Key,
@@ -215,10 +215,26 @@ export class MediaService {
 
     try {
       // .rotate() bakes in the EXIF orientation so resized output displays upright
-      const source = sharp(buffer, { failOn: 'none' }).rotate()
+      let source = sharp(buffer, { failOn: 'none' }).rotate()
       const metadata = await source.metadata()
-      media.width = metadata.width
-      media.height = metadata.height
+      // metadata() describes the file before .rotate(): for the quarter-turn
+      // orientations (5 to 8) the stored dimensions are swapped compared to
+      // what the phone displayed, and the crop was drawn on what it displayed.
+      const isQuarterTurn = (metadata.orientation ?? 1) >= 5
+      const displayWidth = (isQuarterTurn ? metadata.height : metadata.width) ?? 0
+      const displayHeight = (isQuarterTurn ? metadata.width : metadata.height) ?? 0
+      media.width = displayWidth
+      media.height = displayHeight
+
+      if (crop && displayWidth > 0 && displayHeight > 0) {
+        const left = clampOffset(Math.round(crop.x * displayWidth), displayWidth - 1)
+        const top = clampOffset(Math.round(crop.y * displayHeight), displayHeight - 1)
+        const width = clampSize(Math.round(crop.width * displayWidth), displayWidth - left)
+        const height = clampSize(Math.round(crop.height * displayHeight), displayHeight - top)
+        source = source.extract({ left, top, width, height })
+        media.width = width
+        media.height = height
+      }
 
       const optimized = await source
         .clone()
@@ -227,8 +243,9 @@ export class MediaService {
         .toBuffer()
 
       // A tiny already-compressed original can beat the webp re-encode: keep the
-      // smaller of the two so optimization never inflates a file.
-      if (optimized.length < media.originalSize) {
+      // smaller of the two so optimization never inflates a file. A cropped
+      // image has no such choice: the original still shows what was cut away.
+      if (crop || optimized.length < media.originalSize) {
         const optimizedKey = media.s3Key.replace(/\.[^.]+$/, '.opt.webp')
         await this.s3.send(new PutObjectCommand({
           Bucket: media.s3Bucket,
@@ -333,4 +350,14 @@ export class MediaService {
       return 'VIDEO'
     return 'DOCUMENT'
   }
+}
+
+/** A crop origin sits inside the image, and starts at 0 when it hugs the edge. */
+function clampOffset(value: number, max: number): number {
+  return Math.max(0, Math.min(value, max))
+}
+
+/** A crop side stays inside the image and never collapses to nothing. */
+function clampSize(value: number, max: number): number {
+  return Math.max(1, Math.min(value, max))
 }
