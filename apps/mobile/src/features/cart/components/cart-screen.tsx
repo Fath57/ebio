@@ -405,7 +405,7 @@ export function CartScreen({
       {/* Total et commande : la barre d'onglets flotte au-dessus du contenu,
           il faut lui laisser sa hauteur sous peine de cacher le bouton. */}
       <FadeInView delay={300}>
-        <View style={[styles.grandTotalBar, { backgroundColor: semantic.bgCard, paddingBottom: tabBarHeight + spacing[3] }]}>
+        <View style={[styles.grandTotalBar, { backgroundColor: semantic.bgCard, paddingBottom: tabBarHeight + spacing[5] }]}>
           <View>
             <Text style={[styles.grandTotalLabel, { color: semantic.textSecondary }]}>
               {totalItemCount}
@@ -445,7 +445,9 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingTop: spacing[4],
     paddingHorizontal: spacing[4],
-    paddingBottom: 80,
+    // The total bar sits right below the list: without this gap the last
+    // product row and the bar touch, and the cart reads as one cramped block.
+    paddingBottom: spacing[8],
   },
 
   /* Header */
@@ -637,7 +639,10 @@ const styles = StyleSheet.create({
   deliverySection: {
     gap: spacing[2],
     paddingHorizontal: spacing[4],
-    paddingTop: spacing[1],
+    paddingTop: spacing[2],
+    // Last block of the card: without it the mode toggle sits flush against
+    // the card edge, and the whole cart reads as one dense slab.
+    paddingBottom: spacing[4],
   },
   deliveryLabel: {
     ...typography.caption,
@@ -713,7 +718,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: spacing[4],
-    paddingVertical: spacing[3],
+    paddingVertical: spacing[4],
     paddingBottom: Platform.OS === 'ios' ? spacing[6] : spacing[4],
     borderTopLeftRadius: 20,
     borderTopRightRadius: 20,
