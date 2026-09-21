@@ -256,13 +256,13 @@ export class PaymentsService {
   }
 
   /**
-   * Ouvre un paiement unique pour un panier multi-boutiques.
+   * Opens a single payment for a multi-shop cart.
    *
-   * Rien n'est créé côté `Payment` à ce stade : celui-ci est propriétaire d'un
-   * `@OneToOne(Order)` et n'existe donc que par commande. Le passage en caisse
-   * porte la transaction du prestataire, et les paiements par commande naissent
-   * à la confirmation — un par commande, chacun avec son escrow, pour qu'une
-   * boutique soit payée au rythme de la sienne et non de la plus lente.
+   * Nothing is created on the `Payment` side at this point: it owns a
+   * `@OneToOne(Order)` and therefore only exists per order. The checkout
+   * carries the provider's transaction, and per-order payments are born at
+   * confirmation — one per order, each with its own escrow, so that a shop is
+   * paid at its own pace rather than the slowest one's.
    */
   async initiateCartPayment(userId: string, data: InitiateCartPayment) {
     const checkout = await this.em.findOneOrFail(Checkout, { id: data.checkoutId }, { populate: ['buyer'] })
@@ -287,11 +287,11 @@ export class PaymentsService {
   }
 
   /**
-   * Confirme le paiement unique, puis crée un paiement par commande.
+   * Confirms the single payment, then creates one payment per order.
    *
-   * Le montant vérifié est celui du panier ; il est ensuite ventilé entre les
-   * commandes au prorata de leur total, de sorte que la somme des paiements
-   * égale exactement ce qui a été encaissé, au franc près.
+   * The verified amount is the cart's; it is then split across the orders in
+   * proportion to their totals, so that the sum of the payments matches
+   * exactly what was collected, to the franc.
    */
   async verifyCartPayment(userId: string, data: VerifyCartPayment) {
     const checkout = await this.em.findOneOrFail(Checkout, { id: data.checkoutId }, { populate: ['buyer'] })
@@ -304,7 +304,7 @@ export class PaymentsService {
       throw new BadRequestException('Ce panier ne contient aucune commande')
     }
 
-    // Rejouer la confirmation ne doit pas créer un second jeu de paiements.
+    // Replaying the confirmation must not create a second set of payments.
     if (checkout.status !== CheckoutStatus.PENDING) {
       const existing = await this.em.find(Payment, { checkout: { id: checkout.id } })
       return {
@@ -623,12 +623,13 @@ export class PaymentsService {
 }
 
 /**
- * Ventile le montant encaissé entre les commandes, au prorata de leur total.
+ * Splits the collected amount across the orders, in proportion to their
+ * totals.
  *
- * Les arrondis ne doivent rien perdre ni rien inventer : le dernier reçoit le
- * reliquat, de sorte que la somme des parts égale exactement l'encaissement.
- * Sans ça, un panier à trois boutiques peut se solder par un franc en trop ou
- * en moins dans les livres, et ce franc-là se retrouve dans un portefeuille.
+ * Rounding must neither lose nor invent anything: the last one gets the
+ * remainder, so that the shares add up exactly to what was collected. Without
+ * that, a three-shop cart can end up a franc over or under in the books, and
+ * that franc lands in somebody's wallet.
  */
 export function splitCheckoutAmount<T extends { totalAmount: number }>(
   total: number,

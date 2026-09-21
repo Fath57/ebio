@@ -80,9 +80,9 @@ export function useOfflineQueue(onFlushed?: () => void) {
   }, [flush])
 
   /**
-   * Cœur commun : une course et une tournée se transmettent de la même façon,
-   * seule la route change. Le `deliveryId` reste stocké pour l'inspection de
-   * la file, il ne sert plus à fabriquer la route.
+   * Shared core: a delivery and a run are sent the same way, only the
+   * route changes. The `deliveryId` is still stored so the queue can be
+   * inspected; it no longer builds the route.
    */
   const send = useCallback(async (
     deliveryId: string,
@@ -123,7 +123,7 @@ export function useOfflineQueue(onFlushed?: () => void) {
     body: Record<string, unknown> = {},
   ) => send(deliveryId, `/api/deliveries/${deliveryId}/${action}`, body), [send])
 
-  /** Remise d'une tournée : un seul appel clôt toutes ses commandes. */
+  /** Handover of a run: a single call closes every one of its orders. */
   const sendRunTransition = useCallback((
     runId: string,
     action: 'deliver',

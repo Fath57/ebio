@@ -986,12 +986,12 @@ interface DeliveryInfo {
   pickupPosition: { latitude: number, longitude: number } | null
   confirmationCode: string | null
   failReason: string | null
-  /** Renseigné quand la livraison fait partie d'une tournée. */
+  /** Set when the delivery is part of a run. */
   run: {
     id: string
     shopCount: number
     collectedCount: number
-    /** La plateforme n'a plus de recours : à l'acheteur de trancher. */
+    /** The platform has no options left: the buyer decides. */
     awaitingBuyerDecision: boolean
   } | null
 }
@@ -1111,11 +1111,11 @@ function DeliveryLiveMap({ info }: { info: DeliveryInfo }) {
  * buyer hands to the courier as proof of delivery.
  */
 /**
- * Aucun livreur ne prend la commande, même une fois la tournée dégroupée.
+ * No courier takes the order, even once the run has been ungrouped.
  *
- * La plateforme a épuisé ses recours : alerte du back-office à 15 minutes,
- * dégroupage à 30. Continuer d'attendre en silence serait pire que de poser la
- * question — l'acheteur décide, et l'annulation lui rend tout, frais compris.
+ * The platform has exhausted its options: back-office alert at 15 minutes,
+ * ungrouping at 30. Waiting on in silence would be worse than asking the
+ * question — the buyer decides, and cancelling gives everything back, fee included.
  */
 function BuyerDecisionCard({ runId, onResolved }: { runId: string, onResolved: () => void }) {
   const { semantic } = useTheme()

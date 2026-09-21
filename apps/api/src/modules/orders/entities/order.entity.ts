@@ -46,12 +46,12 @@ export class Order {
   supplier!: Rel<Supplier>
 
   /**
-   * Le passage en caisse dont cette commande fait partie, quand elle vient
-   * d'un panier multi-boutiques. Nul sur une commande isolée et sur tout
+   * The checkout this order belongs to, when it comes from a
+   * multi-shop cart. Null on a lone order and across the whole
    * l'historique.
    *
-   * Le lien vit ici et non sur le paiement : en espèces à la livraison aucun
-   * paiement n'est créé, et les commandes seraient orphelines de leur panier.
+   * The link lives here and not on the payment: with cash on delivery no
+   * payment is created, and orders would be orphaned from their cart.
    */
   @Index()
   @ManyToOne(() => Checkout, { fieldName: 'checkout_id', nullable: true })

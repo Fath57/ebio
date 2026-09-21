@@ -4,20 +4,19 @@ import { User } from '../../auth/auth.entity'
 import { Payment } from '../payment.entity'
 
 /**
- * Un passage en caisse : l'acheteur paie une fois pour un panier qui peut
- * couvrir plusieurs boutiques.
+ * A checkout: the buyer pays once for a cart that may span several shops.
  *
- * Le checkout ne porte que ce qui est réellement commun aux commandes —
- * la transaction chez le prestataire, le moyen de paiement, l'adresse, le
- * total encaissé. Chaque `Payment` reste propriétaire d'un `@OneToOne(Order)`,
- * de sorte que l'escrow continue de libérer les fonds commande par commande :
- * une boutique est payée au rythme de la sienne, pas de la plus lente.
+ * The checkout only carries what is genuinely common to the orders — the
+ * provider's transaction, the payment method, the address, the collected
+ * total. Each `Payment` still owns a `@OneToOne(Order)`, so that escrow keeps
+ * releasing funds order by order: a shop is paid at its own pace, not the
+ * slowest one's.
  */
 export enum CheckoutStatus {
   PENDING = 'PENDING',
   PAID = 'PAID',
   DISPATCHED = 'DISPATCHED',
-  /** Au moins une commande dédommagée, mais pas toutes. */
+  /** At least one order compensated, but not all of them. */
   PARTIALLY_REFUNDED = 'PARTIALLY_REFUNDED',
   REFUNDED = 'REFUNDED',
   FAILED = 'FAILED',
@@ -42,18 +41,18 @@ export class Checkout {
   @OneToMany(() => Payment, payment => payment.checkout)
   payments = new Collection<Payment>(this)
 
-  /** Ce qui est réellement encaissé : articles − réduction + frais. */
+  /** What is actually collected: items − discount + fee. */
   @Property({ fieldName: 'total_amount', columnType: 'numeric(12,2)' })
   totalAmount!: number
 
   @Property({ fieldName: 'items_total', columnType: 'numeric(12,2)' })
   itemsTotal!: number
 
-  /** Frais uniques de la tournée, 0 en retrait sur place. */
+  /** Single run fee, 0 on an on-site pickup. */
   @Property({ fieldName: 'delivery_fee', columnType: 'numeric(12,2)', default: 0 })
   deliveryFee: number = 0
 
-  /** Réduction du code promo, répartie au prorata entre les boutiques. */
+  /** Promo code discount, split across the shops in proportion. */
   @Property({ columnType: 'numeric(12,2)', default: 0 })
   discount: number = 0
 
@@ -67,7 +66,7 @@ export class Checkout {
   @Enum({ items: () => CheckoutStatus, default: CheckoutStatus.PENDING })
   status: CheckoutStatus = CheckoutStatus.PENDING
 
-  /** Un seul mode pour tout le panier : le mode mixte est hors périmètre v1. */
+  /** One mode for the whole cart: mixed modes are out of scope for v1. */
   @Enum({ items: () => CheckoutDeliveryMode, fieldName: 'delivery_mode' })
   deliveryMode!: CheckoutDeliveryMode
 

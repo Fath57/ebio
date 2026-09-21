@@ -3,12 +3,12 @@ import { deliveryReasonEnum } from '../../settings/contracts/delivery-pricing.co
 import { orderItemInputSchema, paymentMethodEnum, pickupModeEnum } from './order.contract'
 
 /**
- * Le passage en caisse unifié : un panier qui couvre plusieurs boutiques,
- * un seul paiement, N commandes créées derrière.
+ * The unified checkout: one cart spanning several shops, a single payment, N
+ * orders created behind it.
  *
- * Aucun `supplierId` en entrée : les boutiques se déduisent des produits.
- * C'est tout l'objet de la fonctionnalité — la répartition devient l'affaire
- * de la plateforme et cesse d'être celle de l'acheteur.
+ * No `supplierId` on the way in: the shops are derived from the products. That
+ * is the whole point of the feature — splitting becomes the platform's
+ * business and stops being the buyer's.
  */
 
 export const checkoutPreviewSchema = z.object({
@@ -22,7 +22,7 @@ export const checkoutPreviewSchema = z.object({
   description: 'Demande de chiffrage d\'un panier multi-boutiques',
 })
 
-/** Ce qu'une boutique représente dans le panier, pour l'affichage. */
+/** What one shop amounts to in the cart, for display. */
 export const checkoutSupplierBlockSchema = z.object({
   supplierId: z.string().uuid(),
   shopName: z.string(),
@@ -36,21 +36,21 @@ export const checkoutSupplierBlockSchema = z.object({
     isGift: z.boolean(),
   })),
   itemsTotal: z.number(),
-  /** Renseigné quand cette boutique, et elle seule, empêche la validation. */
+  /** Set when this shop, and it alone, blocks the checkout. */
   blocked: z.enum(['OUT_OF_RANGE', 'CLOSED', 'OUT_OF_STOCK']).nullable(),
 }).meta({ title: 'CheckoutSupplierBlock' })
 
 /**
- * Une tournée du panier. Un panier de deux boutiques proches en produit une ;
- * au-delà de deux boutiques, ou au-delà de l'écart admis entre elles, il en
- * produit plusieurs, chacune avec ses frais.
+ * One run of the cart. A cart with two nearby shops yields one; past two
+ * shops, or past the admitted gap between them, it yields several, each with
+ * its own fee.
  */
 export const checkoutRunBlockSchema = z.object({
   supplierIds: z.array(z.string().uuid()).min(1),
   fee: z.number().nullable(),
   reason: deliveryReasonEnum,
   distanceKm: z.number().nullable(),
-  /** Écart entre les deux collectes les plus éloignées ; null si une position manque. */
+  /** Gap between the two farthest pickups; null when a position is missing. */
   pickupSpreadKm: z.number().nullable(),
 }).meta({ title: 'CheckoutRunBlock' })
 
@@ -59,21 +59,20 @@ export const checkoutPreviewResponseSchema = z.object({
   itemsTotal: z.number(),
   discount: z.number(),
   /**
-   * Total des frais de livraison du panier, toutes tournées confondues. Un
-   * seul chiffre : le découpage en tournées est l'affaire de la plateforme,
-   * l'acheteur n'a pas à le comprendre pour savoir ce qu'il paie.
+   * Total delivery fee of the cart, across every run. A single figure: the
+   * split into runs is the platform's business, and the buyer should not have
+   * to understand it to know what they pay.
    */
   deliveryFee: z.number().nullable(),
   deliveryReason: deliveryReasonEnum,
-  /** Distance cumulée des tournées, collectes comprises. */
+  /** Cumulated distance of the runs, pickups included. */
   deliveryDistanceKm: z.number().nullable(),
-  /** Le détail, pour le back-office et le suivi. Vide en retrait sur place. */
+  /** The breakdown, for the back-office and tracking. Empty on pickup. */
   runs: z.array(checkoutRunBlockSchema),
   total: z.number(),
   /**
-   * De combien le panier dépasse le plafond des espèces, le cas échéant. Le
-   * plafond borne ce que le livreur avance, donc il porte sur la tournée
-   * entière et non sur chaque commande.
+   * By how much the cart exceeds the cash cap, when it does. The cap bounds
+   * what the courier fronts, so it covers the whole run and not each order.
    */
   cashLimitExceededBy: z.number().nullable(),
 }).meta({
@@ -105,8 +104,8 @@ export const createCheckoutResponseSchema = z.object({
     total: z.number(),
   })).min(1),
   /**
-   * Les tournées ouvertes par ce passage en caisse, dans l'ordre de leur
-   * découpage. Vide en retrait sur place : rien n'est à regrouper.
+   * The runs opened by this checkout, in split order. Empty on an on-site
+   * pickup: there is nothing to group.
    */
   deliveryRunIds: z.array(z.string().uuid()),
 }).meta({
@@ -114,7 +113,7 @@ export const createCheckoutResponseSchema = z.object({
   description: 'Le passage en caisse et les commandes qu\'il a créées',
 })
 
-/** Dédommagement d'une commande refusée ou annulée. Usage interne. */
+/** Compensation for a refused or cancelled order. Internal use. */
 export const compensateCheckoutSchema = z.object({
   orderId: z.string().uuid(),
   reason: z.string().trim().min(1).max(500),

@@ -6,18 +6,18 @@ import { Delivery } from './delivery.entity'
 import { DispatchPhase } from './dispatch-phase.enum'
 
 /**
- * Une tournée : les livraisons d'un même passage en caisse, confiées à un seul
- * livreur qui collecte chez chaque boutique puis remet une fois.
+ * A run: the deliveries of one checkout, handed to a single courier who
+ * collects from every shop then hands over once.
  *
- * Chaque `Delivery` reste 1-1 avec sa commande — statut, événements et preuve
- * de remise ne bougent pas, et les écrans fournisseur non plus. C'est la
- * tournée qui devient l'unité de diffusion, d'acceptation et de rémunération.
+ * Each `Delivery` stays 1-1 with its order — status, events and proof of
+ * handover do not move, and neither do the supplier screens. It is the run
+ * that becomes the unit of dispatch, acceptance and pay.
  */
 export enum DeliveryRunStatus {
   AWAITING_COURIER = 'AWAITING_COURIER',
-  /** 15 min sans preneur : le back-office peut attribuer à la main. */
+  /** 15 min unclaimed: the back-office may assign a courier by hand. */
   ESCALATED = 'ESCALATED',
-  /** 30 min sans preneur : l'acheteur choisit d'attendre ou d'annuler. */
+  /** 30 min unclaimed: the buyer chooses between waiting and cancelling. */
   BUYER_DECISION = 'BUYER_DECISION',
   ACCEPTED = 'ACCEPTED',
   COLLECTING = 'COLLECTING',
@@ -26,7 +26,7 @@ export enum DeliveryRunStatus {
   CANCELLED = 'CANCELLED',
 }
 
-/** Comment s'est terminée la recherche d'un livreur. Sert à la mesure. */
+/** How the courier search ended. Kept for measurement. */
 export enum DeliveryRunOutcome {
   ACCEPTED = 'ACCEPTED',
   REFUSED_ALL = 'REFUSED_ALL',
@@ -42,23 +42,23 @@ export class DeliveryRun {
   id!: string
 
   /**
-   * Un panier produit autant de tournées que le regroupement en autorise : au
-   * delà de deux boutiques, ou au delà de l'écart admis entre elles, il en
-   * naît une seconde. Le lien n'est donc plus 1-1.
+   * A cart yields as many runs as the grouping allows: past two shops, or past
+   * the admitted gap between them, a second one is born. The link is therefore
+   * no longer 1-1.
    */
   @Index()
   @ManyToOne(() => Checkout, { fieldName: 'checkout_id' })
   checkout!: Rel<Checkout>
 
   /**
-   * Les boutiques que cette tournée collecte. Renseigné à l'ouverture, avant
-   * qu'aucune livraison n'existe : c'est ce qui permet à chaque livraison de
-   * rejoindre la bonne tournée quand sa commande naît.
+   * The shops this run collects from. Filled at opening time, before any
+   * delivery exists: it is what lets each delivery join the right run when its
+   * order is born.
    */
   @Property({ fieldName: 'supplier_ids', type: 'jsonb' })
   supplierIds: string[] = []
 
-  /** Frais de cette tournée. Le panier en porte la somme, pas le détail. */
+  /** This run's fee. The cart carries their sum, not the breakdown. */
   @Property({ fieldName: 'delivery_fee', columnType: 'numeric(12,2)', default: 0 })
   deliveryFee: number = 0
 
@@ -72,15 +72,15 @@ export class DeliveryRun {
   @Enum({ items: () => DeliveryRunStatus, default: DeliveryRunStatus.AWAITING_COURIER })
   status: DeliveryRunStatus = DeliveryRunStatus.AWAITING_COURIER
 
-  /** Identifiants de livraison, dans l'ordre de passage chez les boutiques. */
+  /** Delivery ids, in the order the shops are visited. */
   @Property({ fieldName: 'pickup_order', type: 'jsonb' })
   pickupOrder: string[] = []
 
-  /** Distance de la tournée complète, collectes comprises. */
+  /** Distance of the whole run, pickups included. */
   @Property({ fieldName: 'total_distance_km', type: 'double', nullable: true })
   totalDistanceKm?: number
 
-  /** Rémunération de la tournée, et non par commande transportée. */
+  /** Pay for the run, and not per order carried. */
   @Property({ fieldName: 'courier_earning', columnType: 'numeric(12,2)', default: 0 })
   courierEarning: number = 0
 
@@ -88,14 +88,14 @@ export class DeliveryRun {
   dispatchPhase: DispatchPhase = DispatchPhase.TARGETED
 
   /*
-   * L'état de diffusion, repris trait pour trait de `Delivery` : le mécanisme
-   * ne change pas, seul l'objet diffusé change.
+   * Dispatch state, taken feature for feature from `Delivery`: the mechanism
+   * does not change, only the object being dispatched does.
    */
 
   /**
-   * Premier point de collecte, écrit en SQL brut comme tout accès géographique.
-   * Null quand aucune boutique de la tournée n'est située : la diffusion vise
-   * alors tous les livreurs disponibles, sans critère de distance.
+   * First pickup point, written in raw SQL like every geographic access. Null
+   * when no shop of the run has a position: the dispatch then targets every
+   * available courier, with no distance criterion.
    */
   @Property({ columnType: 'geography(Point, 4326)', fieldName: 'pickup_location', nullable: true })
   pickupLocation?: string
@@ -103,7 +103,7 @@ export class DeliveryRun {
   @Property({ fieldName: 'offer_round', type: 'int', default: 0 })
   offerRound: number = 0
 
-  /** Livreur qui tient l'offre exclusive, jusqu'à `offerExpiresAt`. */
+  /** Courier holding the exclusive offer, until `offerExpiresAt`. */
   @ManyToOne(() => CourierProfile, { fieldName: 'offered_to_courier_id', nullable: true })
   offeredToCourier?: Rel<CourierProfile> | null
 
@@ -129,14 +129,14 @@ export class DeliveryRun {
   deliveredAt?: Date | null
 
   /**
-   * Code de remise, à quatre chiffres, tiré à la première collecte et montré
-   * à l'acheteur. Un seul pour toute la tournée : l'acheteur reçoit une fois,
-   * il n'a pas à réciter un code par boutique.
+   * Four-digit handover code, drawn at the first pickup and shown to the
+   * buyer. One for the whole run: the buyer receives once, and should not have
+   * to recite one code per shop.
    */
   @Property({ fieldName: 'confirmation_code', length: 4, nullable: true })
   confirmationCode?: string | null
 
-  /** Rayon de diffusion courant, élargi par le cron jusqu'à 25 km. */
+  /** Current broadcast radius, widened by the cron up to 25 km. */
   @Property({ fieldName: 'broadcast_radius_km', type: 'float', default: 5 })
   broadcastRadiusKm: number = 5
 
@@ -147,15 +147,15 @@ export class DeliveryRun {
   buyerPromptedAt?: Date
 
   /*
-   * Mesure. Les seuils de regroupement — deux boutiques, 3 km entre elles —
-   * sont posés, pas devinés ; ces colonnes servent à les ajuster sur des faits
-   * plutôt que sur une intuition.
+   * Measurement. The grouping thresholds — two shops, 3 km apart — are set,
+   * not guessed; these columns serve to tune them on facts rather than on a
+   * hunch.
    */
 
   @Property({ fieldName: 'shop_count', default: 0 })
   shopCount: number = 0
 
-  /** Écart entre les deux collectes les plus éloignées ; null si une position manque. */
+  /** Gap between the two farthest pickups; null when a position is missing. */
   @Property({ fieldName: 'pickup_spread_km', type: 'double', nullable: true })
   pickupSpreadKm?: number
 

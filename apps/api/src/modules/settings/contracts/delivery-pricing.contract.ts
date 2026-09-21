@@ -25,11 +25,11 @@ export const deliveryPricingConfigSchema = z.object({
   freeFrom: z.number().int().min(0).nullable(),
   maxDistanceKm: z.number().min(0.5).max(500),
   /**
-   * Regroupement des boutiques en tournées. Les valeurs par défaut valent pour
-   * une configuration écrite avant que ces seuils n'existent.
+   * Grouping of shops into runs. The defaults cover a configuration written
+   * before these thresholds existed.
    *
-   * `maxPickupSpreadKm` est plafonné par `maxDistanceKm` — vérifié plus bas :
-   * grouper deux boutiques plus éloignées qu'on ne livre n'aurait pas de sens.
+   * `maxPickupSpreadKm` is capped by `maxDistanceKm` — checked below: grouping
+   * two shops farther apart than we deliver would make no sense.
    */
   grouping: z.object({
     maxShops: z.number().int().min(1).max(5),
@@ -52,11 +52,11 @@ export const deliveryQuoteRequestSchema = z.object({
 })
 
 /**
- * Pourquoi la livraison coûte ce qu'elle coûte — ou pourquoi elle ne peut pas
- * être chiffrée. Reflet de `DeliveryFeeReason` (common/delivery-fee.ts).
+ * Why the delivery costs what it costs — or why it cannot be priced. Mirrors
+ * `DeliveryFeeReason` (common/delivery-fee.ts).
  *
- * `NO_SHOP_POSITION` n'est pas bloquant : le forfait s'applique et la commande
- * passe. Seul `NO_POSITION`, qui désigne l'acheteur, l'est.
+ * `NO_SHOP_POSITION` is not blocking: the flat fee applies and the order goes
+ * through. Only `NO_POSITION`, which points at the buyer, is.
  */
 export const deliveryReasonEnum = z.enum([
   'PICKUP',

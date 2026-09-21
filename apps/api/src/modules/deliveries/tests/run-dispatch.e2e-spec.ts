@@ -3,17 +3,17 @@ import type { INestApplication } from '@nestjs/common'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createUserData } from '../../../factories/user.factory'
 /**
- * La diffusion d'une tournée, éprouvée sur une vraie base PostGIS.
+ * Dispatching a run, exercised against a real PostGIS database.
  *
- * Ce qui est testé ici ne l'est nulle part ailleurs : les requêtes brutes. Le
- * typecheck ne dit rien d'un `array_position` mal écrit ou d'un `LATERAL` qui
- * ne compile pas côté serveur — il faut les exécuter.
+ * What is tested here is tested nowhere else: the raw queries. The
+ * typecheck says nothing about a malformed `array_position` or a `LATERAL` the
+ * server refuses to compile — they have to be executed.
  *
- * Trois questions, dans l'ordre où elles se posent :
- *   1. la tournée trouve-t-elle des livreurs à partir de son point de collecte ?
- *   2. un livreur peut-il la prendre entière, et l'ordre de passage part-il
- *      bien de chez lui ?
- *   3. ses livraisons restent-elles hors de la liste des courses isolées ?
+ * Three questions, in the order they arise:
+ *   1. does the run find couriers from its pickup point?
+ *   2. can a courier take it whole, and does the visiting order start from
+ *      where they are?
+ *   3. do its deliveries stay out of the lone-delivery offer list?
  */
 import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
@@ -25,13 +25,13 @@ import { DeliveriesModule } from '../deliveries.module'
 import { DeliveriesService } from '../deliveries.service'
 import { DispatchService } from '../dispatch.service'
 
-/** Cotonou : deux boutiques voisines, un acheteur un peu plus loin. */
+/** Cotonou: two neighbouring shops, a buyer a little farther away. */
 const FATOU = { latitude: 6.3616, longitude: 2.4264 }
 const KOFFI = { latitude: 6.3654, longitude: 2.4183 }
 const ACHETEUR = { latitude: 6.3700, longitude: 2.4300 }
-/** Le livreur est garé à côté de Koffi, pas de Fatou. */
+/** The courier is parked next to Koffi, not to Fatou. */
 const LIVREUR = { latitude: 6.3660, longitude: 2.4180 }
-/** Un second livreur, à l'autre bout de la zone : il doit passer après. */
+/** A second courier, across the zone: they must rank after. */
 const LIVREUR_LOIN = { latitude: 6.3900, longitude: 2.4500 }
 
 interface Fixture {
@@ -133,11 +133,11 @@ async function seed(em: EntityManager, options: { shops?: 1 | 2 } = {}): Promise
 
 describe('diffusion d\'une tournée (e2e)', () => {
   beforeEach(async (context) => {
-    // Deux connexions : le règlement du livreur ouvre sa propre transaction
-    // pendant que la remise tient la sienne.
+    // Two connections: the courier settlement opens its own transaction
+    // while the handover holds its own.
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
-      // Deux modules que l'application enregistre globalement et qu'il faut
-      // nommer ici : les rôles (pour le garde CASL) et l'audit.
+      // Two modules the application registers globally and that must be
+      // named here: roles (for the CASL guard) and audit.
       imports: [RolesModule, AuditModule, DeliveriesModule],
     })
     context.app = app
@@ -151,15 +151,15 @@ describe('diffusion d\'une tournée (e2e)', () => {
 
     const target = { kind: 'RUN' as const, id: fixture.runId, broadcastRadiusKm: 10 }
 
-    // La distance ne se mesure qu'une fois le point de collecte posé, ce que
-    // fait l'ouverture de la diffusion.
+    // Distance is only measurable once the pickup point is set, which
+    // opening the dispatch does.
     await dispatch.startRunDispatch(fixture.runId)
 
     const eligible = await dispatch.findEligibleFor(target)
     expect(eligible.map(c => c.id)).toEqual(expect.arrayContaining([fixture.courierId, fixture.farCourierId]))
 
-    // Le proche a déjà été sollicité par l'ouverture : il sort du classement,
-    // on ne redemande pas deux fois. Reste l'éloigné, avec sa vraie distance.
+    // The near one was already asked when the dispatch opened: they drop out
+    // of the ranking, we do not ask twice. The far one remains, with its distance.
     const ranked = await dispatch.rankCandidatesFor(target)
     expect(ranked.map(candidate => candidate.id)).toEqual([fixture.farCourierId])
     expect(ranked[0].distanceKm).not.toBeNull()
@@ -177,7 +177,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
 
     expect(run.status).toBe('ACCEPTED')
     expect(run.pickupOrder).toHaveLength(2)
-    // Le livreur est garé à côté de Koffi : c'est par là qu'il commence.
+    // The courier is parked next to Koffi: that is where they start.
     expect(run.pickupOrder[0]).toBe(fixture.deliveryIds[1])
 
     const rows = await (em as EntityManager).getConnection().execute(
@@ -193,8 +193,8 @@ describe('diffusion d\'une tournée (e2e)', () => {
     const fixture = await seed(em as EntityManager)
     const deliveries = app.get(DeliveriesService)
 
-    // La tournée existe, mais aucune boutique n'a encore préparé : il n'y a
-    // rien à collecter. La proposer laisserait un livreur accepter le vide.
+    // The run exists, but no shop has prepared yet: there is nothing
+    // to collect. Offering it would let a courier accept an empty run.
     const tournees = await deliveries.getRunOffers(fixture.courierUserId)
     expect(tournees.map(row => row.id)).not.toContain(fixture.runId)
 
@@ -206,22 +206,22 @@ describe('diffusion d\'une tournée (e2e)', () => {
     const { em, app } = context
     const fixture = await seed(em as EntityManager)
     const deliveries = app.get(DeliveriesService)
-    // Une tournée n'est proposée qu'une fois diffusée : sans cela elle n'est
-    // ni ciblée ni en diffusion large, et elle n'a rien à faire dans la liste.
+    // A run is only offered once dispatched: before that it is neither
+    // targeted nor broadcast, and it has no business in the list.
     await app.get(DispatchService).startRunDispatch(fixture.runId)
 
     const isolees = await deliveries.getOffers(fixture.courierUserId)
     expect(isolees.map(row => row.id)).not.toContain(fixture.deliveryIds[0])
 
-    // Mais la tournée, elle, doit apparaître — avec ses deux collectes.
+    // The run itself, however, must show up — with its two pickups.
     const tournees = await deliveries.getRunOffers(fixture.courierUserId)
     const proposee = tournees.find(row => row.id === fixture.runId)
     expect(proposee).toBeDefined()
     expect(proposee?.stops).toHaveLength(2)
     expect(Number(proposee?.courier_earning)).toBe(720)
-    // Les espèces sont celles de CETTE tournée : la somme de ses commandes
-    // plus son frais, et non le total du panier, qui couvre aussi les
-    // tournées que ce livreur ne transporte pas.
+    // The cash figures are THIS run's: the sum of its orders
+    // plus its fee, and not the cart total, which also covers the
+    // runs this courier is not carrying.
     expect(Number(proposee?.total_amount)).toBe(2600 + 2600 + 800)
   })
 
@@ -252,7 +252,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
       const autre = rows.find(row => row.id !== fixture.deliveryIds[0])!
       expect(collectee.status).toBe('PICKED_UP')
       expect(collectee.order_status).toBe('IN_DELIVERY')
-      // L'autre boutique n'a rien vu passer : c'est FR-017.
+      // The other shop saw nothing move: that is FR-017.
       expect(autre.status).toBe('ACCEPTED')
       expect(autre.order_status).toBe('READY')
 
@@ -282,7 +282,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
         [fixture.runId],
       ) as Array<{ status: string, confirmation_code: string }>
       expect(run.status).toBe('DELIVERING')
-      // Le code ne change pas en cours de route.
+      // The code does not change along the way.
       expect(run.confirmation_code).toBe(apresPremiere.confirmation_code)
 
       const courses = await (em as EntityManager).getConnection().execute(
@@ -310,7 +310,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
         deliveries.deliverRun(fixture.runId, fixture.courierUserId, { proofType: 'CODE', code: faux }),
       ).rejects.toThrow()
 
-      // Un code refusé ne laisse rien derrière lui : la tournée roule encore.
+      // A refused code leaves nothing behind: the run is still on the road.
       const [avant] = await (em as EntityManager).getConnection().execute(
         `SELECT status FROM delivery_runs WHERE id = ?`,
         [fixture.runId],
@@ -352,13 +352,13 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(active.shopCount).toBe(2)
       expect(active.courierFee).toBe(720)
       expect(active.stops).toHaveLength(2)
-      // L'ordre suit le passage décidé à l'acceptation : le plus proche d'abord.
+      // The order follows what acceptance decided: closest first.
       expect(active.stops[0].deliveryId).toBe(fixture.deliveryIds[1])
       expect(active.stops.every(stop => stop.status === 'ACCEPTED')).toBe(true)
       expect(active.stops[0].shopName).toBeTruthy()
       expect(active.dropoffAddress).toContain('Cadjehoun')
 
-      // Après une collecte, l'écran doit voir l'avancement boutique par boutique.
+      // After a pickup, the screen must see progress shop by shop.
       await deliveries.collect(fixture.deliveryIds[1], fixture.courierUserId)
       const apres = DeliveriesMapper.toActiveRun((await deliveries.getMyActiveRun(fixture.courierUserId))!)
       expect(apres.status).toBe('COLLECTING')
@@ -380,8 +380,8 @@ describe('diffusion d\'une tournée (e2e)', () => {
 
       const avant = await orders.deliverySummaries(orderIds.map(row => row.id))
       expect(avant.size).toBe(2)
-      // Les deux commandes pointent la même tournée, au même avancement : c'est
-      // ce qui permet à l'acheteur de suivre une progression et non deux.
+      // Both orders point at the same run, at the same progress: that is
+      // what lets the buyer follow one progression rather than two.
       for (const summary of avant.values()) {
         expect(summary.run).toEqual({
           id: fixture.runId,
@@ -416,8 +416,8 @@ describe('diffusion d\'une tournée (e2e)', () => {
 
       await remettre()
 
-      // Le gain est celui de la tournée (720), pas la somme de frais par
-      // commande — les commandes d'un panier unifié en portent zéro.
+      // The earning is the run's (720), not the sum of per-order fees —
+      // the orders of a unified cart carry none.
       const gains = await (em as EntityManager).getConnection().execute(
         `SELECT amount FROM wallet_transactions
          WHERE delivery_run_id = ? AND type = 'DELIVERY_EARNING'`,
@@ -435,7 +435,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(part).toHaveLength(1)
       expect(Number(part[0].amount)).toBe(80)
 
-      // Rejouer la remise ne paie pas deux fois.
+      // Replaying the handover does not pay twice.
       await remettre().catch(() => undefined)
       const apres = await (em as EntityManager).getConnection().execute(
         `SELECT count(*)::int AS n FROM wallet_transactions
@@ -465,11 +465,11 @@ describe('diffusion d\'une tournée (e2e)', () => {
 
       expect(result.amount).toBe(Math.round(Number(order.total_amount)))
       expect(result.alreadyDone).toBe(false)
-      // Une commande sur deux est tombée : le panier n'est pas entièrement rendu.
+      // One order out of two fell through: the cart is not fully refunded.
       expect(result.checkoutStatus).toBe('PARTIALLY_REFUNDED')
 
-      // Un seul remboursement de commande. L'ajustement de frais, lui, porte
-      // la tournée : c'est ce qui l'empêche de passer pour le remboursement.
+      // A single order refund. The fee adjustment, in contrast, carries
+      // the run: that is what keeps it from passing for the refund.
       const credits = await db.execute(
         `SELECT amount FROM wallet_transactions
          WHERE order_id = ? AND type = 'REFUND' AND delivery_run_id IS NULL`,
@@ -478,7 +478,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(credits).toHaveLength(1)
       expect(Number(credits[0].amount)).toBe(Math.round(Number(order.total_amount)))
 
-      // La boutique quitte la tournée : il n'en reste qu'une.
+      // The shop leaves the run: only one is left.
       const [run] = await db.execute(
         `SELECT shop_count, jsonb_array_length(supplier_ids) AS shops FROM delivery_runs WHERE id = ?`,
         [fixture.runId],
@@ -486,7 +486,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(run.shop_count).toBe(1)
       expect(Number(run.shops)).toBe(1)
 
-      // Rejouer ne crédite pas deux fois.
+      // Replaying does not credit twice.
       const rejeu = await compensation.compensateOrder(order.id, 'rejeu')
       expect(rejeu.alreadyDone).toBe(true)
       const apres = await db.execute(
@@ -504,8 +504,8 @@ describe('diffusion d\'une tournée (e2e)', () => {
       const db = (em as EntityManager).getConnection()
 
       await dispatch.startRunDispatch(fixture.runId)
-      // On recule l'ouverture de la diffusion de 31 minutes : le cron doit
-      // alors dégrouper plutôt que de faire attendre.
+      // Push the dispatch opening back by 31 minutes: the cron must then
+      // ungroup rather than keep the buyer waiting.
       await db.execute(
         `UPDATE delivery_runs SET dispatch_started_at = NOW() - INTERVAL '31 minutes' WHERE id = ?`,
         [fixture.runId],
@@ -518,7 +518,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
         [fixture.runId],
       ) as Array<{ status: string, outcome: string, delivery_fee: string }>
       expect(run.status).toBe('CANCELLED')
-      // L'échec est une donnée : la tournée n'est pas effacée.
+      // The failure is data: the run is not erased.
       expect(run.outcome).toBe('UNSERVED')
 
       const courses = await db.execute(
@@ -528,8 +528,8 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(courses).toHaveLength(2)
       expect(courses.every(row => row.delivery_run_id === null)).toBe(true)
       expect(courses.every(row => row.status === 'AWAITING_COURIER')).toBe(true)
-      // Chaque course reprend sa part du frais, sans quoi elle ne serait
-      // payable à personne.
+      // Each delivery takes back its share of the fee, without which it
+      // would be payable to nobody.
       expect(courses.every(row => Number(row.delivery_fee) === 400)).toBe(true)
     })
 
@@ -554,7 +554,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(run.status).toBe('ESCALATED')
       expect(run.escalated_at).not.toBeNull()
 
-      // La diffusion continue : les courses restent dans la tournée.
+      // The dispatch goes on: the deliveries stay inside the run.
       const courses = await db.execute(
         `SELECT delivery_run_id FROM deliveries WHERE id IN (?, ?)`,
         fixture.deliveryIds,
@@ -565,8 +565,8 @@ describe('diffusion d\'une tournée (e2e)', () => {
 
   describe('panier d\'une seule boutique', () => {
     /**
-     * Le cas le plus fréquent, et celui qu'il ne faut surtout pas alourdir : le
-     * panier unifié ne doit rien ajouter à un achat chez une seule boutique.
+     * The most frequent case, and the one that must not be made heavier: the
+     * unified cart must add nothing to a purchase at a single shop.
      */
     it('suit exactement le même chemin qu\'avant, en une collecte et une remise', async (context) => {
       const { em, app } = context
@@ -580,7 +580,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(run.shopCount).toBe(1)
       expect(run.pickupOrder).toHaveLength(1)
 
-      // Une seule collecte suffit à mettre la tournée en route.
+      // A single pickup is enough to put the run on the road.
       await deliveries.collect(fixture.deliveryIds[0], fixture.courierUserId)
       const [apresCollecte] = await db.execute(
         `SELECT status, confirmation_code FROM delivery_runs WHERE id = ?`,
@@ -601,7 +601,7 @@ describe('diffusion d\'une tournée (e2e)', () => {
       expect(course.status).toBe('DELIVERED')
       expect(course.order_status).toBe('DELIVERED')
 
-      // Le livreur touche le frais entier : une boutique, un trajet.
+      // The courier gets the whole fee: one shop, one ride.
       const gains = await db.execute(
         `SELECT amount FROM wallet_transactions
          WHERE delivery_run_id = ? AND type = 'DELIVERY_EARNING'`,

@@ -4,11 +4,11 @@ import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
 /**
- * La tournée que le livreur exécute, ou rien.
+ * The run the courier is riding, or nothing.
  *
- * Elle prime sur la course isolée : tant qu'une tournée est en cours, ses
- * collectes ne sont pas des courses séparées, et les montrer comme telles
- * laisserait croire au livreur qu'il peut en abandonner une.
+ * It takes precedence over the lone delivery: while a run is on, its
+ * pickups are not separate deliveries, and showing them as such would
+ * laisserait croire au livreur they can drop one of them.
  */
 export function useActiveRun() {
   const [run, setRun] = useState<ActiveRun | null>(null)
@@ -24,8 +24,8 @@ export function useActiveRun() {
       setRun(body.length > 0 ? JSON.parse(body) as ActiveRun : null)
     }
     catch {
-      // Hors ligne : on garde la tournée en cache, les transitions se mettent
-      // de toute façon en file locale.
+      // Offline: the cached run is kept, transitions queue locally
+      // anyway.
     }
     finally {
       setLoading(false)

@@ -15,7 +15,7 @@ export interface WalletMovement {
   paymentId?: string
   withdrawalId?: string
   deliveryId?: string
-  /** Règlement d'une tournée entière, et non d'une course. */
+  /** Settlement of a whole run, rather than of a lone delivery. */
   deliveryRunId?: string
   /** COMMISSION_DEBIT / DELIVERY_COMMISSION may push the balance below zero (cash debt). */
   allowNegative?: boolean

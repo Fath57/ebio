@@ -16,11 +16,11 @@ import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.ent
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
 const FIFTEEN_MINUTES_MS = 15 * 60 * 1000
-/** Sans preneur passé ce délai, le back-office est alerté (FR-022). */
+/** Unclaimed past this delay, the back-office is alerted (FR-022). */
 const ESCALATE_AFTER_MS = 15 * 60 * 1000
-/** Sans preneur passé ce délai, la tournée se dégroupe (FR-022a). */
+/** Unclaimed past this delay, the run ungroups itself (FR-022a). */
 const UNGROUP_AFTER_MS = 30 * 60 * 1000
-/** Après le dégroupage, délai avant de rendre la main à l'acheteur (FR-022c). */
+/** After ungrouping, delay before handing the decision to the buyer (FR-022c). */
 const PROMPT_AFTER_UNGROUP_MS = 15 * 60 * 1000
 const RADIUS_STEP_KM = 5
 const RADIUS_CAP_KM = 25
@@ -46,7 +46,7 @@ interface CandidateRow {
   acceptance_rate: string | null
 }
 
-/** Ce que la diffusion propose : une course isolée, ou une tournée. */
+/** What the dispatch offers: a lone delivery, or a run. */
 export interface DispatchTarget {
   kind: 'DELIVERY' | 'RUN'
   id: string
@@ -105,12 +105,12 @@ export class DispatchService {
   }
 
   /**
-   * Ce qu'il faut savoir d'un objet à diffuser pour chercher un livreur : d'où
-   * l'on part, et jusqu'où l'on cherche.
+   * What one needs to know about a dispatchable object to look for a courier:
+   * where the ride starts, and how far to search.
    *
-   * Une course isolée et une tournée n'ont plus de chemin séparé ici. Dupliquer
-   * cette recherche aurait créé deux systèmes de diffusion qui divergent au
-   * premier correctif ; ce sont deux appelants d'une même fonction.
+   * A lone delivery and a run no longer have separate paths here. Duplicating
+   * this search would have created two dispatch systems diverging at the first
+   * fix; they are two callers of one function.
    */
   private async targetOrigin(target: DispatchTarget): Promise<{ latitude: number, longitude: number } | null> {
     const table = target.kind === 'RUN' ? 'delivery_runs' : 'deliveries'
@@ -170,7 +170,7 @@ export class DispatchService {
     )
   }
 
-  /** Une course isolée, telle que la diffusion la voit. */
+  /** A lone delivery, as the dispatch sees it. */
   private async deliveryTarget(deliveryId: string): Promise<DispatchTarget | null> {
     const rows = await this.em.getConnection().execute(
       `SELECT broadcast_radius_km FROM deliveries WHERE id = ?`,
@@ -182,7 +182,7 @@ export class DispatchService {
     return { kind: 'DELIVERY', id: deliveryId, broadcastRadiusKm: Number(rows[0].broadcast_radius_km) }
   }
 
-  /** Une tournée, telle que la diffusion la voit. */
+  /** A run, as the dispatch sees it. */
   private async runTarget(runId: string): Promise<DispatchTarget | null> {
     const rows = await this.em.getConnection().execute(
       `SELECT broadcast_radius_km FROM delivery_runs WHERE id = ?`,
@@ -202,7 +202,7 @@ export class DispatchService {
   /**
    * Eligible couriers not yet asked for this target, ranked by scoreCandidate.
    * Acceptance rate = share of answered targeted offers accepted over 30 days,
-   * courses isolées et tournées confondues : un refus est un refus.
+   * lone deliveries and runs alike: a refusal is a refusal.
    */
   async rankCandidatesFor(target: DispatchTarget): Promise<RankedCourier[]> {
     const eligible = await this.findEligibleFor(target)
@@ -273,10 +273,10 @@ export class DispatchService {
   /**
    * Entry point for a new or re-opened delivery: targeted rounds first.
    *
-   * Une livraison qui appartient à une tournée n'entre pas ici : c'est la
-   * tournée qui est proposée, d'un bloc. La diffuser aussi séparément
-   * permettrait à un livreur d'en prendre une moitié, et le frais unique
-   * promis à l'acheteur ne couvrirait plus rien.
+   * A delivery belonging to a run does not enter here: the run is what gets
+   * offered, as a whole. Dispatching it separately as well would let a courier
+   * take half of it, and the single fee promised to the buyer would no longer
+   * cover anything.
    */
   async startDispatch(deliveryId: string): Promise<void> {
     const delivery = await this.em.findOne(Delivery, { id: deliveryId })
@@ -303,8 +303,8 @@ export class DispatchService {
       dispatchPhase: DispatchPhase.SCHEDULED,
       dispatchAt: { $lte: new Date() },
     })
-    // Une livraison de tournée passe par `startDispatch`, qui la renvoie vers
-    // sa tournée : la sortir de l'attente ici suffit.
+    // A run's delivery goes through `startDispatch`, which redirects it to its
+    // run: taking it out of the waiting list here is enough.
     for (const delivery of due) {
       await this.startDispatch(delivery.id)
     }
@@ -314,8 +314,8 @@ export class DispatchService {
   @EnsureRequestContext()
   async startScheduledCron(): Promise<void> {
     await this.startScheduled()
-    // Une tournée n'attend pas une heure mais la dernière de ses boutiques :
-    // c'est ici qu'on regarde si elle est complète.
+    // A run waits not for a time but for the last of its shops: this is where
+    // we check whether it is complete.
     await this.startReadyRuns()
   }
 
@@ -370,11 +370,11 @@ export class DispatchService {
   }
 
   /**
-   * Ouvre la recherche d'un livreur pour une tournée.
+   * Opens the courier search for a run.
    *
-   * Une tournée n'est diffusée que lorsque **toutes** ses boutiques ont
-   * préparé. Partir avant, c'est envoyer le livreur attendre devant la seconde
-   * — et c'est lui, pas la plateforme, qui paierait cette attente.
+   * A run is only dispatched once **every** one of its shops has prepared.
+   * Leaving earlier means sending the courier to wait in front of the second
+   * one — and it is them, not the platform, who would pay for that wait.
    */
   async startRunDispatch(runId: string): Promise<void> {
     const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['deliveries'] })
@@ -384,8 +384,8 @@ export class DispatchService {
     if (!this.isRunReady(run)) {
       return
     }
-    // Ordre provisoire d'abord — sans lui, le premier point de collecte n'est
-    // pas défini et la recherche partirait d'une boutique au hasard.
+    // Provisional order first — without it the first pickup point is undefined
+    // and the search would start from an arbitrary shop.
     await this.applyProvisionalPickupOrder(run)
     await this.refreshRunPickupPoint(run)
     run.dispatchPhase = DispatchPhase.TARGETED
@@ -398,9 +398,8 @@ export class DispatchService {
   }
 
   /**
-   * Toutes les boutiques de la tournée ont-elles remis leur colis à la
-   * recherche ? Une tournée dont une livraison manque encore — la commande
-   * n'est pas prête — n'est pas diffusable.
+   * Has every shop of the run handed its parcel over to the search? A run
+   * still missing a delivery — the order is not ready — cannot be dispatched.
    */
   private isRunReady(run: DeliveryRun): boolean {
     const deliveries = run.deliveries.getItems()
@@ -414,10 +413,9 @@ export class DispatchService {
   }
 
   /**
-   * Ordre de passage provisoire, tant qu'aucun livreur n'est connu : la
-   * boutique la plus éloignée du point de chute en premier, pour que le
-   * dernier tronçon soit le plus court. Il se recalcule à l'acceptation,
-   * depuis la position réelle du livreur.
+   * Provisional visiting order, while no courier is known: the shop farthest
+   * from the drop-off comes first, so that the last leg is the shortest. It is
+   * recomputed on acceptance, from the courier's real position.
    */
   private async applyProvisionalPickupOrder(run: DeliveryRun): Promise<void> {
     const deliveries = run.deliveries.getItems()
@@ -438,9 +436,8 @@ export class DispatchService {
   }
 
   /**
-   * Le point de départ de la tournée : la première collecte de l'ordre de
-   * passage. Recopié sur la tournée pour que la recherche de livreurs parte du
-   * même endroit que lui.
+   * The run's starting point: the first pickup of the visiting order. Copied
+   * onto the run so the courier search starts from the same place they will.
    */
   private async refreshRunPickupPoint(run: DeliveryRun): Promise<void> {
     const firstId = run.pickupOrder[0] ?? run.deliveries.getItems()[0]?.id
@@ -455,8 +452,8 @@ export class DispatchService {
   }
 
   /**
-   * Propose la tournée au meilleur livreur restant, ou la passe en diffusion
-   * large quand les tours sont épuisés ou qu'il n'y a plus personne à solliciter.
+   * Offers the run to the best remaining courier, or hands it to the broadcast
+   * once the rounds are spent or nobody is left to ask.
    */
   async offerNextRun(runId: string): Promise<void> {
     const run = await this.em.findOne(DeliveryRun, { id: runId })
@@ -502,14 +499,14 @@ export class DispatchService {
     this.logger.log(`Offered run ${run.id} to courier ${best.id} (round ${round}, score ${best.score.toFixed(2)})`)
   }
 
-  /** Comment une tournée se présente à un livreur, en une ligne. */
+  /** How a run introduces itself to a courier, in one line. */
   private runLabel(run: DeliveryRun): string {
     return run.shopCount > 1
       ? `Tournée de ${run.shopCount} boutiques`
       : 'Course à retirer'
   }
 
-  /** Le livreur sollicité a répondu, ou le délai a expiré. */
+  /** The targeted courier answered, or the clock ran out. */
   async respondToRunOffer(runId: string, courierId: string, response: DeliveryOfferResponse): Promise<void> {
     const offer = await this.em.findOne(DeliveryOffer, {
       deliveryRun: { id: runId },
@@ -532,7 +529,7 @@ export class DispatchService {
     }
   }
 
-  /** Ferme l'offre en cours quand la tournée sort de la boucle autrement. */
+  /** Closes the pending offer when the run leaves the loop another way. */
   async cancelPendingRunOffer(runId: string): Promise<void> {
     const pending = await this.em.find(DeliveryOffer, { deliveryRun: { id: runId }, respondedAt: null })
     for (const offer of pending) {
@@ -556,7 +553,7 @@ export class DispatchService {
     await this.broadcastRun(run.id)
   }
 
-  /** Pousse la tournée à tous les livreurs éligibles. */
+  /** Pushes the run to every eligible courier. */
   async broadcastRun(runId: string): Promise<number> {
     const run = await this.em.findOne(DeliveryRun, { id: runId })
     if (!run || run.status !== DeliveryRunStatus.AWAITING_COURIER) {
@@ -586,7 +583,7 @@ export class DispatchService {
     return users.length
   }
 
-  /** Offres de tournée hors délai : journaliser et solliciter le suivant. */
+  /** Run offers past their window: journal and ask the next courier. */
   async expireRunOffers(): Promise<void> {
     const expired = await this.em.find(DeliveryRun, {
       status: DeliveryRunStatus.AWAITING_COURIER,
@@ -604,7 +601,7 @@ export class DispatchService {
     }
   }
 
-  /** Tournée sans preneur depuis 10 min : élargir le rayon et repousser. */
+  /** Run unclaimed for 10 min: widen the radius and push again. */
   async rebroadcastStaleRuns(): Promise<void> {
     const cutoff = new Date(Date.now() - TEN_MINUTES_MS)
     const stale = await this.em.find(DeliveryRun, {
@@ -621,9 +618,9 @@ export class DispatchService {
   }
 
   /**
-   * Tournées dont la dernière boutique vient de préparer. Le déclencheur ne
-   * peut pas vivre au moment où une livraison naît : c'est la *dernière* qui
-   * ouvre la diffusion, et aucune d'elles ne sait qu'elle est la dernière.
+   * Runs whose last shop has just prepared. The trigger cannot live where a
+   * delivery is born: it is the *last* one that opens the dispatch, and none of
+   * them knows it is the last.
    */
   async startReadyRuns(): Promise<void> {
     const waiting = await this.em.find(DeliveryRun, {
@@ -638,19 +635,18 @@ export class DispatchService {
   }
 
   /**
-   * Le sort d'une tournée que personne ne prend, en trois temps.
+   * What becomes of a run nobody takes, in three stages.
    *
-   * 15 minutes : le back-office est alerté et peut attribuer un livreur à la
-   * main. La diffusion continue pendant ce temps — l'alerte n'interrompt rien.
+   * 15 minutes: the back-office is alerted and may assign a courier by hand.
+   * The dispatch keeps running meanwhile — the alert interrupts nothing.
    *
-   * 30 minutes : la tournée se **dégroupe**. Ses livraisons repartent une par
-   * une, parce que faire attendre l'acheteur pendant que la marchandise est
-   * prête chez des boutiques qui ont préparé est le pire des dénouements. Les
-   * plateformes comparables font de même : quand le lot n'a pas de sens, elles
-   * basculent sur deux livreurs plutôt que sur aucun.
+   * 30 minutes: the run **ungroups**. Its deliveries leave one by one, because
+   * making the buyer wait while the goods sit ready at shops that have prepared
+   * is the worst of endings. Comparable platforms do the same: when the batch
+   * makes no sense, they switch to two couriers rather than none.
    *
-   * La main n'est rendue à l'acheteur que si les courses séparées ne trouvent
-   * personne non plus — c'est FR-022c, et c'est le dernier recours.
+   * The decision only goes back to the buyer if the separate deliveries find
+   * nobody either — that is FR-022c, and it is the last resort.
    */
   async escalateStaleRuns(): Promise<void> {
     const now = Date.now()
@@ -680,12 +676,11 @@ export class DispatchService {
   }
 
   /**
-   * Dégroupe une tournée : ses livraisons redeviennent des courses isolées et
-   * repartent chacune de son côté.
+   * Ungroups a run: its deliveries become lone ones again and each leaves on
+   * its own.
    *
-   * La tournée n'est pas supprimée mais close en `UNSERVED` : son échec est
-   * une donnée, c'est elle qui dira plus tard si les seuils de regroupement
-   * sont bien placés.
+   * The run is not deleted but closed as `UNSERVED`: its failure is data, and
+   * it is what will later tell whether the grouping thresholds sit right.
    */
   async ungroupRun(run: DeliveryRun): Promise<void> {
     const deliveries = run.deliveries.getItems()
@@ -697,8 +692,8 @@ export class DispatchService {
     run.offerExpiresAt = null
     await this.em.flush()
 
-    // Chaque course reprend son propre frais, part de la tournée : c'est ce
-    // qui la rend diffusable seule, et payable seule au livreur.
+    // Each delivery takes back its own fee, a share of the run's: that is what
+    // makes it dispatchable on its own, and payable on its own to the courier.
     const rate = await this.platformSettings.getDeliveryCommissionRate()
     const share = deliveries.length > 0 ? Math.round(run.deliveryFee / deliveries.length) : 0
     for (const delivery of deliveries) {
@@ -737,12 +732,12 @@ export class DispatchService {
   }
 
   /**
-   * Rendre la main à l'acheteur, mais seulement en dernier recours.
+   * Hand the decision back to the buyer, but only as a last resort.
    *
-   * Une tournée dégroupée dont les courses ne trouvent toujours personne a
-   * épuisé ce que la plateforme sait faire. À ce stade, continuer d'attendre
-   * en silence serait pire que de poser la question : l'acheteur décide
-   * d'attendre encore ou d'annuler et d'être crédité.
+   * An ungrouped run whose deliveries still find nobody has exhausted what the
+   * platform knows how to do. At that point, waiting on in silence would be
+   * worse than asking: the buyer decides between waiting longer and cancelling
+   * for a refund.
    */
   async promptBuyersForUnservedRuns(): Promise<void> {
     const cutoff = new Date(Date.now() - PROMPT_AFTER_UNGROUP_MS)
@@ -754,8 +749,8 @@ export class DispatchService {
     }, { populate: ['checkout'] })
 
     for (const run of ungrouped) {
-      // Les courses libérées ont-elles trouvé preneur ? Une seule acceptée
-      // suffit à ne pas déranger l'acheteur : il sera livré.
+      // Have the freed deliveries found a taker? A single accepted one is
+      // enough to leave the buyer alone: they will be delivered.
       const stillWaiting = await this.em.count(Delivery, {
         order: { checkout: { id: run.checkout.id } },
         status: DeliveryStatus.AWAITING_COURIER,

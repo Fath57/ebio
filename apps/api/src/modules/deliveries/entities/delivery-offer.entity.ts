@@ -25,9 +25,9 @@ export class DeliveryOffer {
   id!: string
 
   /**
-   * L'objet proposé : une course isolée, ou une tournée. Jamais les deux —
-   * une contrainte en base le garantit, parce que deux cibles pour une offre
-   * laisseraient deux réponses possibles pour un seul refus.
+   * The offered object: a lone delivery, or a run. Never both —
+   * a database constraint guarantees it, because two targets for one offer
+   * would leave two possible answers for a single refusal.
    */
   @ManyToOne(() => Delivery, { fieldName: 'delivery_id', deleteRule: 'cascade', nullable: true })
   @Index()

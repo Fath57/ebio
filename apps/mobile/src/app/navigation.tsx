@@ -1,7 +1,7 @@
 // eslint-disable-next-line ts/ban-ts-comment
 // @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
-// Les deux directives ci-dessus doivent rester en tête de fichier : un import
-// placé avant elles désactive le `@ts-nocheck` et réveille les incompatibilités
+// The two directives above must stay at the top of the file: an import
+// placed before them disables the `@ts-nocheck` and wakes the React
 // de types de React Navigation.
 import type { ProductDetailProduct, ProductDetailSupplier } from '../features/catalog/components/product-detail-screen'
 import type { ApiProductDetail, ApiSupplierDetail } from '../features/catalog/product-detail-mapping'
@@ -210,8 +210,8 @@ function ProductDetailWrapper({ route, navigation }: any) {
     supplier: ProductDetailSupplier | null
   } | null>(null)
 
-  // Une bannière ne transporte qu'un identifiant : on complète nous-mêmes le
-  // produit et son fournisseur, que l'écran attend en objets.
+  // A banner only carries an id: we fill in the product and its
+  // supplier ourselves, which the screen expects as objects.
   React.useEffect(() => {
     if (!productId)
       return
@@ -232,7 +232,7 @@ function ProductDetailWrapper({ route, navigation }: any) {
         }
       }
       catch {
-        // L'écran affichera son état vide.
+        // The screen will show its empty state.
       }
     }
     load()
@@ -334,9 +334,9 @@ function CartHomeWrapper({ navigation }: any) {
     if (items.length === 0)
       return
 
-    // Le récapitulatif est celui du panier, toutes boutiques confondues. Chaque
-    // ligne porte sa boutique pour l'affichage ; la répartition en commandes
-    // est l'affaire du serveur.
+    // The summary is the cart's, every shop together. Each line
+    // carries its shop for display; splitting into orders is the
+    // server's business.
     const orderSummary = {
       shopNames: groups.map(g => g.supplierName),
       items: items.map(i => ({

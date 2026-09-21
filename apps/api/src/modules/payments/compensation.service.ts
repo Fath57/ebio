@@ -11,26 +11,25 @@ import { Checkout, CheckoutStatus } from './entities/checkout.entity'
 import { Payment, PaymentStatus } from './payment.entity'
 
 export interface CompensationResult {
-  /** Montant réellement crédité, 0 quand il n'y avait rien à rendre. */
+  /** Amount actually credited, 0 when there was nothing to give back. */
   amount: number
-  /** Écart de frais rendu après recalcul de la tournée. */
+  /** Fee difference returned after the run was re-priced. */
   deliveryRefund: number
-  /** Vrai quand le dédommagement avait déjà eu lieu. */
+  /** True when the compensation had already happened. */
   alreadyDone: boolean
   checkoutStatus: CheckoutStatus | null
 }
 
 /**
- * Dédommager l'acheteur quand une commande d'un panier unifié tombe.
+ * Compensates the buyer when an order of a unified cart falls through.
  *
- * Le Mobile Money ne sait ni geler des fonds ni en rendre une partie : un
- * paiement unique couvre N commandes, et si l'une est refusée il n'existe
- * aucun moyen d'en défaire le tiers chez le prestataire. Le portefeuille eBio
- * est la seule réponse immédiate, et l'acheteur peut en demander le retrait
- * par les mécanismes existants.
+ * Mobile Money can neither hold funds nor give part of them back: one payment
+ * covers N orders, and if one is refused there is no way to undo a third of it
+ * at the provider. The eBio wallet is the only immediate answer, and the buyer
+ * can withdraw from it through the existing mechanisms.
  *
- * Tout passe par ici, quel que soit le chemin — refus boutique, annulation
- * admin, expiration : un rejeu ne crédite jamais deux fois.
+ * Everything goes through here, whatever the path — shop refusal, admin
+ * cancellation, expiry: a replay never credits twice.
  */
 @Injectable()
 export class CompensationService {
@@ -45,10 +44,10 @@ export class CompensationService {
   ) {}
 
   /**
-   * A-t-on déjà rendu l'argent de cette commande ?
+   * Has this order's money already been given back?
    *
-   * La clé est la commande, pas l'appel : c'est ce qui rend l'opération sûre
-   * quel que soit le nombre de fois où on la déclenche.
+   * The key is the order, not the call: that is what makes the operation safe
+   * however many times it is triggered.
    */
   private async alreadyCompensated(orderId: string): Promise<boolean> {
     const rows = await this.em.getConnection().execute(
@@ -77,8 +76,8 @@ export class CompensationService {
       }
     }
 
-    // En espèces, l'argent n'a jamais quitté l'acheteur : il n'y a rien à
-    // rendre, seulement une commande qui ne se fera pas.
+    // With cash, the money never left the buyer: there is nothing to give
+    // back, only an order that will not happen.
     if (order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
       const status = checkout ? await this.refreshCheckoutStatus(checkout) : null
       return { amount: 0, deliveryRefund: 0, alreadyDone: false, checkoutStatus: status }
@@ -106,8 +105,8 @@ export class CompensationService {
     }
     await this.em.flush()
 
-    // La boutique quitte la tournée : le trajet raccourcit, donc le frais
-    // aussi. Ce que l'acheteur a payé en trop lui revient.
+    // The shop leaves the run: the ride gets shorter, so does the fee. What
+    // the buyer overpaid comes back to them.
     const deliveryRefund = checkout
       ? await this.settleRunAfterRemoval(checkout, order, wallet.id)
       : 0
@@ -129,11 +128,11 @@ export class CompensationService {
   }
 
   /**
-   * Retire la boutique de sa tournée et rend l'écart de frais s'il y en a un.
+   * Removes the shop from its run and returns the fee difference, if any.
    *
-   * Le frais est unique et payé d'avance ; si la tournée perd une collecte,
-   * elle coûte moins cher à faire. Garder la différence reviendrait à facturer
-   * un trajet qui n'aura pas lieu.
+   * The fee is single and paid up front; if the run loses a pickup it costs
+   * less to ride. Keeping the difference would amount to charging for a trip
+   * that will not happen.
    */
   private async settleRunAfterRemoval(checkout: Checkout, order: Order, walletId: string): Promise<number> {
     try {
@@ -149,9 +148,9 @@ export class CompensationService {
         amount: outcome.refund,
         description: `Ajustement des frais de livraison — commande ${order.orderNumber}`,
         orderId: order.id,
-        // La tournée distingue cet ajustement du remboursement de la commande.
-        // Sans elle, un ajustement écrit le premier ferait croire que l'argent
-        // a déjà été rendu, et bloquerait le vrai remboursement pour toujours.
+        // The run tells this adjustment apart from the order's refund. Without
+        // it, an adjustment written first would look like the money had already
+        // been given back, and would block the real refund forever.
         deliveryRunId: outcome.runId,
       })
       checkout.deliveryFee = Math.max(0, checkout.deliveryFee - outcome.refund)
@@ -160,8 +159,8 @@ export class CompensationService {
       return outcome.refund
     }
     catch (error) {
-      // Un ajustement raté ne doit pas retenir le remboursement principal,
-      // qui est le montant que l'acheteur attend vraiment.
+      // A failed adjustment must not hold back the main refund, which is the
+      // amount the buyer is really waiting for.
       this.logger.error(
         `Delivery fee adjustment failed for order ${order.id}`,
         error instanceof Error ? error.stack : String(error),
@@ -171,9 +170,9 @@ export class CompensationService {
   }
 
   /**
-   * Un panier dont toutes les commandes sont tombées est remboursé ; s'il en
-   * reste une debout, il est partiellement remboursé. L'état se déduit des
-   * commandes, il ne s'écrit pas à la main.
+   * A cart whose orders have all fallen through is refunded; if one still
+   * stands, it is partially refunded. The state is derived from the orders, it
+   * is not written by hand.
    */
   private async refreshCheckoutStatus(checkout: Checkout): Promise<CheckoutStatus> {
     const orders = await this.em.find(Order, { checkout: { id: checkout.id } })

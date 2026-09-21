@@ -111,8 +111,8 @@ export class DeliveriesController {
     @Param('id') id: string,
     @TypedBody(transitionSchema) body: z.infer<typeof transitionSchema>,
   ) {
-    // `collect` retombe sur l'ancien retrait pour une course isolée, et tient
-    // la mécanique de tournée pour les autres.
+    // `collect` falls back on the former pickup for a lone delivery, and holds
+    // the run mechanics for the others.
     const delivery = await this.deliveriesService.collect(id, session.user.id, body.occurredAt)
     const events = await this.deliveriesService.getEvents(delivery.id)
     return DeliveriesMapper.toResponse(delivery, 'courier', events)

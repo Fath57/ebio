@@ -45,14 +45,14 @@ type PaymentChoice = 'FEDAPAY' | 'WALLET' | 'CASH'
 // Mirrors the API contract (createOrderSchema.deliveryAddress).
 const MIN_ADDRESS_LENGTH = 3
 
-/** Ce que renvoie `POST /orders/checkout` : un panier, N commandes. */
+/** What `POST /orders/checkout` returns: one cart, N orders. */
 interface CheckoutResult {
   checkoutId: string
   orders: Array<{ orderId: string, orderNumber: string, total: number }>
 }
 
 interface OrderSummary {
-  /** Les boutiques du panier, pour l'en-tête. Une seule le plus souvent. */
+  /** The cart's shops, for the header. A single one most of the time. */
   shopNames: string[]
   items: Array<{
     productId: string
@@ -90,14 +90,14 @@ function formatKm(value: number): string {
 }
 
 /**
- * Motifs pour lesquels l'API refuse réellement la commande — elle ne sait pas
+ * Reasons the API genuinely refuses the order — it cannot price the
  * en chiffrer la livraison (`deliveryPriceable`, orders.service.ts).
  *
- * `NO_SHOP_POSITION` n'en fait pas partie : quand c'est la *boutique* qui n'a
- * pas de position, le serveur applique le forfait et accepte la commande.
- * Bloquer ici interdisait l'achat pour une donnée manquante côté vendeur, que
- * l'acheteur ne peut pas fournir — il repointait sa position sur la carte sans
- * que le message change jamais.
+ * `NO_SHOP_POSITION` is not one of them: when the *shop* has no
+ * position, the server applies the flat fee and accepts the order.
+ * Blocking here forbade the purchase over data missing on the seller's
+ * side, which the buyer cannot supply — they kept re-pinning their
+ * position on the map while the message never changed.
  */
 const BLOCKING_DELIVERY_REASONS: PreviewDeliveryReason[] = ['NO_POSITION', 'OUT_OF_RANGE']
 
@@ -134,8 +134,8 @@ function DeliveryFeeValue({ preview, loading, textColor, mutedColor }: DeliveryF
   if (deliveryReason === 'NO_POSITION') {
     return <Text style={[styles.feeValue, styles.feeBlocked]}>Position à choisir</Text>
   }
-  // La boutique n'est pas localisée : le serveur facture le forfait. Le montant
-  // est réel, l'acheteur a le droit de le voir plutôt qu'un blocage.
+  // The shop has no position: the server charges the flat fee. The amount
+  // is real, and the buyer deserves to see it rather than a block.
   if (deliveryReason === 'NO_SHOP_POSITION') {
     return (
       <Text style={[styles.feeValue, { color: textColor }]}>
@@ -158,8 +158,8 @@ function DeliveryFeeValue({ preview, loading, textColor, mutedColor }: DeliveryF
   if (deliveryReason === 'FREE_THRESHOLD' || deliveryFee === 0) {
     return <Text style={[styles.feeValue, { color: colors.green[600] }]}>Offerte</Text>
   }
-  // Plusieurs tournées : dire « 2 livraisons » plutôt qu'une distance, qui
-  // n'aurait aucun sens additionnée sur deux trajets distincts.
+  // Several runs: say "2 deliveries" rather than a distance, which
+  // would mean nothing added up over two separate rides.
   const runCount = preview.deliveryRunCount
   const showDistance = runCount <= 1
     && (deliveryReason === 'DISTANCE' || deliveryReason === 'ZONE')
@@ -360,7 +360,7 @@ export function CheckoutFlow({
   const [appliedPromo, setAppliedPromo] = useState<{ code: string } | null>(null)
   const [promoError, setPromoError] = useState<string | null>(null)
   const [checkingPromo, setCheckingPromo] = useState(false)
-  /** Le passage en caisse en cours de paiement : un pour tout le panier. */
+  /** The checkout being paid: one for the whole cart. */
   const [pendingCheckoutId, setPendingCheckoutId] = useState<string | null>(null)
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
@@ -387,8 +387,8 @@ export function CheckoutFlow({
     [liveItems, orderSummary.items],
   )
   const basketProductIds = useMemo(() => basketItems.map(item => item.productId), [basketItems])
-  // Les suggestions restent celles de la première boutique du panier : elles
-  // n'ont de sens que rapportées à un catalogue.
+  // Suggestions stay the first shop's: they only make sense
+  // against one catalogue.
   const { items: upsellItems } = useRecommendations(basketItems[0]?.supplierId ?? '', basketProductIds, 4)
   // Single source of truth for the summary: promotions, gifts, promo code and
   // delivery fee are all priced by the API.
@@ -471,8 +471,8 @@ export function CheckoutFlow({
     try {
       const res = await apiFetch('/api/promo-codes/validate', {
         method: 'POST',
-        // Un code appartient à une boutique : on vérifie contre la première.
-        // Au-delà d'une boutique, le serveur refuse le code à la validation.
+        // A code belongs to one shop: we check against the first.
+        // Past one shop, the server refuses the code at checkout time.
         body: JSON.stringify({ code, supplierId: basketItems[0]?.supplierId, itemsTotal: orderSummary.total }),
       })
       const data = await res.json().catch(() => null) as { valid?: boolean, message?: string | null } | null
@@ -538,8 +538,8 @@ export function CheckoutFlow({
     setIsSubmitting(true)
     try {
       // Create order
-      // Un seul appel pour tout le panier : le serveur crée une commande par
-      // boutique et n'encaisse qu'une fois.
+      // A single call for the whole cart: the server creates one order per
+      // shop and collects only once.
       const orderRes = await apiFetch('/api/orders/checkout', {
         method: 'POST',
         body: JSON.stringify({
@@ -568,8 +568,8 @@ export function CheckoutFlow({
       if (orderRes.ok) {
         const created = await orderRes.json() as CheckoutResult
         checkout = created
-        // Le suivi reste par commande : on retient la première pour l'écran de
-        // confirmation, et le montant est celui du panier.
+        // Tracking stays per order: we keep the first for the confirmation
+        // screen, and the amount is the cart's.
         const first = created.orders[0]
         order = {
           id: first.orderId,
@@ -620,8 +620,8 @@ export function CheckoutFlow({
         return
       }
 
-      // Un seul encaissement pour le panier, quel que soit le nombre de
-      // boutiques : c'est toute la promesse de cet écran.
+      // A single collection for the cart, whatever the number of
+      // shops: that is this screen's whole promise.
       const paymentRes = await apiFetch('/api/payments/cart/initiate', {
         method: 'POST',
         body: JSON.stringify({ checkoutId: checkout?.checkoutId }),
@@ -633,8 +633,8 @@ export function CheckoutFlow({
         return
       }
 
-      // Le paiement lui-même n'existe pas encore : il naît à la confirmation,
-      // un par commande. Ce qu'on retient ici est le passage en caisse.
+      // The payment itself does not exist yet: it is born at confirmation,
+      // one per order. What we keep here is the checkout.
       await paymentRes.json()
       setPendingCheckoutId(checkout?.checkoutId ?? null)
       setCurrentStep('PAYMENT')
@@ -652,8 +652,8 @@ export function CheckoutFlow({
       const data = JSON.parse(event.nativeEvent.data)
 
       if (data.type === 'completed' && pendingCheckoutId) {
-        // Confirme l'encaissement unique ; le serveur crée alors un paiement
-        // par commande, chacun avec son escrow.
+        // Confirms the single collection; the server then creates one payment
+        // per order, each with its own escrow.
         await apiFetch('/api/payments/cart/verify', {
           method: 'POST',
           body: JSON.stringify({

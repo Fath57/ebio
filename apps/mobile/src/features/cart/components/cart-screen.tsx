@@ -46,18 +46,18 @@ interface CartItem {
 }
 
 interface CartScreenProps {
-  /** Le panier, à plat. L'acheteur n'a pas à savoir qui vend quoi. */
+  /** The cart, flat. The buyer does not need to know who sells what. */
   items: CartItem[]
-  /** Un seul mode pour tout le panier : l'acheteur n'en a qu'un. */
+  /** One mode for the whole cart: the buyer only has one. */
   deliveryMode: DeliveryMode
   onUpdateQuantity: (itemId: string, quantity: number) => void
   onSelectVariant: (itemId: string, variant: CartVariant) => void
   onChangeDeliveryMode: (mode: DeliveryMode) => void
-  /** Un seul passage en caisse, pour tout le panier. */
+  /** A single checkout, for the whole cart. */
   onCheckout: () => void
   onRemoveItem: (itemId: string) => void
   onContinueShopping?: () => void
-  /** Ouvre la fiche du produit (image ou nom touché). */
+  /** Opens the product page (image or name tapped). */
   onPressItem?: (productId: string) => void
 }
 

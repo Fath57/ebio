@@ -48,10 +48,10 @@ function buildDelivery(extra: Partial<TestDelivery> = {}): TestDelivery {
 }
 
 /**
- * La recherche procède en trois requêtes : le rayon de l'objet diffusé, son
- * point de départ, puis les livreurs. Les deux premières viennent de la table
- * de l'objet — `deliveries` ou `delivery_runs` — et c'est tout ce qui distingue
- * une course isolée d'une tournée.
+ * The search runs three queries: the dispatched object's radius, its
+ * starting point, then the couriers. The first two come from the object's
+ * table — `deliveries` or `delivery_runs` — and that is all that tells
+ * a lone delivery from a run.
  */
 function mockLookup(execute: ReturnType<typeof vi.fn>, options: { radiusKm?: number, origin?: { latitude: number, longitude: number } | null } = {}) {
   execute.mockResolvedValueOnce([{ broadcast_radius_km: options.radiusKm ?? 5 }])
@@ -191,8 +191,8 @@ describe('dispatchService', () => {
 
     it('ne diffuse pas une tournée dont une boutique n\'a pas encore préparé', async () => {
       const { service, em } = buildService()
-      // Deux boutiques annoncées, une seule livraison créée : la seconde
-      // commande n'est pas prête, le livreur attendrait devant.
+      // Two shops announced, a single delivery created: the second
+      // order is not ready, the courier would wait in front of it.
       em.findOne.mockResolvedValueOnce(buildRun({ items: [readyDelivery('d1')] }))
       const offerSpy = vi.spyOn(service, 'offerNextRun').mockResolvedValue(undefined)
       await service.startRunDispatch('run-1')

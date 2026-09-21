@@ -51,7 +51,7 @@ export class PaymentsController {
     return this.paymentsService.initiateCheckoutPayment(session.user.id, body)
   }
 
-  /** Un panier multi-boutiques : un montant, une transaction. */
+  /** A multi-shop cart: one amount, one transaction. */
   @TypedRoute.Post('cart/initiate', cartPaymentResultSchema)
   @CanCreate('Payment')
   async initiateCartPayment(
@@ -61,7 +61,7 @@ export class PaymentsController {
     return this.paymentsService.initiateCartPayment(session.user.id, body)
   }
 
-  /** Confirme l'encaissement unique et crée un paiement par commande. */
+  /** Confirms the single collection and creates one payment per order. */
   @TypedRoute.Post('cart/verify', cartPaymentResultSchema)
   @CanCreate('Payment')
   async verifyCartPayment(

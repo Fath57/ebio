@@ -2,9 +2,9 @@ import { CompensationService } from './compensation.service'
 import { CheckoutStatus } from './entities/checkout.entity'
 
 /**
- * Le dédommagement touche à l'argent : ce qu'on vérifie ici, c'est qu'il ne
- * crédite jamais deux fois, et qu'il rend bien ce qui est dû — le montant de
- * la commande, plus l'écart de frais d'une tournée raccourcie.
+ * Compensation touches money: what is checked here is that it never
+ * credits twice, and that it returns what is owed — the order's
+ * amount, plus the fee difference of a shortened run.
  */
 function buildService(options: { alreadyRefunded?: boolean } = {}) {
   const execute = vi.fn().mockResolvedValue(options.alreadyRefunded ? [{ '?column?': 1 }] : [])
@@ -81,7 +81,7 @@ describe('compensationService', () => {
 
     const result = await service.compensateOrder('order-1', 'boutique fermée')
 
-    // L'argent n'a jamais quitté l'acheteur : il n'y a rien à lui rendre.
+    // The money never left the buyer: there is nothing to give back.
     expect(result.amount).toBe(0)
     expect(wallet.credit).not.toHaveBeenCalled()
   })
@@ -99,15 +99,15 @@ describe('compensationService', () => {
 
     expect(result.deliveryRefund).toBe(300)
     expect(wallet.credit).toHaveBeenCalledTimes(2)
-    // L'ajustement porte la tournée, le remboursement de la commande non :
-    // c'est ce qui empêche l'un de faire passer l'autre pour déjà réglé.
+    // The adjustment carries the run, the order refund does not:
+    // that is what keeps one from making the other look already settled.
     const [orderRefund] = wallet.credit.mock.calls[0].slice(1) as [Record<string, unknown>]
     const [feeRefund] = wallet.credit.mock.calls[1].slice(1) as [Record<string, unknown>]
     expect(orderRefund.deliveryRunId).toBeUndefined()
     expect(orderRefund.amount).toBe(2600)
     expect(feeRefund.deliveryRunId).toBe('run-1')
     expect(feeRefund.amount).toBe(300)
-    // Le panier ne facture plus un trajet qui n'aura pas lieu.
+    // The cart no longer charges for a ride that will not happen.
     expect(checkout.deliveryFee).toBe(500)
     expect(checkout.totalAmount).toBe(5700)
   })
@@ -122,7 +122,7 @@ describe('compensationService', () => {
 
     const result = await service.compensateOrder('order-1', 'rupture de stock')
 
-    // Le montant de la commande est ce que l'acheteur attend vraiment.
+    // The order amount is what the buyer is really waiting for.
     expect(result.amount).toBe(2600)
     expect(result.deliveryRefund).toBe(0)
     expect(wallet.credit).toHaveBeenCalledOnce()

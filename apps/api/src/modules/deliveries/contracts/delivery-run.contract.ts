@@ -1,11 +1,11 @@
 import { z } from 'zod'
 
 /**
- * La tournée : plusieurs collectes, une remise, un seul livreur.
+ * The run: several pickups, one handover, a single courier.
  *
- * La décision du livreur porte sur la tournée entière — il n'y a pas
- * d'acceptation partielle. La collecte, elle, reste boutique par boutique :
- * chaque commande passe en « récupérée » à son propre point.
+ * The courier's decision covers the whole run — there is no
+ * partial acceptance. The pickup, however, stays shop by shop:
+ * each order turns "picked up" at its own point.
  */
 
 export const deliveryRunStatusEnum = z.enum([
@@ -29,7 +29,7 @@ export const runPickupSchema = z.object({
   address: z.string().nullable(),
   latitude: z.number().nullable(),
   longitude: z.number().nullable(),
-  /** Passe à true dès que le livreur a collecté chez cette boutique. */
+  /** Turns true as soon as the courier has collected from this shop. */
   collected: z.boolean(),
 }).meta({ title: 'RunPickup' })
 
@@ -38,7 +38,7 @@ export const offeredRunSchema = z.object({
   checkoutId: z.string().uuid(),
   shopCount: z.number().int().positive(),
   totalDistanceKm: z.number().nullable(),
-  /** Rémunération de la tournée, et non par commande transportée. */
+  /** Pay for the run, and not per order carried. */
   earning: z.number(),
   /** Points de collecte, dans l'ordre de passage. */
   pickups: z.array(runPickupSchema).min(1),
@@ -68,13 +68,13 @@ export const collectDeliveryResponseSchema = z.object({
 }).meta({ title: 'CollectDeliveryResponse' })
 
 export const deliverRunSchema = z.object({
-  /** Le code de l'acheteur, un seul pour toute la tournée. */
+  /** The buyer's code, a single one for the whole run. */
   code: z.string().regex(/^\d{4}$/, 'Le code comporte 4 chiffres'),
 }).meta({ title: 'DeliverRun' })
 
 export const deliverRunResponseSchema = z.object({
   runStatus: deliveryRunStatusEnum,
-  /** Toutes les commandes de la tournée, passées en « livrée » d'un geste. */
+  /** Every order of the run, turned "delivered" in one gesture. */
   orders: z.array(z.object({
     orderId: z.string().uuid(),
     status: z.string(),
@@ -82,8 +82,8 @@ export const deliverRunResponseSchema = z.object({
 }).meta({ title: 'DeliverRunResponse' })
 
 /**
- * Ce que l'acheteur répond quand aucun livreur n'a pris la tournée au bout de
- * 30 minutes. Annuler crédite l'intégralité du montant, frais compris.
+ * What the buyer answers when no courier has taken the run after
+ * 30 minutes. Cancelling credits the full amount, fee included.
  */
 export const buyerRunDecisionSchema = z.object({
   decision: z.enum(['WAIT', 'CANCEL']),

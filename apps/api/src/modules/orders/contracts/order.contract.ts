@@ -112,18 +112,18 @@ export const orderDeliverySummarySchema = z.object({
   courierName: z.string().nullable(),
   courierVehicleType: z.enum(['MOTO', 'BICYCLE', 'CAR', 'ON_FOOT']).nullable(),
   /**
-   * La tournée dont cette livraison fait partie, quand il y en a une. Elle
-   * permet à l'acheteur de voir une seule progression pour un panier qui
-   * couvre plusieurs boutiques, au lieu d'en suivre deux en parallèle.
+   * The run this delivery belongs to, when there is one. It lets
+   * the buyer see one progression for a cart spanning several
+   * shops, instead of following two in parallel.
    */
   run: z.object({
     id: z.string().uuid(),
     shopCount: z.number().int().positive(),
-    /** Boutiques déjà collectées, sur `shopCount`. */
+    /** Shops already collected, out of `shopCount`. */
     collectedCount: z.number().int().min(0),
     /**
-     * Vrai lorsque la plateforme a épuisé ses recours et rend la main à
-     * l'acheteur : attendre encore, ou annuler et être recrédité (FR-022c).
+     * True once the platform has exhausted its options and hands the
+     * decision to the buyer: wait longer, or cancel for a refund (FR-022c).
      */
     awaitingBuyerDecision: z.boolean(),
   }).nullable(),
@@ -161,7 +161,7 @@ export const orderResponseSchema = z.object({
   escrowReleasedAt: z.string().datetime().nullable(),
   items: z.array(orderItemSchema),
   delivery: orderDeliverySummarySchema.nullable(),
-  /** Le passage en caisse dont la commande est issue ; nul avant le panier unifié. */
+  /** The checkout the order came from; null before the unified cart. */
   checkoutId: z.string().uuid().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),

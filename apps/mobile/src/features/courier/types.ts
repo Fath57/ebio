@@ -158,10 +158,10 @@ export const FAIL_REASON_LABELS: Record<DeliveryFailReason, string> = {
 }
 
 /**
- * Une tournée proposée : plusieurs boutiques à collecter, une seule remise, un
- * seul gain. Le livreur la prend ou la laisse entière — il ne peut pas en
- * choisir la moitié, sinon le frais unique promis à l'acheteur ne couvrirait
- * plus le trajet.
+ * An offered run: several shops to collect from, one handover, one
+ * earning. The courier takes it or leaves it whole — they cannot pick
+ * half of it, or the single fee promised to the buyer would no longer
+ * cover the ride.
  */
 export interface RunStop {
   deliveryId: string
@@ -173,33 +173,33 @@ export interface RunStop {
 export interface RunOffer {
   id: string
   shopCount: number
-  /** Gain net du livreur pour la tournée entière. */
+  /** The courier's net earning for the whole run. */
   courierFee: number
-  /** Ce que l'acheteur a payé pour la livraison. */
+  /** What the buyer paid for delivery. */
   deliveryFee: number
   dropoffAddress: string
   dropoffPosition: { latitude: number, longitude: number } | null
-  /** Distance du livreur à la première collecte ; null sans position connue. */
+  /** Distance from the courier to the first pickup; null without a known position. */
   distanceKm: number | null
-  /** Distance de la tournée complète, collectes comprises. */
+  /** Distance of the whole run, pickups included. */
   routeKm: number | null
   paymentMethod: string
   totalAmount: number
   cashToCollect: number | null
   cashToShop: number | null
-  /** Les collectes, dans l'ordre de passage. */
+  /** The pickups, in visiting order. */
   stops: RunStop[]
   isTargeted: boolean
   expiresAt: string | null
   offeredAt: string
 }
 
-/** Une proposition, course isolée ou tournée, dans une seule file. */
+/** One offer, lone delivery or run, in a single feed. */
 export type CourierOffer
   = | ({ kind: 'DELIVERY' } & DeliveryOffer)
     | ({ kind: 'RUN' } & RunOffer)
 
-/** Une collecte de la tournée en cours, avec son avancement. */
+/** One pickup of the current run, with its progress. */
 export interface ActiveRunStop {
   deliveryId: string
   orderId: string
@@ -220,7 +220,7 @@ export interface ActiveRun {
   courierFee: number
   deliveryFee: number
   routeKm: number | null
-  /** Code de remise, tiré à la première collecte ; null avant. */
+  /** Handover code, drawn at the first pickup; null before that. */
   confirmationCode: string | null
   dropoffAddress: string
   dropoffPosition: { latitude: number, longitude: number } | null

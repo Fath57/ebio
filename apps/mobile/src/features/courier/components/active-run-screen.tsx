@@ -15,9 +15,9 @@ import { useLiveLocation } from '../hooks/use-live-location'
 interface ActiveRunScreenProps {
   run: ActiveRun
   pendingCount: number
-  /** Collecte d'une boutique : une seule commande avance. */
+  /** Pickup at one shop: a single order moves forward. */
   onCollect: (deliveryId: string) => Promise<TransitionResult>
-  /** Remise unique : ouvre la saisie du code, qui clôt toute la tournée. */
+  /** Single handover: opens the code entry, which closes the whole run. */
   onDeliver: () => void
   onChanged: () => void
 }
@@ -43,15 +43,15 @@ function openItinerary(address: string, position: { latitude: number, longitude:
 interface StopRowProps {
   stop: ActiveRunStop
   index: number
-  /** La prochaine à collecter : la seule qui porte un bouton. */
+  /** The next one to collect: the only one carrying a button. */
   isNext: boolean
   onCollect: () => void
 }
 
 /**
- * Une collecte. Un seul bouton à l'écran, sur la prochaine boutique : donner
- * le choix inviterait à collecter dans le désordre, et l'ordre est justement
- * ce qui raccourcit le trajet.
+ * One pickup. A single button on screen, on the next shop: offering
+ * a choice would invite collecting out of order, and the order is
+ * precisely what shortens the ride.
  */
 function StopRow({ stop, index, isNext, onCollect }: StopRowProps) {
   const { semantic } = useTheme()
@@ -101,15 +101,15 @@ function StopRow({ stop, index, isNext, onCollect }: StopRowProps) {
 }
 
 /**
- * La tournée en cours : les collectes dans l'ordre, puis une seule remise.
+ * The current run: the pickups in order, then a single handover.
  *
- * Le livreur ne voit jamais deux courses séparées — il a un trajet et un
- * client au bout. Les numéros de commande restent affichés parce que les
- * boutiques les demandent au retrait.
+ * The courier never sees two separate deliveries — they have one ride and
+ * one customer at the end. Order numbers stay on screen because shops
+ * ask for them at pickup.
  */
 export function ActiveRunScreen({ run, pendingCount, onCollect, onDeliver, onChanged }: ActiveRunScreenProps) {
   const { semantic } = useTheme()
-  // Même réserve que la liste des propositions : la barre d'onglets flotte.
+  // Same allowance as the offer list: the tab bar floats.
   const tabBarHeight = useBottomTabBarHeight()
   useLiveLocation(run.status === 'ACCEPTED' || run.status === 'COLLECTING' || run.status === 'DELIVERING')
 
@@ -244,7 +244,7 @@ const styles = StyleSheet.create({
     ...typography.bodyS,
     flex: 1,
   },
-  /** Tout montant est en JetBrains Mono — règle de marque, pas de goût. */
+  /** Every amount is in JetBrains Mono — a brand rule, not a taste. */
   amount: {
     ...typography.price,
     fontSize: 14,

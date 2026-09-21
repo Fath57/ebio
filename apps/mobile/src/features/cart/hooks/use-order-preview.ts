@@ -39,10 +39,10 @@ export interface OrderPreview {
   deliveryReason: PreviewDeliveryReason
   deliveryDistanceKm: number | null
   /**
-   * Nombre de tournées que ce panier produit. Au-delà d'une, le frais affiché
-   * est la somme de plusieurs livraisons : l'acheteur doit savoir qu'il sera
-   * livré en plusieurs fois, sans avoir à comprendre pourquoi le découpage
-   * tombe là.
+   * Number of runs this cart yields. Past one, the fee shown is the
+   * sum of several deliveries: the buyer must know they will be
+   * delivered more than once, without having to understand why the split
+   * falls where it does.
    */
   deliveryRunCount: number
   total: number
@@ -148,8 +148,8 @@ export function useOrderPreview(input: OrderPreviewInput | null): OrderPreviewSt
     setLoading(true)
     const timer = setTimeout(async () => {
       try {
-        // Le panier entier, toutes boutiques confondues : le serveur le
-        // répartit et n'annonce qu'un seul frais de livraison.
+        // The whole cart, every shop together: the server splits it
+        // and announces a single delivery fee.
         const res = await apiFetch('/api/orders/checkout/preview', {
           method: 'POST',
           body: JSON.stringify({

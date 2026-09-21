@@ -42,11 +42,11 @@ export class OrdersController {
   ) {}
 
   /**
-   * Le panier entier tel qu'il serait facturé — toutes boutiques confondues,
-   * frais de livraison uniques. Rien n'est créé.
+   * The whole cart as it would be charged — every shop together,
+   * a single delivery fee. Nothing is created.
    *
-   * Vit à côté de `preview`, qui chiffre une seule boutique : les deux se
-   * répondent tant que l'application mobile n'a pas basculé.
+   * Lives next to `preview`, which prices a single shop: the two answer
+   * each other until the mobile app has switched over.
    */
   @Post('checkout/preview')
   @UseGuards(CaslGuard)
@@ -58,7 +58,7 @@ export class OrdersController {
     return this.checkoutService.preview(session.user.id, body)
   }
 
-  /** Valide le panier entier : un paiement, N commandes. */
+  /** Places the whole cart: one payment, N orders. */
   @Post('checkout')
   @UseGuards(CaslGuard)
   @CanCreate('Order')

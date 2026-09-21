@@ -5,11 +5,11 @@
  * per shop: one of three modes, a basket threshold for free delivery, and a
  * hard distance limit. Distances are computed by the caller and passed in.
  *
- * Depuis le panier unifié, cette distance est celle de la **tournée complète**
- * — collecte à collecte, puis dernière collecte jusqu'au point de chute (voir
- * `computeRunDistance`). C'est le trajet que le livreur parcourt réellement,
- * donc la seule base honnête pour le tarif comme pour sa rémunération. Une
- * tournée d'une seule boutique retombe exactement sur l'ancien calcul.
+ * Since the unified cart, that distance is the one of the **whole run** —
+ * pickup to pickup, then the last pickup to the drop-off point (see
+ * `computeRunDistance`). It is the road the courier actually rides, so the
+ * only honest basis for both the fee and their earning. A run with a single
+ * shop falls back exactly on the former computation.
  */
 
 export type DeliveryPricingMode = 'FLAT' | 'DISTANCE' | 'ZONES'
@@ -21,16 +21,16 @@ export interface DeliveryZone {
 }
 
 /**
- * Combien de boutiques une tournée réunit, et jusqu'à quelle distance.
+ * How many shops a run gathers, and how far apart they may be.
  *
- * Deux critères, pas un. Compter les boutiques ne dit rien du trajet : ce que
- * la plateforme paie, c'est le kilomètre entre elles, puisque l'acheteur ne
- * règle qu'un frais unique. Un seuil d'écart borne cette exposition.
+ * Two criteria, not one. Counting shops says nothing about the ride: what the
+ * platform pays for is the kilometre between them, since the buyer settles a
+ * single fee. A spread threshold bounds that exposure.
  */
 export interface RunGroupingConfig {
-  /** Nombre maximal de boutiques dans une tournée. */
+  /** Largest number of shops a single run may gather. */
   maxShops: number
-  /** Écart maximal, en km, entre deux points de collecte d'une même tournée. */
+  /** Largest gap, in km, between two pickup points of the same run. */
   maxPickupSpreadKm: number
 }
 
@@ -55,7 +55,7 @@ export interface DeliveryPricingConfig {
   freeFrom: number | null
   /** Beyond this distance the order is refused. */
   maxDistanceKm: number
-  /** Combien de boutiques une tournée réunit, et jusqu'à quel écart. */
+  /** How many shops a run gathers, and how far apart they may be. */
   grouping: RunGroupingConfig
 }
 
@@ -88,17 +88,17 @@ export type DeliveryFeeReason
 export interface DeliveryFeeInput {
   isDelivery: boolean
   /**
-   * Items only: the fee never counts toward its own waiver. Sur un panier
-   * multi-boutiques, c'est le total du panier entier — le seuil de gratuité
-   * s'évalue sur ce que l'acheteur voit, c'est-à-dire un panier.
+   * Items only: the fee never counts toward its own waiver. On a multi-shop
+   * cart this is the whole cart total — the free-delivery threshold is judged
+   * on what the buyer sees, which is one cart.
    */
   itemsTotal: number
-  /** Distance de la tournée, km ; null quand un point manque. */
+  /** Run distance in km; null when a point is missing. */
   distanceKm: number | null
   /**
-   * Toutes les boutiques de la tournée sont localisées. Une seule qui ne l'est
-   * pas suffit à rendre la distance incalculable : le forfait s'applique, et
-   * la commande passe quand même (`NO_SHOP_POSITION` n'est pas bloquant).
+   * Every shop of the run has a known position. A single one without it makes
+   * the distance impossible to compute: the flat fee applies and the order
+   * still goes through (`NO_SHOP_POSITION` is not blocking).
    */
   hasShopPosition: boolean
 }
@@ -161,7 +161,7 @@ export function computeCourierFee(deliveryFee: number, rate: number): number {
   return Math.round(deliveryFee * (1 - safeRate))
 }
 
-/** Un point de la tournée : une boutique à collecter, ou le point de chute. */
+/** A point of the run: a shop to collect from, or the drop-off. */
 export interface RunPoint {
   latitude: number | null
   longitude: number | null
@@ -182,16 +182,16 @@ function haversineKm(from: RunPoint, to: RunPoint): number | null {
 }
 
 /**
- * Distance d'une tournée : collecte à collecte dans l'ordre de passage, puis
- * dernière collecte jusqu'au point de chute.
+ * Distance of a run: pickup to pickup in visiting order, then the last pickup
+ * to the drop-off point.
  *
- * C'est le trajet réel du livreur, et non la somme des distances
- * boutique → acheteur : deux boutiques voisines ne doivent pas coûter deux
- * fois le même trajet. Une seule boutique redonne la distance
- * boutique → acheteur, donc le comportement d'avant le panier unifié.
+ * This is the courier's real ride, not the sum of shop → buyer distances: two
+ * neighbouring shops must not be charged twice for the same road. A single
+ * shop gives back the shop → buyer distance, hence the behaviour from before
+ * the unified cart.
  *
- * Renvoie `null` dès qu'un point manque : la distance n'a alors aucun sens, et
- * `computeDeliveryFee` retombe sur le forfait.
+ * Returns `null` as soon as a point is missing: the distance would be
+ * meaningless, and `computeDeliveryFee` falls back on the flat fee.
  */
 export function computeRunDistance(pickups: RunPoint[], dropoff: RunPoint): number | null {
   if (pickups.length === 0) {
@@ -212,21 +212,21 @@ export function computeRunDistance(pickups: RunPoint[], dropoff: RunPoint): numb
   return total + lastLeg
 }
 
-/** Une boutique à collecter, telle que PostGIS la connaît. */
+/** A shop to collect from, as PostGIS knows it. */
 export interface GroupableShop {
   supplierId: string
   latitude: number | null
   longitude: number | null
 }
 
-/** Une tournée en projet : ses boutiques, et l'écart qui les sépare. */
+/** A run being planned: its shops, and the gap between them. */
 export interface ShopGroup {
   supplierIds: string[]
-  /** Plus grand écart entre deux collectes ; 0 pour une boutique seule, null si une position manque. */
+  /** Widest gap between two pickups; 0 for a lone shop, null when a position is missing. */
   pickupSpreadKm: number | null
 }
 
-/** Le plus grand écart entre deux boutiques du lot, ou null si l'une n'est pas située. */
+/** Widest gap between two shops of the batch, or null when one has no position. */
 function widestSpread(shops: GroupableShop[]): number | null {
   let widest = 0
   for (let i = 0; i < shops.length; i++) {
@@ -242,23 +242,22 @@ function widestSpread(shops: GroupableShop[]): number | null {
 }
 
 /**
- * Répartit les boutiques d'un panier en tournées.
+ * Splits the shops of a cart into runs.
  *
- * Deux règles, vérifiées ici et nulle part ailleurs — un contrôle posé plus
- * tard, à la diffusion, arriverait après l'encaissement :
+ * Two rules, enforced here and nowhere else — a check placed later, at
+ * dispatch time, would come after the money was taken:
  *
- * 1. Une boutique sans position connue n'est pas groupable. Son écart n'est
- *    pas mesurable, et le forfait qui s'applique alors ne couvre pas un détour
- *    inconnu : elle prend sa propre tournée.
- * 2. Deux boutiques ne se rejoignent que si **toutes** les paires du lot
- *    restent sous le seuil d'écart. Avec deux boutiques par tournée il n'y a
- *    qu'une paire, mais le seuil doit tenir si la limite est relevée.
+ * 1. A shop with no known position cannot be grouped. Its gap cannot be
+ *    measured, and the flat fee that then applies does not cover an unknown
+ *    detour: it gets a run of its own.
+ * 2. Two shops only join if **every** pair of the batch stays under the spread
+ *    threshold. With two shops per run there is a single pair, but the
+ *    threshold must still hold if the limit is raised.
  *
- * Le parcours est glouton et déterministe : on part de la boutique restante la
- * plus au nord-ouest, on lui adjoint la plus proche qui respecte le seuil, et
- * on recommence. L'optimum n'est pas recherché — il coûterait cher pour un
- * panier qui compte rarement plus de trois boutiques, et la limite de nombre
- * borne déjà le gain possible.
+ * The walk is greedy and deterministic: start from the north-westmost
+ * remaining shop, add the closest one that respects the threshold, repeat. The
+ * optimum is not sought — it would cost dearly for a cart that rarely holds
+ * more than three shops, and the count limit already bounds the possible gain.
  */
 export function groupShopsIntoRuns(shops: GroupableShop[], config: RunGroupingConfig): ShopGroup[] {
   const maxShops = Math.max(1, Math.floor(config.maxShops))
@@ -274,8 +273,8 @@ export function groupShopsIntoRuns(shops: GroupableShop[], config: RunGroupingCo
     }
   }
 
-  // Ordre stable : la position d'abord, l'identifiant pour départager, afin
-  // qu'un même panier produise toujours le même découpage.
+  // Stable order: position first, id to break ties, so that the same cart
+  // always yields the same split.
   const remaining = [...located].sort((a, b) => (
     b.latitude! - a.latitude! || a.longitude! - b.longitude! || a.supplierId.localeCompare(b.supplierId)
   ))
@@ -306,25 +305,24 @@ export function groupShopsIntoRuns(shops: GroupableShop[], config: RunGroupingCo
   return groups
 }
 
-/** Une collecte à ordonner : son identifiant et son point. */
+/** A pickup to order: its id and its point. */
 export interface PickupStop extends RunPoint {
   id: string
 }
 
 /**
- * Ordre de passage d'une tournée : le plus proche du livreur d'abord, puis de
- * proche en proche.
+ * Visiting order of a run: closest to the courier first, then step by step.
  *
- * C'est la règle qui minimise l'attente de la première boutique, et celle que
- * le livreur trouve naturelle — il commence par ce qu'il a sous la main. Le
- * trajet obtenu n'est pas toujours le plus court possible, mais avec deux ou
- * trois collectes l'écart est négligeable, et un ordre contre-intuitif coûte
- * plus cher en refus qu'il ne rapporte en kilomètres.
+ * That rule minimises the first shop's wait, and it is the one couriers find
+ * natural — they start with what is at hand. The resulting ride is not always
+ * the shortest possible, but with two or three pickups the difference is
+ * negligible, and a counter-intuitive order costs more in refusals than it
+ * saves in kilometres.
  *
- * Tant qu'aucun livreur n'a accepté, `origin` est nul : on passe alors par la
- * boutique la plus éloignée du point de chute en premier, pour que le dernier
- * tronçon — celui qui porte la marchandise de toutes les boutiques — soit le
- * plus court. Cet ordre est provisoire et se recalcule à l'acceptation.
+ * While no courier has accepted, `origin` is null: the shop farthest from the
+ * drop-off then comes first, so that the last leg — the one carrying every
+ * shop's goods — is the shortest. That order is provisional and is recomputed
+ * on acceptance.
  */
 export function orderPickups(stops: PickupStop[], origin: RunPoint | null, dropoff: RunPoint): string[] {
   if (stops.length <= 1) {
@@ -338,7 +336,7 @@ export function orderPickups(stops: PickupStop[], origin: RunPoint | null, dropo
     remaining.sort((a, b) => {
       const da = haversineKm(a, dropoff)
       const db = haversineKm(b, dropoff)
-      // Une boutique non située part en dernier : on ne sait pas la placer.
+      // A shop without a position goes last: there is no way to place it.
       if (da === null || db === null) {
         return (da === null ? 1 : 0) - (db === null ? 1 : 0) || a.id.localeCompare(b.id)
       }
@@ -353,8 +351,8 @@ export function orderPickups(stops: PickupStop[], origin: RunPoint | null, dropo
     let bestDistance = Number.POSITIVE_INFINITY
     for (const [index, stop] of remaining.entries()) {
       const distance = haversineKm(from, stop)
-      // Une collecte dont on ignore la position ne peut pas être « la plus
-      // proche » : elle attend que les autres soient placées.
+      // A pickup whose position is unknown cannot be "the closest": it waits
+      // until the others are placed.
       const value = distance === null ? Number.POSITIVE_INFINITY : distance
       if (value < bestDistance) {
         bestIndex = index

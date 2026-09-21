@@ -1,36 +1,34 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * Le regroupement en tournées est borné : deux boutiques, et pas plus de
- * 3 km entre leurs points de collecte.
+ * Grouping into runs is bounded: two shops, and no more than 3 km between
+ * their pickup points.
  *
- * Conséquence directe sur le schéma : un panier ne produit plus une tournée
- * mais autant que son découpage en compte. `delivery_runs.checkout_id` perd
- * donc son unicité, et la tournée gagne les boutiques qu'elle collecte — c'est
- * ce qui permet à chaque livraison de rejoindre la bonne quand sa commande
- * naît, avant qu'aucune livraison n'existe.
+ * Direct consequence on the schema: a cart no longer yields one run but as
+ * many as its split holds. `delivery_runs.checkout_id` therefore loses its
+ * uniqueness, and the run gains the shops it collects from — which is what
+ * lets each delivery join the right one when its order is born, before any
+ * delivery exists.
  *
- * Purement additif pour les données : aucune tournée en base ne porte plus
- * d'une boutique, et le remplissage de `supplier_ids` se fait depuis les
- * livraisons déjà rattachées.
+ * Purely additive for the data: no run in the database holds more than one
+ * shop, and `supplier_ids` is filled from the deliveries already attached.
  */
 export class Migration20260921190000 extends Migration {
   override async up(): Promise<void> {
-    // Un panier, plusieurs tournées. Le nom de la contrainte dépend de la
-    // façon dont la table a été créée : on couvre les deux écritures.
+    // One cart, several runs. The constraint name depends on how the table was
+    // created: both spellings are covered.
     this.addSql(`ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_checkout_id_key";`)
     this.addSql(`ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_checkout_id_unique";`)
     this.addSql(`CREATE INDEX IF NOT EXISTS "delivery_runs_checkout_idx" ON "delivery_runs" ("checkout_id");`)
 
     this.addSql(`ALTER TABLE "delivery_runs" ADD COLUMN IF NOT EXISTS "supplier_ids" jsonb NOT NULL DEFAULT '[]'::jsonb;`)
     this.addSql(`ALTER TABLE "delivery_runs" ADD COLUMN IF NOT EXISTS "delivery_fee" numeric(12,2) NOT NULL DEFAULT 0;`)
-    // L'écart entre les deux collectes les plus éloignées. Mesure : les seuils
-    // sont posés, ces chiffres servent à les ajuster sur des faits.
+    // Gap between the two farthest pickups. Measurement: the thresholds are
+    // set, and these figures serve to tune them on facts.
     this.addSql(`ALTER TABLE "delivery_runs" ADD COLUMN IF NOT EXISTS "pickup_spread_km" double precision NULL;`)
 
-    // Reprise : les tournées existantes tiennent leurs boutiques de leurs
-    // livraisons. Sans elle, une livraison créée après coup ne retrouverait
-    // pas sa tournée.
+    // Backfill: existing runs get their shops from their deliveries. Without
+    // it, a delivery created afterwards would not find its run.
     this.addSql(`UPDATE "delivery_runs" r
       SET "supplier_ids" = COALESCE((
         SELECT jsonb_agg(DISTINCT o."supplier_id")

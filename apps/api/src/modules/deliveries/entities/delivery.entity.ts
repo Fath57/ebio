@@ -14,7 +14,7 @@ import { CourierProfile } from './courier-profile.entity'
 import { DeliveryRun } from './delivery-run.entity'
 import { DispatchPhase } from './dispatch-phase.enum'
 
-// Réexporté pour ne pas casser les importateurs existants.
+// Re-exported so existing importers keep working.
 export { DispatchPhase }
 
 /**
@@ -56,8 +56,8 @@ export class Delivery {
   order!: Rel<Order>
 
   /**
-   * La tournée qui regroupe cette livraison. Nulle sur l'historique et sur
-   * toute livraison née d'une commande isolée.
+   * The run grouping this delivery. Null across the history and on
+   * any delivery born from a lone order.
    */
   @Index()
   @ManyToOne(() => DeliveryRun, { fieldName: 'delivery_run_id', nullable: true })

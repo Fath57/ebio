@@ -57,8 +57,8 @@ describe('computeRunDistance', () => {
 
   it('mesure le trajet réel du livreur, pas la somme boutique → acheteur', () => {
     const run = computeRunDistance([shopA, shopB], buyer)
-    // A→B puis B→acheteur, soit deux tronçons — et non A→acheteur plus
-    // B→acheteur, qui compterait le même chemin deux fois.
+    // A→B then B→buyer, so two legs — and not A→buyer plus
+    // B→buyer, which would count the same road twice.
     expect(run).toBeCloseTo(2.22, 1)
     const naiveSum = computeRunDistance([shopA], buyer)! + computeRunDistance([shopB], buyer)!
     expect(run!).toBeLessThan(naiveSum)
@@ -77,15 +77,15 @@ describe('computeRunDistance', () => {
   it('tarife une tournée comme n\'importe quelle distance, forfait si un point manque', () => {
     const run = computeRunDistance([shopA, shopB], buyer)
     expect(computeDeliveryFee(DEFAULT_DELIVERY_PRICING, { ...base, distanceKm: run })).toMatchObject({ reason: 'DISTANCE' })
-    // Une seule boutique non localisée dans la tournée : forfait, pas blocage.
+    // A single unlocated shop in the run: flat fee, not a block.
     expect(computeDeliveryFee(DEFAULT_DELIVERY_PRICING, { ...base, hasShopPosition: false, distanceKm: null }))
       .toMatchObject({ fee: 500, reason: 'NO_SHOP_POSITION' })
   })
 })
 
 describe('groupShopsIntoRuns', () => {
-  // Cotonou : Ganhi, Jéricho et Calavi. Les deux premières sont voisines, la
-  // troisième est de l'autre côté du lac.
+  // Cotonou: Ganhi, Jericho and Calavi. The first two are neighbours, the
+  // third is across the lake.
   const ganhi = { supplierId: 'ganhi', latitude: 6.3600, longitude: 2.4300 }
   const jericho = { supplierId: 'jericho', latitude: 6.3660, longitude: 2.4100 }
   const proche = { supplierId: 'proche', latitude: 6.3610, longitude: 2.4320 }
@@ -136,7 +136,7 @@ describe('groupShopsIntoRuns', () => {
     const groups = groupShopsIntoRuns([ganhi, jericho, proche], { maxShops: 3, maxPickupSpreadKm: 3 })
     expect(groups).toHaveLength(1)
     expect(groups[0].supplierIds).toHaveLength(3)
-    // L'écart retenu est celui de la paire la plus large du lot, pas du dernier ajout.
+    // The kept spread is the widest pair of the batch, not the last addition.
     expect(groups[0].pickupSpreadKm).toBeGreaterThan(0)
   })
 
@@ -146,7 +146,7 @@ describe('groupShopsIntoRuns', () => {
 })
 
 describe('orderPickups', () => {
-  // Une rue : le livreur est à l'ouest, l'acheteur à l'est.
+  // One street: the courier is west, the buyer east.
   const ouest = { id: 'ouest', latitude: 6.3600, longitude: 2.4100 }
   const est = { id: 'est', latitude: 6.3600, longitude: 2.4300 }
   const acheteur = { latitude: 6.3600, longitude: 2.4400 }
@@ -162,8 +162,8 @@ describe('orderPickups', () => {
   })
 
   it('sans livreur connu, garde le dernier tronçon le plus court', () => {
-    // La boutique la plus éloignée de l'acheteur passe en premier : ce qui
-    // voyage chargé, c'est la fin de la tournée.
+    // The shop farthest from the buyer comes first: what travels
+    // loaded is the end of the run.
     expect(orderPickups([est, ouest], null, acheteur)).toEqual(['ouest', 'est'])
   })
 

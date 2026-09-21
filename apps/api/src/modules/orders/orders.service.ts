@@ -113,17 +113,16 @@ interface BasketLine {
 }
 
 /**
- * Passé par le service de passage en caisse quand la commande fait partie d'un
- * panier unifié. Voir `create`.
+ * Passed by the checkout service when the order is part of a unified cart.
+ * See `create`.
  */
 export interface CheckoutOrderContext {
   checkout: Checkout
   /**
-   * Numéro alloué par le passage en caisse. Le calcul maison compte les
-   * commandes du jour par une requête brute, qui ne voit pas les insertions
-   * encore dans la transaction : sans ce numéro fourni, les commandes d'un
-   * même panier reçoivent toutes le même et la contrainte d'unicité casse la
-   * commande entière.
+   * Number allocated by the checkout. The in-house computation counts the
+   * day's orders with a raw query, which does not see inserts still inside the
+   * transaction: without this supplied number, the orders of one cart all get
+   * the same and the unique constraint breaks the whole checkout.
    */
   orderNumber: string
 }
@@ -169,13 +168,13 @@ export class OrdersService {
   ) {}
 
   /**
-   * Ce qu'un passage en caisse unifié impose à la création d'une commande.
+   * What a unified checkout imposes on order creation.
    *
-   * Sans ce contexte, `create` chiffre sa propre livraison et contrôle son
-   * propre plafond d'espèces — corrects pour une commande isolée, faux dès que
-   * plusieurs boutiques partagent une tournée et un paiement : les frais
-   * seraient facturés N fois et le plafond, qui borne l'avance du livreur,
-   * s'appliquerait à chaque commande au lieu de la tournée.
+   * Without this context, `create` prices its own delivery and checks its own
+   * cash cap — both right for a lone order, both wrong as soon as several
+   * shops share a run and a payment: the fee would be charged N times, and the
+   * cap, which bounds the courier's advance, would apply per order instead of
+   * per run.
    */
   async create(buyerId: string, data: CreateOrder, checkoutContext?: CheckoutOrderContext): Promise<Order> {
     const buyer = await this.em.findOneOrFail(User, { id: buyerId })
@@ -196,8 +195,8 @@ export class OrdersService {
     const orderNumber = checkoutContext?.orderNumber ?? await this.generateOrderNumber()
     const pricing = await this.priceBasket(buyer, supplier, products, data)
     const { itemEntities, discount, discountedItemsTotal, commission, appliedPromo } = pricing
-    // Dans un panier unifié, la livraison est facturée une fois, au niveau du
-    // checkout : les commandes qu'il regroupe n'en portent aucune part.
+    // In a unified cart the delivery is charged once, at checkout level: the
+    // orders it groups carry no share of it.
     const deliveryFee = checkoutContext ? 0 : pricing.deliveryFee
     if (!checkoutContext && !pricing.deliveryPriceable) {
       if (pricing.deliveryReason === 'OUT_OF_RANGE') {
@@ -208,9 +207,9 @@ export class OrdersService {
     }
 
     // Cash: the courier fronts the goods and collects the total at the door,
-    // so the platform caps what one order may put in a courier's hands. En
-    // panier unifié, cette avance est celle de la tournée : le contrôle a déjà
-    // eu lieu sur le total du checkout.
+    // so the platform caps what one order may put in a courier's hands. In a
+    // unified cart that advance covers the run: the check already happened on
+    // the checkout total.
     if (!checkoutContext && data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
       const cashLimit = await this.platformSettings.getCashOnDeliveryMaxAmount()
       if (cashLimit <= 0) {
@@ -281,9 +280,9 @@ export class OrdersService {
 
     // Wallet checkout: the buyer's money is already on the platform account,
     // so the debit is immediate and the payment starts straight in escrow.
-    // Dans un panier unifié, le portefeuille est débité une seule fois, du
-    // total, par le service de passage en caisse : débiter ici le ferait N
-    // fois et laisserait N traces là où l'acheteur n'a fait qu'un geste.
+    // In a unified cart the wallet is debited once, of the total, by the
+    // checkout service: debiting here would do it N times and leave N traces
+    // where the buyer made a single gesture.
     if (!checkoutContext && order.paymentMethod === PaymentMethod.WALLET) {
       const wallet = await this.walletService.getOrCreate({ userId: buyer.id })
       try {
@@ -301,8 +300,8 @@ export class OrdersService {
         await this.em.nativeDelete(Order, { id: order.id })
         throw error
       }
-      // Ce chemin ne s'exécute que hors panier unifié : le paiement n'a donc
-      // aucun passage en caisse à rattacher.
+      // This path only runs outside a unified cart, so the payment has no
+      // checkout to attach to.
       this.em.create(Payment, {
         order,
         amount: order.totalAmount,
@@ -359,8 +358,8 @@ export class OrdersService {
     }
     const deliveries = await this.em.find(Delivery, { order: { $in: orderIds } }, { populate: ['courier', 'deliveryRun'] })
 
-    // Avancement des tournées concernées : combien de leurs boutiques sont
-    // déjà collectées. L'acheteur suit une progression, pas deux.
+    // Progress of the runs involved: how many of their shops are already
+    // collected. The buyer follows one progression, not two.
     const runIds = [...new Set(deliveries.map(d => d.deliveryRun?.id).filter((id): id is string => id != null))]
     const progress = new Map<string, { shopCount: number, collectedCount: number, awaitingBuyerDecision: boolean }>()
     if (runIds.length > 0) {
@@ -1171,10 +1170,10 @@ export class OrdersService {
   }
 
   /**
-   * Alloue `count` numéros consécutifs d'un coup, pour les commandes d'un même
-   * panier. Une seule lecture du compteur, puis une suite en mémoire : les
-   * insertions d'une transaction ne sont pas visibles à la requête brute qui
-   * compte, donc les demander une par une les rendrait toutes identiques.
+   * Allocates `count` consecutive numbers at once, for the orders of one
+   * cart. A single read of the counter, then a sequence in memory: inserts
+   * inside a transaction are invisible to the raw counting query, so asking
+   * for them one by one would make them all identical.
    */
   async allocateOrderNumbers(count: number): Promise<string[]> {
     const first = await this.generateOrderNumber()
@@ -1205,10 +1204,10 @@ export class OrdersService {
   private async onOrderCancelled(order: Order): Promise<void> {
     await this.promoCodesService.release(order.id)
 
-    // Commande issue d'un panier unifié : l'argent ne peut pas être repris
-    // chez le prestataire — un seul paiement couvre N commandes et le Mobile
-    // Money ne sait pas en rendre une part. Le dédommagement passe par le
-    // portefeuille eBio, et il ajuste aussi les frais de la tournée amputée.
+    // Order from a unified cart: the money cannot be taken back at the
+    // provider — one payment covers N orders and Mobile Money cannot return a
+    // share of it. Compensation goes through the eBio wallet, and it also
+    // adjusts the fee of the shortened run.
     if (order.checkout) {
       await this.compensationService.compensateOrder(order.id, 'commande annulée')
       return

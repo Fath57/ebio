@@ -10,12 +10,12 @@ import { compensateCheckoutSchema } from '../orders/contracts/checkout.contract'
 import { CompensationService } from './compensation.service'
 
 /**
- * Dédommagement d'une commande d'un panier unifié, déclenché à la main.
+ * Compensation for one order of a unified cart, triggered by hand.
  *
- * Les annulations ordinaires — refus boutique, expiration — passent déjà par
- * là toutes seules. Cet endpoint sert au back-office quand une commande est
- * tombée sans que le circuit automatique l'ait vue, et il est sans danger à
- * rejouer : le dédommagement est idempotent par commande.
+ * Ordinary cancellations — shop refusal, expiry — already go through it on
+ * their own. This endpoint serves the back-office when an order fell through
+ * without the automatic path noticing, and it is safe to replay: compensation
+ * is idempotent per order.
  */
 @Controller('checkouts')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)

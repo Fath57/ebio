@@ -1,15 +1,15 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * Le grand livre apprend la tournée.
+ * The ledger learns about runs.
  *
- * Une tournée se règle une fois, sur son frais à elle : les commandes d'un
- * panier unifié portent 0, donc un règlement par commande ne paierait rien au
- * livreur. Il faut donc une clé pour dire « cette écriture solde cette
- * tournée », et c'est elle qui rend le règlement rejouable sans double paiement.
+ * A run is settled once, on its own fee: the orders of a unified cart carry 0,
+ * so a per-order settlement would pay the courier nothing. Hence a key saying
+ * "this entry settles that run", and it is what makes the settlement
+ * replayable without paying twice.
  *
- * Plain uuid, sans clé étrangère, exactement comme `delivery_id` : le module
- * portefeuille n'importe pas le module livraisons, et c'est délibéré.
+ * Plain uuid, no foreign key, exactly like `delivery_id`: the wallet module
+ * does not import the deliveries module, and that is deliberate.
  */
 export class Migration20260922140000 extends Migration {
   override async up(): Promise<void> {
@@ -17,8 +17,8 @@ export class Migration20260922140000 extends Migration {
     this.addSql(`CREATE INDEX IF NOT EXISTS "wallet_transactions_run_idx"
       ON "wallet_transactions" ("delivery_run_id");`)
 
-    // Le code de remise est celui de la tournée : une seule remise, un seul
-    // code, quel que soit le nombre de boutiques collectées.
+    // The handover code belongs to the run: one handover, one code, whatever
+    // the number of shops collected from.
     this.addSql(`ALTER TABLE "delivery_runs"
       ADD COLUMN IF NOT EXISTS "confirmation_code" varchar(4) NULL,
       ADD COLUMN IF NOT EXISTS "collecting_at" timestamptz NULL,

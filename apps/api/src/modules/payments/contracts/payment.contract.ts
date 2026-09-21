@@ -55,9 +55,9 @@ export const initiateCheckoutSchema = z.object({
 export type InitiateCheckoutInput = z.infer<typeof initiateCheckoutSchema>
 
 /**
- * Paiement d'un panier entier : un montant, une transaction, quel que soit le
- * nombre de boutiques. Les paiements par commande ne naissent qu'à la
- * confirmation, pour que chacun garde son escrow.
+ * Payment for a whole cart: one amount, one transaction, whatever the
+ * number of shops. Per-order payments are only born at
+ * confirmation, so that each keeps its own escrow.
  */
 export const initiateCartPaymentSchema = z.object({
   checkoutId: z.string().uuid(),
@@ -78,7 +78,7 @@ export const cartPaymentResultSchema = z.object({
   checkoutId: z.string().uuid(),
   amount: z.number(),
   status: z.enum(['pending', 'completed']),
-  /** Un paiement par commande, créé à la confirmation seulement. */
+  /** One payment per order, created at confirmation only. */
   paymentIds: z.array(z.string().uuid()),
 }).meta({ title: 'CartPaymentResult' })
 

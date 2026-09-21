@@ -1,15 +1,15 @@
 /**
- * Comment la course est proposée aux livreurs, à l'instant présent.
+ * How the delivery is being offered to couriers, right now.
  *
- * Vit dans son propre fichier parce que `Delivery` et `DeliveryRun` s'y
- * réfèrent toutes deux : le garder dans l'une des deux créait un import
- * circulaire, et l'enum se lisait `undefined` au chargement de l'autre.
+ * Lives in its own file because both `Delivery` and `DeliveryRun` refer to it:
+ * keeping it in either created a circular import, and the enum read as
+ * `undefined` while the other was loading.
  */
 export enum DispatchPhase {
-  /** Créée pendant que la boutique prépare ; la recherche démarre à dispatchAt. */
+  /** Created while the shop prepares; the search starts at dispatchAt. */
   SCHEDULED = 'SCHEDULED',
-  /** Un livreur classé à la fois, 40 s chacun. */
+  /** One ranked courier at a time, 40 s each. */
   TARGETED = 'TARGETED',
-  /** Tout le monde dans le rayon, le premier qui accepte l'emporte. */
+  /** Everyone within the radius; first to accept wins. */
   BROADCAST = 'BROADCAST',
 }

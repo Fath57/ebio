@@ -32,7 +32,7 @@ export interface OfferRow {
   pickup_ready_at: Date | string | null
 }
 
-/** Une collecte d'une tournée, telle que le livreur la voit. */
+/** One pickup of a run, as the courier sees it. */
 export interface RunStopRow {
   deliveryId: string
   shopName: string
@@ -41,9 +41,9 @@ export interface RunStopRow {
 }
 
 /**
- * Une tournée proposée. Contrairement à `OfferRow`, rien n'y est par commande :
- * un gain, une adresse de remise, une suite de collectes — c'est exactement ce
- * que le livreur décide d'accepter ou non.
+ * An offered run. Unlike `OfferRow`, nothing in it is per order: one earning,
+ * one drop-off address, a sequence of pickups — exactly what the courier
+ * decides to accept or not.
  */
 export interface RunOfferRow {
   id: string
@@ -63,7 +63,7 @@ export interface RunOfferRow {
   stops: RunStopRow[] | null
 }
 
-/** Une collecte d'une tournée en cours, avec son avancement. */
+/** One pickup of a run in progress, with its progress. */
 export interface ActiveRunStopRow {
   deliveryId: string
   orderId: string
@@ -74,11 +74,11 @@ export interface ActiveRunStopRow {
   pickupLongitude: number | null
   status: string
   itemsCount: number | string
-  /** Rang de passage, sur deux chiffres, pour trier côté base. */
+  /** Visiting rank, two digits, so the database can sort on it. */
   position: string
 }
 
-/** La tournée que le livreur exécute en ce moment. */
+/** The run the courier is currently riding. */
 export interface ActiveRunRow {
   id: string
   status: string
@@ -132,8 +132,8 @@ export class DeliveriesMapper {
   }
 
   /**
-   * La tournée en cours : les collectes dans l'ordre de passage, et la remise
-   * unique qui les clôt toutes.
+   * The current run: the pickups in visiting order, and the single handover
+   * that closes them all.
    */
   static toActiveRun(row: ActiveRunRow) {
     const total = Number(row.total_amount)
@@ -168,8 +168,8 @@ export class DeliveriesMapper {
   }
 
   /**
-   * Une tournée proposée au livreur. Le gain est celui de la tournée entière —
-   * c'est FR-019 : on rémunère un trajet, pas un nombre de commandes.
+   * A run offered to the courier. The earning is the whole run's — that is
+   * FR-019: we pay for a ride, not for a number of orders.
    */
   static toRunOffer(row: RunOfferRow) {
     const total = Number(row.total_amount)

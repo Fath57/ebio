@@ -164,21 +164,21 @@ export class DeliveriesService {
    * the supplier is nudged to set a location).
    */
   /**
-   * Ouvre la tournée d'un passage en caisse livré.
+   * Opens the run of a delivered checkout.
    *
-   * Elle naît vide : les livraisons s'y rattachent au fur et à mesure qu'elles
-   * sont créées, commande par commande, quand chaque boutique accepte. La
-   * diffusion n'a lieu qu'une fois toutes les collectes connues.
+   * It is born empty: deliveries join it as they are created, order by order,
+   * when each shop accepts. The dispatch only happens once every pickup is
+   * known.
    *
-   * La rémunération suit la règle existante — `computeCourierFee` sur les
-   * frais — appliquée au frais unique de la tournée. Le livreur touche sa part
-   * du trajet qu'il parcourt réellement, et non une part par commande
-   * transportée, ce qui le paierait trois fois pour un seul déplacement.
+   * Pay follows the existing rule — `computeCourierFee` on the fee — applied
+   * to the run's single fee. The courier gets their share of the road they
+   * actually ride, not a share per order carried, which would pay them three
+   * times for one trip.
    */
   /**
-   * Un panier ouvre autant de tournées que son découpage en compte. L'unicité
-   * n'est donc plus celle du panier mais celle du lot de boutiques : rejouer
-   * la création ne doit pas ouvrir deux fois la même tournée.
+   * A cart opens as many runs as its split holds. Uniqueness is therefore no
+   * longer the cart's but the shop batch's: replaying the creation must not
+   * open the same run twice.
    */
   async createRunForCheckout(input: {
     checkoutId: string
@@ -241,9 +241,9 @@ export class DeliveriesService {
     // in full: the snapshot is the real fee, whoever covers it.
     const deliveryFee = (order.deliveryFee || order.sponsoredDeliveryFee) ?? 0
     const rate = await this.platformSettings.getDeliveryCommissionRate()
-    // La livraison rejoint la tournée qui collecte chez sa boutique — un panier
-    // peut en compter plusieurs, et se tromper de tournée enverrait le livreur
-    // à la mauvaise adresse.
+    // The delivery joins the run that collects from its shop — a cart may hold
+    // several, and picking the wrong one would send the courier to the wrong
+    // address.
     const run = order.checkout
       ? (await this.em.find(DeliveryRun, { checkout: { id: order.checkout.id } }))
           .find(candidate => candidate.supplierIds.includes(supplier.id)) ?? null
@@ -474,11 +474,11 @@ export class DeliveriesService {
   }
 
   /**
-   * Les tournées proposées à ce livreur : celles qu'il tient en exclusivité, et
-   * celles que la diffusion large a poussées dans son rayon.
+   * The runs offered to this courier: the ones they hold exclusively, and the
+   * ones the broadcast pushed into their radius.
    *
-   * Même point de référence que pour les courses isolées — position réelle de
-   * moins de 12 h, à défaut la zone déclarée — et mêmes règles de visibilité.
+   * Same reference point as for lone deliveries — a live position under 12 h,
+   * the declared zone otherwise — and the same visibility rules.
    */
   async getRunOffers(userId: string): Promise<RunOfferRow[]> {
     const profile = await this.getMyProfile(userId)
@@ -549,11 +549,11 @@ export class DeliveriesService {
   }
 
   /**
-   * Ordonne les collectes d'une tournée depuis un point de départ.
+   * Orders the pickups of a run from a starting point.
    *
-   * Appelé deux fois : à l'ouverture, sans livreur connu, pour que l'offre
-   * montre un ordre plausible ; puis à l'acceptation, depuis la position réelle
-   * du livreur — c'est celui-là qui fait foi, et c'est lui que le livreur suit.
+   * Called twice: at opening, with no known courier, so the offer shows a
+   * plausible order; then on acceptance, from the courier's real position —
+   * that one is authoritative, and it is the one the courier follows.
    */
   private async applyPickupOrder(run: DeliveryRun, origin: { latitude: number, longitude: number } | null): Promise<void> {
     const deliveries = run.deliveries.isInitialized()
@@ -562,8 +562,8 @@ export class DeliveriesService {
     if (deliveries.length === 0) {
       return
     }
-    // Le point de chute est celui du panier : une tournée n'en a qu'un, c'est
-    // toute la raison pour laquelle elle existe.
+    // The drop-off is the cart's: a run has only one, which is the whole
+    // reason it exists.
     const checkout = await this.em.findOne(Checkout, { id: run.checkout.id })
     run.pickupOrder = orderPickups(
       deliveries.map(delivery => ({
@@ -577,7 +577,7 @@ export class DeliveriesService {
     await this.em.flush()
   }
 
-  /** Dernière position connue d'un livreur, si elle est encore fraîche. */
+  /** A courier's last known position, if it is still fresh. */
   private async courierPosition(courierId: string): Promise<{ latitude: number, longitude: number } | null> {
     const rows = await this.em.getConnection().execute(
       `SELECT ST_Y(last_known_location::geometry) AS latitude,
@@ -594,12 +594,12 @@ export class DeliveriesService {
   }
 
   /**
-   * Un livreur prend une tournée entière. Comme pour une course isolée, la
-   * garde `courier_id IS NULL` est le verrou : le premier à écrire gagne.
+   * A courier claims a whole run. As for a lone delivery, the
+   * `courier_id IS NULL` guard is the lock: first write wins.
    *
-   * L'acceptation porte sur le tout — c'est FR-015, et c'est ce qui rend le
-   * frais unique tenable. Les livraisons suivent la tournée, elles ne sont pas
-   * acceptées une à une.
+   * Acceptance covers the whole — that is FR-015, and it is what makes the
+   * single fee tenable. Deliveries follow the run; they are not accepted one
+   * by one.
    */
   async acceptRun(runId: string, userId: string): Promise<DeliveryRun> {
     const profile = await this.getMyProfile(userId)
@@ -635,21 +635,21 @@ export class DeliveriesService {
 
     await this.dispatchService.respondToRunOffer(runId, profile.id, DeliveryOfferResponse.ACCEPTED)
 
-    // `refresh` n'est pas un détail : la prise est écrite en SQL brut, donc
-    // l'entité déjà chargée dans le contexte porte encore l'état d'avant. Sans
-    // relecture, l'appelant reçoit une tournée « en attente » qu'il vient
-    // pourtant d'accepter.
+    // `refresh` is not a detail: the claim is written in raw SQL, so the
+    // entity already loaded in the context still carries the previous state.
+    // Without a re-read, the caller gets a run still "awaiting a courier" that
+    // they have just accepted.
     const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['deliveries'], refresh: true })
     if (!run) {
       throw new NotFoundException('Tournée introuvable')
     }
 
-    // L'ordre de passage se fige maintenant : c'est le seul moment où l'on
-    // sait d'où le livreur part.
+    // The visiting order freezes now: this is the only moment we know where
+    // the courier starts from.
     await this.applyPickupOrder(run, await this.courierPosition(profile.id))
 
-    // Chaque livraison suit sa tournée. Le statut par commande ne change pas
-    // de forme — c'est ce qui laisse l'app fournisseur intacte.
+    // Each delivery follows its run. The per-order status keeps its shape —
+    // which is what leaves the supplier app untouched.
     const deliveries = run.deliveries.getItems()
     for (const delivery of deliveries) {
       delivery.courier = profile
@@ -695,7 +695,7 @@ export class DeliveriesService {
     return run
   }
 
-  /** Le livreur sollicité passe : le suivant du classement est sollicité. */
+  /** The targeted courier passes: the next ranked one is asked at once. */
   async declineRun(runId: string, userId: string): Promise<void> {
     const profile = await this.getMyProfile(userId)
     const run = await this.em.findOne(DeliveryRun, { id: runId })
@@ -753,10 +753,10 @@ export class DeliveriesService {
   }
 
   /**
-   * L'avancement de la tournée d'une livraison, pour l'acheteur.
+   * Progress of a delivery's run, for the buyer.
    *
-   * Sans cela, deux commandes d'un même panier affichent deux suivis qui se
-   * contredisent, et rien ne dit à l'acheteur qu'on lui rend la main.
+   * Without it, two orders of the same cart show two tracking lines that
+   * contradict each other, and nothing tells the buyer the decision is theirs.
    */
   async runSummaryFor(delivery: Delivery): Promise<{ id: string, shopCount: number, collectedCount: number, awaitingBuyerDecision: boolean } | null> {
     const runId = delivery.deliveryRun?.id
@@ -784,12 +784,12 @@ export class DeliveriesService {
   }
 
   /**
-   * L'acheteur tranche quand plus personne ne prend sa commande : attendre, ou
-   * annuler et être crédité intégralement, frais de livraison compris.
+   * The buyer decides when nobody takes their order any more: wait, or cancel
+   * and be credited in full, delivery fee included.
    *
-   * L'annulation reste ouverte tant que rien n'est collecté. Dès qu'une
-   * boutique a remis sa marchandise au livreur, elle a engagé des frais : la
-   * commande suit son cours et l'acheteur sera livré.
+   * Cancelling stays open as long as nothing has been collected. Once a shop
+   * has handed its goods to the courier it has incurred costs: the order runs
+   * its course and the buyer will be delivered.
    */
   async buyerDecision(runId: string, userId: string, decision: 'WAIT' | 'CANCEL'): Promise<{ cancelledOrders: number }> {
     const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['checkout'] })
@@ -801,8 +801,8 @@ export class DeliveriesService {
     }
 
     if (decision === 'WAIT') {
-      // La diffusion n'a jamais cessé : rien à relancer, seulement la question
-      // à ne plus reposer tout de suite.
+      // The dispatch never stopped: nothing to restart, only a question not to
+      // ask again right away.
       run.buyerPromptedAt = new Date()
       await this.em.flush()
       return { cancelledOrders: 0 }
@@ -814,7 +814,7 @@ export class DeliveriesService {
       if (order.status === OrderStatus.CANCELLED || order.status === OrderStatus.DELIVERED) {
         continue
       }
-      // Marchandise déjà collectée : la course est engagée, on ne la défait pas.
+      // Goods already collected: the delivery is committed, we do not undo it.
       const delivery = await this.em.findOne(Delivery, { order: { id: order.id } })
       if (delivery && delivery.status !== DeliveryStatus.AWAITING_COURIER && delivery.status !== DeliveryStatus.ACCEPTED) {
         continue
@@ -839,8 +839,8 @@ export class DeliveriesService {
     run.outcome = DeliveryRunOutcome.CANCELLED
     await this.em.flush()
 
-    // Les frais de livraison n'ont rien couvert : ils reviennent en entier,
-    // par-dessus le remboursement des commandes.
+    // The delivery fee covered nothing: it comes back in full, on top of the
+    // orders' refund.
     const fee = Math.round(run.deliveryFee)
     if (fee > 0 && cancelled > 0) {
       const wallet = await this.walletService.getOrCreate({ userId })
@@ -858,22 +858,19 @@ export class DeliveriesService {
   }
 
   /**
-   * Retire une boutique de la tournée d'un panier, et dit ce que l'acheteur
-   * doit récupérer sur les frais.
+   * Removes a shop from a cart's run, and says what the buyer should get back
+   * on the fee.
    *
-   * Une tournée qui perd une collecte coûte moins cher à faire : garder la
-   * différence reviendrait à facturer un trajet qui n'aura pas lieu. Le
-   * nouveau frais est chiffré par les mêmes règles que le devis initial, sur
-   * les boutiques qui restent.
+   * A run that loses a pickup costs less to ride: keeping the difference would
+   * amount to charging for a trip that will not happen. The new fee is priced
+   * by the same rules as the original quote, on the remaining shops.
    *
-   * Si la collecte a déjà eu lieu, rien ne change : le livreur a fait le
-   * trajet, il est payé pour lui (FR-021 — la tournée continue pour les
-   * autres).
+   * If the pickup already happened, nothing changes: the courier rode that
+   * road and is paid for it (FR-021 — the run goes on for the others).
    */
   async removeSupplierFromRun(input: { checkoutId: string, supplierId: string }): Promise<{ runId: string, refund: number, remainingShops: number } | null> {
-    // Filtrage en mémoire, et non en SQL : `supplier_ids` est du jsonb, sur
-    // lequel `LIKE` n'existe pas. Un panier compte de toute façon une poignée
-    // de tournées.
+    // Filtering in memory rather than in SQL: `supplier_ids` is jsonb, which
+    // has no `LIKE` operator. A cart holds a handful of runs anyway.
     const runs = await this.em.find(
       DeliveryRun,
       { checkout: { id: input.checkoutId } },
@@ -900,7 +897,7 @@ export class DeliveriesService {
     run.shopCount = remaining.length
     run.pickupOrder = run.pickupOrder.filter(id => id !== leaving?.id)
 
-    // Plus rien à collecter : la tournée n'a plus d'objet.
+    // Nothing left to collect: the run has no purpose any more.
     if (remaining.length === 0) {
       run.status = DeliveryRunStatus.CANCELLED
       run.outcome = DeliveryRunOutcome.CANCELLED
@@ -911,8 +908,8 @@ export class DeliveriesService {
       return { runId: run.id, refund: refundAll, remainingShops: 0 }
     }
 
-    // Le livreur a déjà fait ce trajet : on ne le lui reprend pas, et on ne
-    // rend rien non plus — le kilomètre a été parcouru.
+    // The courier already rode that road: we do not take it back from them,
+    // and we refund nothing either — the kilometre was covered.
     if (collected) {
       await this.em.flush()
       return { runId: run.id, refund: 0, remainingShops: remaining.length }
@@ -939,11 +936,11 @@ export class DeliveriesService {
   }
 
   /**
-   * La tournée en cours du livreur, avec ses collectes dans l'ordre de passage.
+   * The courier's current run, with its pickups in visiting order.
    *
-   * Le livreur a besoin d'un seul écran : sans cela, ses deux collectes
-   * apparaissent comme deux courses sans lien, et rien ne lui dit par où
-   * commencer ni qu'une seule remise l'attend au bout.
+   * The courier needs a single screen: without it, their two pickups look like
+   * two unrelated deliveries, and nothing tells them where to start nor that a
+   * single handover waits at the end.
    */
   async getMyActiveRun(userId: string): Promise<ActiveRunRow | null> {
     const profile = await this.getMyProfile(userId)
@@ -992,15 +989,15 @@ export class DeliveriesService {
   }
 
   /**
-   * Collecte chez une boutique d'une tournée.
+   * Pickup at one shop of a run.
    *
-   * Le statut ne bouge que pour **cette** commande (FR-017) : la boutique voit
-   * sa commande partir, les autres continuent d'attendre le livreur. C'est ce
-   * qui laisse l'app fournisseur inchangée — elle ne sait pas qu'une tournée
-   * existe, et elle n'a pas à le savoir.
+   * The status moves for **that** order only (FR-017): the shop sees its order
+   * leave, the others keep waiting for the courier. That is what leaves the
+   * supplier app unchanged — it does not know a run exists, and it does not
+   * need to.
    *
-   * Le code de remise, lui, est celui de la tournée : tiré à la première
-   * collecte, annoncé à l'acheteur quand tout est chargé.
+   * The handover code, however, belongs to the run: drawn at the first pickup,
+   * announced to the buyer once everything is loaded.
    */
   async collect(deliveryId: string, userId: string, occurredAt?: string): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
@@ -1008,7 +1005,7 @@ export class DeliveriesService {
       ? await this.em.findOne(DeliveryRun, { id: delivery.deliveryRun.id }, { populate: ['deliveries'] })
       : null
     if (!run) {
-      // Course isolée : rien de neuf, c'est le retrait d'avant les tournées.
+      // Lone delivery: nothing new, this is the pickup from before runs.
       return this.pickup(deliveryId, userId, occurredAt)
     }
 
@@ -1026,8 +1023,8 @@ export class DeliveriesService {
 
     delivery.status = DeliveryStatus.PICKED_UP
     delivery.pickedUpAt = when
-    // Le code est recopié sur chaque course pour que les écrans par commande,
-    // qui ignorent la tournée, continuent de l'afficher.
+    // The code is copied onto each delivery so the per-order screens, which
+    // know nothing of runs, keep showing it.
     delivery.confirmationCode = run.confirmationCode
     this.em.create(DeliveryEvent, {
       delivery,
@@ -1046,8 +1043,8 @@ export class DeliveriesService {
       return delivery
     }
 
-    // Tout est chargé : la tournée roule, et l'acheteur reçoit son code — une
-    // seule fois, pas une par boutique.
+    // Everything is loaded: the run is on the road, and the buyer gets their
+    // code — once, not once per shop.
     run.status = DeliveryRunStatus.DELIVERING
     run.deliveringAt = when
     for (const item of siblings) {
@@ -1080,12 +1077,12 @@ export class DeliveriesService {
   }
 
   /**
-   * Remise d'une tournée : un code, toutes les commandes livrées.
+   * Handover of a run: one code, every order delivered.
    *
-   * L'acheteur n'a qu'un colis en main, il ne récite pas un code par boutique.
-   * Le règlement du livreur se fait ici, une fois, sur le frais de la tournée —
-   * les commandes d'un panier unifié portent zéro, et un règlement par commande
-   * ne lui paierait rien.
+   * The buyer holds a single parcel and should not recite one code per shop.
+   * The courier is settled here, once, on the run's fee — the orders of a
+   * unified cart carry zero, and a per-order settlement would pay them
+   * nothing.
    */
   async deliverRun(runId: string, userId: string, data: CompleteDelivery): Promise<DeliveryRun> {
     const profile = await this.getMyProfile(userId)
@@ -1107,13 +1104,13 @@ export class DeliveriesService {
       }
     }
     else if (cash) {
-      // Le code est le reçu de l'acheteur pour l'argent remis : pas de photo.
+      // The code is the buyer's receipt for the cash handed over: no photo.
       throw new UnprocessableEntityException('Une tournée payée en espèces se clôture avec le code de confirmation du client')
     }
 
     const when = new Date()
-    // La preuve vaut pour la tournée entière : une remise, une preuve. Chaque
-    // course la porte tout de même, parce que les écrans par commande la lisent.
+    // The proof covers the whole run: one handover, one proof. Each delivery
+    // still carries it, because the per-order screens read it.
     const proofType = data.proofType === 'CODE' ? DeliveryProofType.CODE : DeliveryProofType.PHOTO
     const proofMediaId = data.proofType === 'PHOTO' ? data.mediaId : null
     for (const delivery of run.deliveries.getItems()) {
@@ -1138,8 +1135,8 @@ export class DeliveriesService {
     run.deliveredAt = when
     await this.em.flush()
 
-    // L'argent du livreur d'abord : un échec ici est journalisé, jamais
-    // remonté — la marchandise est remise, quoi qu'en dise le grand livre.
+    // The courier's money first: a failure here is logged, never surfaced —
+    // the goods are handed over whatever the ledger says.
     await this.settleRunWallet(run, cash)
 
     for (const delivery of run.deliveries.getItems()) {
@@ -1149,19 +1146,19 @@ export class DeliveriesService {
     return run
   }
 
-  /** Une tournée est en espèces quand son passage en caisse l'est. */
+  /** A run is a cash one when its checkout is. */
   private async isRunCash(run: DeliveryRun): Promise<boolean> {
     const checkout = await this.em.findOne(Checkout, { id: run.checkout.id })
     return checkout?.paymentMethod === PaymentMethod.CASH_ON_DELIVERY
   }
 
   /**
-   * Règle une tournée avec le portefeuille du livreur, une fois pour toutes.
+   * Settles a run against the courier's wallet, once and for all.
    *
-   * En ligne : l'acheteur a payé les frais à la plateforme, le livreur est
-   * crédité de sa part. En espèces : il a gardé tout le frais à la porte, donc
-   * la part d'eBio lui est débitée — le solde peut passer sous zéro, c'est à
-   * cela que servent les recharges. Rejouable : l'écriture porte la tournée.
+   * Paid online: the buyer paid the fee to the platform, the courier is
+   * credited their share. Cash: they kept the whole fee at the door, so eBio's
+   * cut is debited — the balance may go below zero, which is what top-ups are
+   * for. Replayable: the entry carries the run.
    */
   private async settleRunWallet(run: DeliveryRun, isCash: boolean): Promise<void> {
     const courier = run.courier
@@ -1236,8 +1233,8 @@ export class DeliveriesService {
   async start(deliveryId: string, userId: string, occurredAt?: string): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
     if (delivery.deliveryRun) {
-      // Une tournée part quand la dernière boutique est collectée, pas avant :
-      // la décision appartient à la tournée, pas à l'une de ses courses.
+      // A run leaves when the last shop is collected, not before: the decision
+      // belongs to the run, not to one of its deliveries.
       throw new ConflictException('Cette course fait partie d\'une tournée : elle démarre quand toutes les boutiques sont collectées')
     }
     this.assertStatus(delivery, DeliveryStatus.PICKED_UP)
@@ -1259,9 +1256,9 @@ export class DeliveriesService {
   async complete(deliveryId: string, userId: string, data: CompleteDelivery): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
     if (delivery.deliveryRun) {
-      // Clore une course seule réglerait le livreur sur un frais nul — les
-      // commandes d'un panier unifié en portent zéro, le frais est sur la
-      // tournée. La remise se fait d'un bloc, avec un seul code.
+      // Closing a lone delivery would settle the courier on a zero fee — the
+      // orders of a unified cart carry none, the fee sits on the run. The
+      // handover happens as a whole, with a single code.
       throw new ConflictException('Cette course fait partie d\'une tournée : remettez la tournée entière')
     }
     this.assertStatus(delivery, DeliveryStatus.IN_TRANSIT)

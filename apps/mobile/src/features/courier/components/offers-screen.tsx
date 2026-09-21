@@ -127,8 +127,8 @@ function Countdown({ expiresAt }: CountdownProps) {
 /** Feed of nearby deliveries awaiting a courier. Targeted offers first, then first to accept wins. */
 export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOfZoneKm, onRefresh, onAccept, onDecline, onAccepted, onOpenWallet }: OffersScreenProps) {
   const { semantic, isDark } = useTheme()
-  // La barre d'onglets flotte au-dessus de la liste : sans cette réserve, le
-  // bouton de la dernière carte passe dessous et devient intouchable.
+  // The tab bar floats above the list: without this allowance, the last
+  // card's button slides under it and becomes untappable.
   const tabBarHeight = useBottomTabBarHeight()
 
   async function accept(offer: CourierOffer) {
@@ -167,9 +167,9 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
   }
 
   /**
-   * Une tournée : ce que le livreur gagne, par où il passe, et une seule
-   * remise au bout. Les numéros de commande n'y figurent pas — il n'en a rien
-   * à faire tant qu'il collecte, la boutique et l'adresse suffisent.
+   * A run: what the courier earns, where they ride, and a single
+   * handover at the end. Order numbers are absent — they are of no use
+   * while collecting, the shop and the address are enough.
    */
   function renderRun(item: RunOffer) {
     const isCash = item.paymentMethod === 'CASH_ON_DELIVERY'
@@ -574,7 +574,7 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: colors.neutral[0],
   },
-  /** Rang de passage : le livreur suit des numéros, pas des noms. */
+  /** Visiting rank: the courier follows numbers, not names. */
   stopIndex: {
     width: 20,
     height: 20,

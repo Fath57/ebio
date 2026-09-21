@@ -30,10 +30,10 @@ export interface TestAppContext {
 interface InitializeTestAppOptions {
   orm: MikroORM
   /**
-   * Taille du pool de connexions. Une seule suffit à la plupart des tests et
-   * garde l'isolation stricte, mais un flux qui ouvre sa propre transaction —
-   * le portefeuille, par exemple — en réclame une seconde et resterait sinon
-   * bloqué jusqu'au délai de knex.
+   * Connection pool size. One is enough for most tests and keeps
+   * isolation strict, but a flow opening its own transaction — the
+   * wallet, for instance — needs a second one and would otherwise stay
+   * blocked until knex times out.
    */
   poolMax?: number
 }

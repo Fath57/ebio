@@ -11,11 +11,11 @@ import { DeliveriesMapper } from './deliveries.mapper'
 import { DeliveriesService } from './deliveries.service'
 
 /**
- * La tournée côté livreur : une proposition, une décision.
+ * The run on the courier's side: one offer, one decision.
  *
- * Elle ne s'accepte pas par morceaux (FR-015). Les livraisons qu'elle contient
- * gardent leurs propres endpoints pour la collecte et la remise — le statut
- * reste par commande, c'est ce qui laisse l'app fournisseur intacte.
+ * It cannot be accepted piecemeal (FR-015). The deliveries it holds keep their
+ * own endpoints for pickup and handover — the status stays per order, which is
+ * what leaves the supplier app untouched.
  */
 @Controller('runs')
 @UseGuards(AuthGuard)
@@ -30,7 +30,7 @@ export class RunsController {
     return rows.map(DeliveriesMapper.toRunOffer)
   }
 
-  /** La tournée en cours du livreur, ou rien quand il n'en a pas. */
+  /** The courier's current run, or nothing when they have none. */
   @Get('mine')
   @UseGuards(CaslGuard)
   @CanRead('Delivery')
@@ -51,8 +51,8 @@ export class RunsController {
   }
 
   /**
-   * La remise : un seul code, toutes les commandes livrées, un seul règlement.
-   * L'acheteur n'a qu'un colis en main — il ne récite pas un code par boutique.
+   * The handover: one code, every order delivered, one settlement. The buyer
+   * holds a single parcel and should not recite one code per shop.
    */
   @Post(':id/deliver')
   @UseGuards(CaslGuard)
@@ -67,8 +67,8 @@ export class RunsController {
   }
 
   /**
-   * L'acheteur tranche quand personne ne prend sa commande : attendre, ou
-   * annuler et être crédité intégralement, frais compris.
+   * The buyer decides when nobody takes their order: wait, or cancel and be
+   * credited in full, fee included.
    */
   @Post(':id/buyer-decision')
   @UseGuards(CaslGuard)
@@ -81,7 +81,7 @@ export class RunsController {
     return this.deliveriesService.buyerDecision(id, session.user.id, body.decision)
   }
 
-  /** Offre ciblée refusée : le suivant du classement est sollicité aussitôt. */
+  /** Targeted offer refused: the next ranked courier is asked right away. */
   @Post(':id/decline')
   @UseGuards(CaslGuard)
   @CanUpdate('Delivery')

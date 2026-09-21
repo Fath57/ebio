@@ -1,19 +1,19 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * La tournée devient l'unité de diffusion.
+ * The run becomes the unit of dispatch.
  *
- * Deux choix structurants ici :
+ * Two structural choices here:
  *
- * 1. Les offres restent dans `delivery_offers`, avec une colonne de tournée à
- *    côté de celle de livraison. Une table séparée aurait été plus propre à
- *    lire, mais le taux d'acceptation d'un livreur se calcule sur cette table :
- *    l'y laisser, c'est garantir qu'une offre de tournée compte comme les
- *    autres. Une offre porte sur l'une ou l'autre, jamais sur les deux.
+ * 1. Offers stay in `delivery_offers`, with a run column next to the delivery
+ *    one. A separate table would have read more cleanly, but a courier's
+ *    acceptance rate is computed on this table: leaving them here guarantees
+ *    that a run offer counts like the others. An offer targets one or the
+ *    other, never both.
  *
- * 2. La tournée reçoit les mêmes colonnes de diffusion que la livraison —
- *    point de collecte, rayon, tour d'offre, livreur sollicité. Le mécanisme
- *    est identique ; seul l'objet diffusé change.
+ * 2. The run gets the same dispatch columns as the delivery — pickup point,
+ *    radius, offer round, targeted courier. The mechanism is identical; only
+ *    the object being dispatched changes.
  */
 export class Migration20260922090000 extends Migration {
   override async up(): Promise<void> {
@@ -21,8 +21,8 @@ export class Migration20260922090000 extends Migration {
     this.addSql(`ALTER TABLE "delivery_offers" ADD COLUMN IF NOT EXISTS "delivery_run_id" uuid NULL
       REFERENCES "delivery_runs" ("id") ON DELETE CASCADE;`)
     this.addSql(`CREATE INDEX IF NOT EXISTS "delivery_offers_run_idx" ON "delivery_offers" ("delivery_run_id");`)
-    // Une offre porte sur une course ou sur une tournée. Les deux à la fois
-    // laisserait deux réponses possibles pour un seul refus.
+    // An offer targets a delivery or a run. Both at once would leave two
+    // possible answers for a single refusal.
     this.addSql(`ALTER TABLE "delivery_offers" DROP CONSTRAINT IF EXISTS "delivery_offers_target_check";`)
     this.addSql(`ALTER TABLE "delivery_offers" ADD CONSTRAINT "delivery_offers_target_check"
       CHECK (("delivery_id" IS NULL) <> ("delivery_run_id" IS NULL));`)

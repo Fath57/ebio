@@ -264,9 +264,9 @@ export const deliveryResponseSchema = z.object({
   dropoffAddress: z.string(),
   supplierShopName: z.string(),
   /**
-   * La tournée dont cette livraison fait partie. Elle porte l'avancement que
-   * l'acheteur suit — une progression pour tout son panier — et le moment où
-   * la plateforme lui rend la main faute de livreur.
+   * The run this delivery belongs to. It carries the progress the
+   * buyer follows — one progression for their whole cart — and the moment
+   * the platform hands the decision back for want of a courier.
    */
   run: z.object({
     id: z.string().uuid(),
@@ -421,8 +421,8 @@ export type AssignDelivery = z.infer<typeof assignDeliverySchema>
 export type CourierCandidate = z.infer<typeof courierCandidateSchema>
 
 /**
- * Ce que l'acheteur répond quand aucun livreur ne prend sa commande, même
- * dégroupée. Deux issues seulement : patienter, ou récupérer son argent.
+ * What the buyer answers when no courier takes their order, even
+ * once ungrouped. Two outcomes only: wait, or get the money back.
  */
 export const buyerDecisionSchema = z.object({
   decision: z.enum(['WAIT', 'CANCEL']),

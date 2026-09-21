@@ -79,8 +79,8 @@ export class WalletTransaction {
   deliveryId?: string | null
 
   /**
-   * La tournée que cette écriture solde. Une tournée se règle une fois, sur
-   * son frais à elle : les commandes d'un panier unifié en portent zéro.
+   * The run this entry settles. A run is settled once, on
+   * its own fee: the orders of a unified cart carry none.
    */
   @Property({ fieldName: 'delivery_run_id', type: 'uuid', nullable: true })
   deliveryRunId?: string | null

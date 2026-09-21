@@ -41,9 +41,9 @@ export class Payment {
   order!: Rel<Order>
 
   /**
-   * Le passage en caisse dont ce paiement fait partie. Nul sur tout
-   * l'historique antérieur au panier unifié, ce que le code lit comme
-   * « paiement d'une commande isolée ».
+   * The checkout this payment belongs to. Null across the whole
+   * history predating the unified cart, which the code reads as
+   * "payment of a lone order".
    */
   @Index()
   @ManyToOne(() => Checkout, { fieldName: 'checkout_id', nullable: true })

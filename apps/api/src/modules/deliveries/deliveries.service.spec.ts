@@ -39,7 +39,7 @@ function buildService() {
     debit: vi.fn().mockResolvedValue(0),
   }
   const settings = { getDeliveryCommissionRate: vi.fn().mockResolvedValue(0.1), getCourierMaxDebt: vi.fn().mockResolvedValue(0) }
-  // Rechiffrage d'une tournée amputée d'une boutique.
+  // Re-pricing a run that lost a shop.
   const pricing = { quoteRun: vi.fn().mockResolvedValue({ fee: 0, distanceKm: null, reason: 'FLAT' }) }
   const service = new DeliveriesService(
     em as never,
@@ -128,8 +128,8 @@ describe('deliveriesService', () => {
       em.findOne
         .mockResolvedValueOnce(validProfile)
         .mockResolvedValueOnce(buildDelivery(DeliveryStatus.AWAITING_COURIER, { deliveryRun: { id: 'run-1' } }))
-      // Sans ce refus, un livreur prendrait la moitié d'une tournée et le
-      // frais unique promis à l'acheteur ne couvrirait plus le trajet.
+      // Without this refusal a courier would take half a run and the
+      // single fee promised to the buyer would no longer cover the ride.
       await expect(service.accept('delivery-1', 'user-1')).rejects.toBeInstanceOf(ConflictException)
     })
 

@@ -23,16 +23,16 @@ const RUN_STATUSES = [
 const RUN_OUTCOMES = ['ACCEPTED', 'REFUSED_ALL', 'UNSERVED', 'CANCELLED']
 
 /**
- * Le panier unifié : un passage en caisse pour plusieurs boutiques.
+ * The unified cart: one checkout for several shops.
  *
- * Deux tables de regroupement, et rien d'autre. `payments.order_id` et
- * `deliveries.order_id` gardent leur unicité : c'est la condition pour que
- * l'escrow, les reçus, le suivi fournisseur et les écrans livreur continuent
- * de fonctionner sans retouche.
+ * Two grouping tables, and nothing else. `payments.order_id` and
+ * `deliveries.order_id` keep their uniqueness: that is the condition for
+ * escrow, receipts, supplier tracking and courier screens to keep working
+ * untouched.
  *
- * Purement additif. Les colonnes de rattachement sont nullables et restent
- * nulles sur tout l'historique, que le code lit comme « commande d'avant le
- * panier unifié ».
+ * Purely additive. The linking columns are nullable and stay null across the
+ * whole history, which the code reads as "an order from before the unified
+ * cart".
  */
 export class Migration20260921120000 extends Migration {
   override async up(): Promise<void> {
@@ -58,8 +58,8 @@ export class Migration20260921120000 extends Migration {
       CHECK ("status" = ANY (ARRAY[${CHECKOUT_STATUSES.map(s => `'${s}'`).join(', ')}]::text[]));`)
     this.addSql(`ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_delivery_mode_check"
       CHECK ("delivery_mode" = ANY (ARRAY['DELIVERY', 'ON_SITE']::text[]));`)
-    // Une livraison sans point de chute ne peut pas être tarifée, et une
-    // adresse sans coordonnées ne guide personne.
+    // A delivery without a drop-off point cannot be priced, and an address
+    // without coordinates guides nobody.
     this.addSql(`ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_delivery_position_check"
       CHECK ("delivery_mode" <> 'DELIVERY'
         OR ("delivery_latitude" IS NOT NULL AND "delivery_longitude" IS NOT NULL));`)
@@ -92,16 +92,16 @@ export class Migration20260921120000 extends Migration {
       CHECK ("dispatch_phase" = ANY (ARRAY['SCHEDULED', 'TARGETED', 'BROADCAST']::text[]));`)
     this.addSql(`ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_outcome_check"
       CHECK ("outcome" IS NULL OR "outcome" = ANY (ARRAY[${RUN_OUTCOMES.map(o => `'${o}'`).join(', ')}]::text[]));`)
-    // Aucune borne sur shop_count ni sur total_distance_km : le regroupement
-    // est volontairement sans limite en v1, ces colonnes servent à la mesure
-    // pour poser ces limites plus tard sur des faits.
+    // No bound on shop_count nor on total_distance_km at this point: the
+    // limits come in a later migration, and these columns serve the
+    // measurement they will be tuned on.
     this.addSql(`CREATE INDEX IF NOT EXISTS "delivery_runs_courier_idx" ON "delivery_runs" ("courier_id");`)
     this.addSql(`CREATE INDEX IF NOT EXISTS "delivery_runs_dispatch_idx"
       ON "delivery_runs" ("status", "dispatch_phase");`)
 
-    // Le rattachement vit sur la commande, pas sur le paiement : en espèces à
-    // la livraison aucun paiement n'est créé — l'argent passe à la porte — et
-    // les commandes se retrouveraient orphelines de leur passage en caisse.
+    // The link lives on the order, not on the payment: with cash on delivery
+    // no payment is created — the money changes hands at the door — and the
+    // orders would end up orphaned from their checkout.
     this.addSql(`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");`)
     this.addSql(`CREATE INDEX IF NOT EXISTS "orders_checkout_idx" ON "orders" ("checkout_id");`)
 

@@ -33,23 +33,23 @@ interface DeliveryRun {
   courierName: string | null
   courierVehicleType: VehicleType | null
   /**
-   * Renseigné quand la livraison fait partie d'une tournée. L'acheteur suit
-   * alors une seule progression, même si son panier a produit deux commandes.
+   * Set when the delivery is part of a run. The buyer then follows
+   * one progression, even though their cart produced two orders.
    */
   run: {
     id: string
     shopCount: number
     collectedCount: number
-    /** La plateforme n'a plus de recours : à l'acheteur de trancher. */
+    /** The platform has no options left: the buyer decides. */
     awaitingBuyerDecision: boolean
   } | null
 }
 
 /**
- * Ce que dit la ligne de livraison quand plusieurs boutiques sont en jeu.
+ * What the delivery line says when several shops are involved.
  *
- * « Colis récupéré » serait faux tant qu'il en reste à collecter, et deux
- * lignes contradictoires sur deux cartes le seraient encore plus.
+ * "Parcel picked up" would be false while some are left to collect, and
+ * two contradicting lines on two cards even more so.
  */
 function runProgressLabel(delivery: DeliveryRun): string | null {
   const run = delivery.run

@@ -22,13 +22,13 @@ interface SupplierBasket {
 }
 
 /**
- * Le passage en caisse unifié : un panier qui couvre plusieurs boutiques,
- * un paiement, N commandes.
+ * The unified checkout: one cart spanning several shops, one payment, N
+ * orders.
  *
- * Ce service orchestre, il ne re-chiffre rien lui-même. Le prix d'un panier
- * chez une boutique reste l'affaire d'`OrdersService`, avec ses promotions,
- * son stock et ses commissions. Ne remonte ici que ce qui n'a de sens qu'au
- * niveau du panier : les frais de la tournée et le plafond des espèces.
+ * This service orchestrates, it prices nothing itself. What a cart costs at
+ * one shop stays `OrdersService`'s business, with its promotions, its stock
+ * and its commissions. Only what makes sense at cart level rises here: the
+ * run's fee and the cash cap.
  */
 @Injectable()
 export class CheckoutService {
@@ -42,7 +42,7 @@ export class CheckoutService {
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
 
-  /** Regroupe les articles par boutique, en refusant ce qui n'est pas vendable. */
+  /** Groups items by shop, refusing whatever cannot be sold. */
   private async groupBySupplier(items: CheckoutPreview['items']): Promise<SupplierBasket[]> {
     const products = await this.em.find(
       Product,
@@ -71,11 +71,11 @@ export class CheckoutService {
   }
 
   /**
-   * Un code promo appartient à une boutique, ou à la plateforme quand il n'en
-   * a pas. Le passer à chaque boutique d'un panier multi-boutiques
-   * appliquerait N fois un code à montant fixe, donc N fois la remise. Tant
-   * que la règle de répartition n'est pas arbitrée, le code est refusé au-delà
-   * d'une boutique plutôt que de coûter de l'argent en silence.
+   * A promo code belongs to a shop, or to the platform when it has none.
+   * Passing it to every shop of a multi-shop cart would apply a fixed-amount
+   * code N times, hence N times the discount. Until the splitting rule is
+   * settled, the code is refused beyond one shop rather than costing money in
+   * silence.
    */
   private assertPromoUsable(baskets: SupplierBasket[], promoCode: string | undefined): void {
     if (promoCode && baskets.length > 1) {
@@ -90,8 +90,8 @@ export class CheckoutService {
     this.assertPromoUsable(baskets, data.promoCode)
     const isDelivery = data.pickupMode === 'DELIVERY'
 
-    // Chaque boutique est chiffrée par le chemin existant. Ses champs de
-    // livraison sont ignorés : elle est facturée une fois, sur la tournée.
+    // Each shop is priced through the existing path. Its delivery fields are
+    // ignored: it is charged once, on the run.
     const suppliers = []
     let itemsTotal = 0
     let discount = 0
@@ -123,9 +123,9 @@ export class CheckoutService {
       })
     }
 
-    // Le panier peut se découper en plusieurs tournées — deux boutiques par
-    // tournée, et pas au-delà de l'écart admis entre leurs points de collecte.
-    // L'acheteur n'en voit qu'un total : le découpage regarde la plateforme.
+    // The cart may split into several runs — two shops per run, and no more
+    // than the admitted gap between their pickup points. The buyer only sees a
+    // total: the split is the platform's business.
     const quote = await this.deliveryPricing.quoteCart({
       supplierIds: baskets.map(basket => basket.supplier.id),
       itemsTotal,
@@ -157,10 +157,10 @@ export class CheckoutService {
   }
 
   /**
-   * De combien le panier dépasse le plafond des espèces, ou `null`.
+   * By how much the cart exceeds the cash cap, or `null`.
    *
-   * Le plafond borne ce que le livreur avance de sa poche, et cette avance est
-   * celle de la tournée entière, pas d'une commande isolée.
+   * The cap bounds what the courier fronts out of pocket, and that advance
+   * covers the whole run, not a single order.
    */
   private async cashOverflow(total: number): Promise<number | null> {
     const limit = await this.platformSettings.getCashOnDeliveryMaxAmount()
@@ -171,11 +171,11 @@ export class CheckoutService {
   }
 
   /**
-   * Un seul débit, du total du panier, puis un paiement par commande.
+   * One debit, of the cart total, then one payment per order.
    *
-   * L'acheteur n'a fait qu'un geste : son relevé doit en montrer un. Les
-   * paiements, eux, restent par commande pour que l'escrow libère les fonds
-   * de chaque boutique au rythme de la sienne.
+   * The buyer made a single gesture: their statement must show one. The
+   * payments, on the other hand, stay per order so that escrow releases each
+   * shop's funds at its own pace.
    */
   private async payFromWallet(buyer: User, checkout: Checkout, orders: Order[]): Promise<void> {
     const wallet = await this.walletService.getOrCreate({ userId: buyer.id })
@@ -235,9 +235,9 @@ export class CheckoutService {
       deliveryLongitude: data.deliveryLongitude,
     })
 
-    // Ou tout existe, ou rien. Un solde insuffisant découvert à la troisième
-    // boutique ne doit pas laisser les deux premières commandes derrière lui,
-    // ni l'acheteur devant un panier à moitié passé.
+    // Either everything exists or nothing does. An insufficient balance found
+    // at the third shop must leave behind neither the first two orders nor a
+    // buyer facing a half-placed cart.
     const orderNumbers = await this.ordersService.allocateOrderNumbers(baskets.length)
 
     const { orders, createdOrders } = await this.em.transactional(async () => {
@@ -279,8 +279,8 @@ export class CheckoutService {
 
     void createdOrders
 
-    // Les tournées n'ont de sens qu'en livraison : un retrait sur place se fait
-    // boutique par boutique, rien n'est à regrouper.
+    // Runs only make sense for delivery: an on-site pickup happens shop by
+    // shop, there is nothing to group.
     const runIds: string[] = []
     if (isDelivery) {
       for (const run of quote.runs) {

@@ -23,10 +23,10 @@ export interface CartItem {
 export type DeliveryMode = 'PICKUP' | 'DELIVERY'
 
 /**
- * Regroupement par boutique. Ce n'est plus un état, c'est une **vue dérivée**
- * des articles : l'acheteur a un panier, pas un panier par boutique, et le
- * mode de remise vaut pour l'ensemble. Les écrans qui affichent d'où vient
- * chaque ligne s'en servent encore, mais rien ne s'y écrit.
+ * Grouping by shop. No longer a piece of state but a **derived view** of
+ * the items: the buyer has one cart, not one per shop, and the handover
+ * mode covers the whole. Screens showing where each line comes from still
+ * use it, but nothing writes to it.
  */
 export interface SupplierCartGroup {
   supplierId: string
@@ -52,7 +52,7 @@ export interface AddItemInput {
 
 interface CartState {
   items: CartItem[]
-  /** Un seul mode pour tout le panier : le mode mixte est hors périmètre. */
+  /** One mode for the whole cart: mixed modes are out of scope. */
   deliveryMode: DeliveryMode
   hydrated: boolean
 }
@@ -73,9 +73,9 @@ function generateId(): string {
 }
 
 /**
- * Plafond par ligne de panier. La borne basse vit déjà ici — une quantité
- * tombée à zéro retire l'article — et la haute lui tient compagnie plutôt que
- * d'être réécrite par chaque écran qui sait incrémenter.
+ * Cap per cart line. The lower bound already lives here — a quantity
+ * dropping to zero removes the item — and the upper one keeps it company
+ * rather than being rewritten by every screen that can increment.
  */
 export const MAX_ITEM_QUANTITY = 99
 
@@ -89,12 +89,12 @@ interface StoredCart {
 }
 
 /**
- * Relit le panier persisté, quel que soit son âge.
+ * Reads back the persisted cart, whatever its age.
  *
- * Jusqu'ici le panier était stocké groupé par boutique, avec un mode de remise
- * par groupe. Un acheteur qui met l'application à jour ne doit pas perdre son
- * panier : l'ancien format est aplati, et si les modes divergeaient on retient
- * la livraison — c'est le défaut de l'ancien code et le moins surprenant.
+ * Until now the cart was stored grouped by shop, with a handover mode
+ * per group. A buyer updating the app must not lose their cart: the old
+ * format is flattened, and when modes diverged we keep delivery — the
+ * former code's default, and the least surprising one.
  */
 function readStoredCart(raw: string | null): StoredCart {
   const empty: StoredCart = { items: [], deliveryMode: 'DELIVERY' }
@@ -118,7 +118,7 @@ function readStoredCart(raw: string | null): StoredCart {
   }
 }
 
-/** Vue par boutique, reconstruite à la demande depuis la liste à plat. */
+/** Per-shop view, rebuilt on demand from the flat list. */
 export function groupBySupplier(items: CartItem[]): SupplierCartGroup[] {
   const groups: SupplierCartGroup[] = []
   for (const item of items) {
@@ -210,11 +210,11 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 // ---------------------------------------------------------------------------
 
 interface CartContextValue {
-  /** Le panier, à plat. Source de vérité. */
+  /** The cart, flat. Source of truth. */
   items: CartItem[]
-  /** Vue par boutique, dérivée des articles : pour l'affichage seulement. */
+  /** Per-shop view, derived from the items: for display only. */
   groups: SupplierCartGroup[]
-  /** Un seul mode pour tout le panier. */
+  /** One mode for the whole cart. */
   deliveryMode: DeliveryMode
   hydrated: boolean
   addItem: (input: AddItemInput) => void

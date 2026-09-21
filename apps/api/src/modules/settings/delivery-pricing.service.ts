@@ -4,7 +4,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { computeDeliveryFee, computeRunDistance, groupShopsIntoRuns } from '../../common/delivery-fee'
 import { PlatformSettingsService } from './platform-settings.service'
 
-/** Chiffrage d'une tournée : plusieurs collectes, un seul point de chute. */
+/** Pricing a run: several pickups, a single drop-off point. */
 export interface RunQuoteInput {
   supplierIds: string[]
   itemsTotal: number
@@ -13,20 +13,20 @@ export interface RunQuoteInput {
   longitude?: number | null
 }
 
-/** Une tournée chiffrée : ses boutiques, son frais, son écart de collecte. */
+/** A priced run: its shops, its fee, its pickup spread. */
 export interface RunQuote extends DeliveryQuoteResponse {
   supplierIds: string[]
   pickupSpreadKm: number | null
 }
 
-/** Le chiffrage d'un panier entier : ses tournées, et leur somme. */
+/** The pricing of a whole cart: its runs, and their sum. */
 export interface CartQuote {
   runs: RunQuote[]
-  /** Somme des frais ; null dès qu'une tournée ne peut pas être chiffrée. */
+  /** Sum of the fees; null as soon as one run cannot be priced. */
   fee: number | null
-  /** Somme des distances ; null dès qu'une tournée n'est pas mesurable. */
+  /** Sum of the distances; null as soon as one run is not measurable. */
   distanceKm: number | null
-  /** Motif de la tournée bloquante, ou de la première à défaut. */
+  /** Reason of the blocking run, or of the first one otherwise. */
   reason: DeliveryQuoteResponse['reason']
   maxDistanceKm: number
 }
@@ -82,16 +82,16 @@ export class DeliveryPricingService {
   }
 
   /**
-   * Chiffre une tournée : plusieurs boutiques à collecter, un point de chute.
+   * Prices a run: several shops to collect from, one drop-off point.
    *
-   * La distance est celle du trajet réel du livreur — collecte à collecte,
-   * puis dernière collecte au point de chute — et non la somme des distances
-   * boutique → acheteur, qui compterait deux fois le même chemin. Le seuil de
-   * gratuité s'évalue sur le panier entier : c'est ce que l'acheteur voit.
+   * The distance is the courier's real ride — pickup to pickup, then the last
+   * pickup to the drop-off — and not the sum of shop → buyer distances, which
+   * would count the same road twice. The free-delivery threshold is judged on
+   * the whole cart: that is what the buyer sees.
    *
-   * Les coordonnées sortent de PostGIS comme partout ailleurs ; une seule
-   * boutique non localisée suffit à rendre la distance incalculable, et le
-   * forfait s'applique alors sans bloquer la vente.
+   * Coordinates come out of PostGIS as everywhere else; a single shop without
+   * a position is enough to make the distance impossible to compute, and the
+   * flat fee then applies without blocking the sale.
    */
   async quoteRun(input: RunQuoteInput): Promise<DeliveryQuoteResponse> {
     const config = await this.platformSettings.getDeliveryPricing()
@@ -124,16 +124,16 @@ export class DeliveryPricingService {
   }
 
   /**
-   * Découpe les boutiques d'un panier en tournées, puis chiffre chacune.
+   * Splits a cart's shops into runs, then prices each one.
    *
-   * Deux critères bornent le regroupement : le nombre de boutiques et l'écart
-   * entre leurs points de collecte. Ils se vérifient ici, à la constitution du
-   * devis, et non à la diffusion — un contrôle posé plus tard arriverait après
-   * l'encaissement, quand il n'est plus possible de refuser quoi que ce soit.
+   * Two criteria bound the grouping: the number of shops and the gap between
+   * their pickup points. Both are checked here, while the quote is built, and
+   * not at dispatch time — a check placed later would come after the money was
+   * taken, when nothing can be refused any more.
    *
-   * Le seuil de gratuité, lui, reste évalué sur le panier entier : c'est ce
-   * que l'acheteur voit, et un panier découpé en deux tournées ne doit pas
-   * perdre une gratuité déjà acquise.
+   * The free-delivery threshold, however, stays judged on the whole cart: that
+   * is what the buyer sees, and a cart split into two runs must not lose a
+   * waiver it had already earned.
    */
   async quoteCart(input: RunQuoteInput): Promise<CartQuote> {
     const config = await this.platformSettings.getDeliveryPricing()
@@ -153,8 +153,8 @@ export class DeliveryPricingService {
       runs.push({ ...quote, supplierIds: group.supplierIds, pickupSpreadKm: group.pickupSpreadKm })
     }
 
-    // Un seul chiffrage impossible rend le panier impayable : mieux vaut le
-    // dire avec son motif que d'annoncer un total qui ignore une tournée.
+    // A single unpriceable run makes the cart unpayable: better to say so with
+    // its reason than to announce a total that ignores a run.
     const blocked = runs.find(run => run.fee === null) ?? null
     const totalFee = blocked ? null : runs.reduce((sum, run) => sum + (run.fee ?? 0), 0)
     const totalDistanceKm = runs.every(run => run.distanceKm !== null)
@@ -170,7 +170,7 @@ export class DeliveryPricingService {
     }
   }
 
-  /** Coordonnées des boutiques, décodées depuis la géographie PostGIS. */
+  /** Shop coordinates, decoded from the PostGIS geography. */
   private async supplierPositions(supplierIds: string[]): Promise<Map<string, { latitude: number, longitude: number }>> {
     if (supplierIds.length === 0) {
       return new Map()

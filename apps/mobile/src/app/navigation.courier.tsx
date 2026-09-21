@@ -247,9 +247,9 @@ function CoursesHomeWrapper({ navigation }: any) {
     )
   }
 
-  // La tournée passe avant : tant qu'elle court, ses collectes ne sont pas des
-  // courses séparées, et les montrer comme telles laisserait croire au livreur
-  // qu'il peut en abandonner une.
+  // The run comes first: while it runs, its pickups are not separate
+  // deliveries, and showing them as such would let the courier believe
+  // they can drop one of them.
   if (run) {
     return (
       <SafeScreen>
@@ -321,9 +321,9 @@ function CoursesHomeWrapper({ navigation }: any) {
         onAccept={offers.accept}
         onDecline={offers.decline}
         onAccepted={() => {
-          // Une tournée acceptée doit remplacer la liste tout de suite : ne
-          // rafraîchir que la course laissait l'ancien écran, avec un gain à
-          // zéro puisque le frais vit sur la tournée.
+          // An accepted run must replace the list at once: refreshing only
+          // the delivery left the former screen up, with an earning of
+          // zero since the fee lives on the run.
           refreshRun()
           refresh()
         }}
@@ -344,7 +344,7 @@ function CourierProofWrapper({ route, navigation }: any) {
       />
       <ProofScreen
         isCash={paymentMethod === 'CASH_ON_DELIVERY'}
-        // Un seul code clôt toute la tournée ; sinon c'est la course seule.
+        // A single code closes the whole run; otherwise it is the lone delivery.
         onComplete={body => (runId
           ? queue.sendRunTransition(runId, 'deliver', body)
           : queue.sendTransition(deliveryId, 'complete', body))}

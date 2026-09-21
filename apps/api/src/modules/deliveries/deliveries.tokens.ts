@@ -11,10 +11,9 @@ export const ORDER_DELIVERY_HOOKS = Symbol('ORDER_DELIVERY_HOOKS')
 
 export interface OrderDeliveryHooks {
   /**
-   * Ouvre une tournée d'un passage en caisse livré. Un panier en ouvre
-   * plusieurs dès que le regroupement ne tient pas en une seule. Les
-   * livraisons s'y rattachent au fur et à mesure qu'elles naissent, chacune
-   * rejoignant la tournée qui collecte chez sa boutique.
+   * Opens a run of a delivered checkout. A cart opens several as soon as the
+   * grouping does not fit in one. Deliveries join as they are born, each one
+   * reaching the run that collects from its shop.
    */
   createRunForCheckout: (input: {
     checkoutId: string
@@ -32,19 +31,19 @@ export interface OrderDeliveryHooks {
 }
 
 /**
- * Ce que le module paiements demande au module livraisons quand une commande
- * tombe. Même raison que ci-dessus : un jeton, pas une dépendance de service,
- * sinon les deux modules s'importent l'un l'autre.
+ * What the payments module asks of the deliveries module when an order falls
+ * through. Same reason as above: a token, not a service dependency, otherwise
+ * the two modules import each other.
  */
 export const DELIVERY_RUN_HOOKS = Symbol('DELIVERY_RUN_HOOKS')
 
 export interface DeliveryRunHooks {
   /**
-   * Retire une boutique de la tournée d'un panier et rechiffre le trajet.
+   * Removes a shop from a cart's run and re-prices the ride.
    *
-   * Renvoie l'écart de frais à rendre à l'acheteur, ou `null` quand il n'y a
-   * pas de tournée — retrait sur place, ou commande d'avant le panier unifié.
-   * Une tournée qui perd sa dernière boutique est annulée.
+   * Returns the fee difference owed to the buyer, or `null` when there is no
+   * run — on-site pickup, or an order from before the unified cart. A run that
+   * loses its last shop is cancelled.
    */
   removeSupplierFromRun: (input: {
     checkoutId: string

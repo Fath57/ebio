@@ -2,9 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { splitCheckoutAmount } from './payments.service'
 
 /**
- * Un panier encaissé en une fois, ventilé entre les commandes qu'il couvre.
- * Ce qui compte n'est pas l'élégance de la règle mais qu'aucun franc ne se
- * perde ni ne s'invente : le total ventilé doit égaler l'encaissement.
+ * A cart collected in one go, split across the orders it covers.
+ * What matters is not the elegance of the rule but that no franc gets
+ * lost or invented: the split total must equal what was collected.
  */
 describe('splitCheckoutAmount', () => {
   const order = (id: string, totalAmount: number) => ({ id, totalAmount })
@@ -21,7 +21,7 @@ describe('splitCheckoutAmount', () => {
   })
 
   it('ne perd pas le franc des arrondis, quel que soit le nombre de boutiques', () => {
-    // 1 000 sur trois parts égales : 333,33… Le reliquat va à la dernière.
+    // 1,000 over three equal shares: 333.33… The remainder goes to the last.
     const parts = splitCheckoutAmount(1000, [order('a', 1), order('b', 1), order('c', 1)])
     expect(parts.reduce((sum, p) => sum + p.amount, 0)).toBe(1000)
     expect(parts.map(p => p.amount)).toEqual([333, 333, 334])

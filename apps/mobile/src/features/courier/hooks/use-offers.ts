@@ -83,11 +83,11 @@ function earliestExpiry(offers: CourierOffer[]): number | null {
 }
 
 /**
- * File unique des propositions : une course isolée et une tournée y tiennent
- * la même place. Le livreur n'a pas à savoir laquelle des deux lui est
- * proposée pour décider — il regarde ce qu'il gagne et où il va.
+ * A single offer feed: a lone delivery and a run hold the same place in
+ * it. The courier does not need to know which of the two they are being
+ * offered to decide — they look at what they earn and where they go.
  *
- * Les offres prioritaires passent devant, puis la plus proche.
+ * Targeted offers come first, then the closest one.
  */
 function mergeOffers(deliveries: DeliveryOffer[], runs: RunOffer[]): CourierOffer[] {
   const merged: CourierOffer[] = [
@@ -117,8 +117,8 @@ export function useOffers() {
 
   const load = useCallback(async () => {
     try {
-      // Les deux files sont lues ensemble : les mêmes règles d'indisponibilité
-      // et de dette s'appliquent aux deux, et l'écran n'en montre qu'une.
+      // Both feeds are read together: the same unavailability and debt rules
+      // apply to both, and the screen only shows one.
       const [deliveryRes, runRes] = await Promise.all([
         apiFetch('/api/deliveries/offers'),
         apiFetch('/api/runs/offers'),
@@ -136,8 +136,8 @@ export function useOffers() {
       setUnavailable(false)
       setDebtBlock(null)
       const deliveries = await deliveryRes.json() as DeliveryOffer[]
-      // Une file de tournées indisponible ne doit pas vider l'écran : les
-      // courses isolées restent prenables.
+      // An unavailable run feed must not empty the screen: lone
+      // deliveries stay claimable.
       const runs = runRes.ok ? await runRes.json() as RunOffer[] : []
       setOffers(mergeOffers(deliveries, runs))
     }

@@ -88,8 +88,8 @@ function toPreviewConfig(values: DeliveryPricingFormData): DeliveryPricingConfig
     })),
     freeFrom: null,
     maxDistanceKm: toNumber(values.maxDistanceKm, Number.MAX_SAFE_INTEGER),
-    // Sans effet sur le tarif d'une distance donnée : l'aperçu chiffre une
-    // course, le regroupement décide seulement combien il y en a.
+    // No effect on the price of a given distance: the preview prices one
+    // delivery, grouping only decides how many there are.
     grouping: {
       maxShops: toNumber(values.grouping?.maxShops, 2),
       maxPickupSpreadKm: toNumber(values.grouping?.maxPickupSpreadKm, 3),
@@ -112,8 +112,8 @@ export function DeliveryPricingForm({ config, onSubmit, isPending }: DeliveryPri
       data => data.distance.minFee <= data.distance.maxFee,
       { path: ['distance', 'minFee'], message: t('admin.settings.deliveryPricing.distance.minMaxError') },
     )
-    // Grouper plus loin qu'on ne livre n'aurait pas de sens. Même règle côté
-    // API : le refus doit se voir ici, avant l'aller-retour.
+    // Grouping farther than we deliver would make no sense. Same rule on the
+    // API side: the refusal must show here, before the round trip.
     .refine(
       data => data.grouping.maxPickupSpreadKm <= data.maxDistanceKm,
       { path: ['grouping', 'maxPickupSpreadKm'], message: t('admin.settings.deliveryPricing.grouping.spreadOverMaxDistance') },
