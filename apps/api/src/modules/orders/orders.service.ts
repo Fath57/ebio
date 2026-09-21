@@ -117,6 +117,14 @@ interface BasketLine {
  */
 export interface CheckoutOrderContext {
   checkout: Checkout
+  /**
+   * Numéro alloué par le passage en caisse. Le calcul maison compte les
+   * commandes du jour par une requête brute, qui ne voit pas les insertions
+   * encore dans la transaction : sans ce numéro fourni, les commandes d'un
+   * même panier reçoivent toutes le même et la contrainte d'unicité casse la
+   * commande entière.
+   */
+  orderNumber: string
 }
 
 interface BasketPricing {
@@ -183,7 +191,7 @@ export class OrdersService {
 
     await this.checkDuplicateOrder(buyerId, data.supplierId, data.items)
 
-    const orderNumber = await this.generateOrderNumber()
+    const orderNumber = checkoutContext?.orderNumber ?? await this.generateOrderNumber()
     const pricing = await this.priceBasket(buyer, supplier, products, data)
     const { itemEntities, discount, discountedItemsTotal, commission, appliedPromo } = pricing
     // Dans un panier unifié, la livraison est facturée une fois, au niveau du
@@ -271,7 +279,10 @@ export class OrdersService {
 
     // Wallet checkout: the buyer's money is already on the platform account,
     // so the debit is immediate and the payment starts straight in escrow.
-    if (order.paymentMethod === PaymentMethod.WALLET) {
+    // Dans un panier unifié, le portefeuille est débité une seule fois, du
+    // total, par le service de passage en caisse : débiter ici le ferait N
+    // fois et laisserait N traces là où l'acheteur n'a fait qu'un geste.
+    if (!checkoutContext && order.paymentMethod === PaymentMethod.WALLET) {
       const wallet = await this.walletService.getOrCreate({ userId: buyer.id })
       try {
         await this.walletService.debit(wallet.id, {
@@ -288,8 +299,9 @@ export class OrdersService {
         await this.em.nativeDelete(Order, { id: order.id })
         throw error
       }
+      // Ce chemin ne s'exécute que hors panier unifié : le paiement n'a donc
+      // aucun passage en caisse à rattacher.
       this.em.create(Payment, {
-        checkout: checkoutContext?.checkout,
         order,
         amount: order.totalAmount,
         provider: PaymentProvider.FEDAPAY,
@@ -1127,6 +1139,19 @@ export class OrdersService {
         )
       }
     }
+  }
+
+  /**
+   * Alloue `count` numéros consécutifs d'un coup, pour les commandes d'un même
+   * panier. Une seule lecture du compteur, puis une suite en mémoire : les
+   * insertions d'une transaction ne sont pas visibles à la requête brute qui
+   * compte, donc les demander une par une les rendrait toutes identiques.
+   */
+  async allocateOrderNumbers(count: number): Promise<string[]> {
+    const first = await this.generateOrderNumber()
+    const [prefix, seq] = [first.slice(0, -3), Number(first.slice(-3))]
+    return Array.from({ length: count }, (_, index) =>
+      `${prefix}${(seq + index).toString().padStart(3, '0')}`)
   }
 
   private async generateOrderNumber(): Promise<string> {
