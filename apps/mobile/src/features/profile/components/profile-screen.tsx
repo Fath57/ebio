@@ -21,7 +21,6 @@ import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
-  Linking,
   ScrollView,
   StyleSheet,
   Switch,
@@ -36,15 +35,6 @@ import { apiFetch } from '../../../utils/api-client'
 import { BRAND_LOGO } from '../../../utils/app-variant'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
-
-const SUPPLIER_APP_PACKAGE = 'com.ebio.supplier'
-
-/** Opens the eBio Fournisseur Play Store listing (store app, then web fallback). */
-function openSupplierApp() {
-  Linking.openURL(`market://details?id=${SUPPLIER_APP_PACKAGE}`).catch(() => {
-    Linking.openURL(`https://play.google.com/store/apps/details?id=${SUPPLIER_APP_PACKAGE}`)
-  })
-}
 
 interface UserProfile {
   id: string
@@ -79,10 +69,12 @@ interface ProfileScreenProps {
   onNavigateToEditProfile?: () => void
   onNavigateToChangePassword?: () => void
   onNavigateToSupplierRegistration?: () => void
+  onNavigateToHelp?: () => void
+  onNavigateToTerms?: () => void
   refreshTrigger?: number
 }
 
-export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, refreshTrigger }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
   const tabBarHeight = useBottomTabBarHeight()
@@ -236,32 +228,6 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
       >
-        {/* Supplier space moved to the dedicated eBio Fournisseur app */}
-        {supplierStatus.isSupplier && supplierStatus.validationStatus === 'VALIDATED' && (
-          <View style={styles.modeSwitchWrap}>
-            <TouchableOpacity
-              style={[styles.supplierAppBanner, { backgroundColor: semantic.bgPrimaryLight }]}
-              onPress={openSupplierApp}
-              accessibilityRole="button"
-              accessibilityLabel="Installer l'application eBio Fournisseur"
-            >
-              <Store size={24} color={colors.green[600]} />
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.pendingTitle, { color: semantic.textPrimary }]}>
-                  Votre boutique a déménagé
-                </Text>
-                <Text style={[styles.pendingSubtitle, { color: semantic.textSecondary }]}>
-                  Gérez «
-                  {' '}
-                  {supplierStatus.shopName}
-                  {' '}
-                  » depuis la nouvelle application eBio Fournisseur. Touchez pour l'installer.
-                </Text>
-              </View>
-            </TouchableOpacity>
-          </View>
-        )}
-
         {/* Profile header */}
         <View>
           <View style={[styles.header, { backgroundColor: semantic.bgCard }]}>
@@ -515,7 +481,8 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
                 iconBg={colors.green[50]}
                 iconColor={colors.green[600]}
                 label="Centre d'aide"
-                onPress={() => {}}
+                sublabel="Questions fréquentes et contact"
+                onPress={() => onNavigateToHelp?.()}
                 semantic={semantic}
                 grouped
               />
@@ -527,7 +494,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
                 iconBg={colors.neutral[100]}
                 iconColor={colors.neutral[600]}
                 label="Conditions d'utilisation"
-                onPress={() => {}}
+                onPress={() => onNavigateToTerms?.()}
                 semantic={semantic}
                 grouped
               />
@@ -734,19 +701,9 @@ const styles = StyleSheet.create({
   stackedGroup: {
     gap: spacing[2],
   },
-  modeSwitchWrap: {
-    marginTop: spacing[4],
-    marginBottom: spacing[1],
-  },
   pendingBanner: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    gap: spacing[3],
-    padding: spacing[4],
-  },
-  supplierAppBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing[3],
     padding: spacing[4],
   },

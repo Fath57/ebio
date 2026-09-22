@@ -41,6 +41,8 @@ import { OrderConfirmation } from '../features/orders/components/order-confirmat
 import { OrderList } from '../features/orders/components/order-list'
 import { OrderTracking } from '../features/orders/components/order-tracking'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
+import { HelpCenterScreen } from '../features/profile/components/help-center-screen'
+import { LegalScreen } from '../features/profile/components/legal-screen'
 import { ProfileScreen } from '../features/profile/components/profile-screen'
 import { RateOrderFlow } from '../features/ratings/components/rate-order-flow'
 import { ReviewsList } from '../features/ratings/components/reviews-list'
@@ -214,6 +216,28 @@ function SupplierProfileWrapper({ route, navigation }: any) {
  * Every review of one product, paginated. Pushed onto the Accueil stack so
  * the back button returns to the product page it came from.
  */
+function HelpCenterWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <HelpCenterScreen
+        onGoBack={() => navigation.goBack()}
+        // Explicitly the list: navigating to the tab alone lands on whatever
+        // conversation sits on top of its stack, which is not what someone
+        // reaching for help is asking for.
+        onOpenChat={() => navigation.navigate('Chat', { screen: 'ChatHome' })}
+      />
+    </SafeScreen>
+  )
+}
+
+function TermsWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <LegalScreen document="cgu" onGoBack={() => navigation.goBack()} />
+    </SafeScreen>
+  )
+}
+
 function ProductReviewsWrapper({ route, navigation }: any) {
   const { productId, productName } = route.params ?? {}
   return (
@@ -510,6 +534,8 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="ProfileHome" component={ProfileHomeWrapper} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileWrapper} />
       <ProfileStack.Screen name="ChangePassword" component={ChangePasswordWrapper} />
+      <ProfileStack.Screen name="HelpCenter" component={HelpCenterWrapper} />
+      <ProfileStack.Screen name="Terms" component={TermsWrapper} />
       <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <ProfileStack.Screen name="SupplierRegistration" component={SupplierRegistrationWrapper} />
       <ProfileStack.Screen name="ProfileLogin" component={ProfileLoginWrapper} />
@@ -539,6 +565,8 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
         onNavigateToChangePassword={() => navigation.navigate('ChangePassword')}
+        onNavigateToHelp={() => navigation.navigate('HelpCenter')}
+        onNavigateToTerms={() => navigation.navigate('Terms')}
         onNavigateToSupplierRegistration={() => navigation.navigate('SupplierRegistration')}
         refreshTrigger={refreshTrigger}
       />
