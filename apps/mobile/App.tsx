@@ -23,6 +23,7 @@ import { AccountBlockedScreen } from './src/features/auth/components/account-blo
 import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
 import { AppAlertHost } from './src/features/common/components/app-alert'
+import { UpdatePrompt } from './src/features/common/components/update-prompt'
 import { LocationProvider } from './src/features/common/location-context'
 import { ImageCropperHost } from './src/features/media/components/image-cropper'
 import { OnboardingScreen } from './src/features/onboarding/components/onboarding-screen'
@@ -104,6 +105,7 @@ export default function App(): React.JSX.Element | null {
             {accountBlock && <AccountBlockedScreen block={accountBlock} />}
             <AppAlertHost />
             <ImageCropperHost />
+            <UpdatePrompt />
             <StatusBar style="auto" />
             {showOnboarding === true && (
               <OnboardingScreen
