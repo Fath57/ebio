@@ -58,7 +58,10 @@ export class FraudDetectionService {
 
     // Flag review in admin content reports table
     await this.em.getConnection().execute(
-      `INSERT INTO content_reports (id, entity_type, entity_id, reason, status, created_at)
+      // The columns are target_type / target_id / "createdAt". They were
+      // spelled entity_type / entity_id / created_at here, none of which
+      // exist, so this insert threw every time it ran.
+      `INSERT INTO content_reports (id, target_type, target_id, reason, status, "createdAt")
        VALUES (gen_random_uuid(), 'REVIEW', ?, 'FRAUD_SUSPICION', 'PENDING', NOW())
        ON CONFLICT DO NOTHING`,
       [reviewId],

@@ -36,7 +36,7 @@ export interface NutritionalValues {
 @Entity({ tableName: 'products' })
 @Index({ properties: ['supplier', 'category', 'status'] })
 export class Product {
-  [OptionalProps]?: 'id' | 'photos' | 'stock' | 'stockAlertThreshold' | 'status' | 'allergens' | 'labels' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'photos' | 'stock' | 'stockAlertThreshold' | 'status' | 'allergens' | 'labels' | 'ratingCount' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -103,6 +103,19 @@ export class Product {
 
   @Property({ type: 'jsonb', fieldName: 'nutritional_values', nullable: true })
   nutritionalValues?: NutritionalValues
+
+  /**
+   * Weighted average of this product's visible reviews, or null while it has
+   * fewer than three — same rule and same shape as `Supplier.globalRating`,
+   * so the threshold reads the same on both sides. Denormalised so a product
+   * page costs no extra query and the search can sort on it without a join.
+   */
+  @Property({ fieldName: 'rating_avg', type: 'float', nullable: true })
+  ratingAvg?: number
+
+  /** Visible reviews. Shown even below the threshold that hides the average. */
+  @Property({ fieldName: 'rating_count' })
+  ratingCount: number = 0
 
   @Property({ fieldName: 'promotional_price', type: 'float', nullable: true })
   promotionalPrice?: number

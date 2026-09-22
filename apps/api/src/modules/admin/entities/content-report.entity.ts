@@ -13,6 +13,7 @@ import { User } from '../../auth/auth.entity'
 export enum ReportTargetType {
   PRODUCT = 'PRODUCT',
   REVIEW = 'REVIEW',
+  PRODUCT_REVIEW = 'PRODUCT_REVIEW',
   PUBLICATION = 'PUBLICATION',
   MESSAGE = 'MESSAGE',
 }
