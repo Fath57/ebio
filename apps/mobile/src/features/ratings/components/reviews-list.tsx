@@ -7,9 +7,32 @@ import { apiFetch } from '../../../utils/api-client'
 import { StarRating } from '../../common/components/star-rating'
 import { formatRelativeDate } from '../../common/format-date'
 
-interface Review {
+/** What the list renders, whichever endpoint it came from. */
+interface ListedReview {
   id: string
-  buyer: { id: string, name: string, image: string | null }
+  authorName: string
+  rating: number
+  comment: string | null
+  createdAt: string
+}
+
+interface ListedSummary {
+  average: number
+  total: number
+}
+
+export type ReviewTarget = 'supplier' | 'product'
+
+interface ReviewsListProps {
+  /** Which side of the marketplace is being read. */
+  target: ReviewTarget
+  /** Id of the shop or of the product, depending on `target`. */
+  id: string
+}
+
+interface RawSupplierReview {
+  id: string
+  buyer: { name: string }
   qualityRating: number
   delayRating: number
   communicationRating: number
@@ -18,33 +41,74 @@ interface Review {
   createdAt: string
 }
 
-interface ReviewSummary {
-  averageRating: number
-  totalReviews: number
-  qualityAvg: number
-  delayAvg: number
-  communicationAvg: number
-  conformityAvg: number
-  distribution: Record<number, number>
+interface RawProductReview {
+  id: string
+  rating: number
+  comment: string | null
+  authorName: string
+  createdAt: string
 }
 
-interface ReviewsListProps {
-  supplierId: string
+/**
+ * The two endpoints answer in different shapes — a shop review carries four
+ * criteria and a buyer object, a product review one rating and a name. They
+ * are normalised here rather than duplicating the list and its rendering.
+ */
+function normalise(target: ReviewTarget, data: Record<string, unknown>): {
+  reviews: ListedReview[]
+  summary: ListedSummary | null
+  hasMore: boolean
+} {
+  if (target === 'supplier') {
+    const raw = (data.reviews ?? []) as RawSupplierReview[]
+    const summary = data.summary as { averageRating: number, totalReviews: number } | null
+    return {
+      reviews: raw.map(r => ({
+        id: r.id,
+        authorName: r.buyer.name,
+        rating: (r.qualityRating + r.delayRating + r.communicationRating + r.conformityRating) / 4,
+        comment: r.comment,
+        createdAt: r.createdAt,
+      })),
+      summary: summary ? { average: summary.averageRating, total: summary.totalReviews } : null,
+      hasMore: Boolean(data.hasMore),
+    }
+  }
+
+  const raw = (data.reviews ?? []) as RawProductReview[]
+  const summary = data.summary as { average: number | null, count: number } | null
+  const pagination = data.pagination as { hasMore: boolean } | undefined
+  return {
+    reviews: raw.map(r => ({
+      id: r.id,
+      authorName: r.authorName,
+      rating: r.rating,
+      comment: r.comment,
+      createdAt: r.createdAt,
+    })),
+    // A product average stays null below three reviews; the card is then
+    // hidden, exactly as the shop one is under the same threshold.
+    summary: summary && summary.average !== null ? { average: summary.average, total: summary.count } : null,
+    hasMore: Boolean(pagination?.hasMore),
+  }
 }
 
-export function ReviewsList({ supplierId }: ReviewsListProps) {
+export function ReviewsList({ target, id }: ReviewsListProps) {
   const { semantic } = useTheme()
-  const [reviews, setReviews] = useState<Review[]>([])
-  const [summary, setSummary] = useState<ReviewSummary | null>(null)
+  const [reviews, setReviews] = useState<ListedReview[]>([])
+  const [summary, setSummary] = useState<ListedSummary | null>(null)
   const [loading, setLoading] = useState(true)
   const [page, setPage] = useState(1)
   const [hasMore, setHasMore] = useState(false)
 
   const loadReviews = useCallback(async (p: number) => {
+    const path = target === 'supplier'
+      ? `/api/suppliers/${id}/reviews?page=${p}&limit=10`
+      : `/api/products/${id}/reviews?page=${p}&limit=10`
     try {
-      const res = await apiFetch(`/api/suppliers/${supplierId}/reviews?page=${p}&limit=10`)
+      const res = await apiFetch(path)
       if (res.ok) {
-        const data = await res.json()
+        const data = normalise(target, await res.json() as Record<string, unknown>)
         if (p === 1) {
           setReviews(data.reviews)
           setSummary(data.summary)
@@ -57,26 +121,22 @@ export function ReviewsList({ supplierId }: ReviewsListProps) {
     }
     catch { /* offline */ }
     finally { setLoading(false) }
-  }, [supplierId])
+  }, [target, id])
 
   useEffect(() => {
     loadReviews(1)
   }, [loadReviews])
 
-  function getAvgRating(review: Review) {
-    return (review.qualityRating + review.delayRating + review.communicationRating + review.conformityRating) / 4
-  }
-
   return (
     <View style={styles.container}>
-      {summary && summary.totalReviews >= 3 && (
+      {summary !== null && (
         <View style={[styles.summaryCard, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderNormal }]}>
           <View style={styles.summaryTop}>
-            <Text style={[styles.avgNumber, { color: semantic.textPrimaryColor }]}>{summary.averageRating.toFixed(1)}</Text>
+            <Text style={[styles.avgNumber, { color: semantic.textPrimaryColor }]}>{summary.average.toFixed(1).replace('.', ',')}</Text>
             <View style={{ marginLeft: spacing[2] }}>
-              <StarRating value={summary.averageRating} size={16} />
+              <StarRating value={summary.average} size={16} />
               <Text style={[styles.totalText, { color: semantic.textSecondary }]}>
-                {summary.totalReviews}
+                {summary.total}
                 {' '}
                 avis
               </Text>
@@ -92,13 +152,13 @@ export function ReviewsList({ supplierId }: ReviewsListProps) {
           <View style={[styles.reviewCard, { borderBottomColor: semantic.borderLight }]}>
             <View style={styles.reviewHeader}>
               <View style={[styles.avatar, { backgroundColor: semantic.bgPrimaryLight }]}>
-                <Text style={[styles.avatarText, { color: semantic.textPrimaryColor }]}>{item.buyer.name.charAt(0)}</Text>
+                <Text style={[styles.avatarText, { color: semantic.textPrimaryColor }]}>{item.authorName.charAt(0)}</Text>
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.buyerName, { color: semantic.textPrimary }]}>{item.buyer.name}</Text>
+                <Text style={[styles.buyerName, { color: semantic.textPrimary }]}>{item.authorName}</Text>
                 <Text style={[styles.date, { color: semantic.textTertiary }]}>{formatRelativeDate(item.createdAt)}</Text>
               </View>
-              <StarRating value={getAvgRating(item)} size={14} />
+              <StarRating value={item.rating} size={14} />
             </View>
             {item.comment && <Text style={[styles.comment, { color: semantic.textSecondary }]}>{item.comment}</Text>}
           </View>

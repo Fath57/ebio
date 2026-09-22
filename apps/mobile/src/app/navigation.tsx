@@ -43,6 +43,7 @@ import { OrderTracking } from '../features/orders/components/order-tracking'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
 import { ProfileScreen } from '../features/profile/components/profile-screen'
 import { RateOrderFlow } from '../features/ratings/components/rate-order-flow'
+import { ReviewsList } from '../features/ratings/components/reviews-list'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
@@ -71,6 +72,7 @@ function SearchStackScreen() {
       <SearchStack.Screen name="LocationPicker" component={SearchLocationPickerWrapper} />
       <SearchStack.Screen name="SupplierProfile" component={SupplierProfileWrapper} />
       <SearchStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
+      <SearchStack.Screen name="ProductReviews" component={ProductReviewsWrapper} />
     </SearchStack.Navigator>
   )
 }
@@ -208,6 +210,20 @@ function SupplierProfileWrapper({ route, navigation }: any) {
   )
 }
 
+/**
+ * Every review of one product, paginated. Pushed onto the Accueil stack so
+ * the back button returns to the product page it came from.
+ */
+function ProductReviewsWrapper({ route, navigation }: any) {
+  const { productId, productName } = route.params ?? {}
+  return (
+    <SafeScreen>
+      <ScreenHeader title="Avis" subtitle={productName} onBack={() => navigation.goBack()} />
+      <ReviewsList target="product" id={productId} />
+    </SafeScreen>
+  )
+}
+
 function ProductDetailWrapper({ route, navigation }: any) {
   const { productId } = route.params ?? {}
   const [loaded, setLoaded] = React.useState<{
@@ -267,6 +283,7 @@ function ProductDetailWrapper({ route, navigation }: any) {
         onGoBack={() => navigation.goBack()}
         onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
         onOpenProduct={id => navigation.push('ProductDetail', { productId: id })}
+        onSeeAllReviews={id => navigation.navigate('ProductReviews', { productId: id, productName: product.name })}
       />
       <CartCtaBar onPress={() => navigation.navigate('Panier')} />
     </View>
