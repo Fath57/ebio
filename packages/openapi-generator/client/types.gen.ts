@@ -392,6 +392,25 @@ export type TipCourier = {
 };
 
 /**
+ * BuyerDecision
+ *
+ * Attendre encore, ou annuler et être recrédité
+ */
+export type BuyerDecision = {
+  decision: "WAIT" | "CANCEL";
+};
+
+/**
+ * CompensateCheckout
+ *
+ * Crédite le portefeuille eBio de l'acheteur pour une commande perdue
+ */
+export type CompensateCheckout = {
+  orderId: string;
+  reason: string;
+};
+
+/**
  * CreatePaymentMethodInput
  *
  * Input for creating a payment method
@@ -1290,6 +1309,26 @@ export type UpdateLandingFaq = {
 };
 
 /**
+ * CreateProductReviews
+ *
+ * Rate the products of a delivered order
+ */
+export type CreateProductReviews = {
+  reviews: Array<{
+    orderItemId: string;
+    rating: number;
+    comment?: string;
+  }>;
+};
+
+/**
+ * ReportProductReview
+ */
+export type ReportProductReview = {
+  reason: string;
+};
+
+/**
  * CreateReview
  *
  * Submit a review for a supplier
@@ -1836,6 +1875,8 @@ export type SearchResult = {
     unit: string;
     inStock: boolean;
     promotionalPrice: number | null;
+    ratingAvg: number | null;
+    ratingCount: number;
     promotionTypes: Array<string>;
   };
 };
@@ -7157,6 +7198,27 @@ export type PaymentsControllerGetPaymentStatusResponses = {
 export type PaymentsControllerGetPaymentStatusResponse =
   PaymentsControllerGetPaymentStatusResponses[keyof PaymentsControllerGetPaymentStatusResponses];
 
+export type CheckoutsControllerCompensateData = {
+  /**
+   * CompensateCheckout
+   *
+   * Crédite le portefeuille eBio de l'acheteur pour une commande perdue
+   */
+  body: {
+    orderId: string;
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/checkouts/{id}/compensate";
+};
+
+export type CheckoutsControllerCompensateResponses = {
+  201: unknown;
+};
+
 export type PaymentsWebhookControllerHandleFedaPayWebhookData = {
   body?: never;
   path?: never;
@@ -7692,6 +7754,102 @@ export type DeliveriesControllerTipResponses = {
   201: unknown;
 };
 
+export type RunsControllerOffersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/runs/offers";
+};
+
+export type RunsControllerOffersResponses = {
+  200: unknown;
+};
+
+export type RunsControllerMineData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/runs/mine";
+};
+
+export type RunsControllerMineResponses = {
+  200: unknown;
+};
+
+export type RunsControllerAcceptData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/runs/{id}/accept";
+};
+
+export type RunsControllerAcceptResponses = {
+  201: unknown;
+};
+
+export type RunsControllerDeliverData = {
+  /**
+   * CompleteDelivery
+   *
+   * Proof of delivery: buyer confirmation code or photo
+   */
+  body:
+    | {
+        proofType: "CODE";
+        code: string;
+        occurredAt?: Date;
+      }
+    | {
+        proofType: "PHOTO";
+        mediaId: string;
+        occurredAt?: Date;
+      };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/runs/{id}/deliver";
+};
+
+export type RunsControllerDeliverResponses = {
+  201: unknown;
+};
+
+export type RunsControllerBuyerDecisionData = {
+  /**
+   * BuyerDecision
+   *
+   * Attendre encore, ou annuler et être recrédité
+   */
+  body: {
+    decision: "WAIT" | "CANCEL";
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/runs/{id}/buyer-decision";
+};
+
+export type RunsControllerBuyerDecisionResponses = {
+  201: unknown;
+};
+
+export type RunsControllerDeclineData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/runs/{id}/decline";
+};
+
+export type RunsControllerDeclineResponses = {
+  201: unknown;
+};
+
 export type AdminCouriersControllerListData = {
   body?: never;
   path?: never;
@@ -8023,6 +8181,100 @@ export type RatingsControllerReportReviewData = {
 
 export type RatingsControllerReportReviewResponses = {
   201: unknown;
+};
+
+export type ProductReviewsControllerGetProductReviewsData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/products/{id}/reviews";
+};
+
+export type ProductReviewsControllerGetProductReviewsResponses = {
+  200: unknown;
+};
+
+export type ProductReviewsControllerGetRateableProductsData = {
+  body?: never;
+  path: {
+    orderId: string;
+  };
+  query?: never;
+  url: "/api/orders/{orderId}/rateable-products";
+};
+
+export type ProductReviewsControllerGetRateableProductsResponses = {
+  200: unknown;
+};
+
+export type ProductReviewsControllerCreateProductReviewsData = {
+  /**
+   * CreateProductReviews
+   *
+   * Rate the products of a delivered order
+   */
+  body: {
+    reviews: Array<{
+      orderItemId: string;
+      rating: number;
+      comment?: string;
+    }>;
+  };
+  path: {
+    orderId: string;
+  };
+  query?: never;
+  url: "/api/orders/{orderId}/product-reviews";
+};
+
+export type ProductReviewsControllerCreateProductReviewsResponses = {
+  201: unknown;
+};
+
+export type ProductReviewsControllerReportProductReviewData = {
+  /**
+   * ReportProductReview
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/product-reviews/{id}/report";
+};
+
+export type ProductReviewsControllerReportProductReviewResponses = {
+  201: unknown;
+};
+
+export type ProductReviewsControllerListReportsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/product-review-reports";
+};
+
+export type ProductReviewsControllerListReportsResponses = {
+  200: unknown;
+};
+
+export type ProductReviewsControllerSetVisibilityData = {
+  body: {
+    hidden: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/product-reviews/{id}/visibility";
+};
+
+export type ProductReviewsControllerSetVisibilityResponses = {
+  200: unknown;
 };
 
 export type CommunityControllerGetGroupsData = {

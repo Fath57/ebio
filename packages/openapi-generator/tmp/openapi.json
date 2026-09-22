@@ -10177,6 +10177,59 @@
         }
       }
     },
+    "/api/checkouts/{id}/compensate": {
+      "post": {
+        "operationId": "CheckoutsController_compensate",
+        "tags": [
+          "Checkouts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Crédite le portefeuille eBio de l'acheteur pour une commande perdue",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "orderId",
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "CompensateCheckout",
+                "description": "Crédite le portefeuille eBio de l'acheteur pour une commande perdue"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/payments/webhook/fedapay": {
       "post": {
         "operationId": "PaymentsWebhookController_handleFedaPayWebhook",
@@ -11311,6 +11364,214 @@
         }
       }
     },
+    "/api/runs/offers": {
+      "get": {
+        "operationId": "RunsController_offers",
+        "tags": [
+          "Runs"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/runs/mine": {
+      "get": {
+        "operationId": "RunsController_mine",
+        "tags": [
+          "Runs"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/accept": {
+      "post": {
+        "operationId": "RunsController_accept",
+        "tags": [
+          "Runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/deliver": {
+      "post": {
+        "operationId": "RunsController_deliver",
+        "tags": [
+          "Runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Proof of delivery: buyer confirmation code or photo",
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "proofType": {
+                        "type": "string",
+                        "const": "CODE"
+                      },
+                      "code": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "proofType",
+                      "code"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "proofType": {
+                        "type": "string",
+                        "const": "PHOTO"
+                      },
+                      "mediaId": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 255
+                      },
+                      "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "proofType",
+                      "mediaId"
+                    ],
+                    "additionalProperties": false
+                  }
+                ],
+                "title": "CompleteDelivery",
+                "description": "Proof of delivery: buyer confirmation code or photo",
+                "type": "object"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/buyer-decision": {
+      "post": {
+        "operationId": "RunsController_buyerDecision",
+        "tags": [
+          "Runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Attendre encore, ou annuler et être recrédité",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "WAIT",
+                      "CANCEL"
+                    ]
+                  }
+                },
+                "required": [
+                  "decision"
+                ],
+                "additionalProperties": false,
+                "title": "BuyerDecision",
+                "description": "Attendre encore, ou annuler et être recrédité"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/runs/{id}/decline": {
+      "post": {
+        "operationId": "RunsController_decline",
+        "tags": [
+          "Runs"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/couriers": {
       "get": {
         "operationId": "AdminCouriersController_list",
@@ -12041,6 +12302,224 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/products/{id}/reviews": {
+      "get": {
+        "operationId": "ProductReviewsController_getProductReviews",
+        "tags": [
+          "ProductReviews"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{orderId}/rateable-products": {
+      "get": {
+        "operationId": "ProductReviewsController_getRateableProducts",
+        "tags": [
+          "ProductReviews"
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/{orderId}/product-reviews": {
+      "post": {
+        "operationId": "ProductReviewsController_createProductReviews",
+        "tags": [
+          "ProductReviews"
+        ],
+        "parameters": [
+          {
+            "name": "orderId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Rate the products of a delivered order",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reviews": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "orderItemId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "rating": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 5
+                        },
+                        "comment": {
+                          "type": "string",
+                          "maxLength": 500
+                        }
+                      },
+                      "required": [
+                        "orderItemId",
+                        "rating"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "reviews"
+                ],
+                "additionalProperties": false,
+                "title": "CreateProductReviews",
+                "description": "Rate the products of a delivered order"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/product-reviews/{id}/report": {
+      "post": {
+        "operationId": "ProductReviewsController_reportProductReview",
+        "tags": [
+          "ProductReviews"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "ReportProductReview"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/product-review-reports": {
+      "get": {
+        "operationId": "ProductReviewsController_listReports",
+        "tags": [
+          "ProductReviews"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/product-reviews/{id}/visibility": {
+      "patch": {
+        "operationId": "ProductReviewsController_setVisibility",
+        "tags": [
+          "ProductReviews"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hidden": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "hidden"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
             "description": ""
           }
         }
@@ -14999,6 +15478,46 @@
         "title": "TipCourier",
         "description": "Tip for the courier, debited from the buyer wallet and credited in full to the courier"
       },
+      "BuyerDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "WAIT",
+              "CANCEL"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false,
+        "title": "BuyerDecision",
+        "description": "Attendre encore, ou annuler et être recrédité"
+      },
+      "CompensateCheckout": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "orderId",
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "CompensateCheckout",
+        "description": "Crédite le portefeuille eBio de l'acheteur pour une commande perdue"
+      },
       "CreatePaymentMethodInput": {
         "type": "object",
         "properties": {
@@ -17394,6 +17913,61 @@
         "additionalProperties": false,
         "title": "UpdateLandingFaq"
       },
+      "CreateProductReviews": {
+        "type": "object",
+        "properties": {
+          "reviews": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "orderItemId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "rating": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 5
+                },
+                "comment": {
+                  "type": "string",
+                  "maxLength": 500
+                }
+              },
+              "required": [
+                "orderItemId",
+                "rating"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "reviews"
+        ],
+        "additionalProperties": false,
+        "title": "CreateProductReviews",
+        "description": "Rate the products of a delivered order"
+      },
+      "ReportProductReview": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "ReportProductReview"
+      },
       "CreateReview": {
         "type": "object",
         "properties": {
@@ -18875,6 +19449,19 @@
                   }
                 ]
               },
+              "ratingAvg": {
+                "anyOf": [
+                  {
+                    "type": "number"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "ratingCount": {
+                "type": "number"
+              },
               "promotionTypes": {
                 "type": "array",
                 "items": {
@@ -18891,6 +19478,8 @@
               "unit",
               "inStock",
               "promotionalPrice",
+              "ratingAvg",
+              "ratingCount",
               "promotionTypes"
             ],
             "additionalProperties": false

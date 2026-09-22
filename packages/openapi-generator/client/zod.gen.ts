@@ -249,6 +249,29 @@ export const zTipCourier = z.object({
 });
 
 /**
+ * BuyerDecision
+ *
+ * Attendre encore, ou annuler et être recrédité
+ */
+export const zBuyerDecision = z.object({
+  decision: z.enum(["WAIT", "CANCEL"]),
+});
+
+/**
+ * CompensateCheckout
+ *
+ * Crédite le portefeuille eBio de l'acheteur pour une commande perdue
+ */
+export const zCompensateCheckout = z.object({
+  orderId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  reason: z.string().min(1).max(500),
+});
+
+/**
  * CreatePaymentMethodInput
  *
  * Input for creating a payment method
@@ -891,6 +914,35 @@ export const zUpdateLandingFaq = z.object({
 });
 
 /**
+ * CreateProductReviews
+ *
+ * Rate the products of a delivered order
+ */
+export const zCreateProductReviews = z.object({
+  reviews: z
+    .array(
+      z.object({
+        orderItemId: z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        rating: z.int().gte(1).lte(5),
+        comment: z.optional(z.string().max(500)),
+      }),
+    )
+    .min(1)
+    .max(50),
+});
+
+/**
+ * ReportProductReview
+ */
+export const zReportProductReview = z.object({
+  reason: z.string().min(1).max(500),
+});
+
+/**
  * CreateReview
  *
  * Submit a review for a supplier
@@ -1504,6 +1556,8 @@ export const zSearchResult = z.object({
     unit: z.string(),
     inStock: z.boolean(),
     promotionalPrice: z.union([z.number(), z.null()]),
+    ratingAvg: z.union([z.number(), z.null()]),
+    ratingCount: z.number(),
     promotionTypes: z.array(z.string()),
   }),
 });
@@ -6143,6 +6197,21 @@ export const zPaymentsControllerGetPaymentStatusData = z.object({
 export const zPaymentsControllerGetPaymentStatusResponse =
   zPaymentStatusResponse;
 
+export const zCheckoutsControllerCompensateData = z.object({
+  body: z.object({
+    orderId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    reason: z.string().min(1).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zPaymentsWebhookControllerHandleFedaPayWebhookData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -6506,6 +6575,75 @@ export const zDeliveriesControllerTipData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zRunsControllerOffersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRunsControllerMineData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRunsControllerAcceptData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zRunsControllerDeliverData = z.object({
+  body: z.union([
+    z.object({
+      proofType: z.literal("CODE"),
+      code: z.string().regex(/^\d{4}$/),
+      occurredAt: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
+    }),
+    z.object({
+      proofType: z.literal("PHOTO"),
+      mediaId: z.string().min(1).max(255),
+      occurredAt: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
+    }),
+  ]),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zRunsControllerBuyerDecisionData = z.object({
+  body: z.object({
+    decision: z.enum(["WAIT", "CANCEL"]),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zRunsControllerDeclineData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zAdminCouriersControllerListData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -6732,6 +6870,71 @@ export const zRatingsControllerGetSupplierBadgesData = z.object({
 export const zRatingsControllerReportReviewData = z.object({
   body: z.object({
     reason: z.string().max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductReviewsControllerGetProductReviewsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductReviewsControllerGetRateableProductsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    orderId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductReviewsControllerCreateProductReviewsData = z.object({
+  body: z.object({
+    reviews: z
+      .array(
+        z.object({
+          orderItemId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          rating: z.int().gte(1).lte(5),
+          comment: z.optional(z.string().max(500)),
+        }),
+      )
+      .min(1)
+      .max(50),
+  }),
+  path: z.object({
+    orderId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductReviewsControllerReportProductReviewData = z.object({
+  body: z.object({
+    reason: z.string().min(1).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductReviewsControllerListReportsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductReviewsControllerSetVisibilityData = z.object({
+  body: z.object({
+    hidden: z.boolean(),
   }),
   path: z.object({
     id: z.string(),

@@ -118,6 +118,61 @@ describe('productReviewsService', () => {
     })
   })
 
+  describe('modération', () => {
+    function buildModeration(options: { isHidden?: boolean, reports?: Array<Record<string, unknown>> } = {}) {
+      const review = {
+        id: 'review-1',
+        isHidden: options.isHidden ?? false,
+        product: { id: 'product-1' },
+      }
+      const reports = options.reports ?? []
+      const execute = vi.fn().mockResolvedValue([{ weighted_avg: 4, total: 2 }])
+      const em = {
+        findOne: vi.fn().mockResolvedValue(review),
+        find: vi.fn().mockResolvedValue(reports),
+        create: vi.fn((_e: unknown, data: Record<string, unknown>) => data),
+        getReference: vi.fn((_e: unknown, id: string) => ({ id })),
+        flush: vi.fn(),
+        nativeUpdate: vi.fn(),
+        getConnection: () => ({ execute }),
+      }
+      const fraud = { detectMultipleAccounts: vi.fn() }
+      return { service: new ProductReviewsService(em as never, fraud as never), em, review, reports }
+    }
+
+    it('masquer retire l\'avis de la liste et relance le calcul de la moyenne', async () => {
+      const { service, em, review } = buildModeration()
+      await service.setVisibility('review-1', true, 'admin-1')
+      expect(review.isHidden).toBe(true)
+      // Le recalcul ne compte que les avis visibles : la moyenne bouge.
+      expect(em.nativeUpdate).toHaveBeenCalledTimes(1)
+    })
+
+    it('réhabiliter remet l\'avis dans le calcul', async () => {
+      const { service, em, review } = buildModeration({ isHidden: true })
+      await service.setVisibility('review-1', false, 'admin-1')
+      expect(review.isHidden).toBe(false)
+      expect(em.nativeUpdate).toHaveBeenCalledTimes(1)
+    })
+
+    it('solde les signalements en attente selon la décision', async () => {
+      const reports = [{ status: 'PENDING' }, { status: 'PENDING' }]
+      const { service } = buildModeration({ reports })
+      await service.setVisibility('review-1', true, 'admin-1')
+      expect(reports.every(r => r.status === 'RESOLVED')).toBe(true)
+    })
+
+    it('ne signale pas deux fois le même avis par le même acheteur', async () => {
+      const { service, em } = buildModeration({ reports: [] })
+      // findOne rend l'avis, puis un signalement déjà en attente.
+      em.findOne = vi.fn()
+        .mockResolvedValueOnce({ id: 'review-1', product: { id: 'product-1' } })
+        .mockResolvedValueOnce({ id: 'report-1' })
+      await service.reportReview('review-1', 'buyer-1', 'Propos injurieux')
+      expect(em.create).not.toHaveBeenCalled()
+    })
+  })
+
   describe('seuil d\'affichage de la moyenne', () => {
     it('laisse la moyenne à null sous trois avis', async () => {
       const { service, em, execute } = buildService()

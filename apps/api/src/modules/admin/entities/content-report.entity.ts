@@ -4,9 +4,9 @@ import {
   Enum,
   Index,
   ManyToOne,
+  OptionalProps,
   PrimaryKey,
   Property,
-
 } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 
@@ -26,6 +26,9 @@ export enum ReportStatus {
 
 @Entity({ tableName: 'content_reports' })
 export class ContentReport {
+  // Declared so `em.create` does not demand the fields that carry defaults.
+  [OptionalProps]?: 'id' | 'status' | 'createdAt'
+
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 

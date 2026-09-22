@@ -83,6 +83,7 @@ export default [
       route('admin/comptes', 'features/admin/platform-accounts/pages/platform-accounts-page.tsx'),
       route('admin/reversements', 'features/admin/withdrawals/pages/admin-withdrawals-page.tsx'),
       route('admin/codes-promo', 'features/admin/promo-codes/pages/admin-promo-codes-page.tsx'),
+      route('admin/avis-signales', 'features/admin/review-moderation/pages/review-moderation-page.tsx'),
 
       // Admin — Categories
       route('admin/categories', 'features/admin/categories/pages/categories-page.tsx'),

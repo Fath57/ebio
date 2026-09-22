@@ -1,9 +1,10 @@
 import * as React from 'react'
 import { useCallback, useEffect, useState } from 'react'
-import { FlatList, StyleSheet, Text, View } from 'react-native'
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 import { StarRating } from '../../common/components/star-rating'
 import { formatRelativeDate } from '../../common/format-date'
 
@@ -127,6 +128,39 @@ export function ReviewsList({ target, id }: ReviewsListProps) {
     loadReviews(1)
   }, [loadReviews])
 
+  /**
+   * Only product reviews can be reported: the shop endpoint returns
+   * `{ reported: true }` and records nothing, so offering the action there
+   * would promise something the platform does not do.
+   */
+  const [reported, setReported] = useState<Set<string>>(new Set())
+
+  const reportReview = useCallback((reviewId: string) => {
+    appAlert('Signaler cet avis ?', 'Un membre de l\'équipe eBio le relira.', [
+      {
+        text: 'Signaler',
+        style: 'destructive',
+        onPress: () => {
+          void (async () => {
+            try {
+              const res = await apiFetch(`/api/product-reviews/${reviewId}/report`, {
+                method: 'POST',
+                body: JSON.stringify({ reason: 'Signalé depuis la fiche produit' }),
+              })
+              if (res.ok) {
+                setReported(prev => new Set(prev).add(reviewId))
+              }
+            }
+            catch {
+              appAlert('Hors connexion', 'Réessayez dans un instant.')
+            }
+          })()
+        },
+      },
+      { text: 'Annuler', style: 'cancel' },
+    ])
+  }, [])
+
   return (
     <View style={styles.container}>
       {summary !== null && (
@@ -161,6 +195,19 @@ export function ReviewsList({ target, id }: ReviewsListProps) {
               <StarRating value={item.rating} size={14} />
             </View>
             {item.comment && <Text style={[styles.comment, { color: semantic.textSecondary }]}>{item.comment}</Text>}
+            {target === 'product' && (
+              <Pressable
+                style={styles.report}
+                onPress={() => reportReview(item.id)}
+                disabled={reported.has(item.id)}
+                accessibilityRole="button"
+                accessibilityLabel="Signaler cet avis"
+              >
+                <Text style={[styles.reportText, { color: semantic.textTertiary }]}>
+                  {reported.has(item.id) ? 'Signalé' : 'Signaler'}
+                </Text>
+              </Pressable>
+            )}
           </View>
         )}
         onEndReached={() => {
@@ -185,6 +232,8 @@ export function ReviewsList({ target, id }: ReviewsListProps) {
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  report: { alignSelf: 'flex-start', minHeight: 44, justifyContent: 'center' },
+  reportText: { ...typography.caption, textDecorationLine: 'underline' },
   summaryCard: {
     backgroundColor: colors.neutral[0],
     padding: spacing[4],

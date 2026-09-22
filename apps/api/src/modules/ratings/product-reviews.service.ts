@@ -2,6 +2,8 @@ import type { CreateProductReviews, ProductReviewsResponse, RateableProductsResp
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { thumbnailUrlFor } from '../../common/media-urls'
+import { ContentReport, ReportStatus, ReportTargetType } from '../admin/entities/content-report.entity'
+import { User } from '../auth/auth.entity'
 import { OrderItem } from '../orders/entities/order-item.entity'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
 import { Product } from '../products/entities/product.entity'
@@ -194,6 +196,125 @@ export class ProductReviewsService {
         hasMore: page * limit < total,
       },
     }
+  }
+
+  /**
+   * Files a report against a review. The review stays visible: a report is a
+   * request for a decision, not the decision itself.
+   *
+   * This actually writes, unlike `POST /reviews/:id/report` for shop reviews,
+   * which returns `{ reported: true }` and records nothing.
+   */
+  async reportReview(reviewId: string, reporterId: string, reason: string): Promise<{ reported: boolean }> {
+    const review = await this.em.findOne(ProductReview, { id: reviewId })
+    if (!review) {
+      throw new NotFoundException('Avis introuvable')
+    }
+
+    // One pending report per reviewer and review: signalling twice is not
+    // two problems.
+    const existing = await this.em.findOne(ContentReport, {
+      targetType: ReportTargetType.PRODUCT_REVIEW,
+      targetId: reviewId,
+      reporter: { id: reporterId },
+      status: ReportStatus.PENDING,
+    })
+    if (existing) {
+      return { reported: true }
+    }
+
+    this.em.create(ContentReport, {
+      reporter: this.em.getReference(User, reporterId),
+      targetType: ReportTargetType.PRODUCT_REVIEW,
+      targetId: reviewId,
+      reason,
+    })
+    await this.em.flush()
+    return { reported: true }
+  }
+
+  /**
+   * The moderation queue: pending reports on product reviews, each carrying
+   * the review it targets so the moderator decides without a second call.
+   *
+   * Scoped to product reviews rather than listing every `content_reports`
+   * row: shop reviews, publications and messages have no moderation screen
+   * yet, and a queue mixing four kinds nobody can act on is noise.
+   */
+  async listPendingReports(): Promise<{
+    items: Array<{
+      reportId: string
+      reason: string
+      reportedAt: string
+      review: { id: string, rating: number, comment: string | null, authorName: string, isHidden: boolean, productId: string } | null
+    }>
+  }> {
+    const reports = await this.em.find(
+      ContentReport,
+      { targetType: ReportTargetType.PRODUCT_REVIEW, status: ReportStatus.PENDING },
+      { orderBy: { createdAt: 'DESC' }, limit: 100 },
+    )
+    if (reports.length === 0) {
+      return { items: [] }
+    }
+
+    const reviews = await this.em.find(
+      ProductReview,
+      { id: { $in: reports.map(r => r.targetId) } },
+      { populate: ['buyer', 'product'] },
+    )
+    const byId = new Map(reviews.map(r => [r.id, r]))
+
+    return {
+      items: reports.map((report) => {
+        const review = byId.get(report.targetId)
+        return {
+          reportId: report.id,
+          reason: report.reason,
+          reportedAt: report.createdAt.toISOString(),
+          // A review deleted since the report leaves the row without a target.
+          review: review
+            ? {
+                id: review.id,
+                rating: review.rating,
+                comment: review.comment ?? null,
+                authorName: review.buyer.name,
+                isHidden: review.isHidden,
+                productId: review.product.id,
+              }
+            : null,
+        }
+      }),
+    }
+  }
+
+  /**
+   * Hides or restores a review, and settles the reports that asked for it.
+   * The product's average is recomputed either way — a hidden review must
+   * leave the figure, and a restored one must return to it.
+   */
+  async setVisibility(reviewId: string, hidden: boolean, adminId: string): Promise<{ hidden: boolean }> {
+    const review = await this.em.findOne(ProductReview, { id: reviewId }, { populate: ['product'] })
+    if (!review) {
+      throw new NotFoundException('Avis introuvable')
+    }
+
+    review.isHidden = hidden
+
+    const reports = await this.em.find(ContentReport, {
+      targetType: ReportTargetType.PRODUCT_REVIEW,
+      targetId: reviewId,
+      status: ReportStatus.PENDING,
+    })
+    for (const report of reports) {
+      report.status = hidden ? ReportStatus.RESOLVED : ReportStatus.DISMISSED
+      report.resolvedBy = this.em.getReference(User, adminId)
+      report.resolvedAt = new Date()
+    }
+
+    await this.em.flush()
+    await this.recalculateProductRating(review.product.id)
+    return { hidden }
   }
 
   /**

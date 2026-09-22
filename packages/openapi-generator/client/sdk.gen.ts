@@ -180,6 +180,8 @@ import type {
   ChatControllerGetUnreadCountResponses,
   ChatControllerShareWhatsAppData,
   ChatControllerShareWhatsAppResponses,
+  CheckoutsControllerCompensateData,
+  CheckoutsControllerCompensateResponses,
   CommentsControllerCreateCommentData,
   CommentsControllerCreateCommentResponses,
   CommentsControllerDeleteCommentData,
@@ -408,6 +410,18 @@ import type {
   PostControllerUnpublishPostResponses,
   PostControllerUpdatePostData,
   PostControllerUpdatePostResponses,
+  ProductReviewsControllerCreateProductReviewsData,
+  ProductReviewsControllerCreateProductReviewsResponses,
+  ProductReviewsControllerGetProductReviewsData,
+  ProductReviewsControllerGetProductReviewsResponses,
+  ProductReviewsControllerGetRateableProductsData,
+  ProductReviewsControllerGetRateableProductsResponses,
+  ProductReviewsControllerListReportsData,
+  ProductReviewsControllerListReportsResponses,
+  ProductReviewsControllerReportProductReviewData,
+  ProductReviewsControllerReportProductReviewResponses,
+  ProductReviewsControllerSetVisibilityData,
+  ProductReviewsControllerSetVisibilityResponses,
   ProductsControllerClearPromotionData,
   ProductsControllerClearPromotionResponses,
   ProductsControllerCreateData,
@@ -470,6 +484,18 @@ import type {
   RolesControllerGetCatalogResponses,
   RolesControllerUpdateData,
   RolesControllerUpdateResponses,
+  RunsControllerAcceptData,
+  RunsControllerAcceptResponses,
+  RunsControllerBuyerDecisionData,
+  RunsControllerBuyerDecisionResponses,
+  RunsControllerDeclineData,
+  RunsControllerDeclineResponses,
+  RunsControllerDeliverData,
+  RunsControllerDeliverResponses,
+  RunsControllerMineData,
+  RunsControllerMineResponses,
+  RunsControllerOffersData,
+  RunsControllerOffersResponses,
   SalesPointsControllerCreateData,
   SalesPointsControllerCreateResponses,
   SalesPointsControllerFindBySupplierData,
@@ -3465,6 +3491,24 @@ export const paymentsControllerGetPaymentStatus = <
     ThrowOnError
   >({ url: "/api/payments/orders/{id}/status", ...options });
 
+export const checkoutsControllerCompensate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CheckoutsControllerCompensateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CheckoutsControllerCompensateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/checkouts/{id}/compensate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const paymentsWebhookControllerHandleFedaPayWebhook = <
   ThrowOnError extends boolean = false,
 >(
@@ -3855,6 +3899,76 @@ export const deliveriesControllerTip = <ThrowOnError extends boolean = false>(
     },
   });
 
+export const runsControllerOffers = <ThrowOnError extends boolean = false>(
+  options?: Options<RunsControllerOffersData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    RunsControllerOffersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/runs/offers", ...options });
+
+export const runsControllerMine = <ThrowOnError extends boolean = false>(
+  options?: Options<RunsControllerMineData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    RunsControllerMineResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/runs/mine", ...options });
+
+export const runsControllerAccept = <ThrowOnError extends boolean = false>(
+  options: Options<RunsControllerAcceptData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RunsControllerAcceptResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/runs/{id}/accept", ...options });
+
+export const runsControllerDeliver = <ThrowOnError extends boolean = false>(
+  options: Options<RunsControllerDeliverData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RunsControllerDeliverResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/runs/{id}/deliver",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const runsControllerBuyerDecision = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<RunsControllerBuyerDecisionData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RunsControllerBuyerDecisionResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/runs/{id}/buyer-decision",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const runsControllerDecline = <ThrowOnError extends boolean = false>(
+  options: Options<RunsControllerDeclineData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RunsControllerDeclineResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/runs/{id}/decline", ...options });
+
 export const adminCouriersControllerList = <
   ThrowOnError extends boolean = false,
 >(
@@ -4126,6 +4240,102 @@ export const ratingsControllerReportReview = <
     ThrowOnError
   >({
     url: "/api/reviews/{id}/report",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productReviewsControllerGetProductReviews = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductReviewsControllerGetProductReviewsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ProductReviewsControllerGetProductReviewsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/products/{id}/reviews", ...options });
+
+export const productReviewsControllerGetRateableProducts = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    ProductReviewsControllerGetRateableProductsData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).get<
+    ProductReviewsControllerGetRateableProductsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/{orderId}/rateable-products", ...options });
+
+export const productReviewsControllerCreateProductReviews = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    ProductReviewsControllerCreateProductReviewsData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    ProductReviewsControllerCreateProductReviewsResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/{orderId}/product-reviews",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productReviewsControllerReportProductReview = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    ProductReviewsControllerReportProductReviewData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    ProductReviewsControllerReportProductReviewResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/product-reviews/{id}/report",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productReviewsControllerListReports = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<ProductReviewsControllerListReportsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    ProductReviewsControllerListReportsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/product-review-reports", ...options });
+
+export const productReviewsControllerSetVisibility = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductReviewsControllerSetVisibilityData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    ProductReviewsControllerSetVisibilityResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/product-reviews/{id}/visibility",
     ...options,
     headers: {
       "Content-Type": "application/json",
