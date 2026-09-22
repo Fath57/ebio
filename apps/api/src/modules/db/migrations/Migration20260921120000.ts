@@ -35,6 +35,12 @@ const RUN_OUTCOMES = ['ACCEPTED', 'REFUSED_ALL', 'UNSERVED', 'CANCELLED']
  * cart".
  */
 export class Migration20260921120000 extends Migration {
+  /**
+   * Every constraint is dropped before being added: the equivalent SQL script
+   * is applied to production before the container swaps, so this migration has
+   * to run a second time on a database that already carries them, only to
+   * register its name.
+   */
   override async up(): Promise<void> {
     this.addSql(`CREATE TABLE IF NOT EXISTS "checkouts" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -54,12 +60,15 @@ export class Migration20260921120000 extends Migration {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     );`)
 
+    this.addSql(`ALTER TABLE "checkouts" DROP CONSTRAINT IF EXISTS "checkouts_status_check";`)
     this.addSql(`ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_status_check"
       CHECK ("status" = ANY (ARRAY[${CHECKOUT_STATUSES.map(s => `'${s}'`).join(', ')}]::text[]));`)
+    this.addSql(`ALTER TABLE "checkouts" DROP CONSTRAINT IF EXISTS "checkouts_delivery_mode_check";`)
     this.addSql(`ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_delivery_mode_check"
       CHECK ("delivery_mode" = ANY (ARRAY['DELIVERY', 'ON_SITE']::text[]));`)
     // A delivery without a drop-off point cannot be priced, and an address
     // without coordinates guides nobody.
+    this.addSql(`ALTER TABLE "checkouts" DROP CONSTRAINT IF EXISTS "checkouts_delivery_position_check";`)
     this.addSql(`ALTER TABLE "checkouts" ADD CONSTRAINT "checkouts_delivery_position_check"
       CHECK ("delivery_mode" <> 'DELIVERY'
         OR ("delivery_latitude" IS NOT NULL AND "delivery_longitude" IS NOT NULL));`)
@@ -86,10 +95,13 @@ export class Migration20260921120000 extends Migration {
       "updatedAt" timestamptz NOT NULL DEFAULT now()
     );`)
 
+    this.addSql(`ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_status_check";`)
     this.addSql(`ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_status_check"
       CHECK ("status" = ANY (ARRAY[${RUN_STATUSES.map(s => `'${s}'`).join(', ')}]::text[]));`)
+    this.addSql(`ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_dispatch_phase_check";`)
     this.addSql(`ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_dispatch_phase_check"
       CHECK ("dispatch_phase" = ANY (ARRAY['SCHEDULED', 'TARGETED', 'BROADCAST']::text[]));`)
+    this.addSql(`ALTER TABLE "delivery_runs" DROP CONSTRAINT IF EXISTS "delivery_runs_outcome_check";`)
     this.addSql(`ALTER TABLE "delivery_runs" ADD CONSTRAINT "delivery_runs_outcome_check"
       CHECK ("outcome" IS NULL OR "outcome" = ANY (ARRAY[${RUN_OUTCOMES.map(o => `'${o}'`).join(', ')}]::text[]));`)
     // No bound on shop_count nor on total_distance_km at this point: the
