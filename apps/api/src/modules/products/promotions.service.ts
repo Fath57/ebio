@@ -76,6 +76,9 @@ export class PromotionsService {
     })
     if (data.type === PromotionType.PRICE) {
       product.promotionalPrice = data.promoPrice
+      // A promotion scheduled for later must not discount the product today:
+      // the mirrored window carries its start as well as its end.
+      product.promotionStartsAt = startsAt
       product.promotionExpiresAt = endsAt ?? undefined
     }
     await this.em.flush()
@@ -90,6 +93,7 @@ export class PromotionsService {
     promotion.isActive = false
     if (promotion.type === PromotionType.PRICE) {
       promotion.product.promotionalPrice = undefined
+      promotion.product.promotionStartsAt = undefined
       promotion.product.promotionExpiresAt = undefined
     }
     await this.em.flush()

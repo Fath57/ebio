@@ -15,6 +15,8 @@ import { NOTIFICATION_AUDIENCE } from '../../../utils/app-variant'
 interface HomeHeaderProps {
   /** Libellé de la position courante (ex. « Cotonou, Akpakpa »). */
   locationLabel: string
+  /** True when the label is the fallback city, not a position we know. */
+  locationIsAssumed?: boolean
   onPickLocation: () => void
   onOpenSearch: () => void
   onOpenMap: () => void
@@ -90,6 +92,7 @@ function formatBalance(value: number): string {
  */
 export function HomeHeader({
   locationLabel,
+  locationIsAssumed = false,
   onPickLocation,
   onOpenSearch,
   onOpenMap,
@@ -110,9 +113,13 @@ export function HomeHeader({
           onPress={onPickLocation}
           hitSlop={8}
           accessibilityRole="button"
-          accessibilityLabel={`Changer ma position, actuellement ${locationLabel}`}
+          accessibilityLabel={locationIsAssumed
+            ? `Choisir ma position, ${locationLabel} par défaut`
+            : `Changer ma position, actuellement ${locationLabel}`}
         >
-          <Text style={styles.locationText} numberOfLines={1}>{locationLabel}</Text>
+          <Text style={styles.locationText} numberOfLines={1}>
+            {locationIsAssumed ? `${locationLabel} ?` : locationLabel}
+          </Text>
           <ChevronDown size={16} color={colors.neutral[0]} strokeWidth={2.6} />
         </Pressable>
 

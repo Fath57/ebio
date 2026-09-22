@@ -50,7 +50,11 @@ export function HomeScreen({
   onOpenWallet,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
-  const { latitude, longitude, label: locationLabel } = useLocation()
+  const { latitude, longitude, label: locationLabel, source: locationSource } = useLocation()
+  // Permission refused or position unavailable: the app falls back to a
+  // default city. Saying "near you" about someone else's city is a lie, and
+  // the one thing that would fix it — choosing a position — is one tap away.
+  const positionIsAssumed = locationSource === 'default'
   const { categories, loadCategories } = useCategories()
   const { nearby, validated, promos, loading } = useHomeFeed(latitude, longitude)
   const { banners: editorialBanners } = useHomeBanners()
@@ -80,6 +84,7 @@ export function HomeScreen({
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <HomeHeader
         locationLabel={locationLabel}
+        locationIsAssumed={positionIsAssumed}
         onPickLocation={onPickLocation}
         onOpenSearch={onOpenSearch}
         onOpenMap={onOpenMap}
@@ -118,7 +123,7 @@ export function HomeScreen({
           : (
               <>
                 <HomeSection
-                  title="Explorer près de vous"
+                  title={positionIsAssumed ? 'À découvrir' : 'Explorer près de vous'}
                   Icon={MapPin}
                   iconColor={colors.coral[400]}
                   data={nearby}

@@ -107,6 +107,14 @@ export class Product {
   @Property({ fieldName: 'promotional_price', type: 'float', nullable: true })
   promotionalPrice?: number
 
+  /**
+   * Start of the mirrored promotion. Null means it applies at once, which is
+   * what the legacy `setPromotion` path writes; a scheduled promotion fills
+   * it so the discount does not show before its first day.
+   */
+  @Property({ fieldName: 'promotion_starts_at', nullable: true })
+  promotionStartsAt?: Date
+
   @Property({ fieldName: 'promotion_expires_at', nullable: true })
   promotionExpiresAt?: Date
 

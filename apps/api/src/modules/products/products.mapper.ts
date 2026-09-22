@@ -5,12 +5,18 @@ import type { Product } from './entities/product.entity'
 import { thumbnailUrlFor } from '../../common/media-urls'
 import { PromotionsService } from './promotions.service'
 
-/** The legacy promo price, only while it is still running. */
-export function livePromotionalPrice(product: Pick<Product, 'promotionalPrice' | 'promotionExpiresAt'>): number | null {
+/** The legacy promo price, only while it is running — started and not over. */
+export function livePromotionalPrice(
+  product: Pick<Product, 'promotionalPrice' | 'promotionStartsAt' | 'promotionExpiresAt'>,
+): number | null {
   if (product.promotionalPrice == null) {
     return null
   }
-  if (product.promotionExpiresAt && product.promotionExpiresAt <= new Date()) {
+  const now = new Date()
+  if (product.promotionStartsAt && product.promotionStartsAt > now) {
+    return null
+  }
+  if (product.promotionExpiresAt && product.promotionExpiresAt <= now) {
     return null
   }
   return product.promotionalPrice

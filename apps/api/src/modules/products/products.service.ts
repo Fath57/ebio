@@ -269,6 +269,7 @@ export class ProductsService {
   async clearPromotion(productId: string, supplierId: string): Promise<Product> {
     const product = await this.findByIdAndVerifyOwnership(productId, supplierId)
     product.promotionalPrice = undefined
+    product.promotionStartsAt = undefined
     product.promotionExpiresAt = undefined
     await this.em.flush()
     return product
@@ -306,6 +307,8 @@ export class ProductsService {
     }
 
     product.promotionalPrice = price
+    // This path has no schedule: the discount starts now.
+    product.promotionStartsAt = undefined
     product.promotionExpiresAt = new Date(expiresAt)
     await this.em.flush()
     return product

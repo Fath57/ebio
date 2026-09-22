@@ -30,6 +30,23 @@ interface RawSearchRow {
 /** Rayon appliqué quand la requête est géolocalisée sans rayon explicite. */
 const DEFAULT_RADIUS_METERS = 50_000
 
+/**
+ * The discount mirrored onto the product, while it runs. A null bound is an
+ * open one: no start means it applies at once, no end means it never expires.
+ */
+const LIVE_LEGACY_PROMO = `
+  p.promotional_price IS NOT NULL
+  AND (p.promotion_starts_at IS NULL OR p.promotion_starts_at <= NOW())
+  AND (p.promotion_expires_at IS NULL OR p.promotion_expires_at > NOW())
+`.trim()
+
+/** A running row of `product_promotions`, whatever its type. */
+const LIVE_PROMOTION_ROW = `
+  SELECT 1 FROM product_promotions pp
+  WHERE pp.product_id = p.id AND pp.is_active = true
+    AND pp.starts_at <= NOW() AND (pp.ends_at IS NULL OR pp.ends_at > NOW())
+`.trim()
+
 interface RawCountRow {
   count: string
 }
@@ -96,7 +113,10 @@ export class SearchService {
     }
 
     if (promoOnly === 'true') {
-      whereClause += `  AND p.promotional_price IS NOT NULL AND (p.promotion_expires_at IS NULL OR p.promotion_expires_at > NOW())\n`
+      // A promotion is a price cut, a 1+1 or a free delivery. Only the first
+      // mirrors itself onto the product, so the other two are found where
+      // they live — otherwise the section showed none of them.
+      whereClause += `  AND (${LIVE_LEGACY_PROMO} OR EXISTS (${LIVE_PROMOTION_ROW}))\n`
     }
 
     if (q) {
@@ -150,7 +170,7 @@ export class SearchService {
         p.price_per_unit,
         p.unit,
         p.stock,
-        CASE WHEN p.promotion_expires_at IS NULL OR p.promotion_expires_at > NOW() THEN p.promotional_price END AS promotional_price,
+        CASE WHEN ${LIVE_LEGACY_PROMO} THEN p.promotional_price END AS promotional_price,
         (SELECT COALESCE(array_agg(pp.type), '{}') FROM product_promotions pp
           WHERE pp.product_id = p.id AND pp.is_active = true
             AND pp.starts_at <= NOW() AND (pp.ends_at IS NULL OR pp.ends_at > NOW())) AS promotion_types,
