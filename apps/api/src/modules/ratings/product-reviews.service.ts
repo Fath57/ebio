@@ -55,7 +55,10 @@ export class ProductReviewsService {
           orderItemId: item.id,
           productId: item.product.id,
           productName: item.product.name,
-          thumbnail: thumbnailUrlFor(item.product.photos[0]) ?? null,
+          // A thumbnail only exists for media the platform optimised; a
+          // seeded or external URL has none, and the full photo is the
+          // documented fallback rather than an empty square.
+          thumbnail: thumbnailUrlFor(item.product.photos[0]) ?? item.product.photos[0] ?? null,
           existingReview: review ? { rating: review.rating, comment: review.comment ?? null } : null,
         }
       }),

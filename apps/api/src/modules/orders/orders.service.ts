@@ -1243,6 +1243,23 @@ export class OrdersService {
     return rows.length > 0
   }
 
+  /**
+   * True while at least one delivered line still has no product review.
+   *
+   * Without it the rate button vanished as soon as the shop and the courier
+   * were rated, and the products step became unreachable — the buyer could
+   * never rate what they actually bought.
+   */
+  async hasUnratedProducts(orderId: string): Promise<boolean> {
+    const rows = await this.em.getConnection().execute(
+      `SELECT 1 FROM order_items oi
+       LEFT JOIN product_reviews pr ON pr.order_item_id = oi.id
+       WHERE oi.order_id = ? AND pr.id IS NULL LIMIT 1`,
+      [orderId],
+    )
+    return rows.length > 0
+  }
+
   private verifySupplierOwnership(order: Order, supplierId: string): void {
     if (order.supplier.id !== supplierId) {
       throw new ForbiddenException('This order does not belong to your shop')

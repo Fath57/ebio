@@ -66,6 +66,8 @@ interface OrderDetail {
   supplierName: string
   supplierId: string
   hasReview: boolean
+  /** At least one delivered line still has no product review. */
+  hasUnratedProducts: boolean
   currentStatus: OrderStatus
   deliveryConfirmedByBuyer: boolean
   steps: StatusStep[]
@@ -153,6 +155,7 @@ export function OrderTracking({
           supplierName: raw.supplierName,
           supplierId: raw.supplierId,
           hasReview: raw.hasReview === true,
+          hasUnratedProducts: raw.hasUnratedProducts === true,
           currentStatus: raw.status,
           deliveryConfirmedByBuyer: raw.deliveryConfirmedByBuyer === true,
           total: raw.totalAmount ?? raw.total ?? 0,
@@ -255,7 +258,12 @@ export function OrderTracking({
   const courierPending = deliveryInfo?.status === 'DELIVERED' && deliveryInfo.courier !== null && !deliveryInfo.buyerRating
   const rateLabel = !order.hasReview
     ? (courierPending ? 'Noter ma commande' : 'Noter la boutique')
-    : courierPending ? 'Noter le livreur' : null
+    : courierPending
+      ? 'Noter le livreur'
+      // Shop and courier done, products not: the button has to stay, or the
+      // products step is unreachable and the buyer can never rate what they
+      // actually bought.
+      : order.hasUnratedProducts ? 'Noter les produits' : null
 
   const subtotal = order.items.reduce((sum, item) => sum + item.totalPrice, 0)
   const deliveryFee = order.total - subtotal

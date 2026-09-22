@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
@@ -35,6 +36,9 @@ interface Draft {
  */
 export function ProductRatingStep({ orderId, onComplete }: ProductRatingStepProps) {
   const { semantic } = useTheme()
+  // The tab bar floats over the content: without its height the last product
+  // and the validate button sit underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const [items, setItems] = useState<RateableProduct[]>([])
   const [drafts, setDrafts] = useState<Record<string, Draft>>({})
   const [loading, setLoading] = useState(true)
@@ -135,7 +139,10 @@ export function ProductRatingStep({ orderId, onComplete }: ProductRatingStepProp
 
   return (
     <KeyboardAwareView style={[styles.flex, { backgroundColor: semantic.bgPage }]}>
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
+        keyboardShouldPersistTaps="handled"
+      >
         <Text style={[styles.title, { color: semantic.textPrimary }]}>
           Notez les produits reçus
         </Text>
@@ -225,7 +232,6 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: spacing[4],
-    paddingBottom: spacing[10],
   },
   title: {
     ...typography.h2,

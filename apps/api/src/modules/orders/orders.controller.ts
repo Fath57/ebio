@@ -137,8 +137,9 @@ export class OrdersController {
   ) {
     const order = await this.ordersService.findById(id)
     const hasReview = await this.ordersService.hasReview(id)
+    const hasUnratedProducts = await this.ordersService.hasUnratedProducts(id)
     const deliveries = await this.ordersService.deliverySummaries([id])
-    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null), hasReview }
+    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null), hasReview, hasUnratedProducts }
   }
 
   /** Rendered invoice of a delivered order, for the buyer or the shop. */

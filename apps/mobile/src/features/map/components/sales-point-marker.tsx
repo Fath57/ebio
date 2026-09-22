@@ -27,7 +27,9 @@ const WIDTH_SELECTED = 38
 export function SalesPointMarker({ isSelected = false }: SalesPointMarkerProps) {
   const width = isSelected ? WIDTH_SELECTED : WIDTH_DEFAULT
   const height = width * PLAQUE_RATIO
-  const fill = isSelected ? colors.earth[600] : colors.earth[400]
+  // Coral, the charter's red: a sales point is not a shop, and the map has
+  // to say so at a glance. Darker when selected, as everywhere else.
+  const fill = isSelected ? colors.coral[600] : colors.coral[400]
 
   // Centre of the plaque, excluding the foot: (13/26, 13/34) of the viewBox.
   const iconSize = width * 0.46
