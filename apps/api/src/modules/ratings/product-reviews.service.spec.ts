@@ -73,14 +73,14 @@ describe('productReviewsService', () => {
 
     it('rend une liste vide plutôt qu\'une erreur quand la commande n\'est pas livrée', async () => {
       const { service } = buildService({ status: OrderStatus.PLACED })
-      // L'étape est alors sautée, pas cassée.
+      // The step is then skipped, not broken.
       await expect(service.listRateableItems(ORDER, BUYER)).resolves.toEqual({ items: [] })
     })
   })
 
   describe('un avis par ligne de commande', () => {
     it('ignore une ligne déjà notée au lieu de refuser tout le lot', async () => {
-      // Un renvoi après coupure réseau ne doit pas échouer sur un doublon.
+      // A retry after a dropped connection must not fail over a duplicate.
       const { service, created } = buildService({
         existingReviews: [{ orderItem: { id: 'item-1' } }],
       })
@@ -105,7 +105,7 @@ describe('productReviewsService', () => {
       })
       expect(result).toEqual({ created: 2, skipped: 0 })
       expect(created).toHaveLength(2)
-      // Deux produits distincts touchés, donc deux recalculs.
+      // Two distinct products touched, so two recomputations.
       expect(em.nativeUpdate).toHaveBeenCalledTimes(2)
     })
 
@@ -164,7 +164,7 @@ describe('productReviewsService', () => {
 
     it('ne signale pas deux fois le même avis par le même acheteur', async () => {
       const { service, em } = buildModeration({ reports: [] })
-      // findOne rend l'avis, puis un signalement déjà en attente.
+      // findOne returns the review, then a report already pending.
       em.findOne = vi.fn()
         .mockResolvedValueOnce({ id: 'review-1', product: { id: 'product-1' } })
         .mockResolvedValueOnce({ id: 'report-1' })
@@ -197,8 +197,8 @@ describe('productReviewsService', () => {
     })
 
     it('divise en flottant, pas en entier', async () => {
-      // 5 et 4 récents (×2), 3 ancien (×1) : 21 / 5 = 4,2. Sans le cast
-      // `::numeric`, Postgres divisait deux entiers et rendait 4.
+      // 5 and 4 recent (x2), 3 old (x1): 21 / 5 = 4.2. Without the
+      // `::numeric` cast, Postgres divided two integers and returned 4.
       const { service, execute } = buildService()
       execute.mockResolvedValueOnce([{ weighted_avg: 4.2, total: 3 }])
       await service.recalculateProductRating('product-1')
@@ -212,7 +212,7 @@ describe('productReviewsService', () => {
       await service.recalculateProductRating('product-1')
       const [sql] = execute.mock.calls[0]
       expect(sql).toContain('is_hidden = false')
-      // La pondération des 90 jours, reprise des boutiques.
+      // The 90-day weighting, carried over from shops.
       expect(sql).toContain(`INTERVAL '90 days'`)
     })
   })

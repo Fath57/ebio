@@ -301,7 +301,10 @@ export class SearchService {
   private buildOrderClause(sortBy: string): string {
     switch (sortBy) {
       case 'rating':
-        return 'ORDER BY s.global_rating DESC NULLS LAST, distance ASC'
+        // The product's own rating, not its shop's. `NULLS LAST` puts the
+        // products whose average is not published yet — fewer than three
+        // reviews — after those that have one, with no extra construction.
+        return 'ORDER BY p.rating_avg DESC NULLS LAST, distance ASC'
       case 'price':
         return 'ORDER BY p.price_per_unit ASC, distance ASC'
       default:
