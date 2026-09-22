@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
 import Car from 'lucide-react-native/dist/esm/icons/car'
@@ -170,6 +171,7 @@ function getFirstPhoto(items: OrderItem[]): string | null {
 }
 
 export function OrderList({ onOpenOrder }: OrderListProps) {
+  const tabBarHeight = useBottomTabBarHeight()
   const [orders, setOrders] = useState<OrderListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -409,6 +411,9 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
               keyExtractor={keyExtractor}
               contentContainerStyle={[
                 styles.listContent,
+                // The tab bar floats over the list: without its height the
+                // last card sits underneath it.
+                { paddingBottom: tabBarHeight + spacing[6] },
                 filteredOrders.length === 0 && styles.listContentEmpty,
               ]}
               refreshing={isRefreshing}
@@ -495,7 +500,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing[4],
     paddingTop: spacing[2],
-    paddingBottom: spacing[10],
     gap: spacing[3],
   },
 

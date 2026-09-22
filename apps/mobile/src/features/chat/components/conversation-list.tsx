@@ -1,4 +1,5 @@
 import type { ConversationKind } from '../delivery-chat'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
@@ -81,6 +82,9 @@ function formatPreview(last: { content?: string | null, type?: string } | null):
 }
 
 export function ConversationList({ currentUserId, onOpenConversation }: ConversationListProps) {
+  // The tab bar floats over the content: without its height the last
+  // row sits underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
   const [conversations, setConversations] = useState<Conversation[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -229,7 +233,11 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         style={[styles.list, { backgroundColor: semantic.bgPage }]}
-        contentContainerStyle={[styles.listContent, conversations.length === 0 && styles.listContentEmpty]}
+        contentContainerStyle={[
+          styles.listContent,
+          { paddingBottom: tabBarHeight + spacing[6] },
+          conversations.length === 0 && styles.listContentEmpty,
+        ]}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
         ListEmptyComponent={(

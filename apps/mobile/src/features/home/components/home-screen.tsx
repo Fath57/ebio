@@ -1,5 +1,6 @@
 import type { SearchResult } from '../../search/hooks/use-search'
 import type { HomeBanner } from '../hooks/use-home-banners'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import BadgeCheck from 'lucide-react-native/dist/esm/icons/badge-check'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
@@ -50,6 +51,9 @@ export function HomeScreen({
   onOpenWallet,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
+  // The tab bar floats over the content: without its height the last
+  // row sits underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const { latitude, longitude, label: locationLabel, source: locationSource } = useLocation()
   // Permission refused or position unavailable: the app falls back to a
   // default city. Saying "near you" about someone else's city is a lie, and
@@ -94,7 +98,7 @@ export function HomeScreen({
 
       <ScrollView
         style={styles.screen}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
       >
         {/* Bannières */}
@@ -206,7 +210,6 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   content: {
-    paddingBottom: 96, // clear the floating tab bar (64px) + breathing room
   },
   bannersBlock: {
     marginTop: spacing[5],

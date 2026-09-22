@@ -1,4 +1,5 @@
 import type { SearchResult } from '../hooks/use-search'
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Search from 'lucide-react-native/dist/esm/icons/search'
@@ -49,6 +50,9 @@ interface SearchScreenProps {
 }
 
 export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
+  // The tab bar floats over the content: without its height the last
+  // row sits underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
   const { data: session } = useSession()
   const firstName = session?.user?.name?.split(' ')[0]
@@ -442,7 +446,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
                     </View>
                   )
                 : null}
-              contentContainerStyle={styles.listContent}
+              contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[6] }]}
               showsVerticalScrollIndicator={false}
               onEndReached={() => loadMore()}
               onEndReachedThreshold={0.5}
@@ -638,7 +642,6 @@ const styles = StyleSheet.create({
   listContent: {
     paddingTop: spacing[2],
     paddingHorizontal: spacing[4],
-    paddingBottom: 80, // Extra padding for floating tab bar
   },
   footerLoading: {
     paddingVertical: spacing[4],

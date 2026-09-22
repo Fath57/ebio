@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -63,6 +64,9 @@ interface WalletScreenProps {
 }
 
 export function WalletScreen({ onGoBack }: WalletScreenProps) {
+  // The tab bar floats over the content: without its height the last
+  // row sits underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
   const [wallet, setWallet] = useState<WalletData | null>(null)
   const [topups, setTopups] = useState<Topup[]>([])
@@ -206,7 +210,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Mon portefeuille" onBack={onGoBack} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
         refreshControl={(
           <RefreshControl
@@ -366,7 +370,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  content: { paddingBottom: spacing[8] },
+  content: {},
 
   balanceCard: {
     marginHorizontal: spacing[4],

@@ -151,6 +151,10 @@ async function openChatWithSupplier(navigation: any, supplierId: string, peerNam
       const conv = await res.json()
       navigation.navigate('Chat', {
         screen: 'ChatDetail',
+        // Puts the conversation list underneath: without it the Chat stack is
+        // created with ChatDetail as its only route, so the back button has
+        // nothing to pop and the list becomes unreachable.
+        initial: false,
         params: {
           conversationId: conv.id,
           peerName: peerName ?? conv.supplierShopName,
@@ -172,6 +176,7 @@ async function openChatWithCourier(navigation: any, deliveryId: string, peerName
     const conv = await openDeliveryConversation(deliveryId)
     navigation.navigate('Chat', {
       screen: 'ChatDetail',
+      initial: false,
       params: {
         conversationId: conv.conversationId,
         peerName: conv.peerName ?? peerName,

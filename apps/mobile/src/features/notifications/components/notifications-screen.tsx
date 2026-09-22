@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import BellOff from 'lucide-react-native/dist/esm/icons/bell-off'
 import CheckCheck from 'lucide-react-native/dist/esm/icons/check-check'
 import CreditCardIcon from 'lucide-react-native/dist/esm/icons/credit-card'
@@ -83,6 +84,9 @@ function formatRelativeTime(dateStr: string): string {
 }
 
 export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
+  // The tab bar floats over the content: without its height the last
+  // row sits underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
   const [notifications, setNotifications] = React.useState<NotificationItem[]>([])
   const [loading, setLoading] = React.useState(true)
@@ -207,7 +211,7 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
               data={notifications}
               keyExtractor={item => item.id}
               renderItem={renderItem}
-              contentContainerStyle={styles.list}
+              contentContainerStyle={[styles.list, { paddingBottom: tabBarHeight + spacing[6] }]}
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green[400]} />
               }

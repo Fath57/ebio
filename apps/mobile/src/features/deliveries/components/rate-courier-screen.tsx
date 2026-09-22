@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import { useCallback, useEffect, useState } from 'react'
@@ -44,6 +45,9 @@ async function readError(res: Response): Promise<string> {
  * comment), then optionally leave a tip debited from the personal wallet.
  */
 export function RateCourierScreen({ deliveryId, courierName, mode, onDone, onBack, onOpenWallet }: RateCourierScreenProps) {
+  // The tab bar floats over the content: without its height the last
+  // row sits underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
   const [step, setStep] = useState<'rate' | 'tip' | 'success'>(mode)
 
@@ -190,7 +194,7 @@ export function RateCourierScreen({ deliveryId, courierName, mode, onDone, onBac
         <KeyboardAwareView style={{ flex: 1 }}>
           <ScrollView
             style={{ backgroundColor: semantic.bgPage }}
-            contentContainerStyle={styles.content}
+            contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
             keyboardShouldPersistTaps="handled"
           >
             <Text style={[styles.title, { color: semantic.textPrimary }]}>Comment s'est passée la livraison ?</Text>
@@ -240,7 +244,7 @@ export function RateCourierScreen({ deliveryId, courierName, mode, onDone, onBac
       <KeyboardAwareView style={{ flex: 1 }}>
         <ScrollView
           style={{ backgroundColor: semantic.bgPage }}
-          contentContainerStyle={styles.content}
+          contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
           keyboardShouldPersistTaps="handled"
         >
           <Text style={[styles.title, { color: semantic.textPrimary }]}>{`Laisser un pourboire à ${courierName} ?`}</Text>
@@ -336,7 +340,7 @@ export function RateCourierScreen({ deliveryId, courierName, mode, onDone, onBac
 }
 
 const styles = StyleSheet.create({
-  content: { padding: spacing[4], paddingBottom: spacing[12] },
+  content: { padding: spacing[4] },
   title: { ...typography.h2 },
   subtitle: { ...typography.bodyS, marginTop: spacing[2] },
   starsRow: {

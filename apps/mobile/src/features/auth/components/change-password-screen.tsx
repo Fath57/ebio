@@ -1,3 +1,4 @@
+import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Eye from 'lucide-react-native/dist/esm/icons/eye'
 import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
 import Lock from 'lucide-react-native/dist/esm/icons/lock'
@@ -26,6 +27,9 @@ const MIN_LENGTH = 8
 
 /** Logged-in password change, shared by the three app variants. */
 export function ChangePasswordScreen({ onDone }: ChangePasswordScreenProps) {
+  // The tab bar floats over the content: without its height the last
+  // row sits underneath it.
+  const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -67,7 +71,7 @@ export function ChangePasswordScreen({ onDone }: ChangePasswordScreenProps) {
 
   return (
     <KeyboardAwareView style={[styles.flex, { backgroundColor: semantic.bgPage }]}>
-      <ScrollView contentContainerStyle={styles.container} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={[styles.container, { paddingBottom: tabBarHeight + spacing[6] }]} keyboardShouldPersistTaps="handled">
         <Text style={[styles.hint, { color: semantic.textSecondary }]}>
           Saisissez votre mot de passe actuel puis choisissez-en un nouveau d’au moins
           {' '}
@@ -169,7 +173,6 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: {
     padding: spacing[4],
-    paddingBottom: spacing[12],
   },
   hint: {
     ...typography.bodyS,

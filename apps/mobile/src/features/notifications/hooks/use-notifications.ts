@@ -222,6 +222,7 @@ export function handleNotificationTap(data: Record<string, unknown>) {
       if (data.conversationId) {
         navigationRef.navigate('Chat', {
           screen: 'ChatDetail',
+          initial: false,
           params: {
             conversationId: data.conversationId,
             peerName: (data.peerName as string) ?? 'Discussion',
@@ -321,6 +322,7 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
       if (data.conversationId) {
         navigationRef.navigate('Chat', {
           screen: 'ChatDetail',
+          initial: false,
           params: {
             conversationId: data.conversationId,
             peerName: (data.peerName as string) ?? 'Discussion',
