@@ -33,6 +33,7 @@ import { chatFetch, resolveMediaUrl } from '../../../utils/api-client'
 import { websocketClient } from '../../../utils/websocket-client'
 import { appAlert } from '../../common/components/app-alert'
 import { useKeyboardHeight } from '../../common/hooks/use-keyboard-height'
+import { downscaleImage } from '../../media/downscale'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { VoiceNotePlayer, VoiceNoteRecorder } from './voice-note'
 
@@ -430,7 +431,15 @@ export function ChatScreen({
       if (result.canceled || !result.assets?.[0])
         return
       const asset = result.assets[0]
-      void startMediaSend(asset.uri, asset.fileName ?? 'photo.jpg', asset.mimeType ?? 'image/jpeg', 'IMAGE')
+      // A phone photo is several megabytes: reduced first, the bubble leaves
+      // in a couple of seconds instead of waiting out a mobile upload.
+      const reduced = await downscaleImage(asset, 'CHAT_ATTACHMENT')
+      void startMediaSend(
+        reduced?.uri ?? asset.uri,
+        reduced?.fileName ?? asset.fileName ?? 'photo.jpg',
+        reduced?.mimeType ?? asset.mimeType ?? 'image/jpeg',
+        'IMAGE',
+      )
     }
     catch (error) {
       // A rejected picker used to vanish as an unhandled rejection: in a

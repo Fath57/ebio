@@ -1,4 +1,3 @@
-import * as ImagePicker from 'expo-image-picker'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -24,6 +23,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 interface EditProfileScreenProps {
   onGoBack: () => void
@@ -46,10 +46,14 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
   const [imageUri, setImageUri] = useState<string | null>(null)
+  /** Set once a new photo has reached the storage; null means unchanged. */
+  const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
+
+  const { pickAndUpload, uploading } = useMediaUpload({ context: 'SUPPLIER_PROFILE' })
 
   const iconColor = semantic.textTertiary
   const inputBg = semantic.bgSurface
@@ -80,69 +84,13 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
     loadProfile()
   }, [])
 
+  // The photo goes up as soon as it is picked, so a failure is said at the
+  // moment it happens instead of being swallowed by the save.
   async function handlePickImage() {
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 0.8,
-    })
-    if (!result.canceled && result.assets[0]) {
-      setImageUri(result.assets[0].uri)
-    }
-  }
-
-  async function uploadImage(uri: string): Promise<string | null> {
-    try {
-      const filename = uri.split('/').pop() ?? 'photo.jpg'
-
-      // Read file first to get the size
-      const fileRes = await fetch(uri)
-      const blob = await fileRes.blob()
-
-      // Step 1: Initiate — get presigned URL
-      const initiateRes = await apiFetch('/api/media/upload', {
-        method: 'POST',
-        body: JSON.stringify({
-          fileName: filename,
-          mimeType: 'image/jpeg',
-          fileSize: blob.size,
-          context: 'SUPPLIER_PROFILE',
-          parts: 1,
-        }),
-      })
-
-      if (!initiateRes.ok)
-        return null
-      const { mediaId, parts } = await initiateRes.json() as {
-        mediaId: string
-        parts: Array<{ partNumber: number, uploadUrl: string }>
-      }
-
-      // Step 2: Upload file to S3 via presigned URL
-
-      const s3Res = await fetch(parts[0].uploadUrl, {
-        method: 'PUT',
-        body: blob,
-        headers: { 'Content-Type': 'image/jpeg' },
-      })
-      if (!s3Res.ok)
-        return null
-
-      // Step 3: Complete upload
-      const completeRes = await apiFetch('/api/media/complete', {
-        method: 'POST',
-        body: JSON.stringify({ mediaId }),
-      })
-
-      if (!completeRes.ok)
-        return null
-      const media = await completeRes.json() as { publicUrl: string | null }
-
-      return media.publicUrl ?? null
-    }
-    catch {
-      return null
+    const uploaded = await pickAndUpload()
+    if (uploaded?.publicUrl) {
+      setUploadedImageUrl(uploaded.publicUrl)
+      setImageUri(uploaded.publicUrl)
     }
   }
 
@@ -160,11 +108,8 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
       if (phone.trim())
         body.phone = phone.trim()
 
-      // Upload new image if it's a local URI
-      if (imageUri && imageUri.startsWith('file://')) {
-        const uploadedUrl = await uploadImage(imageUri)
-        if (uploadedUrl)
-          body.image = uploadedUrl
+      if (uploadedImageUrl) {
+        body.image = uploadedImageUrl
       }
 
       const res = await apiFetch('/api/users/me', {
@@ -228,7 +173,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
         )}
 
         {/* Avatar */}
-        <Pressable onPress={handlePickImage} style={styles.avatarSection}>
+        <Pressable onPress={handlePickImage} disabled={uploading} style={styles.avatarSection}>
           <View style={styles.avatarWrapper}>
             {imageUri
               ? (
@@ -242,11 +187,13 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
                   </View>
                 )}
             <View style={styles.cameraButton}>
-              <Camera size={14} color={colors.neutral[0]} />
+              {uploading
+                ? <ActivityIndicator size="small" color={colors.neutral[0]} />
+                : <Camera size={14} color={colors.neutral[0]} />}
             </View>
           </View>
           <Text style={[styles.avatarHint, { color: semantic.textPrimaryColor }]}>
-            Changer la photo
+            {uploading ? 'Envoi de la photo…' : 'Changer la photo'}
           </Text>
         </Pressable>
 

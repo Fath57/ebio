@@ -5,6 +5,7 @@ import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { requestImageCrop } from '../components/image-cropper'
+import { downscaleImage } from '../downscale'
 
 export type MediaContext
   = | 'PRODUCT_PHOTO'
@@ -96,15 +97,18 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
       return null
 
     const asset = result.assets[0]
-    const crop = await cropAsset(asset)
+    const reduced = await downscaleImage(asset, options.context)
+    const crop = await cropAsset(reduced ? { ...asset, ...reduced } : asset)
     if (crop.cancelled)
       return null
 
     return uploadFile(
-      asset.uri,
-      asset.fileName ?? 'photo.jpg',
-      asset.mimeType ?? 'image/jpeg',
-      asset.fileSize ?? 0,
+      reduced?.uri ?? asset.uri,
+      reduced?.fileName ?? asset.fileName ?? 'photo.jpg',
+      reduced?.mimeType ?? asset.mimeType ?? 'image/jpeg',
+      // A reduced copy has a new size: the blob read in `uploadFile` is what
+      // the server is told, this is only the fallback.
+      reduced ? 0 : asset.fileSize ?? 0,
       crop.rect,
     )
   }, [options, cropAsset])
@@ -133,11 +137,15 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
       return null
 
     const asset = result.assets[0]
+    const reduced = await downscaleImage(
+      { uri: asset.uri, fileName: asset.name, mimeType: asset.mimeType },
+      options.context,
+    )
     return uploadFile(
-      asset.uri,
-      asset.name ?? 'document.pdf',
-      asset.mimeType ?? 'application/pdf',
-      asset.size ?? 0,
+      reduced?.uri ?? asset.uri,
+      reduced?.fileName ?? asset.name ?? 'document.pdf',
+      reduced?.mimeType ?? asset.mimeType ?? 'application/pdf',
+      reduced ? 0 : asset.size ?? 0,
     )
   }, [options])
 
@@ -160,15 +168,16 @@ export function useMediaUpload(options: UseMediaUploadOptions) {
       return null
 
     const asset = result.assets[0]
-    const crop = await cropAsset(asset)
+    const reduced = await downscaleImage(asset, options.context)
+    const crop = await cropAsset(reduced ? { ...asset, ...reduced } : asset)
     if (crop.cancelled)
       return null
 
     return uploadFile(
-      asset.uri,
-      asset.fileName ?? 'photo.jpg',
-      asset.mimeType ?? 'image/jpeg',
-      asset.fileSize ?? 0,
+      reduced?.uri ?? asset.uri,
+      reduced?.fileName ?? asset.fileName ?? 'photo.jpg',
+      reduced?.mimeType ?? asset.mimeType ?? 'image/jpeg',
+      reduced ? 0 : asset.fileSize ?? 0,
       crop.rect,
     )
   }, [options, cropAsset])
