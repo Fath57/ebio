@@ -263,7 +263,7 @@ export function OrderTracking({
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       {/* Header */}
-      <ScreenHeader title={`Commande ${order.orderNumber}`} onBack={onBack} />
+      <ScreenHeader title="Commande" subtitle={order.orderNumber} onBack={onBack} />
 
       <ScrollView
         style={styles.scrollView}
@@ -308,7 +308,7 @@ export function OrderTracking({
 
         {/* Timeline */}
         {!isCancelled && (
-          <View style={[styles.sectionCard, { backgroundColor: semantic.bgCard }, CARD_SHADOW]}>
+          <View style={[styles.sectionCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
               Suivi
             </Text>
@@ -385,7 +385,7 @@ export function OrderTracking({
         )}
 
         {/* Order details (collapsible) */}
-        <View style={[styles.sectionCard, { backgroundColor: semantic.bgCard }, CARD_SHADOW]}>
+        <View style={[styles.sectionCard, { backgroundColor: semantic.bgCard }]}>
           <TouchableOpacity
             style={styles.sectionTitleRow}
             onPress={() => setDetailsExpanded(!detailsExpanded)}
@@ -483,7 +483,7 @@ export function OrderTracking({
         </View>
 
         {/* Delivery info card */}
-        <View style={[styles.sectionCard, { backgroundColor: semantic.bgCard }, CARD_SHADOW]}>
+        <View style={[styles.sectionCard, { backgroundColor: semantic.bgCard }]}>
           <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
             Informations
           </Text>
@@ -611,16 +611,10 @@ export function OrderTracking({
   )
 }
 
-const CARD_SHADOW = shadows.sm
-
 const styles = StyleSheet.create({
   decisionCard: {
-    borderRadius: radius.lg,
     padding: spacing[4],
     gap: spacing[2],
-    marginBottom: spacing[3],
-    borderWidth: 1,
-    borderColor: colors.earth[200],
   },
   decisionTitle: {
     ...typography.h3,
@@ -664,9 +658,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[3],
-    gap: spacing[3],
+    // No horizontal padding: the surfaces run edge to edge, and the gap lets
+    // the page show through between them in place of a card outline.
+    paddingTop: spacing[2],
+    gap: spacing[2],
   },
   loadingContainer: {
     flex: 1,
@@ -704,7 +699,6 @@ const styles = StyleSheet.create({
   // Cancelled banner
   cancelledBanner: {
     backgroundColor: colors.coral[50],
-    borderRadius: radius.lg,
     paddingVertical: spacing[3],
     paddingHorizontal: spacing[4],
     alignItems: 'center',
@@ -719,7 +713,6 @@ const styles = StyleSheet.create({
 
   // Section card
   sectionCard: {
-    borderRadius: radius.xl,
     padding: spacing[4],
   },
   sectionTitle: {
@@ -916,8 +909,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing[2],
     minHeight: 48,
+    marginTop: spacing[2],
+    marginHorizontal: spacing[4],
     borderWidth: 1.5,
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
   },
   outlineButtonText: {
     fontFamily: fonts.sansSb,
@@ -1228,7 +1223,7 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourie
   const delivered = info.status === 'DELIVERED'
 
   return (
-    <View style={[deliveryStyles.card, { backgroundColor: semantic.bgCard }, CARD_SHADOW]}>
+    <View style={[deliveryStyles.card, { backgroundColor: semantic.bgCard }]}>
       {inProgress ? <DeliveryLiveMap info={info} /> : null}
       <Text style={[deliveryStyles.title, { color: semantic.textPrimary }]}>Votre livreur</Text>
       <View style={deliveryStyles.courierRow}>
@@ -1336,10 +1331,9 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourie
 }
 
 const deliveryStyles = StyleSheet.create({
-  // Same footprint as the other section cards: the scroll content already
-  // carries the horizontal padding and the vertical gap.
+  // Same footprint as the other section bands: the scroll content carries
+  // the vertical gap, and the band itself runs edge to edge.
   card: {
-    borderRadius: radius.xl,
     padding: spacing[4],
   },
   title: {

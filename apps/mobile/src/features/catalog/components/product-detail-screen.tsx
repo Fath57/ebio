@@ -21,6 +21,7 @@ import {
   Dimensions,
   Image,
   Pressable,
+  Share,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -186,6 +187,21 @@ export function ProductDetailScreen({
     }
   }, [cartItem, updateQuantity])
 
+  const handleShare = useCallback(async () => {
+    try {
+      // The public site has no product page yet, so the link lands on the
+      // shop; the message names the product so the reader knows what to look
+      // for once there.
+      const url = `https://e-bio.org/boutique/${supplier.id}`
+      await Share.share({
+        message: `${product.name} — ${formatPrice(displayPrice)} FCFA/${unitLabel}\nChez ${supplier.shopName} sur eBio 🌿\n${url}`,
+      })
+    }
+    catch {
+      // Share cancelled or failed
+    }
+  }, [product.name, displayPrice, unitLabel, supplier.id, supplier.shopName])
+
   // Scroll-driven animations
   const headerBg = scrollY.interpolate({
     inputRange: [HERO_HEIGHT - 160, HERO_HEIGHT - 80],
@@ -266,7 +282,7 @@ export function ProductDetailScreen({
           </Pressable>
           <Pressable
             style={styles.headerButton}
-            onPress={() => {}}
+            onPress={handleShare}
             accessibilityRole="button"
             accessibilityLabel="Partager"
           >
@@ -339,12 +355,12 @@ export function ProductDetailScreen({
         </View>
 
         {/* Sheet that overlaps the hero for depth */}
-        <View style={[styles.sheet, { backgroundColor: semantic.bgPage }]} />
+        <View style={[styles.sheet, { backgroundColor: semantic.bgCard }]} />
 
         {/* ============================================================== */}
         {/* PRODUCT INFO                                                    */}
         {/* ============================================================== */}
-        <View style={styles.infoSection}>
+        <View style={[styles.infoSection, { backgroundColor: semantic.bgCard }]}>
           {/* Category overline */}
           {product.categoryName && (
             <Text style={[styles.categoryOverline, { color: semantic.textTertiary }]}>
@@ -461,8 +477,8 @@ export function ProductDetailScreen({
         {/* ============================================================== */}
         {product.description && (
           <>
-            <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-            <View style={styles.section}>
+            <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+            <View style={[styles.section, { backgroundColor: semantic.bgCard }]}>
               <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Description</Text>
               <Text style={[styles.descriptionText, { color: semantic.textSecondary }]}>
                 {product.description}
@@ -479,8 +495,8 @@ export function ProductDetailScreen({
         {/* ============================================================== */}
         {/* FOURNISSEUR                                                     */}
         {/* ============================================================== */}
-        <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-        <View style={styles.section}>
+        <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+        <View style={[styles.section, { backgroundColor: semantic.bgCard }]}>
           <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Vendu par</Text>
           <TouchableOpacity
             style={[styles.supplierCard, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}
@@ -944,15 +960,14 @@ const styles = StyleSheet.create({
   // Sections
   section: {
     paddingHorizontal: spacing[5],
+    paddingVertical: spacing[4],
     gap: spacing[3],
   },
   sectionTitle: {
     ...typography.h3,
   },
   divider: {
-    height: 1,
-    marginHorizontal: spacing[5],
-    marginVertical: spacing[5],
+    height: spacing[2],
   },
 
   suggestionsBlock: {

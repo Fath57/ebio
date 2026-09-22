@@ -30,7 +30,7 @@ import {
   View,
 } from 'react-native'
 import { notifyAuthChange, signOut, useSession } from '../../../lib/auth-client'
-import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
+import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { BRAND_LOGO } from '../../../utils/app-variant'
@@ -730,9 +730,9 @@ const styles = StyleSheet.create({
   section: {
     marginTop: spacing[5],
   },
-  // Two standalone cards in a row need breathing room between them.
+  // Two standalone bands in a row need the page to show between them.
   stackedGroup: {
-    gap: spacing[3],
+    gap: spacing[2],
   },
   modeSwitchWrap: {
     marginTop: spacing[4],
@@ -742,16 +742,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing[3],
-    marginHorizontal: spacing[4],
     padding: spacing[4],
-    borderRadius: radius.lg,
   },
   supplierAppBanner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[3],
     padding: spacing[4],
-    borderRadius: radius.lg,
   },
   pendingTitle: {
     ...typography.h3,
@@ -768,9 +765,9 @@ const styles = StyleSheet.create({
   },
   themeSelector: {
     flexDirection: 'row',
-    marginHorizontal: spacing[4],
-    borderRadius: radius.lg,
-    padding: spacing[1],
+    // Aligned with the section titles and the row labels above it.
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[1],
     gap: spacing[1],
   },
   themeOption: {
@@ -793,10 +790,7 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSb,
   },
   menuGroup: {
-    marginHorizontal: spacing[4],
-    borderRadius: radius.lg,
     overflow: 'hidden',
-    ...shadows.sm,
   },
   menuItemRow: {
     flexDirection: 'row',
@@ -838,12 +832,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     gap: spacing[2],
     marginTop: spacing[8],
-    marginHorizontal: spacing[4],
     paddingVertical: spacing[4],
-    borderRadius: radius.lg,
     backgroundColor: colors.coral[50],
     minHeight: 48,
-    ...shadows.sm,
   },
   logoutText: {
     fontFamily: fonts.sansSb,

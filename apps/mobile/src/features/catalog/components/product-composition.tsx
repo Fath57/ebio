@@ -113,8 +113,8 @@ export function ProductCompositionSections({ composition }: { composition: Produ
       {/* Ingrédients */}
       {hasIngredients && (
         <>
-          <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-          <View style={styles.section}>
+          <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+          <View style={[styles.section, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Ingrédients</Text>
             <Text style={[styles.bodyText, { color: semantic.textSecondary }]}>
               {composition.ingredients}
@@ -126,8 +126,8 @@ export function ProductCompositionSections({ composition }: { composition: Produ
       {/* Allergènes — prominent warning-tinted chips */}
       {hasAllergens && (
         <>
-          <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-          <View style={styles.section}>
+          <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+          <View style={[styles.section, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Allergènes</Text>
             <View style={styles.chipRow}>
               {composition.allergens.map(allergen => (
@@ -144,8 +144,8 @@ export function ProductCompositionSections({ composition }: { composition: Produ
       {/* Origine */}
       {hasOrigin && (
         <>
-          <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-          <View style={styles.section}>
+          <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+          <View style={[styles.section, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Origine</Text>
             <View style={styles.originRow}>
               <MapPin size={15} color={colors.green[600]} strokeWidth={2.2} />
@@ -160,8 +160,8 @@ export function ProductCompositionSections({ composition }: { composition: Produ
       {/* Conservation */}
       {hasConservation && (
         <>
-          <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-          <View style={styles.section}>
+          <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+          <View style={[styles.section, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Conservation</Text>
             <Text style={[styles.bodyText, { color: semantic.textSecondary }]}>
               {composition.conservation}
@@ -173,8 +173,8 @@ export function ProductCompositionSections({ composition }: { composition: Produ
       {/* Valeurs nutritionnelles — 2-column table */}
       {hasNutrition && (
         <>
-          <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
-          <View style={styles.section}>
+          <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+          <View style={[styles.section, { backgroundColor: semantic.bgCard }]}>
             <View style={styles.nutritionTitleRow}>
               <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Valeurs nutritionnelles</Text>
               <Text style={[styles.nutritionSubtitle, { color: semantic.textTertiary }]}>
@@ -217,15 +217,14 @@ const styles = StyleSheet.create({
   // Shared section layout — mirrors product-detail-screen sections
   section: {
     paddingHorizontal: spacing[5],
+    paddingVertical: spacing[4],
     gap: spacing[3],
   },
   sectionTitle: {
     ...typography.h3,
   },
   divider: {
-    height: 1,
-    marginHorizontal: spacing[5],
-    marginVertical: spacing[5],
+    height: spacing[2],
   },
   bodyText: {
     ...typography.bodyL,
@@ -298,8 +297,6 @@ const styles = StyleSheet.create({
     fontSize: 12,
   },
   nutritionTable: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
     overflow: 'hidden',
   },
   nutritionRow: {

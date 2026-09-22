@@ -697,7 +697,7 @@ export function CheckoutFlow({
         >
 
           {/* Supplier */}
-          <View style={[styles.card, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}>
+          <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
             <View style={styles.supplierRow}>
               <View style={[styles.supplierIcon, { backgroundColor: semantic.bgPrimaryLight }]}>
                 <Store size={16} color={colors.green[600]} strokeWidth={2} />
@@ -711,7 +711,7 @@ export function CheckoutFlow({
           </View>
 
           {/* Delivery mode */}
-          <View style={[styles.card, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}>
+          <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
             <View style={styles.deliveryRow}>
               {orderSummary.deliveryMode === 'DELIVERY'
                 ? <Truck size={18} color={colors.green[600]} strokeWidth={2} />
@@ -780,7 +780,7 @@ export function CheckoutFlow({
           </View>
 
           {/* Order items */}
-          <View style={[styles.card, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}>
+          <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.cardTitle, { color: semantic.textPrimary }]}>
               Récapitulatif
             </Text>
@@ -886,7 +886,7 @@ export function CheckoutFlow({
               style={[
                 styles.card,
                 styles.walletOption,
-                { backgroundColor: semantic.bgCard, borderColor: effectiveChoice === 'WALLET' ? colors.green[400] : semantic.borderLight },
+                { backgroundColor: effectiveChoice === 'WALLET' ? semantic.bgPrimaryLight : semantic.bgCard },
               ]}
               onPress={() => setPaymentChoice(previous => (previous === 'WALLET' ? 'FEDAPAY' : 'WALLET'))}
               activeOpacity={0.7}
@@ -915,7 +915,7 @@ export function CheckoutFlow({
               style={[
                 styles.card,
                 styles.walletOption,
-                { backgroundColor: semantic.bgCard, borderColor: effectiveChoice === 'CASH' ? colors.green[400] : semantic.borderLight },
+                { backgroundColor: effectiveChoice === 'CASH' ? semantic.bgPrimaryLight : semantic.bgCard },
                 !cashAvailable && styles.buttonDisabled,
               ]}
               onPress={() => setPaymentChoice(previous => (previous === 'CASH' ? 'FEDAPAY' : 'CASH'))}
@@ -942,9 +942,9 @@ export function CheckoutFlow({
           )}
 
           {effectiveChoice === 'FEDAPAY' && (
-            <View style={[styles.paymentInfo, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}>
-              <CircleCheck size={16} color={colors.green[400]} strokeWidth={2} />
-              <Text style={[styles.paymentInfoText, { color: semantic.textSecondary }]}>
+            <View style={styles.paymentInfo}>
+              <CircleCheck size={14} color={semantic.textTertiary} strokeWidth={2} />
+              <Text style={[styles.paymentInfoText, { color: semantic.textTertiary }]}>
                 Paiement sécurisé via FedaPay (Mobile Money, Visa, Mastercard)
               </Text>
             </View>
@@ -1112,10 +1112,10 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: {
-    paddingHorizontal: spacing[4],
-    paddingTop: spacing[2],
+    // No horizontal padding: the surfaces run edge to edge, and the gap lets
+    // the page show through between them in place of a card outline.
     paddingBottom: spacing[12],
-    gap: spacing[3],
+    gap: spacing[2],
   },
 
   // Header
@@ -1137,10 +1137,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
 
-  // Cards
+  // Bands
   card: {
-    borderRadius: radius.lg,
-    borderWidth: 1,
     padding: spacing[4],
     gap: spacing[3],
   },
@@ -1377,15 +1375,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing[2],
-    padding: spacing[4],
-    borderRadius: radius.lg,
-    borderWidth: 1,
+    paddingHorizontal: spacing[4],
+    paddingVertical: spacing[3],
   },
   paymentInfoText: {
     flex: 1,
     fontFamily: fonts.sans,
-    fontSize: 12,
-    lineHeight: 12 * 1.6,
+    fontSize: 11,
+    lineHeight: 11 * 1.6,
   },
 
   // Bottom bar
