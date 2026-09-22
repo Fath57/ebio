@@ -555,8 +555,14 @@ export class DispatchService {
 
   /** Pushes the run to every eligible courier. */
   async broadcastRun(runId: string): Promise<number> {
-    const run = await this.em.findOne(DeliveryRun, { id: runId })
+    const run = await this.em.findOne(DeliveryRun, { id: runId }, { populate: ['deliveries'] })
     if (!run || run.status !== DeliveryRunStatus.AWAITING_COURIER) {
+      return 0
+    }
+    // A run whose shops have not all prepared carries nothing to pick up.
+    // Offering it announces a job that does not exist yet, and a courier who
+    // accepted would find an empty round.
+    if (!this.isRunReady(run)) {
       return 0
     }
     const target = await this.runTarget(runId)
@@ -588,6 +594,14 @@ export class DispatchService {
     const expired = await this.em.find(DeliveryRun, {
       status: DeliveryRunStatus.AWAITING_COURIER,
       dispatchPhase: DispatchPhase.TARGETED,
+      // A run is born TARGETED with no open offer, so without this every
+      // brand-new run matched — including one whose shops had not prepared
+      // and one carrying no delivery at all. It was then pushed to broadcast
+      // behind `startRunDispatch`'s back, which is the only place setting
+      // `dispatchStartedAt`; the escalation that ends a search reads that
+      // field, so such a run could never be ended and kept notifying every
+      // courier every ten minutes, for as long as the server was up.
+      dispatchStartedAt: { $ne: null },
       $or: [{ offerExpiresAt: { $lt: new Date() } }, { offerExpiresAt: null }],
     }, { populate: ['offeredToCourier'] })
     for (const run of expired) {
@@ -601,12 +615,23 @@ export class DispatchService {
     }
   }
 
-  /** Run unclaimed for 10 min: widen the radius and push again. */
+  /**
+   * Run unclaimed for 10 min: widen the radius and push again — until the cap.
+   *
+   * `$lt: RADIUS_CAP_KM` is what ends the search. Without it a run that had
+   * reached the cap was pushed again every ten minutes to the same couriers,
+   * for ever: a single unclaimed run sent 81 notifications in one day. The
+   * last widening still gets its broadcast, in the pass that reaches the cap;
+   * afterwards the run stays visible in the couriers' list and the back-office
+   * can still assign it by hand — it simply stops ringing.
+   */
   async rebroadcastStaleRuns(): Promise<void> {
     const cutoff = new Date(Date.now() - TEN_MINUTES_MS)
     const stale = await this.em.find(DeliveryRun, {
       status: DeliveryRunStatus.AWAITING_COURIER,
       dispatchPhase: DispatchPhase.BROADCAST,
+      dispatchStartedAt: { $ne: null },
+      broadcastRadiusKm: { $lt: RADIUS_CAP_KM },
       offeredAt: { $lt: cutoff },
     })
     for (const run of stale) {
@@ -914,13 +939,19 @@ export class DispatchService {
     await this.reassignStuck()
   }
 
-  /** Unclaimed after 10 min: widen the radius (cap 25 km) and push again. */
+  /**
+   * Unclaimed after 10 min: widen the radius and push again — until the cap.
+   *
+   * A lone delivery has no escalation to end it, so the cap is the only stop:
+   * past it, it stays offered in the list without notifying anyone again.
+   */
   async rebroadcastStale(): Promise<void> {
     const cutoff = new Date(Date.now() - TEN_MINUTES_MS)
     const stale = await this.em.find(Delivery, {
       status: DeliveryStatus.AWAITING_COURIER,
       dispatchPhase: DispatchPhase.BROADCAST,
       deliveryRun: null,
+      broadcastRadiusKm: { $lt: RADIUS_CAP_KM },
       offeredAt: { $lt: cutoff },
     })
 

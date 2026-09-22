@@ -233,5 +233,45 @@ describe('dispatchService', () => {
       expect(run.broadcastRadiusKm).toBe(25)
       expect(broadcastSpy).toHaveBeenCalledWith('run-1')
     })
+
+    // A run at the cap used to be pushed again every ten minutes for ever:
+    // one unclaimed run sent 81 notifications in a day. The query itself must
+    // exclude it, so nothing depends on a later guard.
+    it('ne rappelle plus une tournée dont le rayon est déjà au plafond', async () => {
+      const { service, em } = buildService()
+      em.find.mockResolvedValueOnce([])
+      await service.rebroadcastStaleRuns()
+      const [, where] = em.find.mock.calls[0]
+      expect(where.broadcastRadiusKm).toEqual({ $lt: 25 })
+      expect(where.dispatchStartedAt).toEqual({ $ne: null })
+    })
+
+    it('ne rappelle plus une course seule dont le rayon est au plafond', async () => {
+      const { service, em } = buildService()
+      em.find.mockResolvedValueOnce([])
+      await service.rebroadcastStale()
+      const [, where] = em.find.mock.calls[0]
+      expect(where.broadcastRadiusKm).toEqual({ $lt: 25 })
+    })
+
+    // The entry point of the loop: a run is born TARGETED with no open offer,
+    // so this cron matched every brand-new one and pushed it to broadcast
+    // behind startRunDispatch's back — leaving dispatchStartedAt null, which
+    // is what the escalation reads to end a search.
+    it('ignore une tournée dont la recherche n\'a jamais démarré', async () => {
+      const { service, em } = buildService()
+      em.find.mockResolvedValueOnce([])
+      await service.expireRunOffers()
+      const [, where] = em.find.mock.calls[0]
+      expect(where.dispatchStartedAt).toEqual({ $ne: null })
+    })
+
+    it('ne diffuse pas une tournée vide : il n\'y a rien à retirer', async () => {
+      const { service, em, notifications } = buildService()
+      em.findOne.mockResolvedValueOnce(buildRun({ items: [] }))
+      const notified = await service.broadcastRun('run-1')
+      expect(notified).toBe(0)
+      expect(notifications.send).not.toHaveBeenCalled()
+    })
   })
 })
