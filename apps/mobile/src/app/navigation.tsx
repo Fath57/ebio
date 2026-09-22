@@ -816,6 +816,9 @@ export function AppNavigation() {
                 // Shared profile links: ebio-mobile://boutique/:supplierId
                 // and https://e-bio.org/boutique/:supplierId
                 SupplierProfile: 'boutique/:supplierId',
+                // Shared product links: the wrapper fills in the product and
+                // its shop from the id alone.
+                ProductDetail: 'produit/:productId',
               },
             },
           },

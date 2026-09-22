@@ -189,10 +189,9 @@ export function ProductDetailScreen({
 
   const handleShare = useCallback(async () => {
     try {
-      // The public site has no product page yet, so the link lands on the
-      // shop; the message names the product so the reader knows what to look
-      // for once there.
-      const url = `https://e-bio.org/boutique/${supplier.id}`
+      // The public product page carries the OG preview card and opens the
+      // app when it is installed.
+      const url = `https://e-bio.org/produit/${product.id}`
       await Share.share({
         message: `${product.name} — ${formatPrice(displayPrice)} FCFA/${unitLabel}\nChez ${supplier.shopName} sur eBio 🌿\n${url}`,
       })
@@ -200,7 +199,7 @@ export function ProductDetailScreen({
     catch {
       // Share cancelled or failed
     }
-  }, [product.name, displayPrice, unitLabel, supplier.id, supplier.shopName])
+  }, [product.id, product.name, displayPrice, unitLabel, supplier.shopName])
 
   // Scroll-driven animations
   const headerBg = scrollY.interpolate({
