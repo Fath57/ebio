@@ -24,6 +24,8 @@ export interface ApiProductDetail {
   promotionTypes?: string[]
   unit: string
   stock?: number
+  ratingAvg?: number | null
+  ratingCount?: number
   categoryName?: string
   description?: string
   supplierId: string
@@ -51,6 +53,8 @@ export function toDetailProduct(raw: ApiProductDetail): ProductDetailProduct {
     promotionTypes: raw.promotionTypes,
     unit: raw.unit,
     isInStock: (raw.stock ?? 0) > 0,
+    ratingAvg: raw.ratingAvg ?? null,
+    ratingCount: raw.ratingCount ?? 0,
     categoryName: raw.categoryName,
     description: raw.description,
     stock: raw.stock,

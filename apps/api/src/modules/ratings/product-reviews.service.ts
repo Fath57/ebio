@@ -200,14 +200,17 @@ export class ProductReviewsService {
    * Recomputes a product's average and count from its visible reviews.
    *
    * Same weighting as `RatingsService.recalculateRating`, minus the four
-   * criteria: the rating is already a single number. The average stays null
+   * criteria: the rating is already a single number. Hence the `::numeric`
+   * cast — the shop version divides by `4.0` and gets its float for free,
+   * whereas summing smallints over integers here would divide as integers
+   * and turn an average of 4.2 into 4. The average stays null
    * below the threshold, which drops the product to the end of a `NULLS LAST`
    * ordering with no extra code.
    */
   async recalculateProductRating(productId: string): Promise<void> {
     const rows = await this.em.getConnection().execute(
       `SELECT COALESCE(
-        SUM(rating * CASE WHEN "createdAt" >= NOW() - INTERVAL '${RECENT_WINDOW_DAYS} days' THEN 2 ELSE 1 END)
+        SUM(rating::numeric * CASE WHEN "createdAt" >= NOW() - INTERVAL '${RECENT_WINDOW_DAYS} days' THEN 2 ELSE 1 END)
         / NULLIF(SUM(CASE WHEN "createdAt" >= NOW() - INTERVAL '${RECENT_WINDOW_DAYS} days' THEN 2 ELSE 1 END), 0),
         0
       ) as weighted_avg,

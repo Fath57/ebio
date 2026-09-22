@@ -40,6 +40,9 @@ export const searchResultSchema = z.object({
     unit: z.string(),
     inStock: z.boolean(),
     promotionalPrice: z.number().nullable(),
+    /** Weighted average of the product's reviews, null below three of them. */
+    ratingAvg: z.number().nullable(),
+    ratingCount: z.number(),
     /** Live promotion types, for badges (e.g. ['BOGO', 'FREE_DELIVERY']). */
     promotionTypes: z.array(z.string()),
   }),

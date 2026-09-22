@@ -180,6 +180,10 @@ export const productResponseSchema = z.object({
   stock: z.number(),
   stockAlertThreshold: z.number(),
   status: productStatusEnum,
+  /** Weighted average of the product's reviews, null below three of them. */
+  ratingAvg: z.number().nullable(),
+  /** Visible reviews. Shown even while the average stays hidden. */
+  ratingCount: z.number(),
   promotionalPrice: z.number().nullable(),
   promotionExpiresAt: z.string().datetime().nullable(),
   /** Promotions live right now (price, buy-X-get-Y, free delivery). */
@@ -207,6 +211,10 @@ export const productSummarySchema = z.object({
   unit: productUnitCode,
   stock: z.number(),
   status: productStatusEnum,
+  /** Weighted average of the product's reviews, null below three of them. */
+  ratingAvg: z.number().nullable(),
+  /** Visible reviews. Shown even while the average stays hidden. */
+  ratingCount: z.number(),
   promotionalPrice: z.number().nullable(),
   /** Live promotion types, for badges (e.g. ['BOGO', 'FREE_DELIVERY']). */
   promotionTypes: z.array(promotionTypeEnum),

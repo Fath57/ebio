@@ -13,6 +13,8 @@ interface RawSearchRow {
   unit: string
   stock: number
   promotional_price: number | null
+  rating_avg: number | null
+  rating_count: number
   promotion_types: string[] | null
   supplier_id: string
   shop_name: string
@@ -170,6 +172,8 @@ export class SearchService {
         p.price_per_unit,
         p.unit,
         p.stock,
+        p.rating_avg,
+        p.rating_count,
         CASE WHEN ${LIVE_LEGACY_PROMO} THEN p.promotional_price END AS promotional_price,
         (SELECT COALESCE(array_agg(pp.type), '{}') FROM product_promotions pp
           WHERE pp.product_id = p.id AND pp.is_active = true
@@ -331,6 +335,8 @@ export class SearchService {
         unit: row.unit,
         inStock: row.stock > 0,
         promotionalPrice: row.promotional_price,
+        ratingAvg: row.rating_avg,
+        ratingCount: row.rating_count ?? 0,
         promotionTypes: row.promotion_types ?? [],
       },
     }

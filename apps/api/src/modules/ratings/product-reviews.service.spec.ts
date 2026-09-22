@@ -141,6 +141,16 @@ describe('productReviewsService', () => {
       )
     })
 
+    it('divise en flottant, pas en entier', async () => {
+      // 5 et 4 récents (×2), 3 ancien (×1) : 21 / 5 = 4,2. Sans le cast
+      // `::numeric`, Postgres divisait deux entiers et rendait 4.
+      const { service, execute } = buildService()
+      execute.mockResolvedValueOnce([{ weighted_avg: 4.2, total: 3 }])
+      await service.recalculateProductRating('product-1')
+      const [sql] = execute.mock.calls[0]
+      expect(sql).toContain('rating::numeric')
+    })
+
     it('ne compte que les avis visibles', async () => {
       const { service, execute } = buildService()
       execute.mockResolvedValueOnce([{ weighted_avg: 5, total: 3 }])

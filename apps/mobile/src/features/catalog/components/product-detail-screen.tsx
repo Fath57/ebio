@@ -12,7 +12,6 @@ import Package from 'lucide-react-native/dist/esm/icons/package'
 import Percent from 'lucide-react-native/dist/esm/icons/percent'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Share2 from 'lucide-react-native/dist/esm/icons/share-2'
-import Star from 'lucide-react-native/dist/esm/icons/star'
 import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import * as React from 'react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -38,6 +37,7 @@ import { formatDistance, formatPrice } from '../../search/components/search-resu
 import { useProductUnits } from '../hooks/use-product-units'
 import { describePromotion, parsePromotions, promotionChipLabels, promotionChipLabelsFor } from '../promotions'
 import { ProductCompositionSections, ProductLabelChips } from './product-composition'
+import { ProductRatingLine, ProductReviewsSection } from './product-reviews-section'
 import { PromotionChips } from './promotion-chips'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
@@ -59,6 +59,9 @@ export interface ProductDetailProduct {
   promotionTypes?: string[]
   unit: string
   isInStock: boolean
+  /** Weighted average of the product's reviews, null below three of them. */
+  ratingAvg?: number | null
+  ratingCount?: number
   categoryName?: string
   description?: string
   stock?: number
@@ -83,6 +86,8 @@ interface ProductDetailScreenProps {
   onNavigateToSupplier: (supplierId: string) => void
   /** Opens another product of the shop (suggestions rail). */
   onOpenProduct?: (productId: string) => void
+  /** Opens the full, paginated review list of this product. */
+  onSeeAllReviews?: (productId: string) => void
 }
 
 export function ProductDetailScreen({
@@ -91,6 +96,7 @@ export function ProductDetailScreen({
   onGoBack,
   onNavigateToSupplier,
   onOpenProduct,
+  onSeeAllReviews,
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
   const { shortLabel } = useProductUnits()
@@ -426,6 +432,7 @@ export function ProductDetailScreen({
                   )}
                   <PromotionChips labels={chipLabels} />
                 </View>
+                <ProductRatingLine average={product.ratingAvg ?? null} count={product.ratingCount ?? 0} />
               </View>
 
               {/* Le geste d'achat est ici, à hauteur du prix : il n'y a plus de
@@ -492,6 +499,12 @@ export function ProductDetailScreen({
         <ProductCompositionSections composition={composition} />
 
         {/* ============================================================== */}
+        {/* AVIS DU PRODUIT                                                 */}
+        {/* ============================================================== */}
+        <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+        <ProductReviewsSection productId={product.id} onSeeAll={() => onSeeAllReviews?.(product.id)} />
+
+        {/* ============================================================== */}
         {/* FOURNISSEUR                                                     */}
         {/* ============================================================== */}
         <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
@@ -527,22 +540,10 @@ export function ProductDetailScreen({
                 )}
               </View>
 
+              {/* The shop's rating is deliberately absent: the product now
+                  carries its own, and two ratings side by side leave nobody
+                  knowing which one to read. The shop page still shows its. */}
               <View style={styles.supplierMeta}>
-                {supplier.rating != null && (
-                  <View style={styles.metaItem}>
-                    <Star size={12} color={colors.earth[400]} fill={colors.earth[400]} strokeWidth={0} />
-                    <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
-                      {supplier.rating.toFixed(1)}
-                    </Text>
-                    {supplier.reviewCount !== undefined && (
-                      <Text style={[styles.metaTextLight, { color: semantic.textTertiary }]}>
-                        (
-                        {supplier.reviewCount}
-                        )
-                      </Text>
-                    )}
-                  </View>
-                )}
                 {supplier.distance !== undefined && (
                   <View style={styles.metaItem}>
                     <MapPin size={12} color={semantic.textTertiary} strokeWidth={2} />
