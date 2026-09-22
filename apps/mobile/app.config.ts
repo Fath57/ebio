@@ -82,6 +82,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     ...config,
     name: v.name,
     slug: 'ebio-mobile',
+    // Pinned, not inferred. Expo defaults this list from what it finds
+    // installed, and the result differed between this machine and the EAS
+    // worker ('web' on one side only) — which moved the fingerprint and made
+    // the build refuse its own runtime version. There is no web target.
+    platforms: ['android', 'ios'],
     version: '1.3.0',
     scheme: v.scheme,
     orientation: 'portrait',
