@@ -1,4 +1,5 @@
 import type { ChatMessage, ConnectionState } from '../../../utils/websocket-client'
+import type { CropRect } from '../../media/components/image-cropper'
 import type { VoiceRecorderStatus, VoiceTint } from './voice-note'
 import { useFocusEffect } from '@react-navigation/native'
 import * as ImagePicker from 'expo-image-picker'
@@ -33,6 +34,7 @@ import { chatFetch, resolveMediaUrl } from '../../../utils/api-client'
 import { websocketClient } from '../../../utils/websocket-client'
 import { appAlert } from '../../common/components/app-alert'
 import { useKeyboardHeight } from '../../common/hooks/use-keyboard-height'
+import { requestImageCrop } from '../../media/components/image-cropper'
 import { downscaleImage } from '../../media/downscale'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { VoiceNotePlayer, VoiceNoteRecorder } from './voice-note'
@@ -60,6 +62,8 @@ interface DisplayMessage {
   isRead: boolean
   durationMs?: number | null
   status: MessageStatus
+  /** Kept on a pending bubble so a retry crops the same way as the first try. */
+  crop?: CropRect | null
 }
 
 type ChatListItem
@@ -387,6 +391,7 @@ export function ChatScreen({
     mimeType: string,
     type: 'IMAGE' | 'VOICE',
     durationMs?: number,
+    crop?: CropRect | null,
   ) => {
     const tempId = makeTempId()
     setMessages(prev => [{
@@ -398,10 +403,11 @@ export function ChatScreen({
       isRead: false,
       durationMs: durationMs ?? null,
       status: 'pending' as const,
+      crop: crop ?? null,
     }, ...prev])
     flatListRef.current?.scrollToOffset({ offset: 0, animated: true })
     setUploadingMsgId(tempId)
-    const uploaded = await uploadFile(localUri, fileName, mimeType, 0)
+    const uploaded = await uploadFile(localUri, fileName, mimeType, 0, crop ?? undefined)
     setUploadingMsgId(null)
     if (!uploaded) {
       setMessages(prev => prev.map(m => (m.id === tempId ? { ...m, status: 'failed' as const } : m)))
@@ -425,20 +431,33 @@ export function ChatScreen({
       // prompting. Same call as the profile photo picker, which works.
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
-        allowsEditing: true,
+        // The app's own cropper runs below: Android's native editor hides its
+        // handles and behaves differently from one phone to the next, which
+        // is why every other screen already avoids it.
+        allowsEditing: false,
         quality: 0.8,
       })
       if (result.canceled || !result.assets?.[0])
         return
       const asset = result.assets[0]
-      // A phone photo is several megabytes: reduced first, the bubble leaves
-      // in a couple of seconds instead of waiting out a mobile upload.
+      // A phone photo is several megabytes: reduced first, so the cropper
+      // opens on a small image and the bubble leaves in a couple of seconds.
       const reduced = await downscaleImage(asset, 'CHAT_ATTACHMENT')
+      const source = reduced ? { ...asset, ...reduced } : asset
+      const cropped = await requestImageCrop({
+        uri: source.uri,
+        width: source.width,
+        height: source.height,
+      })
+      if (cropped.cancelled)
+        return
       void startMediaSend(
-        reduced?.uri ?? asset.uri,
+        source.uri,
         reduced?.fileName ?? asset.fileName ?? 'photo.jpg',
         reduced?.mimeType ?? asset.mimeType ?? 'image/jpeg',
         'IMAGE',
+        undefined,
+        cropped.crop,
       )
     }
     catch (error) {
@@ -464,6 +483,7 @@ export function ChatScreen({
           message.type === 'VOICE' ? 'voice-note.m4a' : 'photo.jpg',
           message.type === 'VOICE' ? 'audio/mp4' : 'image/jpeg',
           0,
+          message.crop ?? undefined,
         )
         setUploadingMsgId(null)
         if (!uploaded) {

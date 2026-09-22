@@ -272,11 +272,11 @@ export function ProductDetailScreen({
             accessibilityRole="button"
             accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
           >
-            <Heart
-              size={20}
-              color={isFavorite ? colors.coral[400] : colors.neutral[0]}
+            <HeaderIcon
+              Icon={Heart}
+              tintProgress={headerButtonTint}
+              fixedColor={isFavorite ? colors.coral[400] : undefined}
               fill={isFavorite ? colors.coral[400] : 'none'}
-              strokeWidth={2.2}
             />
           </Pressable>
           <Pressable
@@ -605,20 +605,36 @@ export function ProductDetailScreen({
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
+/**
+ * Header icon that follows the scroll: white over the photo, ink over the
+ * page once the header has turned opaque. `fixedColor` opts out for a state
+ * that carries its own meaning — a favourited heart stays coral throughout.
+ */
 function HeaderIcon({
   Icon,
   tintProgress,
+  fixedColor,
+  fill,
 }: {
-  Icon: React.ComponentType<{ size: number, color: string, strokeWidth?: number }>
+  Icon: React.ComponentType<{ size: number, color: string, strokeWidth?: number, fill?: string }>
   tintProgress: Animated.AnimatedInterpolation<number>
+  fixedColor?: string
+  fill?: string
 }) {
+  if (fixedColor) {
+    return (
+      <View style={{ width: 20, height: 20 }}>
+        <Icon size={20} color={fixedColor} fill={fill ?? 'none'} strokeWidth={2.2} />
+      </View>
+    )
+  }
   return (
     <View style={{ width: 20, height: 20 }}>
       <Animated.View style={{ position: 'absolute', opacity: Animated.subtract(1, tintProgress) }}>
-        <Icon size={20} color={colors.neutral[0]} strokeWidth={2.2} />
+        <Icon size={20} color={colors.neutral[0]} fill={fill ?? 'none'} strokeWidth={2.2} />
       </Animated.View>
       <Animated.View style={{ position: 'absolute', opacity: tintProgress }}>
-        <Icon size={20} color={colors.neutral[800]} strokeWidth={2.2} />
+        <Icon size={20} color={colors.neutral[800]} fill={fill ?? 'none'} strokeWidth={2.2} />
       </Animated.View>
     </View>
   )

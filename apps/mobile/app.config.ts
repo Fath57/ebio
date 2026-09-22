@@ -159,11 +159,19 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             {
               action: 'VIEW',
               autoVerify: true,
+              // One entry per shared path. App Links are verified per host,
+              // but Android only hands over a URL whose path is declared —
+              // an undeclared /produit link silently opened the browser.
               data: [
                 {
                   scheme: 'https',
                   host: 'e-bio.org',
                   pathPrefix: '/boutique',
+                },
+                {
+                  scheme: 'https',
+                  host: 'e-bio.org',
+                  pathPrefix: '/produit',
                 },
               ],
               category: ['BROWSABLE', 'DEFAULT'],
