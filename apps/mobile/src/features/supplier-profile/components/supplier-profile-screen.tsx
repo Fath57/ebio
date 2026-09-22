@@ -12,9 +12,10 @@ import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
+  Animated,
   Dimensions,
   Image,
   Linking,
@@ -35,7 +36,7 @@ import { useCart } from '../../cart/cart-context'
 import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
 import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
-import { ScreenHeader } from '../../common/components/screen-header'
+import { HeaderIcon, ScrollFadeHeader, useHeaderTint } from '../../common/components/scroll-fade-header'
 import { useLocation } from '../../common/location-context'
 import { ContactActionSheet } from './contact-action-sheet'
 
@@ -310,6 +311,9 @@ export function SupplierProfileScreen({
 }: SupplierProfileScreenProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
+  const scrollY = useRef(new Animated.Value(0)).current
+  // The action buttons follow the header's own fade, as on the product page.
+  const headerButtonTint = useHeaderTint(COVER_HEIGHT, scrollY)
   const navigation = useNavigation()
   const { getItemCount } = useCart()
   // Keep the last product row reachable above the floating cart bar.
@@ -544,11 +548,33 @@ export function SupplierProfileScreen({
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScrollView
+      <ScrollFadeHeader
+        heroHeight={COVER_HEIGHT}
+        scrollY={scrollY}
+        title={supplier.shopName}
+        onBack={() => onGoBack ? onGoBack() : navigation.goBack()}
+        rightSlot={(
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={handleShare}
+            accessibilityRole="button"
+            accessibilityLabel="Partager"
+          >
+            <HeaderIcon Icon={ShareIcon} tintProgress={headerButtonTint} />
+          </TouchableOpacity>
+        )}
+      />
+
+      <Animated.ScrollView
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] + cartBarClearance }}
         showsVerticalScrollIndicator={false}
         bounces
+        onScroll={Animated.event(
+          [{ nativeEvent: { contentOffset: { y: scrollY } } }],
+          { useNativeDriver: false },
+        )}
+        scrollEventThrottle={16}
       >
         {/* ================================================================= */}
         {/* HERO SECTION                                                       */}
@@ -575,11 +601,6 @@ export function SupplierProfileScreen({
             style={styles.coverGradient}
             start={{ x: 0, y: 0 }}
             end={{ x: 0, y: 1 }}
-          />
-
-          <ScreenHeader
-            variant="transparent"
-            onBack={() => onGoBack ? onGoBack() : navigation.goBack()}
           />
 
           {/* Profile photo — overlapping bottom of cover */}
@@ -876,7 +897,7 @@ export function SupplierProfileScreen({
                 </View>
               )}
         </View>
-      </ScrollView>
+      </Animated.ScrollView>
 
       {/* Contact Action Sheet */}
       <ContactActionSheet
@@ -927,6 +948,14 @@ const styles = StyleSheet.create({
     right: 0,
     bottom: PROFILE_SIZE / 2,
     height: COVER_HEIGHT * 0.45,
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(20,20,16,0.35)',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   backButton: {
     position: 'absolute',

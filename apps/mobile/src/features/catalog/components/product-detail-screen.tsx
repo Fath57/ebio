@@ -1,6 +1,5 @@
 import type { ProductPromotion } from '../promotions'
 import type { NutritionalValues, ProductCompositionData } from './product-composition'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import Heart from 'lucide-react-native/dist/esm/icons/heart'
@@ -33,6 +32,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { MAX_ITEM_QUANTITY, useCart } from '../../cart/cart-context'
 import { BasketSuggestions } from '../../cart/components/basket-suggestions'
 import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
+import { HeaderIcon, ScrollFadeHeader, useHeaderTint } from '../../common/components/scroll-fade-header'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 import { useProductUnits } from '../hooks/use-product-units'
 import { describePromotion, parsePromotions, promotionChipLabels, promotionChipLabelsFor } from '../promotions'
@@ -208,21 +208,8 @@ export function ProductDetailScreen({
   }, [product.id, product.name, displayPrice, unitLabel, supplier.shopName])
 
   // Scroll-driven animations
-  const headerBg = scrollY.interpolate({
-    inputRange: [HERO_HEIGHT - 160, HERO_HEIGHT - 80],
-    outputRange: ['rgba(0,0,0,0)', semantic.bgPage],
-    extrapolate: 'clamp',
-  })
-  const headerTitleOpacity = scrollY.interpolate({
-    inputRange: [HERO_HEIGHT - 140, HERO_HEIGHT - 80],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  })
-  const headerButtonTint = scrollY.interpolate({
-    inputRange: [HERO_HEIGHT - 140, HERO_HEIGHT - 80],
-    outputRange: [0, 1],
-    extrapolate: 'clamp',
-  })
+  // The action buttons follow the header's own fade.
+  const headerButtonTint = useHeaderTint(HERO_HEIGHT, scrollY)
   const heroTranslateY = scrollY.interpolate({
     inputRange: [0, HERO_HEIGHT],
     outputRange: [0, HERO_HEIGHT * 0.35],
@@ -236,65 +223,37 @@ export function ProductDetailScreen({
 
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-      {/* Floating header */}
-      <Animated.View
-        style={[
-          styles.floatingHeader,
-          {
-            backgroundColor: headerBg,
-            paddingTop: insets.top,
-            borderBottomColor: semantic.borderLight,
-          },
-        ]}
-      >
-        <Animated.View
-          style={[styles.headerBorderOverlay, { opacity: headerButtonTint, borderBottomColor: semantic.borderLight }]}
-          pointerEvents="none"
-        />
-        <Pressable
-          style={styles.headerButton}
-          onPress={onGoBack}
-          accessibilityRole="button"
-          accessibilityLabel="Retour"
-          hitSlop={8}
-        >
-          <HeaderIcon Icon={ArrowLeft} tintProgress={headerButtonTint} />
-        </Pressable>
-
-        <Animated.Text
-          numberOfLines={1}
-          style={[
-            styles.headerTitle,
-            { color: semantic.textPrimary, opacity: headerTitleOpacity },
-          ]}
-        >
-          {product.name}
-        </Animated.Text>
-
-        <View style={styles.headerRight}>
-          <Pressable
-            style={styles.headerButton}
-            onPress={() => setIsFavorite(prev => !prev)}
-            accessibilityRole="button"
-            accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
-          >
-            <HeaderIcon
-              Icon={Heart}
-              tintProgress={headerButtonTint}
-              fixedColor={isFavorite ? colors.coral[400] : undefined}
-              fill={isFavorite ? colors.coral[400] : 'none'}
-            />
-          </Pressable>
-          <Pressable
-            style={styles.headerButton}
-            onPress={handleShare}
-            accessibilityRole="button"
-            accessibilityLabel="Partager"
-          >
-            <HeaderIcon Icon={Share2} tintProgress={headerButtonTint} />
-          </Pressable>
-        </View>
-      </Animated.View>
+      <ScrollFadeHeader
+        heroHeight={HERO_HEIGHT}
+        scrollY={scrollY}
+        title={product.name}
+        onBack={onGoBack}
+        rightSlot={(
+          <>
+            <Pressable
+              style={styles.headerButton}
+              onPress={() => setIsFavorite(prev => !prev)}
+              accessibilityRole="button"
+              accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+            >
+              <HeaderIcon
+                Icon={Heart}
+                tintProgress={headerButtonTint}
+                fixedColor={isFavorite ? colors.coral[400] : undefined}
+                fill={isFavorite ? colors.coral[400] : 'none'}
+              />
+            </Pressable>
+            <Pressable
+              style={styles.headerButton}
+              onPress={handleShare}
+              accessibilityRole="button"
+              accessibilityLabel="Partager"
+            >
+              <HeaderIcon Icon={Share2} tintProgress={headerButtonTint} />
+            </Pressable>
+          </>
+        )}
+      />
 
       <Animated.ScrollView
         style={styles.scrollView}
@@ -606,41 +565,6 @@ export function ProductDetailScreen({
 
 // ─── Sub-components ──────────────────────────────────────────────────────────
 
-/**
- * Header icon that follows the scroll: white over the photo, ink over the
- * page once the header has turned opaque. `fixedColor` opts out for a state
- * that carries its own meaning — a favourited heart stays coral throughout.
- */
-function HeaderIcon({
-  Icon,
-  tintProgress,
-  fixedColor,
-  fill,
-}: {
-  Icon: React.ComponentType<{ size: number, color: string, strokeWidth?: number, fill?: string }>
-  tintProgress: Animated.AnimatedInterpolation<number>
-  fixedColor?: string
-  fill?: string
-}) {
-  if (fixedColor) {
-    return (
-      <View style={{ width: 20, height: 20 }}>
-        <Icon size={20} color={fixedColor} fill={fill ?? 'none'} strokeWidth={2.2} />
-      </View>
-    )
-  }
-  return (
-    <View style={{ width: 20, height: 20 }}>
-      <Animated.View style={{ position: 'absolute', opacity: Animated.subtract(1, tintProgress) }}>
-        <Icon size={20} color={colors.neutral[0]} fill={fill ?? 'none'} strokeWidth={2.2} />
-      </Animated.View>
-      <Animated.View style={{ position: 'absolute', opacity: tintProgress }}>
-        <Icon size={20} color={colors.neutral[800]} fill={fill ?? 'none'} strokeWidth={2.2} />
-      </Animated.View>
-    </View>
-  )
-}
-
 interface CartControlProps {
   /** Quantité au panier. 0 = le produit n'y est pas encore. */
   quantity: number
@@ -706,32 +630,6 @@ const styles = StyleSheet.create({
   scrollView: { flex: 1 },
 
   // Floating header
-  floatingHeader: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing[4],
-    paddingBottom: spacing[2],
-    gap: spacing[3],
-  },
-  headerBorderOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    borderBottomWidth: StyleSheet.hairlineWidth,
-  },
-  headerTitle: {
-    flex: 1,
-    fontFamily: fonts.sansSb,
-    fontSize: 15,
-    textAlign: 'center',
-  },
-  headerRight: {
-    flexDirection: 'row',
-    gap: spacing[2],
-  },
   headerButton: {
     width: 40,
     height: 40,
