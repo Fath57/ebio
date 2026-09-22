@@ -88,6 +88,23 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     icon: withFallback(v.icon, './assets/icon.png'),
     userInterfaceStyle: 'light',
     newArchEnabled: true,
+    // Over-the-air updates. The channel is set per build profile in eas.json,
+    // one per variant: an update is addressed by channel + runtimeVersion +
+    // platform, never by Android package, and the three apps share this one
+    // project — a common channel would drop the client bundle onto the
+    // courier app.
+    updates: {
+      url: 'https://u.expo.dev/34d0f388-ffd9-48e9-aeb3-12460fa50a44',
+      fallbackToCacheTimeout: 0,
+    },
+    // The fingerprint is computed from the native dependencies, so it moves on
+    // its own the day a native module is added — and an update built against
+    // that module is then never served to a binary that lacks it. `appVersion`
+    // would have happily shipped JS calling expo-image-manipulator to a build
+    // that does not contain it.
+    runtimeVersion: {
+      policy: 'fingerprint',
+    },
     splash: {
       image: withFallback(v.splash, './assets/splash-icon.png'),
       resizeMode: 'contain',

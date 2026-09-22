@@ -5,6 +5,7 @@
   },
   "build": {
     "development": {
+      "channel": "development-client",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -20,6 +21,7 @@
       }
     },
     "development-supplier": {
+      "channel": "development-supplier",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -35,6 +37,7 @@
       }
     },
     "development-courier": {
+      "channel": "development-courier",
       "developmentClient": true,
       "distribution": "internal",
       "android": {
@@ -50,6 +53,7 @@
       }
     },
     "preview": {
+      "channel": "preview-client",
       "android": {
         "buildType": "apk"
       },
@@ -64,6 +68,7 @@
       }
     },
     "preview-supplier": {
+      "channel": "preview-supplier",
       "android": {
         "buildType": "apk"
       },
@@ -78,6 +83,7 @@
       }
     },
     "preview-courier": {
+      "channel": "preview-courier",
       "android": {
         "buildType": "apk"
       },
@@ -92,6 +98,7 @@
       }
     },
     "production-client": {
+      "channel": "production-client",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
@@ -106,6 +113,7 @@
       }
     },
     "production-supplier": {
+      "channel": "production-supplier",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
@@ -120,6 +128,7 @@
       }
     },
     "production-courier": {
+      "channel": "production-courier",
       "autoIncrement": true,
       "android": {
         "buildType": "app-bundle"
