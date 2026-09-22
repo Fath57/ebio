@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
-import { useCallback, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   FlatList,
   Image,
@@ -13,9 +13,12 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { chatFetch } from '../../../utils/api-client'
+import { SUPPORT_LOGO } from '../../../utils/app-variant'
+import { websocketClient } from '../../../utils/websocket-client'
 import { ScreenHeader } from '../../common/components/screen-header'
 
 interface Conversation {
@@ -30,11 +33,13 @@ interface Conversation {
   kind: ConversationKind
   orderNumber: string | null
   /** Role label of the peer on courier threads (« Livreur » for the buyer, « Client » for the courier). */
-  peerRole: 'Livreur' | 'Client' | null
+  peerRole: 'Livreur' | 'Client' | 'Assistance eBio' | null
 }
 
 interface ConversationListProps {
   currentUserId: string
+  /** Opens (and creates on first use) the permanent thread with eBio. */
+  onOpenSupport?: () => void
   onOpenConversation: (
     conversationId: string,
     participantName: string,
@@ -81,7 +86,7 @@ function formatPreview(last: { content?: string | null, type?: string } | null):
   return last.content ?? null
 }
 
-export function ConversationList({ currentUserId, onOpenConversation }: ConversationListProps) {
+export function ConversationList({ currentUserId, onOpenConversation, onOpenSupport }: ConversationListProps) {
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
@@ -100,7 +105,9 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
           const last = c.lastMessage as { content?: string | null, type?: string, senderId?: string } | null
           const preview = formatPreview(last)
           const isOwnLast = last?.senderId != null && last.senderId === currentUserId
-          const kind: ConversationKind = c.kind === 'COURIER' ? 'COURIER' : 'SUPPLIER'
+          const kind: ConversationKind = c.kind === 'COURIER'
+            ? 'COURIER'
+            : c.kind === 'SUPPORT' ? 'SUPPORT' : 'SUPPLIER'
           // Server-computed peer fields take precedence; the buyer/supplier
           // heuristics remain as a fallback for older payloads.
           const peerName = typeof c.peerName === 'string' ? c.peerName : null
@@ -111,9 +118,16 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
           if (kind === 'COURIER') {
             peerRole = isBuyer ? 'Livreur' : 'Client'
           }
+          // Support is a team, so the buyer always sees the same name rather
+          // than whoever happens to be on duty.
+          if (kind === 'SUPPORT') {
+            peerRole = isBuyer ? 'Assistance eBio' : 'Client'
+          }
           return {
             id: c.id as string,
-            participantName: peerName ?? fallbackName ?? '',
+            participantName: kind === 'SUPPORT' && isBuyer
+              ? 'Support eBio'
+              : peerName ?? fallbackName ?? '',
             participantAvatar: peerImage ?? fallbackImage ?? null,
             lastMessage: preview != null && isOwnLast ? `Vous : ${preview}` : preview,
             lastMessageAt: (c.lastMessageAt as string) ?? null,
@@ -144,9 +158,19 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
     }
   }, [currentUserId])
 
-  // Refresh whenever the screen (re)gains focus — new messages while away
+  /**
+   * Refresh on focus, then stay live: the socket is opened for the list too,
+   * and any message — sent from here, from the other side, or from the
+   * back-office — refreshes the previews and the unread counters at once.
+   * Without it the list only ever caught up when it regained focus.
+   */
   useFocusEffect(useCallback(() => {
     void fetchConversations()
+    websocketClient.ensureConnected()
+    const unsubscribe = websocketClient.addMessageListener(() => {
+      void fetchConversations()
+    })
+    return unsubscribe
   }, [fetchConversations]))
 
   const handleRefresh = useCallback(() => {
@@ -223,13 +247,51 @@ export function ConversationList({ currentUserId, onOpenConversation }: Conversa
 
   const keyExtractor = useCallback((item: Conversation) => item.id, [])
 
+  /**
+   * Support sits above the list and is always there, whether the thread
+   * exists yet or not. A buyer who opens Messages with no order has nobody
+   * to write to otherwise — which was the whole problem.
+   */
+  const supportRow = useMemo(() => {
+    const existing = conversations.find(c => c.kind === 'SUPPORT')
+    return (
+      <TouchableOpacity
+        style={[styles.row, { backgroundColor: semantic.bgCard }]}
+        onPress={() => onOpenSupport?.()}
+        activeOpacity={0.7}
+        accessibilityRole="button"
+        accessibilityLabel="Écrire au support eBio"
+      >
+        <View style={[styles.avatar, styles.avatarPlaceholder, { backgroundColor: semantic.bgPrimaryLight }]}>
+          <Image source={SUPPORT_LOGO} style={styles.supportLogo} resizeMode="contain" />
+        </View>
+        <View style={styles.content}>
+          <View style={styles.topRow}>
+            <Text style={[styles.name, { color: semantic.textPrimary }]} numberOfLines={1}>
+              Support eBio
+            </Text>
+          </View>
+          <Text style={[styles.preview, { color: semantic.textSecondary }]} numberOfLines={1}>
+            {existing?.lastMessage ?? 'Une question ? Nous répondons sous 24 h.'}
+          </Text>
+        </View>
+        {existing !== undefined && existing.unreadCount > 0 && (
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadText}>{existing.unreadCount}</Text>
+          </View>
+        )}
+      </TouchableOpacity>
+    )
+  }, [conversations, onOpenSupport, semantic])
+
   // Racine d'onglet : en-tête sans bouton retour, seulement le repère « où suis-je ».
   // FlatList même à vide : le pull-to-refresh doit rester disponible.
   return (
     <View style={[styles.list, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Messages" />
       <FlatList
-        data={conversations}
+        data={conversations.filter(c => c.kind !== 'SUPPORT')}
+        ListHeaderComponent={supportRow}
         renderItem={renderItem}
         keyExtractor={keyExtractor}
         style={[styles.list, { backgroundColor: semantic.bgPage }]}
@@ -272,6 +334,10 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
+  },
+  supportLogo: {
+    width: 30,
+    height: 30,
   },
   avatarPlaceholder: {
     backgroundColor: colors.green[100],

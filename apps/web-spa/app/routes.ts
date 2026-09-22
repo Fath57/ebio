@@ -84,6 +84,7 @@ export default [
       route('admin/reversements', 'features/admin/withdrawals/pages/admin-withdrawals-page.tsx'),
       route('admin/codes-promo', 'features/admin/promo-codes/pages/admin-promo-codes-page.tsx'),
       route('admin/avis-signales', 'features/admin/review-moderation/pages/review-moderation-page.tsx'),
+      route('admin/support', 'features/admin/support/pages/support-inbox-page.tsx'),
 
       // Admin — Categories
       route('admin/categories', 'features/admin/categories/pages/categories-page.tsx'),

@@ -48,6 +48,14 @@ export class ChatController {
   }
 
   /** Buyer ↔ courier thread of a delivery, created on first access. */
+  /** The buyer's permanent thread with eBio. Created on first use. */
+  @Post('conversations/support')
+  @CanCreate('Conversation')
+  async openSupportConversation(@Req() req: JwtAuthenticatedRequest) {
+    const conversation = await this.chatService.getOrCreateSupportConversation(req.user.sub)
+    return { id: conversation.id, kind: conversation.kind }
+  }
+
   @Post('conversations/delivery/:deliveryId')
   @CanCreate('Conversation')
   async createDeliveryConversation(

@@ -2,11 +2,11 @@ import type { ConversationKind } from '../delivery-chat'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import { useEffect, useState } from 'react'
-import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
-import { APP_VARIANT } from '../../../utils/app-variant'
+import { APP_VARIANT, SUPPORT_LOGO } from '../../../utils/app-variant'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { ChatScreen } from './chat-screen'
 
@@ -79,7 +79,9 @@ export function ChatDetailScreen({
         onBack={onGoBack}
         leadingSlot={(
           <View style={styles.avatar}>
-            <Text style={styles.avatarInitial}>{(peerName ?? 'C').charAt(0).toUpperCase()}</Text>
+            {kind === 'SUPPORT'
+              ? <Image source={SUPPORT_LOGO} style={styles.avatarLogo} resizeMode="contain" />
+              : <Text style={styles.avatarInitial}>{(peerName ?? 'C').charAt(0).toUpperCase()}</Text>}
           </View>
         )}
       />
@@ -132,6 +134,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   avatarInitial: { fontFamily: fonts.sansBd, fontSize: 16, color: colors.green[600] },
+  avatarLogo: { width: 26, height: 26 },
   title: { ...typography.h3, flex: 1 },
   orderBanner: {
     flexDirection: 'row',

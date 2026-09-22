@@ -12009,6 +12009,20 @@
         }
       }
     },
+    "/api/chat/conversations/support": {
+      "post": {
+        "operationId": "ChatController_openSupportConversation",
+        "tags": [
+          "Chat"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/chat/conversations/delivery/{deliveryId}": {
       "post": {
         "operationId": "ChatController_createDeliveryConversation",
@@ -12134,6 +12148,102 @@
         ],
         "responses": {
           "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/support/conversations": {
+      "get": {
+        "operationId": "SupportController_listThreads",
+        "tags": [
+          "Support"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/support/unread": {
+      "get": {
+        "operationId": "SupportController_unread",
+        "tags": [
+          "Support"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/support/conversations/{id}/messages": {
+      "get": {
+        "operationId": "SupportController_listMessages",
+        "tags": [
+          "Support"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "SupportController_reply",
+        "tags": [
+          "Support"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "A back-office answer in a support thread",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4000
+                  }
+                },
+                "required": [
+                  "content"
+                ],
+                "additionalProperties": false,
+                "title": "SupportReply",
+                "description": "A back-office answer in a support thread"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         }
@@ -17385,6 +17495,22 @@
         "additionalProperties": false,
         "title": "CreateConversation",
         "description": "Create or retrieve an existing conversation with a supplier"
+      },
+      "SupportReply": {
+        "type": "object",
+        "properties": {
+          "content": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4000
+          }
+        },
+        "required": [
+          "content"
+        ],
+        "additionalProperties": false,
+        "title": "SupportReply",
+        "description": "A back-office answer in a support thread"
       },
       "CreatePublication": {
         "type": "object",

@@ -30,6 +30,7 @@ import { toDetailProduct, toDetailSupplier } from '../features/catalog/product-d
 import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
 import { ConversationList } from '../features/chat/components/conversation-list'
 import { openDeliveryConversation } from '../features/chat/delivery-chat'
+import { openSupportConversation } from '../features/chat/support-chat'
 import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { useLocation } from '../features/common/location-context'
@@ -175,6 +176,27 @@ async function openChatWithSupplier(navigation: any, supplierId: string, peerNam
 }
 
 /** Buyer -> courier thread of a delivery (get-or-create), then the chat tab. */
+/** Buyer ↔ eBio support thread (get-or-create), then the chat tab. */
+async function openSupportChat(navigation: any) {
+  try {
+    const conv = await openSupportConversation()
+    navigation.navigate('Chat', {
+      screen: 'ChatDetail',
+      initial: false,
+      params: {
+        conversationId: conv.id,
+        peerName: 'Support eBio',
+        isSupplier: false,
+        orderId: null,
+        kind: 'SUPPORT',
+      },
+    })
+  }
+  catch (error) {
+    appAlert('Support indisponible', error instanceof Error ? error.message : undefined)
+  }
+}
+
 async function openChatWithCourier(navigation: any, deliveryId: string, peerName: string, orderId?: string) {
   try {
     const conv = await openDeliveryConversation(deliveryId)
@@ -221,10 +243,9 @@ function HelpCenterWrapper({ navigation }: any) {
     <SafeScreen>
       <HelpCenterScreen
         onGoBack={() => navigation.goBack()}
-        // Explicitly the list: navigating to the tab alone lands on whatever
-        // conversation sits on top of its stack, which is not what someone
-        // reaching for help is asking for.
-        onOpenChat={() => navigation.navigate('Chat', { screen: 'ChatHome' })}
+        // Straight to the support thread: someone opening the help centre is
+        // looking for eBio, not for the last shop they wrote to.
+        onOpenChat={() => openSupportChat(navigation)}
       />
     </SafeScreen>
   )
@@ -325,6 +346,7 @@ function ChatStackScreen() {
           <SafeScreen>
             <ConversationList
               currentUserId={currentUserId}
+              onOpenSupport={() => openSupportChat(navigation)}
               onOpenConversation={(conversationId, peerName, isSupplier, orderId, kind) =>
                 navigation.navigate('ChatDetail', { conversationId, peerName, isSupplier, orderId, kind })}
             />

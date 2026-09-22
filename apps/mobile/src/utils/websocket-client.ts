@@ -80,10 +80,32 @@ class WebSocketClient {
   private socket: Socket | null = null
   private connectionState: ConnectionState = 'disconnected'
   private handlers: WebSocketClientOptions = {}
+  /**
+   * Listeners that outlive a `connect` call. `handlers` belongs to whichever
+   * screen owns the connection (the open thread); these are for everyone
+   * else who needs to know a message arrived — the conversation list, which
+   * otherwise only learned of it on its next focus.
+   */
+  private messageListeners = new Set<EventHandler<ChatMessage>>()
 
   connect(options: WebSocketClientOptions): void {
     this.handlers = options
     void this.establishConnection()
+  }
+
+  /** Opens the socket only if nothing else already has it open. */
+  ensureConnected(): void {
+    if (this.socket === null) {
+      void this.establishConnection()
+    }
+  }
+
+  /** Subscribes to every incoming message; returns the unsubscribe. */
+  addMessageListener(listener: EventHandler<ChatMessage>): () => void {
+    this.messageListeners.add(listener)
+    return () => {
+      this.messageListeners.delete(listener)
+    }
   }
 
   disconnect(): void {
@@ -206,7 +228,11 @@ class WebSocketClient {
     })
 
     this.socket.on('chat:message', (data: Record<string, unknown>) => {
-      this.handlers.onMessage?.(mapServerMessage(data))
+      const message = mapServerMessage(data)
+      this.handlers.onMessage?.(message)
+      this.messageListeners.forEach((listener) => {
+        listener(message)
+      })
     })
 
     this.socket.on('chat:read', (data: Record<string, unknown>) => {

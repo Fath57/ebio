@@ -5,9 +5,9 @@ export const messageTypeEnum = z.enum(['TEXT', 'PHOTO', 'VOICE', 'LOCATION']).me
   description: 'Type of chat message',
 })
 
-export const conversationKindEnum = z.enum(['SUPPLIER', 'COURIER']).meta({
+export const conversationKindEnum = z.enum(['SUPPLIER', 'COURIER', 'SUPPORT']).meta({
   title: 'ConversationKind',
-  description: 'SUPPLIER: buyer ↔ shop thread; COURIER: buyer ↔ courier thread about one delivery',
+  description: 'SUPPLIER: buyer ↔ shop thread; COURIER: buyer ↔ courier thread about one delivery; SUPPORT: the permanent thread between a buyer and eBio',
 })
 
 export const createConversationSchema = z.object({

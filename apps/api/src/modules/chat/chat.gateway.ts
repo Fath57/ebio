@@ -18,7 +18,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { ChatService } from './chat.service'
 import { wsSendMessageSchema } from './contracts/chat.contract'
 import { Conversation } from './entities/conversation.entity'
-import { MessageType } from './entities/message.entity'
+import { Message, MessageType } from './entities/message.entity'
 
 interface AuthenticatedSocket extends Socket {
   data: {
@@ -134,6 +134,40 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
       this.logger.error(`chat:send error — ${error}`)
       return { success: false, error: 'Failed to send message' }
     }
+  }
+
+  /**
+   * Fan-out for a message that did not come in over the socket: the
+   * back-office answers support over REST, and without this the phone only
+   * learned of the reply on its next refetch — which is what made support
+   * feel like e-mail instead of chat.
+   *
+   * Same room, same event name and same payload as `chat:send`, so the apps
+   * need no idea where the message was written.
+   */
+  async broadcastMessage(conversationId: string, message: Message): Promise<void> {
+    this.server.to(`conversation:${conversationId}`).emit('chat:message', {
+      id: message.id,
+      conversationId,
+      senderId: message.sender.id,
+      senderName: message.sender.name,
+      type: message.type,
+      content: message.content ?? null,
+      mediaUrl: message.mediaUrl ?? null,
+      durationMs: message.durationMs ?? null,
+      latitude: message.latitude ?? null,
+      longitude: message.longitude ?? null,
+      readAt: null,
+      createdAt: message.createdAt.toISOString(),
+    })
+
+    await this.pushToOfflineRecipient(
+      conversationId,
+      message.sender.id,
+      message.sender.name,
+      message.type,
+      message.content,
+    )
   }
 
   /**

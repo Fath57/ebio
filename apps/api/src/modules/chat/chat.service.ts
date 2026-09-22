@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common'
-import { User } from '../auth/auth.entity'
+import { User, UserRole } from '../auth/auth.entity'
 import { Delivery } from '../deliveries/entities/delivery.entity'
 import { Order } from '../orders/entities/order.entity'
 import { Product } from '../products/entities/product.entity'
@@ -143,13 +143,43 @@ export class ChatService {
     return conversation
   }
 
+  /**
+   * The buyer's permanent thread with eBio, created the first time they open
+   * it. No supplier, no courier: support is a team, and every back-office
+   * member is a participant of every support thread.
+   */
+  async getOrCreateSupportConversation(buyerId: string): Promise<Conversation> {
+    const em = this.em.fork()
+    const existing = await em.findOne(Conversation, {
+      buyer: buyerId,
+      kind: ConversationKind.SUPPORT,
+    })
+    if (existing) {
+      return existing
+    }
+
+    const conversation = em.create(Conversation, {
+      buyer: em.getReference(User, buyerId),
+      kind: ConversationKind.SUPPORT,
+    })
+    await em.persistAndFlush(conversation)
+    return conversation
+  }
+
+  /** Back-office seats: they read and answer every support thread. */
+  private async isStaff(em: EntityManager, userId: string): Promise<boolean> {
+    const user = await em.findOne(User, { id: userId })
+    return user?.role === UserRole.ADMIN
+  }
+
   async getConversations(userId: string): Promise<ConversationListEntry[]> {
     const em = this.em.fork()
 
+    const staff = await this.isStaff(em, userId)
     const conversations = await em.find(
       Conversation,
       {
-        $or: this.participantFilter(userId),
+        $or: this.participantFilter(userId, staff),
         archivedAt: null,
       },
       {
@@ -298,11 +328,35 @@ export class ChatService {
     return count
   }
 
+  /**
+   * What the back-office badge shows: support messages written by a buyer
+   * that nobody on the team has opened yet.
+   *
+   * Raw SQL because the condition compares two columns — the sender is the
+   * thread's own buyer — which the query builder cannot express. Counting
+   * this way stays one index scan however many threads exist, so the badge
+   * can be polled every few seconds without weighing on the API.
+   */
+  async countUnreadSupport(): Promise<{ threads: number, messages: number }> {
+    const rows = await this.em.getConnection().execute<Array<{ threads: number, messages: number }>>(
+      `SELECT COUNT(DISTINCT m.conversation_id)::int AS threads,
+              COUNT(*)::int AS messages
+       FROM messages m
+       JOIN conversations c ON c.id = m.conversation_id
+       WHERE c.kind = 'SUPPORT'
+         AND c.archived_at IS NULL
+         AND m.read_at IS NULL
+         AND m.sender_id = c.buyer_id`,
+    )
+
+    return { threads: rows[0]?.threads ?? 0, messages: rows[0]?.messages ?? 0 }
+  }
+
   async getUnreadCount(userId: string): Promise<number> {
     const em = this.em.fork()
 
     const conversations = await em.find(Conversation, {
-      $or: this.participantFilter(userId),
+      $or: this.participantFilter(userId, await this.isStaff(em, userId)),
       archivedAt: null,
     })
 
@@ -318,13 +372,21 @@ export class ChatService {
     })
   }
 
-  /** Every conversation the user takes part in, whichever seat they hold. */
-  participantFilter(userId: string): Array<Record<string, unknown>> {
-    return [
+  /**
+   * Every conversation the user takes part in, whichever seat they hold.
+   * A back-office seat additionally holds every support thread — that is what
+   * makes support answerable by whoever is on duty.
+   */
+  participantFilter(userId: string, staff = false): Array<Record<string, unknown>> {
+    const seats: Array<Record<string, unknown>> = [
       { buyer: userId },
       { supplier: { user: userId } },
       { courier: { user: userId } },
     ]
+    if (staff) {
+      seats.push({ kind: ConversationKind.SUPPORT })
+    }
+    return seats
   }
 
   generatePromptMessage(productName: string, distance?: string): string {
@@ -380,8 +442,10 @@ export class ChatService {
     const isBuyer = conversation.buyer.id === userId
     const isSupplierUser = conversation.supplier?.user.id === userId
     const isCourierUser = conversation.courier?.user.id === userId
+    const isSupportStaff = conversation.kind === ConversationKind.SUPPORT
+      && await this.isStaff(em, userId)
 
-    if (!isBuyer && !isSupplierUser && !isCourierUser) {
+    if (!isBuyer && !isSupplierUser && !isCourierUser && !isSupportStaff) {
       throw new ForbiddenException('You are not a participant of this conversation')
     }
 

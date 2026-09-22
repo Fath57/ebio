@@ -1061,6 +1061,15 @@ export type CreateConversation = {
 };
 
 /**
+ * SupportReply
+ *
+ * A back-office answer in a support thread
+ */
+export type SupportReply = {
+  content: string;
+};
+
+/**
  * CreatePublication
  */
 export type CreatePublication = {
@@ -8049,6 +8058,17 @@ export type ChatControllerCreateConversationResponses = {
   201: unknown;
 };
 
+export type ChatControllerOpenSupportConversationData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/chat/conversations/support";
+};
+
+export type ChatControllerOpenSupportConversationResponses = {
+  201: unknown;
+};
+
 export type ChatControllerCreateDeliveryConversationData = {
   body?: never;
   path: {
@@ -8115,6 +8135,61 @@ export type ChatControllerGetQuickRepliesData = {
 
 export type ChatControllerGetQuickRepliesResponses = {
   200: unknown;
+};
+
+export type SupportControllerListThreadsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/support/conversations";
+};
+
+export type SupportControllerListThreadsResponses = {
+  200: unknown;
+};
+
+export type SupportControllerUnreadData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/support/unread";
+};
+
+export type SupportControllerUnreadResponses = {
+  200: unknown;
+};
+
+export type SupportControllerListMessagesData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/support/conversations/{id}/messages";
+};
+
+export type SupportControllerListMessagesResponses = {
+  200: unknown;
+};
+
+export type SupportControllerReplyData = {
+  /**
+   * SupportReply
+   *
+   * A back-office answer in a support thread
+   */
+  body: {
+    content: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/support/conversations/{id}/messages";
+};
+
+export type SupportControllerReplyResponses = {
+  201: unknown;
 };
 
 export type RatingsControllerCreateReviewData = {

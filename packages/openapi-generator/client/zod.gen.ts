@@ -809,6 +809,15 @@ export const zCreateConversation = z.object({
 });
 
 /**
+ * SupportReply
+ *
+ * A back-office answer in a support thread
+ */
+export const zSupportReply = z.object({
+  content: z.string().min(1).max(4000),
+});
+
+/**
  * CreatePublication
  */
 export const zCreatePublication = z.object({
@@ -6783,6 +6792,12 @@ export const zChatControllerCreateConversationData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zChatControllerOpenSupportConversationData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zChatControllerCreateDeliveryConversationData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -6820,6 +6835,36 @@ export const zChatControllerShareWhatsAppData = z.object({
 
 export const zChatControllerGetQuickRepliesData = z.object({
   body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupportControllerListThreadsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupportControllerUnreadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupportControllerListMessagesData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupportControllerReplyData = z.object({
+  body: z.object({
+    content: z.string().min(1).max(4000),
+  }),
   path: z.object({
     id: z.string(),
   }),

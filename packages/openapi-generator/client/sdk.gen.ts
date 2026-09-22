@@ -178,6 +178,8 @@ import type {
   ChatControllerGetQuickRepliesResponses,
   ChatControllerGetUnreadCountData,
   ChatControllerGetUnreadCountResponses,
+  ChatControllerOpenSupportConversationData,
+  ChatControllerOpenSupportConversationResponses,
   ChatControllerShareWhatsAppData,
   ChatControllerShareWhatsAppResponses,
   CheckoutsControllerCompensateData,
@@ -592,6 +594,14 @@ import type {
   SupplierWalletControllerTopupResponses,
   SupplierWalletControllerVerifyTopupData,
   SupplierWalletControllerVerifyTopupResponses,
+  SupportControllerListMessagesData,
+  SupportControllerListMessagesResponses,
+  SupportControllerListThreadsData,
+  SupportControllerListThreadsResponses,
+  SupportControllerReplyData,
+  SupportControllerReplyResponses,
+  SupportControllerUnreadData,
+  SupportControllerUnreadResponses,
   TrainingControllerCompleteModuleData,
   TrainingControllerCompleteModuleResponses,
   TrainingControllerGetDownloadUrlData,
@@ -4136,6 +4146,17 @@ export const chatControllerCreateConversation = <
     },
   });
 
+export const chatControllerOpenSupportConversation = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<ChatControllerOpenSupportConversationData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    ChatControllerOpenSupportConversationResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/chat/conversations/support", ...options });
+
 export const chatControllerCreateDeliveryConversation = <
   ThrowOnError extends boolean = false,
 >(
@@ -4188,6 +4209,53 @@ export const chatControllerGetQuickReplies = <
     unknown,
     ThrowOnError
   >({ url: "/api/chat/suppliers/{id}/quick-replies", ...options });
+
+export const supportControllerListThreads = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SupportControllerListThreadsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SupportControllerListThreadsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/support/conversations", ...options });
+
+export const supportControllerUnread = <ThrowOnError extends boolean = false>(
+  options?: Options<SupportControllerUnreadData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SupportControllerUnreadResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/support/unread", ...options });
+
+export const supportControllerListMessages = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupportControllerListMessagesData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SupportControllerListMessagesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/support/conversations/{id}/messages", ...options });
+
+export const supportControllerReply = <ThrowOnError extends boolean = false>(
+  options: Options<SupportControllerReplyData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SupportControllerReplyResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/support/conversations/{id}/messages",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const ratingsControllerCreateReview = <
   ThrowOnError extends boolean = false,

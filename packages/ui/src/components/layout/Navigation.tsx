@@ -25,6 +25,8 @@ export interface NavigationItem {
   hideOnDesktop?: boolean
   /** Match the route exactly instead of by prefix (for index routes like /admin). */
   end?: boolean
+  /** Unread counter shown next to the label; 0 or undefined shows nothing. */
+  badge?: number
 }
 
 export interface NavigationSection {
@@ -59,6 +61,19 @@ interface NavigationItemProps {
   className?: string
 }
 
+/** The counter itself: loud on purpose, since it means someone is waiting. */
+function NavigationBadge({ count }: { count: number }) {
+  if (count <= 0) {
+    return null
+  }
+  return (
+    <span className="bg-destructive text-destructive-foreground ml-1 inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[11px] font-semibold leading-none">
+      {count > 99 ? '99+' : count}
+    </span>
+  )
+}
+NavigationBadge.displayName = 'NavigationBadge'
+
 function NavigationItemComponent({ item, className, isMobile = false, onItemClick }: NavigationItemProps) {
   const baseClassName = cn(
     className,
@@ -83,6 +98,7 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
       >
         {item.icon}
         <span>{item.label}</span>
+        <NavigationBadge count={item.badge ?? 0} />
       </button>
     )
   }
@@ -96,6 +112,7 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
       >
         {item.icon}
         <span>{item.label}</span>
+        <NavigationBadge count={item.badge ?? 0} />
       </Link>
     )
   }
@@ -111,6 +128,7 @@ function NavigationItemComponent({ item, className, isMobile = false, onItemClic
     >
       {item.icon}
       <span>{item.label}</span>
+      <NavigationBadge count={item.badge ?? 0} />
     </NavLink>
   )
 }
@@ -252,6 +270,7 @@ function NavigationGroupDropdown({ section }: NavigationGroupDropdownProps) {
             >
               {item.icon}
               <span>{item.label}</span>
+              <NavigationBadge count={item.badge ?? 0} />
             </Link>
           </DropdownMenuItem>
         ))}

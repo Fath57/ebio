@@ -17,6 +17,7 @@ import {
   Images,
   Landmark,
   LayoutDashboard,
+  LifeBuoy,
   LogOut,
   Monitor,
   Moon,
@@ -42,6 +43,7 @@ import logoImg from '@/assets/images/logo.png'
 import useTheme from '@/hooks/useTheme'
 import { authClient } from '@/lib/auth-client'
 import { useAbility } from '@/lib/casl/ability-context'
+import { useSupportUnread } from '../admin/support/utils/use-support-unread'
 
 interface NavPermission {
   action: Actions
@@ -55,6 +57,7 @@ interface AdminNavItem {
   end?: boolean
   /** Omitted = visible to every staff member (dashboard). */
   permission?: NavPermission
+  badge?: number
 }
 
 interface AdminNavSection {
@@ -69,6 +72,7 @@ export default function AppLayout() {
   const navigate = useNavigate()
   const hasLoadedOnce = useRef(false)
   const [theme, resolvedTheme, setTheme] = useTheme()
+  const supportUnread = useSupportUnread(role === 'ADMIN')
 
   const handleLogout = async () => {
     await authClient.signOut()
@@ -170,6 +174,16 @@ export default function AppLayout() {
       items: [
         { to: '/admin/utilisateurs', label: t('nav.users'), icon: <Users className="h-4 w-4" />, permission: { action: 'read', subject: 'User' } },
         { to: '/admin/moderation', label: t('nav.moderation'), icon: <ShieldCheck className="h-4 w-4" />, permission: { action: 'manage', subject: 'ContentReport' } },
+      ],
+    },
+    {
+      items: [
+        {
+          to: '/admin/support',
+          label: t('nav.support'),
+          icon: <LifeBuoy className="h-4 w-4" />,
+          badge: supportUnread,
+        },
       ],
     },
     {

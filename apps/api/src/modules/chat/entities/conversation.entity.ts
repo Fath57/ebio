@@ -16,11 +16,17 @@ import { Supplier } from '../../suppliers/supplier.entity'
 /**
  * Who the buyer is talking to. SUPPLIER threads are one per buyer↔shop pair;
  * COURIER threads are one per delivery, between the buyer and the courier
- * assigned to it.
+ * assigned to it; SUPPORT is the permanent thread with eBio itself.
+ *
+ * A SUPPORT thread carries neither supplier nor courier: support is a team,
+ * not a person. Any back-office member answers it, and the buyer always sees
+ * the same correspondent — assigning an agent would make the thread go quiet
+ * the day that agent is off.
  */
 export enum ConversationKind {
   SUPPLIER = 'SUPPLIER',
   COURIER = 'COURIER',
+  SUPPORT = 'SUPPORT',
 }
 
 @Entity({ tableName: 'conversations' })

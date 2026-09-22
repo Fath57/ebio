@@ -1,6 +1,6 @@
 import { chatFetch } from '../../utils/api-client'
 
-export type ConversationKind = 'SUPPLIER' | 'COURIER'
+export type ConversationKind = 'SUPPLIER' | 'COURIER' | 'SUPPORT'
 
 export interface DeliveryConversation {
   conversationId: string
