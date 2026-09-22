@@ -401,12 +401,11 @@ export function CartScreen({
           il faut lui laisser sa hauteur sous peine de cacher le bouton. */}
       <FadeInView delay={300}>
         <View style={[styles.grandTotalBar, { backgroundColor: semantic.bgCard, paddingBottom: tabBarHeight + spacing[5] }]}>
-          <View>
+          <View style={styles.grandTotalRow}>
             <Text style={[styles.grandTotalLabel, { color: semantic.textSecondary }]}>
               {totalItemCount}
               {' article'}
               {totalItemCount > 1 ? 's' : ''}
-
             </Text>
             <Text style={[styles.grandTotalValue, { color: semantic.textPrimary }]}>
               {formatPrice(grandTotal)}
@@ -414,6 +413,8 @@ export function CartScreen({
               FCFA
             </Text>
           </View>
+          {/* Full width and anchored: the one action of the screen should not
+              have to be aimed at, and the amount stays legible beside it. */}
           <TouchableOpacity
             style={styles.orderButton}
             onPress={onCheckout}
@@ -686,7 +687,7 @@ const styles = StyleSheet.create({
   },
   orderButton: {
     flexDirection: 'row',
-    minHeight: 52,
+    height: 52,
     backgroundColor: colors.green[400],
     borderRadius: radius.pill,
     justifyContent: 'center',
@@ -705,9 +706,7 @@ const styles = StyleSheet.create({
 
   /* Grand total bar */
   grandTotalBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    gap: spacing[3],
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[4],
     paddingBottom: Platform.OS === 'ios' ? spacing[6] : spacing[4],
@@ -715,8 +714,13 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     ...shadows.lg,
   },
+  grandTotalRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+  },
   grandTotalLabel: {
-    ...typography.caption,
+    ...typography.bodyS,
   },
   grandTotalValue: {
     fontFamily: fonts.mono,

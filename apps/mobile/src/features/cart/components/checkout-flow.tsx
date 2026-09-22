@@ -689,7 +689,7 @@ export function CheckoutFlow({
   if (currentStep === 'SUMMARY') {
     return (
       <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Validation de la commande" onBack={onCancel} />
+        <ScreenHeader title="Votre commande" onBack={onCancel} />
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
@@ -961,6 +961,8 @@ export function CheckoutFlow({
               FCFA
             </Text>
           </View>
+          {/* Full width, below the amount: the only action of the screen is
+              not something to aim at with a thumb. */}
           <TouchableOpacity
             style={[styles.confirmButton, (isSubmitting || quoteBlocked) && styles.buttonDisabled]}
             onPress={handleProceedToPayment}
@@ -1388,8 +1390,6 @@ const styles = StyleSheet.create({
 
   // Bottom bar
   bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
     gap: spacing[3],
     paddingHorizontal: spacing[4],
     paddingTop: spacing[3],
@@ -1405,7 +1405,9 @@ const styles = StyleSheet.create({
     }),
   },
   bottomPriceCol: {
-    gap: 2,
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
   },
   bottomPriceLabel: {
     fontFamily: fonts.sans,
@@ -1416,14 +1418,13 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   confirmButton: {
-    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: spacing[2],
     height: 52,
     backgroundColor: colors.green[400],
-    borderRadius: radius.lg,
+    borderRadius: radius.pill,
   },
   confirmButtonText: {
     fontFamily: fonts.sansBd,

@@ -2,7 +2,7 @@ import type { ReactNode } from 'react'
 import ChevronLeft from 'lucide-react-native/dist/esm/icons/chevron-left'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { colors, fonts, radius, spacing } from '../../../theme/theme'
+import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 
 /**
@@ -42,10 +42,18 @@ export function ScreenHeader({
   const isTransparent = variant === 'transparent'
 
   // Sur média, l'écran est plein cadre : la barre absorbe elle-même l'encoche.
+  // The header sits on the page rather than on a bar of its own: a filled
+  // strip with a rule under it read as one more slab stacked on the content,
+  // and the title is strong enough on its own to say where we are.
   const containerStyle = isTransparent
     ? [styles.header, styles.headerTransparent, { paddingTop: insets.top + spacing[2] }]
-    : [styles.header, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderLight }]
+    : [styles.header, { backgroundColor: semantic.bgPage }]
 
+  // A root screen's title is the page's identity and carries it at full size;
+  // a stacked screen's title is a breadcrumb, sharing the row with a back
+  // button and possibly an action, so it takes the step below. Giving both the
+  // same size truncated the longer ones.
+  const titleSize = onBack ? styles.titleStacked : styles.titleRoot
   const titleColor = isTransparent ? colors.neutral[0] : semantic.textPrimary
   const subtitleColor = isTransparent ? 'rgba(255,255,255,0.85)' : semantic.textTertiary
 
@@ -78,7 +86,7 @@ export function ScreenHeader({
             <View style={styles.titleWrap} pointerEvents="none">
               {title
                 ? (
-                    <Text style={[styles.title, { color: titleColor }]} numberOfLines={1}>
+                    <Text style={[styles.title, titleSize, { color: titleColor }]} numberOfLines={1}>
                       {title}
                     </Text>
                   )
@@ -107,7 +115,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: spacing[3],
     paddingVertical: spacing[3],
-    borderBottomWidth: 1,
   },
   headerTransparent: {
     position: 'absolute',
@@ -143,8 +150,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontFamily: fonts.sansBd,
-    fontSize: 18,
+    flexShrink: 1,
+  },
+  /** Charter h1: with the bar gone, the title alone carries the page. */
+  titleRoot: {
+    ...typography.h1,
+  },
+  /** Charter h2: shares its row with a back button and an action. */
+  titleStacked: {
+    ...typography.h2,
   },
   subtitle: {
     fontFamily: fonts.sans,
