@@ -419,7 +419,7 @@ export type CreatePaymentMethodInput = {
   name: string;
   code: string;
   type: "mobile" | "card";
-  provider: "fedapay" | "stripe" | "pawerpayer";
+  provider: "fedapay" | "stripe" | "pawerpayer" | "intram";
   countryCode: string;
   commission: number;
   priority: number;
@@ -438,7 +438,7 @@ export type UpdatePaymentMethodInput = {
   name?: string;
   code?: string;
   type?: "mobile" | "card";
-  provider?: "fedapay" | "stripe" | "pawerpayer";
+  provider?: "fedapay" | "stripe" | "pawerpayer" | "intram";
   countryCode?: string;
   commission?: number;
   priority?: number;
@@ -711,7 +711,7 @@ export type CreateCheckout = {
   deliveryLongitude?: number;
   paymentMethod: PaymentMethod;
   promoCode?: string;
-  deliverySlot?: Date;
+  deliverySlot?: string;
 };
 
 /**
@@ -1384,7 +1384,7 @@ export type PaymentMethodOutput = {
   name: string;
   code: string;
   type: "mobile" | "card";
-  provider: "fedapay" | "stripe" | "pawerpayer";
+  provider: "fedapay" | "stripe" | "pawerpayer" | "intram";
   countryCode: string;
   commission: number;
   priority: number;
@@ -1471,6 +1471,8 @@ export type CartPaymentResult = {
   amount: number;
   status: "pending" | "completed";
   paymentIds: Array<string>;
+  paymentUrl?: string | null;
+  providerTransactionId?: string | null;
 };
 
 /**
@@ -1527,6 +1529,7 @@ export const PaymentProvider = {
   FEDAPAY: "fedapay",
   STRIPE: "stripe",
   PAWERPAYER: "pawerpayer",
+  INTRAM: "intram",
 } as const;
 
 /**
@@ -6819,7 +6822,7 @@ export type OrdersControllerCreateCheckoutData = {
      */
     paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
     promoCode?: string;
-    deliverySlot?: Date;
+    deliverySlot?: string;
   };
   path?: never;
   query?: never;
@@ -7239,6 +7242,21 @@ export type PaymentsWebhookControllerHandleFedaPayWebhookResponses = {
   201: unknown;
 };
 
+export type PaymentsWebhookControllerHandleIntramWebhookData = {
+  body?: never;
+  headers: {
+    "x-intram-signature": string;
+    "x-intram-timestamp": string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/intram";
+};
+
+export type PaymentsWebhookControllerHandleIntramWebhookResponses = {
+  201: unknown;
+};
+
 export type PaymentsWebhookControllerHandleStripeWebhookData = {
   body?: never;
   headers: {
@@ -7291,7 +7309,7 @@ export type PaymentMethodAdminControllerCreateData = {
     name: string;
     code: string;
     type: "mobile" | "card";
-    provider: "fedapay" | "stripe" | "pawerpayer";
+    provider: "fedapay" | "stripe" | "pawerpayer" | "intram";
     countryCode: string;
     commission: number;
     priority: number;
@@ -7363,7 +7381,7 @@ export type PaymentMethodAdminControllerUpdateData = {
     name?: string;
     code?: string;
     type?: "mobile" | "card";
-    provider?: "fedapay" | "stripe" | "pawerpayer";
+    provider?: "fedapay" | "stripe" | "pawerpayer" | "intram";
     countryCode?: string;
     commission?: number;
     priority?: number;

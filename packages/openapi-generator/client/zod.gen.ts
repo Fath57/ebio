@@ -280,7 +280,7 @@ export const zCreatePaymentMethodInput = z.object({
   name: z.string().min(1).max(255),
   code: z.string().min(1).max(255),
   type: z.enum(["mobile", "card"]),
-  provider: z.enum(["fedapay", "stripe", "pawerpayer"]),
+  provider: z.enum(["fedapay", "stripe", "pawerpayer", "intram"]),
   countryCode: z.string().min(2).max(3),
   commission: z.number().gte(0).lte(100).default(0),
   priority: z.int().gte(0).lte(9007199254740991).default(0),
@@ -299,7 +299,7 @@ export const zUpdatePaymentMethodInput = z.object({
   name: z.optional(z.string().min(1).max(255)),
   code: z.optional(z.string().min(1).max(255)),
   type: z.optional(z.enum(["mobile", "card"])),
-  provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer"])),
+  provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer", "intram"])),
   countryCode: z.optional(z.string().min(2).max(3)),
   commission: z.optional(z.number().gte(0).lte(100)),
   priority: z.optional(z.int().gte(0).lte(9007199254740991)),
@@ -1000,7 +1000,7 @@ export const zPaymentMethodOutput = z.object({
   name: z.string(),
   code: z.string(),
   type: z.enum(["mobile", "card"]),
-  provider: z.enum(["fedapay", "stripe", "pawerpayer"]),
+  provider: z.enum(["fedapay", "stripe", "pawerpayer", "intram"]),
   countryCode: z.string(),
   commission: z.number(),
   priority: z.int().gte(-9007199254740991).lte(9007199254740991),
@@ -1115,6 +1115,8 @@ export const zCartPaymentResult = z.object({
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
   ),
+  paymentUrl: z.optional(z.union([z.string(), z.null()])),
+  providerTransactionId: z.optional(z.union([z.string(), z.null()])),
 });
 
 /**
@@ -1150,7 +1152,12 @@ export const zPaymentStatus = z.enum([
  *
  * Payment gateway provider
  */
-export const zPaymentProvider = z.enum(["fedapay", "stripe", "pawerpayer"]);
+export const zPaymentProvider = z.enum([
+  "fedapay",
+  "stripe",
+  "pawerpayer",
+  "intram",
+]);
 
 /**
  * PaymentStatusResponse
@@ -2336,13 +2343,7 @@ export const zCreateCheckout = z.object({
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   paymentMethod: zPaymentMethod,
   promoCode: z.optional(z.string().max(50)),
-  deliverySlot: z.optional(
-    z.iso
-      .datetime()
-      .regex(
-        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-      ),
-  ),
+  deliverySlot: z.optional(z.string().max(200)),
 });
 
 /**
@@ -5902,13 +5903,7 @@ export const zOrdersControllerCreateCheckoutData = z.object({
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
     promoCode: z.optional(z.string().max(50)),
-    deliverySlot: z.optional(
-      z.iso
-        .datetime()
-        .regex(
-          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-        ),
-    ),
+    deliverySlot: z.optional(z.string().max(200)),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -6227,6 +6222,16 @@ export const zPaymentsWebhookControllerHandleFedaPayWebhookData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zPaymentsWebhookControllerHandleIntramWebhookData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+  headers: z.object({
+    "x-intram-signature": z.string(),
+    "x-intram-timestamp": z.string(),
+  }),
+});
+
 export const zPaymentsWebhookControllerHandleStripeWebhookData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -6258,7 +6263,7 @@ export const zPaymentMethodAdminControllerCreateData = z.object({
     name: z.string().min(1).max(255),
     code: z.string().min(1).max(255),
     type: z.enum(["mobile", "card"]),
-    provider: z.enum(["fedapay", "stripe", "pawerpayer"]),
+    provider: z.enum(["fedapay", "stripe", "pawerpayer", "intram"]),
     countryCode: z.string().min(2).max(3),
     commission: z.number().gte(0).lte(100).default(0),
     priority: z.int().gte(0).lte(9007199254740991).default(0),
@@ -6315,7 +6320,7 @@ export const zPaymentMethodAdminControllerUpdateData = z.object({
     name: z.optional(z.string().min(1).max(255)),
     code: z.optional(z.string().min(1).max(255)),
     type: z.optional(z.enum(["mobile", "card"])),
-    provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer"])),
+    provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer", "intram"])),
     countryCode: z.optional(z.string().min(2).max(3)),
     commission: z.optional(z.number().gte(0).lte(100)),
     priority: z.optional(z.int().gte(0).lte(9007199254740991)),

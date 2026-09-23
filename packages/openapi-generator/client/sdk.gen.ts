@@ -396,6 +396,8 @@ import type {
   PaymentsControllerVerifyCheckoutPaymentResponses,
   PaymentsWebhookControllerHandleFedaPayWebhookData,
   PaymentsWebhookControllerHandleFedaPayWebhookResponses,
+  PaymentsWebhookControllerHandleIntramWebhookData,
+  PaymentsWebhookControllerHandleIntramWebhookResponses,
   PaymentsWebhookControllerHandlePawerPayerWebhookData,
   PaymentsWebhookControllerHandlePawerPayerWebhookResponses,
   PaymentsWebhookControllerHandleStripeWebhookData,
@@ -3532,6 +3534,20 @@ export const paymentsWebhookControllerHandleFedaPayWebhook = <
     unknown,
     ThrowOnError
   >({ url: "/api/payments/webhook/fedapay", ...options });
+
+export const paymentsWebhookControllerHandleIntramWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    PaymentsWebhookControllerHandleIntramWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    PaymentsWebhookControllerHandleIntramWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/intram", ...options });
 
 export const paymentsWebhookControllerHandleStripeWebhook = <
   ThrowOnError extends boolean = false,
