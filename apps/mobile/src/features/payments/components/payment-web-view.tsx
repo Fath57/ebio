@@ -172,11 +172,15 @@ export function PaymentWebView({
         <View style={styles.backButton} />
       </View>
 
+      {/* The provider's page ends with its pay button, and the gesture bar
+          sat over it. The inset belongs under the WebView, not inside it:
+          a page we do not control cannot be asked to leave room. */}
       <WebView
+        style={styles.webView}
+        containerStyle={{ paddingBottom: insets.bottom }}
         source={url ? { uri: url } : { html: html ?? '' }}
         onNavigationStateChange={handleNavigation}
         onMessage={handleMessage}
-        style={styles.webView}
         javaScriptEnabled
         domStorageEnabled
         startInLoadingState

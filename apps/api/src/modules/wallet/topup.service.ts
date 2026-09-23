@@ -131,6 +131,18 @@ export class TopupService {
 
     this.em.clear()
     const fresh = await this.em.findOneOrFail(WalletTopup, { id: topupId }, { populate: ['wallet'] })
+
+    // Anything but a settled topup is an error, not a 200 with a status in
+    // the body. Answering 200 for a payment still in flight let every caller
+    // read the HTTP code and announce a recharge that had not happened.
+    if (fresh.status !== TopupStatus.COMPLETED) {
+      throw new BadRequestException(
+        fresh.status === TopupStatus.FAILED
+          ? 'Le paiement a échoué'
+          : 'Paiement pas encore confirmé',
+      )
+    }
+
     return { status: fresh.status, balance: Number(fresh.wallet.balance) }
   }
 
