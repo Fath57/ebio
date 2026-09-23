@@ -30,14 +30,44 @@ La phase 0 n'est donc pas une phase de code, et elle a un droit de veto.
 
 ### Phase 0 — Mesurer, avant de s'engager
 
-1. Recueillir une trentaine d'enregistrements réels : des demandes de courses
-   dites en français béninois, dont une moitié en environnement bruyant.
-2. Les passer à travers trois oreilles : la reconnaissance **native Android**
-   (gratuite), Whisper, et un service de flux.
-3. Comparer sur ce qui compte, pas sur le taux de mots : **les noms de produits
-   et les quantités sont-ils justes ?** « Deux kilos » entendu « douze kilos »
-   est une erreur qui coûte de l'argent ; une virgule manquée n'en est pas une.
-4. Mesurer la latence d'un aller-retour complet depuis Cotonou.
+#### 0a. Constituer le corpus
+
+Vérifié : la base ne contient que neuf notes vocales, qui sont des essais de
+chat. Il n'existe pas de corpus, et il faut le créer.
+
+Ces neuf-là ne seraient d'ailleurs pas utilisables : elles ont été enregistrées
+pour parler à un commerçant, pas pour être envoyées à un service de
+transcription tiers. Le corpus se constitue **exprès**, avec des gens qui savent
+à quoi il sert.
+
+Ce n'est pas un travail de recherche, c'est un après-midi :
+
+- **30 enregistrements**, 5 à 15 secondes chacun ;
+- **6 à 8 voix différentes** — pas seulement la nôtre : des femmes et des
+  hommes, des âges différents, des accents différents. Une seule voix ne mesure
+  rien ;
+- chacun dit **3 ou 4 demandes de courses** comme il les dirait vraiment, sans
+  lire une phrase préparée : « il me faut du gari, deux bouteilles d'huile rouge
+  et un peu de piment » ;
+- **la moitié dans le bruit** : dehors, au marché, avec la télévision ou un
+  ventilateur. C'est la condition réelle, pas la condition confortable ;
+- y glisser volontairement les pièges : **les quantités** (« deux » contre
+  « douze »), les noms de produits locaux (gari, sohui, akassa), et au moins
+  deux demandes qui se corrigent en cours de route — « non, plutôt trois kilos ».
+
+Pour chaque enregistrement, noter **ce qui a été dit réellement** : sans cette
+référence écrite, on ne peut rien scorer.
+
+#### 0b. Comparer les oreilles
+
+Passer le corpus à travers la reconnaissance **native Android** (gratuite, à
+tester sur le téléphone), Whisper, et un service de flux.
+
+Comparer sur ce qui compte, pas sur le taux de mots : **les noms de produits et
+les quantités sont-ils justes ?** « Deux kilos » entendu « douze kilos » est une
+erreur qui coûte de l'argent ; une virgule manquée n'en est pas une.
+
+Mesurer aussi la latence d'un aller-retour complet depuis Cotonou.
 
 **Critère de sortie** : si le gratuit tient, la pile économique est validée et le
 projet est facile. Sinon on sait ce qu'il faut payer. Si aucune option ne tient
