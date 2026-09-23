@@ -6,7 +6,7 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
-import { FedaPayGateway } from '../payments/gateways/fedapay.gateway'
+import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { Supplier } from '../suppliers/supplier.entity'
 import { PayoutNumber, PayoutNumberStatus } from './entities/payout-number.entity'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
@@ -37,13 +37,23 @@ interface Payee {
 @Injectable()
 export class WithdrawalsService {
   private readonly logger = new Logger(WithdrawalsService.name)
-  private readonly fedapay = new FedaPayGateway()
 
   constructor(
     private readonly em: EntityManager,
     private readonly walletService: WalletService,
     private readonly notificationsService: NotificationsService,
+    private readonly gatewayFactory: PaymentGatewayFactory,
   ) {}
+
+  /**
+   * Whoever sends money out in this deployment.
+   *
+   * Read per call rather than held: the provider is configuration, and a
+   * cached instance would outlive a change of it.
+   */
+  private payoutGateway() {
+    return this.gatewayFactory.createPayoutGateway()
+  }
 
   // ---------- Payout numbers ----------
 
@@ -204,7 +214,7 @@ export class WithdrawalsService {
 
     try {
       const [firstname, ...rest] = (number.holderName || payee.displayName).split(' ')
-      const result = await this.fedapay.createPayout({
+      const result = await this.payoutGateway().createPayout({
         amount: Math.round(Number(withdrawal.amount)),
         phoneNumber: number.phoneNumber,
         mode: number.operator,
@@ -221,15 +231,15 @@ export class WithdrawalsService {
       // The payout never left: fail the request and give the money back.
       // Never JSON.stringify here: provider errors carry circular refs. The
       // FedaPay SDK throws plain objects whose useful part sits in .message
-      // or .errorMessage.
+      // or .errorMessage; INTRAM throws a plain Error.
       const raw = error as { message?: unknown, errorMessage?: unknown } | null
       const detail = String(raw?.message ?? raw?.errorMessage ?? error)
-      this.logger.error(`FedaPay payout failed for withdrawal ${withdrawal.id}: ${detail}`)
+      this.logger.error(`Reversement refusé par le prestataire pour ${withdrawal.id} : ${detail}`)
       withdrawal.status = WithdrawalStatus.FAILED
       withdrawal.processedAt = new Date()
       await this.em.flush()
       await this.refund(withdrawal, 'Échec du versement — solde rétabli')
-      throw new BadRequestException('Le versement FedaPay a échoué ; le solde du bénéficiaire est rétabli')
+      throw new BadRequestException('Le versement a échoué ; le solde du bénéficiaire est rétabli')
     }
 
     return this.mapWithdrawal(withdrawal)
@@ -347,7 +357,7 @@ export class WithdrawalsService {
       return
     }
 
-    const check = await this.fedapay.checkPayoutStatus(fedapayPayoutId)
+    const check = await this.payoutGateway().checkPayoutStatus(fedapayPayoutId)
     if (check.status === 'pending') {
       return
     }

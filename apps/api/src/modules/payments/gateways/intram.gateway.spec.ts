@@ -118,7 +118,7 @@ describe('intramGateway', () => {
       const result = await buildGateway({ get: vi.fn(), post }).createPayout({
         amount: 25000,
         phoneNumber: '61234567',
-        mode: 'MTN_BENIN_229',
+        mode: 'mtn_open',
         firstname: 'Ada',
         lastname: 'Lovelace',
         withdrawalId: 'wd-9',
@@ -133,12 +133,45 @@ describe('intramGateway', () => {
       expect(result.payoutId).toBe('op_pay_1')
     })
 
+    // Our operator codes are FedaPay's and sit in `payout_numbers.operator` on
+    // every saved number; INTRAM wants its own. Translating at the edge is
+    // what spares that column a migration.
+    it('traduit nos codes opérateurs vers ceux d\'INTRAM', async () => {
+      const post = vi.fn().mockResolvedValue({ operation_id: 'op' })
+      const gateway = buildGateway({ get: vi.fn(), post })
+      const base = { amount: 1000, phoneNumber: '61234567', firstname: 'A', lastname: 'B', withdrawalId: 'wd' }
+
+      await gateway.createPayout({ ...base, mode: 'mtn_open' })
+      await gateway.createPayout({ ...base, mode: 'moov' })
+      await gateway.createPayout({ ...base, mode: 'sbin' })
+
+      expect(post.mock.calls.map(call => call[1].destination.provider_code)).toEqual([
+        'MTN_BENIN_229',
+        'MOOV_AFRICA_BENIN_229',
+        'SBIN_BENIN_229',
+      ])
+    })
+
+    it('refuse un opérateur inconnu avant que l\'argent ne bouge', async () => {
+      const post = vi.fn()
+      const gateway = buildGateway({ get: vi.fn(), post })
+      await expect(gateway.createPayout({
+        amount: 1000,
+        phoneNumber: '61234567',
+        mode: 'orange_ci',
+        firstname: 'A',
+        lastname: 'B',
+        withdrawalId: 'wd',
+      })).rejects.toThrow(/opérateur inconnu/)
+      expect(post).not.toHaveBeenCalled()
+    })
+
     it('ne double pas l\'indicatif d\'un numéro déjà international', async () => {
       const post = vi.fn().mockResolvedValue({ operation_id: 'op_pay_2' })
       await buildGateway({ get: vi.fn(), post }).createPayout({
         amount: 1000,
         phoneNumber: '22961234567',
-        mode: 'MOOV_AFRICA_BENIN_229',
+        mode: 'moov',
         firstname: 'A',
         lastname: 'B',
         withdrawalId: 'wd-10',

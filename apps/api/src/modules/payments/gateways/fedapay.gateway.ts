@@ -1,8 +1,11 @@
 import type {
   CheckStatusResult,
+  CreatePayoutParams,
   InitiatePaymentParams,
   InitiatePaymentResult,
   PaymentGatewayInterface,
+  PayoutGatewayInterface,
+  PayoutStatusResult,
   RefundResult,
   WebhookResult,
 } from './payment-gateway.interface'
@@ -19,7 +22,7 @@ const FEDAPAY_STATUS_MAP: Record<string, string> = {
   pending: 'pending',
 }
 
-export class FedaPayGateway implements PaymentGatewayInterface {
+export class FedaPayGateway implements PaymentGatewayInterface, PayoutGatewayInterface {
   private readonly logger = new Logger(FedaPayGateway.name)
 
   constructor() {
@@ -99,16 +102,7 @@ export class FedaPayGateway implements PaymentGatewayInterface {
    * provider ids; the caller tracks completion via webhook + polling since
    * the money leaves asynchronously (pending → started → sent | failed).
    */
-  async createPayout(params: {
-    amount: number
-    phoneNumber: string
-    /** FedaPay mode: mtn_open | moov | sbin, derived from the number's prefix. */
-    mode: string
-    firstname: string
-    lastname: string
-    email?: string
-    withdrawalId: string
-  }): Promise<{ payoutId: string, reference: string | null }> {
+  async createPayout(params: CreatePayoutParams): Promise<{ payoutId: string, reference: string | null }> {
     const payout = await Payout.create({
       amount: params.amount,
       currency: { iso: 'XOF' },
@@ -134,11 +128,7 @@ export class FedaPayGateway implements PaymentGatewayInterface {
     }
   }
 
-  async checkPayoutStatus(payoutId: string): Promise<{
-    status: 'pending' | 'sent' | 'failed'
-    reference: string | null
-    errorMessage: string | null
-  }> {
+  async checkPayoutStatus(payoutId: string): Promise<PayoutStatusResult> {
     const payout = await Payout.retrieve(Number(payoutId))
     const raw = payout as unknown as {
       status?: string

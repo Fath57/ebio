@@ -1,6 +1,7 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
 import { NotificationsModule } from '../notifications/notifications.module'
+import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { SuppliersModule } from '../suppliers/suppliers.module'
 import { CourierWalletController } from './courier-wallet.controller'
 import { PayoutNumber } from './entities/payout-number.entity'
@@ -23,7 +24,13 @@ import { WithdrawalsService } from './withdrawals.service'
     SuppliersModule,
   ],
   controllers: [WalletController, SupplierWalletController, CourierWalletController, WalletAdminController],
-  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService],
+  /**
+   * The gateway factory is provided here rather than imported from
+   * `PaymentsModule`: that module already imports this one, and a second
+   * instance of a stateless factory costs nothing — far less than a circular
+   * import held together by `forwardRef`.
+   */
+  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PaymentGatewayFactory],
   exports: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService],
 })
 export class WalletModule {}

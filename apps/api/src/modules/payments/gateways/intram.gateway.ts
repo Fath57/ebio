@@ -1,8 +1,11 @@
 import type {
   CheckStatusResult,
+  CreatePayoutParams,
   InitiatePaymentParams,
   InitiatePaymentResult,
   PaymentGatewayInterface,
+  PayoutGatewayInterface,
+  PayoutStatusResult,
   RefundResult,
   WebhookResult,
 } from './payment-gateway.interface'
@@ -79,7 +82,18 @@ interface IntramTransaction {
  * Fees are added on top of the amount by INTRAM and paid by the customer, so
  * the amount sent here stays the order total, untouched.
  */
-export class IntramGateway implements PaymentGatewayInterface {
+/**
+ * Our operator codes are FedaPay's, because they were there first and they
+ * sit in `payout_numbers.operator` on every saved number. Translating at the
+ * edge keeps that column untouched by a change of provider.
+ */
+const INTRAM_PROVIDER_CODES: Record<string, string> = {
+  mtn_open: 'MTN_BENIN_229',
+  moov: 'MOOV_AFRICA_BENIN_229',
+  sbin: 'SBIN_BENIN_229',
+}
+
+export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInterface {
   private readonly logger = new Logger(IntramGateway.name)
 
   constructor(private readonly client: IntramClient = new IntramClient()) {}
@@ -228,16 +242,14 @@ export class IntramGateway implements PaymentGatewayInterface {
    * taken. `payout.completed` or `payout.failed` says what became of it, and
    * `checkPayoutStatus` is the fallback when no webhook arrives.
    */
-  async createPayout(params: {
-    amount: number
-    phoneNumber: string
-    /** INTRAM provider code, e.g. MTN_BENIN_229. */
-    mode: string
-    firstname: string
-    lastname: string
-    email?: string
-    withdrawalId: string
-  }): Promise<{ payoutId: string, reference: string | null }> {
+  async createPayout(params: CreatePayoutParams): Promise<{ payoutId: string, reference: string | null }> {
+    const providerCode = INTRAM_PROVIDER_CODES[params.mode]
+    if (!providerCode) {
+      // Refusing here beats sending an operator code INTRAM will reject: the
+      // withdrawal fails before the money is reserved, not after.
+      throw new Error(`INTRAM: opérateur inconnu « ${params.mode} »`)
+    }
+
     const operation = await this.client.post<IntramOperation>(
       '/payouts',
       {
@@ -246,7 +258,7 @@ export class IntramGateway implements PaymentGatewayInterface {
         destination: {
           type: 'mobile_money',
           country_code: 'BJ',
-          provider_code: params.mode,
+          provider_code: providerCode,
           // International format without the plus sign, as INTRAM expects.
           msisdn: params.phoneNumber.startsWith('229') ? params.phoneNumber : `229${params.phoneNumber}`,
           account_name: params.firstname,
@@ -265,11 +277,7 @@ export class IntramGateway implements PaymentGatewayInterface {
     }
   }
 
-  async checkPayoutStatus(payoutId: string): Promise<{
-    status: 'pending' | 'sent' | 'failed'
-    reference: string | null
-    errorMessage: string | null
-  }> {
+  async checkPayoutStatus(payoutId: string): Promise<PayoutStatusResult> {
     const operation = await this.client.get<IntramOperation & { error_message?: string }>(`/operations/${payoutId}`)
     const raw = operation.result?.status ?? operation.status
 

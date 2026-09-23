@@ -1,8 +1,10 @@
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { config } from '../../config/env.config'
 import { User } from '../auth/auth.entity'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
-import { FedaPayGateway } from '../payments/gateways/fedapay.gateway'
+import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
+import { PaymentProvider } from '../payments/payment.entity'
 import { Supplier } from '../suppliers/supplier.entity'
 import { TopupStatus, WalletTopup } from './entities/wallet-topup.entity'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
@@ -14,17 +16,31 @@ export type TopupTarget = 'personal' | 'courier' | 'supplier'
 @Injectable()
 export class TopupService {
   private readonly logger = new Logger(TopupService.name)
-  private readonly fedapay = new FedaPayGateway()
 
   constructor(
     private readonly em: EntityManager,
     private readonly walletService: WalletService,
+    private readonly gatewayFactory: PaymentGatewayFactory,
   ) {}
 
   /**
-   * Same pattern as the order checkout: the FedaPay transaction is created
-   * by the Checkout.js widget on the phone; here we only open the pending
-   * topup the widget will settle through verify().
+   * The provider behind the widget the apps embed.
+   *
+   * A top-up is settled by re-reading the transaction the widget produced, so
+   * this has to be the same provider the phone just paid through — asking
+   * FedaPay about an INTRAM reference finds nothing, and the wallet would
+   * never be credited.
+   */
+  private checkoutGateway() {
+    return this.gatewayFactory.createGateway(
+      config.payments.checkoutProvider === 'intram' ? PaymentProvider.INTRAM : PaymentProvider.FEDAPAY,
+    )
+  }
+
+  /**
+   * Same pattern as the order checkout: the transaction is created by the
+   * provider's widget on the phone; here we only open the pending topup the
+   * widget will settle through verify().
    *
    * A courier tops up their courier wallet (to cover the cash-commission
    * debt), never their personal one.
@@ -57,10 +73,10 @@ export class TopupService {
     if (topup.status === TopupStatus.PENDING) {
       let check
       try {
-        check = await this.fedapay.checkStatus(fedapayTransactionId)
+        check = await this.checkoutGateway().checkStatus(fedapayTransactionId)
       }
       catch {
-        throw new BadRequestException('Transaction FedaPay introuvable')
+        throw new BadRequestException('Transaction introuvable chez le prestataire')
       }
       if (check.status === 'completed') {
         if (check.amount !== undefined && check.amount !== Math.round(Number(topup.amount))) {

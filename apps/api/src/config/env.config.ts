@@ -120,6 +120,12 @@ export const configValidationSchema = z.object({
    * decides which gateway verifies what the widget hands back.
    */
   CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
+  /**
+   * Who sends money out. Kept apart from the checkout: taking payments and
+   * paying people can be moved to a new provider one at a time, which is the
+   * only safe way to change either.
+   */
+  PAYOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
 
   // SMS (Africa's Talking)
   AT_API_KEY: z.string().optional(),
@@ -247,6 +253,7 @@ export const config = {
       apiUrl: configParsed.data.PAWERPAYER_API_URL,
     },
     checkoutProvider: configParsed.data.CHECKOUT_PROVIDER,
+    payoutProvider: configParsed.data.PAYOUT_PROVIDER,
     intram: {
       apiKey: configParsed.data.INTRAM_API_KEY,
       secretKey: configParsed.data.INTRAM_SECRET_KEY,

@@ -39,3 +39,38 @@ export interface PaymentGatewayInterface {
   processRefund: (providerTransactionId: string, amount: number) => Promise<RefundResult>
   handleWebhook: (payload: unknown, signature?: string) => Promise<WebhookResult>
 }
+
+export interface CreatePayoutParams {
+  amount: number
+  /** Local or international Benin number; each gateway formats its own. */
+  phoneNumber: string
+  /** Our internal operator code (`mtn_open` | `moov` | `sbin`). */
+  mode: string
+  firstname: string
+  lastname: string
+  email?: string
+  withdrawalId: string
+}
+
+export interface PayoutStatusResult {
+  status: 'pending' | 'sent' | 'failed'
+  reference: string | null
+  errorMessage: string | null
+}
+
+/**
+ * Sending money out — a courier's earnings, a shop's withdrawal.
+ *
+ * Kept apart from `PaymentGatewayInterface` because not every provider can do
+ * it: Stripe and PawaPay are only ever asked to take money in. Withdrawals
+ * ask the factory for this capability, so a provider that lacks it is refused
+ * at the door rather than failing at the moment of paying someone.
+ *
+ * `mode` is our own operator code, not the provider's: each implementation
+ * translates it, so the value stored on a payout number never has to be
+ * migrated when the provider changes.
+ */
+export interface PayoutGatewayInterface {
+  createPayout: (params: CreatePayoutParams) => Promise<{ payoutId: string, reference: string | null }>
+  checkPayoutStatus: (payoutId: string) => Promise<PayoutStatusResult>
+}
