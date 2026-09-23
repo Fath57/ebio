@@ -41,18 +41,21 @@ describe('vérification d\'une recharge', () => {
   it('refuse tant que le paiement n\'est pas abouti', async () => {
     const { service } = buildService(TopupStatus.PENDING, 'pending')
     await expect(service.verify('user-1', 'topup-1', 'ref-1'))
-      .rejects.toThrow(BadRequestException)
+      .rejects
+      .toThrow(BadRequestException)
   })
 
   it('refuse un paiement échoué', async () => {
     const { service } = buildService(TopupStatus.FAILED, 'failed')
     await expect(service.verify('user-1', 'topup-1', 'ref-1'))
-      .rejects.toThrow(/échoué/)
+      .rejects
+      .toThrow(/échoué/)
   })
 
   it('rend le solde une fois la recharge encaissée', async () => {
     const { service } = buildService(TopupStatus.COMPLETED, 'completed')
     await expect(service.verify('user-1', 'topup-1', 'ref-1'))
-      .resolves.toEqual({ status: TopupStatus.COMPLETED, balance: 2500 })
+      .resolves
+      .toEqual({ status: TopupStatus.COMPLETED, balance: 2500 })
   })
 })

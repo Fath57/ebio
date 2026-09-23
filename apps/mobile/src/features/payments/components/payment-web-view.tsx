@@ -37,14 +37,18 @@ export interface PaymentWebViewProps {
   /** Back pressed, or the payment abandoned. */
   onCancel: () => void
   /**
-   * Asks our server whether the payment has landed. Resolve true and the
-   * screen settles on its own.
+   * Asks our server where the payment stands.
    *
    * This is the signal that actually holds. A hosted page may not redirect
    * at all — INTRAM's ends on its own receipt — and then the return URL
    * never fires. Our server can always ask the provider, so it is asked.
+   *
+   * The three answers matter: `pending` means keep waiting, `settled` closes
+   * the screen, and `failed` closes it too. Treating a failure as « keep
+   * waiting » left the buyer on a dead page whose only exit asked whether
+   * they wanted to cancel a payment that had already failed.
    */
-  pollSettled?: () => Promise<boolean>
+  pollStatus?: () => Promise<'settled' | 'pending' | 'failed'>
 }
 
 /**
@@ -66,7 +70,7 @@ export function PaymentWebView({
   title = 'Paiement sécurisé',
   onSettled,
   onCancel,
-  pollSettled,
+  pollStatus,
 }: PaymentWebViewProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
@@ -85,20 +89,28 @@ export function PaymentWebView({
   // Polls while the screen is open. Stops as soon as it settles, and never
   // outlives the screen — an interval left running would confirm a payment
   // the buyer has already walked away from.
-  const pollRef = useRef(pollSettled)
-  pollRef.current = pollSettled
+  const pollRef = useRef(pollStatus)
+  pollRef.current = pollStatus
 
   useEffect(() => {
-    if (settled || pollSettled === undefined) {
+    if (settled || pollStatus === undefined) {
       return
     }
     let cancelled = false
     const timer = setInterval(() => {
       void (async () => {
         try {
-          const done = await pollRef.current?.()
-          if (done === true && !cancelled) {
+          const status = await pollRef.current?.()
+          if (cancelled) {
+            return
+          }
+          if (status === 'settled') {
             settle(transactionId ?? '')
+          }
+          else if (status === 'failed') {
+            setSettled(true)
+            appAlert('Paiement échoué', 'Le paiement n\'a pas abouti. Aucun montant n\'a été débité.')
+            onCancel()
           }
         }
         catch {
@@ -111,7 +123,7 @@ export function PaymentWebView({
       cancelled = true
       clearInterval(timer)
     }
-  }, [settled, pollSettled, transactionId, settle])
+  }, [settled, pollStatus, transactionId, settle, onCancel])
 
   const confirmCancel = useCallback(() => {
     appAlert(

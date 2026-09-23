@@ -600,15 +600,19 @@ export function CheckoutFlow({
    * that claim would have been believed.
    */
   /** Silent check: the verify endpoint only succeeds once the money landed. */
-  const pollCartSettled = useCallback(async (): Promise<boolean> => {
+  const pollCartStatus = useCallback(async (): Promise<'settled' | 'pending' | 'failed'> => {
     if (!pendingCheckoutId || !providerTransactionId) {
-      return false
+      return 'pending'
     }
     const res = await apiFetch('/api/payments/cart/verify', {
       method: 'POST',
       body: JSON.stringify({ checkoutId: pendingCheckoutId, fedapayTransactionId: providerTransactionId }),
     })
-    return res.ok
+    if (res.ok) {
+      return 'settled'
+    }
+    const body = await res.json().catch(() => null) as { code?: string } | null
+    return body?.code === 'payment_failed' ? 'failed' : 'pending'
   }, [pendingCheckoutId, providerTransactionId])
 
   const confirmCartPayment = useCallback(async (reference: string) => {
@@ -1006,7 +1010,7 @@ export function CheckoutFlow({
         transactionId={providerTransactionId}
         onSettled={confirmCartPayment}
         onCancel={() => setCurrentStep('SUMMARY')}
-        pollSettled={pollCartSettled}
+        pollStatus={pollCartStatus}
       />
     )
   }

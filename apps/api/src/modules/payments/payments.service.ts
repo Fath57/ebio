@@ -238,7 +238,10 @@ export class PaymentsService {
     const checkResult = await gateway.checkStatus(data.fedapayTransactionId)
 
     if (checkResult.status !== 'completed') {
-      throw new BadRequestException(`Payment not confirmed. Status: ${checkResult.status}`)
+      throw new BadRequestException({
+        code: checkResult.status === 'failed' ? 'payment_failed' : 'payment_pending',
+        message: `Paiement non confirmé. Statut : ${checkResult.status}`,
+      })
     }
 
     payment.providerTransactionId = data.fedapayTransactionId
@@ -368,7 +371,12 @@ export class PaymentsService {
     const gateway = this.gatewayFactory.createGateway(this.checkoutProvider())
     const checkResult = await gateway.checkStatus(data.fedapayTransactionId)
     if (checkResult.status !== 'completed') {
-      throw new BadRequestException(`Paiement non confirmé. Statut : ${checkResult.status}`)
+      // Same two shapes as a wallet topup: the app has to tell a payment that
+      // failed from one still in flight, or it waits on a dead page.
+      throw new BadRequestException({
+        code: checkResult.status === 'failed' ? 'payment_failed' : 'payment_pending',
+        message: `Paiement non confirmé. Statut : ${checkResult.status}`,
+      })
     }
 
     checkout.providerTransactionId = data.fedapayTransactionId

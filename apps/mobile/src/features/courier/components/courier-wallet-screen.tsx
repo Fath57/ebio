@@ -24,6 +24,7 @@ import {
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
@@ -260,13 +261,23 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   }, [reload, onRefreshed])
 
   /** Silent check: the verify endpoint only succeeds once the money landed. */
-  const pollTopupSettled = useCallback(async (): Promise<boolean> => {
+  const pollTopupStatus = useCallback(async (): Promise<'settled' | 'pending' | 'failed'> => {
     if (!pendingTopupId || !providerTransactionId) {
-      return false
+      return 'pending'
     }
-    const result = await verifyTopup(pendingTopupId, providerTransactionId)
-    return result.ok
-  }, [pendingTopupId, providerTransactionId, verifyTopup])
+    // Called directly rather than through the hook: a refusal carries the
+    // code that tells a failed payment from one still in flight, and the
+    // hook's result keeps only the message.
+    const res = await apiFetch(`/api/couriers/me/wallet/topups/${pendingTopupId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
+    })
+    if (res.ok) {
+      return 'settled'
+    }
+    const body = await res.json().catch(() => null) as { code?: string } | null
+    return body?.code === 'payment_failed' ? 'failed' : 'pending'
+  }, [pendingTopupId, providerTransactionId])
 
   const confirmTopup = useCallback(async (reference: string) => {
     if (!pendingTopupId) {
@@ -302,7 +313,7 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
         title="Recharge du portefeuille"
         onSettled={confirmTopup}
         onCancel={closeCheckout}
-        pollSettled={pollTopupSettled}
+        pollStatus={pollTopupStatus}
       />
     )
   }

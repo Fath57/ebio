@@ -136,10 +136,13 @@ export class TopupService {
     // the body. Answering 200 for a payment still in flight let every caller
     // read the HTTP code and announce a recharge that had not happened.
     if (fresh.status !== TopupStatus.COMPLETED) {
+      // A code, not just a sentence: the app has to tell a payment that
+      // failed from one still in flight. Waiting on the first is right;
+      // waiting on the second leaves the buyer stuck on a dead page.
       throw new BadRequestException(
         fresh.status === TopupStatus.FAILED
-          ? 'Le paiement a échoué'
-          : 'Paiement pas encore confirmé',
+          ? { code: 'payment_failed', message: 'Le paiement a échoué' }
+          : { code: 'payment_pending', message: 'Paiement pas encore confirmé' },
       )
     }
 

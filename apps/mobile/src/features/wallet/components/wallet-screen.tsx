@@ -171,15 +171,21 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
    * is enough: it re-reads the transaction from the provider and only
    * answers 200 once the money is really there.
    */
-  const pollTopupSettled = useCallback(async (): Promise<boolean> => {
+  const pollTopupStatus = useCallback(async (): Promise<'settled' | 'pending' | 'failed'> => {
     if (!pendingTopupId || !providerTransactionId) {
-      return false
+      return 'pending'
     }
     const res = await apiFetch(`/api/wallet/me/topups/${pendingTopupId}/verify`, {
       method: 'POST',
       body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
     })
-    return res.ok
+    if (res.ok) {
+      return 'settled'
+    }
+    // A refusal says which of the two it is; without the code we would keep
+    // waiting on a payment that has already failed.
+    const body = await res.json().catch(() => null) as { code?: string } | null
+    return body?.code === 'payment_failed' ? 'failed' : 'pending'
   }, [pendingTopupId, providerTransactionId])
 
   const confirmTopup = useCallback(async (reference: string) => {
@@ -219,7 +225,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
         title="Recharge du portefeuille"
         onSettled={confirmTopup}
         onCancel={closeCheckout}
-        pollSettled={pollTopupSettled}
+        pollStatus={pollTopupStatus}
       />
     )
   }
