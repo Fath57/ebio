@@ -3,7 +3,7 @@ import Check from 'lucide-react-native/dist/esm/icons/check'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import * as React from 'react'
-import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { PromotionChips } from '../../catalog/components/promotion-chips'
@@ -26,7 +26,22 @@ const REASON_LABELS: Record<RecommendationReason, string> = {
  */
 export type ReasonLabels = Partial<Record<RecommendationReason, string>>
 
-const CARD_WIDTH = 150
+/**
+ * Une carte fait toujours un peu moins du tiers de la largeur utile, de sorte
+ * que la suivante dépasse du bord.
+ *
+ * C'est le seul signal fiable qu'un rail se fait défiler : une largeur fixe
+ * tombait juste sur certains écrans, la dernière carte s'arrêtait pile au bord,
+ * et le rail se lisait comme une grille figée. Les bornes gardent la carte
+ * lisible sur un petit téléphone et raisonnable sur une tablette.
+ */
+const RAIL_GAP = 8
+const VISIBLE_CARDS = 2.35
+
+function cardWidthFor(screenWidth: number): number {
+  const available = screenWidth - RAIL_GAP * 2
+  return Math.round(Math.min(170, Math.max(128, available / VISIBLE_CARDS)))
+}
 
 function formatPrice(value: number): string {
   return value.toLocaleString('fr-FR').replace(/,/g, ' ')
@@ -52,20 +67,22 @@ interface BasketSuggestionsProps {
 
 interface SuggestionCardProps {
   item: RecommendedProduct
+  /** Calculée depuis la largeur de l'écran, pour que la suivante dépasse. */
+  width: number
   inCart: boolean
   onAdd: ((item: RecommendedProduct) => void) | null
   onOpen: ((productId: string) => void) | null
   reasonLabels: ReasonLabels
 }
 
-function SuggestionCard({ item, inCart, onAdd, onOpen, reasonLabels }: SuggestionCardProps) {
+function SuggestionCard({ item, inCart, onAdd, onOpen, reasonLabels, width }: SuggestionCardProps) {
   const { semantic } = useTheme()
   const hasPromo = item.promotionalPrice !== null && item.promotionalPrice < item.pricePerUnit
   const displayPrice = hasPromo ? item.promotionalPrice ?? item.pricePerUnit : item.pricePerUnit
   const imageUri = item.thumbnail ?? item.photo
   return (
     <TouchableOpacity
-      style={[styles.card, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}
+      style={[styles.card, { width, backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}
       onPress={onOpen ? () => onOpen(item.id) : undefined}
       disabled={!onOpen}
       activeOpacity={0.8}
@@ -127,6 +144,8 @@ export function BasketSuggestions({
   reasonLabels = {},
 }: BasketSuggestionsProps) {
   const { semantic } = useTheme()
+  const { width: screenWidth } = useWindowDimensions()
+  const cardWidth = cardWidthFor(screenWidth)
   const { groups, addItem } = useCart()
   // The caller may already hold the list (the checkout upsell does): asking
   // again would just duplicate the request.
@@ -164,6 +183,7 @@ export function BasketSuggestions({
         {items.map(item => (
           <SuggestionCard
             key={item.id}
+            width={cardWidth}
             item={item}
             inCart={cartProductIds.has(item.id)}
             onAdd={handleAdd}
@@ -188,7 +208,6 @@ const styles = StyleSheet.create({
     paddingVertical: 2,
   },
   card: {
-    width: CARD_WIDTH,
     borderWidth: 1,
     borderRadius: radius.md,
     padding: spacing[2],
