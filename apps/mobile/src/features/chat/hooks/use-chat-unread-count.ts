@@ -34,12 +34,18 @@ export function useChatUnreadCount(): { count: number, refetch: () => void } {
     const interval = setInterval(() => {
       refetch()
     }, POLL_INTERVAL_MS)
-    const unsubscribe = websocketClient.addMessageListener(() => {
+    const unsubscribeMessages = websocketClient.addMessageListener(() => {
+      refetch()
+    })
+    // Reading is something this device does, so the server never announces
+    // it: without this the badge outlived the messages it counted.
+    const unsubscribeReads = websocketClient.addReadListener(() => {
       refetch()
     })
     return () => {
       clearInterval(interval)
-      unsubscribe()
+      unsubscribeMessages()
+      unsubscribeReads()
     }
   }, [refetch])
 

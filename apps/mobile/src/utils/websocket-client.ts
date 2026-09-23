@@ -87,6 +87,8 @@ class WebSocketClient {
    * otherwise only learned of it on its next focus.
    */
   private messageListeners = new Set<EventHandler<ChatMessage>>()
+  /** Told when this device marks a thread read, so counters can follow. */
+  private readListeners = new Set<() => void>()
 
   connect(options: WebSocketClientOptions): void {
     this.handlers = options
@@ -105,6 +107,20 @@ class WebSocketClient {
     this.messageListeners.add(listener)
     return () => {
       this.messageListeners.delete(listener)
+    }
+  }
+
+  /**
+   * Subscribes to « this device has just read a thread ».
+   *
+   * The unread badge cannot learn this from the server — reading is
+   * something *we* do — and without it the badge kept showing messages the
+   * user had just opened, until the next poll came round.
+   */
+  addReadListener(listener: () => void): () => void {
+    this.readListeners.add(listener)
+    return () => {
+      this.readListeners.delete(listener)
     }
   }
 
@@ -172,6 +188,9 @@ class WebSocketClient {
 
   sendReadReceipt(conversationId: string, _messageId?: string): void {
     this.socket?.emit('chat:read', { conversationId })
+    this.readListeners.forEach((listener) => {
+      listener()
+    })
   }
 
   sendTyping(conversationId: string, isTyping: boolean): void {

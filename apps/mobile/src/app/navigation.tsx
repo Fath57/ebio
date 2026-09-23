@@ -30,6 +30,7 @@ import { toDetailProduct, toDetailSupplier } from '../features/catalog/product-d
 import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
 import { ConversationList } from '../features/chat/components/conversation-list'
 import { openDeliveryConversation } from '../features/chat/delivery-chat'
+import { useChatUnreadCount } from '../features/chat/hooks/use-chat-unread-count'
 import { openSupportConversation } from '../features/chat/support-chat'
 import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
@@ -878,6 +879,10 @@ export function AppNavigation() {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   useNotifications()
+  // The acheteur had no sign a message was waiting: the badge existed in the
+  // supplier app only. It refreshes on every socket message, so it appears
+  // the moment the message does.
+  const { count: chatUnread } = useChatUnreadCount()
 
   const baseTabBarStyle = {
     height: 64 + insets.bottom,
@@ -944,6 +949,12 @@ export function AppNavigation() {
         <Tab.Screen
           name="Chat"
           component={ChatStackScreen}
+          options={chatUnread > 0
+            ? {
+                tabBarBadge: chatUnread > 99 ? '99+' : chatUnread,
+                tabBarBadgeStyle: { backgroundColor: colors.coral[400], fontFamily: fonts.sansMd, fontSize: 10 },
+              }
+            : {}}
           listeners={({ navigation }) => ({
             tabPress: () => popChatStackToTop(navigation),
           })}
