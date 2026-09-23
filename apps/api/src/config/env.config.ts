@@ -131,6 +131,18 @@ export const configValidationSchema = z.object({
    * switch production the day this ships, keys or no keys — a deployment must
    * never change who takes the money by omission.
    */
+  // ── Assistant vocal ──────────────────────────────────────────────────────
+  /** Clé du fournisseur de modèle. Absente = assistant désactivé, sans erreur. */
+  ASSISTANT_API_KEY: z.string().optional(),
+  /** Le SDK AI abstrait le fournisseur : en changer ne touche pas au code. */
+  ASSISTANT_PROVIDER: z.enum(['anthropic', 'openai', 'google', 'mistral']).default('anthropic'),
+  ASSISTANT_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+  /**
+   * Nombre maximal d'allers-retours d'outils dans un tour. Une boucle folle
+   * coûterait une fortune sans que personne ne s'en aperçoive avant la facture.
+   */
+  ASSISTANT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(8),
+
   CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('fedapay'),
   /**
    * Where a provider sends the browser once a payment ends. It must be a
@@ -184,6 +196,12 @@ export const config = {
     port: configParsed.data.API_PORT,
   },
   version: getVersion(),
+  assistant: {
+    apiKey: configParsed.data.ASSISTANT_API_KEY,
+    provider: configParsed.data.ASSISTANT_PROVIDER,
+    model: configParsed.data.ASSISTANT_MODEL,
+    maxSteps: configParsed.data.ASSISTANT_MAX_STEPS,
+  },
   // Google Maps Platform — Places, pour les suggestions de villes.
   maps: {
     googleApiKey: configParsed.data.GOOGLE_MAPS_API_KEY,

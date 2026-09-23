@@ -1,0 +1,36 @@
+import { z } from 'zod'
+
+export const assistantTurnSchema = z.object({
+  /** Absent au premier tour : le serveur ouvre alors la conversation. */
+  sessionId: z.string().uuid().optional(),
+  message: z.string().trim().min(1).max(1000),
+}).meta({
+  title: 'AssistantTurn',
+  description: 'Un tour de parole avec l\'assistant',
+})
+
+const cartLineSchema = z.object({
+  productId: z.string().uuid(),
+  name: z.string(),
+  supplierId: z.string().uuid(),
+  supplierName: z.string(),
+  quantity: z.number().int(),
+  pricePerUnit: z.number(),
+  unit: z.string(),
+})
+
+export const assistantTurnResponseSchema = z.object({
+  sessionId: z.string().uuid(),
+  reply: z.string(),
+  /**
+   * Le panier construit par la conversation. L'application le reprend : eBio
+   * n'a pas encore de panier côté serveur, et celui-ci le remplacera le jour
+   * où il y en aura un.
+   */
+  cart: z.array(cartLineSchema),
+}).meta({
+  title: 'AssistantTurnResponse',
+  description: 'La réponse de l\'assistant et l\'état du panier',
+})
+
+export type AssistantTurnInput = z.infer<typeof assistantTurnSchema>

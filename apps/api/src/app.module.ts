@@ -10,6 +10,7 @@ import { AppController } from './app.controller'
 import { AdminModule } from './modules/admin/admin.module'
 import { AuditModule } from './modules/admin/audit.module'
 import { AiModule } from './modules/ai/ai.module'
+import { AssistantModule } from './modules/assistant/assistant.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { RolesModule } from './modules/auth/roles/roles.module'
 import { BannersModule } from './modules/banners/banners.module'
@@ -123,6 +124,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     NestConfigModule,
     ExampleModule,
     SearchModule,
+    AssistantModule,
     BannersModule,
     LandingModule,
     GeocodingModule,
