@@ -1,11 +1,11 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
-import type { AssistantTurnInput } from './contracts/assistant.contract'
+import type { AssistantCartLineInput, AssistantTurnInput } from './contracts/assistant.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
-import { Controller, Post, UseGuards } from '@nestjs/common'
+import { Controller, Param, Patch, Post, UseGuards } from '@nestjs/common'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { AssistantService } from './assistant.service'
-import { assistantTurnSchema } from './contracts/assistant.contract'
+import { assistantCartLineSchema, assistantTurnSchema } from './contracts/assistant.contract'
 
 /**
  * L'assistant, en texte.
@@ -29,5 +29,26 @@ export class AssistantController {
       body.message,
     )
     return { sessionId: result.sessionId, reply: result.reply, cart: result.cart }
+  }
+
+  /**
+   * Corriger une ligne à la main, sans quitter la conversation.
+   *
+   * L'écran rend le panier entier et non la ligne touchée : le serveur reste
+   * la source, et rien ne peut diverger si l'assistant écrit au même moment.
+   */
+  @Patch(':sessionId/cart')
+  async adjustCart(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('sessionId') sessionId: string,
+    @TypedBody(assistantCartLineSchema) body: AssistantCartLineInput,
+  ) {
+    const cart = await this.assistantService.adjustCart(
+      session.user.id,
+      sessionId,
+      body.produitId,
+      body.quantite,
+    )
+    return { cart }
   }
 }

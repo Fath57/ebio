@@ -27,7 +27,7 @@ interface SessionState {
   cart?: AssistantCartLine[]
 }
 
-async function loadState(em: EntityManager, sessionId: string): Promise<{ cart: AssistantCartLine[] }> {
+export async function loadState(em: EntityManager, sessionId: string): Promise<{ cart: AssistantCartLine[] }> {
   const session = await em.findOneOrFail(AssistantSession, { id: sessionId })
   return { cart: (session.state as SessionState).cart ?? [] }
 }
@@ -43,7 +43,7 @@ async function loadState(em: EntityManager, sessionId: string): Promise<{ cart: 
  *
  * `line` à `null` retire la ligne de `productId`.
  */
-async function writeCartLine(
+export async function writeCartLine(
   em: EntityManager,
   sessionId: string,
   line: AssistantCartLine | null,

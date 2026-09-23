@@ -13,7 +13,7 @@ import { ASSISTANT_SYSTEM_PROMPT } from './assistant.prompt'
 import { amountsFromTools, forSpeech, groundingBreaches } from './assistant.guardrails'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
-import { addToCartTool, removeFromCartTool, viewCartTool } from './tools/cart.tools'
+import { addToCartTool, loadState, removeFromCartTool, viewCartTool, writeCartLine } from './tools/cart.tools'
 import { estimateOrderTool } from './tools/estimate-order.tool'
 import { lastOrdersTool, ongoingOrdersTool, orderStatusTool } from './tools/orders.tools'
 import { searchProductsTool } from './tools/search-products.tool'
@@ -230,5 +230,31 @@ export class AssistantService {
       [JSON.stringify(amounts), sessionId],
     )
     this.em.clear()
+  }
+
+  /**
+   * Le panier corrigé à la main, sans passer par la parole.
+   *
+   * Retirer une ligne se dit mal et se touche bien. La correction passe par la
+   * même écriture atomique que les outils : l'acheteur peut très bien appuyer
+   * pendant que l'assistant ajoute autre chose.
+   */
+  async adjustCart(buyerId: string, sessionId: string, productId: string, quantity: number): Promise<AssistantCartLine[]> {
+    const session = await this.em.findOne(AssistantSession, { id: sessionId, buyer: { id: buyerId } })
+    if (!session) {
+      throw new BadRequestException('Conversation introuvable.')
+    }
+
+    if (quantity === 0) {
+      return await writeCartLine(this.em, sessionId, null, productId)
+    }
+
+    const { cart } = await loadState(this.em, sessionId)
+    const line = cart.find(item => item.productId === productId)
+    if (!line) {
+      throw new BadRequestException('Cette ligne n\'est pas dans le panier.')
+    }
+
+    return await writeCartLine(this.em, sessionId, { ...line, quantity })
   }
 }

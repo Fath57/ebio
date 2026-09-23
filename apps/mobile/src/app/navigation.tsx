@@ -1,4 +1,5 @@
-// eslint-disable-next-line ts/ban-ts-comment
+import type { AssistantCartLine } from '../features/assistant/assistant'
+
 // @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
 // The two directives above must stay at the top of the file: an import
 // placed before them disables the `@ts-nocheck` and wakes the React
@@ -16,6 +17,7 @@ import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
 import { ActivityIndicator, Animated, Platform, StatusBar, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AssistantScreen } from '../features/assistant/components/assistant-screen'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
@@ -96,6 +98,7 @@ function SearchStackScreen() {
       <SearchStack.Screen name="SupplierProfile" component={SupplierProfileWrapper} />
       <SearchStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
       <SearchStack.Screen name="ProductReviews" component={ProductReviewsWrapper} />
+      <SearchStack.Screen name="Assistant" component={AssistantWrapper} />
     </SearchStack.Navigator>
   )
 }
@@ -113,6 +116,7 @@ function SearchHomeWrapper({ navigation }: any) {
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
+        onOpenAssistant={() => navigation.navigate('Assistant')}
         onSeeAll={(preset) => {
           if (preset === 'validated') {
             navigation.navigate('SearchResults', { validatedOnly: true, title: 'Validé eBio' })
@@ -126,6 +130,39 @@ function SearchHomeWrapper({ navigation }: any) {
         }}
       />
     </View>
+  )
+}
+
+/**
+ * L'assistant, et le passage de relais au paiement.
+ *
+ * La conversation tient son panier côté serveur ; la caisse, elle, ne connaît
+ * que le panier de l'application. On recopie donc les lignes avant de basculer,
+ * sans toucher à ce qui s'y trouvait déjà : l'acheteur a pu commencer à la main
+ * puis continuer en parlant.
+ */
+function AssistantWrapper({ navigation }: any) {
+  const { addItem } = useCart()
+
+  return (
+    <SafeScreen>
+      <AssistantScreen
+        onGoBack={() => navigation.goBack()}
+        onOrder={(cart: AssistantCartLine[]) => {
+          cart.forEach(line => addItem({
+            productId: line.productId,
+            supplierId: line.supplierId,
+            supplierName: line.supplierName,
+            name: line.name,
+            imageUrl: null,
+            pricePerUnit: line.pricePerUnit,
+            unit: line.unit,
+            quantity: line.quantity,
+          }))
+          navigation.navigate('Panier', { screen: 'CartHome' })
+        }}
+      />
+    </SafeScreen>
   )
 }
 
@@ -736,6 +773,7 @@ function RateOrderWrapper({ route, navigation }: any) {
         onDone={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
+        onOpenAssistant={() => navigation.navigate('Assistant')}
       />
     </SafeScreen>
   )
@@ -864,6 +902,7 @@ function popChatStackToTop(navigation) {
 }
 
 const HIDE_TAB_BAR_ROUTES = new Set([
+  'Assistant',
   'LocationPicker',
   'Checkout',
   'OrderSuccess',

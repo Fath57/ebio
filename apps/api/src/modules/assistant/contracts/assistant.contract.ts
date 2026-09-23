@@ -33,4 +33,19 @@ export const assistantTurnResponseSchema = z.object({
   description: 'La réponse de l\'assistant et l\'état du panier',
 })
 
+/**
+ * Une correction à la main, pendant que la conversation continue.
+ *
+ * `quantite` à zéro retire la ligne. L'acheteur corrige sans avoir à le dire
+ * à voix haute : c'est plus rapide de toucher que d'expliquer.
+ */
+export const assistantCartLineSchema = z.object({
+  produitId: z.string().uuid(),
+  quantite: z.number().int().min(0).max(999),
+}).meta({
+  title: 'AssistantCartAdjustment',
+  description: 'Corriger une ligne du panier de la conversation',
+})
+
 export type AssistantTurnInput = z.infer<typeof assistantTurnSchema>
+export type AssistantCartLineInput = z.infer<typeof assistantCartLineSchema>

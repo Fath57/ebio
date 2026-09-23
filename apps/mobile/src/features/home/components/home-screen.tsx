@@ -37,6 +37,7 @@ interface HomeScreenProps {
   onPickLocation: () => void
   onOpenNotifications: () => void
   onOpenWallet: () => void
+  onOpenAssistant: () => void
 }
 
 export function HomeScreen({
@@ -49,6 +50,7 @@ export function HomeScreen({
   onPickLocation,
   onOpenNotifications,
   onOpenWallet,
+  onOpenAssistant,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
   // The tab bar floats over the content: without its height the last
@@ -94,6 +96,7 @@ export function HomeScreen({
         onOpenMap={onOpenMap}
         onOpenNotifications={onOpenNotifications}
         onOpenWallet={onOpenWallet}
+        onOpenAssistant={onOpenAssistant}
       />
 
       <ScrollView

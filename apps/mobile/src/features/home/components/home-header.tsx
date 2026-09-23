@@ -4,6 +4,7 @@ import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import Search from 'lucide-react-native/dist/esm/icons/search'
+import Sparkles from 'lucide-react-native/dist/esm/icons/sparkles'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import { useCallback, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
@@ -22,6 +23,7 @@ interface HomeHeaderProps {
   onOpenMap: () => void
   onOpenNotifications: () => void
   onOpenWallet: () => void
+  onOpenAssistant: () => void
 }
 
 /** Unread notifications, re-counted whenever the home screen regains focus. */
@@ -98,6 +100,7 @@ export function HomeHeader({
   onOpenMap,
   onOpenNotifications,
   onOpenWallet,
+  onOpenAssistant,
 }: HomeHeaderProps) {
   const insets = useSafeAreaInsets()
   const unreadCount = useUnreadCount()
@@ -161,6 +164,14 @@ export function HomeHeader({
         >
           <Search size={18} color={colors.neutral[600]} strokeWidth={2.2} />
           <Text style={styles.searchText}>Rechercher un produit, une boutique…</Text>
+        </Pressable>
+        <Pressable
+          style={styles.circle}
+          onPress={onOpenAssistant}
+          accessibilityRole="button"
+          accessibilityLabel="Faire mes courses en parlant à l'assistant"
+        >
+          <Sparkles size={20} color={colors.green[600]} strokeWidth={2.2} />
         </Pressable>
         <Pressable
           style={styles.circle}
