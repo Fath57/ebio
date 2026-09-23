@@ -42,8 +42,11 @@ type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
 type PaymentChoice = 'FEDAPAY' | 'WALLET' | 'CASH'
 
-// Mirrors the API contract (createOrderSchema.deliveryAddress).
-const MIN_ADDRESS_LENGTH = 3
+// Mirrors the API contract (createCheckoutSchema.deliveryAddress), which
+// asks for ten characters. It said three, so an address between the two
+// passed here and was refused by the server — with a generic failure, since
+// nothing on this screen knew the real rule.
+const MIN_ADDRESS_LENGTH = 10
 
 /** What `POST /orders/checkout` returns: one cart, N orders. */
 interface CheckoutResult {
@@ -531,8 +534,12 @@ export function CheckoutFlow({
       }
       else {
         const error = await orderRes.json().catch(() => null)
+        // A validation failure carries its reason in one of two shapes
+        // depending on the layer that raised it; a generic message would
+        // hide exactly what the buyer has to change.
         const message = error?.aggregateErrors?.[0]?.message
-          ?? error?.message
+          ?? error?.errors?.[0]?.message
+          ?? (error?.message === 'Validation failed' ? undefined : error?.message)
           ?? 'Impossible de créer la commande. Veuillez réessayer.'
         // Cash cap or cash disabled: the server explains, the buyer picks another way.
         if (orderRes.status === 400 && effectiveChoice === 'CASH' && typeof error?.message === 'string') {
