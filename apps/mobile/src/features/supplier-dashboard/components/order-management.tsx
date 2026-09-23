@@ -1,7 +1,8 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -148,9 +149,12 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
     }
   }, [supplierId])
 
-  useEffect(() => {
+  // On focus, not just on mount: the screen stays mounted while an order's
+  // detail is open — and a notification opens that detail directly — so
+  // coming back used to show a list from before the order that caused it.
+  useFocusEffect(useCallback(() => {
     fetchOrders()
-  }, [fetchOrders])
+  }, [fetchOrders]))
 
   const handleRefresh = useCallback(() => {
     setIsRefreshing(true)
