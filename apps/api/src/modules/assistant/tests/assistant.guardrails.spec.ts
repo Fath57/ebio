@@ -145,3 +145,34 @@ describe('mise en voix', () => {
     expect(forSpeech('Il reste 2 * 3 kilos, c\'est tout.')).toBe('Il reste 2 * 3 kilos, c\'est tout.')
   })
 })
+
+/**
+ * Le défaut le plus grave vu sur téléphone : « C'est noté » alors que le
+ * panier était resté vide. On croit avoir commandé, et on ne l'a pas fait.
+ */
+describe('ajout annoncé', () => {
+  const added: RecordedToolCall[] = [
+    { name: 'ajouter_au_panier', args: {}, ms: 1, result: { lignes: [] } },
+  ]
+  const searchedOnly: RecordedToolCall[] = [
+    { name: 'chercher_produits', args: {}, ms: 1, result: { produits: [] } },
+  ]
+
+  it('reprend « c\'est noté » quand le panier n\'a pas bougé', () => {
+    const breaches = groundingBreaches('C\'est noté. Vous cherchez autre chose ?', searchedOnly)
+    expect(breaches.map(breach => breach.what)).toContain('ajout annoncé sans que le panier ait bougé')
+  })
+
+  it('reprend « je vous en mets deux » sans ajout', () => {
+    expect(groundingBreaches('Je vous en mets deux.', searchedOnly)).toHaveLength(1)
+  })
+
+  it('laisse passer l\'annonce quand l\'ajout a eu lieu', () => {
+    expect(groundingBreaches('Voilà, c\'est dans le panier.', added)).toEqual([])
+  })
+
+  // Une question n'est pas une annonce : « je vous en mets deux ? » propose.
+  it('ne reprend pas une proposition ordinaire', () => {
+    expect(groundingBreaches('Il me reste du piment frais. Ça vous dit ?', searchedOnly)).toEqual([])
+  })
+})

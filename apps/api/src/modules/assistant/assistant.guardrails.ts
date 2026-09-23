@@ -106,6 +106,23 @@ export function deliveryFeeIsKnown(toolCalls: RecordedToolCall[]): boolean {
     && typeof (call.result as { livraison?: unknown } | null)?.livraison === 'number')
 }
 
+/**
+ * Une réponse qui annonce un ajout au panier.
+ *
+ * Volontairement étroit : reprendre le modèle à tort abîmerait la conversation.
+ * Ce qui est visé, c'est la phrase qui fait croire que la commande contient
+ * l'article.
+ *
+ * Les frontières sont unicode et non `\b` : en JavaScript `\b` est ASCII, et
+ * « noté\b » ne correspond jamais puisque « é » n'est pas un caractère de mot.
+ */
+const CLAIMS_ADDED = /(?:c['’]est|ça y est|voilà)[^.!?]{0,25}(?:dans (?:le|votre) panier|ajouté(?:e|s)?|noté(?:e|s)?)(?!\p{L})|je vous (?:le|la|les|en)?\s?(?:mets|ai mis|rajoute|ajoute)(?!\p{L})|dans (?:le|votre) panier(?!\p{L})/iu
+
+/** Le panier a-t-il réellement changé pendant ce tour ? */
+export function cartWasTouched(toolCalls: RecordedToolCall[]): boolean {
+  return toolCalls.some(call => call.name === 'ajouter_au_panier' || call.name === 'retirer_du_panier')
+}
+
 /** Ce qui, dans une réponse, ne tient pas debout face aux outils appelés. */
 export interface GroundingBreach {
   /** Ce qui cloche, pour le journal. */
@@ -135,6 +152,14 @@ export function groundingBreaches(
       what: `montant sans source : ${invented.join(', ')}`,
       fix: `Tu viens d'annoncer ${invented.join(', ')} sans qu'aucun outil ne l'ait rendu. `
         + 'Appelle l\'outil qui donne ce chiffre, puis redis ta phrase. Si tu ne peux pas l\'obtenir, ne donne aucun montant.',
+    })
+  }
+
+  if (CLAIMS_ADDED.test(reply) && !cartWasTouched(toolCalls)) {
+    breaches.push({
+      what: 'ajout annoncé sans que le panier ait bougé',
+      fix: 'Tu viens de laisser entendre que l\'article est dans le panier alors que tu ne l\'y as pas mis. '
+        + 'Appelle ajouter_au_panier, puis redis ta phrase. Si la quantité ou le produit ne sont pas clairs, demande — n\'annonce rien.',
     })
   }
 

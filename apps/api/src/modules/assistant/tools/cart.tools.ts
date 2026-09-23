@@ -1,6 +1,7 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { AssistantTool, AssistantToolContext } from './assistant-tool'
 import { z } from 'zod'
+import { thumbnailUrlFor } from '../../../common/media-urls'
 import { Product } from '../../products/entities/product.entity'
 import { AssistantSession } from '../entities/assistant-session.entity'
 
@@ -21,6 +22,8 @@ export interface AssistantCartLine {
   quantity: number
   pricePerUnit: number
   unit: string
+  /** Thumbnail when the product has one, so the screen shows what was added. */
+  imageUrl: string | null
 }
 
 interface SessionState {
@@ -135,6 +138,9 @@ export function addToCartTool(em: EntityManager) {
         quantity: args.quantite,
         pricePerUnit: Number(product.promotionalPrice ?? product.pricePerUnit),
         unit: product.unit,
+        // Same thumbnail the catalogue shows: recognising the picture is
+        // faster than reading the name, and it catches the wrong product.
+        imageUrl: thumbnailUrlFor(product.photos[0]) ?? product.photos[0] ?? null,
       }
 
       const next = await writeCartLine(em, context.sessionId, line)

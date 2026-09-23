@@ -154,7 +154,7 @@ function AssistantWrapper({ navigation }: any) {
             supplierId: line.supplierId,
             supplierName: line.supplierName,
             name: line.name,
-            imageUrl: null,
+            imageUrl: line.imageUrl,
             pricePerUnit: line.pricePerUnit,
             unit: line.unit,
             quantity: line.quantity,

@@ -9,6 +9,8 @@ export interface AssistantCartLine {
   quantity: number
   pricePerUnit: number
   unit: string
+  /** Thumbnail, absent when the product carries no photo. */
+  imageUrl: string | null
 }
 
 export interface AssistantTurn {

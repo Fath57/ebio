@@ -4,7 +4,7 @@ import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { cartTotal } from '../assistant'
@@ -40,6 +40,12 @@ export function AssistantCartPanel({
   busy,
 }: AssistantCartPanelProps) {
   const { semantic } = useTheme()
+  // Ordered for display only. The server rewrites a corrected line by removing
+  // then re-appending it, so without this the row jumps to the bottom under
+  // the finger that just tapped it. Grouping by shop is also how the cart
+  // reads elsewhere in the app.
+  const lines = [...cart].sort((a, b) =>
+    a.supplierName.localeCompare(b.supplierName, 'fr') || a.name.localeCompare(b.name, 'fr'))
   const total = cartTotal(cart)
   const count = cart.reduce((sum, line) => sum + line.quantity, 0)
 
@@ -72,8 +78,26 @@ export function AssistantCartPanel({
 
       {expanded && (
         <ScrollView style={styles.lines} keyboardShouldPersistTaps="handled">
-          {cart.map(line => (
+          {lines.map(line => (
             <View key={line.productId} style={[styles.line, { borderTopColor: semantic.borderLight }]}>
+              {/*
+                * The quiet square sits under the picture rather than instead of
+                * it: a photo that 404s then looks like a product without one,
+                * not like a hole in the row.
+                */}
+              <View style={[styles.thumb, { backgroundColor: semantic.bgPage, borderColor: semantic.borderLight }]}>
+                {line.imageUrl !== null && (
+                  <Image
+                    source={{ uri: line.imageUrl }}
+                    style={styles.thumbImage}
+                    resizeMode="cover"
+                    accessibilityIgnoresInvertColors
+                    // Decorative: the name right next to it already says what this is.
+                    accessible={false}
+                  />
+                )}
+              </View>
+
               <View style={styles.lineText}>
                 <Text style={[styles.lineName, { color: semantic.textPrimary }]} numberOfLines={1}>
                   {line.name}
@@ -90,15 +114,15 @@ export function AssistantCartPanel({
                   style={[styles.stepButton, { borderColor: semantic.borderNormal }]}
                   disabled={busy}
                   onPress={() => onChangeQuantity(line.productId, line.quantity - 1)}
-                  hitSlop={6}
+                  hitSlop={10}
                   accessibilityRole="button"
                   accessibilityLabel={line.quantity === 1
                     ? `Retirer ${line.name}`
                     : `Enlever un, ${line.name}`}
                 >
                   {line.quantity === 1
-                    ? <Trash2 size={16} color={colors.coral[400]} strokeWidth={2.2} />
-                    : <Minus size={16} color={semantic.textPrimary} strokeWidth={2.4} />}
+                    ? <Trash2 size={15} color={colors.coral[400]} strokeWidth={2.2} />
+                    : <Minus size={15} color={semantic.textPrimary} strokeWidth={2.4} />}
                 </Pressable>
 
                 <Text style={[styles.quantity, { color: semantic.textPrimary }]}>{line.quantity}</Text>
@@ -107,11 +131,11 @@ export function AssistantCartPanel({
                   style={[styles.stepButton, { borderColor: semantic.borderNormal }]}
                   disabled={busy}
                   onPress={() => onChangeQuantity(line.productId, line.quantity + 1)}
-                  hitSlop={6}
+                  hitSlop={10}
                   accessibilityRole="button"
                   accessibilityLabel={`Ajouter un, ${line.name}`}
                 >
-                  <Plus size={16} color={semantic.textPrimary} strokeWidth={2.4} />
+                  <Plus size={15} color={semantic.textPrimary} strokeWidth={2.4} />
                 </Pressable>
               </View>
             </View>
@@ -166,6 +190,17 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[2],
     borderTopWidth: StyleSheet.hairlineWidth,
   },
+  thumb: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.sm,
+    borderWidth: StyleSheet.hairlineWidth,
+    overflow: 'hidden',
+  },
+  thumbImage: {
+    width: '100%',
+    height: '100%',
+  },
   lineText: {
     flex: 1,
     gap: 2,
@@ -180,11 +215,13 @@ const styles = StyleSheet.create({
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
+    gap: spacing[1],
   },
+  // Drawn at 32 but tapped at 44: the charter's touch target is kept by the
+  // hitSlop around it, and the row stays quiet next to the product picture.
   stepButton: {
-    width: 44,
-    height: 44,
+    width: 32,
+    height: 32,
     borderRadius: radius.sm,
     borderWidth: 1,
     alignItems: 'center',
@@ -192,7 +229,8 @@ const styles = StyleSheet.create({
   },
   quantity: {
     ...typography.price,
-    minWidth: 24,
+    fontSize: 14,
+    minWidth: 22,
     textAlign: 'center',
   },
   order: {

@@ -17,6 +17,7 @@ const cartLineSchema = z.object({
   quantity: z.number().int(),
   pricePerUnit: z.number(),
   unit: z.string(),
+  imageUrl: z.string().nullable(),
 })
 
 export const assistantTurnResponseSchema = z.object({
