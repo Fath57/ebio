@@ -132,11 +132,19 @@ export const configValidationSchema = z.object({
    * never change who takes the money by omission.
    */
   // ── Assistant vocal ──────────────────────────────────────────────────────
-  /** Clé du fournisseur de modèle. Absente = assistant désactivé, sans erreur. */
-  ASSISTANT_API_KEY: z.string().optional(),
-  /** Le SDK AI abstrait le fournisseur : en changer ne touche pas au code. */
-  ASSISTANT_PROVIDER: z.enum(['anthropic', 'openai', 'google', 'mistral']).default('anthropic'),
-  ASSISTANT_MODEL: z.string().default('claude-haiku-4-5-20251001'),
+  /**
+   * Le modèle, choisi dans le registre du module `ai` — qui porte déjà les
+   * fournisseurs, leurs clés, la limitation de débit et la télémétrie. Rien
+   * de tout cela n'est à refaire ici.
+   */
+  ASSISTANT_MODEL: z.enum([
+    'CLAUDE_HAIKU_4_5',
+    'CLAUDE_HAIKU_3_5',
+    'CLAUDE_OPUS_4_5',
+    'GOOGLE_GEMINI_3_FLASH',
+    'OPENAI_GPT_5_NANO',
+    'MISTRAL_SMALL',
+  ]).default('CLAUDE_HAIKU_4_5'),
   /**
    * Nombre maximal d'allers-retours d'outils dans un tour. Une boucle folle
    * coûterait une fortune sans que personne ne s'en aperçoive avant la facture.
@@ -197,8 +205,6 @@ export const config = {
   },
   version: getVersion(),
   assistant: {
-    apiKey: configParsed.data.ASSISTANT_API_KEY,
-    provider: configParsed.data.ASSISTANT_PROVIDER,
     model: configParsed.data.ASSISTANT_MODEL,
     maxSteps: configParsed.data.ASSISTANT_MAX_STEPS,
   },

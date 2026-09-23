@@ -1,5 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
+import { AiModule } from '../ai/ai.module'
 import { OrdersModule } from '../orders/orders.module'
 import { SearchModule } from '../search/search.module'
 import { AssistantController } from './assistant.controller'
@@ -15,6 +16,7 @@ import { AssistantTurn } from './entities/assistant-turn.entity'
 @Module({
   imports: [
     MikroOrmModule.forFeature([AssistantSession, AssistantTurn]),
+    AiModule,
     SearchModule,
     OrdersModule,
   ],

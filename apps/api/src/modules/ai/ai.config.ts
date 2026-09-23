@@ -39,6 +39,11 @@ export const modelConfigBase = {
     provider: 'anthropic' as const satisfies ProviderName,
     isDefault: false,
   },
+  CLAUDE_HAIKU_4_5: {
+    modelString: 'claude-haiku-4-5-20251001',
+    provider: 'anthropic' as const satisfies ProviderName,
+    isDefault: false,
+  },
   CLAUDE_OPUS_4_5: {
     modelString: 'claude-opus-4-5',
     provider: 'anthropic' as const satisfies ProviderName,

@@ -1,14 +1,11 @@
-import type { LanguageModel, ModelMessage } from 'ai'
+import type { AiCoreMessage } from '../ai/contracts/ai.contract'
 import type { AssistantTool, RecordedToolCall } from './tools/assistant-tool'
 import type { AssistantCartLine } from './tools/cart.tools'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createMistral } from '@ai-sdk/mistral'
-import { createOpenAI } from '@ai-sdk/openai'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
-import { generateText, stepCountIs, tool } from 'ai'
+import { tool } from 'ai'
 import { config } from '../../config/env.config'
+import { AiService } from '../ai/ai.service'
 import { User } from '../auth/auth.entity'
 import { CheckoutService } from '../orders/checkout.service'
 import { SearchService } from '../search/search.service'
@@ -33,33 +30,10 @@ export class AssistantService {
 
   constructor(
     private readonly em: EntityManager,
+    private readonly ai: AiService,
     private readonly search: SearchService,
     private readonly checkout: CheckoutService,
   ) {}
-
-  /**
-   * Le modèle configuré.
-   *
-   * Sans clé, l'assistant est simplement absent : l'API démarre, et seul
-   * l'appel échoue — un déploiement ne doit pas tomber parce qu'une
-   * fonctionnalité facultative n'est pas branchée.
-   */
-  private model(): LanguageModel {
-    const { apiKey, provider, model } = config.assistant
-    if (!apiKey) {
-      throw new ServiceUnavailableException('L\'assistant n\'est pas configuré sur ce serveur.')
-    }
-    switch (provider) {
-      case 'openai':
-        return createOpenAI({ apiKey })(model)
-      case 'google':
-        return createGoogleGenerativeAI({ apiKey })(model)
-      case 'mistral':
-        return createMistral({ apiKey })(model)
-      default:
-        return createAnthropic({ apiKey })(model)
-    }
-  }
 
   /**
    * Tout ce que le modèle sait faire.
@@ -121,24 +95,32 @@ export class AssistantService {
       }),
     ]))
 
-    const history = session.messages as ModelMessage[]
-    const messages: ModelMessage[] = [...history, { role: 'user', content: message }]
+    const history = session.messages as AiCoreMessage[]
+    // L'invite système ouvre le fil une seule fois : elle fait partie de la
+    // conversation, elle ne se répète pas à chaque tour.
+    const messages: AiCoreMessage[] = history.length > 0
+      ? [...history, { role: 'user', content: message }]
+      : [
+          { role: 'system', content: ASSISTANT_SYSTEM_PROMPT },
+          { role: 'user', content: message },
+        ]
 
     let text: string
-    let usage: { inputTokens?: number, outputTokens?: number }
+    let usage: { promptTokens?: number, completionTokens?: number }
     try {
-      const result = await generateText({
-        model: this.model(),
-        system: ASSISTANT_SYSTEM_PROMPT,
+      const result = await this.ai.chat({
         messages,
         tools,
-        // Une boucle bornée : un modèle qui s'entête sur un outil coûterait
-        // une fortune sans que personne ne le voie avant la facture.
-        stopWhen: stepCountIs(config.assistant.maxSteps),
+        model: config.assistant.model,
+        options: {
+          // Une boucle bornée : un modèle qui s'entête sur un outil coûterait
+          // une fortune sans que personne ne le voie avant la facture.
+          stopWhen: config.assistant.maxSteps,
+        },
       })
-      text = result.text
-      usage = result.totalUsage
-      session.messages = [...messages, ...result.response.messages] as unknown[]
+      text = result.result
+      usage = (result as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
+      session.messages = [...messages, { role: 'assistant', content: text }] as unknown[]
     }
     catch (error) {
       this.logger.error(`Tour d'assistant échoué (session ${session.id}) — ${error}`)
@@ -150,8 +132,8 @@ export class AssistantService {
       input: message,
       output: text,
       toolCalls: recorded as unknown[],
-      inputTokens: usage.inputTokens ?? 0,
-      outputTokens: usage.outputTokens ?? 0,
+      inputTokens: usage.promptTokens ?? 0,
+      outputTokens: usage.completionTokens ?? 0,
     })
     await this.em.flush()
 
