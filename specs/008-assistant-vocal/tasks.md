@@ -58,6 +58,12 @@ C'est ici que vit le vrai sujet. Tout est testable sans micro.
 - [ ] **T023** [P] `estimer_commande` → `POST /orders/preview`. **Seule source
       des totaux.**
 - [ ] **T024** [P] `dernieres_commandes` — pour le « comme la dernière fois ».
+- [ ] **T024b** [P] `statut_commande` — compose `GET /orders/:id` et
+      `GET /deliveries/by-order/:orderId`, qui existent tous les deux. Rend
+      l'état, les étapes franchies et la tournée. **Aucune estimation de délai
+      n'est fabriquée** : on énonce ce que dit le suivi.
+- [ ] **T024c** [P] `commandes_en_cours` — pour désigner la bonne quand il y en
+      a plusieurs, par la boutique et le contenu, jamais par un numéro.
 - [ ] **T025** Vérifier qu'aucun outil ne touche au paiement, et qu'un test le
       constate. L'absence est le garde-fou ; un test la rend permanente.
 
@@ -83,6 +89,8 @@ C'est ici que vit le vrai sujet. Tout est testable sans micro.
       prix absent de la dernière réponse d'outil.
 - [ ] **T042** Tests d'ancrage : un montant prononcé qui n'est pas dans une
       réponse d'outil fait échouer le test. Idem pour un nom de produit.
+- [ ] **T042b** Tests du suivi : l'assistant énonce l'état réel d'une commande,
+      et ne fabrique jamais un délai.
 - [ ] **T043** Tests de conversations tordues : « la même chose que la dernière
       fois mais sans le savon », « non, plutôt trois kilos », une rupture de
       stock en cours de route.
@@ -104,8 +112,22 @@ C'est ici que vit le vrai sujet. Tout est testable sans micro.
 
 ## Phase 3 — L'écran
 
-- [ ] **T060** Écran assistant dans l'app cliente : bouton pour parler,
-      conversation affichée au fil de l'eau, panier visible en dessous.
+- [ ] **T060** Écran assistant dans l'app cliente. Lire
+      `.claude/context/design-principles.md` **avant** d'écrire la moindre ligne
+      d'interface.
+- [ ] **T060a** La transcription de ce qui a été entendu, à chaque tour. C'est
+      la tâche la plus importante de la phase : sans elle, une erreur de
+      transcription se découvre sur la facture.
+- [ ] **T060b** Trois états lisibles d'un coup d'œil — il écoute, il cherche, il
+      parle. Un assistant dont on ne sait pas s'il écoute est un assistant qu'on
+      interrompt au mauvais moment.
+- [ ] **T060c** Bouton pour parler, large, atteignable au pouce d'une seule
+      main. On fait ses courses debout.
+- [ ] **T060d** Couper la parole d'un appui.
+- [ ] **T060e** Corriger le panier à la main sans quitter la conversation.
+- [ ] **T060f** Écrire au lieu de parler : pour un mot que la transcription
+      n'attrape pas, ou là où l'on ne peut pas parler.
+- [ ] **T060g** Total toujours visible, jamais à chercher.
 - [ ] **T061** Enregistrement via `expo-audio` — déjà en place pour les notes
       vocales du chat, rien à installer.
 - [ ] **T062** Lecture de la réponse, avec le texte affiché pendant qu'il se

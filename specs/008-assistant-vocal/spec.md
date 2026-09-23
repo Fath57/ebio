@@ -162,11 +162,76 @@ Le produit demandé est en rupture, ou la boutique est fermée. L'assistant le d
 
 **Critère d'acceptation** : l'assistant énonce les écarts avec la commande de référence avant de valider.
 
-### US5 — Aller jusqu'au paiement (priorité 1)
+### US5 — Savoir où en est sa commande (priorité 1)
+
+« Où est ma commande ? » est la question la plus posée d'une place de marché qui
+livre. Aujourd'hui elle suppose d'ouvrir l'application, de trouver l'onglet, la
+bonne commande, et de lire un suivi.
+
+« Où en est ma commande ? » — l'assistant répond : la boutique a accepté, elle
+prépare, le livreur est en route, il arrive. En une phrase, sans navigation.
+
+S'il y a plusieurs commandes en cours, il demande laquelle, en les désignant par
+ce qui les distingue pour l'acheteuse — la boutique, ce qu'il y a dedans — pas
+par un numéro.
+
+**Critère d'acceptation** : la réponse vient de la commande et de sa livraison
+réelles, jamais d'une supposition sur le délai.
+
+### US6 — Aller jusqu'au paiement (priorité 1)
 
 Le panier prêt, l'assistant annonce le total, les frais de livraison et l'adresse retenue, puis **rend la main** : la confirmation du paiement se fait à l'écran.
 
 **Critère d'acceptation** : aucun débit ne peut être déclenché par la voix seule.
+
+## Ce que cette fonctionnalité devient
+
+Ajouter le suivi de commande déplace le projet. Ce n'est plus « commander à la
+voix » : c'est **une porte d'entrée parlée à eBio**. Passer commande en est
+l'usage le plus lourd, mais pas le plus fréquent — on commande une fois, on
+demande où en est la livraison trois fois.
+
+Cela ne change rien à l'architecture : un outil de plus, branché sur des
+endpoints qui existent. Mais cela change la façon de juger la fonctionnalité.
+Le succès ne se mesurera pas seulement en commandes passées à la voix, mais en
+**questions auxquelles on n'a plus eu à répondre à la main** — au support, ou en
+naviguant.
+
+## L'écran
+
+L'assistant est vocal, pas aveugle. L'écran n'est pas un décor : c'est lui qui
+rend la conversation digne de confiance.
+
+**Ce qu'il montre, et pourquoi :**
+
+- **Ce qui a été entendu**, tour par tour, écrit. C'est le plus important. La
+  transcription se trompera — « deux kilos » entendu « douze » — et l'acheteuse
+  doit le voir à l'instant, pas le découvrir sur la facture.
+- **Ce que l'assistant a fait** : le panier se remplit sous les yeux, ligne à
+  ligne, pendant qu'il parle.
+- **Le total, toujours visible.** Jamais à chercher.
+- **Son état, sans ambiguïté** : il écoute, il cherche, il parle. Trois états
+  lisibles d'un coup d'œil. Un assistant dont on ne sait pas s'il écoute est un
+  assistant qu'on interrompt au mauvais moment.
+
+**Ce qu'il permet :**
+
+- **Un bouton pour parler**, large, atteignable au pouce d'une seule main. On
+  fait ses courses debout, souvent avec l'autre main occupée.
+- **Couper la parole** : un appui l'arrête net.
+- **Corriger à la main** à tout moment — retirer une ligne, changer une
+  quantité — sans quitter la conversation ni recommencer.
+- **Écrire au lieu de parler**, pour un mot que la transcription n'attrape pas,
+  ou dans un endroit où l'on ne peut pas parler.
+
+**Ce qu'il n'est pas.** Pas de sphère animée, pas d'onde sonore décorative, pas
+d'effet. Ce qu'on attend d'un outil qu'on utilise pour acheter, c'est qu'il soit
+rapide, lisible, et qu'il ne mente pas sur son état. La sobriété n'est pas ici
+une préférence esthétique : chaque élément qui bouge sans rien dire est un
+élément qui distrait de ce qui compte — le panier et le total.
+
+L'écran suit la charte d'eBio comme les autres. Il n'invente ni ses couleurs ni
+ses espacements.
 
 ## Exigences fonctionnelles
 
@@ -180,6 +245,9 @@ Le panier prêt, l'assistant annonce le total, les frais de livraison et l'adres
 - **FR-007** — L'acheteur peut interrompre et reprendre la main à tout moment ; l'écran reste pleinement utilisable pendant la conversation.
 - **FR-008** — Le traitement se fait **côté serveur**. Aucune clé de fournisseur d'IA ne descend dans une application distribuée.
 - **FR-009** — L'assistant dispose de l'historique des commandes de l'acheteur, et de lui seul.
+- **FR-009b** — L'assistant peut lire l'état d'une commande en cours et de sa livraison. Il énonce ce que disent la commande et le suivi, **jamais une estimation de délai qu'il aurait formée lui-même**.
+- **FR-011** — L'écran affiche la transcription de ce qui a été entendu, à chaque tour. C'est le seul moyen de rattraper une erreur de transcription avant qu'elle ne coûte quelque chose.
+- **FR-012** — L'acheteur peut à tout moment couper la parole à l'assistant, corriger le panier à la main, ou écrire au lieu de parler.
 - **FR-010** — Une conversation sans réseau échoue proprement et dit pourquoi ; elle ne laisse pas un panier à moitié construit.
 
 ## Hors périmètre
