@@ -128,8 +128,17 @@ export class DispatchService {
 
   /**
    * Validated + available couriers with a fresh (<12h) position inside the
-   * target's current radius. A target without a pickup location falls back
-   * to every available courier, distance-free.
+   * target's current radius, or whose declared zone circle reaches it.
+   *
+   * Without a pickup point, **nobody**. It used to fall back to every
+   * available courier, distance-free — which is how one phantom run sent 81
+   * offers to couriers who could never have taken it. Notifying someone four
+   * hundred kilometres away is worse than notifying no one: it teaches them
+   * to ignore the notification that matters.
+   *
+   * It is also a data defect worth seeing. A shop without coordinates — there
+   * are four — would silently have had its orders blasted to the whole
+   * country instead of being fixed.
    */
   async findEligibleFor(target: DispatchTarget): Promise<EligibleCourier[]> {
     const debt = await this.debtFilter()
@@ -162,12 +171,11 @@ export class DispatchService {
       )
     }
 
-    return this.em.getConnection().execute(
-      `SELECT cp.id, cp.user_id
-       FROM courier_profiles cp
-       WHERE cp.validation_status = 'VALIDATED' AND cp.is_available = true${debt.sql}`,
-      debt.params,
+    this.logger.error(
+      `Diffusion refusée : ${target.kind.toLowerCase()} ${target.id} n'a pas de point de retrait. `
+      + `La boutique n'a probablement pas de coordonnées — à corriger, la course reste attribuable à la main.`,
     )
+    return []
   }
 
   /** A lone delivery, as the dispatch sees it. */

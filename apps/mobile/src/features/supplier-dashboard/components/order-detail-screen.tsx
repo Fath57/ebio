@@ -432,11 +432,10 @@ const COURSE_FAIL_LABELS: Record<string, string> = {
   OTHER: 'Autre motif',
 }
 
-/** Delivery tracking block for the supplier: assigned courier + rebroadcast. */
+/** Delivery tracking block for the supplier: assigned courier and progress. */
 function CourseSection({ orderId, refreshToken }: { orderId: string, refreshToken: number }) {
   const { semantic } = useTheme()
   const [course, setCourse] = useState<CourseInfo | null>(null)
-  const [rebroadcasting, setRebroadcasting] = useState(false)
 
   const load = useCallback(async () => {
     try {
@@ -459,33 +458,6 @@ function CourseSection({ orderId, refreshToken }: { orderId: string, refreshToke
     return null
   }
 
-  async function rebroadcast() {
-    if (!course) {
-      return
-    }
-    setRebroadcasting(true)
-    try {
-      const res = await apiFetch(`/api/deliveries/${course.id}/rebroadcast`, { method: 'POST' })
-      if (res.ok) {
-        appAlert('Recherche relancée', 'La course a été proposée à nouveau aux livreurs, sur un rayon élargi.')
-        await load()
-      }
-      else if (res.status === 409) {
-        appAlert('Livreur trouvé', 'Un livreur a déjà pris cette course en charge.')
-        await load()
-      }
-      else {
-        appAlert('Erreur', 'La relance a échoué. Réessayez.')
-      }
-    }
-    catch {
-      appAlert('Hors connexion', 'Vérifiez votre connexion internet puis réessayez.')
-    }
-    finally {
-      setRebroadcasting(false)
-    }
-  }
-
   const isFailed = course.status === 'FAILED'
 
   return (
@@ -506,19 +478,6 @@ function CourseSection({ orderId, refreshToken }: { orderId: string, refreshToke
             value={`${COURSE_FAIL_LABELS[course.failReason] ?? course.failReason}${course.failComment ? ` — ${course.failComment}` : ''}`}
             semantic={semantic}
           />
-        )}
-        {course.status === 'AWAITING_COURIER' && (
-          <Pressable
-            style={[styles.rebroadcastButton, rebroadcasting && styles.rebroadcastDisabled]}
-            onPress={rebroadcast}
-            disabled={rebroadcasting}
-            accessibilityRole="button"
-            accessibilityLabel="Relancer la recherche de livreur"
-          >
-            {rebroadcasting
-              ? <ActivityIndicator size="small" color={colors.neutral[0]} />
-              : <Text style={styles.rebroadcastText}>Relancer la recherche de livreur</Text>}
-          </Pressable>
         )}
       </View>
     </>
@@ -626,19 +585,5 @@ const styles = StyleSheet.create({
   actionText: {
     ...typography.caption,
     fontSize: 13,
-  },
-  rebroadcastButton: {
-    height: 44,
-    borderRadius: radius.md,
-    backgroundColor: colors.green[400],
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginVertical: spacing[3],
-  },
-  rebroadcastDisabled: { opacity: 0.6 },
-  rebroadcastText: {
-    ...typography.caption,
-    fontSize: 13,
-    color: colors.neutral[0],
   },
 })

@@ -65,7 +65,9 @@ describe('dispatchService', () => {
     it('keeps indebted couriers out once a debt limit is set', async () => {
       const { service, execute, settings } = buildService()
       settings.getCourierMaxDebt.mockResolvedValue(5000)
-      mockLookup(execute)
+      // Avec une origine : sans point de retrait, plus aucune requête
+      // d'éligibilité n'est faite — c'est le sujet du test suivant.
+      mockLookup(execute, { origin: { latitude: 6.36, longitude: 2.42 } })
       execute.mockResolvedValueOnce([])
       await service.findEligibleCouriers('delivery-1')
       const [sql, params] = execute.mock.calls[2]
@@ -84,14 +86,17 @@ describe('dispatchService', () => {
       expect(proximitySql).toContain(`INTERVAL '12 hours'`)
     })
 
-    it('falls back to every available courier when the pickup has no location', async () => {
+    // Le repli « tout le monde » a existé, et c'est ainsi qu'une tournée
+    // fantôme a envoyé 81 offres à des livreurs qui ne pouvaient pas la
+    // prendre. Prévenir quelqu'un à quatre cents kilomètres est pire que ne
+    // prévenir personne : ça lui apprend à ignorer ses notifications.
+    it('ne diffuse à personne quand le point de retrait est inconnu', async () => {
       const { service, execute } = buildService()
       mockLookup(execute, { origin: null })
-      execute.mockResolvedValueOnce([{ id: 'c1', user_id: 'u1' }, { id: 'c2', user_id: 'u2' }])
       const result = await service.findEligibleCouriers('delivery-1')
-      expect(result).toHaveLength(2)
-      const fallbackSql = execute.mock.calls[2][0] as string
-      expect(fallbackSql).not.toContain('ST_DWithin')
+      expect(result).toEqual([])
+      // Aucune requête d'éligibilité : on n'interroge même pas.
+      expect(execute).toHaveBeenCalledTimes(2)
     })
 
     it('cherche les livreurs d\'une tournée depuis sa table, pas depuis les courses', async () => {
