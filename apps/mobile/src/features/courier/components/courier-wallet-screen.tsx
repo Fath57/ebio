@@ -21,13 +21,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { WebView } from 'react-native-webview'
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
-import { buildTopupCheckoutHtml, parseTopupCheckoutMessage } from '../../wallet/utils/topup-checkout'
+import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { buildTopupCheckoutHtml } from '../../wallet/utils/topup-checkout'
 import { useCourierWallet } from '../hooks/use-courier-wallet'
 import { AddNumberSheet, MIN_WITHDRAWAL, TopupSheet, WithdrawSheet } from './courier-wallet-sheets'
 
@@ -151,6 +151,10 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   // FedaPay Checkout.js page rendered in a WebView; `pendingTopupId` is the
   // server-side top-up the page is paying for.
   const [checkoutHtml, setCheckoutHtml] = useState<string | null>(null)
+  /** The provider's own page, when it hands one over. */
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+  /** Reference held by the server, the only one we confirm with. */
+  const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
 
   const balance = wallet?.balance ?? 0
@@ -229,13 +233,18 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
     }
     setIsToppingUp(false)
     setPendingTopupId(result.topupId)
-    setCheckoutHtml(buildTopupCheckoutHtml(
-      fedapayPublicKey ?? '',
-      result.amount,
-      result.topupId,
-      session?.user?.name ?? 'Livreur eBio',
-      session?.user?.email ?? null,
-    ))
+    setPaymentUrl(result.paymentUrl)
+    setProviderTransactionId(result.providerTransactionId)
+    // Only a widget-based provider leaves the page to us to build.
+    setCheckoutHtml(result.paymentUrl
+      ? null
+      : buildTopupCheckoutHtml(
+          fedapayPublicKey ?? '',
+          result.amount,
+          result.topupId,
+          session?.user?.name ?? 'Livreur eBio',
+          session?.user?.email ?? null,
+        ))
     return true
   }, [startTopup, fedapayPublicKey, session])
 
@@ -243,30 +252,26 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   // the wallet — reload either way.
   const closeCheckout = useCallback(() => {
     setCheckoutHtml(null)
+    setPaymentUrl(null)
+    setProviderTransactionId(null)
     setPendingTopupId(null)
     reload()
     onRefreshed?.()
   }, [reload, onRefreshed])
 
-  const handleCheckoutMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
-    const message = parseTopupCheckoutMessage(event.nativeEvent.data)
-    if (!message) {
+  const confirmTopup = useCallback(async (reference: string) => {
+    if (!pendingTopupId) {
       closeCheckout()
       return
     }
-    if (message.type === 'completed' && pendingTopupId) {
-      const result = await verifyTopup(pendingTopupId, message.transactionId)
-      if (result.ok) {
-        appAlert('Recharge confirmée', 'Votre portefeuille a été crédité.')
-      }
-      else {
-        appAlert('Vérification échouée', result.message === 'Une erreur est survenue'
-          ? 'La recharge sera vérifiée automatiquement.'
-          : result.message)
-      }
+    const result = await verifyTopup(pendingTopupId, reference)
+    if (result.ok) {
+      appAlert('Recharge confirmée', 'Votre portefeuille a été crédité.')
     }
-    else if (message.type === 'failed') {
-      appAlert('Paiement échoué', message.reason ?? 'Le paiement a échoué.')
+    else {
+      appAlert('Vérification échouée', result.message === 'Une erreur est survenue'
+        ? 'La recharge sera vérifiée automatiquement.'
+        : result.message)
     }
     closeCheckout()
   }, [pendingTopupId, verifyTopup, closeCheckout])
@@ -279,17 +284,16 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
     )
   }
 
-  if (checkoutHtml) {
+  if (checkoutHtml || paymentUrl) {
     return (
-      <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Recharge du portefeuille" onBack={closeCheckout} />
-        <WebView
-          source={{ html: checkoutHtml }}
-          style={{ flex: 1 }}
-          onMessage={handleCheckoutMessage}
-          javaScriptEnabled
-        />
-      </View>
+      <PaymentWebView
+        url={paymentUrl}
+        html={checkoutHtml}
+        transactionId={providerTransactionId}
+        title="Recharge du portefeuille"
+        onSettled={confirmTopup}
+        onCancel={closeCheckout}
+      />
     )
   }
 

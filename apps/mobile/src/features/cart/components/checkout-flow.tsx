@@ -1,5 +1,4 @@
 import type { OrderPreview, OrderPreviewLine, PreviewDeliveryReason } from '../hooks/use-order-preview'
-import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -22,7 +21,6 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { WebView } from 'react-native-webview'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -33,7 +31,8 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
-import { buildCheckoutHtml, paymentPublicKey } from '../../wallet/utils/checkout-widget'
+import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { buildCheckoutHtml, paymentPublicKey } from '../../payments/utils/checkout-widget'
 import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
 import { useRecommendations } from '../hooks/use-recommendations'
@@ -255,6 +254,10 @@ export function CheckoutFlow({
   /** Address of the pinned point, from the map's reverse geocoding. */
   const [deliveryPlaceLabel, setDeliveryPlaceLabel] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
+  /** The provider's own payment page, when it hands one over up front. */
+  const [hostedPaymentUrl, setHostedPaymentUrl] = useState<string | null>(null)
+  /** Known before the buyer pays, so confirmation never trusts the page. */
+  const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   // Where the map opens when no point is pinned yet: the typed address if it
   // geocodes, otherwise the device position (a buyer ordering for elsewhere
   // would otherwise be priced from where they stand).
@@ -566,9 +569,12 @@ export function CheckoutFlow({
       }
 
       // The payment itself does not exist yet: it is born at confirmation,
-      // one per order. What we keep here is the checkout.
-      await paymentRes.json()
+      // one per order. What we keep here is the checkout, plus the page the
+      // provider opened for it and the reference it gave the server.
+      const payment = await paymentRes.json() as { paymentUrl?: string | null, providerTransactionId?: string | null }
       setPendingCheckoutId(checkout?.checkoutId ?? null)
+      setHostedPaymentUrl(payment.paymentUrl ?? null)
+      setProviderTransactionId(payment.providerTransactionId ?? null)
       setCurrentStep('PAYMENT')
     }
     catch {
@@ -579,40 +585,35 @@ export function CheckoutFlow({
     }
   }, [orderSummary, basketItems, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems])
 
-  const handleWebViewMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
+  /**
+   * Confirms the collection once the payment screen says it is over.
+   *
+   * The reference comes from the server, which opened the payment: the page
+   * the buyer used could claim any transaction was paid, and this is where
+   * that claim would have been believed.
+   */
+  const confirmCartPayment = useCallback(async (reference: string) => {
+    if (!pendingCheckoutId) {
+      return
+    }
     try {
-      const data = JSON.parse(event.nativeEvent.data)
-
-      if (data.type === 'completed' && pendingCheckoutId) {
-        // Confirms the single collection; the server then creates one payment
-        // per order, each with its own escrow.
-        await apiFetch('/api/payments/cart/verify', {
-          method: 'POST',
-          body: JSON.stringify({
-            checkoutId: pendingCheckoutId,
-            fedapayTransactionId: data.transactionId,
-          }),
-        })
-        if (orderNumber && pendingOrderId) {
-          onComplete(orderNumber, pendingOrderId)
-        }
-      }
-      else if (data.type === 'closed') {
-        appAlert(
-          'Paiement annulé',
-          'Le paiement a été annulé. Votre commande reste en attente de paiement.',
-          [
-            { text: 'OK', onPress: () => setCurrentStep('SUMMARY') },
-          ],
-        )
-      }
-      else if (data.type === 'failed') {
-        appAlert('Paiement échoué', data.reason ?? 'Le paiement a échoué.')
+      const res = await apiFetch('/api/payments/cart/verify', {
+        method: 'POST',
+        body: JSON.stringify({ checkoutId: pendingCheckoutId, fedapayTransactionId: reference }),
+      })
+      if (!res.ok) {
+        const error = await res.json().catch(() => null) as { message?: string } | null
+        appAlert('Paiement non confirmé', error?.message ?? 'Le paiement n\'a pas abouti.')
         setCurrentStep('SUMMARY')
+        return
+      }
+      if (orderNumber && pendingOrderId) {
+        onComplete(orderNumber, pendingOrderId)
       }
     }
     catch {
-      // Ignore parse errors
+      appAlert('Erreur', 'La confirmation du paiement a échoué.')
+      setCurrentStep('SUMMARY')
     }
   }, [pendingCheckoutId, pendingOrderId, orderNumber, onComplete])
 
@@ -969,60 +970,24 @@ export function CheckoutFlow({
   // ─── STEP: PAYMENT (widget du prestataire, en WebView) ─────────────────────
 
   if (currentStep === 'PAYMENT' && fedapayPublicKey && pendingCheckoutId) {
-    const checkoutHtml = buildCheckoutHtml({
-      publicKey: fedapayPublicKey,
-      amount: amountDue ?? orderTotal,
-      description: orderSummary.shopNames.length > 1
-        ? `Panier eBio — ${orderSummary.shopNames.length} boutiques`
-        : `Commande eBio - ${orderSummary.shopNames[0] ?? ''}`,
-      customer,
-      metadata: { payment_id: pendingCheckoutId },
-    })
-
     return (
-      <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-        <View style={[styles.webViewHeader, { paddingTop: insets.top, backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderLight }]}>
-          <TouchableOpacity
-            style={styles.webViewBackButton}
-            onPress={() => {
-              appAlert(
-                'Annuler le paiement ?',
-                'Votre commande restera en attente de paiement.',
-                [
-                  { text: 'Continuer le paiement', style: 'cancel' },
-                  {
-                    text: 'Annuler',
-                    style: 'destructive',
-                    onPress: () => setCurrentStep('SUMMARY'),
-                  },
-                ],
-              )
-            }}
-          >
-            <ArrowLeft size={22} color={semantic.textPrimary} strokeWidth={2} />
-          </TouchableOpacity>
-          <Text style={[styles.webViewTitle, { color: semantic.textPrimary }]}>
-            Paiement sécurisé
-          </Text>
-          <View style={styles.webViewBackButton} />
-        </View>
-        <WebView
-          source={{ html: checkoutHtml }}
-          style={styles.webView}
-          onMessage={handleWebViewMessage}
-          javaScriptEnabled
-          domStorageEnabled
-          startInLoadingState
-          renderLoading={() => (
-            <View style={[styles.webViewLoading, { backgroundColor: semantic.bgPage }]}>
-              <ActivityIndicator size="large" color={colors.green[400]} />
-              <Text style={[styles.webViewLoadingText, { color: semantic.textSecondary }]}>
-                Chargement du paiement...
-              </Text>
-            </View>
-          )}
-        />
-      </View>
+      <PaymentWebView
+        url={hostedPaymentUrl}
+        html={hostedPaymentUrl
+          ? null
+          : buildCheckoutHtml({
+              publicKey: fedapayPublicKey,
+              amount: amountDue ?? orderTotal,
+              description: orderSummary.shopNames.length > 1
+                ? `Panier eBio — ${orderSummary.shopNames.length} boutiques`
+                : `Commande eBio - ${orderSummary.shopNames[0] ?? ''}`,
+              customer,
+              metadata: { payment_id: pendingCheckoutId },
+            })}
+        transactionId={providerTransactionId}
+        onSettled={confirmCartPayment}
+        onCancel={() => setCurrentStep('SUMMARY')}
+      />
     )
   }
 

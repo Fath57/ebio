@@ -108,6 +108,14 @@ export const configValidationSchema = z.object({
   // INTRAM Merchant API v1. The mode comes from the key itself
   // (pk_sandbox_… / pk_live_…), not from a flag.
   INTRAM_API_KEY: z.string().optional(),
+  /**
+   * Opening a payment goes through their older endpoint: the v1 equivalent
+   * answers 504, and this one hands back the hosted page's URL at once.
+   */
+  INTRAM_LEGACY_URL: z.string().default('https://webservices.intram.org:4002/api/v1'),
+  INTRAM_LEGACY_PUBLIC_KEY: z.string().optional(),
+  INTRAM_LEGACY_PRIVATE_KEY: z.string().optional(),
+  INTRAM_LEGACY_SECRET_KEY: z.string().optional(),
   INTRAM_SECRET_KEY: z.string().optional(),
   /** Distinct from the secret key: it signs incoming webhooks only. */
   INTRAM_WEBHOOK_SECRET: z.string().optional(),
@@ -255,6 +263,10 @@ export const config = {
     checkoutProvider: configParsed.data.CHECKOUT_PROVIDER,
     payoutProvider: configParsed.data.PAYOUT_PROVIDER,
     intram: {
+      legacyUrl: configParsed.data.INTRAM_LEGACY_URL,
+      legacyPublicKey: configParsed.data.INTRAM_LEGACY_PUBLIC_KEY,
+      legacyPrivateKey: configParsed.data.INTRAM_LEGACY_PRIVATE_KEY,
+      legacySecretKey: configParsed.data.INTRAM_LEGACY_SECRET_KEY,
       apiKey: configParsed.data.INTRAM_API_KEY,
       secretKey: configParsed.data.INTRAM_SECRET_KEY,
       webhookSecret: configParsed.data.INTRAM_WEBHOOK_SECRET,

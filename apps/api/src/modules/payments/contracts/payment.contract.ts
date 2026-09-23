@@ -80,6 +80,18 @@ export const cartPaymentResultSchema = z.object({
   status: z.enum(['pending', 'completed']),
   /** One payment per order, created at confirmation only. */
   paymentIds: z.array(z.string().uuid()),
+  /**
+   * The provider's hosted page, when the provider gives one up front. The app
+   * opens it in a WebView; a provider whose widget builds its own page leaves
+   * this null and the app falls back to embedding that widget.
+   */
+  paymentUrl: z.string().nullable().optional(),
+  /**
+   * The provider's transaction, known server-side from the moment the payment
+   * is opened — so confirmation never has to trust a reference the phone
+   * hands back.
+   */
+  providerTransactionId: z.string().nullable().optional(),
 }).meta({ title: 'CartPaymentResult' })
 
 export type InitiateCartPayment = z.infer<typeof initiateCartPaymentSchema>

@@ -7,8 +7,8 @@
  * three screens using it did not have to change.
  */
 
-import type { CheckoutMessage } from './checkout-widget'
-import { buildCheckoutHtml, parseCheckoutMessage } from './checkout-widget'
+import type { CheckoutMessage } from '../../payments/utils/checkout-widget'
+import { buildCheckoutHtml, parseCheckoutMessage } from '../../payments/utils/checkout-widget'
 
 export const TOPUP_PRESETS = [1000, 2000, 5000, 10000]
 

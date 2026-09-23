@@ -294,11 +294,45 @@ export class PaymentsService {
       throw new BadRequestException('Ce panier ne contient aucune commande')
     }
 
+    // Opening the payment here, rather than letting the phone do it, is what
+    // makes the transaction id trustworthy: it is ours before the buyer sees
+    // a page, so confirmation compares against something the client never
+    // chose. It also spares the app the provider's widget entirely.
+    const gateway = this.gatewayFactory.createGateway(this.checkoutProvider())
+
+    // Only for a provider that hands over a page. A widget-based one opens
+    // its own transaction on the phone, and pre-opening here would leave an
+    // orphan beside it.
+    if (gateway.hostsPaymentPage?.() !== true) {
+      return {
+        checkoutId: checkout.id,
+        amount: checkout.totalAmount,
+        status: 'pending' as const,
+        paymentIds: [],
+        paymentUrl: null,
+        providerTransactionId: null,
+      }
+    }
+
+    const opened = await gateway.initiatePayment({
+      amount: checkout.totalAmount,
+      currency: 'XOF',
+      orderId: checkout.id,
+      paymentMethod: '',
+      callbackUrl: `${config.clients.webApp.url}/payments/callback`,
+    })
+
+    checkout.providerTransactionId = opened.providerTransactionId
+
+    await this.em.flush()
+
     return {
       checkoutId: checkout.id,
       amount: checkout.totalAmount,
       status: 'pending' as const,
       paymentIds: [],
+      paymentUrl: opened.redirectUrl ?? null,
+      providerTransactionId: opened.providerTransactionId,
     }
   }
 

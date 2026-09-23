@@ -98,7 +98,32 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
 
   constructor(private readonly client: IntramClient = new IntramClient()) {}
 
+  /** INTRAM gives a page; its widget is deliberately not used. */
+  hostsPaymentPage(): boolean {
+    return true
+  }
+
+  /**
+   * Opens a payment and hands back the page the buyer must be shown.
+   *
+   * This goes through INTRAM's older endpoint, on purpose. The Merchant API
+   * v1 equivalent answers `504` and, even when it does not, only promises the
+   * URL later through a webhook; this one returns it in the same breath. The
+   * *verification* stays on v1, signed — a transaction opened here is
+   * readable there, which was checked against their sandbox.
+   *
+   * Their JavaScript widget is skipped entirely: all it does is call this
+   * same endpoint from the browser and open `gateway.intram.org/<id>` in an
+   * iframe. Doing it server-side removes jQuery, socket.io and a credentialed
+   * cross-origin call from a page that has no origin — and the transaction id
+   * then comes from us, so a phone cannot invent one.
+   */
   async initiatePayment(params: InitiatePaymentParams): Promise<InitiatePaymentResult> {
+    const legacy = await this.openLegacyPayment(params)
+    if (legacy) {
+      return legacy
+    }
+
     const operation = await this.client.post<IntramOperation>(
       '/payment-requests',
       {
@@ -128,6 +153,69 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
       // worker has minted it, the operation id is the only handle we have and
       // the webhook carries it too.
       providerTransactionId: ready?.transaction_reference ?? operation.operation_id,
+      status: 'pending',
+    }
+  }
+
+  /**
+   * The older endpoint: three keys in headers, no signature, and the hosted
+   * page's URL in the answer. Returns null when it is not configured, so the
+   * v1 path below stays as the fallback.
+   */
+  private async openLegacyPayment(params: InitiatePaymentParams): Promise<InitiatePaymentResult | null> {
+    const { legacyUrl, legacyPublicKey, legacyPrivateKey, legacySecretKey } = config.payments.intram
+    if (!legacyPublicKey || !legacyPrivateKey || !legacySecretKey) {
+      return null
+    }
+
+    const response = await fetch(`${legacyUrl}/payments/request`, {
+      method: 'POST',
+      headers: {
+        'X-API-KEY': legacyPublicKey,
+        'X-PRIVATE-KEY': legacyPrivateKey,
+        'X-SECRET-KEY': legacySecretKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        invoice: {
+          currency: params.currency,
+          items: [],
+          taxes: [],
+          amount: params.amount,
+          description: `Commande ${params.orderId}`,
+          custom_datas: { order_id: params.orderId },
+        },
+        store: {
+          name: 'eBio',
+          postal_adress: 'Cotonou, Bénin',
+          logo_url: 'https://e-bio.org/logo.png',
+          web_site_url: 'https://e-bio.org',
+          phone: '+22900000000',
+          template: 'default',
+        },
+        actions: {
+          cancel_url: params.callbackUrl,
+          return_url: params.callbackUrl,
+          callback_url: `${config.api.baseUrl}/api/payments/webhook/intram`,
+        },
+      }),
+    })
+
+    const text = await response.text()
+    if (!response.ok) {
+      this.logger.error(`INTRAM (ancienne API) ${response.status} : ${text.slice(0, 300)}`)
+      throw new Error(`INTRAM: ouverture du paiement refusée (${response.status})`)
+    }
+
+    const data = JSON.parse(text) as { transaction_id?: string, receipt_url?: string, status?: string }
+    if (!data.transaction_id || !data.receipt_url) {
+      this.logger.error(`INTRAM (ancienne API) : réponse sans transaction — ${text.slice(0, 300)}`)
+      throw new Error('INTRAM: réponse sans transaction')
+    }
+
+    return {
+      redirectUrl: data.receipt_url,
+      providerTransactionId: data.transaction_id,
       status: 'pending',
     }
   }

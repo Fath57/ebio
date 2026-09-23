@@ -8,15 +8,14 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { WebView } from 'react-native-webview'
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
-import { ScreenHeader } from '../../common/components/screen-header'
-import { buildTopupCheckoutHtml, parseTopupCheckoutMessage, TOPUP_PRESETS } from '../../wallet/utils/topup-checkout'
+import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { buildTopupCheckoutHtml, TOPUP_PRESETS } from '../../wallet/utils/topup-checkout'
 import { readApiError } from '../utils/read-api-error'
 
 export const MIN_TOPUP = 100
@@ -49,6 +48,10 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
   const [isSubmitting, setIsSubmitting] = useState(false)
   // FedaPay page currently open; `pendingTopupId` is the server-side top-up it pays for.
   const [checkoutHtml, setCheckoutHtml] = useState<string | null>(null)
+  /** The provider's own page, when it hands one over. */
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+  /** Reference held by the server, the only one we confirm with. */
+  const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
 
   // Pre-fill the suggested amount each time the sheet opens.
@@ -79,15 +82,25 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
         appAlert('Recharge impossible', await readApiError(res))
         return
       }
-      const data = await res.json() as { topupId: string, amount: number }
+      const data = await res.json() as {
+        topupId: string
+        amount: number
+        paymentUrl?: string | null
+        providerTransactionId?: string | null
+      }
       setPendingTopupId(data.topupId)
-      setCheckoutHtml(buildTopupCheckoutHtml(
-        fedapayPublicKey,
-        data.amount,
-        data.topupId,
-        session?.user?.name ?? 'Boutique eBio',
-        session?.user?.email ?? null,
-      ))
+      setPaymentUrl(data.paymentUrl ?? null)
+      setProviderTransactionId(data.providerTransactionId ?? null)
+      // Only a widget-based provider leaves the page to us to build.
+      setCheckoutHtml(data.paymentUrl
+        ? null
+        : buildTopupCheckoutHtml(
+            fedapayPublicKey,
+            data.amount,
+            data.topupId,
+            session?.user?.name ?? 'Boutique eBio',
+            session?.user?.email ?? null,
+          ))
     }
     catch {
       appAlert('Recharge impossible', 'Vérifiez votre connexion et réessayez.')
@@ -99,43 +112,39 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
 
   const closeCheckout = useCallback(() => {
     setCheckoutHtml(null)
+    setPaymentUrl(null)
+    setProviderTransactionId(null)
     setPendingTopupId(null)
     onClose()
   }, [onClose])
 
-  const handleCheckoutMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
-    const message = parseTopupCheckoutMessage(event.nativeEvent.data)
-    if (!message) {
+  const confirmTopup = useCallback(async (reference: string) => {
+    if (!pendingTopupId) {
       closeCheckout()
       return
     }
-    if (message.type === 'completed' && pendingTopupId) {
-      try {
-        const res = await apiFetch(`/api/suppliers/me/wallet/topups/${pendingTopupId}/verify`, {
-          method: 'POST',
-          body: JSON.stringify({ fedapayTransactionId: message.transactionId }),
-        })
-        if (res.ok) {
-          const data = await res.json() as { status: string, balance: number }
-          closeCheckout()
-          onVerified(data.balance)
-          return
-        }
-        appAlert('Vérification échouée', await readApiError(res))
+    try {
+      const res = await apiFetch(`/api/suppliers/me/wallet/topups/${pendingTopupId}/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ fedapayTransactionId: reference }),
+      })
+      if (res.ok) {
+        const data = await res.json() as { status: string, balance: number }
+        closeCheckout()
+        onVerified(data.balance)
+        return
       }
-      catch {
-        appAlert('Vérification échouée', 'La recharge sera vérifiée automatiquement.')
-      }
+      appAlert('Vérification échouée', await readApiError(res))
     }
-    else if (message.type === 'failed') {
-      appAlert('Paiement échoué', message.reason ?? 'Le paiement a échoué.')
+    catch {
+      appAlert('Vérification échouée', 'La recharge sera vérifiée automatiquement.')
     }
     closeCheckout()
   }, [pendingTopupId, closeCheckout, onVerified])
 
   return (
     <>
-      <Modal visible={visible && !checkoutHtml} transparent animationType="slide" onRequestClose={onClose}>
+      <Modal visible={visible && !checkoutHtml && !paymentUrl} transparent animationType="slide" onRequestClose={onClose}>
         <KeyboardAwareView style={styles.overlay}>
           <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.title, { color: semantic.textPrimary }]}>Recharger mon portefeuille</Text>
@@ -198,18 +207,15 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
         </KeyboardAwareView>
       </Modal>
 
-      <Modal visible={checkoutHtml !== null} animationType="slide" onRequestClose={closeCheckout}>
-        <View style={[styles.checkout, { backgroundColor: semantic.bgPage }]}>
-          <ScreenHeader title="Recharge du portefeuille" onBack={closeCheckout} />
-          {checkoutHtml && (
-            <WebView
-              source={{ html: checkoutHtml }}
-              style={styles.checkout}
-              onMessage={handleCheckoutMessage}
-              javaScriptEnabled
-            />
-          )}
-        </View>
+      <Modal visible={checkoutHtml !== null || paymentUrl !== null} animationType="slide" onRequestClose={closeCheckout}>
+        <PaymentWebView
+          url={paymentUrl}
+          html={checkoutHtml}
+          transactionId={providerTransactionId}
+          title="Recharge du portefeuille"
+          onSettled={confirmTopup}
+          onCancel={closeCheckout}
+        />
       </Modal>
     </>
   )

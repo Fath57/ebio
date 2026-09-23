@@ -184,7 +184,10 @@ export function useCourierWallet() {
   }, [load])
 
   /** Opens a top-up; the caller then renders the FedaPay checkout page. */
-  const startTopup = useCallback(async (amount: number): Promise<{ ok: true, topupId: string, amount: number } | { ok: false, message: string }> => {
+  const startTopup = useCallback(async (amount: number): Promise<
+    | { ok: true, topupId: string, amount: number, paymentUrl: string | null, providerTransactionId: string | null }
+    | { ok: false, message: string }
+  > => {
     const res = await apiFetch(`${BASE}/topup`, {
       method: 'POST',
       body: JSON.stringify({ amount }),
@@ -192,8 +195,21 @@ export function useCourierWallet() {
     if (!res.ok) {
       return { ok: false, message: await readError(res) }
     }
-    const data = await res.json() as { topupId: string, amount: number }
-    return { ok: true, topupId: data.topupId, amount: data.amount }
+    const data = await res.json() as {
+      topupId: string
+      amount: number
+      paymentUrl?: string | null
+      providerTransactionId?: string | null
+    }
+    return {
+      ok: true,
+      topupId: data.topupId,
+      amount: data.amount,
+      // Present when the provider hands over its own page; absent for a
+      // widget-based one, which opens its transaction on the phone.
+      paymentUrl: data.paymentUrl ?? null,
+      providerTransactionId: data.providerTransactionId ?? null,
+    }
   }, [])
 
   /** Server-side verification with FedaPay after the widget reports success. */

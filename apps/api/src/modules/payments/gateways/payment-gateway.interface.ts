@@ -34,6 +34,16 @@ export interface WebhookResult {
 }
 
 export interface PaymentGatewayInterface {
+  /**
+   * True when the provider hands over a page for us to open.
+   *
+   * A provider whose checkout is a widget we embed ourselves answers false —
+   * and must, because opening a payment ahead of time would then mint a
+   * transaction nobody ever uses, and the widget would open a second one.
+   * This is what keeps FedaPay's Checkout.js path exactly as it was should we
+   * switch back to it.
+   */
+  hostsPaymentPage?: () => boolean
   initiatePayment: (params: InitiatePaymentParams) => Promise<InitiatePaymentResult>
   checkStatus: (providerTransactionId: string) => Promise<CheckStatusResult>
   processRefund: (providerTransactionId: string, amount: number) => Promise<RefundResult>

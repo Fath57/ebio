@@ -12,7 +12,6 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
-import { WebView } from 'react-native-webview'
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -20,6 +19,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { buildTopupCheckoutHtml, TOPUP_PRESETS } from '../utils/topup-checkout'
 
 interface WalletData {
@@ -80,6 +80,10 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
   // Checkout.js widget HTML, same mechanism as the order payment: local page,
   // native postMessage on completion, server-side re-check before crediting.
   const [checkoutHtml, setCheckoutHtml] = useState<string | null>(null)
+  /** The provider's own page, when it hands one over. */
+  const [paymentUrl, setPaymentUrl] = useState<string | null>(null)
+  /** Reference held by the server, the only one we confirm with. */
+  const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
 
   const load = useCallback(async () => {
@@ -126,17 +130,27 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
         appAlert('Erreur', body?.message ?? 'Impossible de démarrer la recharge.')
         return
       }
-      const data = await res.json() as { topupId: string, amount: number }
+      const data = await res.json() as {
+        topupId: string
+        amount: number
+        paymentUrl?: string | null
+        providerTransactionId?: string | null
+      }
       setIsToppingUp(false)
       setTopupAmount('')
       setPendingTopupId(data.topupId)
-      setCheckoutHtml(buildTopupCheckoutHtml(
-        fedapayPublicKey ?? '',
-        data.amount,
-        data.topupId,
-        session?.user?.name ?? 'Client eBio',
-        session?.user?.email ?? null,
-      ))
+      setPaymentUrl(data.paymentUrl ?? null)
+      setProviderTransactionId(data.providerTransactionId ?? null)
+      // Only a widget-based provider leaves the page to us to build.
+      setCheckoutHtml(data.paymentUrl
+        ? null
+        : buildTopupCheckoutHtml(
+            fedapayPublicKey ?? '',
+            data.amount,
+            data.topupId,
+            session?.user?.name ?? 'Client eBio',
+            session?.user?.email ?? null,
+          ))
     }
     finally {
       setIsSubmitting(false)
@@ -145,41 +159,31 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
 
   const closeCheckout = useCallback(() => {
     setCheckoutHtml(null)
+    setPaymentUrl(null)
+    setProviderTransactionId(null)
     setPendingTopupId(null)
     setIsLoading(true)
     load()
   }, [load])
 
-  const handleCheckoutMessage = useCallback(async (event: { nativeEvent: { data: string } }) => {
-    try {
-      const data = JSON.parse(event.nativeEvent.data) as { type: string, transactionId?: string, reason?: string }
-      if (data.type === 'completed' && pendingTopupId && data.transactionId) {
-        // The server re-checks the transaction with FedaPay (status AND
-        // amount) before crediting — the widget's word alone is worthless.
-        const res = await apiFetch(`/api/wallet/me/topups/${pendingTopupId}/verify`, {
-          method: 'POST',
-          body: JSON.stringify({ fedapayTransactionId: data.transactionId }),
-        })
-        if (res.ok) {
-          appAlert('Recharge confirmée', 'Votre portefeuille a été crédité.')
-        }
-        else {
-          const body = await res.json().catch(() => null) as { message?: string } | null
-          appAlert('Vérification échouée', body?.message ?? 'La recharge sera vérifiée automatiquement.')
-        }
-        closeCheckout()
-      }
-      else if (data.type === 'failed') {
-        appAlert('Paiement échoué', data.reason ?? 'Le paiement a échoué.')
-        closeCheckout()
-      }
-      else if (data.type === 'closed') {
-        closeCheckout()
-      }
+  const confirmTopup = useCallback(async (reference: string) => {
+    if (!pendingTopupId) {
+      return
     }
-    catch {
-      closeCheckout()
+    // The server re-checks status AND amount with the provider before
+    // crediting — the page's word alone is worthless.
+    const res = await apiFetch(`/api/wallet/me/topups/${pendingTopupId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ fedapayTransactionId: reference }),
+    })
+    if (res.ok) {
+      appAlert('Recharge confirmée', 'Votre portefeuille a été crédité.')
     }
+    else {
+      const body = await res.json().catch(() => null) as { message?: string } | null
+      appAlert('Vérification échouée', body?.message ?? 'La recharge sera vérifiée automatiquement.')
+    }
+    closeCheckout()
   }, [pendingTopupId, closeCheckout])
 
   if (isLoading) {
@@ -190,19 +194,16 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
     )
   }
 
-  // FedaPay payment page: once the user leaves it, the webhook has (or will
-  // shortly have) credited the wallet — reload on close.
-  if (checkoutHtml) {
+  if (checkoutHtml || paymentUrl) {
     return (
-      <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Recharge du portefeuille" onBack={closeCheckout} />
-        <WebView
-          source={{ html: checkoutHtml }}
-          style={{ flex: 1 }}
-          onMessage={handleCheckoutMessage}
-          javaScriptEnabled
-        />
-      </View>
+      <PaymentWebView
+        url={paymentUrl}
+        html={checkoutHtml}
+        transactionId={providerTransactionId}
+        title="Recharge du portefeuille"
+        onSettled={confirmTopup}
+        onCancel={closeCheckout}
+      />
     )
   }
 

@@ -45,7 +45,14 @@ export class TopupService {
    * A courier tops up their courier wallet (to cover the cash-commission
    * debt), never their personal one.
    */
-  async initiate(userId: string, amount: number, target: TopupTarget = 'personal'): Promise<{ topupId: string, amount: number }> {
+  async initiate(userId: string, amount: number, target: TopupTarget = 'personal'): Promise<{
+    topupId: string
+    amount: number
+    /** The provider's hosted page, when it gives one; the app opens it. */
+    paymentUrl: string | null
+    /** Known here, so crediting never trusts a reference from the phone. */
+    providerTransactionId: string | null
+  }> {
     const wallet = await this.walletService.getOrCreate(await this.resolveOwner(userId, target))
     const user = await this.em.findOneOrFail(User, { id: userId })
 
@@ -56,7 +63,35 @@ export class TopupService {
     })
     await this.em.flush()
 
-    return { topupId: topup.id, amount }
+    const gateway = this.checkoutGateway()
+    // Only for a provider that hands over a page; a widget-based one opens
+    // its own transaction on the phone (see `hostsPaymentPage`).
+    if (gateway.hostsPaymentPage?.() !== true) {
+      return { topupId: topup.id, amount, paymentUrl: null, providerTransactionId: null }
+    }
+
+    // The payment is opened here rather than by the phone: the provider's
+    // page comes back at once, and the reference it is tied to is ours before
+    // the user sees anything to pay with.
+    const opened = await gateway.initiatePayment({
+      amount,
+      currency: 'XOF',
+      orderId: topup.id,
+      paymentMethod: '',
+      callbackUrl: `${config.clients.webApp.url}/payments/callback`,
+    })
+
+    if (opened.providerTransactionId) {
+      topup.fedapayTransactionId = opened.providerTransactionId
+      await this.em.flush()
+    }
+
+    return {
+      topupId: topup.id,
+      amount,
+      paymentUrl: opened.redirectUrl ?? null,
+      providerTransactionId: opened.providerTransactionId ?? null,
+    }
   }
 
   /**

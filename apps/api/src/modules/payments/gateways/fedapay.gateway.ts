@@ -32,6 +32,15 @@ export class FedaPayGateway implements PaymentGatewayInterface, PayoutGatewayInt
     )
   }
 
+  /**
+   * False on purpose: the apps embed Checkout.js, which opens its own
+   * transaction. `initiatePayment` still works — the no-redirect flow uses
+   * it — but the cart and the wallets must not pre-open one.
+   */
+  hostsPaymentPage(): boolean {
+    return false
+  }
+
   async initiatePayment(params: InitiatePaymentParams): Promise<InitiatePaymentResult> {
     // An empty phone_number makes FedaPay reject the transaction: the
     // customer block is only sent when a phone actually exists (Google
