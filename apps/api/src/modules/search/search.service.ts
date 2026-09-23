@@ -70,6 +70,31 @@ interface RawCategoryRow {
 /** French words whose final -s or -x belongs to the singular. */
 const INVARIABLE = /(?:ais|ois|as|os|us|ix)$/i
 
+/**
+ * What people say here, for what the catalogue calls something else.
+ *
+ * "de l'huile rouge" is palm oil in Benin, and no product carries the word
+ * "rouge". Substituted on the whole query, before it is split, because the
+ * meaning is in the pair of words and not in either one.
+ *
+ * Deliberately short: a guessed synonym silently sends the buyer elsewhere.
+ * It grows from what buyers actually ask for.
+ */
+const LOCAL_SYNONYMS: [RegExp, string][] = [
+  [/\bhuiles?\s+rouges?\b/gi, 'huile de palme'],
+]
+
+/**
+ * Linking words, dropped.
+ *
+ * Every term is required in the name, so keeping "avec" from "du gari avec de
+ * l'huile" demands that the product be named "avec" — nothing matches.
+ */
+const STOPWORDS = new Set([
+  'au', 'aux', 'avec', 'de', 'des', 'du', 'en', 'et',
+  'la', 'le', 'les', 'ou', 'pour', 'un', 'une',
+])
+
 /** Au-delà, la requête n'est plus une recherche mais une phrase. */
 const MAX_SEARCH_TERMS = 6
 
@@ -81,11 +106,18 @@ const MAX_SEARCH_TERMS = 6
  * feraient correspondre la moitié du catalogue.
  */
 export function searchTerms(q: string): string[] {
-  return q
+  const query = LOCAL_SYNONYMS.reduce((text, [said, meant]) => text.replace(said, meant), q)
+
+  const terms = query
     .split(/\s+/)
     .map(term => singularize(term.trim()))
     .filter(term => term.length > 1)
-    .slice(0, MAX_SEARCH_TERMS)
+
+  // A query made only of linking words keeps them: better to look for "le"
+  // and find nothing than to drop every term and return the whole catalogue.
+  const meaningful = terms.filter(term => !STOPWORDS.has(term.toLowerCase()))
+
+  return (meaningful.length > 0 ? meaningful : terms).slice(0, MAX_SEARCH_TERMS)
 }
 
 /**
@@ -166,7 +198,10 @@ export class SearchService {
       // nom exact d'un produit, et l'apostrophe de « huile d'arachide »
       // suffisait à tout faire échouer.
       for (const term of searchTerms(q)) {
-        whereClause += `  AND (p.name ILIKE ? OR s.shop_name ILIKE ?)\n`
+        // unaccent on both sides: the catalogue is typed "Tomates fraiches"
+        // while speech dictation gives "tomates fraîches". Without it the
+        // assistant announces a shortage that does not exist.
+        whereClause += `  AND (unaccent(p.name) ILIKE unaccent(?) OR unaccent(s.shop_name) ILIKE unaccent(?))\n`
         baseParams.push(`%${term}%`, `%${term}%`)
       }
     }
@@ -278,14 +313,14 @@ export class SearchService {
           AND s.validation_status <> 'SUSPENDED'
           AND s.location IS NOT NULL
           AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)
-          AND p.name ILIKE ?
+          AND unaccent(p.name) ILIKE unaccent(?)
         LIMIT 5
       )
       UNION ALL
       (
         SELECT c.name as text, 'category' as type, c.id::text as id
         FROM categories c
-        WHERE c.name ILIKE ?
+        WHERE unaccent(c.name) ILIKE unaccent(?)
         LIMIT 3
       )
       UNION ALL
@@ -294,7 +329,7 @@ export class SearchService {
         FROM suppliers s
         WHERE s.location IS NOT NULL
           AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)
-          AND s.shop_name ILIKE ?
+          AND unaccent(s.shop_name) ILIKE unaccent(?)
           AND s.validation_status = 'VALIDATED'
         LIMIT 3
       )

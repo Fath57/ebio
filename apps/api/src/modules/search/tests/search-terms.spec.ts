@@ -47,4 +47,21 @@ describe('découpage d\'une recherche', () => {
   it('retire aussi le pluriel en « x » : « choux » trouve « Chou »', () => {
     expect(searchTerms('choux')).toEqual(['chou'])
   })
+
+  // Chaque mot est exigé dans le nom du produit : garder « avec » revenait à
+  // chercher un produit qui s'appelle « avec ».
+  it('écarte les mots de liaison', () => {
+    expect(searchTerms('du gari avec de l huile')).toEqual(['gari', 'huile'])
+  })
+
+  it('garde les mots de liaison quand il n\'y a qu\'eux', () => {
+    expect(searchTerms('les')).toEqual(['les'])
+  })
+
+  // Le scénario d'origine : « je cherche du gari avec de l'huile rouge ».
+  // Aucun produit ne porte le mot « rouge » — c'est l'huile de palme.
+  it('traduit le vocabulaire d\'ici : « huile rouge » est de l\'huile de palme', () => {
+    expect(searchTerms('huile rouge')).toEqual(['huile', 'palme'])
+    expect(searchTerms('gari et huiles rouges')).toEqual(['gari', 'huile', 'palme'])
+  })
 })
