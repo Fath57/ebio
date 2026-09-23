@@ -126,8 +126,12 @@ export const configValidationSchema = z.object({
    * Which provider the in-app checkout widget belongs to. The apps ship the
    * matching public key; this is the server side of the same choice, and it
    * decides which gateway verifies what the widget hands back.
+   *
+   * Defaults to the provider already in service. A default of `intram` would
+   * switch production the day this ships, keys or no keys — a deployment must
+   * never change who takes the money by omission.
    */
-  CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
+  CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('fedapay'),
   /**
    * Where a provider sends the browser once a payment ends. It must be a
    * public HTTPS address: a gateway will not redirect to `localhost`, which
@@ -140,7 +144,7 @@ export const configValidationSchema = z.object({
    * paying people can be moved to a new provider one at a time, which is the
    * only safe way to change either.
    */
-  PAYOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
+  PAYOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('fedapay'),
 
   // SMS (Africa's Talking)
   AT_API_KEY: z.string().optional(),
