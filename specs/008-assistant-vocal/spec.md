@@ -31,36 +31,86 @@ pour le rendre possible.
 
 > *(l'acheteuse ouvre l'assistant)*
 >
-> **— Bonjour ! Qu'est-ce qu'il vous faut aujourd'hui ?**
+> **— Bonjour ! Qu'est-ce qu'il vous faut ?**
 >
 > — Je cherche du gari avec de l'huile rouge.
 >
-> **— J'ai du gari chez deux boutiques : du gari blanc à 1 500 le kilo chez Mama
-> Adjo, et du gari Sohui à 1 800 chez Fidjrossè Bio. Pour l'huile rouge, Mama
-> Adjo a une bouteille d'un litre à 2 500 — si vous prenez tout chez elle, ça
-> vous fait une seule livraison. Je vous mets ça ?**
+> **— Du gari et de l'huile rouge, d'accord… Attendez, je regarde.**
 >
-> — Oui, deux kilos de gari et une bouteille.
+> **— Voilà : j'ai les deux chez Mama Adjo. Son gari blanc, c'est 1 500 le kilo.**
 >
-> **— C'est noté : deux kilos de gari blanc et une bouteille d'huile rouge, chez
-> Mama Adjo. Ça fait 5 500. Il vous faut autre chose ?**
+> — Ça va. Il m'en faut deux kilos.
 >
-> — Non, c'est tout.
+> **— Deux kilos, c'est noté. Et pour l'huile, elle a la bouteille d'un litre à
+> 2 500. J'en mets une ?**
 >
-> **— Très bien. Avec la livraison à Fidjrossè, on arrive à 6 500. Je vous laisse
-> confirmer le paiement à l'écran.**
+> — Oui.
+>
+> **— Voilà. Ça vous fait 5 500 pour l'instant. Autre chose ?**
+>
+> — Non, c'est bon.
+>
+> **— D'accord. Avec la livraison, on est à 6 500. Je vous laisse confirmer à
+> l'écran.**
 
 Ce qu'il faut lire dans cet échange :
 
-- L'assistant **oriente** au lieu d'énumérer. Il ne récite pas un catalogue, il
-  propose ce qui va ensemble et dit pourquoi.
-- Il **remarque** ce qu'une vendeuse remarquerait : deux produits chez la même
-  boutique, c'est une livraison au lieu de deux. Le panier unifié rend cette
-  remarque vraie, donc utile.
-- Il **demande avant de mettre dans le sac**, une fois, naturellement — pas à
-  chaque ligne, pas sous forme de case à cocher.
-- Il **compte à voix haute**, au fur et à mesure et à la fin.
-- Il **rend la main** pour l'argent, sans cérémonie.
+- **Les tours sont courts.** Une idée, parfois deux. Jamais un paragraphe.
+- Il **accuse réception avant de répondre** — « du gari et de l'huile rouge,
+  d'accord » — comme on le fait en écoutant quelqu'un.
+- Il **ne vide pas le catalogue**. Une seule boutique proposée, celle qui a les
+  deux. Le reste attend qu'on le demande.
+- Il **laisse parler**. Après « c'est 1 500 le kilo », il s'arrête. C'est
+  l'acheteuse qui donne la quantité, il ne la lui demande pas comme un
+  formulaire.
+- Il **compte au fur et à mesure**, sans solennité : « ça vous fait 5 500 pour
+  l'instant ».
+- Il **rend la main** pour l'argent, en une phrase.
+
+### Comparaison
+
+La même chose, mal dite — et c'était la première rédaction de cette spec :
+
+> *J'ai du gari chez deux boutiques : du gari blanc à 1 500 le kilo chez Mama
+> Adjo, et du gari Sohui à 1 800 chez Fidjrossè Bio. Pour l'huile rouge, Mama
+> Adjo a une bouteille d'un litre à 2 500 — si vous prenez tout chez elle, ça
+> vous fait une seule livraison. Je vous mets ça ?*
+
+Quatre informations, deux boutiques, trois prix et une question sans reprendre
+son souffle. À lire, ça passe. À l'oreille, on décroche à la moitié — et on ne
+peut pas relire.
+
+## Comment il parle
+
+Le ton n'est pas un vernis qu'on applique à la fin : c'est la fonctionnalité.
+Un assistant qui dit des choses justes dans une langue d'automate n'est pas un
+assistant dégradé, c'est une fonctionnalité ratée — personne ne parlera deux
+fois à un serveur vocal.
+
+**Ce qui fait qu'on parle comme quelqu'un :**
+
+- **Des tours courts.** Deux phrases, rarement trois. Ce qui ne tient pas dans
+  un souffle ne tient pas dans une oreille.
+- **Deux ou trois choses à la fois, pas plus.** L'oreille ne revient pas en
+  arrière. Une liste de cinq produits lue à voix haute est perdue d'avance.
+- **On accuse réception.** « D'accord », « c'est noté », « attendez, je
+  regarde ». C'est ce qui prouve qu'on écoute.
+- **On dit les prix comme on les dit au marché** : « 1 500 le kilo », pas
+  « 1 500 francs CFA le kilogramme ».
+- **On s'arrête.** Après une proposition, on se tait. Le silence est une
+  question.
+- **On a le droit d'hésiter.** « Attendez… » pendant que le catalogue est
+  interrogé vaut mieux qu'un blanc.
+
+**Ce qui trahit la machine** — et qu'on ne veut pas entendre :
+
+- énumérer en annonçant le nombre : « j'ai trois options pour vous » ;
+- répéter la demande mot pour mot avant d'y répondre ;
+- confirmer chaque ligne séparément comme une case à cocher ;
+- dire « je vais maintenant ajouter cet article à votre panier » ;
+- nommer ses propres actions : « recherche en cours », « traitement de votre
+  demande » ;
+- terminer chaque tour par une formule identique.
 
 ## Registre
 
@@ -122,6 +172,7 @@ Le panier prêt, l'assistant annonce le total, les frais de livraison et l'adres
 
 - **FR-001** — L'assistant comprend le français parlé, y compris les tournures et le lexique alimentaire d'usage au Bénin.
 - **FR-002** — L'assistant répond **à voix haute**. Sans cela « sans toucher l'écran » est faux : l'acheteur devrait lire.
+- **FR-002b** — Un tour de parole tient en deux ou trois phrases et ne porte pas plus de deux ou trois informations. Ce qui ne tient pas dans un souffle ne tient pas dans une oreille, et l'oreille ne revient pas en arrière.
 - **FR-003** — **Tout produit, tout prix, toute disponibilité énoncés proviennent d'un appel à l'API.** L'assistant n'énonce jamais une information qu'il n'a pas obtenue du serveur.
 - **FR-004** — Les totaux sont ceux de `POST /orders/preview`, jamais un calcul de l'assistant.
 - **FR-005** — L'assistant peut ajouter, retirer et modifier des lignes du panier. Il ne peut **ni payer, ni déclencher un paiement**.
