@@ -2,6 +2,8 @@ import type { BannerOffers, DeliveryPricingConfig } from '@boilerstone/openapi-g
 import type { CommissionCategoryRate } from '../forms/commission-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
+  adminAssistantControllerGet,
+  adminAssistantControllerUpdate,
   adminBannerOffersControllerGet,
   adminBannerOffersControllerUpdate,
   adminControllerUpdateCashOnDeliveryLimit,
@@ -15,12 +17,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/compon
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@boilerstone/ui/components/primitives/tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CreditCard, Percent } from 'lucide-react'
+import { Bot, CreditCard, Percent } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
+import { AssistantToggle } from '../forms/assistant-toggle'
 import { BannerOffersForm } from '../forms/banner-offers-form'
 import { CashLimitForm } from '../forms/cash-limit-form'
 import { CommissionForm } from '../forms/commission-form'
@@ -61,6 +64,18 @@ function fetchBannerOffersQueryOptions() {
   }
 }
 
+function fetchAssistantQueryOptions() {
+  return {
+    queryKey: ['admin', 'assistant'],
+    queryFn: async () => {
+      const response = await adminAssistantControllerGet()
+      if (response.error)
+        throw new Error('Failed to fetch assistant setting')
+      return response.data as { enabled: boolean }
+    },
+  }
+}
+
 function fetchAdminSettingsQueryOptions() {
   return {
     queryKey: ['admin', 'settings'],
@@ -85,10 +100,12 @@ export default function AdminSettingsPage() {
   const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
   const [bannerOffersFeedback, setBannerOffersFeedback] = useState<'saved' | 'error' | null>(null)
+  const [assistantFeedback, setAssistantFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
   const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
   const { data: bannerOffers, isLoading: isBannerOffersLoading } = useQuery(fetchBannerOffersQueryOptions())
+  const { data: assistant, isLoading: isAssistantLoading } = useQuery(fetchAssistantQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
     mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
@@ -198,6 +215,25 @@ export default function AdminSettingsPage() {
     },
   })
 
+  const { mutate: updateAssistant, isPending: isAssistantPending } = useMutation({
+    mutationFn: async (enabled: boolean) => {
+      const response = await adminAssistantControllerUpdate({ body: { enabled } })
+      if (response.error)
+        throw new Error('Failed to update assistant setting')
+      return response.data as { enabled: boolean }
+    },
+    onMutate: () => {
+      setAssistantFeedback(null)
+    },
+    onSuccess: (saved) => {
+      setAssistantFeedback('saved')
+      queryClient.setQueryData(['admin', 'assistant'], saved)
+    },
+    onError: () => {
+      setAssistantFeedback('error')
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -224,7 +260,41 @@ export default function AdminSettingsPage() {
             <CreditCard className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.payments')}
           </TabsTrigger>
+          <TabsTrigger value="assistant">
+            <Bot className="mr-2 h-4 w-4" />
+            {t('admin.settings.tabs.assistant')}
+          </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="assistant" className="mt-6 space-y-6">
+          <Can action="manage" subject="all">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.assistant.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.assistant.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isAssistantLoading || !assistant
+                  ? <Skeleton className="h-12 w-full" />
+                  : (
+                      <AssistantToggle
+                        enabled={assistant.enabled}
+                        onChange={updateAssistant}
+                        isPending={isAssistantPending}
+                      />
+                    )}
+                {assistantFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.assistant.saved')}</p>
+                )}
+                {assistantFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.assistant.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </Can>
+        </TabsContent>
 
         <TabsContent value="commissions" className="mt-6 space-y-6">
           <Can action="manage" subject="all">

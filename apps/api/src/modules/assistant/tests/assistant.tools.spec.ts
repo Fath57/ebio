@@ -7,7 +7,7 @@ import { AssistantService } from '../assistant.service'
  * que la liste des outils, pas leur exécution.
  */
 function toolset() {
-  const service = new AssistantService({} as never, {} as never, {} as never, {} as never)
+  const service = new AssistantService({} as never, {} as never, {} as never, {} as never, {} as never)
   return (service as unknown as { toolset: () => Array<{ name: string, description: string }> }).toolset()
 }
 

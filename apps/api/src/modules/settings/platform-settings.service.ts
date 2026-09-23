@@ -11,6 +11,7 @@ export const CASH_ON_DELIVERY_MAX_AMOUNT_KEY = 'cash_on_delivery_max_amount'
 export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
 export const DELIVERY_PRICING_KEY = 'delivery_pricing'
 export const BANNER_OFFERS_KEY = 'banner_offers'
+export const ASSISTANT_ENABLED_KEY = 'assistant_enabled'
 
 export const DEFAULT_BANNER_OFFERS: BannerOffersInput = {
   offers: [
@@ -28,6 +29,15 @@ export const DEFAULT_CASH_ON_DELIVERY_MAX_AMOUNT = 25_000
 const CASH_LIMIT_CEILING = 10_000_000
 /** Deepest negative courier balance (FCFA) before offers stop; 0 = no limit. */
 export const DEFAULT_COURIER_MAX_DEBT = 5_000
+
+/**
+ * The assistant stays off until someone turns it on.
+ *
+ * Every turn calls a paid model, so an accidental opening is measured in money
+ * rather than in noise. The spec opens it to a small group first; shipping it
+ * dark makes that a decision instead of a side effect.
+ */
+export const DEFAULT_ASSISTANT_ENABLED = false
 
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
@@ -131,6 +141,19 @@ export class PlatformSettingsService {
   async setBannerOffers(config: BannerOffersInput): Promise<void> {
     const sorted = { ...config, offers: [...config.offers].sort((a, b) => a.days - b.days) }
     await this.set(BANNER_OFFERS_KEY, JSON.stringify(sorted))
+  }
+
+  /** Is the conversational assistant open to buyers? */
+  async getAssistantEnabled(): Promise<boolean> {
+    const raw = await this.get(ASSISTANT_ENABLED_KEY)
+    if (raw === null) {
+      return DEFAULT_ASSISTANT_ENABLED
+    }
+    return raw === 'true'
+  }
+
+  async setAssistantEnabled(enabled: boolean): Promise<void> {
+    await this.set(ASSISTANT_ENABLED_KEY, enabled ? 'true' : 'false')
   }
 
   /** Admin edits call this so the new value applies immediately. */

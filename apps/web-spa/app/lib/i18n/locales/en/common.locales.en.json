@@ -1022,7 +1022,8 @@
       },
       "tabs": {
         "commissions": "Commissions",
-        "payments": "Payments"
+        "payments": "Payments",
+        "assistant": "Assistant"
       },
       "paymentMethods": {
         "title": "Payment methods",
@@ -1165,6 +1166,15 @@
         "rateHint": "Between 0 and 50 %. Applies to upcoming deliveries only.",
         "saved": "Rate saved",
         "error": "Could not save the rate. Try again."
+      },
+      "assistant": {
+        "title": "Conversational assistant",
+        "description": "The assistant lets a buyer shop by talking. Every exchange calls a paid model: close it to contain spending, or when it answers badly.",
+        "toggleLabel": "Open the assistant to buyers",
+        "stateOpen": "Open: the button shows in the app and conversations are allowed.",
+        "stateClosed": "Closed: the button disappears from the app and every conversation is refused.",
+        "saved": "Saved. The change applies within a minute.",
+        "error": "The change was not saved."
       }
     },
     "site": {

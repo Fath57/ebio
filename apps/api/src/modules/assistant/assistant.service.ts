@@ -9,6 +9,7 @@ import { AiService } from '../ai/ai.service'
 import { User } from '../auth/auth.entity'
 import { CheckoutService } from '../orders/checkout.service'
 import { SearchService } from '../search/search.service'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { ASSISTANT_SYSTEM_PROMPT } from './assistant.prompt'
 import { amountsFromTools, forSpeech, groundingBreaches } from './assistant.guardrails'
 import { AssistantSession } from './entities/assistant-session.entity'
@@ -34,7 +35,21 @@ export class AssistantService {
     private readonly ai: AiService,
     private readonly search: SearchService,
     private readonly checkout: CheckoutService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
+
+  /**
+   * L'assistant peut être fermé depuis le back-office.
+   *
+   * Vérifié à chaque tour plutôt qu'au démarrage : couper un assistant qui
+   * répond mal ne doit pas demander un déploiement, et la conversation en
+   * cours s'arrête au tour suivant.
+   */
+  private async assertOpen(): Promise<void> {
+    if (!(await this.platformSettings.getAssistantEnabled())) {
+      throw new ServiceUnavailableException('L\'assistant n\'est pas disponible pour le moment.')
+    }
+  }
 
   /**
    * Tout ce que le modèle sait faire.
@@ -69,6 +84,8 @@ export class AssistantService {
    * est le vrai sujet, et elle se teste entièrement au clavier.
    */
   async handleTurn(buyerId: string, sessionId: string | null, message: string): Promise<AssistantTurnResult> {
+    await this.assertOpen()
+
     const session = sessionId
       ? await this.em.findOne(AssistantSession, { id: sessionId, buyer: { id: buyerId } })
       : await this.openSession(buyerId)

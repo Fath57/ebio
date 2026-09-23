@@ -104,3 +104,19 @@ export type BannerOffersInput = z.infer<typeof bannerOffersSchema>
 export type DeliveryPricingConfigInput = z.infer<typeof deliveryPricingConfigSchema>
 export type DeliveryQuoteRequest = z.infer<typeof deliveryQuoteRequestSchema>
 export type DeliveryQuoteResponse = z.infer<typeof deliveryQuoteResponseSchema>
+
+/**
+ * L'interrupteur de l'assistant.
+ *
+ * Un objet plutôt qu'un booléen nu : le corps d'une requête se lit mieux, et
+ * le réglage pourra gagner un champ — une liste d'acheteurs, un plafond de
+ * dépense — sans casser ce qui l'appelle.
+ */
+export const assistantSettingSchema = z.object({
+  enabled: z.boolean(),
+}).meta({
+  title: 'AssistantSetting',
+  description: 'Ouvrir ou fermer l\'assistant conversationnel',
+})
+
+export type AssistantSettingInput = z.infer<typeof assistantSettingSchema>

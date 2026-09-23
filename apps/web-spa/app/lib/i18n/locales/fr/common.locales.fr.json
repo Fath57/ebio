@@ -1022,7 +1022,8 @@
       },
       "tabs": {
         "commissions": "Commissions",
-        "payments": "Paiements"
+        "payments": "Paiements",
+        "assistant": "Assistant"
       },
       "paymentMethods": {
         "title": "Moyens de paiement",
@@ -1165,6 +1166,15 @@
         "rateHint": "Entre 0 et 50 %. Appliqué aux courses à venir uniquement.",
         "saved": "Taux enregistré",
         "error": "Impossible d’enregistrer le taux. Réessayez."
+      },
+      "assistant": {
+        "title": "Assistant conversationnel",
+        "description": "L'assistant permet à un acheteur de faire ses courses en parlant. Chaque échange appelle un modèle payant : fermez-le si la dépense doit être contenue, ou s'il répond mal.",
+        "toggleLabel": "Ouvrir l’assistant aux acheteurs",
+        "stateOpen": "Ouvert : le bouton apparaît dans l'application et les conversations sont possibles.",
+        "stateClosed": "Fermé : le bouton disparaît de l'application et toute conversation est refusée.",
+        "saved": "Enregistré. Le changement s’applique dans la minute.",
+        "error": "Le changement n'a pas été enregistré."
       }
     },
     "site": {

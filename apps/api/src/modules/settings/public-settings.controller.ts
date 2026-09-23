@@ -11,6 +11,9 @@ export class PublicSettingsController {
     const cashOnDeliveryMaxAmount = await this.platformSettings.getCashOnDeliveryMaxAmount()
     const courierMaxDebt = await this.platformSettings.getCourierMaxDebt()
     const bannerOffers = await this.platformSettings.getBannerOffers()
-    return { cashOnDeliveryMaxAmount, courierMaxDebt, bannerOffers }
+    // The apps hide the assistant's entry point when it is closed: a button
+    // that answers "indisponible" is worse than no button.
+    const assistantEnabled = await this.platformSettings.getAssistantEnabled()
+    return { cashOnDeliveryMaxAmount, courierMaxDebt, bannerOffers, assistantEnabled }
   }
 }

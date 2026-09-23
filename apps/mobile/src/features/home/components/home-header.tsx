@@ -26,6 +26,42 @@ interface HomeHeaderProps {
   onOpenAssistant: () => void
 }
 
+/**
+ * Is the assistant open to buyers?
+ *
+ * Read from the public settings, because it can be closed from the back-office
+ * at any moment — during a spending spike, or when it answers badly. A button
+ * that would only answer "indisponible" is worse than no button, so it simply
+ * is not drawn.
+ */
+function useAssistantEnabled(): boolean {
+  const [enabled, setEnabled] = useState(false)
+
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false
+      async function load(): Promise<void> {
+        try {
+          const res = await apiFetch('/api/settings/public')
+          if (res.ok && !cancelled) {
+            const data = await res.json() as { assistantEnabled?: boolean }
+            setEnabled(data.assistantEnabled === true)
+          }
+        }
+        catch {
+          // keep whatever we knew: a hiccup must not make the entry blink
+        }
+      }
+      load()
+      return () => {
+        cancelled = true
+      }
+    }, []),
+  )
+
+  return enabled
+}
+
 /** Unread notifications, re-counted whenever the home screen regains focus. */
 function useUnreadCount(): number {
   const [count, setCount] = useState(0)
@@ -105,6 +141,7 @@ export function HomeHeader({
   const insets = useSafeAreaInsets()
   const unreadCount = useUnreadCount()
   const balance = useWalletBalance()
+  const assistantEnabled = useAssistantEnabled()
 
   return (
     <View style={[styles.band, { paddingTop: insets.top + spacing[2] }]}>
@@ -165,14 +202,16 @@ export function HomeHeader({
           <Search size={18} color={colors.neutral[600]} strokeWidth={2.2} />
           <Text style={styles.searchText}>Rechercher un produit, une boutique…</Text>
         </Pressable>
-        <Pressable
-          style={styles.circle}
-          onPress={onOpenAssistant}
-          accessibilityRole="button"
-          accessibilityLabel="Faire mes courses en parlant à l'assistant"
-        >
-          <Sparkles size={20} color={colors.green[600]} strokeWidth={2.2} />
-        </Pressable>
+        {assistantEnabled && (
+          <Pressable
+            style={styles.circle}
+            onPress={onOpenAssistant}
+            accessibilityRole="button"
+            accessibilityLabel="Faire mes courses en parlant à l'assistant"
+          >
+            <Sparkles size={20} color={colors.green[600]} strokeWidth={2.2} />
+          </Pressable>
+        )}
         <Pressable
           style={styles.circle}
           onPress={onOpenMap}
