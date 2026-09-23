@@ -1,8 +1,9 @@
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import TicketPercent from 'lucide-react-native/dist/esm/icons/ticket-percent'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { use, useCallback, useEffect, useState } from 'react'
+import { use, useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -79,9 +80,11 @@ export function PromoCodesScreen({ onGoBack }: PromoCodesScreenProps) {
     }
   }, [])
 
-  useEffect(() => {
+  // Au focus : un code créé depuis cet écran n'apparaissait qu'au prochain
+  // lancement de l'application.
+  useFocusEffect(useCallback(() => {
     load()
-  }, [load])
+  }, [load]))
 
   async function readError(res: Response): Promise<string> {
     const body = await res.json().catch(() => null) as { message?: string, aggregateErrors?: Array<{ message?: string }> } | null

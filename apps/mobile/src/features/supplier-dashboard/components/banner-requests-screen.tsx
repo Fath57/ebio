@@ -1,8 +1,9 @@
+import { useFocusEffect } from '@react-navigation/native'
 import Eye from 'lucide-react-native/dist/esm/icons/eye'
 import Megaphone from 'lucide-react-native/dist/esm/icons/megaphone'
 import MousePointerClick from 'lucide-react-native/dist/esm/icons/mouse-pointer-click'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -129,9 +130,11 @@ export function BannerRequestsScreen({ onGoBack, onNewRequest, refreshKey = 0 }:
     }
   }, [])
 
-  useEffect(() => {
+  // Au focus : l'état d'une demande évolue côté back-office, et l'écran ne
+  // l'apprenait qu'au montage.
+  useFocusEffect(useCallback(() => {
     load()
-  }, [load, refreshKey])
+  }, [load, refreshKey]))
 
   const cancelRequest = useCallback((request: BannerRequest) => {
     appAlert(

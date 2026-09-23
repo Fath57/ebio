@@ -1,4 +1,5 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
@@ -6,7 +7,7 @@ import Search from 'lucide-react-native/dist/esm/icons/search'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import * as React from 'react'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -131,9 +132,11 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
     }
   }, [])
 
-  useEffect(() => {
+  // Au focus, pas seulement au montage : l'écran reste monté pendant qu'on
+  // ouvre ou modifie un produit, et y revenir montrait l'état d'avant.
+  useFocusEffect(useCallback(() => {
     void fetchProducts()
-  }, [fetchProducts])
+  }, [fetchProducts]))
 
   function handleRefresh(): void {
     setIsRefreshing(true)

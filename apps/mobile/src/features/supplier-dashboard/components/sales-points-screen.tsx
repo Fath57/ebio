@@ -1,5 +1,6 @@
 import type { ApiWeekHours } from './week-schedule-editor'
 import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import * as Location from 'expo-location'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
@@ -8,7 +9,7 @@ import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { use, useCallback, useEffect, useState } from 'react'
+import { use, useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
@@ -77,9 +78,10 @@ export function SalesPointsScreen({ onGoBack }: SalesPointsScreenProps) {
     }
   }, [])
 
-  useEffect(() => {
+  // Au focus : un point de vente ajouté ne se voyait pas au retour.
+  useFocusEffect(useCallback(() => {
     load()
-  }, [load])
+  }, [load]))
 
   async function handleDelete(): Promise<void> {
     if (!deleting) {

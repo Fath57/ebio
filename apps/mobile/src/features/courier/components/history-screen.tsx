@@ -1,7 +1,8 @@
 import type { Delivery } from '../types'
+import { useFocusEffect } from '@react-navigation/native'
 import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check'
 import XCircle from 'lucide-react-native/dist/esm/icons/circle-x'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -37,9 +38,11 @@ export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
     }
   }, [])
 
-  useEffect(() => {
+  // Au focus : une course terminée depuis l'écran de livraison n'apparaissait
+  // pas dans l'historique au retour.
+  useFocusEffect(useCallback(() => {
     load()
-  }, [load])
+  }, [load]))
 
   const refresh = useCallback(async () => {
     setRefreshing(true)
