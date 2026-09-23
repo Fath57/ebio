@@ -38,24 +38,25 @@ export function searchProductsTool(search: SearchService): AssistantTool<typeof 
         limit: MAX_RESULTS,
       } as never)
 
-      const items = ((result as { items?: unknown[] }).items ?? []).slice(0, MAX_RESULTS)
+      // La recherche rend `{ results: [{ supplier, product }] }` — pas une
+      // liste plate. Se tromper de forme ici ne casse rien visiblement :
+      // l'assistant répond simplement qu'il ne trouve rien, toujours.
+      const results = ((result as { results?: Array<{ supplier?: Record<string, unknown>, product?: Record<string, unknown> }> }).results ?? [])
+        .slice(0, MAX_RESULTS)
 
       // Le modèle reçoit le strict nécessaire pour parler : tout le reste est
       // du bruit qu'il paierait en jetons et pourrait recracher de travers.
       return {
-        produits: items.map((raw) => {
-          const p = raw as Record<string, unknown>
-          const supplier = p.supplier as Record<string, unknown> | undefined
-          return {
-            id: p.id,
-            nom: p.name,
-            prix: p.promotionalPrice ?? p.pricePerUnit,
-            unite: p.unit,
-            stock: p.stock,
+        produits: results
+          .filter(entry => entry.product?.inStock !== false)
+          .map(({ supplier, product }) => ({
+            id: product?.id,
+            nom: product?.name,
+            prix: product?.promotionalPrice ?? product?.pricePerUnit,
+            unite: product?.unit,
             boutique: supplier?.shopName ?? null,
             boutiqueId: supplier?.id ?? null,
-          }
-        }),
+          })),
       }
     },
   }

@@ -67,6 +67,24 @@ interface RawCategoryRow {
   product_count: string
 }
 
+/** Au-delà, la requête n'est plus une recherche mais une phrase. */
+const MAX_SEARCH_TERMS = 6
+
+/**
+ * Les mots d'une recherche, chacun devant se retrouver dans le nom du produit
+ * ou celui de la boutique.
+ *
+ * Les mots d'un seul caractère sont écartés : ils ne discriminent rien et
+ * feraient correspondre la moitié du catalogue.
+ */
+export function searchTerms(q: string): string[] {
+  return q
+    .split(/\s+/)
+    .map(term => term.trim())
+    .filter(term => term.length > 1)
+    .slice(0, MAX_SEARCH_TERMS)
+}
+
 @Injectable()
 export class SearchService {
   constructor(private readonly em: EntityManager) {}
@@ -120,10 +138,16 @@ export class SearchService {
       // they live — otherwise the section showed none of them.
       whereClause += `  AND (${LIVE_LEGACY_PROMO} OR EXISTS (${LIVE_PROMOTION_ROW}))\n`
     }
-
     if (q) {
-      whereClause += `  AND (p.name ILIKE ? OR s.shop_name ILIKE ?)\n`
-      baseParams.push(`%${q}%`, `%${q}%`)
+      // Mot à mot, et tous exigés. Une seule sous-chaîne sur la phrase
+      // entière rendait « huile arachide » muet alors que « huile » et
+      // « arachide » trouvaient chacun quelque chose : personne n'écrit le
+      // nom exact d'un produit, et l'apostrophe de « huile d'arachide »
+      // suffisait à tout faire échouer.
+      for (const term of searchTerms(q)) {
+        whereClause += `  AND (p.name ILIKE ? OR s.shop_name ILIKE ?)\n`
+        baseParams.push(`%${term}%`, `%${term}%`)
+      }
     }
 
     if (category) {

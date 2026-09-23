@@ -27,10 +27,51 @@ interface SessionState {
   cart?: AssistantCartLine[]
 }
 
-async function loadState(em: EntityManager, sessionId: string): Promise<{ session: AssistantSession, cart: AssistantCartLine[] }> {
+async function loadState(em: EntityManager, sessionId: string): Promise<{ cart: AssistantCartLine[] }> {
   const session = await em.findOneOrFail(AssistantSession, { id: sessionId })
-  const cart = ((session.state as SessionState).cart ?? [])
-  return { session, cart }
+  return { cart: (session.state as SessionState).cart ?? [] }
+}
+
+/**
+ * Écrit une ligne du panier **en une seule instruction**.
+ *
+ * Le modèle appelle ses outils en parallèle : « mets-moi de l'huile et du
+ * piment » déclenche deux ajouts dans le même pas. En lecture-modification-
+ * écriture, les deux lisent le panier vide et le second écrase le premier —
+ * un article disparaît en silence, et l'assistant annonce quand même que
+ * tout y est. Postgres fait donc la fusion lui-même.
+ *
+ * `line` à `null` retire la ligne de `productId`.
+ */
+async function writeCartLine(
+  em: EntityManager,
+  sessionId: string,
+  line: AssistantCartLine | null,
+  removeProductId?: string,
+): Promise<AssistantCartLine[]> {
+  const targetId = line?.productId ?? removeProductId
+  const rows = await em.getConnection().execute<Array<{ state: SessionState }>>(
+    `UPDATE assistant_sessions
+     SET state = jsonb_set(
+       COALESCE(state, '{}'::jsonb),
+       '{cart}',
+       COALESCE(
+         (SELECT jsonb_agg(l)
+          FROM jsonb_array_elements(COALESCE(state->'cart', '[]'::jsonb)) l
+          WHERE l->>'productId' <> ?),
+         '[]'::jsonb
+       ) || ?::jsonb
+     ),
+     "updatedAt" = NOW()
+     WHERE id = ?
+     RETURNING state`,
+    [targetId ?? '', line ? JSON.stringify([line]) : '[]', sessionId],
+  )
+
+  // L'entité en mémoire porte encore l'ancien état : la suite du tour lirait
+  // un panier périmé.
+  em.clear()
+  return (rows[0]?.state as SessionState).cart ?? []
 }
 
 /** Le panier tel qu'on le dit à voix haute : des lignes et un sous-total. */
@@ -76,7 +117,6 @@ export function addToCartTool(em: EntityManager) {
     ].join(' '),
     parameters,
     async execute(args: z.infer<typeof parameters>, context: AssistantToolContext) {
-      const { session, cart } = await loadState(em, context.sessionId)
       const product = await em.findOne(Product, { id: args.produitId }, { populate: ['supplier'] })
       if (!product) {
         // Dire « introuvable » plutôt que de laisser le modèle conclure : il
@@ -96,10 +136,8 @@ export function addToCartTool(em: EntityManager) {
         pricePerUnit: Number(product.promotionalPrice ?? product.pricePerUnit),
         unit: product.unit,
       }
-      const next = [...cart.filter(l => l.productId !== line.productId), line]
-      session.state = { cart: next }
-      await em.flush()
 
+      const next = await writeCartLine(em, context.sessionId, line)
       return describe(next)
     },
   }
@@ -115,10 +153,7 @@ export function removeFromCartTool(em: EntityManager) {
     description: 'Retire une ligne du panier. À utiliser quand l\'acheteur se ravise.',
     parameters,
     async execute(args: z.infer<typeof parameters>, context: AssistantToolContext) {
-      const { session, cart } = await loadState(em, context.sessionId)
-      const next = cart.filter(line => line.productId !== args.produitId)
-      session.state = { cart: next }
-      await em.flush()
+      const next = await writeCartLine(em, context.sessionId, null, args.produitId)
       return describe(next)
     },
   }

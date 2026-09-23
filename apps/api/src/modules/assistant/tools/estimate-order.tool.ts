@@ -39,12 +39,24 @@ export function estimateOrderTool(em: EntityManager, checkout: CheckoutService) 
         pickupMode: args.mode,
       } as never)
 
+      // Un total juste peut habiller une phrase fausse : sans adresse, les
+      // frais ne sont pas calculés, et « livraison comprise » se dit tout
+      // seul. L'outil énonce donc ce qu'il ne faut pas prétendre — l'ancrage
+      // par les nombres ne rattrape pas une affirmation autour du nombre.
+      const livraisonConnue = preview.deliveryFee !== null
+
       return {
         total: preview.total,
         articles: preview.itemsTotal,
         livraison: preview.deliveryFee,
         remise: preview.discount,
         boutiques: [...new Set(cart.map(line => line.supplierName))],
+        ...(livraisonConnue
+          ? {}
+          : {
+              avertissement: 'Les frais de livraison ne sont pas encore calculés : l\'adresse n\'est pas connue. '
+                + 'Ce total ne couvre que les articles — ne dites pas « livraison comprise ».',
+            }),
       }
     },
   }
