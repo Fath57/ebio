@@ -67,6 +67,9 @@ interface RawCategoryRow {
   product_count: string
 }
 
+/** French words whose final -s or -x belongs to the singular. */
+const INVARIABLE = /(?:ais|ois|as|os|us|ix)$/i
+
 /** Au-delà, la requête n'est plus une recherche mais une phrase. */
 const MAX_SEARCH_TERMS = 6
 
@@ -80,9 +83,27 @@ const MAX_SEARCH_TERMS = 6
 export function searchTerms(q: string): string[] {
   return q
     .split(/\s+/)
-    .map(term => term.trim())
+    .map(term => singularize(term.trim()))
     .filter(term => term.length > 1)
     .slice(0, MAX_SEARCH_TERMS)
+}
+
+/**
+ * A word with its plural mark removed.
+ *
+ * "deux piments" must find "Piment frais local". Matching the stem widens the
+ * search instead of narrowing it, since the SQL compares substrings.
+ *
+ * Words that end in -s without being plurals are left alone: stripping "frais"
+ * down to "frai" would drag in "fraise", and "pois" down to "poi" would drag in
+ * "poivre" and "poisson".
+ */
+function singularize(term: string): string {
+  if (term.length <= 3 || INVARIABLE.test(term)) {
+    return term
+  }
+
+  return /[sx]$/i.test(term) ? term.slice(0, -1) : term
 }
 
 @Injectable()

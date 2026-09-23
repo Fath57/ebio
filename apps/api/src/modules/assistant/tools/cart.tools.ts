@@ -105,7 +105,7 @@ export function viewCartTool(em: EntityManager): AssistantTool<z.ZodObject<Recor
 export function addToCartTool(em: EntityManager) {
   const parameters = z.object({
     produitId: z.string().uuid().describe('L\'identifiant rendu par chercher_produits. Ne jamais l\'inventer.'),
-    quantite: z.number().int().min(1).max(99).describe('Le nombre d\'unités voulu.'),
+    quantite: z.number().int().min(1).max(999).describe('Le nombre d\'unités voulu. La disponibilité réelle est vérifiée ici : proposer la quantité demandée, l\'outil dira s\'il n\'y en a pas assez.'),
   })
 
   return {
