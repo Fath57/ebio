@@ -1,6 +1,5 @@
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
-import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinned from 'lucide-react-native/dist/esm/icons/map-pinned'
 import Megaphone from 'lucide-react-native/dist/esm/icons/megaphone'
 import Pencil from 'lucide-react-native/dist/esm/icons/pencil'
@@ -24,7 +23,6 @@ interface SupplierSettingsScreenProps {
   onNavigateToSalesPoints: () => void
   onNavigateToPromoCodes: () => void
   onNavigateToBannerRequests: () => void
-  onNavigateToDeliveryZones: () => void
   onNavigateToMode: () => void
 }
 
@@ -35,7 +33,6 @@ export function SupplierSettingsScreen({
   onNavigateToSalesPoints,
   onNavigateToPromoCodes,
   onNavigateToBannerRequests,
-  onNavigateToDeliveryZones,
   onNavigateToMode,
 }: SupplierSettingsScreenProps) {
   const { semantic } = useTheme()
@@ -107,19 +104,6 @@ export function SupplierSettingsScreen({
           <View style={styles.menuTextContainer}>
             <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Ma publicité</Text>
             <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Bannière en page d'accueil client</Text>
-          </View>
-          <ChevronRight size={18} color={semantic.textTertiary} />
-        </TouchableOpacity>
-
-        <View style={styles.menuDivider} />
-
-        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToDeliveryZones} activeOpacity={0.6}>
-          <View style={[styles.menuIcon, { backgroundColor: colors.blue[50] }]}>
-            <MapPin size={18} color={colors.blue[600]} />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Zones de livraison</Text>
-            <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Gérer vos zones et frais</Text>
           </View>
           <ChevronRight size={18} color={semantic.textTertiary} />
         </TouchableOpacity>

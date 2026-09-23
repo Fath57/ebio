@@ -30,7 +30,6 @@ import { EditProfileScreen } from '../features/profile/components/edit-profile-s
 import { BannerRequestForm } from '../features/supplier-dashboard/components/banner-request-form'
 import { BannerRequestsScreen } from '../features/supplier-dashboard/components/banner-requests-screen'
 import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
-import { DeliveryZoneEditor } from '../features/supplier-dashboard/components/delivery-zone-editor'
 import { ModeSelector } from '../features/supplier-dashboard/components/mode-selector'
 import { OpeningHoursEditor } from '../features/supplier-dashboard/components/opening-hours-editor'
 import { OrderDetailScreen } from '../features/supplier-dashboard/components/order-detail-screen'
@@ -365,7 +364,6 @@ function SupplierSettingsWrapper({ navigation }: any) {
         onNavigateToSalesPoints={() => navigation.navigate('SupplierSalesPoints')}
         onNavigateToPromoCodes={() => navigation.navigate('SupplierPromoCodes')}
         onNavigateToBannerRequests={() => navigation.navigate('SupplierBannerRequests')}
-        onNavigateToDeliveryZones={() => navigation.navigate('SupplierDeliveryZones')}
         onNavigateToMode={() => navigation.navigate('SupplierMode')}
       />
     </SafeScreen>
@@ -450,14 +448,6 @@ function SupplierBannerRequestFormWrapper({ navigation }: any) {
   )
 }
 
-function SupplierDeliveryZonesWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <DeliveryZoneEditor onSave={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
 function SupplierModeWrapper({ navigation }: any) {
   return (
     <SafeScreen>
@@ -482,7 +472,6 @@ function HomeStackScreen() {
       <HomeStack.Screen name="SupplierPromoCodes" component={SupplierPromoCodesWrapper} />
       <HomeStack.Screen name="SupplierBannerRequests" component={SupplierBannerRequestsWrapper} />
       <HomeStack.Screen name="SupplierBannerRequestForm" component={SupplierBannerRequestFormWrapper} />
-      <HomeStack.Screen name="SupplierDeliveryZones" component={SupplierDeliveryZonesWrapper} />
       <HomeStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
     </HomeStack.Navigator>
   )
