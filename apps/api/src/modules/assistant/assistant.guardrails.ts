@@ -90,3 +90,79 @@ const MACHINE_TELLS: Array<{ pattern: RegExp, why: string }> = [
 export function machineTells(reply: string): string[] {
   return MACHINE_TELLS.filter(tell => tell.pattern.test(reply)).map(tell => tell.why)
 }
+
+/**
+ * « Livraison comprise », et ses variantes.
+ *
+ * Un total juste peut habiller une phrase fausse. L'outil prévient déjà le
+ * modèle quand l'adresse manque ; ceci vérifie qu'il en a tenu compte.
+ */
+const DELIVERY_INCLUDED = /\b(?:livraison|frais\s+de\s+livraison)\s+(?:comprise?s?|inclus(?:e|es)?)\b|\btout\s+compris\b/i
+
+/** Les frais de livraison ont-ils été réellement calculés ? */
+export function deliveryFeeIsKnown(toolCalls: RecordedToolCall[]): boolean {
+  return toolCalls.some(call =>
+    call.name === 'estimer_commande'
+    && typeof (call.result as { livraison?: unknown } | null)?.livraison === 'number')
+}
+
+/** Ce qui, dans une réponse, ne tient pas debout face aux outils appelés. */
+export interface GroundingBreach {
+  /** Ce qui cloche, pour le journal. */
+  what: string
+  /** Ce qu'on redemande au modèle, écrit pour lui. */
+  fix: string
+}
+
+/**
+ * L'écart entre ce qui a été dit et ce qui a été vérifié.
+ *
+ * Les montants connus viennent de toute la conversation et pas du seul tour :
+ * redire un prix trouvé deux tours plus tôt est légitime, et le prendre pour
+ * une invention ferait sonner l'alarme à chaque échange.
+ */
+export function groundingBreaches(
+  reply: string,
+  toolCalls: RecordedToolCall[],
+  knownAmounts: Iterable<number> = [],
+): GroundingBreach[] {
+  const breaches: GroundingBreach[] = []
+
+  const known = new Set([...knownAmounts, ...amountsFromTools(toolCalls)])
+  const invented = amountsIn(reply).filter(amount => !known.has(amount))
+  if (invented.length > 0) {
+    breaches.push({
+      what: `montant sans source : ${invented.join(', ')}`,
+      fix: `Tu viens d'annoncer ${invented.join(', ')} sans qu'aucun outil ne l'ait rendu. `
+        + 'Appelle l\'outil qui donne ce chiffre, puis redis ta phrase. Si tu ne peux pas l\'obtenir, ne donne aucun montant.',
+    })
+  }
+
+  if (DELIVERY_INCLUDED.test(reply) && !deliveryFeeIsKnown(toolCalls)) {
+    breaches.push({
+      what: 'livraison annoncée comprise sans frais calculés',
+      fix: 'Tu viens de dire que la livraison était comprise alors que les frais n\'ont pas été calculés. '
+        + 'Redis ta phrase en précisant que le total ne couvre que les articles.',
+    })
+  }
+
+  return breaches
+}
+
+/**
+ * La réponse telle qu'elle sera entendue.
+ *
+ * Le modèle met des astérisques autour des noms de boutique ; une synthèse
+ * vocale les lit ou les avale de travers. Rien de ce qui se voit à l'écrit
+ * n'a de sens à l'oreille.
+ */
+export function forSpeech(reply: string): string {
+  return reply
+    .replace(/\*\*(.+?)\*\*/g, '$1')
+    .replace(/(?<![\p{L}\d])[*_](\S(?:.*?\S)?)[*_](?![\p{L}\d])/gu, '$1')
+    .replace(/^\s{0,3}#{1,6}\s+/gm, '')
+    .replace(/^\s{0,3}[-*+]\s+/gm, '')
+    .replace(/`([^`]+)`/g, '$1')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim()
+}

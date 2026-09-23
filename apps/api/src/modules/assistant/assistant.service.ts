@@ -10,6 +10,7 @@ import { User } from '../auth/auth.entity'
 import { CheckoutService } from '../orders/checkout.service'
 import { SearchService } from '../search/search.service'
 import { ASSISTANT_SYSTEM_PROMPT } from './assistant.prompt'
+import { amountsFromTools, forSpeech, groundingBreaches } from './assistant.guardrails'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
 import { addToCartTool, removeFromCartTool, viewCartTool } from './tools/cart.tools'
@@ -118,8 +119,10 @@ export class AssistantService {
           stopWhen: config.assistant.maxSteps,
         },
       })
-      text = result.result
+      text = forSpeech(result.result)
       usage = (result as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
+
+      text = await this.repairIfUngrounded(session, messages, tools, text, recorded)
       session.messages = [...messages, { role: 'assistant', content: text }] as unknown[]
     }
     catch (error) {
@@ -137,6 +140,8 @@ export class AssistantService {
     })
     await this.em.flush()
 
+    await this.rememberAmounts(session.id, recorded)
+
     const fresh = await this.em.findOneOrFail(AssistantSession, { id: session.id })
     return {
       sessionId: session.id,
@@ -144,5 +149,86 @@ export class AssistantService {
       cart: ((fresh.state as { cart?: AssistantCartLine[] }).cart ?? []),
       toolCalls: recorded,
     }
+  }
+
+  /**
+   * Une seconde chance, quand ce qui a été dit ne tient pas face aux outils.
+   *
+   * Le modèle annonce parfois un total qu'il a additionné lui-même, ou dit la
+   * livraison comprise alors que rien ne l'a calculée. L'invite le lui interdit
+   * déjà ; une invite ne garantit rien. On le lui met sous les yeux et on lui
+   * redonne la parole, une fois — avec ses outils, pour qu'il puisse aller
+   * chercher le chiffre au lieu de le retirer.
+   *
+   * Le tour fautif ne reste pas dans l'historique : l'acheteur ne l'a jamais
+   * entendu, et le laisser là apprendrait au modèle que c'était acceptable.
+   */
+  private async repairIfUngrounded(
+    session: AssistantSession,
+    messages: AiCoreMessage[],
+    tools: Parameters<AiService['chat']>[0]['tools'],
+    text: string,
+    recorded: RecordedToolCall[],
+  ): Promise<string> {
+    const known = (session.state as { montants?: number[] }).montants ?? []
+    const breaches = groundingBreaches(text, recorded, known)
+    if (breaches.length === 0) {
+      return text
+    }
+
+    this.logger.warn(`Réponse reprise (session ${session.id}) — ${breaches.map(b => b.what).join(' ; ')}`)
+
+    const repaired = await this.ai.chat({
+      messages: [
+        ...messages,
+        { role: 'assistant', content: text },
+        { role: 'system', content: breaches.map(breach => breach.fix).join('\n') },
+      ],
+      tools,
+      model: config.assistant.model,
+      options: { stopWhen: config.assistant.maxSteps },
+    })
+
+    const second = forSpeech(repaired.result)
+    if (groundingBreaches(second, recorded, known).length > 0) {
+      // Deux fois de suite : on ne laisse pas passer un prix que personne n'a
+      // fixé. Mieux vaut une phrase qui n'avance rien qu'un montant inventé.
+      this.logger.error(`Ancrage toujours rompu après reprise (session ${session.id})`)
+      return 'Attendez, je me suis embrouillée sur les chiffres. Redites-moi ce qu\'il vous faut ?'
+    }
+
+    return second
+  }
+
+  /**
+   * Les montants que les outils ont rendus, gardés pour les tours suivants.
+   *
+   * Redire un prix trouvé deux tours plus tôt est normal : sans mémoire, la
+   * vérification le prendrait pour une invention et reprendrait le modèle à
+   * chaque phrase. Écrit à part du panier, qui s'écrit ailleurs au même moment.
+   */
+  private async rememberAmounts(sessionId: string, recorded: RecordedToolCall[]): Promise<void> {
+    const amounts = [...amountsFromTools(recorded)]
+    if (amounts.length === 0) {
+      return
+    }
+
+    await this.em.getConnection().execute(
+      `UPDATE assistant_sessions
+       SET state = jsonb_set(
+             COALESCE(state, '{}'::jsonb),
+             '{montants}',
+             (
+               SELECT COALESCE(jsonb_agg(DISTINCT m), '[]'::jsonb)
+               FROM jsonb_array_elements(
+                 COALESCE(state->'montants', '[]'::jsonb) || ?::jsonb
+               ) m
+             )
+           ),
+           "updatedAt" = NOW()
+       WHERE id = ?`,
+      [JSON.stringify(amounts), sessionId],
+    )
+    this.em.clear()
   }
 }

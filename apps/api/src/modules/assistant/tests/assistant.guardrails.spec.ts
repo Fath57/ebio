@@ -1,6 +1,8 @@
 import type { RecordedToolCall } from '../tools/assistant-tool'
 import {
   amountsIn,
+  forSpeech,
+  groundingBreaches,
   isTurnTooLong,
   machineTells,
   sentenceCount,
@@ -85,5 +87,61 @@ describe('ce qui trahit la machine', () => {
 
   it('laisse passer une vraie phrase de marché', () => {
     expect(machineTells('Deux kilos, c\'est noté. Je vous mets l\'huile aussi ?')).toEqual([])
+  })
+})
+
+/**
+ * Ce que l'invite demande mais ne garantit pas.
+ *
+ * Trouvés en poussant l'assistant : il a annoncé « 1 600, livraison comprise »
+ * sans avoir rien calculé, et mis des astérisques autour d'un nom de boutique.
+ */
+describe('vérification d\'une réponse', () => {
+  const searched: RecordedToolCall[] = [
+    { name: 'chercher_produits', args: {}, ms: 1, result: { produits: [{ nom: 'Gari', prix: 800 }] } },
+  ]
+
+  it('laisse passer un montant qu\'un outil a rendu', () => {
+    expect(groundingBreaches('C\'est 800 le kilo.', searched)).toEqual([])
+  })
+
+  it('reprend un total que personne n\'a calculé', () => {
+    const breaches = groundingBreaches('Ça fait 1 600 en tout.', searched)
+    expect(breaches).toHaveLength(1)
+    expect(breaches[0].what).toContain('1600')
+  })
+
+  // Le prix d'un produit trouvé deux tours plus tôt reste légitime : sans
+  // cette mémoire, l'alarme sonnerait à chaque phrase d'une conversation.
+  it('accepte un montant vu plus tôt dans la conversation', () => {
+    expect(groundingBreaches('Je vous avais dit 2 500 le litre.', [], [2500])).toEqual([])
+  })
+
+  it('reprend « livraison comprise » quand rien ne l\'a calculée', () => {
+    const breaches = groundingBreaches('Ça fait 800, livraison comprise.', searched)
+    expect(breaches.map(breach => breach.what)).toContain('livraison annoncée comprise sans frais calculés')
+  })
+
+  it('accepte « livraison comprise » quand les frais sont connus', () => {
+    const estimated: RecordedToolCall[] = [
+      { name: 'estimer_commande', args: {}, ms: 1, result: { total: 1800, livraison: 1000 } },
+    ]
+    expect(groundingBreaches('Ça fait 1 800, livraison comprise.', estimated)).toEqual([])
+  })
+})
+
+describe('mise en voix', () => {
+  it('retire ce qui ne s\'entend pas', () => {
+    expect(forSpeech('L\'une chez **Huiles Bio Koffi**, elle est en livraison.'))
+      .toBe('L\'une chez Huiles Bio Koffi, elle est en livraison.')
+  })
+
+  it('aplatit une liste écrite', () => {
+    expect(forSpeech('## Vos commandes\n- du gari\n- de l\'huile')).toBe('Vos commandes\ndu gari\ndu l\'huile'.replace('du l\'huile', 'de l\'huile'))
+  })
+
+  // « 2 * 3 » ou une apostrophe ne doivent pas être pris pour du balisage.
+  it('ne touche pas au texte ordinaire', () => {
+    expect(forSpeech('Il reste 2 * 3 kilos, c\'est tout.')).toBe('Il reste 2 * 3 kilos, c\'est tout.')
   })
 })
