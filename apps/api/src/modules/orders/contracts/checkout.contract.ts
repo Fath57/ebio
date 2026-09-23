@@ -88,7 +88,14 @@ export const createCheckoutSchema = z.object({
   deliveryLongitude: z.number().min(-180).max(180).optional(),
   paymentMethod: paymentMethodEnum,
   promoCode: z.string().trim().max(50).optional(),
-  deliverySlot: z.string().datetime().optional(),
+  /**
+   * What the buyer types, in their own words — « Demain matin entre 8h et
+   * 12h ». Not a timestamp: the column is text, the entity declares a string,
+   * and the single-order contract has always taken one. Only this schema
+   * asked for an ISO datetime, so any cart where the buyer filled the slot
+   * was refused.
+   */
+  deliverySlot: z.string().trim().max(200).optional(),
 }).meta({
   title: 'CreateCheckout',
   description: 'Valide un panier multi-boutiques en une seule opération',
