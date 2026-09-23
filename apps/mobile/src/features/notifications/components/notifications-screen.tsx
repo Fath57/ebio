@@ -39,7 +39,8 @@ interface NotificationItem {
 }
 
 interface NotificationsScreenProps {
-  onGoBack: () => void
+  /** Absent quand l'écran est une racine d'onglet : il n'y a alors rien où revenir. */
+  onGoBack?: () => void
 }
 
 const TYPE_ICONS: Record<string, typeof PackageIcon> = {

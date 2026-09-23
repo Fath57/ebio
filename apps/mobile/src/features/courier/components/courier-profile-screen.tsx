@@ -7,7 +7,8 @@ import KeyRound from 'lucide-react-native/dist/esm/icons/key-round'
 import LogOut from 'lucide-react-native/dist/esm/icons/log-out'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import MapView, { Circle, Marker, PROVIDER_GOOGLE } from 'react-native-maps'
 import { signOut } from '../../../lib/auth-client'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -39,6 +40,9 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
   const tabBarHeight = useBottomTabBarHeight()
   const [zonePickerOpen, setZonePickerOpen] = useState(false)
   const [savingZone, setSavingZone] = useState(false)
+  const hasZonePoint = profile.zoneLatitude != null && profile.zoneLongitude != null
+  // Le cercle doit tenir dans le cadre : même règle que le sélecteur de zone.
+  const zoneDelta = ((profile.zoneRadiusKm ?? 10) * 2.6) / 111
 
   function confirmSignOut() {
     appAlert('Se déconnecter', 'Vous ne recevrez plus de courses jusqu\'à votre prochaine connexion.', [
@@ -143,9 +147,44 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
             {profile.zone}
           </Text>
         </View>
+
+        {/* Le point, montré et non décrit : « 10 km autour de Fidjrossè » ne
+            dit pas autour de quel endroit exactement. La carte est inerte —
+            sans quoi elle volerait le défilement de la page. */}
+        {hasZonePoint && (
+          <View style={styles.zoneMap} pointerEvents="none">
+            <MapView
+              style={StyleSheet.absoluteFill}
+              provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+              initialRegion={{
+                latitude: profile.zoneLatitude as number,
+                longitude: profile.zoneLongitude as number,
+                latitudeDelta: zoneDelta,
+                longitudeDelta: zoneDelta,
+              }}
+              scrollEnabled={false}
+              zoomEnabled={false}
+              pitchEnabled={false}
+              rotateEnabled={false}
+              toolbarEnabled={false}
+            >
+              <Circle
+                center={{ latitude: profile.zoneLatitude as number, longitude: profile.zoneLongitude as number }}
+                radius={(profile.zoneRadiusKm ?? 10) * 1000}
+                strokeColor={colors.green[400]}
+                strokeWidth={2}
+                fillColor="rgba(42, 157, 78, 0.15)"
+              />
+              <Marker
+                coordinate={{ latitude: profile.zoneLatitude as number, longitude: profile.zoneLongitude as number }}
+              />
+            </MapView>
+          </View>
+        )}
+
         <Text style={[styles.zoneHint, { color: semantic.textSecondary }]}>
-          {profile.zoneRadiusKm != null
-            ? `Vous recevez les courses dans un rayon de ${profile.zoneRadiusKm} km autour de ce point.`
+          {hasZonePoint
+            ? `Vous recevez les courses dans un rayon de ${profile.zoneRadiusKm ?? 10} km autour de ce point.`
             : 'Aucun point précis enregistré — placez-le sur la carte pour recevoir les courses autour de vous.'}
         </Text>
 
@@ -244,6 +283,13 @@ const styles = StyleSheet.create({
   zoneValue: {
     ...typography.bodyL,
     flex: 1,
+  },
+  zoneMap: {
+    height: 150,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    marginTop: spacing[2],
+    marginBottom: spacing[2],
   },
   zoneHint: {
     ...typography.bodyS,

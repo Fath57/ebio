@@ -3,6 +3,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import * as Notifications from 'expo-notifications'
+import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import User from 'lucide-react-native/dist/esm/icons/user'
@@ -38,6 +39,7 @@ import { useOfflineQueue } from '../features/courier/hooks/use-offline-queue'
 import { useOutOfZone } from '../features/courier/hooks/use-out-of-zone'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
+import { useNotificationsUnreadCount } from '../features/notifications/hooks/use-notifications-unread-count'
 import { signOut, useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
@@ -510,6 +512,24 @@ function CourierNotificationsWrapper({ navigation }: any) {
   )
 }
 
+const NotificationsStack = createNativeStackNavigator()
+function NotificationsStackScreen() {
+  return (
+    <NotificationsStack.Navigator screenOptions={{ headerShown: false }}>
+      <NotificationsStack.Screen name="CourierNotificationsHome" component={CourierNotificationsTabWrapper} />
+    </NotificationsStack.Navigator>
+  )
+}
+
+/** Racine d'onglet : pas de bouton retour, contrairement à l'accès par le profil. */
+function CourierNotificationsTabWrapper() {
+  return (
+    <SafeScreen>
+      <NotificationsScreen />
+    </SafeScreen>
+  )
+}
+
 function ProfileStackScreen() {
   return (
     <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
@@ -527,6 +547,7 @@ const TAB_ICONS: Record<string, typeof Bike> = {
   Courses: Bike,
   Historique: ClipboardList,
   Portefeuille: Wallet,
+  Notifications: Bell,
   Profil: User,
 }
 
@@ -535,6 +556,9 @@ const HIDE_TAB_BAR_ROUTES = new Set(['CourierChat', 'CourierHistoryChat', 'Couri
 function CourierTabs() {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
+  // Les courses arrivent par notification : le livreur doit voir qu'il en a
+  // une sans avoir à ouvrir son profil pour la chercher.
+  const { count: notificationsUnread } = useNotificationsUnreadCount()
   return (
     <Tab.Navigator
       screenOptions={({ route }) => {
@@ -577,6 +601,16 @@ function CourierTabs() {
       <Tab.Screen name="Courses" component={CoursesStackScreen} />
       <Tab.Screen name="Historique" component={HistoryStackScreen} />
       <Tab.Screen name="Portefeuille" component={WalletStackScreen} />
+      <Tab.Screen
+        name="Notifications"
+        component={NotificationsStackScreen}
+        options={notificationsUnread > 0
+          ? {
+              tabBarBadge: notificationsUnread > 99 ? '99+' : notificationsUnread,
+              tabBarBadgeStyle: { backgroundColor: colors.coral[400], fontFamily: fonts.sansMd, fontSize: 10 },
+            }
+          : {}}
+      />
       <Tab.Screen name="Profil" component={ProfileStackScreen} />
     </Tab.Navigator>
   )
