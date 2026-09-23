@@ -465,6 +465,7 @@ function CourierProfileWrapper({ navigation }: any) {
         onEdit={() => navigation.navigate('CourierEditProfile')}
         onOpenNotifications={() => navigation.navigate('CourierNotifications')}
         onChangePassword={() => navigation.navigate('CourierChangePassword')}
+        onZoneChanged={refresh}
         onSignedOut={refresh}
       />
     </SafeScreen>
