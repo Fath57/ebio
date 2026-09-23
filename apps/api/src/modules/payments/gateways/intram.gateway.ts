@@ -42,6 +42,14 @@ const WEBHOOK_EVENT_STATUS: Record<string, string> = {
   'refund.failed': 'failed',
 }
 
+/**
+ * Where a transaction is paid. Their widget builds the same address, and
+ * appends `?native=1` when it detects a native host — which makes the page
+ * close instead of redirecting. We want the redirect: it is how we learn the
+ * payment is over.
+ */
+const GATEWAY_URL = 'https://gateway.intram.org'
+
 /** How long we wait for the hosted checkout URL before handing back. */
 const GATEWAY_URL_TIMEOUT_MS = 10_000
 const GATEWAY_URL_POLL_MS = 700
@@ -208,13 +216,17 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
     }
 
     const data = JSON.parse(text) as { transaction_id?: string, receipt_url?: string, status?: string }
-    if (!data.transaction_id || !data.receipt_url) {
+    if (!data.transaction_id) {
       this.logger.error(`INTRAM (ancienne API) : réponse sans transaction — ${text.slice(0, 300)}`)
       throw new Error('INTRAM: réponse sans transaction')
     }
 
     return {
-      redirectUrl: data.receipt_url,
+      // Built from the transaction reference, not from `receipt_url`: that
+      // one points at the receipt, which renders as a blank page with a
+      // print toggle while nothing has been paid. Their own widget opens
+      // `<gateway>/<transaction_id>`, and so do we.
+      redirectUrl: `${GATEWAY_URL}/${data.transaction_id}`,
       providerTransactionId: data.transaction_id,
       status: 'pending',
     }

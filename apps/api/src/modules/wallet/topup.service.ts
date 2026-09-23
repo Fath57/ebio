@@ -78,7 +78,7 @@ export class TopupService {
       currency: 'XOF',
       orderId: topup.id,
       paymentMethod: '',
-      callbackUrl: `${config.clients.webApp.url}/payments/callback`,
+      callbackUrl: config.payments.returnUrl,
     })
 
     if (opened.providerTransactionId) {

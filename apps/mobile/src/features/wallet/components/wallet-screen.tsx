@@ -166,6 +166,22 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
     load()
   }, [load])
 
+  /**
+   * Silent check, handed to the payment screen. Asking the verify endpoint
+   * is enough: it re-reads the transaction from the provider and only
+   * answers 200 once the money is really there.
+   */
+  const pollTopupSettled = useCallback(async (): Promise<boolean> => {
+    if (!pendingTopupId || !providerTransactionId) {
+      return false
+    }
+    const res = await apiFetch(`/api/wallet/me/topups/${pendingTopupId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
+    })
+    return res.ok
+  }, [pendingTopupId, providerTransactionId])
+
   const confirmTopup = useCallback(async (reference: string) => {
     if (!pendingTopupId) {
       return
@@ -203,6 +219,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
         title="Recharge du portefeuille"
         onSettled={confirmTopup}
         onCancel={closeCheckout}
+        pollSettled={pollTopupSettled}
       />
     )
   }

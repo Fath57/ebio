@@ -259,6 +259,15 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
     onRefreshed?.()
   }, [reload, onRefreshed])
 
+  /** Silent check: the verify endpoint only succeeds once the money landed. */
+  const pollTopupSettled = useCallback(async (): Promise<boolean> => {
+    if (!pendingTopupId || !providerTransactionId) {
+      return false
+    }
+    const result = await verifyTopup(pendingTopupId, providerTransactionId)
+    return result.ok
+  }, [pendingTopupId, providerTransactionId, verifyTopup])
+
   const confirmTopup = useCallback(async (reference: string) => {
     if (!pendingTopupId) {
       closeCheckout()
@@ -293,6 +302,7 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
         title="Recharge du portefeuille"
         onSettled={confirmTopup}
         onCancel={closeCheckout}
+        pollSettled={pollTopupSettled}
       />
     )
   }

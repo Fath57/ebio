@@ -118,6 +118,18 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
     onClose()
   }, [onClose])
 
+  /** Silent check: the verify endpoint only succeeds once the money landed. */
+  const pollTopupSettled = useCallback(async (): Promise<boolean> => {
+    if (!pendingTopupId || !providerTransactionId) {
+      return false
+    }
+    const res = await apiFetch(`/api/suppliers/me/wallet/topups/${pendingTopupId}/verify`, {
+      method: 'POST',
+      body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
+    })
+    return res.ok
+  }, [pendingTopupId, providerTransactionId])
+
   const confirmTopup = useCallback(async (reference: string) => {
     if (!pendingTopupId) {
       closeCheckout()
@@ -215,6 +227,7 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
           title="Recharge du portefeuille"
           onSettled={confirmTopup}
           onCancel={closeCheckout}
+          pollSettled={pollTopupSettled}
         />
       </Modal>
     </>

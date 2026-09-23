@@ -129,6 +129,13 @@ export const configValidationSchema = z.object({
    */
   CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
   /**
+   * Where a provider sends the browser once a payment ends. It must be a
+   * public HTTPS address: a gateway will not redirect to `localhost`, which
+   * is what the web app's URL is in development — and the payment then ends
+   * on the provider's receipt with nothing telling the app it is over.
+   */
+  PAYMENT_RETURN_URL: z.string().default('https://e-bio.org/payments/callback'),
+  /**
    * Who sends money out. Kept apart from the checkout: taking payments and
    * paying people can be moved to a new provider one at a time, which is the
    * only safe way to change either.
@@ -261,6 +268,7 @@ export const config = {
       apiUrl: configParsed.data.PAWERPAYER_API_URL,
     },
     checkoutProvider: configParsed.data.CHECKOUT_PROVIDER,
+    returnUrl: configParsed.data.PAYMENT_RETURN_URL,
     payoutProvider: configParsed.data.PAYOUT_PROVIDER,
     intram: {
       legacyUrl: configParsed.data.INTRAM_LEGACY_URL,

@@ -1,5 +1,5 @@
 import ArrowLeft from 'lucide-react-native/dist/esm/icons/arrow-left'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ActivityIndicator, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview'
@@ -10,6 +10,9 @@ import { parseCheckoutMessage } from '../utils/checkout-widget'
 
 /** Where the provider sends the browser once the payment ends. */
 const RETURN_PATH = '/payments/callback'
+
+/** How often we ask our own server whether the payment has landed. */
+const POLL_INTERVAL_MS = 4000
 
 export interface PaymentWebViewProps {
   /**
@@ -33,6 +36,15 @@ export interface PaymentWebViewProps {
   onSettled: (transactionId: string) => void | Promise<void>
   /** Back pressed, or the payment abandoned. */
   onCancel: () => void
+  /**
+   * Asks our server whether the payment has landed. Resolve true and the
+   * screen settles on its own.
+   *
+   * This is the signal that actually holds. A hosted page may not redirect
+   * at all — INTRAM's ends on its own receipt — and then the return URL
+   * never fires. Our server can always ask the provider, so it is asked.
+   */
+  pollSettled?: () => Promise<boolean>
 }
 
 /**
@@ -54,6 +66,7 @@ export function PaymentWebView({
   title = 'Paiement sécurisé',
   onSettled,
   onCancel,
+  pollSettled,
 }: PaymentWebViewProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
@@ -68,6 +81,37 @@ export function PaymentWebView({
     setSettled(true)
     void onSettled(reference)
   }, [settled, onSettled])
+
+  // Polls while the screen is open. Stops as soon as it settles, and never
+  // outlives the screen — an interval left running would confirm a payment
+  // the buyer has already walked away from.
+  const pollRef = useRef(pollSettled)
+  pollRef.current = pollSettled
+
+  useEffect(() => {
+    if (settled || pollSettled === undefined) {
+      return
+    }
+    let cancelled = false
+    const timer = setInterval(() => {
+      void (async () => {
+        try {
+          const done = await pollRef.current?.()
+          if (done === true && !cancelled) {
+            settle(transactionId ?? '')
+          }
+        }
+        catch {
+          // Offline for a moment: the next tick asks again.
+        }
+      })()
+    }, POLL_INTERVAL_MS)
+
+    return () => {
+      cancelled = true
+      clearInterval(timer)
+    }
+  }, [settled, pollSettled, transactionId, settle])
 
   const confirmCancel = useCallback(() => {
     appAlert(

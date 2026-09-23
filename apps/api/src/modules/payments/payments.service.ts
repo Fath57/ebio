@@ -319,7 +319,7 @@ export class PaymentsService {
       currency: 'XOF',
       orderId: checkout.id,
       paymentMethod: '',
-      callbackUrl: `${config.clients.webApp.url}/payments/callback`,
+      callbackUrl: config.payments.returnUrl,
     })
 
     checkout.providerTransactionId = opened.providerTransactionId
