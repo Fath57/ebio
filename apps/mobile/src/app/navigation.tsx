@@ -14,8 +14,8 @@ import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
-import { ActivityIndicator, Animated, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ActivityIndicator, Animated, Platform, StatusBar, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
@@ -56,12 +56,31 @@ import { useTheme } from '../theme/theme-context'
 import { apiFetch, chatFetch } from '../utils/api-client'
 import { navigationRef } from './navigation-ref'
 
+/**
+ * The strip every screen sits under, below the status bar.
+ *
+ * `SafeAreaView` alone trusted the inset the system reports, and some Android
+ * devices report less than the status bar they actually draw — the title then
+ * sat half under the clock. Taking the larger of the two costs nothing where
+ * the inset is right (edge-to-edge makes them equal) and is the only thing
+ * that saves the devices where it is not; it is a max, never a sum, so
+ * nothing is padded twice.
+ */
 function SafeScreen({ children }: { children: React.ReactNode }) {
   const { semantic } = useTheme()
+  const insets = useSafeAreaInsets()
+  const statusBarHeight = Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0
+
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: semantic.bgPage }} edges={['top']}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: semantic.bgPage,
+        paddingTop: Math.max(insets.top, statusBarHeight),
+      }}
+    >
       {children}
-    </SafeAreaView>
+    </View>
   )
 }
 

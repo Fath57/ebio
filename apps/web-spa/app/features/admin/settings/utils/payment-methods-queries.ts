@@ -11,7 +11,7 @@ export interface PaymentMethodItem {
   name: string
   code: string
   type: 'mobile' | 'card'
-  provider: 'fedapay' | 'stripe' | 'pawerpayer'
+  provider: 'fedapay' | 'stripe' | 'pawerpayer' | 'intram'
   countryCode: string
   commission: number
   priority: number
@@ -25,7 +25,7 @@ export interface PaymentMethodFormData {
   name: string
   code: string
   type: 'mobile' | 'card'
-  provider: 'fedapay' | 'stripe' | 'pawerpayer'
+  provider: 'fedapay' | 'stripe' | 'pawerpayer' | 'intram'
   countryCode: string
   commission: number
   priority: number

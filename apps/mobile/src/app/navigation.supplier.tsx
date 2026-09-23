@@ -12,8 +12,8 @@ import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import UserPen from 'lucide-react-native/dist/esm/icons/user-pen'
 import * as React from 'react'
-import { ActivityIndicator, AppState, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
+import { ActivityIndicator, AppState, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
@@ -54,10 +54,17 @@ import { navigationRef } from './navigation-ref'
 
 function SafeScreen({ children }: { children: React.ReactNode }) {
   const { semantic } = useTheme()
+  const insets = useSafeAreaInsets()
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: semantic.bgPage }} edges={['top']}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: semantic.bgPage,
+        paddingTop: Math.max(insets.top, Platform.OS === 'android' ? StatusBar.currentHeight ?? 0 : 0),
+      }}
+    >
       {children}
-    </SafeAreaView>
+    </View>
   )
 }
 

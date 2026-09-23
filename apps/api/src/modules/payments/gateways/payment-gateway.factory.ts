@@ -2,6 +2,7 @@ import type { PaymentGatewayInterface } from './payment-gateway.interface'
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { PaymentProvider } from '../payment.entity'
 import { FedaPayGateway } from './fedapay.gateway'
+import { IntramGateway } from './intram.gateway'
 import { PawerPayerGateway } from './pawerpayer.gateway'
 import { StripeGateway } from './stripe.gateway'
 
@@ -17,6 +18,8 @@ export class PaymentGatewayFactory {
         return new StripeGateway()
       case PaymentProvider.PAWERPAYER:
         return new PawerPayerGateway()
+      case PaymentProvider.INTRAM:
+        return new IntramGateway()
       default:
         throw new BadRequestException(`Unsupported payment provider: ${provider}`)
     }

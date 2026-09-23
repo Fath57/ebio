@@ -259,6 +259,7 @@ export function PaymentMethodsManager() {
                   <SelectItem value="fedapay">FedaPay</SelectItem>
                   <SelectItem value="stripe">Stripe</SelectItem>
                   <SelectItem value="pawerpayer">PawaPay</SelectItem>
+                  <SelectItem value="intram">INTRAM</SelectItem>
                 </SelectContent>
               </Select>
             </div>

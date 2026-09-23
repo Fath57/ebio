@@ -105,6 +105,21 @@ export const configValidationSchema = z.object({
   // PawerPayer
   PAWERPAYER_API_KEY: z.string().optional(),
   PAWERPAYER_API_URL: z.string().optional(),
+  // INTRAM Merchant API v1. The mode comes from the key itself
+  // (pk_sandbox_… / pk_live_…), not from a flag.
+  INTRAM_API_KEY: z.string().optional(),
+  INTRAM_SECRET_KEY: z.string().optional(),
+  /** Distinct from the secret key: it signs incoming webhooks only. */
+  INTRAM_WEBHOOK_SECRET: z.string().optional(),
+  // Not the base URL their docs give (`/v1`): that one 404s. The real route
+  // is the path they describe as "internal", verified against the live API.
+  INTRAM_API_URL: z.string().default('https://api.intram.org/api/v1/merchant'),
+  /**
+   * Which provider the in-app checkout widget belongs to. The apps ship the
+   * matching public key; this is the server side of the same choice, and it
+   * decides which gateway verifies what the widget hands back.
+   */
+  CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
 
   // SMS (Africa's Talking)
   AT_API_KEY: z.string().optional(),
@@ -230,6 +245,13 @@ export const config = {
     pawerpayer: {
       apiKey: configParsed.data.PAWERPAYER_API_KEY,
       apiUrl: configParsed.data.PAWERPAYER_API_URL,
+    },
+    checkoutProvider: configParsed.data.CHECKOUT_PROVIDER,
+    intram: {
+      apiKey: configParsed.data.INTRAM_API_KEY,
+      secretKey: configParsed.data.INTRAM_SECRET_KEY,
+      webhookSecret: configParsed.data.INTRAM_WEBHOOK_SECRET,
+      apiUrl: configParsed.data.INTRAM_API_URL,
     },
   },
   fedapay: {

@@ -16,6 +16,7 @@ export enum PaymentProvider {
   FEDAPAY = 'fedapay',
   STRIPE = 'stripe',
   PAWERPAYER = 'pawerpayer',
+  INTRAM = 'intram',
 }
 
 export enum PaymentMethodType {

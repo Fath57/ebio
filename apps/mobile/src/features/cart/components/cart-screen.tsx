@@ -254,14 +254,29 @@ export function CartScreen({
                     </TouchableOpacity>
 
                     <View style={styles.itemDetails}>
-                      <Text
-                        style={[styles.itemName, { color: semantic.textPrimary }]}
-                        numberOfLines={2}
-                        onPress={onPressItem ? () => onPressItem(item.productId) : undefined}
-                        accessibilityRole={onPressItem ? 'link' : undefined}
-                      >
-                        {item.name}
-                      </Text>
+                      {/* The stepper's minus turns into a bin at one, which
+                          made dropping a line of seven a seven-tap affair.
+                          Removing is its own gesture, one tap whatever the
+                          quantity. */}
+                      <View style={styles.itemTopRow}>
+                        <Text
+                          style={[styles.itemName, { color: semantic.textPrimary }]}
+                          numberOfLines={2}
+                          onPress={onPressItem ? () => onPressItem(item.productId) : undefined}
+                          accessibilityRole={onPressItem ? 'link' : undefined}
+                        >
+                          {item.name}
+                        </Text>
+                        <TouchableOpacity
+                          style={styles.removeButton}
+                          onPress={() => onRemoveItem(item.id)}
+                          hitSlop={8}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Retirer ${item.name} du panier`}
+                        >
+                          <Trash2 size={16} color={semantic.textTertiary} strokeWidth={2} />
+                        </TouchableOpacity>
+                      </View>
 
                       <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
                         {formatPrice(item.pricePerUnit)}
@@ -604,6 +619,10 @@ const styles = StyleSheet.create({
   removeButton: {
     width: 32,
     height: 32,
+    // Pulled into the row's corner so the button aligns with the line's top
+    // edge instead of pushing the name down.
+    marginTop: -spacing[1],
+    marginRight: -spacing[2],
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: radius.sm,

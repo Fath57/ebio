@@ -16,7 +16,7 @@ export const paymentStatusEnum = z.enum([
   description: 'Current status of a payment',
 })
 
-export const paymentProviderEnum = z.enum(['fedapay', 'stripe', 'pawerpayer']).meta({
+export const paymentProviderEnum = z.enum(['fedapay', 'stripe', 'pawerpayer', 'intram']).meta({
   title: 'PaymentProvider',
   description: 'Payment gateway provider',
 })

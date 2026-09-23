@@ -141,8 +141,22 @@ export class PaymentsService {
   }
 
   /**
-   * Creates a pending Payment before opening Checkout.js.
-   * Returns the paymentId so the frontend can pass it in FedaPay metadata.
+   * The provider behind the in-app widget.
+   *
+   * The apps embed one provider's script and hand back its transaction
+   * reference; reading it from configuration rather than hard-coding FedaPay
+   * is what lets a build switch without a migration — the payments already
+   * recorded keep their own provider, since each row carries it.
+   */
+  private checkoutProvider(): PaymentProvider {
+    return config.payments.checkoutProvider === 'intram'
+      ? PaymentProvider.INTRAM
+      : PaymentProvider.FEDAPAY
+  }
+
+  /**
+   * Creates a pending Payment before opening the provider's widget.
+   * Returns the paymentId so the frontend can pass it in the widget metadata.
    */
   async initiateCheckoutPayment(userId: string, data: InitiateCheckoutInput) {
     const order = await this.em.findOneOrFail(
@@ -184,8 +198,10 @@ export class PaymentsService {
     const payment = this.em.create(Payment, {
       order,
       amount: order.totalAmount,
-      provider: PaymentProvider.FEDAPAY,
-      paymentMethod: 'fedapay_checkout',
+      // Whichever widget the apps embed: the payment must be born under the
+      // provider that will later be asked to vouch for it.
+      provider: this.checkoutProvider(),
+      paymentMethod: `${this.checkoutProvider()}_checkout`,
       status: PaymentStatus.PENDING,
     })
 
@@ -315,7 +331,7 @@ export class PaymentsService {
       }
     }
 
-    const gateway = this.gatewayFactory.createGateway(PaymentProvider.FEDAPAY)
+    const gateway = this.gatewayFactory.createGateway(this.checkoutProvider())
     const checkResult = await gateway.checkStatus(data.fedapayTransactionId)
     if (checkResult.status !== 'completed') {
       throw new BadRequestException(`Paiement non confirmé. Statut : ${checkResult.status}`)
@@ -329,8 +345,8 @@ export class PaymentsService {
         checkout,
         order,
         amount,
-        provider: PaymentProvider.FEDAPAY,
-        paymentMethod: 'fedapay_checkout',
+        provider: this.checkoutProvider(),
+        paymentMethod: `${this.checkoutProvider()}_checkout`,
         providerTransactionId: data.fedapayTransactionId,
         providerReference: checkResult.reference,
         providerPaymentMethodId: checkResult.providerPaymentMethodId,
@@ -479,7 +495,7 @@ export class PaymentsService {
       status: payment.status,
       amount: payment.amount,
       paidAt: payment.paidAt?.toISOString() ?? null,
-      provider: payment.provider as 'fedapay' | 'stripe' | 'pawerpayer',
+      provider: payment.provider as 'fedapay' | 'stripe' | 'pawerpayer' | 'intram',
     }
   }
 

@@ -114,7 +114,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[3],
+    // More above than below: the title is the first thing on the page and was
+    // reading as glued to the status bar, on every screen using this header.
+    paddingTop: spacing[4],
+    paddingBottom: spacing[3],
   },
   headerTransparent: {
     position: 'absolute',

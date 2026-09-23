@@ -1,8 +1,9 @@
 import { Buffer } from 'node:buffer'
-import { Body, Controller, Headers, Post, RawBody } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Headers, Post, RawBody } from '@nestjs/common'
 import { Public } from '../auth/auth.decorator'
 import { TopupService } from '../wallet/topup.service'
 import { WithdrawalsService } from '../wallet/withdrawals.service'
+import { IntramGateway } from './gateways/intram.gateway'
 import { PaymentProvider } from './payment.entity'
 import { PaymentsService } from './payments.service'
 
@@ -45,6 +46,52 @@ export class PaymentsWebhookController {
     await this.paymentsService.handleWebhookCallback(
       PaymentProvider.FEDAPAY,
       body,
+    )
+    return { received: true }
+  }
+
+  /**
+   * INTRAM signs what it sends, so this route proves the delivery before
+   * acting on it — unlike the FedaPay one above, which still trusts its body.
+   *
+   * The raw bytes are required: the signature covers `timestamp.body` exactly
+   * as sent, and re-serialising the parsed JSON breaks it. INTRAM retries a
+   * non-2xx five times over two hours, so answering quickly matters more than
+   * answering in detail.
+   */
+  @Post('intram')
+  @Public()
+  async handleIntramWebhook(
+    @RawBody() rawBody: Buffer,
+    @Headers('x-intram-signature') signature: string,
+    @Headers('x-intram-timestamp') timestamp: string,
+  ) {
+    const gateway = new IntramGateway()
+    const body = rawBody?.toString('utf8') ?? ''
+
+    if (!gateway.verifyWebhook(body, signature, timestamp)) {
+      // 400 rather than 200: a body we cannot prove is not one we acknowledge.
+      throw new BadRequestException('Signature INTRAM invalide')
+    }
+
+    const payload = JSON.parse(body) as {
+      event?: string
+      operation_id?: string
+      data?: { reference?: string, status?: string }
+    }
+
+    // payout.* belongs to withdrawals, never to an order payment.
+    if (payload.event?.startsWith('payout.')) {
+      const payoutId = payload.operation_id ?? payload.data?.reference
+      if (payoutId) {
+        await this.withdrawalsService.settleFromProvider(payoutId)
+      }
+      return { received: true }
+    }
+
+    await this.paymentsService.handleWebhookCallback(
+      PaymentProvider.INTRAM,
+      payload,
     )
     return { received: true }
   }

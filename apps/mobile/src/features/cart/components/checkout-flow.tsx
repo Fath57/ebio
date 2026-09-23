@@ -33,6 +33,7 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
+import { buildCheckoutHtml, paymentPublicKey } from '../../wallet/utils/checkout-widget'
 import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
 import { useRecommendations } from '../hooks/use-recommendations'
@@ -237,77 +238,6 @@ function toLocalLines(items: OrderSummary['items']): OrderPreviewLine[] {
   }))
 }
 
-function buildFedaPayCheckoutHtml(
-  publicKey: string,
-  amount: number,
-  description: string,
-  paymentId: string,
-  customer: CustomerInfo,
-): string {
-  const nameParts = customer.name.trim().split(/\s+/)
-  const firstname = nameParts[0] ?? ''
-  const lastname = nameParts.slice(1).join(' ') || firstname
-
-  const customerBlock = [
-    `firstname: '${firstname.replace(/'/g, '\\\'')}'`,
-    `lastname: '${lastname.replace(/'/g, '\\\'')}'`,
-    customer.email ? `email: '${customer.email.replace(/'/g, '\\\'')}'` : null,
-    customer.phone ? `phone_number: { number: '${customer.phone}', country: 'BJ' }` : null,
-  ].filter(Boolean).join(',\n          ')
-
-  return `
-<!DOCTYPE html>
-<html><head>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<style>
-  body {
-    margin: 0;
-    padding: 20px;
-    background: #F7F6F2;
-    font-family: -apple-system, sans-serif;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 100vh;
-  }
-  .loading { color: #5A5852; font-size: 16px; text-align: center; }
-</style>
-</head><body>
-<p class="loading">Chargement du paiement...</p>
-<script src="https://cdn.fedapay.com/checkout.js?v=1.1.7"></script>
-<script>
-  FedaPay.init({
-    public_key: '${publicKey}',
-    transaction: {
-      amount: ${amount},
-      description: '${description.replace(/'/g, '\\\'')}',
-      custom_metadata: { payment_id: '${paymentId}' }
-    },
-    customer: {
-      ${customerBlock}
-    },
-    currency: { iso: 'XOF' },
-    onComplete: function(resp) {
-      if (resp.reason === 'CHECKOUT_COMPLETED' || (resp.transaction && resp.transaction.status === 'approved')) {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'completed',
-          transactionId: String(resp.transaction.id)
-        }));
-      } else {
-        window.ReactNativeWebView.postMessage(JSON.stringify({
-          type: 'failed',
-          reason: resp.reason || 'Paiement échoué'
-        }));
-      }
-    },
-    onClose: function() {
-      window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'closed' }));
-    }
-  }).open();
-</script>
-</body></html>`
-}
-
 export function CheckoutFlow({
   orderSummary,
   customer,
@@ -348,7 +278,9 @@ export function CheckoutFlow({
   const { latitude: currentLatitude, longitude: currentLongitude } = useLocation()
   const [deliverySlot, setDeliverySlot] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
+  // Whichever provider this build ships with; the name stays so the
+  // payment-choice logic below reads as before.
+  const fedapayPublicKey = paymentPublicKey()
   // Wallet checkout: the balance decides whether the option is even offered.
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('FEDAPAY')
@@ -1034,18 +966,18 @@ export function CheckoutFlow({
     )
   }
 
-  // ─── STEP: PAYMENT (FedaPay WebView) ───────────────────────────────────────
+  // ─── STEP: PAYMENT (widget du prestataire, en WebView) ─────────────────────
 
   if (currentStep === 'PAYMENT' && fedapayPublicKey && pendingCheckoutId) {
-    const checkoutHtml = buildFedaPayCheckoutHtml(
-      fedapayPublicKey,
-      amountDue ?? orderTotal,
-      orderSummary.shopNames.length > 1
+    const checkoutHtml = buildCheckoutHtml({
+      publicKey: fedapayPublicKey,
+      amount: amountDue ?? orderTotal,
+      description: orderSummary.shopNames.length > 1
         ? `Panier eBio — ${orderSummary.shopNames.length} boutiques`
         : `Commande eBio - ${orderSummary.shopNames[0] ?? ''}`,
-      pendingCheckoutId,
       customer,
-    )
+      metadata: { payment_id: pendingCheckoutId },
+    })
 
     return (
       <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
