@@ -274,7 +274,9 @@ export function CartScreen({
                           accessibilityRole="button"
                           accessibilityLabel={`Retirer ${item.name} du panier`}
                         >
-                          <Trash2 size={16} color={semantic.textTertiary} strokeWidth={2} />
+                          {/* Coral, like the bin the stepper shows at one:
+                              the same gesture should not wear two colours. */}
+                          <Trash2 size={16} color={colors.coral[400]} strokeWidth={2} />
                         </TouchableOpacity>
                       </View>
 
