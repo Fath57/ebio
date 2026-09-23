@@ -1,5 +1,6 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
+import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Settings from 'lucide-react-native/dist/esm/icons/settings'
@@ -32,6 +33,8 @@ interface DashboardData {
   criticalStockProducts: number
   unreadMessages: number
   averageRating: number | null
+  /** Faux tant que la boutique n'a pas de coordonnées : aucune course ne part. */
+  hasLocation?: boolean
 }
 
 interface DashboardScreenProps {
@@ -131,6 +134,29 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           <Text style={[styles.errorBannerText, { color: colors.coral[600] }]}>
             Impossible de charger — Réessayer
           </Text>
+        </TouchableOpacity>
+      )}
+
+      {/* Sans coordonnées, la diffusion refuse la course faute de savoir d'où
+          elle part. Le bandeau dit la conséquence — pas de livreur — avant de
+          dire le remède, parce que c'est la conséquence qui fait agir. */}
+      {data?.hasLocation === false && (
+        <TouchableOpacity
+          style={[styles.errorBanner, styles.locationBanner, { backgroundColor: colors.coral[50] }]}
+          onPress={onNavigateToSettings}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Votre boutique n'a pas de position. Ouvrir les paramètres pour la placer sur la carte."
+        >
+          <MapPinOff size={18} color={colors.coral[600]} />
+          <View style={styles.locationBannerText}>
+            <Text style={[styles.errorBannerText, { color: colors.coral[600] }]}>
+              Aucun livreur ne peut venir chez vous
+            </Text>
+            <Text style={[styles.locationBannerHint, { color: colors.coral[600] }]}>
+              Votre boutique n'est pas placée sur la carte. Appuyez pour la positionner.
+            </Text>
+          </View>
         </TouchableOpacity>
       )}
 
@@ -381,6 +407,17 @@ const styles = StyleSheet.create({
   alertTitle: { ...typography.h3 },
   alertSubtitle: { ...typography.bodyS, marginTop: 2 },
 
+  locationBanner: {
+    alignItems: 'flex-start',
+    paddingVertical: spacing[3],
+  },
+  locationBannerText: {
+    flex: 1,
+    gap: 2,
+  },
+  locationBannerHint: {
+    ...typography.caption,
+  },
   errorBanner: {
     flexDirection: 'row',
     alignItems: 'center',

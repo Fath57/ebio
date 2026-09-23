@@ -307,6 +307,12 @@ export class SuppliersService {
     netRevenue: number
     pendingEscrow: number
     averageRating: number | null
+    /**
+     * Sans coordonnées, aucune course ne peut partir : la diffusion refuse un
+     * retrait dont elle ignore l'endroit. La boutique doit l'apprendre de
+     * l'application, pas d'un client qui s'étonne de ne voir venir personne.
+     */
+    hasLocation: boolean
   }> {
     const supplier = await this.findById(supplierId)
     const db = this.em.getConnection()
@@ -359,6 +365,7 @@ export class SuppliersService {
       netRevenue: Math.round((revenue - commission) * 100) / 100,
       pendingEscrow: Number(escrow.amount),
       averageRating: supplier.globalRating ?? null,
+      hasLocation: supplier.location != null,
     }
   }
 
