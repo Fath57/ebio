@@ -5,7 +5,6 @@ import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { RateCourierScreen } from '../../deliveries/components/rate-courier-screen'
-import { ProductRatingStep } from './product-rating-step'
 import { RatingForm } from './rating-form'
 
 interface RateOrderFlowProps {
@@ -28,17 +27,17 @@ interface DeliveryFeedbackState {
   buyerRating: { rating: number } | null
 }
 
-type Step = 'loading' | 'shop' | 'courier' | 'tip' | 'products'
+type Step = 'loading' | 'shop' | 'courier' | 'tip'
 
 /**
- * Single "rate my order" entry point after a delivery: the shop review
- * (4 criteria), then the courier (stars + optional tip), then the products
- * received. Steps already done, or irrelevant (shop self-delivery), are
- * skipped so the buyer never sees two rating buttons for one order.
+ * Noter sa commande, à la livraison : la boutique (quatre critères), puis le
+ * livreur (étoiles et pourboire). Les étapes déjà faites, ou sans objet quand
+ * la boutique a livré elle-même, sont sautées.
  *
- * Products come last on purpose: it is the longest step, so abandoning
- * halfway costs product reviews rather than the courier's rating, which
- * feeds their pay.
+ * Les produits n'y sont plus. On les notait ici, au moment où le colis arrive
+ * — donc avant d'avoir rien goûté, et l'avis portait sur l'emballage. La
+ * demande part maintenant quelques heures plus tard, par notification, vers
+ * un écran qui ne fait que cela.
  */
 export function RateOrderFlow({ orderId, supplierId, hasReview, tipOnly = false, onDone, onBack, onOpenWallet }: RateOrderFlowProps) {
   const { semantic } = useTheme()
@@ -71,7 +70,7 @@ export function RateOrderFlow({ orderId, supplierId, hasReview, tipOnly = false,
       else if (courierDone && found?.tipAmount === 0)
         setStep('tip')
       else
-        setStep('products')
+        onDone()
     }
     load()
     return () => {
@@ -86,11 +85,6 @@ export function RateOrderFlow({ orderId, supplierId, hasReview, tipOnly = false,
       setStep('courier')
       return
     }
-    setStep('products')
-  }
-
-  /** The products step ends the journey, whatever was rated in it. */
-  function handleProductsDone(): void {
     appAlert('Merci !', 'Votre avis a été enregistré.')
     onDone()
   }
@@ -119,21 +113,12 @@ export function RateOrderFlow({ orderId, supplierId, hasReview, tipOnly = false,
     )
   }
 
-  if (step === 'products') {
-    return (
-      <>
-        <ScreenHeader title="Noter les produits" onBack={onBack} />
-        <ProductRatingStep orderId={orderId} onComplete={handleProductsDone} />
-      </>
-    )
-  }
-
   return (
     <RateCourierScreen
       deliveryId={delivery!.id}
       courierName={delivery!.courier?.name ?? 'Livreur'}
       mode={step === 'tip' ? 'tip' : 'rate'}
-      onDone={() => setStep('products')}
+      onDone={onDone}
       onBack={onBack}
       onOpenWallet={onOpenWallet}
     />

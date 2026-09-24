@@ -6915,6 +6915,48 @@
         }
       }
     },
+    "/api/users/me/terms": {
+      "post": {
+        "operationId": "UsersController_acceptTerms",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Enregistrer l'acceptation des conditions et de la politique de confidentialité",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "depuis": {
+                    "type": "string",
+                    "enum": [
+                      "client",
+                      "supplier",
+                      "courier",
+                      "web"
+                    ]
+                  }
+                },
+                "required": [
+                  "depuis"
+                ],
+                "additionalProperties": false,
+                "title": "AcceptTerms",
+                "description": "Enregistrer l'acceptation des conditions et de la politique de confidentialité"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/media/upload": {
       "post": {
         "operationId": "MediaController_initiateUpload",
@@ -8892,6 +8934,62 @@
                 "additionalProperties": false,
                 "title": "AssistantSetting",
                 "description": "Ouvrir ou fermer l'assistant conversationnel"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/product-review-timing": {
+      "get": {
+        "operationId": "AdminProductReviewTimingController_get",
+        "tags": [
+          "AdminProductReviewTiming"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminProductReviewTimingController_update",
+        "tags": [
+          "AdminProductReviewTiming"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Délai et relances de la demande d'avis produit",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "delaiHeures": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 720
+                  },
+                  "relancesMaximum": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  }
+                },
+                "required": [
+                  "delaiHeures",
+                  "relancesMaximum"
+                ],
+                "additionalProperties": false,
+                "title": "ProductReviewTiming",
+                "description": "Délai et relances de la demande d'avis produit"
               }
             }
           }
@@ -15086,6 +15184,28 @@
         "title": "AssistantSetting",
         "description": "Ouvrir ou fermer l'assistant conversationnel"
       },
+      "ProductReviewTiming": {
+        "type": "object",
+        "properties": {
+          "delaiHeures": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 720
+          },
+          "relancesMaximum": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 10
+          }
+        },
+        "required": [
+          "delaiHeures",
+          "relancesMaximum"
+        ],
+        "additionalProperties": false,
+        "title": "ProductReviewTiming",
+        "description": "Délai et relances de la demande d'avis produit"
+      },
       "UpdateUser": {
         "type": "object",
         "properties": {
@@ -15113,6 +15233,26 @@
         "additionalProperties": false,
         "title": "UpdateUser",
         "description": "Update user profile"
+      },
+      "AcceptTerms": {
+        "type": "object",
+        "properties": {
+          "depuis": {
+            "type": "string",
+            "enum": [
+              "client",
+              "supplier",
+              "courier",
+              "web"
+            ]
+          }
+        },
+        "required": [
+          "depuis"
+        ],
+        "additionalProperties": false,
+        "title": "AcceptTerms",
+        "description": "Enregistrer l'acceptation des conditions et de la politique de confidentialité"
       },
       "CreateSalesPoint": {
         "type": "object",

@@ -49,6 +49,7 @@ import { HelpCenterScreen } from '../features/profile/components/help-center-scr
 import { LegalScreen } from '../features/profile/components/legal-screen'
 import { ProfileScreen } from '../features/profile/components/profile-screen'
 import { RateOrderFlow } from '../features/ratings/components/rate-order-flow'
+import { RateProductsScreen } from '../features/ratings/components/rate-products-screen'
 import { ReviewsList } from '../features/ratings/components/reviews-list'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
@@ -607,6 +608,7 @@ function OrdersStackScreen() {
       <OrdersStack.Screen name="MyOrders" component={MyOrdersWrapper} />
       <OrdersStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
       <OrdersStack.Screen name="RateOrder" component={RateOrderWrapper} />
+      <OrdersStack.Screen name="RateProducts" component={RateProductsWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -755,6 +757,25 @@ function OrderTrackingWrapper({ route, navigation }: any) {
         onOpenCourierChat={(deliveryId, courierName) => openChatWithCourier(navigation, deliveryId, courierName, orderId)}
         onRate={(supplierId, hasReview) => navigation.navigate('RateOrder', { supplierId, orderId, hasReview })}
         onTipCourier={supplierId => navigation.navigate('RateOrder', { supplierId, orderId, hasReview: true, tipOnly: true })}
+        onBack={() => navigation.goBack()}
+      />
+    </SafeScreen>
+  )
+}
+
+/**
+ * L'écran d'avis produit, atteint depuis la notification différée.
+ *
+ * Séparé de `RateOrder` parce qu'il se vit à un autre moment : la boutique et
+ * le livreur se jugent à l'arrivée du colis, le produit une fois consommé.
+ */
+function RateProductsWrapper({ route, navigation }: any) {
+  const { orderId } = route.params ?? {}
+  return (
+    <SafeScreen>
+      <RateProductsScreen
+        orderId={orderId}
+        onDone={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
       />
     </SafeScreen>

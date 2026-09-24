@@ -31,7 +31,7 @@ export enum PaymentMethod {
 
 @Entity({ tableName: 'orders' })
 export class Order {
-  [OptionalProps]?: 'id' | 'status' | 'deliveryFee' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt' | 'discountAmount' | 'sponsoredDeliveryFee' | 'platformPromoCompensation'
+  [OptionalProps]?: 'id' | 'status' | 'deliveryFee' | 'commissionRate' | 'commissionAmount' | 'deliveryConfirmedByBuyer' | 'deliveryConfirmedBySupplier' | 'items' | 'createdAt' | 'updatedAt' | 'discountAmount' | 'sponsoredDeliveryFee' | 'platformPromoCompensation' | 'reviewInvitesSent'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -137,6 +137,19 @@ export class Order {
 
   @Property({ fieldName: 'escrow_released_at', nullable: true })
   escrowReleasedAt?: Date
+
+  /**
+   * Combien de fois on a déjà invité l'acheteur à donner son avis produit.
+   *
+   * L'invitation part des heures après la livraison, pas au moment où on
+   * dépose le colis : on ne juge pas un produit qu'on n'a pas encore ouvert.
+   * Le compteur borne la relance — au-delà, le silence est une réponse.
+   */
+  @Property({ fieldName: 'review_invites_sent', default: 0 })
+  reviewInvitesSent: number = 0
+
+  @Property({ fieldName: 'review_invite_last_sent_at', nullable: true })
+  reviewInviteLastSentAt?: Date | null
 
   @OneToMany(() => OrderItem, item => item.order)
   items = new Collection<OrderItem>(this)

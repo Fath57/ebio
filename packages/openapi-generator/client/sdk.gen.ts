@@ -98,6 +98,10 @@ import type {
   AdminDeliveryPricingControllerGetResponses,
   AdminDeliveryPricingControllerUpdateData,
   AdminDeliveryPricingControllerUpdateResponses,
+  AdminProductReviewTimingControllerGetData,
+  AdminProductReviewTimingControllerGetResponses,
+  AdminProductReviewTimingControllerUpdateData,
+  AdminProductReviewTimingControllerUpdateResponses,
   AdminPromoCodesControllerCreateData,
   AdminPromoCodesControllerCreateResponses,
   AdminPromoCodesControllerListData,
@@ -628,6 +632,8 @@ import type {
   TrainingControllerGetModulesResponses,
   TrainingControllerGetMyProgressData,
   TrainingControllerGetMyProgressResponses,
+  UsersControllerAcceptTermsData,
+  UsersControllerAcceptTermsResponses,
   UsersControllerGetMeData,
   UsersControllerGetMeResponses,
   UsersControllerUpdateMeData,
@@ -2635,6 +2641,24 @@ export const usersControllerUpdateMe = <ThrowOnError extends boolean = false>(
     },
   });
 
+export const usersControllerAcceptTerms = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UsersControllerAcceptTermsData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    UsersControllerAcceptTermsResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/users/me/terms",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const mediaControllerInitiateUpload = <
   ThrowOnError extends boolean = false,
 >(
@@ -3284,6 +3308,35 @@ export const adminAssistantControllerUpdate = <
     ThrowOnError
   >({
     url: "/api/admin/assistant",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminProductReviewTimingControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminProductReviewTimingControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminProductReviewTimingControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/product-review-timing", ...options });
+
+export const adminProductReviewTimingControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminProductReviewTimingControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminProductReviewTimingControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/product-review-timing",
     ...options,
     headers: {
       "Content-Type": "application/json",

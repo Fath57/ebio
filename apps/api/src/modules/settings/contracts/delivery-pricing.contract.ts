@@ -120,3 +120,19 @@ export const assistantSettingSchema = z.object({
 })
 
 export type AssistantSettingInput = z.infer<typeof assistantSettingSchema>
+
+/**
+ * Quand demander un avis sur les produits, et combien de fois relancer.
+ *
+ * Le délai court depuis la livraison pour la première invitation, puis depuis
+ * la précédente pour chaque relance : un seul nombre à comprendre.
+ */
+export const productReviewTimingSchema = z.object({
+  delaiHeures: z.coerce.number().int().min(1).max(720),
+  relancesMaximum: z.coerce.number().int().min(1).max(10),
+}).meta({
+  title: 'ProductReviewTiming',
+  description: 'Délai et relances de la demande d\'avis produit',
+})
+
+export type ProductReviewTimingInput = z.infer<typeof productReviewTimingSchema>

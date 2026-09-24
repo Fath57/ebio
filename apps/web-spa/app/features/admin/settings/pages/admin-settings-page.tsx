@@ -12,6 +12,8 @@ import {
   adminControllerUpdateDeliveryCommission,
   adminDeliveryPricingControllerGet,
   adminDeliveryPricingControllerUpdate,
+  adminProductReviewTimingControllerGet,
+  adminProductReviewTimingControllerUpdate,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
@@ -29,6 +31,7 @@ import { CashLimitForm } from '../forms/cash-limit-form'
 import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
+import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
 
 interface AdminSettingsData {
   commissions: CommissionCategoryRate[]
@@ -76,6 +79,23 @@ function fetchAssistantQueryOptions() {
   }
 }
 
+interface ProductReviewTiming {
+  delaiHeures: number
+  relancesMaximum: number
+}
+
+function fetchProductReviewTimingQueryOptions() {
+  return {
+    queryKey: ['admin', 'product-review-timing'],
+    queryFn: async () => {
+      const response = await adminProductReviewTimingControllerGet()
+      if (response.error)
+        throw new Error('Failed to fetch product review timing')
+      return response.data as ProductReviewTiming
+    },
+  }
+}
+
 function fetchAdminSettingsQueryOptions() {
   return {
     queryKey: ['admin', 'settings'],
@@ -101,11 +121,13 @@ export default function AdminSettingsPage() {
   const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
   const [bannerOffersFeedback, setBannerOffersFeedback] = useState<'saved' | 'error' | null>(null)
   const [assistantFeedback, setAssistantFeedback] = useState<'saved' | 'error' | null>(null)
+  const [reviewFeedback, setReviewFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
   const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
   const { data: bannerOffers, isLoading: isBannerOffersLoading } = useQuery(fetchBannerOffersQueryOptions())
   const { data: assistant, isLoading: isAssistantLoading } = useQuery(fetchAssistantQueryOptions())
+  const { data: reviewTiming, isLoading: isReviewLoading } = useQuery(fetchProductReviewTimingQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
     mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
@@ -234,6 +256,25 @@ export default function AdminSettingsPage() {
     },
   })
 
+  const { mutate: updateReviewTiming, isPending: isReviewPending } = useMutation({
+    mutationFn: async (timing: ProductReviewTiming) => {
+      const response = await adminProductReviewTimingControllerUpdate({ body: timing })
+      if (response.error)
+        throw new Error('Failed to update product review timing')
+      return response.data as ProductReviewTiming
+    },
+    onMutate: () => {
+      setReviewFeedback(null)
+    },
+    onSuccess: (saved) => {
+      setReviewFeedback('saved')
+      queryClient.setQueryData(['admin', 'product-review-timing'], saved)
+    },
+    onError: () => {
+      setReviewFeedback('error')
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -319,6 +360,32 @@ export default function AdminSettingsPage() {
                 {pricingFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.deliveryPricing.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.productReview.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.productReview.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isReviewLoading || !reviewTiming
+                  ? <Skeleton className="h-24 w-full" />
+                  : (
+                      <ProductReviewTimingForm
+                        timing={reviewTiming}
+                        onSubmit={updateReviewTiming}
+                        isPending={isReviewPending}
+                      />
+                    )}
+                {reviewFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.productReview.saved')}</p>
+                )}
+                {reviewFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.productReview.error')}
                   </p>
                 )}
               </CardContent>

@@ -86,6 +86,35 @@ export class User {
   @Property({ fieldName: 'status_changed_by', nullable: true })
   statusChangedBy?: string
 
+  /**
+   * Quand cette personne a accepté les conditions et la politique de
+   * confidentialité.
+   *
+   * La case était cochée dans l'écran d'inscription et n'allait nulle part :
+   * elle bloquait le bouton, et c'est tout. En cas de contestation il n'y
+   * avait rien à montrer. Ces trois colonnes sont la trace — la date, d'où
+   * elle vient, et quel texte était en vigueur ce jour-là.
+   *
+   * La première acceptation ne s'écrase jamais : ce qui compte est le moment
+   * où l'accord a été donné, pas la dernière fois qu'on l'a redit.
+   */
+  @Property({ fieldName: 'terms_accepted_at', nullable: true })
+  termsAcceptedAt?: Date | null
+
+  /** L'application depuis laquelle l'accord a été donné. */
+  @Property({ fieldName: 'terms_accepted_from', nullable: true })
+  termsAcceptedFrom?: string | null
+
+  /**
+   * La version des documents acceptés.
+   *
+   * Enregistrée sans mécanique de re-consentement : on ne redemande rien aux
+   * comptes existants quand les textes changent. Mais savoir *ce qui* a été
+   * accepté est précisément ce qui sépare une preuve d'une date.
+   */
+  @Property({ fieldName: 'terms_version', nullable: true })
+  termsVersion?: string | null
+
   @Property({ fieldName: 'createdAt' })
   createdAt: Date = new Date()
 

@@ -23,6 +23,34 @@ export class UsersService {
     return this.em.findOne(User, { email })
   }
 
+  /**
+   * La version des documents en vigueur.
+   *
+   * Une constante, et non un réglage : changer les textes se fait en
+   * déployant, et la trace doit dire ce qui a été accepté ce jour-là. Aucun
+   * re-consentement n'est demandé aux comptes existants quand elle change.
+   */
+  private static readonly TERMS_VERSION = '2026-09'
+
+  /**
+   * Enregistrer l'accord, une fois pour toutes.
+   *
+   * La première acceptation n'est jamais écrasée : ce qui compte est le
+   * moment où l'accord a été donné, pas la dernière fois qu'on l'a redit.
+   */
+  async acceptTerms(id: string, from: string): Promise<User> {
+    const user = await this.findById(id)
+    if (user.termsAcceptedAt) {
+      return user
+    }
+
+    user.termsAcceptedAt = new Date()
+    user.termsAcceptedFrom = from
+    user.termsVersion = UsersService.TERMS_VERSION
+    await this.em.flush()
+    return user
+  }
+
   async update(id: string, data: UpdateUser): Promise<User> {
     const user = await this.findById(id)
     if (data.name !== undefined)

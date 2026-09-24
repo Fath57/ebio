@@ -98,6 +98,16 @@ export type AssistantSetting = {
 };
 
 /**
+ * ProductReviewTiming
+ *
+ * Délai et relances de la demande d'avis produit
+ */
+export type ProductReviewTiming = {
+  delaiHeures: number;
+  relancesMaximum: number;
+};
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -108,6 +118,15 @@ export type UpdateUser = {
   phone?: string;
   image?: string;
   deviceId?: string;
+};
+
+/**
+ * AcceptTerms
+ *
+ * Enregistrer l'acceptation des conditions et de la politique de confidentialité
+ */
+export type AcceptTerms = {
+  depuis: "client" | "supplier" | "courier" | "web";
 };
 
 /**
@@ -5939,6 +5958,24 @@ export type UsersControllerUpdateMeResponses = {
   200: unknown;
 };
 
+export type UsersControllerAcceptTermsData = {
+  /**
+   * AcceptTerms
+   *
+   * Enregistrer l'acceptation des conditions et de la politique de confidentialité
+   */
+  body: {
+    depuis: "client" | "supplier" | "courier" | "web";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/users/me/terms";
+};
+
+export type UsersControllerAcceptTermsResponses = {
+  201: unknown;
+};
+
 export type MediaControllerInitiateUploadData = {
   /**
    * InitiateUpload
@@ -6817,6 +6854,36 @@ export type AdminAssistantControllerUpdateData = {
 };
 
 export type AdminAssistantControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type AdminProductReviewTimingControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/product-review-timing";
+};
+
+export type AdminProductReviewTimingControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminProductReviewTimingControllerUpdateData = {
+  /**
+   * ProductReviewTiming
+   *
+   * Délai et relances de la demande d'avis produit
+   */
+  body: {
+    delaiHeures: number;
+    relancesMaximum: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/product-review-timing";
+};
+
+export type AdminProductReviewTimingControllerUpdateResponses = {
   200: unknown;
 };
 

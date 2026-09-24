@@ -12,6 +12,8 @@ export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
 export const DELIVERY_PRICING_KEY = 'delivery_pricing'
 export const BANNER_OFFERS_KEY = 'banner_offers'
 export const ASSISTANT_ENABLED_KEY = 'assistant_enabled'
+export const PRODUCT_REVIEW_DELAY_HOURS_KEY = 'product_review_delay_hours'
+export const PRODUCT_REVIEW_MAX_INVITES_KEY = 'product_review_max_invites'
 
 export const DEFAULT_BANNER_OFFERS: BannerOffersInput = {
   offers: [
@@ -38,6 +40,18 @@ export const DEFAULT_COURIER_MAX_DEBT = 5_000
  * dark makes that a decision instead of a side effect.
  */
 export const DEFAULT_ASSISTANT_ENABLED = false
+
+/**
+ * Le temps qu'on laisse avant de demander un avis sur un produit.
+ *
+ * Demander à la livraison n'a pas de sens : personne n'a encore ouvert le sac.
+ * Douze heures laissent passer un repas, ce qui est le minimum pour avoir un
+ * avis sur de la nourriture.
+ */
+export const DEFAULT_PRODUCT_REVIEW_DELAY_HOURS = 12
+
+/** Au-delà, ne pas répondre est une réponse. */
+export const DEFAULT_PRODUCT_REVIEW_MAX_INVITES = 3
 
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
@@ -143,6 +157,26 @@ export class PlatformSettingsService {
     await this.set(BANNER_OFFERS_KEY, JSON.stringify(sorted))
   }
 
+  /** Heures entre la livraison et la demande d'avis sur les produits. */
+  async getProductReviewDelayHours(): Promise<number> {
+    return this.readInteger(PRODUCT_REVIEW_DELAY_HOURS_KEY, DEFAULT_PRODUCT_REVIEW_DELAY_HOURS, 1, 720)
+  }
+
+  async setProductReviewDelayHours(hours: number): Promise<void> {
+    this.assertInteger(hours, 1, 720, 'Le délai doit être un nombre d\'heures entre 1 et 720')
+    await this.set(PRODUCT_REVIEW_DELAY_HOURS_KEY, String(hours))
+  }
+
+  /** Nombre total d'invitations, relances comprises. */
+  async getProductReviewMaxInvites(): Promise<number> {
+    return this.readInteger(PRODUCT_REVIEW_MAX_INVITES_KEY, DEFAULT_PRODUCT_REVIEW_MAX_INVITES, 1, 10)
+  }
+
+  async setProductReviewMaxInvites(count: number): Promise<void> {
+    this.assertInteger(count, 1, 10, 'Le nombre de relances doit être compris entre 1 et 10')
+    await this.set(PRODUCT_REVIEW_MAX_INVITES_KEY, String(count))
+  }
+
   /** Is the conversational assistant open to buyers? */
   async getAssistantEnabled(): Promise<boolean> {
     const raw = await this.get(ASSISTANT_ENABLED_KEY)
@@ -159,6 +193,19 @@ export class PlatformSettingsService {
   /** Admin edits call this so the new value applies immediately. */
   invalidateCache(): void {
     this.cache.clear()
+  }
+
+  /** Un entier borné, ou le défaut si la ligne manque ou ne se lit pas. */
+  private async readInteger(key: string, fallback: number, min: number, max: number): Promise<number> {
+    const raw = await this.get(key)
+    const value = raw === null ? Number.NaN : Number(raw)
+    return Number.isInteger(value) && value >= min && value <= max ? value : fallback
+  }
+
+  private assertInteger(value: number, min: number, max: number, message: string): void {
+    if (!Number.isInteger(value) || value < min || value > max) {
+      throw new BadRequestException(message)
+    }
   }
 
   private async get(key: string): Promise<string | null> {

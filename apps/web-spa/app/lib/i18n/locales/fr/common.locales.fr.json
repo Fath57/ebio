@@ -1175,6 +1175,16 @@
         "stateClosed": "Fermée : le bouton disparaît de l'application et toute conversation est refusée.",
         "saved": "Enregistré. Le changement s’applique dans la minute.",
         "error": "Le changement n'a pas été enregistré."
+      },
+      "productReview": {
+        "title": "Avis sur les produits",
+        "description": "Quand demander à l'acheteur ce qu'il a pensé de ce qu'il a reçu. Demander à la livraison n'a pas de sens : personne n'a encore ouvert le sac.",
+        "delay": "Délai (heures)",
+        "delayHint": "Depuis la livraison pour la première demande, puis depuis la précédente pour chaque relance.",
+        "reminders": "Demandes au total",
+        "remindersHint": "Relances comprises. Au-delà, ne pas répondre est une réponse.",
+        "saved": "Enregistré.",
+        "error": "Le changement n'a pas été enregistré."
       }
     },
     "site": {

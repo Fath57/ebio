@@ -5,7 +5,7 @@ import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import Mail from 'lucide-react-native/dist/esm/icons/mail'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -28,7 +28,8 @@ import {
 } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { BRAND_LOGO } from '../../../utils/app-variant'
+import { apiFetch } from '../../../utils/api-client'
+import { APP_VARIANT, BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { GoogleSignInButton } from './google-sign-in-button'
 import { OtpInput, ResendTimer } from './otp-input'
@@ -56,6 +57,29 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
   const [resendKey, setResendKey] = useState(0)
   // Store requirement: no account without explicit terms acceptance.
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+
+  /**
+   * Clore l'inscription, et laisser la trace de l'accord.
+   *
+   * La case cochée ne quittait jamais le téléphone : elle désactivait le
+   * bouton, et il n'y avait rien à produire en cas de contestation. Le
+   * serveur l'enregistre désormais, avec la date et l'application d'où elle
+   * vient. Un échec réseau ne bloque pas l'inscription — le compte existe
+   * déjà à ce stade — mais il est signalé dans la console.
+   */
+  const finishRegistration = useCallback(async () => {
+    try {
+      await apiFetch('/api/users/me/terms', {
+        method: 'POST',
+        body: JSON.stringify({ depuis: APP_VARIANT }),
+      })
+    }
+    catch (caught) {
+      console.warn('[cgu] acceptation non enregistrée', caught)
+    }
+    notifyAuthChange()
+    onRegisterSuccess()
+  }, [onRegisterSuccess])
 
   const iconColor = semantic.textTertiary
   const inputBg = semantic.bgSurface
@@ -100,8 +124,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
       }
       else {
         // Existing user — already logged in via OTP
-        notifyAuthChange()
-        onRegisterSuccess()
+        await finishRegistration()
       }
     }
     catch {
@@ -134,8 +157,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
         setError(result.error)
         return
       }
-      notifyAuthChange()
-      onRegisterSuccess()
+      await finishRegistration()
     }
     catch {
       setError('Une erreur est survenue')
@@ -198,8 +220,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
         setError(result.error)
         return
       }
-      notifyAuthChange()
-      onRegisterSuccess()
+      await finishRegistration()
     }
     catch {
       setError('Une erreur est survenue')
@@ -329,8 +350,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 <GoogleSignInButton
                   label="S'inscrire avec Google"
                   onSuccess={() => {
-                    notifyAuthChange()
-                    onRegisterSuccess()
+                    void finishRegistration()
                   }}
                   onError={setError}
                 />

@@ -54,6 +54,7 @@ const TYPE_ICONS: Record<string, typeof PackageIcon> = {
   PAYMENT_RELEASED: CreditCardIcon,
   NEW_MESSAGE: MessageCircleIcon,
   NEW_REVIEW: StarIcon,
+  PRODUCT_REVIEW_INVITE: StarIcon,
   STOCK_ALERT: TrendingDownIcon,
   SUPPLIER_VALIDATED: ShieldAlertIcon,
   SUPPLIER_REJECTED: ShieldAlertIcon,

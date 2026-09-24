@@ -26,6 +26,8 @@ export enum NotificationType {
   STOCK_AVAILABLE = 'STOCK_AVAILABLE',
   NEW_MESSAGE = 'NEW_MESSAGE',
   NEW_REVIEW = 'NEW_REVIEW',
+  /** Invitation à donner son avis sur les produits reçus, différée après la livraison. */
+  PRODUCT_REVIEW_INVITE = 'PRODUCT_REVIEW_INVITE',
   ESCROW_REMINDER = 'ESCROW_REMINDER',
   PROMOTIONAL = 'PROMOTIONAL',
   SYSTEM = 'SYSTEM',

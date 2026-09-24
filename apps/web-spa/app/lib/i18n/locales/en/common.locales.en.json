@@ -1175,6 +1175,16 @@
         "stateClosed": "Closed: the button disappears from the app and every conversation is refused.",
         "saved": "Saved. The change applies within a minute.",
         "error": "The change was not saved."
+      },
+      "productReview": {
+        "title": "Product reviews",
+        "description": "When to ask the buyer what they thought of what they received. Asking at delivery makes no sense: nobody has opened the bag yet.",
+        "delay": "Delay (hours)",
+        "delayHint": "From the delivery for the first ask, then from the previous one for each reminder.",
+        "reminders": "Total asks",
+        "remindersHint": "Reminders included. Beyond that, not answering is an answer.",
+        "saved": "Saved.",
+        "error": "The change was not saved."
       }
     },
     "site": {

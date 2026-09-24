@@ -1,4 +1,4 @@
-import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest } from './contracts/delivery-pricing.contract'
+import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
@@ -6,7 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { AuthGuard } from '../auth/auth.guard'
-import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema } from './contracts/delivery-pricing.contract'
+import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSettingsService } from './platform-settings.service'
 
@@ -87,5 +87,38 @@ export class AdminAssistantController {
   async update(@TypedBody(assistantSettingSchema) body: AssistantSettingInput) {
     await this.platformSettings.setAssistantEnabled(body.enabled)
     return { enabled: await this.platformSettings.getAssistantEnabled() }
+  }
+}
+
+/**
+ * Le moment où l'on demande son avis à l'acheteur.
+ *
+ * Réglable parce que le bon délai dépend de ce qu'on vend : douze heures
+ * conviennent à de la nourriture, ce serait trop tôt pour du savon.
+ */
+@Controller('admin/product-review-timing')
+@UseGuards(AuthGuard, RolesGuard, CaslGuard)
+@Roles('ADMIN')
+export class AdminProductReviewTimingController {
+  constructor(private readonly platformSettings: PlatformSettingsService) {}
+
+  @CanRead('Settings')
+  @Get()
+  async get() {
+    return {
+      delaiHeures: await this.platformSettings.getProductReviewDelayHours(),
+      relancesMaximum: await this.platformSettings.getProductReviewMaxInvites(),
+    }
+  }
+
+  @CanManage('Settings')
+  @Put()
+  async update(@TypedBody(productReviewTimingSchema) body: ProductReviewTimingInput) {
+    await this.platformSettings.setProductReviewDelayHours(body.delaiHeures)
+    await this.platformSettings.setProductReviewMaxInvites(body.relancesMaximum)
+    return {
+      delaiHeures: await this.platformSettings.getProductReviewDelayHours(),
+      relancesMaximum: await this.platformSettings.getProductReviewMaxInvites(),
+    }
   }
 }

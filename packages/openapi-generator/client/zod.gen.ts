@@ -46,6 +46,16 @@ export const zAssistantSetting = z.object({
 });
 
 /**
+ * ProductReviewTiming
+ *
+ * Délai et relances de la demande d'avis produit
+ */
+export const zProductReviewTiming = z.object({
+  delaiHeures: z.int().gte(1).lte(720),
+  relancesMaximum: z.int().gte(1).lte(10),
+});
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -62,6 +72,15 @@ export const zUpdateUser = z.object({
   phone: z.optional(z.string()),
   image: z.optional(z.url()),
   deviceId: z.optional(z.string()),
+});
+
+/**
+ * AcceptTerms
+ *
+ * Enregistrer l'acceptation des conditions et de la politique de confidentialité
+ */
+export const zAcceptTerms = z.object({
+  depuis: z.enum(["client", "supplier", "courier", "web"]),
 });
 
 /**
@@ -5191,6 +5210,14 @@ export const zUsersControllerUpdateMeData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zUsersControllerAcceptTermsData = z.object({
+  body: z.object({
+    depuis: z.enum(["client", "supplier", "courier", "web"]),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zMediaControllerInitiateUploadData = z.object({
   body: z.object({
     fileName: z.string().min(1),
@@ -5774,6 +5801,21 @@ export const zAdminAssistantControllerGetData = z.object({
 export const zAdminAssistantControllerUpdateData = z.object({
   body: z.object({
     enabled: z.boolean(),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminProductReviewTimingControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminProductReviewTimingControllerUpdateData = z.object({
+  body: z.object({
+    delaiHeures: z.int().gte(1).lte(720),
+    relancesMaximum: z.int().gte(1).lte(10),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),

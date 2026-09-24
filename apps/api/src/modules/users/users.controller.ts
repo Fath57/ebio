@@ -1,10 +1,10 @@
 import type { AuthenticatedRequest } from '../auth/auth.guard'
 import { TypedBody } from '@lonestone/nzoth/server'
-import { Controller, Get, Put, Req, UseGuards } from '@nestjs/common'
+import { Controller, Get, Post, Put, Req, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { AuthGuard } from '../auth/auth.guard'
 import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
-import { updateUserSchema } from './contracts/user.contract'
+import { acceptTermsSchema, updateUserSchema } from './contracts/user.contract'
 import { UserMapper } from './users.mapper'
 import { UsersService } from './users.service'
 
@@ -30,5 +30,24 @@ export class UsersController {
   ) {
     const user = await this.usersService.update(req.session.user.id, body)
     return UserMapper.toResponse(user)
+  }
+
+  /**
+   * Enregistrer que les conditions ont été acceptées.
+   *
+   * Appelée par l'application juste après une inscription réussie, quel que
+   * soit le chemin — téléphone, courriel ou Google. La case cochée à l'écran
+   * ne quittait jamais le téléphone ; elle laisse désormais une trace datée.
+   */
+  @Post('me/terms')
+  async acceptTerms(
+    @Req() req: AuthenticatedRequest,
+    @TypedBody(acceptTermsSchema) body: z.infer<typeof acceptTermsSchema>,
+  ) {
+    const user = await this.usersService.acceptTerms(req.session.user.id, body.depuis)
+    return {
+      termsAcceptedAt: user.termsAcceptedAt ?? null,
+      termsVersion: user.termsVersion ?? null,
+    }
   }
 }

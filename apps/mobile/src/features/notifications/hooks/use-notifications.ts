@@ -218,6 +218,16 @@ export function handleNotificationTap(data: Record<string, unknown>) {
         })
       }
       break
+    case 'PRODUCT_REVIEW_INVITE':
+      // Un écran qui ne fait que cela : l'invitation arrive des heures après
+      // la livraison, la notation de la commande est déjà derrière nous.
+      if (data.orderId) {
+        navigationRef.navigate('Commandes', {
+          screen: 'RateProducts',
+          params: { orderId: data.orderId },
+        })
+      }
+      break
     case 'NEW_MESSAGE':
       if (data.conversationId) {
         navigationRef.navigate('Chat', {
@@ -259,6 +269,16 @@ function handleCourierTap(type: string, data: Record<string, unknown>) {
     case 'DELIVERY_REASSIGNED':
     case 'ORDER_CANCELLED':
       navigationRef.navigate('Courses')
+      break
+    case 'PRODUCT_REVIEW_INVITE':
+      // Un écran qui ne fait que cela : l'invitation arrive des heures après
+      // la livraison, la notation de la commande est déjà derrière nous.
+      if (data.orderId) {
+        navigationRef.navigate('Commandes', {
+          screen: 'RateProducts',
+          params: { orderId: data.orderId },
+        })
+      }
       break
     case 'NEW_MESSAGE':
       // Buyer thread of a delivery: lives in the Courses branch
@@ -316,6 +336,16 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
       }
       else {
         navigationRef.navigate('Commandes')
+      }
+      break
+    case 'PRODUCT_REVIEW_INVITE':
+      // Un écran qui ne fait que cela : l'invitation arrive des heures après
+      // la livraison, la notation de la commande est déjà derrière nous.
+      if (data.orderId) {
+        navigationRef.navigate('Commandes', {
+          screen: 'RateProducts',
+          params: { orderId: data.orderId },
+        })
       }
       break
     case 'NEW_MESSAGE':

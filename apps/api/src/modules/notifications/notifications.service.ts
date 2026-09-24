@@ -35,6 +35,7 @@ const AUDIENCE_TYPES: Record<NotificationAudience, NotificationType[]> = {
     NotificationType.STOCK_AVAILABLE,
     NotificationType.NEW_MESSAGE,
     NotificationType.ESCROW_REMINDER,
+    NotificationType.PRODUCT_REVIEW_INVITE,
     NotificationType.DELIVERY_ASSIGNED,
     NotificationType.DELIVERY_PICKED_UP,
     NotificationType.DELIVERY_FAILED,
