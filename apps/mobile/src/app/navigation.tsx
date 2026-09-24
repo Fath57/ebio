@@ -553,7 +553,7 @@ function ForgotPasswordWrapper({ navigation }: any) {
 }
 
 function CheckoutWrapper({ route, navigation }: any) {
-  const { clearSupplierCart } = useCart()
+  const { clearAll } = useCart()
   const { data: session } = useSession()
   const { orderSummary } = route.params
   const customer = {
@@ -567,7 +567,12 @@ function CheckoutWrapper({ route, navigation }: any) {
         orderSummary={orderSummary}
         customer={customer}
         onComplete={(orderNumber, orderId) => {
-          clearSupplierCart(orderSummary.supplierId)
+          // Tout le panier, pas une boutique : depuis le panier unifié, un
+          // passage en caisse facture l'ensemble et crée une commande par
+          // boutique. `clearSupplierCart(orderSummary.supplierId)` ne vidait
+          // rien du tout — `OrderSummary` ne porte pas de `supplierId`, il
+          // valait `undefined`, et le panier restait entier après la commande.
+          clearAll()
           navigation.replace('OrderSuccess', { orderNumber, orderId })
         }}
         onCancel={() => navigation.goBack()}
@@ -888,13 +893,13 @@ const Tab = createBottomTabNavigator()
  * after our listener. So we target the child stack directly through `target`,
  * the only way for an action to travel down: otherwise it bubbles up.
  */
-function popChatStackToTop(navigation) {
+function popTabStackToTop(navigation, tabName: string) {
   // Read on press rather than captured when the listener is created: the route
-  // frozen in the closure would carry the state from before the conversation
-  // was opened.
-  const state = navigation.getState().routes.find(r => r.name === 'Chat')?.state
+  // frozen in the closure would carry the state from before the screen was
+  // opened.
+  const state = navigation.getState().routes.find(r => r.name === tabName)?.state
   // `key` is missing until the stack has mounted; an `index` of 0 means we are
-  // already on the list. Nothing to pop in either case.
+  // already at its root. Nothing to pop in either case.
   if (!state?.key || !state.index) {
     return
   }
@@ -984,7 +989,13 @@ export function AppNavigation() {
           }
         }}
       >
-        <Tab.Screen name="Accueil" component={SearchStackScreen} />
+        <Tab.Screen
+          name="Accueil"
+          component={SearchStackScreen}
+          listeners={({ navigation }) => ({
+            tabPress: () => popTabStackToTop(navigation, 'Accueil'),
+          })}
+        />
         <Tab.Screen
           name="Chat"
           component={ChatStackScreen}
@@ -995,12 +1006,30 @@ export function AppNavigation() {
               }
             : {}}
           listeners={({ navigation }) => ({
-            tabPress: () => popChatStackToTop(navigation),
+            tabPress: () => popTabStackToTop(navigation, 'Chat'),
           })}
         />
-        <Tab.Screen name="Panier" component={CartStackScreen} />
-        <Tab.Screen name="Commandes" component={OrdersStackScreen} />
-        <Tab.Screen name="Profil" component={ProfileStackScreen} />
+        <Tab.Screen
+          name="Panier"
+          component={CartStackScreen}
+          listeners={({ navigation }) => ({
+            tabPress: () => popTabStackToTop(navigation, 'Panier'),
+          })}
+        />
+        <Tab.Screen
+          name="Commandes"
+          component={OrdersStackScreen}
+          listeners={({ navigation }) => ({
+            tabPress: () => popTabStackToTop(navigation, 'Commandes'),
+          })}
+        />
+        <Tab.Screen
+          name="Profil"
+          component={ProfileStackScreen}
+          listeners={({ navigation }) => ({
+            tabPress: () => popTabStackToTop(navigation, 'Profil'),
+          })}
+        />
       </Tab.Navigator>
     </NavigationContainer>
   )
