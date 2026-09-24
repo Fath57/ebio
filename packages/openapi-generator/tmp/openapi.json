@@ -3017,6 +3017,101 @@
         }
       }
     },
+    "/api/assistant/turn/stream": {
+      "post": {
+        "operationId": "AssistantController_turnStream",
+        "tags": [
+          "Assistant"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Un tour de parole avec l'assistant",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sessionId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "message": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 1000
+                  }
+                },
+                "required": [
+                  "message"
+                ],
+                "additionalProperties": false,
+                "title": "AssistantTurn",
+                "description": "Un tour de parole avec l'assistant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/assistant/transcribe": {
+      "post": {
+        "operationId": "AssistantController_transcribe",
+        "tags": [
+          "Assistant"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/assistant/speak": {
+      "post": {
+        "operationId": "AssistantController_speak",
+        "tags": [
+          "Assistant"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Faire dire une réponse à voix haute",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "texte": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "texte"
+                ],
+                "additionalProperties": false,
+                "title": "AssistantSpeak",
+                "description": "Faire dire une réponse à voix haute"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/orders/checkout/preview": {
       "post": {
         "operationId": "OrdersController_previewCheckout",
@@ -17308,6 +17403,22 @@
         "additionalProperties": false,
         "title": "AssistantCartAdjustment",
         "description": "Corriger une ligne du panier de la conversation"
+      },
+      "AssistantSpeak": {
+        "type": "object",
+        "properties": {
+          "texte": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          }
+        },
+        "required": [
+          "texte"
+        ],
+        "additionalProperties": false,
+        "title": "AssistantSpeak",
+        "description": "Faire dire une réponse à voix haute"
       },
       "OtpRequest": {
         "type": "object",

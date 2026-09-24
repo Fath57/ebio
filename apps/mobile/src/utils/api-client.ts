@@ -2,6 +2,17 @@ import * as SecureStore from 'expo-secure-store'
 import { parseAccountBlock, setAccountBlock } from './account-block'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
+
+/**
+ * Où vit l'API.
+ *
+ * Exposée pour les appels qui ne peuvent pas passer par `apiFetch` : un envoi
+ * multipart, dont la frontière est posée par la plateforme, et un flux lu par
+ * `XMLHttpRequest`. Les deux ont besoin de composer leurs propres en-têtes.
+ */
+export function apiUrl(): string {
+  return API_URL
+}
 const SESSION_KEY = 'ebio_session_token'
 
 export async function getSessionToken(): Promise<string | null> {

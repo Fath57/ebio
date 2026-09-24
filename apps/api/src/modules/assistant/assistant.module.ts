@@ -6,6 +6,7 @@ import { SearchModule } from '../search/search.module'
 import { PlatformSettingsModule } from '../settings/platform-settings.module'
 import { AssistantController } from './assistant.controller'
 import { AssistantService } from './assistant.service'
+import { AssistantVoiceService } from './assistant.voice'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
 
@@ -23,7 +24,7 @@ import { AssistantTurn } from './entities/assistant-turn.entity'
     PlatformSettingsModule,
   ],
   controllers: [AssistantController],
-  providers: [AssistantService],
-  exports: [AssistantService],
+  providers: [AssistantService, AssistantVoiceService],
+  exports: [AssistantService, AssistantVoiceService],
 })
 export class AssistantModule {}

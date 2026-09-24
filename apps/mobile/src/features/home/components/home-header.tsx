@@ -4,7 +4,6 @@ import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
 import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import Search from 'lucide-react-native/dist/esm/icons/search'
-import Sparkles from 'lucide-react-native/dist/esm/icons/sparkles'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import { useCallback, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
@@ -12,6 +11,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
 import { NOTIFICATION_AUDIENCE } from '../../../utils/app-variant'
+import { AssistantEntryIcon } from '../../assistant/components/assistant-entry-icon'
 
 interface HomeHeaderProps {
   /** Libellé de la position courante (ex. « Cotonou, Akpakpa »). */
@@ -209,7 +209,7 @@ export function HomeHeader({
             accessibilityRole="button"
             accessibilityLabel="Faire mes courses en parlant à l'assistant"
           >
-            <Sparkles size={20} color={colors.green[600]} strokeWidth={2.2} />
+            <AssistantEntryIcon />
           </Pressable>
         )}
         <Pressable

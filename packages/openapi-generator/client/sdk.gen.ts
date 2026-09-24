@@ -148,8 +148,14 @@ import type {
   AppControllerGetHelloResponses,
   AssistantControllerAdjustCartData,
   AssistantControllerAdjustCartResponses,
+  AssistantControllerSpeakData,
+  AssistantControllerSpeakResponses,
+  AssistantControllerTranscribeData,
+  AssistantControllerTranscribeResponses,
   AssistantControllerTurnData,
   AssistantControllerTurnResponses,
+  AssistantControllerTurnStreamData,
+  AssistantControllerTurnStreamResponses,
   BannersControllerClickData,
   BannersControllerClickResponses,
   BannersControllerCreateData,
@@ -1319,6 +1325,51 @@ export const assistantControllerAdjustCart = <
     ThrowOnError
   >({
     url: "/api/assistant/{sessionId}/cart",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const assistantControllerTurnStream = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AssistantControllerTurnStreamData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AssistantControllerTurnStreamResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/assistant/turn/stream",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const assistantControllerTranscribe = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AssistantControllerTranscribeData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    AssistantControllerTranscribeResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/assistant/transcribe", ...options });
+
+export const assistantControllerSpeak = <ThrowOnError extends boolean = false>(
+  options: Options<AssistantControllerSpeakData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AssistantControllerSpeakResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/assistant/speak",
     ...options,
     headers: {
       "Content-Type": "application/json",

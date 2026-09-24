@@ -48,5 +48,14 @@ export const assistantCartLineSchema = z.object({
   description: 'Corriger une ligne du panier de la conversation',
 })
 
+/** Le texte à dire. Borné : au-delà, ce n'est plus un tour de parole. */
+export const assistantSpeakSchema = z.object({
+  texte: z.string().trim().min(1).max(2000),
+}).meta({
+  title: 'AssistantSpeak',
+  description: 'Faire dire une réponse à voix haute',
+})
+
+export type AssistantSpeakInput = z.infer<typeof assistantSpeakSchema>
 export type AssistantTurnInput = z.infer<typeof assistantTurnSchema>
 export type AssistantCartLineInput = z.infer<typeof assistantCartLineSchema>

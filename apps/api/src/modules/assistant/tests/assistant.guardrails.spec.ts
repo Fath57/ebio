@@ -6,6 +6,7 @@ import {
   isTurnTooLong,
   machineTells,
   sentenceCount,
+  takeSentences,
   ungroundedAmounts,
 } from '../assistant.guardrails'
 
@@ -175,4 +176,31 @@ describe('ajout annoncé', () => {
   it('ne reprend pas une proposition ordinaire', () => {
     expect(groundingBreaches('Il me reste du piment frais. Ça vous dit ?', searchedOnly)).toEqual([])
   })
+})
+
+/**
+ * La diffusion n'attend pas la fin du tour, mais elle n'envoie jamais une
+ * phrase à moitié écrite : un montant coupé en deux ne se vérifie pas.
+ */
+describe('découpe du flux en phrases', () => {
+  it('rend les phrases achevées et garde le reste', () => {
+    expect(takeSentences('Bonjour ! J\'ai du gari. Vous en vou'))
+      .toEqual({ sentences: ['Bonjour !', 'J\'ai du gari.'], rest: 'Vous en vou' })
+  })
+
+  it('ne coupe pas un nombre en cours d\'écriture', () => {
+    expect(takeSentences('C\'est 2 500 le l').sentences).toEqual([])
+  })
+
+  it('garde la dernière phrase tant que rien ne la suit', () => {
+    expect(takeSentences('Voilà, c\'est dans le panier.'))
+      .toEqual({ sentences: [], rest: 'Voilà, c\'est dans le panier.' })
+  })
+})
+
+// Le modèle oublie parfois l'espace après le point : « je regarde.J'ai du
+// gari » s'afficherait collé, et ne se vérifierait qu'en bloc.
+it('sépare deux phrases que le modèle a collées', () => {
+  expect(takeSentences('Je regarde.J\'ai du gari. ').sentences)
+    .toEqual(['Je regarde.', 'J\'ai du gari.'])
 })

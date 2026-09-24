@@ -191,3 +191,34 @@ export function forSpeech(reply: string): string {
     .replace(/\n{3,}/g, '\n\n')
     .trim()
 }
+
+/**
+ * Découpe un flux de texte en phrases achevées.
+ *
+ * Rend les phrases terminées et garde le reste : une phrase n'est diffusée
+ * qu'une fois entière, parce qu'on ne peut pas vérifier un demi-montant.
+ * « 2 500 » ne doit pas partir au moment où le modèle a écrit « 2 ».
+ */
+export function takeSentences(buffer: string): { sentences: string[], rest: string } {
+  const sentences: string[] = []
+  let rest = buffer
+
+  // Une ponctuation forte clôt une phrase quand une espace ou une majuscule la
+  // suit. Sans cela, le point pourrait appartenir à un nombre ; et le modèle
+  // oublie parfois l'espace — « je regarde.J'ai du gari » est bien deux
+  // phrases, qu'il faut séparer avant de les afficher.
+  const boundary = /[.!?…]+(?:\s|(?=\p{Lu}))/u
+
+  let match = boundary.exec(rest)
+  while (match !== null) {
+    const cut = match.index + match[0].length
+    const sentence = rest.slice(0, cut).trim()
+    if (sentence.length > 0) {
+      sentences.push(sentence)
+    }
+    rest = rest.slice(cut)
+    match = boundary.exec(rest)
+  }
+
+  return { sentences, rest }
+}

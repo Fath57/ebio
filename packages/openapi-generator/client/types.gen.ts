@@ -948,6 +948,15 @@ export type AssistantCartAdjustment = {
 };
 
 /**
+ * AssistantSpeak
+ *
+ * Faire dire une réponse à voix haute
+ */
+export type AssistantSpeak = {
+  texte: string;
+};
+
+/**
  * OtpRequest
  *
  * Request OTP via SMS
@@ -4170,6 +4179,54 @@ export type AssistantControllerAdjustCartData = {
 
 export type AssistantControllerAdjustCartResponses = {
   200: unknown;
+};
+
+export type AssistantControllerTurnStreamData = {
+  /**
+   * AssistantTurn
+   *
+   * Un tour de parole avec l'assistant
+   */
+  body: {
+    sessionId?: string;
+    message: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/assistant/turn/stream";
+};
+
+export type AssistantControllerTurnStreamResponses = {
+  201: unknown;
+};
+
+export type AssistantControllerTranscribeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/assistant/transcribe";
+};
+
+export type AssistantControllerTranscribeResponses = {
+  201: unknown;
+};
+
+export type AssistantControllerSpeakData = {
+  /**
+   * AssistantSpeak
+   *
+   * Faire dire une réponse à voix haute
+   */
+  body: {
+    texte: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/assistant/speak";
+};
+
+export type AssistantControllerSpeakResponses = {
+  201: unknown;
 };
 
 export type OrdersControllerPreviewCheckoutData = {

@@ -672,6 +672,15 @@ export const zAssistantCartAdjustment = z.object({
 });
 
 /**
+ * AssistantSpeak
+ *
+ * Faire dire une réponse à voix haute
+ */
+export const zAssistantSpeak = z.object({
+  texte: z.string().min(1).max(2000),
+});
+
+/**
  * OtpRequest
  *
  * Request OTP via SMS
@@ -3976,6 +3985,35 @@ export const zAssistantControllerAdjustCartData = z.object({
   path: z.object({
     sessionId: z.string(),
   }),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerTurnStreamData = z.object({
+  body: z.object({
+    sessionId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    message: z.string().min(1).max(1000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerTranscribeData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerSpeakData = z.object({
+  body: z.object({
+    texte: z.string().min(1).max(2000),
+  }),
+  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 

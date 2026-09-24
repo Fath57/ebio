@@ -10,7 +10,7 @@ import { User } from '../auth/auth.entity'
 import { CheckoutService } from '../orders/checkout.service'
 import { SearchService } from '../search/search.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
-import { amountsFromTools, forSpeech, groundingBreaches } from './assistant.guardrails'
+import { amountsFromTools, forSpeech, groundingBreaches, takeSentences } from './assistant.guardrails'
 import { ASSISTANT_SYSTEM_PROMPT } from './assistant.prompt'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
@@ -18,6 +18,22 @@ import { addToCartTool, loadState, removeFromCartTool, viewCartTool, writeCartLi
 import { estimateOrderTool } from './tools/estimate-order.tool'
 import { lastOrdersTool, ongoingOrdersTool, orderStatusTool } from './tools/orders.tools'
 import { searchProductsTool } from './tools/search-products.tool'
+
+/**
+ * Ce qui part vers l'écran pendant qu'il parle.
+ *
+ * Une phrase à la fois plutôt qu'un mot à la fois : c'est le grain auquel on
+ * peut vérifier. Un montant coupé en deux ne s'ancre pas, et « 2 500 » ne doit
+ * pas s'afficher au moment où le modèle a écrit « 2 ».
+ */
+export type AssistantStreamEvent
+  = | { type: 'session', sessionId: string }
+    | { type: 'phrase', text: string }
+    | { type: 'cart', cart: AssistantCartLine[] }
+  /** Ce qui a été dit ne tenait pas : l'écran efface et on recommence. */
+    | { type: 'reset' }
+    | { type: 'done', reply: string, cart: AssistantCartLine[] }
+    | { type: 'error', message: string }
 
 export interface AssistantTurnResult {
   sessionId: string
@@ -83,7 +99,13 @@ export class AssistantService {
    * L'audio viendra se brancher autour, sans toucher à ceci : la conversation
    * est le vrai sujet, et elle se teste entièrement au clavier.
    */
-  async handleTurn(buyerId: string, sessionId: string | null, message: string): Promise<AssistantTurnResult> {
+  /**
+   * Ce qu'il faut pour parler : la conversation, ses outils, son historique.
+   *
+   * Partagé par le tour d'un bloc et le tour diffusé — c'est le même échange,
+   * seule la façon de le rendre change.
+   */
+  private async prepareTurn(buyerId: string, sessionId: string | null, message: string) {
     await this.assertOpen()
 
     const session = sessionId
@@ -123,6 +145,41 @@ export class AssistantService {
           { role: 'user', content: message },
         ]
 
+    return { session, tools, messages, recorded }
+  }
+
+  /** Le panier tel qu'il est en base, relu après les écritures du tour. */
+  private async currentCart(sessionId: string): Promise<AssistantCartLine[]> {
+    const fresh = await this.em.findOneOrFail(AssistantSession, { id: sessionId })
+    return (fresh.state as { cart?: AssistantCartLine[] }).cart ?? []
+  }
+
+  /** Clôt un tour : l'historique, la trace, les montants retenus. */
+  private async closeTurn(
+    session: AssistantSession,
+    messages: AiCoreMessage[],
+    message: string,
+    text: string,
+    recorded: RecordedToolCall[],
+    usage: { promptTokens?: number, completionTokens?: number },
+  ): Promise<void> {
+    session.messages = [...messages, { role: 'assistant', content: text }] as unknown[]
+
+    this.em.create(AssistantTurn, {
+      session,
+      input: message,
+      output: text,
+      toolCalls: recorded as unknown[],
+      inputTokens: usage.promptTokens ?? 0,
+      outputTokens: usage.completionTokens ?? 0,
+    })
+    await this.em.flush()
+    await this.rememberAmounts(session.id, recorded)
+  }
+
+  async handleTurn(buyerId: string, sessionId: string | null, message: string): Promise<AssistantTurnResult> {
+    const { session, tools, messages, recorded } = await this.prepareTurn(buyerId, sessionId, message)
+
     let text: string
     let usage: { promptTokens?: number, completionTokens?: number }
     try {
@@ -140,30 +197,18 @@ export class AssistantService {
       usage = (result as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
 
       text = await this.repairIfUngrounded(session, messages, tools, text, recorded)
-      session.messages = [...messages, { role: 'assistant', content: text }] as unknown[]
     }
     catch (error) {
       this.logger.error(`Tour d'assistant échoué (session ${session.id}) — ${error}`)
       throw new ServiceUnavailableException('L\'assistant est momentanément indisponible.')
     }
 
-    this.em.create(AssistantTurn, {
-      session,
-      input: message,
-      output: text,
-      toolCalls: recorded as unknown[],
-      inputTokens: usage.promptTokens ?? 0,
-      outputTokens: usage.completionTokens ?? 0,
-    })
-    await this.em.flush()
+    await this.closeTurn(session, messages, message, text, recorded, usage)
 
-    await this.rememberAmounts(session.id, recorded)
-
-    const fresh = await this.em.findOneOrFail(AssistantSession, { id: session.id })
     return {
       sessionId: session.id,
       reply: text,
-      cart: ((fresh.state as { cart?: AssistantCartLine[] }).cart ?? []),
+      cart: await this.currentCart(session.id),
       toolCalls: recorded,
     }
   }
@@ -199,7 +244,10 @@ export class AssistantService {
       messages: [
         ...messages,
         { role: 'assistant', content: text },
-        { role: 'system', content: breaches.map(breach => breach.fix).join('\n') },
+        // Rôle « user » et non « system » : un second message système en fin de
+        // conversation est refusé par Anthropic (« multiple system messages
+        // separated by user/assistant »), et la reprise échouait en silence.
+        { role: 'user', content: breaches.map(breach => breach.fix).join('\n') },
       ],
       tools,
       model: config.assistant.model,
@@ -247,6 +295,107 @@ export class AssistantService {
       [JSON.stringify(amounts), sessionId],
     )
     this.em.clear()
+  }
+
+  /**
+   * Le même tour, dit au fil de l'eau.
+   *
+   * La diffusion et la vérification se contredisent : lire un montant inventé
+   * à voix haute avant de pouvoir le reprendre, c'est exactement ce que les
+   * garde-fous existent pour empêcher. D'où le grain de la phrase — on ne
+   * diffuse qu'une phrase achevée *et* vérifiée. L'attente tombe de tout le
+   * tour à une phrase, sans rien céder sur l'ancrage.
+   *
+   * Si une phrase ne tient pas, rien de plus n'est diffusé : on reprend le
+   * tour entier hors flux et l'écran efface ce qu'il montrait. C'est rare, et
+   * mieux vaut un effacement qu'un prix que personne n'a fixé.
+   */
+  async* handleTurnStream(
+    buyerId: string,
+    sessionId: string | null,
+    message: string,
+  ): AsyncGenerator<AssistantStreamEvent> {
+    const { session, tools, messages, recorded } = await this.prepareTurn(buyerId, sessionId, message)
+    yield { type: 'session', sessionId: session.id }
+
+    const known = (session.state as { montants?: number[] }).montants ?? []
+    let spoken = ''
+    let buffer = ''
+    let breached = false
+    let usage: { promptTokens?: number, completionTokens?: number } = {}
+    let cartSignature = JSON.stringify(await this.currentCart(session.id))
+
+    try {
+      for await (const event of this.ai.streamTextGenerator({
+        messages,
+        tools,
+        model: config.assistant.model,
+        options: { stopWhen: config.assistant.maxSteps },
+      })) {
+        if (event.type === 'chunk') {
+          buffer += event.text
+          const { sentences, rest } = takeSentences(buffer)
+          buffer = rest
+
+          for (const sentence of sentences) {
+            const clean = forSpeech(sentence)
+            if (groundingBreaches(clean, recorded, known).length > 0) {
+              breached = true
+              break
+            }
+            spoken = `${spoken}${spoken.length > 0 ? ' ' : ''}${clean}`
+            yield { type: 'phrase', text: clean }
+          }
+
+          if (breached) {
+            break
+          }
+        }
+
+        // Le panier se remplit sous les yeux, pendant qu'il parle : c'est la
+        // preuve visible que ce qu'il dit a bien eu lieu.
+        if (event.type === 'tool-result') {
+          const cart = await this.currentCart(session.id)
+          const signature = JSON.stringify(cart)
+          if (signature !== cartSignature) {
+            cartSignature = signature
+            yield { type: 'cart', cart }
+          }
+        }
+
+        if (event.type === 'done') {
+          usage = (event as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
+        }
+      }
+    }
+    catch (error) {
+      this.logger.error(`Tour diffusé échoué (session ${session.id}) — ${error}`)
+      yield { type: 'error', message: 'L\'assistant est momentanément indisponible.' }
+      return
+    }
+
+    // La dernière phrase n'est suivie d'aucune espace : elle sort du tampon ici.
+    const tail = forSpeech(buffer)
+    if (!breached && tail.length > 0) {
+      if (groundingBreaches(tail, recorded, known).length > 0) {
+        breached = true
+      }
+      else {
+        spoken = `${spoken}${spoken.length > 0 ? ' ' : ''}${tail}`
+        yield { type: 'phrase', text: tail }
+      }
+    }
+
+    let reply = spoken
+    if (breached || spoken.trim().length === 0) {
+      const whole = forSpeech(`${spoken} ${buffer}`)
+      reply = await this.repairIfUngrounded(session, messages, tools, whole, recorded)
+      yield { type: 'reset' }
+      yield { type: 'phrase', text: reply }
+    }
+
+    await this.closeTurn(session, messages, message, reply, recorded, usage)
+    yield { type: 'done', reply, cart: await this.currentCart(session.id) }
   }
 
   /**

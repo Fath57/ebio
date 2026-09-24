@@ -150,6 +150,14 @@ export const configValidationSchema = z.object({
    * coûterait une fortune sans que personne ne s'en aperçoive avant la facture.
    */
   ASSISTANT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(8),
+  /**
+   * L'oreille. Whisper est le plus robuste sur les accents et le bruit — la
+   * recherche de la spec 008 le retient pour cette raison, pas pour son prix.
+   */
+  ASSISTANT_STT_MODEL: z.string().default('whisper-1'),
+  /** La voix, et son timbre. Féminin : la métaphore est celle d'une vendeuse. */
+  ASSISTANT_TTS_MODEL: z.string().default('gpt-4o-mini-tts'),
+  ASSISTANT_TTS_VOICE: z.string().default('shimmer'),
 
   CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('fedapay'),
   /**
@@ -207,6 +215,9 @@ export const config = {
   assistant: {
     model: configParsed.data.ASSISTANT_MODEL,
     maxSteps: configParsed.data.ASSISTANT_MAX_STEPS,
+    sttModel: configParsed.data.ASSISTANT_STT_MODEL,
+    ttsModel: configParsed.data.ASSISTANT_TTS_MODEL,
+    ttsVoice: configParsed.data.ASSISTANT_TTS_VOICE,
   },
   // Google Maps Platform — Places, pour les suggestions de villes.
   maps: {
