@@ -436,6 +436,14 @@ export class AiService implements OnModuleInit {
           result: part.output,
         }
       }
+      // A stream can break mid-sentence. Dropping the error part left the
+      // consumer with a half-written answer and no way to tell it apart from
+      // a finished one — a turn ended on the single word "Je".
+      else if (part.type === 'error') {
+        const message = part.error instanceof Error ? part.error.message : String(part.error)
+        this.logger.error(`Streaming interrupted — ${message}`)
+        yield { type: 'error' as const, message }
+      }
     }
 
     const usage = await result.usage

@@ -65,3 +65,12 @@ describe('découpage d\'une recherche', () => {
     expect(searchTerms('gari et huiles rouges')).toEqual(['gari', 'huile', 'palme'])
   })
 })
+
+// L'assistant a cherché « tomate 2 kg » et n'a rien rendu, alors que le
+// catalogue porte « Tomates fraiches bio ». Chaque mot étant exigé dans le
+// nom, « 2 » et « kg » condamnaient la requête.
+it('écarte la quantité et son unité', () => {
+  expect(searchTerms('tomate 2 kg')).toEqual(['tomate'])
+  expect(searchTerms('2 litres d huile')).toEqual(['huile'])
+  expect(searchTerms('500 g de gari')).toEqual(['gari'])
+})

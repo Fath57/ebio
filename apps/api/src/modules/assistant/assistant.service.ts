@@ -375,6 +375,15 @@ export class AssistantService {
 
         if (event.type === 'done') {
           usage = (event as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
+
+          // « stop » est la seule fin propre. « length », « tool-calls » ou
+          // autre veulent dire que le modèle n'a pas fini sa phrase, et une
+          // phrase inachevée ne doit pas devenir la réponse.
+          const reason = (event as { finishReason?: string }).finishReason
+          if (reason !== undefined && reason !== 'stop') {
+            this.logger.error(`Tour inachevé (session ${session.id}) — fin « ${reason} »`)
+            failed = true
+          }
         }
       }
     }

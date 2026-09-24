@@ -6,7 +6,7 @@ import { z } from 'zod'
 const MAX_RESULTS = 5
 
 const parameters = z.object({
-  termes: z.string().min(1).describe('Ce que l\'acheteur demande, dans ses mots : « gari », « huile rouge », « riz parfumé ».'),
+  termes: z.string().min(1).describe('Le produit seul, dans les mots de l\'acheteur : « gari », « huile rouge », « riz parfumé ». Jamais la quantité ni l\'unité — « tomate », pas « tomate 2 kg ».'),
   prixMaximum: z.number().positive().optional().describe('Plafond en FCFA, seulement si l\'acheteur en a donné un.'),
 })
 

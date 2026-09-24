@@ -91,9 +91,62 @@ const LOCAL_SYNONYMS: [RegExp, string][] = [
  * l'huile" demands that the product be named "avec" — nothing matches.
  */
 const STOPWORDS = new Set([
-  'au', 'aux', 'avec', 'de', 'des', 'du', 'en', 'et',
-  'la', 'le', 'les', 'ou', 'pour', 'un', 'une',
+  'au',
+  'aux',
+  'avec',
+  'de',
+  'des',
+  'du',
+  'en',
+  'et',
+  'la',
+  'le',
+  'les',
+  'ou',
+  'pour',
+  'un',
+  'une',
 ])
+
+/**
+ * Les mots d'une quantité, écartés eux aussi.
+ *
+ * L'assistant a cherché « tomate 2 kg » et n'a rien rendu, alors que le
+ * catalogue porte « Tomates fraiches bio » : chaque mot est exigé dans le nom,
+ * donc « 2 » et « kg » condamnaient la requête. Quelqu'un qui tape « 2 kg de
+ * tomates » dans la barre de recherche tombait sur le même mur.
+ *
+ * Aucun produit du catalogue ne porte une unité dans son nom ; le jour où l'un
+ * s'appellera « Huile 5 litres », il faudra le chercher autrement.
+ */
+const QUANTITY_WORDS = new Set([
+  'kg',
+  'kilo',
+  'kilos',
+  'kilogramme',
+  'kilogrammes',
+  'g',
+  'gramme',
+  'grammes',
+  'l',
+  'litre',
+  'litres',
+  'cl',
+  'ml',
+  'piece',
+  'pieces',
+  'pièce',
+  'pièces',
+  'unite',
+  'unites',
+  'unité',
+  'unités',
+])
+
+/** Un nombre écrit en chiffres ne désigne aucun produit. */
+function isQuantity(term: string): boolean {
+  return /^\d+(?:[.,]\d+)?$/.test(term) || QUANTITY_WORDS.has(term.toLowerCase())
+}
 
 /** Au-delà, la requête n'est plus une recherche mais une phrase. */
 const MAX_SEARCH_TERMS = 6
@@ -115,7 +168,7 @@ export function searchTerms(q: string): string[] {
 
   // A query made only of linking words keeps them: better to look for "le"
   // and find nothing than to drop every term and return the whole catalogue.
-  const meaningful = terms.filter(term => !STOPWORDS.has(term.toLowerCase()))
+  const meaningful = terms.filter(term => !STOPWORDS.has(term.toLowerCase()) && !isQuantity(term))
 
   return (meaningful.length > 0 ? meaningful : terms).slice(0, MAX_SEARCH_TERMS)
 }
