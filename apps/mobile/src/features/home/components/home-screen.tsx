@@ -1,9 +1,15 @@
 import type { SearchResult } from '../../search/hooks/use-search'
 import type { HomeBanner } from '../hooks/use-home-banners'
+import type { HomeSectionCriteria } from '../hooks/use-home-sections'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import BadgeCheck from 'lucide-react-native/dist/esm/icons/badge-check'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
+import Clock from 'lucide-react-native/dist/esm/icons/clock'
+import Flame from 'lucide-react-native/dist/esm/icons/flame'
+import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
+import Sparkles from 'lucide-react-native/dist/esm/icons/sparkles'
+import Star from 'lucide-react-native/dist/esm/icons/star'
 import Tag from 'lucide-react-native/dist/esm/icons/tag'
 import { useEffect } from 'react'
 import {
@@ -20,12 +26,30 @@ import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { useCategories } from '../../search/hooks/use-search'
 import { useHomeBanners } from '../hooks/use-home-banners'
-import { useHomeFeed } from '../hooks/use-home-feed'
+import { useHomeSections } from '../hooks/use-home-sections'
 import { CategoryRail } from './category-rail'
 import { HomeBannerCarousel } from './home-banner-carousel'
 import { HomeHeader } from './home-header'
 
-export type HomePreset = 'nearby' | 'validated' | 'promo'
+/**
+ * Ce que l'application sait dessiner, et ce que le back-office peut choisir.
+ *
+ * Une liste fermée : un nom inconnu laisserait un trou dans le rail, alors
+ * qu'un défaut se remarque à peine.
+ */
+const SECTION_ICONS: Record<string, typeof MapPin> = {
+  'map-pin': MapPin,
+  'badge-check': BadgeCheck,
+  'tag': Tag,
+  'sparkles': Sparkles,
+  'star': Star,
+  'leaf': Leaf,
+  'flame': Flame,
+  'clock': Clock,
+}
+
+/** Les pictogrammes qui appellent l'attention se colorent en corail. */
+const WARM_ICONS = new Set(['tag', 'flame', 'map-pin'])
 
 interface HomeScreenProps {
   onOpenSearch: () => void
@@ -33,7 +57,8 @@ interface HomeScreenProps {
   onOpenMap: () => void
   onNavigateToSupplier: (supplierId: string) => void
   onNavigateToProduct: (productId: string) => void
-  onSeeAll: (preset: HomePreset) => void
+  /** Rouvre la recherche avec les critères de la section. */
+  onSeeAll: (title: string, criteria: HomeSectionCriteria) => void
   onPickLocation: () => void
   onOpenNotifications: () => void
   onOpenWallet: () => void
@@ -62,7 +87,7 @@ export function HomeScreen({
   // the one thing that would fix it — choosing a position — is one tap away.
   const positionIsAssumed = locationSource === 'default'
   const { categories, loadCategories } = useCategories()
-  const { nearby, validated, promos, loading } = useHomeFeed(latitude, longitude)
+  const { sections, loading } = useHomeSections(latitude, longitude)
   const { banners: editorialBanners } = useHomeBanners()
 
   useEffect(() => {
@@ -73,7 +98,9 @@ export function HomeScreen({
   // publiée, on retombe sur une sélection automatique — promotions, à défaut
   // fournisseurs validés, à défaut les plus proches — pour ne jamais laisser
   // la section vide.
-  const fallbackSource = promos.length > 0 ? promos : validated.length > 0 ? validated : nearby
+  // Sans bannière publiée, on pioche dans ce que les sections ont déjà rendu
+  // plutôt que de relancer une recherche pour rien.
+  const fallbackSource = sections.flatMap(section => section.results)
   const banners: HomeBanner[] = editorialBanners.length > 0
     ? editorialBanners
     : fallbackSource.slice(0, 5).map(item => ({
@@ -129,33 +156,23 @@ export function HomeScreen({
             )
           : (
               <>
-                <HomeSection
-                  title={positionIsAssumed ? 'À découvrir' : 'Explorer près de vous'}
-                  Icon={MapPin}
-                  iconColor={colors.coral[400]}
-                  data={nearby}
-                  onSeeAll={() => onSeeAll('nearby')}
-                  onNavigateToProduct={onNavigateToProduct}
-                  textColor={semantic.textSecondary}
-                />
-                <HomeSection
-                  title="Validé eBio"
-                  Icon={BadgeCheck}
-                  iconColor={colors.green[400]}
-                  data={validated}
-                  onSeeAll={() => onSeeAll('validated')}
-                  onNavigateToProduct={onNavigateToProduct}
-                  textColor={semantic.textSecondary}
-                />
-                <HomeSection
-                  title="En promotion"
-                  Icon={Tag}
-                  iconColor={colors.coral[400]}
-                  data={promos}
-                  onSeeAll={() => onSeeAll('promo')}
-                  onNavigateToProduct={onNavigateToProduct}
-                  textColor={semantic.textSecondary}
-                />
+                {sections.map(section => (
+                  <HomeSection
+                    key={section.id}
+                    title={section.title === 'Près de vous' && positionIsAssumed ? 'À découvrir' : section.title}
+                    subtitle={section.subtitle}
+                    Icon={SECTION_ICONS[section.icon ?? ''] ?? Sparkles}
+                    iconColor={WARM_ICONS.has(section.icon ?? '') ? colors.coral[400] : colors.green[400]}
+                    data={section.results}
+                    // Une section composée à la main montre déjà tout ce
+                    // qu'elle contient : « Tout voir » n'y mène nulle part.
+                    onSeeAll={section.criteria === null
+                      ? null
+                      : () => onSeeAll(section.title, section.criteria ?? {})}
+                    onNavigateToProduct={onNavigateToProduct}
+                    textColor={semantic.textSecondary}
+                  />
+                ))}
               </>
             )}
       </ScrollView>
@@ -163,12 +180,14 @@ export function HomeScreen({
   )
 }
 
-function HomeSection({ title, Icon, iconColor, data, onSeeAll, onNavigateToProduct, textColor }: {
+function HomeSection({ title, subtitle, Icon, iconColor, data, onSeeAll, onNavigateToProduct, textColor }: {
   title: string
+  subtitle?: string | null
   Icon: typeof MapPin
   iconColor: string
   data: SearchResult[]
-  onSeeAll: () => void
+  /** Nul pour une section qui montre déjà tout. */
+  onSeeAll: (() => void) | null
   onNavigateToProduct: (productId: string) => void
   textColor: string
 }) {
@@ -182,16 +201,22 @@ function HomeSection({ title, Icon, iconColor, data, onSeeAll, onNavigateToProdu
           <Icon size={14} color={iconColor} strokeWidth={2.4} />
           <Text style={[styles.overline, { color: textColor }]}>{title}</Text>
         </View>
-        <Pressable
-          style={styles.seeAll}
-          onPress={onSeeAll}
-          accessibilityRole="button"
-          accessibilityLabel={`Tout voir : ${title}`}
-        >
-          <Text style={styles.seeAllText}>Tout voir</Text>
-          <ChevronRight size={15} color={colors.green[600]} strokeWidth={2.4} />
-        </Pressable>
+        {onSeeAll !== null && (
+          <Pressable
+            style={styles.seeAll}
+            onPress={onSeeAll}
+            accessibilityRole="button"
+            accessibilityLabel={`Tout voir : ${title}`}
+          >
+            <Text style={styles.seeAllText}>Tout voir</Text>
+            <ChevronRight size={15} color={colors.green[600]} strokeWidth={2.4} />
+          </Pressable>
+        )}
       </View>
+
+      {subtitle !== null && subtitle !== undefined && subtitle.length > 0 && (
+        <Text style={[styles.sectionSubtitle, { color: textColor }]}>{subtitle}</Text>
+      )}
 
       <ScrollView
         horizontal
@@ -258,6 +283,12 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSb,
     fontSize: 13,
     color: colors.green[600],
+  },
+  sectionSubtitle: {
+    ...typography.bodyS,
+    paddingHorizontal: spacing[4],
+    marginTop: -spacing[2],
+    marginBottom: spacing[3],
   },
   carousel: {
     paddingHorizontal: spacing[4],

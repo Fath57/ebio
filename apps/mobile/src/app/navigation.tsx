@@ -118,16 +118,22 @@ function SearchHomeWrapper({ navigation }: any) {
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
         onOpenAssistant={() => navigation.navigate('Assistant')}
-        onSeeAll={(preset) => {
-          if (preset === 'validated') {
-            navigation.navigate('SearchResults', { validatedOnly: true, title: 'Validé eBio' })
-          }
-          else if (preset === 'promo') {
-            navigation.navigate('SearchResults', { promoOnly: true, title: 'En promotion' })
-          }
-          else {
-            navigation.navigate('SearchResults', { title: 'Près de vous' })
-          }
+        onSeeAll={(title: string, criteria: Record<string, unknown>) => {
+          // Les critères de la section rouvrent la recherche telle quelle :
+          // plus de correspondance à maintenir entre trois noms figés et
+          // trois jeux de filtres.
+          navigation.navigate('SearchResults', {
+            title,
+            validatedOnly: criteria.validatedOnly === true,
+            promoOnly: criteria.promoOnly === true,
+            category: criteria.categorySlug,
+            supplierId: criteria.supplierId,
+            maxPrice: criteria.maxPrice,
+            minRating: criteria.minRating,
+            newerThanDays: criteria.newerThanDays,
+            radius: typeof criteria.maxDistanceKm === 'number' ? criteria.maxDistanceKm * 1000 : undefined,
+            sortBy: criteria.sortBy,
+          })
         }}
       />
     </View>
@@ -179,6 +185,12 @@ function SearchResultsWrapper({ route, navigation }: any) {
         initialCategory={params.category}
         initialValidatedOnly={params.validatedOnly}
         initialPromoOnly={params.promoOnly}
+        initialSupplierId={params.supplierId}
+        initialMaxPrice={params.maxPrice}
+        initialMinRating={params.minRating}
+        initialNewerThanDays={params.newerThanDays}
+        initialRadius={params.radius}
+        initialSortBy={params.sortBy}
         initialViewMode={params.viewMode}
         headerTitle={params.title}
         initialAutoFocus={params.autoFocus}

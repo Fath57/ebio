@@ -16,6 +16,10 @@ interface SearchFilters {
   mode?: 'CONTACT' | 'ORDER'
   validatedOnly?: boolean
   promoOnly?: boolean
+  /** Une boutique précise, quand une section de l'accueil y est dédiée. */
+  supplierId?: string
+  /** Mis en ligne depuis moins de N jours — ce que « nouveau » veut dire. */
+  newerThanDays?: number
   sortBy?: 'distance' | 'rating' | 'price'
   page?: number
 }

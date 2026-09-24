@@ -98,6 +98,16 @@ import type {
   AdminDeliveryPricingControllerGetResponses,
   AdminDeliveryPricingControllerUpdateData,
   AdminDeliveryPricingControllerUpdateResponses,
+  AdminHomeSectionsControllerCreateData,
+  AdminHomeSectionsControllerCreateResponses,
+  AdminHomeSectionsControllerListData,
+  AdminHomeSectionsControllerListResponses,
+  AdminHomeSectionsControllerRemoveData,
+  AdminHomeSectionsControllerRemoveResponses,
+  AdminHomeSectionsControllerReorderData,
+  AdminHomeSectionsControllerReorderResponses,
+  AdminHomeSectionsControllerUpdateData,
+  AdminHomeSectionsControllerUpdateResponses,
   AdminProductReviewTimingControllerGetData,
   AdminProductReviewTimingControllerGetResponses,
   AdminProductReviewTimingControllerUpdateData,
@@ -290,6 +300,8 @@ import type {
   GeocodingControllerResolvePlaceResponses,
   GeocodingControllerReverseData,
   GeocodingControllerReverseResponses,
+  HomeControllerListData,
+  HomeControllerListResponses,
   LandingControllerCreateFaqData,
   LandingControllerCreateFaqResponses,
   LandingControllerFindAllFaqsData,
@@ -3832,6 +3844,91 @@ export const recommendationsControllerList = <
     unknown,
     ThrowOnError
   >({ url: "/api/recommendations", ...options });
+
+export const homeControllerList = <ThrowOnError extends boolean = false>(
+  options: Options<HomeControllerListData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    HomeControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/home/sections", ...options });
+
+export const adminHomeSectionsControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminHomeSectionsControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminHomeSectionsControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/home-sections", ...options });
+
+export const adminHomeSectionsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminHomeSectionsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminHomeSectionsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/home-sections",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminHomeSectionsControllerReorder = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminHomeSectionsControllerReorderData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminHomeSectionsControllerReorderResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/home-sections/order",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminHomeSectionsControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminHomeSectionsControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    AdminHomeSectionsControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/home-sections/{id}", ...options });
+
+export const adminHomeSectionsControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminHomeSectionsControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminHomeSectionsControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/home-sections/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const bannersControllerFindActive = <
   ThrowOnError extends boolean = false,

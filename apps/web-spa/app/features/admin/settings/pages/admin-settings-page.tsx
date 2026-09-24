@@ -19,11 +19,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/compon
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@boilerstone/ui/components/primitives/tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CreditCard, Percent } from 'lucide-react'
+import { Bot, CreditCard, LayoutGrid, Percent } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
+import { HomeSectionsManager } from '../../home-sections/components/home-sections-manager'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { AssistantToggle } from '../forms/assistant-toggle'
 import { BannerOffersForm } from '../forms/banner-offers-form'
@@ -301,11 +302,29 @@ export default function AdminSettingsPage() {
             <CreditCard className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.payments')}
           </TabsTrigger>
+          <TabsTrigger value="accueil">
+            <LayoutGrid className="mr-2 h-4 w-4" />
+            {t('admin.settings.tabs.home')}
+          </TabsTrigger>
           <TabsTrigger value="assistant">
             <Bot className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.assistant')}
           </TabsTrigger>
         </TabsList>
+
+        <TabsContent value="accueil" className="mt-6 space-y-6">
+          <Can action="manage" subject="all">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.homeSections.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.homeSections.description')}</p>
+              </CardHeader>
+              <CardContent>
+                <HomeSectionsManager />
+              </CardContent>
+            </Card>
+          </Can>
+        </TabsContent>
 
         <TabsContent value="assistant" className="mt-6 space-y-6">
           <Can action="manage" subject="all">

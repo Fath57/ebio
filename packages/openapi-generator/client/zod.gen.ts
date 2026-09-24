@@ -973,6 +973,88 @@ export const zCreateCommentSchema = z.object({
 });
 
 /**
+ * HomeSectionInput
+ *
+ * Une section de l'accueil
+ */
+export const zHomeSectionInput = z.object({
+  title: z.string().min(1).max(120),
+  icon: z.optional(
+    z.union([
+      z.enum([
+        "map-pin",
+        "badge-check",
+        "tag",
+        "sparkles",
+        "star",
+        "leaf",
+        "flame",
+        "clock",
+      ]),
+      z.null(),
+    ]),
+  ),
+  subtitle: z.optional(z.union([z.string().max(200), z.null()])),
+  mode: z.enum(["CRITERIA", "MANUAL"]),
+  criteria: z.optional(
+    z.union([
+      z.object({
+        categorySlug: z.optional(z.string()),
+        supplierId: z.optional(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        ),
+        validatedOnly: z.optional(z.boolean()),
+        promoOnly: z.optional(z.boolean()),
+        minRating: z.optional(z.number().gte(1).lte(5)),
+        maxPrice: z.optional(z.number().gt(0)),
+        newerThanDays: z.optional(z.int().gte(1).lte(365)),
+        maxDistanceKm: z.optional(z.number().gt(0).lte(500)),
+        sortBy: z.optional(z.enum(["distance", "rating", "price"])),
+      }),
+      z.null(),
+    ]),
+  ),
+  productIds: z.optional(
+    z.union([
+      z
+        .array(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        )
+        .max(50),
+      z.null(),
+    ]),
+  ),
+  active: z.optional(z.boolean()),
+  limit: z.optional(z.int().gte(1).lte(30)),
+});
+
+/**
+ * HomeSectionOrder
+ *
+ * L'ordre des sections de l'accueil
+ */
+export const zHomeSectionOrder = z.object({
+  ids: z
+    .array(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    )
+    .min(1)
+    .max(50),
+});
+
+/**
  * CreateLandingFaq
  */
 export const zCreateLandingFaq = z.object({
@@ -2518,6 +2600,25 @@ export const zSearchProductsQuery = z.object({
   mode: z.optional(z.enum(["CONTACT", "ORDER"])),
   validatedOnly: z.enum(["true", "false"]),
   promoOnly: z.enum(["true", "false"]),
+  supplierId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  newerThanDays: z.optional(z.int().gte(1).lte(365)),
+  productIds: z.optional(
+    z
+      .array(
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+      )
+      .max(50),
+  ),
   sortBy: z.enum(["distance", "rating", "price"]),
   page: z.number().default(1),
   limit: z.number().lte(50).default(20),
@@ -3940,6 +4041,25 @@ export const zSearchControllerSearchProductsData = z.object({
     mode: z.optional(z.enum(["CONTACT", "ORDER"])),
     validatedOnly: z.enum(["true", "false"]),
     promoOnly: z.enum(["true", "false"]),
+    supplierId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    newerThanDays: z.optional(z.int().gte(1).lte(365)),
+    productIds: z.optional(
+      z
+        .array(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        )
+        .max(50),
+    ),
     sortBy: z.enum(["distance", "rating", "price"]),
     page: z.number().default(1),
     limit: z.number().lte(50).default(20),
@@ -6489,6 +6609,174 @@ export const zAdminPromotionsControllerRemoveData = z.object({
 export const zRecommendationsControllerListData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zHomeControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    latitude: z.string(),
+    longitude: z.string(),
+  }),
+});
+
+export const zAdminHomeSectionsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminHomeSectionsControllerCreateData = z.object({
+  body: z.object({
+    title: z.string().min(1).max(120),
+    icon: z.optional(
+      z.union([
+        z.enum([
+          "map-pin",
+          "badge-check",
+          "tag",
+          "sparkles",
+          "star",
+          "leaf",
+          "flame",
+          "clock",
+        ]),
+        z.null(),
+      ]),
+    ),
+    subtitle: z.optional(z.union([z.string().max(200), z.null()])),
+    mode: z.enum(["CRITERIA", "MANUAL"]),
+    criteria: z.optional(
+      z.union([
+        z.object({
+          categorySlug: z.optional(z.string()),
+          supplierId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          validatedOnly: z.optional(z.boolean()),
+          promoOnly: z.optional(z.boolean()),
+          minRating: z.optional(z.number().gte(1).lte(5)),
+          maxPrice: z.optional(z.number().gt(0)),
+          newerThanDays: z.optional(z.int().gte(1).lte(365)),
+          maxDistanceKm: z.optional(z.number().gt(0).lte(500)),
+          sortBy: z.optional(z.enum(["distance", "rating", "price"])),
+        }),
+        z.null(),
+      ]),
+    ),
+    productIds: z.optional(
+      z.union([
+        z
+          .array(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          )
+          .max(50),
+        z.null(),
+      ]),
+    ),
+    active: z.optional(z.boolean()),
+    limit: z.optional(z.int().gte(1).lte(30)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminHomeSectionsControllerReorderData = z.object({
+  body: z.object({
+    ids: z
+      .array(
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+      )
+      .min(1)
+      .max(50),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminHomeSectionsControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminHomeSectionsControllerUpdateData = z.object({
+  body: z.object({
+    title: z.string().min(1).max(120),
+    icon: z.optional(
+      z.union([
+        z.enum([
+          "map-pin",
+          "badge-check",
+          "tag",
+          "sparkles",
+          "star",
+          "leaf",
+          "flame",
+          "clock",
+        ]),
+        z.null(),
+      ]),
+    ),
+    subtitle: z.optional(z.union([z.string().max(200), z.null()])),
+    mode: z.enum(["CRITERIA", "MANUAL"]),
+    criteria: z.optional(
+      z.union([
+        z.object({
+          categorySlug: z.optional(z.string()),
+          supplierId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          validatedOnly: z.optional(z.boolean()),
+          promoOnly: z.optional(z.boolean()),
+          minRating: z.optional(z.number().gte(1).lte(5)),
+          maxPrice: z.optional(z.number().gt(0)),
+          newerThanDays: z.optional(z.int().gte(1).lte(365)),
+          maxDistanceKm: z.optional(z.number().gt(0).lte(500)),
+          sortBy: z.optional(z.enum(["distance", "rating", "price"])),
+        }),
+        z.null(),
+      ]),
+    ),
+    productIds: z.optional(
+      z.union([
+        z
+          .array(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          )
+          .max(50),
+        z.null(),
+      ]),
+    ),
+    active: z.optional(z.boolean()),
+    limit: z.optional(z.int().gte(1).lte(30)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 

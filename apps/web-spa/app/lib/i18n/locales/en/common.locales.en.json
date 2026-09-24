@@ -1023,7 +1023,8 @@
       "tabs": {
         "commissions": "Commissions",
         "payments": "Payments",
-        "assistant": "Assita"
+        "assistant": "Assita",
+        "home": "Home"
       },
       "paymentMethods": {
         "title": "Payment methods",
@@ -1185,6 +1186,10 @@
         "remindersHint": "Reminders included. Beyond that, not answering is an answer.",
         "saved": "Saved.",
         "error": "The change was not saved."
+      },
+      "homeSections": {
+        "title": "Home sections",
+        "description": "What the buyer sees on opening the app: the product rails, their titles, their order and what they hold. They used to live in the code — renaming one meant shipping a new app version."
       }
     },
     "site": {

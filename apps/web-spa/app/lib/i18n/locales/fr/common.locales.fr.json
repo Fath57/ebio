@@ -1023,7 +1023,8 @@
       "tabs": {
         "commissions": "Commissions",
         "payments": "Paiements",
-        "assistant": "Assita"
+        "assistant": "Assita",
+        "home": "Accueil"
       },
       "paymentMethods": {
         "title": "Moyens de paiement",
@@ -1185,6 +1186,10 @@
         "remindersHint": "Relances comprises. Au-delà, ne pas répondre est une réponse.",
         "saved": "Enregistré.",
         "error": "Le changement n'a pas été enregistré."
+      },
+      "homeSections": {
+        "title": "Sections de l'accueil",
+        "description": "Ce que l'acheteur voit en ouvrant l'application : les rails de produits, leur titre, leur ordre et ce qu'ils contiennent. Ils étaient écrits dans le code — les renommer demandait une nouvelle version de l'application."
       }
     },
     "site": {

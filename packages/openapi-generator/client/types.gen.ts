@@ -1350,6 +1350,50 @@ export type UpdatePostSchema = {
 };
 
 /**
+ * HomeSectionInput
+ *
+ * Une section de l'accueil
+ */
+export type HomeSectionInput = {
+  title: string;
+  icon?:
+    | "map-pin"
+    | "badge-check"
+    | "tag"
+    | "sparkles"
+    | "star"
+    | "leaf"
+    | "flame"
+    | "clock"
+    | null;
+  subtitle?: string | null;
+  mode: "CRITERIA" | "MANUAL";
+  criteria?: {
+    categorySlug?: string;
+    supplierId?: string;
+    validatedOnly?: boolean;
+    promoOnly?: boolean;
+    minRating?: number;
+    maxPrice?: number;
+    newerThanDays?: number;
+    maxDistanceKm?: number;
+    sortBy?: "distance" | "rating" | "price";
+  } | null;
+  productIds?: Array<string> | null;
+  active?: boolean;
+  limit?: number;
+};
+
+/**
+ * HomeSectionOrder
+ *
+ * L'ordre des sections de l'accueil
+ */
+export type HomeSectionOrder = {
+  ids: Array<string>;
+};
+
+/**
  * ContactMessage
  *
  * Message sent from the landing contact form
@@ -2412,6 +2456,9 @@ export type SearchProductsQuery = {
    * Filter promotional products only
    */
   promoOnly: "true" | "false";
+  supplierId?: string;
+  newerThanDays?: number;
+  productIds?: Array<string>;
   sortBy: "distance" | "rating" | "price";
   page: number;
   limit: number;
@@ -4105,6 +4152,9 @@ export type SearchControllerSearchProductsData = {
      * Filter promotional products only
      */
     promoOnly: "true" | "false";
+    supplierId?: string;
+    newerThanDays?: number;
+    productIds?: Array<string>;
     sortBy: "distance" | "rating" | "price";
     page: number;
     limit: number;
@@ -7687,6 +7737,152 @@ export type RecommendationsControllerListData = {
 };
 
 export type RecommendationsControllerListResponses = {
+  200: unknown;
+};
+
+export type HomeControllerListData = {
+  body?: never;
+  path?: never;
+  query: {
+    latitude: string;
+    longitude: string;
+  };
+  url: "/api/home/sections";
+};
+
+export type HomeControllerListResponses = {
+  200: unknown;
+};
+
+export type AdminHomeSectionsControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/home-sections";
+};
+
+export type AdminHomeSectionsControllerListResponses = {
+  200: unknown;
+};
+
+export type AdminHomeSectionsControllerCreateData = {
+  /**
+   * HomeSectionInput
+   *
+   * Une section de l'accueil
+   */
+  body: {
+    title: string;
+    icon?:
+      | "map-pin"
+      | "badge-check"
+      | "tag"
+      | "sparkles"
+      | "star"
+      | "leaf"
+      | "flame"
+      | "clock"
+      | null;
+    subtitle?: string | null;
+    mode: "CRITERIA" | "MANUAL";
+    criteria?: {
+      categorySlug?: string;
+      supplierId?: string;
+      validatedOnly?: boolean;
+      promoOnly?: boolean;
+      minRating?: number;
+      maxPrice?: number;
+      newerThanDays?: number;
+      maxDistanceKm?: number;
+      sortBy?: "distance" | "rating" | "price";
+    } | null;
+    productIds?: Array<string> | null;
+    active?: boolean;
+    limit?: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/home-sections";
+};
+
+export type AdminHomeSectionsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type AdminHomeSectionsControllerReorderData = {
+  /**
+   * HomeSectionOrder
+   *
+   * L'ordre des sections de l'accueil
+   */
+  body: {
+    ids: Array<string>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/home-sections/order";
+};
+
+export type AdminHomeSectionsControllerReorderResponses = {
+  200: unknown;
+};
+
+export type AdminHomeSectionsControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/home-sections/{id}";
+};
+
+export type AdminHomeSectionsControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type AdminHomeSectionsControllerUpdateData = {
+  /**
+   * HomeSectionInput
+   *
+   * Une section de l'accueil
+   */
+  body: {
+    title: string;
+    icon?:
+      | "map-pin"
+      | "badge-check"
+      | "tag"
+      | "sparkles"
+      | "star"
+      | "leaf"
+      | "flame"
+      | "clock"
+      | null;
+    subtitle?: string | null;
+    mode: "CRITERIA" | "MANUAL";
+    criteria?: {
+      categorySlug?: string;
+      supplierId?: string;
+      validatedOnly?: boolean;
+      promoOnly?: boolean;
+      minRating?: number;
+      maxPrice?: number;
+      newerThanDays?: number;
+      maxDistanceKm?: number;
+      sortBy?: "distance" | "rating" | "price";
+    } | null;
+    productIds?: Array<string> | null;
+    active?: boolean;
+    limit?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/home-sections/{id}";
+};
+
+export type AdminHomeSectionsControllerUpdateResponses = {
   200: unknown;
 };
 

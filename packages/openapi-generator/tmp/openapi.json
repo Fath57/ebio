@@ -2806,6 +2806,40 @@
             }
           },
           {
+            "name": "supplierId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "newerThanDays",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 365
+            }
+          },
+          {
+            "name": "productIds",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxItems": 50,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              }
+            }
+          },
+          {
             "name": "sortBy",
             "required": true,
             "in": "query",
@@ -10996,6 +11030,434 @@
         }
       }
     },
+    "/api/home/sections": {
+      "get": {
+        "operationId": "HomeController_list",
+        "tags": [
+          "Home"
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/home-sections": {
+      "get": {
+        "operationId": "AdminHomeSectionsController_list",
+        "tags": [
+          "AdminHomeSections"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "AdminHomeSectionsController_create",
+        "tags": [
+          "AdminHomeSections"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Une section de l'accueil",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "icon": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "map-pin",
+                          "badge-check",
+                          "tag",
+                          "sparkles",
+                          "star",
+                          "leaf",
+                          "flame",
+                          "clock"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "subtitle": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "CRITERIA",
+                      "MANUAL"
+                    ]
+                  },
+                  "criteria": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "categorySlug": {
+                            "type": "string"
+                          },
+                          "supplierId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "validatedOnly": {
+                            "type": "boolean"
+                          },
+                          "promoOnly": {
+                            "type": "boolean"
+                          },
+                          "minRating": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "maxPrice": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "newerThanDays": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 365
+                          },
+                          "maxDistanceKm": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 500
+                          },
+                          "sortBy": {
+                            "type": "string",
+                            "enum": [
+                              "distance",
+                              "rating",
+                              "price"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "HomeSectionCriteria"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "productIds": {
+                    "anyOf": [
+                      {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 30
+                  }
+                },
+                "required": [
+                  "title",
+                  "mode"
+                ],
+                "additionalProperties": false,
+                "title": "HomeSectionInput",
+                "description": "Une section de l'accueil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/home-sections/order": {
+      "put": {
+        "operationId": "AdminHomeSectionsController_reorder",
+        "tags": [
+          "AdminHomeSections"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "L'ordre des sections de l'accueil",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "ids": {
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  }
+                },
+                "required": [
+                  "ids"
+                ],
+                "additionalProperties": false,
+                "title": "HomeSectionOrder",
+                "description": "L'ordre des sections de l'accueil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/home-sections/{id}": {
+      "put": {
+        "operationId": "AdminHomeSectionsController_update",
+        "tags": [
+          "AdminHomeSections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Une section de l'accueil",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "icon": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "map-pin",
+                          "badge-check",
+                          "tag",
+                          "sparkles",
+                          "star",
+                          "leaf",
+                          "flame",
+                          "clock"
+                        ]
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "subtitle": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "mode": {
+                    "type": "string",
+                    "enum": [
+                      "CRITERIA",
+                      "MANUAL"
+                    ]
+                  },
+                  "criteria": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "categorySlug": {
+                            "type": "string"
+                          },
+                          "supplierId": {
+                            "type": "string",
+                            "format": "uuid",
+                            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                          },
+                          "validatedOnly": {
+                            "type": "boolean"
+                          },
+                          "promoOnly": {
+                            "type": "boolean"
+                          },
+                          "minRating": {
+                            "type": "number",
+                            "minimum": 1,
+                            "maximum": 5
+                          },
+                          "maxPrice": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "newerThanDays": {
+                            "type": "integer",
+                            "minimum": 1,
+                            "maximum": 365
+                          },
+                          "maxDistanceKm": {
+                            "type": "number",
+                            "exclusiveMinimum": 0,
+                            "maximum": 500
+                          },
+                          "sortBy": {
+                            "type": "string",
+                            "enum": [
+                              "distance",
+                              "rating",
+                              "price"
+                            ]
+                          }
+                        },
+                        "additionalProperties": false,
+                        "title": "HomeSectionCriteria"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "productIds": {
+                    "anyOf": [
+                      {
+                        "maxItems": 50,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        }
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 30
+                  }
+                },
+                "required": [
+                  "title",
+                  "mode"
+                ],
+                "additionalProperties": false,
+                "title": "HomeSectionInput",
+                "description": "Une section de l'accueil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "AdminHomeSectionsController_remove",
+        "tags": [
+          "AdminHomeSections"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/banners/active": {
       "get": {
         "operationId": "BannersController_findActive",
@@ -18430,6 +18892,161 @@
         "title": "UpdatePostSchema",
         "description": "Schema for updating a post"
       },
+      "HomeSectionInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "icon": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "map-pin",
+                  "badge-check",
+                  "tag",
+                  "sparkles",
+                  "star",
+                  "leaf",
+                  "flame",
+                  "clock"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subtitle": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mode": {
+            "type": "string",
+            "enum": [
+              "CRITERIA",
+              "MANUAL"
+            ]
+          },
+          "criteria": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "categorySlug": {
+                    "type": "string"
+                  },
+                  "supplierId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "validatedOnly": {
+                    "type": "boolean"
+                  },
+                  "promoOnly": {
+                    "type": "boolean"
+                  },
+                  "minRating": {
+                    "type": "number",
+                    "minimum": 1,
+                    "maximum": 5
+                  },
+                  "maxPrice": {
+                    "type": "number",
+                    "exclusiveMinimum": 0
+                  },
+                  "newerThanDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 365
+                  },
+                  "maxDistanceKm": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 500
+                  },
+                  "sortBy": {
+                    "type": "string",
+                    "enum": [
+                      "distance",
+                      "rating",
+                      "price"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "title": "HomeSectionCriteria"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "productIds": {
+            "anyOf": [
+              {
+                "maxItems": 50,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 30
+          }
+        },
+        "required": [
+          "title",
+          "mode"
+        ],
+        "additionalProperties": false,
+        "title": "HomeSectionInput",
+        "description": "Une section de l'accueil"
+      },
+      "HomeSectionOrder": {
+        "type": "object",
+        "properties": {
+          "ids": {
+            "minItems": 1,
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          }
+        },
+        "required": [
+          "ids"
+        ],
+        "additionalProperties": false,
+        "title": "HomeSectionOrder",
+        "description": "L'ordre des sections de l'accueil"
+      },
       "ContactMessage": {
         "type": "object",
         "properties": {
@@ -20689,6 +21306,25 @@
               "true",
               "false"
             ]
+          },
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "newerThanDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 365
+          },
+          "productIds": {
+            "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
           },
           "sortBy": {
             "default": "distance",

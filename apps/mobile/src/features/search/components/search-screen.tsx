@@ -42,6 +42,18 @@ interface SearchScreenProps {
   initialCategory?: string
   initialValidatedOnly?: boolean
   initialPromoOnly?: boolean
+  /**
+   * Les critères d'une section de l'accueil, quand on arrive par « Tout voir ».
+   *
+   * Sans eux, le listing montrait autre chose que le rail dont il venait —
+   * une section « moins de 1 000 F » s'ouvrait sur le catalogue entier.
+   */
+  initialSupplierId?: string
+  initialMaxPrice?: number
+  initialMinRating?: number
+  initialNewerThanDays?: number
+  initialRadius?: number
+  initialSortBy?: 'distance' | 'rating' | 'price'
   initialViewMode?: ViewMode
   /** Titre de l'en-tête (ex. « Près de vous »). Défaut : « Recherche ». */
   headerTitle?: string
@@ -49,7 +61,7 @@ interface SearchScreenProps {
   initialAutoFocus?: boolean
 }
 
-export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
+export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
@@ -96,15 +108,21 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         q: q || undefined,
         latitude,
         longitude,
-        radius: appliedFilters.radius !== undefined ? appliedFilters.radius * 1000 : undefined,
+        // Ce que l'acheteur a réglé lui-même prime sur ce que la section
+        // proposait : il vient d'ouvrir le panneau de filtres pour ça.
+        radius: appliedFilters.radius !== undefined ? appliedFilters.radius * 1000 : initialRadius,
         category,
-        maxPrice: appliedFilters.maxPrice,
+        maxPrice: appliedFilters.maxPrice ?? initialMaxPrice,
         inStockOnly: appliedFilters.inStockOnly,
+        minRating: initialMinRating,
+        newerThanDays: initialNewerThanDays,
+        supplierId: initialSupplierId,
+        sortBy: initialSortBy,
         validatedOnly: initialValidatedOnly || undefined,
         promoOnly: initialPromoOnly || undefined,
       })
     },
-    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialValidatedOnly, initialPromoOnly],
+    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy],
   )
 
   useEffect(() => {

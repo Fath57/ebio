@@ -208,6 +208,9 @@ export class SearchService {
       mode,
       validatedOnly,
       promoOnly,
+      supplierId,
+      newerThanDays,
+      productIds,
       sortBy,
       page,
       limit,
@@ -281,6 +284,29 @@ export class SearchService {
     if (mode) {
       whereClause += `  AND s.mode = ?\n`
       baseParams.push(mode)
+    }
+
+    if (supplierId) {
+      whereClause += `  AND s.id = ?\n`
+      baseParams.push(supplierId)
+    }
+
+    if (newerThanDays !== undefined) {
+      whereClause += `  AND p."createdAt" >= NOW() - (? * INTERVAL '1 day')\n`
+      baseParams.push(newerThanDays)
+    }
+
+    // Une liste vide ne veut pas dire « tous » : une section composée à la
+    // main dont on a retiré le dernier produit doit rendre le vide.
+    if (productIds !== undefined) {
+      if (productIds.length === 0) {
+        return { results: [], total: 0, page, hasMore: false }
+      }
+      // Un emplacement par identifiant : le pilote ne sait pas lier un tableau
+      // JavaScript derrière `ANY(?::uuid[])`, il l'aplatit et le SQL ne se
+      // lit plus.
+      whereClause += `  AND p.id IN (${productIds.map(() => '?').join(', ')})\n`
+      baseParams.push(...productIds)
     }
 
     const orderClause = hasLocation ? this.buildOrderClause(sortBy) : this.buildOrderClause(sortBy === 'distance' ? 'rating' : sortBy)

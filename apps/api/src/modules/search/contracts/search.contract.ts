@@ -12,6 +12,18 @@ export const searchProductsQuerySchema = z.object({
   mode: z.enum(['CONTACT', 'ORDER']).optional(),
   validatedOnly: z.enum(['true', 'false']).default('false').meta({ description: 'Filter validated suppliers only' }),
   promoOnly: z.enum(['true', 'false']).default('false').meta({ description: 'Filter promotional products only' }),
+  /** Une boutique précise : une section peut être dédiée à un fournisseur. */
+  supplierId: z.string().uuid().optional(),
+  /** Mis en ligne depuis moins de N jours — ce que « nouveau » veut dire. */
+  newerThanDays: z.coerce.number().int().min(1).max(365).optional(),
+  /**
+   * Des produits choisis un par un.
+   *
+   * Passer par la recherche plutôt que par une requête à part donne
+   * gratuitement la boutique, la distance et le prix promotionnel — tout ce
+   * qu'une carte affiche et qu'il faudrait sinon refaire.
+   */
+  productIds: z.array(z.string().uuid()).max(50).optional(),
   sortBy: z.enum(['distance', 'rating', 'price']).default('distance'),
   page: z.coerce.number().default(1),
   limit: z.coerce.number().max(50).default(20),

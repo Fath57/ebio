@@ -21,6 +21,7 @@ import { DeliveriesModule } from './modules/deliveries/deliveries.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
 import { GeocodingModule } from './modules/geocoding/geocoding.module'
+import { HomeModule } from './modules/home/home.module'
 import { LandingModule } from './modules/landing/landing.module'
 import { MediaModule } from './modules/media/media.module'
 import { NotificationsModule } from './modules/notifications/notifications.module'
@@ -125,6 +126,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     ExampleModule,
     SearchModule,
     AssistantModule,
+    HomeModule,
     BannersModule,
     LandingModule,
     GeocodingModule,
