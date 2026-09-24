@@ -1,7 +1,8 @@
 import type { RecommendationReason, RecommendedProduct } from '../hooks/use-recommendations'
-import Check from 'lucide-react-native/dist/esm/icons/check'
+import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import * as React from 'react'
 import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
@@ -9,7 +10,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { PromotionChips } from '../../catalog/components/promotion-chips'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { promotionChipLabels } from '../../catalog/promotions'
-import { useCart } from '../cart-context'
+import { MAX_ITEM_QUANTITY, useCart } from '../cart-context'
 import { useRecommendations } from '../hooks/use-recommendations'
 
 const REASON_LABELS: Record<RecommendationReason, string> = {
@@ -69,13 +70,16 @@ interface SuggestionCardProps {
   item: RecommendedProduct
   /** Calculée depuis la largeur de l'écran, pour que la suivante dépasse. */
   width: number
-  inCart: boolean
+  /** Ce qu'il y a déjà dans le panier pour ce produit ; 0 s'il n'y est pas. */
+  quantity: number
   onAdd: ((item: RecommendedProduct) => void) | null
+  /** Change la quantité d'une ligne déjà là ; 0 la retire. */
+  onChangeQuantity: ((item: RecommendedProduct, next: number) => void) | null
   onOpen: ((productId: string) => void) | null
   reasonLabels: ReasonLabels
 }
 
-function SuggestionCard({ item, inCart, onAdd, onOpen, reasonLabels, width }: SuggestionCardProps) {
+function SuggestionCard({ item, quantity, onAdd, onChangeQuantity, onOpen, reasonLabels, width }: SuggestionCardProps) {
   const { semantic } = useTheme()
   const hasPromo = item.promotionalPrice !== null && item.promotionalPrice < item.pricePerUnit
   const displayPrice = hasPromo ? item.promotionalPrice ?? item.pricePerUnit : item.pricePerUnit
@@ -110,22 +114,53 @@ function SuggestionCard({ item, inCart, onAdd, onOpen, reasonLabels, width }: Su
         <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>{`${formatPrice(item.pricePerUnit)} FCFA`}</Text>
       )}
       <PromotionChips labels={promotionChipLabels(item.promotionTypes)} maxVisible={2} />
-      {onAdd && (
+      {/*
+        * Une fois l'article pris, le bouton devient un compteur : une
+        * suggestion ne se prend pas toujours à l'unité, et il fallait sinon
+        * quitter la caisse pour passer de un à trois kilos.
+        */}
+      {onAdd && quantity === 0 && (
         <TouchableOpacity
-          style={[styles.addButton, inCart && styles.addButtonDone]}
+          style={styles.addButton}
           onPress={() => onAdd(item)}
-          disabled={inCart}
           accessibilityRole="button"
-          accessibilityState={{ disabled: inCart }}
-          accessibilityLabel={inCart ? `${item.name} ajouté au panier` : `Ajouter ${item.name} au panier`}
+          accessibilityLabel={`Ajouter ${item.name} au panier`}
         >
-          {inCart
-            ? <Check size={14} color={colors.green[800]} strokeWidth={2.5} />
-            : <Plus size={14} color={colors.neutral[0]} strokeWidth={2.5} />}
-          <Text style={[styles.addButtonText, inCart && styles.addButtonTextDone]}>
-            {inCart ? 'Ajouté' : 'Ajouter'}
-          </Text>
+          <Plus size={14} color={colors.neutral[0]} strokeWidth={2.5} />
+          <Text style={styles.addButtonText}>Ajouter</Text>
         </TouchableOpacity>
+      )}
+
+      {onChangeQuantity && quantity > 0 && (
+        <View style={[styles.stepper, { borderColor: semantic.borderNormal }]}>
+          <TouchableOpacity
+            style={styles.stepButton}
+            onPress={() => onChangeQuantity(item, quantity - 1)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={quantity === 1
+              ? `Retirer ${item.name} du panier`
+              : `Enlever un ${item.name}`}
+          >
+            {quantity === 1
+              ? <Trash2 size={14} color={colors.coral[400]} strokeWidth={2.4} />
+              : <Minus size={14} color={semantic.textPrimary} strokeWidth={2.6} />}
+          </TouchableOpacity>
+
+          <Text style={[styles.stepQuantity, { color: semantic.textPrimary }]}>
+            {`${quantity} ${unitShortLabel(item.unit)}`}
+          </Text>
+
+          <TouchableOpacity
+            style={styles.stepButton}
+            onPress={() => onChangeQuantity(item, quantity + 1)}
+            hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel={`Ajouter un ${item.name}`}
+          >
+            <Plus size={14} color={semantic.textPrimary} strokeWidth={2.6} />
+          </TouchableOpacity>
+        </View>
       )}
     </TouchableOpacity>
   )
@@ -146,7 +181,7 @@ export function BasketSuggestions({
   const { semantic } = useTheme()
   const { width: screenWidth } = useWindowDimensions()
   const cardWidth = cardWidthFor(screenWidth)
-  const { groups, addItem } = useCart()
+  const { items: cartItems, addItem, updateQuantity, removeItem } = useCart()
   // The caller may already hold the list (the checkout upsell does): asking
   // again would just duplicate the request.
   const fetched = useRecommendations(providedItems ? null : supplierId, productIds, limit)
@@ -156,9 +191,23 @@ export function BasketSuggestions({
     return null
   }
 
-  const cartProductIds = new Set(
-    groups.filter(g => g.supplierId === supplierId).flatMap(g => g.items.map(i => i.productId)),
-  )
+  // La ligne du panier, pas seulement sa présence : c'est elle qui porte la
+  // quantité à afficher et l'identifiant qu'attendent `updateQuantity` et
+  // `removeItem`.
+  const cartLineFor = (productId: string) =>
+    cartItems.find(line => line.productId === productId && line.supplierId === supplierId) ?? null
+
+  const handleChangeQuantity = (item: RecommendedProduct, next: number): void => {
+    const line = cartLineFor(item.id)
+    if (line === null) {
+      return
+    }
+    if (next <= 0) {
+      removeItem(line.id)
+      return
+    }
+    updateQuantity(line.id, Math.min(next, MAX_ITEM_QUANTITY))
+  }
 
   const handleAdd = supplierName
     ? (item: RecommendedProduct) => {
@@ -185,8 +234,9 @@ export function BasketSuggestions({
             key={item.id}
             width={cardWidth}
             item={item}
-            inCart={cartProductIds.has(item.id)}
+            quantity={cartLineFor(item.id)?.quantity ?? 0}
             onAdd={handleAdd}
+            onChangeQuantity={supplierName ? handleChangeQuantity : null}
             onOpen={onOpenProduct ?? null}
             reasonLabels={reasonLabels}
           />
@@ -197,6 +247,26 @@ export function BasketSuggestions({
 }
 
 const styles = StyleSheet.create({
+  stepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: spacing[2],
+    height: 32,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    paddingHorizontal: spacing[1],
+  },
+  stepButton: {
+    width: 28,
+    height: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  stepQuantity: {
+    fontFamily: fonts.mono,
+    fontSize: 12,
+  },
   container: {
     gap: spacing[2],
   },
