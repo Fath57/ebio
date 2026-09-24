@@ -5,6 +5,7 @@ import { User } from '../auth/auth.entity'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { PaymentProvider } from '../payments/payment.entity'
+import { providerForTransaction } from '../payments/provider-for-transaction'
 import { Supplier } from '../suppliers/supplier.entity'
 import { TopupStatus, WalletTopup } from './entities/wallet-topup.entity'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
@@ -106,9 +107,15 @@ export class TopupService {
     }
 
     if (topup.status === TopupStatus.PENDING) {
+      // Chez qui vérifier se lit sur la transaction, pas sur le réglage : une
+      // application installée avant la bascule ouvre encore son paiement chez
+      // l'ancien prestataire, et la chercher chez le nouveau reviendrait à ne
+      // pas créditer quelqu'un qui a payé.
+      const provider = providerForTransaction(fedapayTransactionId, topup.fedapayTransactionId ?? null)
+
       let check
       try {
-        check = await this.checkoutGateway().checkStatus(fedapayTransactionId)
+        check = await this.gatewayFactory.createGateway(provider).checkStatus(fedapayTransactionId)
       }
       catch {
         throw new BadRequestException('Transaction introuvable chez le prestataire')

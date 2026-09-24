@@ -117,7 +117,7 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
    * This goes through INTRAM's older endpoint, on purpose. The Merchant API
    * v1 equivalent answers `504` and, even when it does not, only promises the
    * URL later through a webhook; this one returns it in the same breath. The
-   * *verification* stays on v1, signed — a transaction opened here is
+   * verification* stays on v1, signed — a transaction opened here is
    * readable there, which was checked against their sandbox.
    *
    * Their JavaScript widget is skipped entirely: all it does is call this

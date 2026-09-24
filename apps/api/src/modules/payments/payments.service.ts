@@ -20,6 +20,7 @@ import { Checkout, CheckoutStatus } from './entities/checkout.entity'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
 import { Payment, PaymentProvider, PaymentStatus } from './payment.entity'
+import { providerForTransaction } from './provider-for-transaction'
 
 @Injectable()
 export class PaymentsService {
@@ -368,7 +369,14 @@ export class PaymentsService {
       }
     }
 
-    const gateway = this.gatewayFactory.createGateway(this.checkoutProvider())
+    // Même raison que pour la recharge : on suit la transaction présentée, pas
+    // le prestataire du moment. Les applications d'avant la bascule paient
+    // encore chez l'ancien.
+    const provider = providerForTransaction(
+      data.fedapayTransactionId,
+      checkout.providerTransactionId ?? null,
+    )
+    const gateway = this.gatewayFactory.createGateway(provider)
     const checkResult = await gateway.checkStatus(data.fedapayTransactionId)
     if (checkResult.status !== 'completed') {
       // Same two shapes as a wallet topup: the app has to tell a payment that
@@ -387,8 +395,8 @@ export class PaymentsService {
         checkout,
         order,
         amount,
-        provider: this.checkoutProvider(),
-        paymentMethod: `${this.checkoutProvider()}_checkout`,
+        provider,
+        paymentMethod: `${provider}_checkout`,
         providerTransactionId: data.fedapayTransactionId,
         providerReference: checkResult.reference,
         providerPaymentMethodId: checkResult.providerPaymentMethodId,
