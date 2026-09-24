@@ -1023,7 +1023,7 @@
       "tabs": {
         "commissions": "Commissions",
         "payments": "Payments",
-        "assistant": "Assistant"
+        "assistant": "Assita"
       },
       "paymentMethods": {
         "title": "Payment methods",
@@ -1168,9 +1168,9 @@
         "error": "Could not save the rate. Try again."
       },
       "assistant": {
-        "title": "Conversational assistant",
-        "description": "The assistant lets a buyer shop by talking. Every exchange calls a paid model: close it to contain spending, or when it answers badly.",
-        "toggleLabel": "Open the assistant to buyers",
+        "title": "Assita, the shopping assistant",
+        "description": "Assita lets a buyer shop by talking. Every exchange calls a paid model: close her to contain spending, or when she answers badly.",
+        "toggleLabel": "Open Assita to buyers",
         "stateOpen": "Open: the button shows in the app and conversations are allowed.",
         "stateClosed": "Closed: the button disappears from the app and every conversation is refused.",
         "saved": "Saved. The change applies within a minute.",

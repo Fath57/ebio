@@ -207,7 +207,7 @@ export function HomeHeader({
             style={styles.circle}
             onPress={onOpenAssistant}
             accessibilityRole="button"
-            accessibilityLabel="Faire mes courses en parlant à l'assistant"
+            accessibilityLabel="Faire mes courses en parlant à Assita"
           >
             <AssistantEntryIcon />
           </Pressable>

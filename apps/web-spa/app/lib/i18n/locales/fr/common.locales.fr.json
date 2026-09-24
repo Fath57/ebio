@@ -1023,7 +1023,7 @@
       "tabs": {
         "commissions": "Commissions",
         "payments": "Paiements",
-        "assistant": "Assistant"
+        "assistant": "Assita"
       },
       "paymentMethods": {
         "title": "Moyens de paiement",
@@ -1168,11 +1168,11 @@
         "error": "Impossible d’enregistrer le taux. Réessayez."
       },
       "assistant": {
-        "title": "Assistant conversationnel",
-        "description": "L'assistant permet à un acheteur de faire ses courses en parlant. Chaque échange appelle un modèle payant : fermez-le si la dépense doit être contenue, ou s'il répond mal.",
-        "toggleLabel": "Ouvrir l’assistant aux acheteurs",
-        "stateOpen": "Ouvert : le bouton apparaît dans l'application et les conversations sont possibles.",
-        "stateClosed": "Fermé : le bouton disparaît de l'application et toute conversation est refusée.",
+        "title": "Assita, l’assistante de courses",
+        "description": "Assita permet à un acheteur de faire ses courses en parlant. Chaque échange appelle un modèle payant : fermez-la si la dépense doit être contenue, ou si elle répond mal.",
+        "toggleLabel": "Ouvrir Assita aux acheteurs",
+        "stateOpen": "Ouverte : le bouton apparaît dans l'application et les conversations sont possibles.",
+        "stateClosed": "Fermée : le bouton disparaît de l'application et toute conversation est refusée.",
         "saved": "Enregistré. Le changement s’applique dans la minute.",
         "error": "Le changement n'a pas été enregistré."
       }

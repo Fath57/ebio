@@ -76,7 +76,7 @@ export function AssistantSpeaking({ speaking }: AssistantSpeakingProps) {
         <Image source={ASSISTANT_AVATAR} style={styles.avatar} accessible={false} />
       </View>
 
-      <Text style={styles.label}>Elle vous répond…</Text>
+      <Text style={styles.label}>Assita vous répond…</Text>
     </View>
   )
 }

@@ -9,7 +9,7 @@ interface AssistantEntryIconProps {
 }
 
 /**
- * L'étincelle qui mène à l'assistant, et qui bouge juste assez pour être vue.
+ * L'étincelle qui mène à Assita, et qui bouge juste assez pour être vue.
  *
  * Une entrée nouvelle ne se trouve pas toute seule au milieu d'une barre déjà
  * pleine. Le halo part lentement, toutes les quatre secondes : assez pour que

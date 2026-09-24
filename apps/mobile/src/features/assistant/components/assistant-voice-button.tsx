@@ -253,7 +253,7 @@ export function AssistantVoiceButton({ onRecorded, onError, disabled }: Assistan
           }}
           disabled={disabled}
           accessibilityRole="button"
-          accessibilityLabel={listening ? 'Arrêter et envoyer' : 'Parler à l\'assistant'}
+          accessibilityLabel={listening ? 'Arrêter et envoyer' : 'Parler à Assita'}
         >
           {listening
             ? <Square size={26} color={colors.neutral[0]} strokeWidth={2.4} fill={colors.neutral[0]} />

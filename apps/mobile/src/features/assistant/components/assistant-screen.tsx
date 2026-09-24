@@ -27,19 +27,19 @@ interface Exchange {
 }
 
 /**
- * Ce que fait l'assistant, en un coup d'œil.
+ * Ce que fait Assita, en un coup d'œil.
  *
- * Trois états et pas davantage : il écoute, il cherche, il parle. Un assistant
- * dont on ne sait pas s'il écoute est un assistant qu'on interrompt au mauvais
- * moment.
+ * Trois états et pas davantage : elle écoute, elle cherche, elle parle. Une
+ * assistante dont on ne sait pas si elle écoute est une assistante qu'on
+ * interrompt au mauvais moment.
  */
 type Activity = 'idle' | 'hearing' | 'thinking' | 'speaking'
 
 const ACTIVITY_LABEL: Record<Activity, string> = {
   idle: 'Dites-lui ce qu\'il vous faut',
-  hearing: 'Il met vos mots par écrit…',
-  thinking: 'Il cherche…',
-  speaking: 'Il répond…',
+  hearing: 'Elle met vos mots par écrit…',
+  thinking: 'Elle cherche…',
+  speaking: 'Elle répond…',
 }
 
 interface AssistantScreenProps {
@@ -49,7 +49,7 @@ interface AssistantScreenProps {
 }
 
 /**
- * L'assistant, en conversation.
+ * Assita, en conversation.
  *
  * L'écran n'est pas un décor : la voix ne laisse aucune trace, donc tout ce qui
  * a été compris s'écrit — ce qu'on a dit, ce qu'il a répondu, ce qu'il a mis
@@ -248,7 +248,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader
-        title="Assistant"
+        title="Assita"
         subtitle={ACTIVITY_LABEL[activity]}
         onBack={onGoBack}
         leadingSlot={<Image source={ASSISTANT_AVATAR} style={styles.headerAvatar} accessible={false} />}
@@ -306,9 +306,9 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
 
               {exchange.answered === null
                 ? (
-                    <View style={styles.pending} accessibilityLabel="L'assistant cherche">
+                    <View style={styles.pending} accessibilityLabel="Assita cherche">
                       <ActivityIndicator size="small" color={colors.green[400]} />
-                      <Text style={[styles.pendingText, { color: semantic.textTertiary }]}>Il cherche…</Text>
+                      <Text style={[styles.pendingText, { color: semantic.textTertiary }]}>Elle cherche…</Text>
                     </View>
                   )
                 : (
@@ -355,7 +355,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
                     autoFocus
                     editable={!busy}
                     onSubmitEditing={() => send(draft)}
-                    accessibilityLabel="Votre message pour l'assistant"
+                    accessibilityLabel="Votre message pour Assita"
                   />
                   <Pressable
                     style={[styles.send, draft.trim().length === 0 && styles.sendIdle]}
