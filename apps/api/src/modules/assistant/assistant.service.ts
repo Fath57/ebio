@@ -10,7 +10,7 @@ import { User } from '../auth/auth.entity'
 import { CheckoutService } from '../orders/checkout.service'
 import { SearchService } from '../search/search.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
-import { amountsFromTools, forSpeech, groundingBreaches, takeSentences } from './assistant.guardrails'
+import { amountsFromTools, forSpeech, groundingBreaches, takeSentences, ungroundedAmounts } from './assistant.guardrails'
 import { ASSISTANT_SYSTEM_PROMPT } from './assistant.prompt'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
@@ -320,6 +320,8 @@ export class AssistantService {
 
     const known = (session.state as { montants?: number[] }).montants ?? []
     let spoken = ''
+    /** Tout ce que le modèle a écrit, diffusé ou non : la reprise en a besoin. */
+    let collected = ''
     let buffer = ''
     let breached = false
     let failed = false
@@ -340,16 +342,23 @@ export class AssistantService {
 
           for (const sentence of sentences) {
             const clean = forSpeech(sentence)
-            if (groundingBreaches(clean, recorded, known).length > 0) {
-              breached = true
-              break
+            collected = `${collected}${collected.length > 0 ? ' ' : ''}${clean}`
+
+            if (breached) {
+              continue
             }
+
+            // Seuls les montants se jugent phrase par phrase : un chiffre
+            // prononcé vient forcément d'un outil déjà appelé. Le reste —
+            // « c'est noté », « livraison comprise » — dépend d'outils qui
+            // peuvent suivre le texte dans le flux, et se juge à la fin.
+            if (ungroundedAmounts(clean, recorded).some(amount => !known.includes(amount))) {
+              breached = true
+              continue
+            }
+
             spoken = `${spoken}${spoken.length > 0 ? ' ' : ''}${clean}`
             yield { type: 'phrase', text: clean }
-          }
-
-          if (breached) {
-            break
           }
         }
 
@@ -402,20 +411,21 @@ export class AssistantService {
 
     // La dernière phrase n'est suivie d'aucune espace : elle sort du tampon ici.
     const tail = forSpeech(buffer)
-    if (!breached && tail.length > 0) {
-      if (groundingBreaches(tail, recorded, known).length > 0) {
-        breached = true
-      }
-      else {
+    if (tail.length > 0) {
+      collected = `${collected}${collected.length > 0 ? ' ' : ''}${tail}`
+
+      if (!breached && !ungroundedAmounts(tail, recorded).some(amount => !known.includes(amount))) {
         spoken = `${spoken}${spoken.length > 0 ? ' ' : ''}${tail}`
         yield { type: 'phrase', text: tail }
       }
     }
 
-    let reply = spoken
-    if (breached || spoken.trim().length === 0) {
-      const whole = forSpeech(`${spoken} ${buffer}`)
-      reply = await this.repairIfUngrounded(session, messages, tools, whole, recorded)
+    // Le tour est fini : tous les outils ont été appelés, tout est jugeable.
+    // La reprise porte sur le texte entier — y compris la phrase fautive, que
+    // l'on ne jette surtout pas, sans quoi il n'y aurait plus rien à corriger.
+    let reply = collected
+    if (breached || groundingBreaches(collected, recorded, known).length > 0) {
+      reply = await this.repairIfUngrounded(session, messages, tools, collected, recorded)
       yield { type: 'reset' }
       yield { type: 'phrase', text: reply }
     }
