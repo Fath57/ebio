@@ -1,5 +1,5 @@
 import type { AssistantCartLine } from '../assistant'
-import { useAudioPlayer } from 'expo-audio'
+import { createAudioPlayer, setAudioModeAsync } from 'expo-audio'
 import ArrowUp from 'lucide-react-native/dist/esm/icons/arrow-up'
 import Keyboard from 'lucide-react-native/dist/esm/icons/keyboard'
 import Volume2 from 'lucide-react-native/dist/esm/icons/volume-2'
@@ -15,6 +15,7 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { discardSpoken, speak, streamTurn, transcribe } from '../assistant'
 import { ASSISTANT_AVATAR } from '../avatar'
 import { AssistantCartPanel } from './assistant-cart-panel'
+import { AssistantSpeaking } from './assistant-speaking'
 import { AssistantVoiceButton } from './assistant-voice-button'
 
 interface Exchange {
@@ -74,8 +75,17 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   const [typing, setTyping] = useState(false)
   const [voiceOn, setVoiceOn] = useState(true)
 
-  const [spokenUri, setSpokenUri] = useState<string | null>(null)
-  const player = useAudioPlayer(spokenUri === null ? null : { uri: spokenUri })
+  /**
+   * La lecture, pilotée à la main.
+   *
+   * `useAudioPlayer` ne rejouait pas quand la source changeait : le fichier
+   * était chargé, `play()` appelé, et rien ne sortait. Un lecteur créé pour
+   * chaque réponse, joué puis libéré, ne laisse pas de place au doute. Le mode
+   * audio est reposé à chaque fois parce que l'enregistrement le change, et
+   * qu'en conversation écrite il n'aurait jamais été posé du tout.
+   */
+  const playerRef = useRef<ReturnType<typeof createAudioPlayer> | null>(null)
+  const [speaking, setSpeaking] = useState(false)
 
   const busy = activity !== 'idle'
 
@@ -88,6 +98,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   useEffect(() => {
     return () => {
       stopStream.current?.()
+      playerRef.current?.remove()
     }
   }, [])
 
@@ -96,20 +107,34 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
     if (!voiceOn || text.trim().length === 0) {
       return
     }
-    const uri = await speak(text)
-    if (uri !== null) {
-      setSpokenUri((previous) => {
-        discardSpoken(previous)
-        return uri
-      })
-    }
-  }, [voiceOn])
 
-  useEffect(() => {
-    if (spokenUri !== null) {
+    const uri = await speak(text)
+    if (uri === null) {
+      return
+    }
+
+    try {
+      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true })
+
+      playerRef.current?.remove()
+      const player = createAudioPlayer({ uri })
+      playerRef.current = player
+
+      player.addListener('playbackStatusUpdate', (status) => {
+        setSpeaking(status.playing)
+        if (status.didJustFinish) {
+          setSpeaking(false)
+          discardSpoken(uri)
+        }
+      })
+
       player.play()
     }
-  }, [player, spokenUri])
+    catch {
+      // Une voix qui ne sort pas n'empêche pas de lire : le texte est déjà là.
+      setSpeaking(false)
+    }
+  }, [voiceOn])
 
   const send = useCallback((message: string) => {
     const text = message.trim()
@@ -229,7 +254,15 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
         leadingSlot={<Image source={ASSISTANT_AVATAR} style={styles.headerAvatar} accessible={false} />}
         rightSlot={(
           <Pressable
-            onPress={() => setVoiceOn(on => !on)}
+            onPress={() => {
+              setVoiceOn((on) => {
+                if (on) {
+                  playerRef.current?.pause()
+                  setSpeaking(false)
+                }
+                return !on
+              })
+            }}
             hitSlop={10}
             accessibilityRole="button"
             accessibilityState={{ checked: voiceOn }}
@@ -288,6 +321,12 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
             <Text style={styles.error} accessibilityRole="alert">{error}</Text>
           )}
         </ScrollView>
+
+        {speaking && (
+          <View style={styles.speaking}>
+            <AssistantSpeaking speaking />
+          </View>
+        )}
 
         <AssistantCartPanel
           cart={cart}
@@ -432,6 +471,9 @@ const styles = StyleSheet.create({
   error: {
     ...typography.bodyS,
     color: colors.coral[600],
+  },
+  speaking: {
+    paddingHorizontal: spacing[4],
   },
   composer: {
     gap: spacing[3],
