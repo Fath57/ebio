@@ -322,6 +322,7 @@ export class AssistantService {
     let spoken = ''
     let buffer = ''
     let breached = false
+    let failed = false
     let usage: { promptTokens?: number, completionTokens?: number } = {}
     let cartSignature = JSON.stringify(await this.currentCart(session.id))
 
@@ -363,6 +364,15 @@ export class AssistantService {
           }
         }
 
+        // Le flux peut se rompre en cours de phrase. Sans ce cas, la boucle
+        // s'arrêtait sans bruit et le texte partiel était enregistré comme la
+        // réponse : un tour s'est terminé sur « D'accord. J ».
+        if (event.type === 'error') {
+          this.logger.error(`Flux interrompu (session ${session.id}) — ${JSON.stringify((event as { error?: unknown }).error ?? event)}`)
+          failed = true
+          break
+        }
+
         if (event.type === 'done') {
           usage = (event as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
         }
@@ -371,6 +381,13 @@ export class AssistantService {
     catch (error) {
       this.logger.error(`Tour diffusé échoué (session ${session.id}) — ${error}`)
       yield { type: 'error', message: 'L\'assistant est momentanément indisponible.' }
+      return
+    }
+
+    if (failed) {
+      // Rien n'est enregistré : une réponse coupée en deux vaut moins que pas
+      // de réponse, et le tour se refait.
+      yield { type: 'error', message: 'La réponse s\'est interrompue. Redites-moi ?' }
       return
     }
 

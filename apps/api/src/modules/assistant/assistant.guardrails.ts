@@ -118,6 +118,21 @@ export function deliveryFeeIsKnown(toolCalls: RecordedToolCall[]): boolean {
  */
 const CLAIMS_ADDED = /(?:c['’]est|ça y est|voilà)[^.!?]{0,25}(?:dans (?:le|votre) panier|ajouté(?:e|s)?|noté(?:e|s)?)(?!\p{L})|je vous (?:le|la|les|en)?\s?(?:mets|ai mis|rajoute|ajoute)(?!\p{L})|dans (?:le|votre) panier(?!\p{L})/iu
 
+/**
+ * Une annonce d'ajout, et non une proposition.
+ *
+ * « Je vous mets deux kilos ? » est une question — c'est même la phrase que
+ * l'invite enseigne. La prendre pour une annonce faisait reprendre le modèle
+ * sur un simple bonjour, jusqu'à la phrase de repli. Seule une phrase qui
+ * n'interroge pas engage quelque chose.
+ */
+function announcesAddition(reply: string): boolean {
+  return reply
+    .split(/(?<=[.!?…])\s+/)
+    .filter(sentence => !sentence.trim().endsWith('?'))
+    .some(sentence => CLAIMS_ADDED.test(sentence))
+}
+
 /** Le panier a-t-il réellement changé pendant ce tour ? */
 export function cartWasTouched(toolCalls: RecordedToolCall[]): boolean {
   return toolCalls.some(call => call.name === 'ajouter_au_panier' || call.name === 'retirer_du_panier')
@@ -155,7 +170,7 @@ export function groundingBreaches(
     })
   }
 
-  if (CLAIMS_ADDED.test(reply) && !cartWasTouched(toolCalls)) {
+  if (announcesAddition(reply) && !cartWasTouched(toolCalls)) {
     breaches.push({
       what: 'ajout annoncé sans que le panier ait bougé',
       fix: 'Tu viens de laisser entendre que l\'article est dans le panier alors que tu ne l\'y as pas mis. '

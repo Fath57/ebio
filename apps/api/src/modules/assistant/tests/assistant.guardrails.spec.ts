@@ -204,3 +204,26 @@ it('sépare deux phrases que le modèle a collées', () => {
   expect(takeSentences('Je regarde.J\'ai du gari. ').sentences)
     .toEqual(['Je regarde.', 'J\'ai du gari.'])
 })
+
+/**
+ * Vu sur téléphone : « Salut, comment tu vas ? » a déclenché la phrase de
+ * repli. La réponse contenait « je vous mets », que l'invite enseigne
+ * pourtant comme une proposition — et une proposition n'engage rien.
+ */
+describe('proposer n\'est pas annoncer', () => {
+  const searchedOnly: RecordedToolCall[] = [
+    { name: 'chercher_produits', args: {}, ms: 1, result: { produits: [] } },
+  ]
+
+  it('laisse passer « je vous mets ça ? »', () => {
+    expect(groundingBreaches('Ça va bien ! Qu\'est-ce que je vous mets ?', searchedOnly)).toEqual([])
+  })
+
+  it('reprend toujours l\'annonce sans point d\'interrogation', () => {
+    expect(groundingBreaches('Je vous mets deux kilos.', searchedOnly)).toHaveLength(1)
+  })
+
+  it('ne se laisse pas désarmer par une question qui suit l\'annonce', () => {
+    expect(groundingBreaches('Voilà, c\'est dans le panier. Autre chose ?', searchedOnly)).toHaveLength(1)
+  })
+})
