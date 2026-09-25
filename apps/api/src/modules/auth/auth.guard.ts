@@ -65,9 +65,19 @@ export class AuthGuard implements CanActivate {
         const authHeader = request.headers.authorization ?? request.headers.Authorization
         if (typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
           const token = authHeader.slice(7)
-          // Create a fake cookie header so better-auth can resolve the session
+          // Create a fake cookie header so better-auth can resolve the session.
+          //
+          // Under both names, because the one it looks for depends on the
+          // address it was configured with: over https it prefixes its cookies
+          // with `__Secure-`, over http it does not. Sending only the bare name
+          // worked in development and refused every phone in production — the
+          // token was minted and then rejected on the very next call, which
+          // reads as « your code is wrong » to whoever is holding the phone.
           const fakeHeaders = new Headers()
-          fakeHeaders.set('cookie', `better-auth.session_token=${token}`)
+          fakeHeaders.set(
+            'cookie',
+            `better-auth.session_token=${token}; __Secure-better-auth.session_token=${token}`,
+          )
           session = await this.authService.api.getSession({ headers: fakeHeaders })
         }
       }
