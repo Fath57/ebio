@@ -50,6 +50,8 @@ import type {
   AdminCartsControllerSummaryResponses,
   AdminControllerBroadcastNotificationData,
   AdminControllerBroadcastNotificationResponses,
+  AdminControllerGetCatalogueData,
+  AdminControllerGetCatalogueResponses,
   AdminControllerGetCommissionOrdersData,
   AdminControllerGetCommissionOrdersResponses,
   AdminControllerGetCommissionsData,
@@ -540,6 +542,16 @@ import type {
   ProductsControllerUpdateResponses,
   ProductsControllerUpdateStockData,
   ProductsControllerUpdateStockResponses,
+  ProductStudioControllerDescribeData,
+  ProductStudioControllerDescribeResponses,
+  ProductStudioControllerEnhanceData,
+  ProductStudioControllerEnhanceResponses,
+  ProductStudioControllerPreviewData,
+  ProductStudioControllerPreviewResponses,
+  ProductStudioControllerRestageData,
+  ProductStudioControllerRestageResponses,
+  ProductStudioControllerReviewData,
+  ProductStudioControllerReviewResponses,
   ProductUnitsControllerCreateData,
   ProductUnitsControllerCreateResponses,
   ProductUnitsControllerFindActiveData,
@@ -4094,6 +4106,22 @@ export const productsControllerFindBySupplier = <
     ThrowOnError
   >({ url: "/api/suppliers/{supplierId}/products", ...options });
 
+export const productsControllerCreate = <ThrowOnError extends boolean = false>(
+  options: Options<ProductsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ProductsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/{supplierId}/products",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const productsControllerFindById = <
   ThrowOnError extends boolean = false,
 >(
@@ -4105,22 +4133,6 @@ export const productsControllerFindById = <
     ThrowOnError
   >({ url: "/api/products/{id}", ...options });
 
-export const productsControllerCreate = <ThrowOnError extends boolean = false>(
-  options: Options<ProductsControllerCreateData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    ProductsControllerCreateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/suppliers/me/products",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
 export const productsControllerSoftDelete = <
   ThrowOnError extends boolean = false,
 >(
@@ -4130,7 +4142,7 @@ export const productsControllerSoftDelete = <
     ProductsControllerSoftDeleteResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/suppliers/me/products/{id}", ...options });
+  >({ url: "/api/suppliers/{supplierId}/products/{id}", ...options });
 
 export const productsControllerUpdate = <ThrowOnError extends boolean = false>(
   options: Options<ProductsControllerUpdateData, ThrowOnError>,
@@ -4140,7 +4152,7 @@ export const productsControllerUpdate = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
-    url: "/api/suppliers/me/products/{id}",
+    url: "/api/suppliers/{supplierId}/products/{id}",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -4158,7 +4170,7 @@ export const productsControllerUpdateStock = <
     unknown,
     ThrowOnError
   >({
-    url: "/api/suppliers/me/products/{id}/stock",
+    url: "/api/suppliers/{supplierId}/products/{id}/stock",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -4175,7 +4187,7 @@ export const productsControllerClearPromotion = <
     ProductsControllerClearPromotionResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/suppliers/me/products/{id}/promotion", ...options });
+  >({ url: "/api/suppliers/{supplierId}/products/{id}/promotion", ...options });
 
 export const productsControllerSetPromotion = <
   ThrowOnError extends boolean = false,
@@ -4187,7 +4199,7 @@ export const productsControllerSetPromotion = <
     unknown,
     ThrowOnError
   >({
-    url: "/api/suppliers/me/products/{id}/promotion",
+    url: "/api/suppliers/{supplierId}/products/{id}/promotion",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -4437,6 +4449,96 @@ export const recommendationsControllerList = <
     unknown,
     ThrowOnError
   >({ url: "/api/recommendations", ...options });
+
+export const productStudioControllerPreview = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductStudioControllerPreviewData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ProductStudioControllerPreviewResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/products/studio/photos/preview",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productStudioControllerEnhance = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductStudioControllerEnhanceData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ProductStudioControllerEnhanceResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/products/studio/photos/enhance",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productStudioControllerDescribe = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductStudioControllerDescribeData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ProductStudioControllerDescribeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/products/studio/description",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productStudioControllerRestage = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductStudioControllerRestageData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ProductStudioControllerRestageResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/products/studio/photos/restage",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const productStudioControllerReview = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ProductStudioControllerReviewData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ProductStudioControllerReviewResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/products/studio/photos/review",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const homeControllerList = <ThrowOnError extends boolean = false>(
   options: Options<HomeControllerListData, ThrowOnError>,
@@ -5694,6 +5796,17 @@ export const adminControllerGetProducts = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/products", ...options });
+
+export const adminControllerGetCatalogue = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetCatalogueData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetCatalogueResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/catalogue", ...options });
 
 export const adminControllerGetUsers = <ThrowOnError extends boolean = false>(
   options: Options<AdminControllerGetUsersData, ThrowOnError>,

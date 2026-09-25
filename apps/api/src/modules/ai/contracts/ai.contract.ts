@@ -1,3 +1,4 @@
+import type { SharedV3ProviderOptions } from '@ai-sdk/provider'
 import type { Tool } from 'ai'
 import type { ModelId } from '../ai.config'
 import { registerSchema } from '@lonestone/nzoth/server'
@@ -26,6 +27,17 @@ export const aiGenerateOptionsSchema = z.object({
     langfuseOriginalPrompt: z.string().optional().describe('The original prompt that was used to generate the response. (Use prompt.toJSON())'),
   }).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  /**
+   * Passed straight to the provider, keyed by provider name — for instance
+   * `{ openai: { reasoningEffort: 'low' } }`. A reasoning model left at its
+   * default spends twenty seconds on a two-sentence answer, and there was no
+   * way to say otherwise from here.
+   */
+  providerOptions: z.custom<SharedV3ProviderOptions>().meta({
+    type: 'object',
+    additionalProperties: true,
+    description: 'Options transmises telles quelles au fournisseur, par nom de fournisseur',
+  }).optional(),
 }).meta({
   title: 'AiGenerateOptions',
   description: 'Options for an AI generation',

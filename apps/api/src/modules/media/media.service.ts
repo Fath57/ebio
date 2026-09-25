@@ -353,6 +353,79 @@ export class MediaService {
   }
 
   /**
+   * The media behind a public URL, or nothing.
+   *
+   * Server-side image work starts from a URL the client already holds, and a
+   * URL is the one thing a client can forge. Resolving it against our own
+   * rows means the server only ever fetches objects it put there itself —
+   * anything else simply does not resolve, and no request leaves the bucket.
+   */
+  async findByPublicUrl(url: string): Promise<Media | null> {
+    return this.em.findOne(Media, { publicUrl: url })
+  }
+
+  /**
+   * Read an object's bytes back out of the bucket.
+   */
+  async readObject(media: Media, key?: string): Promise<Buffer> {
+    const { Body } = await this.s3.send(new GetObjectCommand({
+      Bucket: media.s3Bucket,
+      Key: key ?? media.optimizedKey ?? media.s3Key,
+    }))
+    if (!Body) {
+      throw new NotFoundException(`Objet S3 introuvable pour le média ${media.id}`)
+    }
+    return Buffer.from(await Body.transformToByteArray())
+  }
+
+  /**
+   * Store an image the server produced itself.
+   *
+   * Goes through the same optimisation and thumbnailing as an upload, so a
+   * retouched photo is served exactly like any other — and lands as its own
+   * row, because the original has to remain reachable when the shop changes
+   * its mind.
+   */
+  async createFromBuffer(
+    userId: string,
+    input: {
+      buffer: Buffer
+      context: MediaContext
+      originalName: string
+      entityType?: string
+      entityId?: string
+    },
+  ): Promise<Media> {
+    const s3Key = `${storagePrefix(input.context)}/${randomUUID()}.webp`
+
+    await this.s3.send(new PutObjectCommand({
+      Bucket: s3Config.bucket,
+      Key: s3Key,
+      Body: input.buffer,
+      ContentType: 'image/webp',
+      CacheControl: 'public, max-age=31536000, immutable',
+    }))
+
+    const media = this.em.create(Media, {
+      uploadedBy: this.em.getReference(User, userId),
+      type: MediaType.IMAGE,
+      context: input.context,
+      status: MediaStatus.PROCESSING,
+      originalName: input.originalName,
+      mimeType: 'image/webp',
+      originalSize: input.buffer.length,
+      s3Key,
+      s3Bucket: s3Config.bucket,
+      entityType: input.entityType,
+      entityId: input.entityId,
+    })
+    await this.em.flush()
+
+    await this.processMedia(media)
+    return media
+  }
+
+  /**
    * Find a single media by ID.
    */
   async findById(mediaId: string): Promise<Media> {

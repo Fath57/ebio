@@ -1,7 +1,9 @@
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import { ChevronLeft, ChevronRight, X } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Wand2, X } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ImageUpload } from '@/features/media/components/image-upload'
+import { PhotoStudioDialog } from './photo-studio-dialog'
 
 interface ProductPhotoManagerProps {
   /** Existing photo URLs kept on the product (edit mode) */
@@ -11,14 +13,39 @@ interface ProductPhotoManagerProps {
   onMediaIdsChange: (mediaIds: string[]) => void
   /** Max total photos (kept + new) */
   max?: number
+  /** Passed to the retouching review so it can spot an off-subject photo. */
+  productName?: string
+}
+
+/**
+ * What the studio is currently working on.
+ *
+ * A photo already on the product and one that was just uploaded are kept the
+ * same way on screen but not underneath — one is a URL in the product, the
+ * other a media id not attached to anything yet. Rather than branch inside the
+ * dialog, each opener says here how to put the result back.
+ */
+interface StudioTarget {
+  url: string
+  apply: (next: { mediaId: string, url: string }) => void
 }
 
 /**
  * Photo management for the product form: kept existing photos with
- * remove/reorder controls, plus upload slots for new photos.
+ * remove/reorder controls, plus upload slots for new photos. Both kinds can be
+ * retouched, including the one that has just finished uploading — improving a
+ * photo should not mean saving first and coming back for it.
  */
-export function ProductPhotoManager({ keptUrls, onKeptUrlsChange, onMediaIdsChange, max = 3 }: ProductPhotoManagerProps) {
+export function ProductPhotoManager({ keptUrls, onKeptUrlsChange, onMediaIdsChange, max = 3, productName }: ProductPhotoManagerProps) {
   const { t } = useTranslation()
+  const [editing, setEditing] = useState<StudioTarget | null>(null)
+
+  function editKept(url: string) {
+    setEditing({
+      url,
+      apply: next => onKeptUrlsChange(keptUrls.map(kept => (kept === url ? next.url : kept))),
+    })
+  }
 
   function removeAt(index: number) {
     onKeptUrlsChange(keptUrls.filter((_, i) => i !== index))
@@ -51,6 +78,17 @@ export function ProductPhotoManager({ keptUrls, onKeptUrlsChange, onMediaIdsChan
                 onClick={() => removeAt(i)}
               >
                 <X className="h-3.5 w-3.5" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                aria-label={t('catalog.photoStudio.open')}
+                title={t('catalog.photoStudio.open')}
+                className="absolute left-1 top-1 h-6 w-6 rounded-full bg-black/50 text-white hover:bg-black/70"
+                onClick={() => editKept(url)}
+              >
+                <Wand2 className="h-3.5 w-3.5" />
               </Button>
               <div className="absolute bottom-1 left-1 right-1 flex justify-between">
                 <Button
@@ -85,6 +123,14 @@ export function ProductPhotoManager({ keptUrls, onKeptUrlsChange, onMediaIdsChan
         context="PRODUCT_PHOTO"
         max={Math.max(0, max - keptUrls.length)}
         onMediaIdsChange={onMediaIdsChange}
+        onRetouchRequest={(photo, replace) => setEditing({ url: photo.url, apply: replace })}
+      />
+
+      <PhotoStudioDialog
+        url={editing?.url ?? null}
+        productName={productName}
+        onClose={() => setEditing(null)}
+        onReplace={next => editing?.apply(next)}
       />
     </div>
   )

@@ -498,6 +498,43 @@ export const zUpdateCategory = z.object({
 });
 
 /**
+ * DescribeProduct
+ *
+ * Rédiger une description à partir des informations déjà saisies
+ */
+export const zDescribeProduct = z.object({
+  name: z.string().min(2).max(200),
+  categoryName: z.optional(z.string().max(100)),
+  unit: z.optional(z.string().max(100)),
+  origin: z.optional(z.string().max(200)),
+  ingredients: z.optional(z.string().max(2000)),
+  conservation: z.optional(z.string().max(1000)),
+  labels: z.optional(z.array(z.string().max(100)).max(10)),
+  current: z.optional(z.string().max(2000)),
+});
+
+/**
+ * RestagePhoto
+ *
+ * Remettre le produit en scène en conservant le produit lui-même
+ */
+export const zRestagePhoto = z.object({
+  url: z.url(),
+  productName: z.optional(z.string().max(200)),
+  consigne: z.optional(z.string().max(300)),
+});
+
+/**
+ * ReviewPhoto
+ *
+ * Demander un avis sur une photo de produit
+ */
+export const zReviewPhoto = z.object({
+  url: z.url(),
+  productName: z.optional(z.string().max(200)),
+});
+
+/**
  * CreateProductUnit
  *
  * Data required to add a unit of sale
@@ -2268,6 +2305,29 @@ export const zFailDelivery = z.object({
 });
 
 /**
+ * PhotoAdjustments
+ *
+ * Retouches déterministes appliquées à une photo de produit
+ */
+export const zPhotoAdjustments = z.object({
+  trim: z.boolean().default(true),
+  light: z.boolean().default(true),
+  square: z.boolean().default(true),
+  sharpen: z.boolean().default(true),
+  warmth: z.number().gte(-30).lte(30).default(0),
+});
+
+/**
+ * EnhancePhoto
+ *
+ * Retoucher une photo de produit et enregistrer le résultat
+ */
+export const zEnhancePhoto = z.object({
+  url: z.url(),
+  adjustments: zPhotoAdjustments,
+});
+
+/**
  * PaginationQuerySchema
  *
  * Schema for pagination query
@@ -3084,6 +3144,7 @@ export const zAiGenerateOptions = z.object({
     }),
   ),
   metadata: z.optional(z.record(z.string(), z.unknown())),
+  providerOptions: z.optional(z.record(z.string(), z.unknown())),
 });
 
 /**
@@ -3797,6 +3858,7 @@ export const zAiExampleControllerGenerateTextData = z.object({
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
+        providerOptions: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
   }),
@@ -3844,6 +3906,7 @@ export const zAiExampleControllerGenerateObjectData = z.object({
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
+        providerOptions: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
   }),
@@ -3931,6 +3994,7 @@ export const zAiExampleControllerChatData = z.object({
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
+        providerOptions: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
     schemaType: z.optional(
@@ -3980,6 +4044,7 @@ export const zAiExampleControllerStreamTextData = z.object({
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
+        providerOptions: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
   }),
@@ -4022,6 +4087,7 @@ export const zAiExampleControllerStreamObjectData = z.object({
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
+        providerOptions: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
   }),
@@ -4103,6 +4169,7 @@ export const zAiExampleControllerStreamChatData = z.object({
           }),
         ),
         metadata: z.optional(z.record(z.string(), z.unknown())),
+        providerOptions: z.optional(z.record(z.string(), z.unknown())),
       }),
     ),
   }),
@@ -4145,6 +4212,7 @@ export const zAiExampleUseCasesControllerUseCase1SingleGenerationData =
             }),
           ),
           metadata: z.optional(z.record(z.string(), z.unknown())),
+          providerOptions: z.optional(z.record(z.string(), z.unknown())),
         }),
       ),
     }),
@@ -6711,14 +6779,6 @@ export const zProductsControllerFindBySupplierData = z.object({
   }),
 });
 
-export const zProductsControllerFindByIdData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
 export const zProductsControllerCreateData = z.object({
   body: z.object({
     name: z.string().min(2).max(200),
@@ -6810,13 +6870,24 @@ export const zProductsControllerCreateData = z.object({
       }),
     ),
   }),
-  path: z.optional(z.never()),
+  path: z.object({
+    supplierId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zProductsControllerFindByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 
 export const zProductsControllerSoftDeleteData = z.object({
   body: z.optional(z.never()),
   path: z.object({
+    supplierId: z.string(),
     id: z.string(),
   }),
   query: z.optional(z.never()),
@@ -6919,6 +6990,7 @@ export const zProductsControllerUpdateData = z.object({
     photos: z.optional(z.array(z.string()).max(10)),
   }),
   path: z.object({
+    supplierId: z.string(),
     id: z.string(),
   }),
   query: z.optional(z.never()),
@@ -6929,6 +7001,7 @@ export const zProductsControllerUpdateStockData = z.object({
     stock: z.int().gte(0).lte(9007199254740991),
   }),
   path: z.object({
+    supplierId: z.string(),
     id: z.string(),
   }),
   query: z.optional(z.never()),
@@ -6937,6 +7010,7 @@ export const zProductsControllerUpdateStockData = z.object({
 export const zProductsControllerClearPromotionData = z.object({
   body: z.optional(z.never()),
   path: z.object({
+    supplierId: z.string(),
     id: z.string(),
   }),
   query: z.optional(z.never()),
@@ -6952,6 +7026,7 @@ export const zProductsControllerSetPromotionData = z.object({
       ),
   }),
   path: z.object({
+    supplierId: z.string(),
     id: z.string(),
   }),
   query: z.optional(z.never()),
@@ -7160,6 +7235,70 @@ export const zAdminPromotionsControllerRemoveData = z.object({
 
 export const zRecommendationsControllerListData = z.object({
   body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductStudioControllerPreviewData = z.object({
+  body: z.object({
+    url: z.url(),
+    adjustments: z.object({
+      trim: z.boolean().default(true),
+      light: z.boolean().default(true),
+      square: z.boolean().default(true),
+      sharpen: z.boolean().default(true),
+      warmth: z.number().gte(-30).lte(30).default(0),
+    }),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductStudioControllerEnhanceData = z.object({
+  body: z.object({
+    url: z.url(),
+    adjustments: z.object({
+      trim: z.boolean().default(true),
+      light: z.boolean().default(true),
+      square: z.boolean().default(true),
+      sharpen: z.boolean().default(true),
+      warmth: z.number().gte(-30).lte(30).default(0),
+    }),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductStudioControllerDescribeData = z.object({
+  body: z.object({
+    name: z.string().min(2).max(200),
+    categoryName: z.optional(z.string().max(100)),
+    unit: z.optional(z.string().max(100)),
+    origin: z.optional(z.string().max(200)),
+    ingredients: z.optional(z.string().max(2000)),
+    conservation: z.optional(z.string().max(1000)),
+    labels: z.optional(z.array(z.string().max(100)).max(10)),
+    current: z.optional(z.string().max(2000)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductStudioControllerRestageData = z.object({
+  body: z.object({
+    url: z.url(),
+    productName: z.optional(z.string().max(200)),
+    consigne: z.optional(z.string().max(300)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zProductStudioControllerReviewData = z.object({
+  body: z.object({
+    url: z.url(),
+    productName: z.optional(z.string().max(200)),
+  }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
@@ -8333,6 +8472,23 @@ export const zAdminControllerGetProductsData = z.object({
   query: z.object({
     q: z.string(),
     supplierId: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zAdminControllerGetCatalogueData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    q: z.string(),
+    supplierId: z.string(),
+    categoryId: z.string(),
+    status: z.string(),
+    stock: z.string(),
+    promo: z.string(),
+    sortBy: z.string(),
+    sortDir: z.string(),
+    page: z.string(),
     limit: z.string(),
   }),
 });

@@ -595,6 +595,53 @@ export type UpdateCategory = {
 };
 
 /**
+ * EnhancePhoto
+ *
+ * Retoucher une photo de produit et enregistrer le résultat
+ */
+export type EnhancePhoto = {
+  url: string;
+  adjustments: PhotoAdjustments;
+};
+
+/**
+ * DescribeProduct
+ *
+ * Rédiger une description à partir des informations déjà saisies
+ */
+export type DescribeProduct = {
+  name: string;
+  categoryName?: string;
+  unit?: string;
+  origin?: string;
+  ingredients?: string;
+  conservation?: string;
+  labels?: Array<string>;
+  current?: string;
+};
+
+/**
+ * RestagePhoto
+ *
+ * Remettre le produit en scène en conservant le produit lui-même
+ */
+export type RestagePhoto = {
+  url: string;
+  productName?: string;
+  consigne?: string;
+};
+
+/**
+ * ReviewPhoto
+ *
+ * Demander un avis sur une photo de produit
+ */
+export type ReviewPhoto = {
+  url: string;
+  productName?: string;
+};
+
+/**
  * CreateProductUnit
  *
  * Data required to add a unit of sale
@@ -2332,6 +2379,19 @@ export type DeliveryFailReason =
   (typeof DeliveryFailReason)[keyof typeof DeliveryFailReason];
 
 /**
+ * PhotoAdjustments
+ *
+ * Retouches déterministes appliquées à une photo de produit
+ */
+export type PhotoAdjustments = {
+  trim: boolean;
+  light: boolean;
+  square: boolean;
+  sharpen: boolean;
+  warmth: number;
+};
+
+/**
  * PaginationQuerySchema
  *
  * Schema for pagination query
@@ -2866,6 +2926,12 @@ export type AiGenerateOptions = {
     langfuseOriginalPrompt?: string;
   };
   metadata?: {
+    [key: string]: unknown;
+  };
+  /**
+   * Options transmises telles quelles au fournisseur, par nom de fournisseur
+   */
+  providerOptions?: {
     [key: string]: unknown;
   };
 };
@@ -3679,6 +3745,12 @@ export type AiExampleControllerGenerateTextData = {
       metadata?: {
         [key: string]: unknown;
       };
+      /**
+       * Options transmises telles quelles au fournisseur, par nom de fournisseur
+       */
+      providerOptions?: {
+        [key: string]: unknown;
+      };
     };
   };
   path?: never;
@@ -3758,6 +3830,12 @@ export type AiExampleControllerGenerateObjectData = {
         langfuseOriginalPrompt?: string;
       };
       metadata?: {
+        [key: string]: unknown;
+      };
+      /**
+       * Options transmises telles quelles au fournisseur, par nom de fournisseur
+       */
+      providerOptions?: {
         [key: string]: unknown;
       };
     };
@@ -3881,6 +3959,12 @@ export type AiExampleControllerChatData = {
       metadata?: {
         [key: string]: unknown;
       };
+      /**
+       * Options transmises telles quelles au fournisseur, par nom de fournisseur
+       */
+      providerOptions?: {
+        [key: string]: unknown;
+      };
     };
     /**
      * ChatSchemaType
@@ -3967,6 +4051,12 @@ export type AiExampleControllerStreamTextData = {
       metadata?: {
         [key: string]: unknown;
       };
+      /**
+       * Options transmises telles quelles au fournisseur, par nom de fournisseur
+       */
+      providerOptions?: {
+        [key: string]: unknown;
+      };
     };
   };
   path?: never;
@@ -4040,6 +4130,12 @@ export type AiExampleControllerStreamObjectData = {
         langfuseOriginalPrompt?: string;
       };
       metadata?: {
+        [key: string]: unknown;
+      };
+      /**
+       * Options transmises telles quelles au fournisseur, par nom de fournisseur
+       */
+      providerOptions?: {
         [key: string]: unknown;
       };
     };
@@ -4157,6 +4253,12 @@ export type AiExampleControllerStreamChatData = {
       metadata?: {
         [key: string]: unknown;
       };
+      /**
+       * Options transmises telles quelles au fournisseur, par nom de fournisseur
+       */
+      providerOptions?: {
+        [key: string]: unknown;
+      };
     };
   };
   path?: never;
@@ -4229,6 +4331,12 @@ export type AiExampleUseCasesControllerUseCase1SingleGenerationData = {
         langfuseOriginalPrompt?: string;
       };
       metadata?: {
+        [key: string]: unknown;
+      };
+      /**
+       * Options transmises telles quelles au fournisseur, par nom de fournisseur
+       */
+      providerOptions?: {
         [key: string]: unknown;
       };
     };
@@ -7975,19 +8083,6 @@ export type ProductsControllerFindBySupplierResponses = {
   200: unknown;
 };
 
-export type ProductsControllerFindByIdData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/products/{id}";
-};
-
-export type ProductsControllerFindByIdResponses = {
-  200: unknown;
-};
-
 export type ProductsControllerCreateData = {
   /**
    * CreateProduct
@@ -8074,22 +8169,38 @@ export type ProductsControllerCreateData = {
       salt?: number;
     };
   };
-  path?: never;
+  path: {
+    supplierId: string;
+  };
   query?: never;
-  url: "/api/suppliers/me/products";
+  url: "/api/suppliers/{supplierId}/products";
 };
 
 export type ProductsControllerCreateResponses = {
   201: unknown;
 };
 
-export type ProductsControllerSoftDeleteData = {
+export type ProductsControllerFindByIdData = {
   body?: never;
   path: {
     id: string;
   };
   query?: never;
-  url: "/api/suppliers/me/products/{id}";
+  url: "/api/products/{id}";
+};
+
+export type ProductsControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type ProductsControllerSoftDeleteData = {
+  body?: never;
+  path: {
+    supplierId: string;
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/products/{id}";
 };
 
 export type ProductsControllerSoftDeleteResponses = {
@@ -8184,10 +8295,11 @@ export type ProductsControllerUpdateData = {
     photos?: Array<string>;
   };
   path: {
+    supplierId: string;
     id: string;
   };
   query?: never;
-  url: "/api/suppliers/me/products/{id}";
+  url: "/api/suppliers/{supplierId}/products/{id}";
 };
 
 export type ProductsControllerUpdateResponses = {
@@ -8204,10 +8316,11 @@ export type ProductsControllerUpdateStockData = {
     stock: number;
   };
   path: {
+    supplierId: string;
     id: string;
   };
   query?: never;
-  url: "/api/suppliers/me/products/{id}/stock";
+  url: "/api/suppliers/{supplierId}/products/{id}/stock";
 };
 
 export type ProductsControllerUpdateStockResponses = {
@@ -8217,10 +8330,11 @@ export type ProductsControllerUpdateStockResponses = {
 export type ProductsControllerClearPromotionData = {
   body?: never;
   path: {
+    supplierId: string;
     id: string;
   };
   query?: never;
-  url: "/api/suppliers/me/products/{id}/promotion";
+  url: "/api/suppliers/{supplierId}/products/{id}/promotion";
 };
 
 export type ProductsControllerClearPromotionResponses = {
@@ -8238,10 +8352,11 @@ export type ProductsControllerSetPromotionData = {
     expiresAt: Date;
   };
   path: {
+    supplierId: string;
     id: string;
   };
   query?: never;
-  url: "/api/suppliers/me/products/{id}/promotion";
+  url: "/api/suppliers/{supplierId}/products/{id}/promotion";
 };
 
 export type ProductsControllerSetPromotionResponses = {
@@ -8549,6 +8664,130 @@ export type RecommendationsControllerListData = {
 
 export type RecommendationsControllerListResponses = {
   200: unknown;
+};
+
+export type ProductStudioControllerPreviewData = {
+  /**
+   * EnhancePhoto
+   *
+   * Retoucher une photo de produit et enregistrer le résultat
+   */
+  body: {
+    url: string;
+    /**
+     * PhotoAdjustments
+     *
+     * Retouches déterministes appliquées à une photo de produit
+     */
+    adjustments: {
+      trim: boolean;
+      light: boolean;
+      square: boolean;
+      sharpen: boolean;
+      warmth: number;
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/products/studio/photos/preview";
+};
+
+export type ProductStudioControllerPreviewResponses = {
+  201: unknown;
+};
+
+export type ProductStudioControllerEnhanceData = {
+  /**
+   * EnhancePhoto
+   *
+   * Retoucher une photo de produit et enregistrer le résultat
+   */
+  body: {
+    url: string;
+    /**
+     * PhotoAdjustments
+     *
+     * Retouches déterministes appliquées à une photo de produit
+     */
+    adjustments: {
+      trim: boolean;
+      light: boolean;
+      square: boolean;
+      sharpen: boolean;
+      warmth: number;
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/products/studio/photos/enhance";
+};
+
+export type ProductStudioControllerEnhanceResponses = {
+  201: unknown;
+};
+
+export type ProductStudioControllerDescribeData = {
+  /**
+   * DescribeProduct
+   *
+   * Rédiger une description à partir des informations déjà saisies
+   */
+  body: {
+    name: string;
+    categoryName?: string;
+    unit?: string;
+    origin?: string;
+    ingredients?: string;
+    conservation?: string;
+    labels?: Array<string>;
+    current?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/products/studio/description";
+};
+
+export type ProductStudioControllerDescribeResponses = {
+  201: unknown;
+};
+
+export type ProductStudioControllerRestageData = {
+  /**
+   * RestagePhoto
+   *
+   * Remettre le produit en scène en conservant le produit lui-même
+   */
+  body: {
+    url: string;
+    productName?: string;
+    consigne?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/products/studio/photos/restage";
+};
+
+export type ProductStudioControllerRestageResponses = {
+  201: unknown;
+};
+
+export type ProductStudioControllerReviewData = {
+  /**
+   * ReviewPhoto
+   *
+   * Demander un avis sur une photo de produit
+   */
+  body: {
+    url: string;
+    productName?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/products/studio/photos/review";
+};
+
+export type ProductStudioControllerReviewResponses = {
+  201: unknown;
 };
 
 export type HomeControllerListData = {
@@ -10146,6 +10385,28 @@ export type AdminControllerGetProductsData = {
 };
 
 export type AdminControllerGetProductsResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetCatalogueData = {
+  body?: never;
+  path?: never;
+  query: {
+    q: string;
+    supplierId: string;
+    categoryId: string;
+    status: string;
+    stock: string;
+    promo: string;
+    sortBy: string;
+    sortDir: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/catalogue";
+};
+
+export type AdminControllerGetCatalogueResponses = {
   200: unknown;
 };
 

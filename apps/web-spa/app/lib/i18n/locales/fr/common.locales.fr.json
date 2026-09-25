@@ -154,6 +154,7 @@
     "banners": "Bannières",
     "catalogue": "Catalogue",
     "categories": "Catégories",
+    "allProducts": "Tous les produits",
     "dashboard": "Tableau de bord",
     "groups": {
       "sales": "Ventes",
@@ -202,6 +203,93 @@
     "deleteSuccess": "Produit supprimé",
     "deleteError": "Erreur lors de la suppression",
     "currency": "FCFA",
+    "scope": {
+      "onBehalf": "Vous travaillez sur le catalogue de {{shop}}",
+      "onBehalfHint": "Chaque modification est enregistrée au nom d'eBio, pas au nom de la boutique.",
+      "leave": "Quitter cette boutique",
+      "chooseTitle": "Choisissez une boutique",
+      "chooseHint": "Le studio ouvre le catalogue de la boutique sélectionnée.",
+      "pickerPlaceholder": "Aucune boutique sélectionnée",
+      "pickerSearch": "Rechercher une boutique…",
+      "pickerEmpty": "Aucune boutique trouvée",
+      "notValidated": "Boutique non validée — ses produits ne sont pas visibles des acheteurs",
+      "emptyTitle": "Aucune boutique sélectionnée",
+      "emptyDescription": "Sélectionnez une boutique ci-dessus pour ouvrir son catalogue et modifier ses produits.",
+      "shopTitle": "Catalogue de la boutique",
+      "shopDescription": "Gérez les produits et l'inventaire de cette boutique"
+    },
+    "photoStudio": {
+      "open": "Retoucher cette photo",
+      "title": "Retoucher la photo",
+      "description": "Les réglages n'agissent que sur la lumière et le cadrage de la photo prise. Rien n'est ajouté : l'acheteur doit recevoir ce qu'il a vu.",
+      "before": "Originale",
+      "after": "Retouchée",
+      "keep": "Remplacer la photo",
+      "replaced": "Photo remplacée. L'originale reste conservée.",
+      "previewError": "L'aperçu n'a pas pu être calculé",
+      "saveError": "La photo retouchée n'a pas pu être enregistrée",
+      "reviewError": "L'analyse n'a pas abouti",
+      "reviewTitle": "Avis sur la photo",
+      "reviewAction": "Analyser",
+      "reviewHint": "L'analyse lit la photo et dit ce qu'un acheteur lui reprocherait. Elle ne modifie rien.",
+      "noIssue": "Rien à signaler : cette photo est publiable telle quelle.",
+      "note": "{{note}}/5",
+      "toggles": {
+        "trim": {
+          "label": "Rogner les marges",
+          "hint": "Supprime le vide autour du produit pour qu'il remplisse la vignette."
+        },
+        "light": {
+          "label": "Corriger la lumière",
+          "hint": "Rattrape une photo terne ou prise en intérieur."
+        },
+        "square": {
+          "label": "Format carré",
+          "hint": "Complète en blanc sans rien couper, pour que la grille s'aligne."
+        },
+        "sharpen": {
+          "label": "Renforcer la netteté",
+          "hint": "Un léger piqué. Ne rattrape pas une photo réellement floue."
+        },
+        "warmth": {
+          "label": "Chaleur et couleurs",
+          "hint": "Léger ajustement, volontairement borné."
+        }
+      },
+      "issues": {
+        "FLOU": "Flou",
+        "SOMBRE": "Trop sombre",
+        "FOND": "Fond encombré",
+        "CADRAGE": "Cadrage",
+        "REFLET": "Reflets",
+        "TEXTE": "Texte incrusté",
+        "MULTIPLE": "Plusieurs produits",
+        "HORS_SUJET": "Hors sujet",
+        "AUTRE": "À revoir"
+      },
+      "reviewPending": "Lecture de la photo en cours… une dizaine de secondes.",
+      "restaged": "Remise en scène",
+      "restageTitle": "Mise en scène (IA)",
+      "restageAction": "Remettre en scène",
+      "restageHint": "L'IA redessine tout ce qui entoure le produit : fond, lumière, ombre. Le produit lui-même doit rester identique — c'est vérifié juste après, et ce n'est pas garanti. Comparez les deux images avant de publier. Comptez jusqu'à une minute.",
+      "restagePlaceholder": "Ambiance souhaitée (facultatif) : fond bois clair, lumière du matin…",
+      "restagePending": "Mise en scène en cours… jusqu'à une minute.",
+      "restageDiscard": "Revenir à la retouche",
+      "restageError": "La mise en scène n'a pas abouti",
+      "fidelityOk": "Vérification : le produit est resté identique.",
+      "fidelityWarning": "Le produit a changé. Ne publiez pas cette image telle quelle.",
+      "fidelityAccept": "J'ai comparé les deux images et je veux quand même utiliser celle-ci.",
+      "gaps": {
+        "TEXTE_AJOUTE": "Texte ajouté",
+        "ETIQUETTE_MODIFIEE": "Étiquette modifiée",
+        "PRODUIT_DIFFERENT": "Produit différent",
+        "QUANTITE_DIFFERENTE": "Quantité différente",
+        "OBJET_AJOUTE": "Objet ajouté",
+        "COULEUR_DIFFERENTE": "Couleur différente",
+        "INDETERMINE": "Vérification impossible",
+        "AUTRE": "Écart"
+      }
+    },
     "empty": {
       "title": "Aucun produit",
       "description": "Commencez par ajouter votre premier produit à votre catalogue."
@@ -268,7 +356,9 @@
       "photoMoveRight": "Déplacer vers la droite",
       "promotionPriceRequired": "Veuillez saisir un prix promotionnel valide",
       "promotionPriceTooHigh": "Le prix promotionnel doit être inférieur au prix unitaire",
-      "promotionExpiryRequired": "Veuillez choisir une date d'expiration"
+      "promotionExpiryRequired": "Veuillez choisir une date d'expiration",
+      "draftDescription": "Rédiger avec l'assistant",
+      "draftDescriptionError": "La description n'a pas pu être rédigée"
     },
     "units": {
       "kg": "Kilogramme",
@@ -879,6 +969,39 @@
         "promoCompensation": "Compensation promo eBio"
       }
     },
+    "products": {
+      "title": "Tous les produits",
+      "description": "Le catalogue de toutes les boutiques, filtrable",
+      "searchPlaceholder": "Rechercher un produit ou une boutique…",
+      "empty": "Aucun produit ne correspond à ces filtres.",
+      "edit": "Modifier ce produit",
+      "allShops": "Toutes les boutiques",
+      "clearShop": "Retirer le filtre boutique",
+      "allCategories": "Toutes les catégories",
+      "allStatuses": "Tous les statuts",
+      "allStock": "Tous les stocks",
+      "onlyPromotions": "En promotion",
+      "shopNotValidated": "Boutique non validée",
+      "columns": {
+        "name": "Produit",
+        "category": "Catégorie",
+        "shop": "Boutique",
+        "price": "Prix",
+        "stock": "Stock",
+        "status": "Statut",
+        "created": "Ajouté le"
+      },
+      "status": {
+        "ACTIVE": "En vente",
+        "OUT_OF_STOCK": "Rupture",
+        "HIDDEN": "Masqué"
+      },
+      "stock": {
+        "out": "En rupture",
+        "low": "Stock bas",
+        "in": "En stock"
+      }
+    },
     "promotions": {
       "title": "Promotions",
       "dialogTitle": "Promotions — {{name}}",
@@ -1322,6 +1445,7 @@
         "noOpeningHours": "Aucun horaire renseigné.",
         "products": {
           "title": "Produits",
+          "openStudio": "Gérer le catalogue",
           "empty": "Aucun produit.",
           "notValidatedHint": "Le catalogue n'est visible qu'une fois la boutique validée.",
           "columns": {

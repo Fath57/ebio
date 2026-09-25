@@ -154,6 +154,7 @@
     "banners": "Banners",
     "catalogue": "Catalogue",
     "categories": "Categories",
+    "allProducts": "All products",
     "dashboard": "Dashboard",
     "groups": {
       "sales": "Sales",
@@ -202,6 +203,93 @@
     "deleteSuccess": "Product deleted",
     "deleteError": "Failed to delete product",
     "currency": "FCFA",
+    "scope": {
+      "onBehalf": "You are working on {{shop}}'s catalogue",
+      "onBehalfHint": "Every change is recorded under eBio's name, not the shop's.",
+      "leave": "Leave this shop",
+      "chooseTitle": "Choose a shop",
+      "chooseHint": "The studio opens the catalogue of the selected shop.",
+      "pickerPlaceholder": "No shop selected",
+      "pickerSearch": "Search for a shop…",
+      "pickerEmpty": "No shop found",
+      "notValidated": "Shop not validated — its products are not visible to buyers",
+      "emptyTitle": "No shop selected",
+      "emptyDescription": "Select a shop above to open its catalogue and edit its products.",
+      "shopTitle": "Shop catalogue",
+      "shopDescription": "Manage this shop’s products and inventory"
+    },
+    "photoStudio": {
+      "open": "Retouch this photo",
+      "title": "Retouch the photo",
+      "description": "The settings only act on the light and framing of the photo that was taken. Nothing is added: the buyer must receive what they saw.",
+      "before": "Original",
+      "after": "Retouched",
+      "keep": "Replace the photo",
+      "replaced": "Photo replaced. The original is kept.",
+      "previewError": "The preview could not be rendered",
+      "saveError": "The retouched photo could not be saved",
+      "reviewError": "The review failed",
+      "reviewTitle": "Photo review",
+      "reviewAction": "Review",
+      "reviewHint": "The review reads the photo and says what a buyer would hold against it. It changes nothing.",
+      "noIssue": "Nothing to report: this photo can be published as is.",
+      "note": "{{note}}/5",
+      "toggles": {
+        "trim": {
+          "label": "Trim the margins",
+          "hint": "Removes the empty space around the product so it fills the thumbnail."
+        },
+        "light": {
+          "label": "Fix the light",
+          "hint": "Rescues a dull or indoor shot."
+        },
+        "square": {
+          "label": "Square format",
+          "hint": "Pads with white without cropping, so the grid lines up."
+        },
+        "sharpen": {
+          "label": "Sharpen",
+          "hint": "A touch of definition. It will not rescue a genuinely blurry photo."
+        },
+        "warmth": {
+          "label": "Warmth and colours",
+          "hint": "A slight adjustment, deliberately bounded."
+        }
+      },
+      "issues": {
+        "FLOU": "Blurry",
+        "SOMBRE": "Too dark",
+        "FOND": "Cluttered background",
+        "CADRAGE": "Framing",
+        "REFLET": "Reflections",
+        "TEXTE": "Text overlay",
+        "MULTIPLE": "Several products",
+        "HORS_SUJET": "Off subject",
+        "AUTRE": "To review"
+      },
+      "reviewPending": "Reading the photo… about ten seconds.",
+      "restaged": "Restaged",
+      "restageTitle": "Restaging (AI)",
+      "restageAction": "Restage",
+      "restageHint": "The AI redraws everything around the product: background, light, shadow. The product itself must stay identical — that is checked right after, and it is not guaranteed. Compare both images before publishing. Allow up to a minute.",
+      "restagePlaceholder": "Desired setting (optional): light wood background, morning light…",
+      "restagePending": "Restaging… up to a minute.",
+      "restageDiscard": "Back to the retouch",
+      "restageError": "The restaging failed",
+      "fidelityOk": "Check: the product stayed identical.",
+      "fidelityWarning": "The product changed. Do not publish this image as is.",
+      "fidelityAccept": "I compared both images and want to use this one anyway.",
+      "gaps": {
+        "TEXTE_AJOUTE": "Text added",
+        "ETIQUETTE_MODIFIEE": "Label changed",
+        "PRODUIT_DIFFERENT": "Different product",
+        "QUANTITE_DIFFERENTE": "Different quantity",
+        "OBJET_AJOUTE": "Object added",
+        "COULEUR_DIFFERENTE": "Different colour",
+        "INDETERMINE": "Check failed",
+        "AUTRE": "Divergence"
+      }
+    },
     "empty": {
       "title": "No products",
       "description": "Start by adding your first product to your catalogue."
@@ -268,7 +356,9 @@
       "photoMoveRight": "Move right",
       "promotionPriceRequired": "Please enter a valid promotional price",
       "promotionPriceTooHigh": "The promotional price must be lower than the unit price",
-      "promotionExpiryRequired": "Please choose an expiry date"
+      "promotionExpiryRequired": "Please choose an expiry date",
+      "draftDescription": "Draft with the assistant",
+      "draftDescriptionError": "The description could not be drafted"
     },
     "units": {
       "kg": "Kilogram",
@@ -879,6 +969,39 @@
         "promoCompensation": "eBio promo compensation"
       }
     },
+    "products": {
+      "title": "All products",
+      "description": "Every shop's catalogue, filterable",
+      "searchPlaceholder": "Search a product or a shop…",
+      "empty": "No product matches these filters.",
+      "edit": "Edit this product",
+      "allShops": "All shops",
+      "clearShop": "Clear the shop filter",
+      "allCategories": "All categories",
+      "allStatuses": "All statuses",
+      "allStock": "All stock levels",
+      "onlyPromotions": "On promotion",
+      "shopNotValidated": "Shop not validated",
+      "columns": {
+        "name": "Product",
+        "category": "Category",
+        "shop": "Shop",
+        "price": "Price",
+        "stock": "Stock",
+        "status": "Status",
+        "created": "Added on"
+      },
+      "status": {
+        "ACTIVE": "On sale",
+        "OUT_OF_STOCK": "Out of stock",
+        "HIDDEN": "Hidden"
+      },
+      "stock": {
+        "out": "Out of stock",
+        "low": "Low stock",
+        "in": "In stock"
+      }
+    },
     "promotions": {
       "title": "Promotions",
       "dialogTitle": "Promotions — {{name}}",
@@ -1322,6 +1445,7 @@
         "noOpeningHours": "No opening hours set.",
         "products": {
           "title": "Products",
+          "openStudio": "Manage catalogue",
           "empty": "No products.",
           "notValidatedHint": "The catalogue is only visible once the shop is validated.",
           "columns": {

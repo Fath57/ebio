@@ -19,11 +19,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@boilerstone/ui/components/primitives/select'
+import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowLeft, ArrowRight, Check, ChevronDown, Plus, Trash2 } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Check, ChevronDown, Loader2, Plus, Sparkles, Trash2 } from 'lucide-react'
 import * as React from 'react'
 import { useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
@@ -42,6 +43,7 @@ import {
   NUTRITION_BASES,
   nutritionPerBasis,
 } from '../utils/composition'
+import { describeProduct } from '../utils/photo-studio-queries'
 
 // ---------- Schema ----------
 
@@ -215,6 +217,42 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
     name: 'variants',
   })
 
+  const [drafting, setDrafting] = useState(false)
+
+  /**
+   * Fills the description from what has already been typed.
+   *
+   * The result lands in the field as a proposal and is marked dirty: the shop
+   * reads it, edits it, and only then saves. Nothing is written on its behalf.
+   */
+  async function handleDraftDescription() {
+    const name = form.watch('name')?.trim()
+    if (!name) {
+      return
+    }
+    setDrafting(true)
+    try {
+      const values = form.getValues()
+      const description = await describeProduct({
+        name,
+        categoryName: categories.find(category => category.id === values.categoryId)?.name,
+        unit: units.find(unit => unit.code === values.unit)?.label,
+        origin: values.origin ?? undefined,
+        ingredients: values.ingredients ?? undefined,
+        conservation: values.conservation ?? undefined,
+        labels: values.labels?.map(code => labelName(t, code)),
+        current: values.description ?? undefined,
+      })
+      form.setValue('description', description, { shouldDirty: true })
+    }
+    catch {
+      toast.error(t('catalog.form.draftDescriptionError'))
+    }
+    finally {
+      setDrafting(false)
+    }
+  }
+
   const hasPromotion = form.watch('hasPromotion')
   const pricePerUnit = form.watch('pricePerUnit')
   const keptPhotos = form.watch('photos') ?? []
@@ -341,7 +379,21 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
               name="description"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>{t('catalog.form.description')}</FormLabel>
+                  <div className="flex items-center justify-between gap-2">
+                    <FormLabel>{t('catalog.form.description')}</FormLabel>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      disabled={drafting || !form.watch('name')?.trim()}
+                      onClick={handleDraftDescription}
+                    >
+                      {drafting
+                        ? <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                        : <Sparkles className="mr-2 h-3.5 w-3.5" />}
+                      {t('catalog.form.draftDescription')}
+                    </Button>
+                  </div>
                   <FormControl>
                     <Textarea {...field} placeholder={t('catalog.form.descriptionPlaceholder')} rows={3} maxLength={2000} />
                   </FormControl>
@@ -441,6 +493,7 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
               onKeptUrlsChange={urls => form.setValue('photos', urls, { shouldDirty: true })}
               onMediaIdsChange={ids => form.setValue('mediaIds', ids, { shouldDirty: true })}
               max={3}
+              productName={form.watch('name')}
             />
           </div>
         )}

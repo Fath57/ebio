@@ -1,6 +1,6 @@
 import type { MediaContext } from '../hooks/use-media-upload'
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import { ImagePlus, Loader2, X } from 'lucide-react'
+import { ImagePlus, Loader2, Wand2, X } from 'lucide-react'
 import * as React from 'react'
 import { useTranslation } from 'react-i18next'
 import { useMediaUpload } from '../hooks/use-media-upload'
@@ -20,6 +20,18 @@ interface ImageUploadProps {
   onUrlChange?: (url: string | undefined) => void
   /** Initial single URL (for edit mode, single image) */
   initialUrl?: string
+  /**
+   * Offers a retouch on a photo that was just uploaded.
+   *
+   * The parent opens whatever editor it wants and calls `replace` with the
+   * result; the swap of both the preview and the media id happens here, where
+   * the list actually lives. Without this prop no retouch button is shown, so
+   * the uploads that have no editor behind them are unaffected.
+   */
+  onRetouchRequest?: (
+    photo: { mediaId: string, url: string },
+    replace: (next: { mediaId: string, url: string }) => void,
+  ) => void
 }
 
 const sizeClasses = {
@@ -36,10 +48,18 @@ export function ImageUpload({
   onMediaIdsChange,
   onUrlChange,
   initialUrl,
+  onRetouchRequest,
 }: ImageUploadProps) {
   const { t } = useTranslation()
-  const { uploading, uploadedMedia, uploadFile, removeMedia } = useMediaUpload({ context })
+  const { uploading, uploadedMedia, uploadFile, removeMedia, setUploadedMedia } = useMediaUpload({ context })
   const [singleUrl, setSingleUrl] = React.useState<string | undefined>(initialUrl)
+
+  // A retouch finishes long after the click that started it: the callback must
+  // read the list as it is then, not as it was when the dialog opened.
+  const mediaRef = React.useRef(uploadedMedia)
+  React.useEffect(() => {
+    mediaRef.current = uploadedMedia
+  }, [uploadedMedia])
 
   const isSingleMode = max === 1 && !!onUrlChange
   const totalImages = (existingUrls?.length ?? 0) + uploadedMedia.length + (isSingleMode && singleUrl ? 1 : 0)
@@ -79,6 +99,21 @@ export function ImageUpload({
     onUrlChange?.(undefined)
   }
 
+  function handleRetouch(photo: { mediaId: string, publicUrl: string | null }) {
+    if (!photo.publicUrl) {
+      return
+    }
+    onRetouchRequest?.({ mediaId: photo.mediaId, url: photo.publicUrl }, (next) => {
+      const updated = mediaRef.current.map(item => (
+        item.mediaId === photo.mediaId
+          ? { mediaId: next.mediaId, publicUrl: next.url, status: 'READY' }
+          : item
+      ))
+      setUploadedMedia(updated)
+      onMediaIdsChange?.(updated.map(item => item.mediaId))
+    })
+  }
+
   return (
     <div className="flex flex-wrap gap-3">
       {/* Existing photos (edit mode, multi) */}
@@ -110,6 +145,19 @@ export function ImageUpload({
           {m.publicUrl
             ? <img src={m.publicUrl} alt="" className="h-full w-full object-cover" />
             : <div className="flex h-full items-center justify-center bg-muted text-xs"><Loader2 className="h-4 w-4 animate-spin" /></div>}
+          {onRetouchRequest && m.publicUrl && (
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              aria-label={t('catalog.photoStudio.open')}
+              title={t('catalog.photoStudio.open')}
+              className="absolute left-1 top-1 h-6 w-6 rounded-full bg-black/50 text-white hover:bg-black/70"
+              onClick={() => handleRetouch(m)}
+            >
+              <Wand2 className="h-3.5 w-3.5" />
+            </Button>
+          )}
           <Button
             type="button"
             variant="ghost"

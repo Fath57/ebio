@@ -24,10 +24,16 @@ export interface ModelConfig {
 }
 
 export const modelConfigBase = {
+  /**
+   * The house default: anything that does not name a model lands here.
+   *
+   * The assistant is not affected — it names its model through
+   * `ASSISTANT_MODEL`, which keeps its own value.
+   */
   OPENAI_GPT_5_NANO: {
     modelString: 'gpt-5-nano-2025-08-07',
     provider: 'openai' as const satisfies ProviderName,
-    isDefault: false,
+    isDefault: true,
   },
   GOOGLE_GEMINI_3_FLASH: {
     modelString: 'gemini-3-flash-preview',
