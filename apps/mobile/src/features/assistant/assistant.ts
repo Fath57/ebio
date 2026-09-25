@@ -78,6 +78,9 @@ export function streamTurn(
   const request = new XMLHttpRequest()
   let consumed = 0
   let cancelled = false
+  // A turn is only finished when the server says so. Without this, a reply
+  // that stops short leaves the screen searching for ever.
+  let finished = false
 
   function drain(text: string): void {
     // An event is complete once the blank line that ends it has arrived:
@@ -88,7 +91,11 @@ export function streamTurn(
       consumed = boundary + 2
       if (raw.startsWith('data: ')) {
         try {
-          onEvent(JSON.parse(raw.slice(6)) as AssistantStreamEvent)
+          const event = JSON.parse(raw.slice(6)) as AssistantStreamEvent
+          if (event.type === 'done' || event.type === 'error') {
+            finished = true
+          }
+          onEvent(event)
         }
         catch {
           // One unreadable event must not take the conversation down.
@@ -112,13 +119,34 @@ export function streamTurn(
     }
 
     request.onprogress = () => drain(request.responseText)
+
+    /**
+     * What to say when the answer never came.
+     *
+     * A refused request carries no event at all, so draining it finds nothing
+     * and the screen would wait for ever. The status is read here because
+     * `onerror` only fires when the transport itself fails — an HTTP 401 is a
+     * perfectly successful request that happens to say no.
+     */
     request.onload = () => {
       drain(request.responseText)
+      if (cancelled || finished) {
+        return
+      }
+      onEvent({
+        type: 'error',
+        message: request.status === 401
+          ? 'Votre session a expiré. Reconnectez-vous pour continuer.'
+          : 'La réponse s\'est arrêtée en chemin. Réessayez ?',
+      })
     }
-    request.onerror = () => onEvent({
-      type: 'error',
-      message: 'La connexion s\'est interrompue.',
-    })
+
+    request.onerror = () => {
+      if (cancelled || finished) {
+        return
+      }
+      onEvent({ type: 'error', message: 'La connexion s\'est interrompue.' })
+    }
 
     request.send(JSON.stringify(sessionId ? { sessionId, message } : { message }))
   })()
