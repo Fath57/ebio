@@ -209,6 +209,30 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
         return
       }
 
+      // Asked for before anything else is set up. Android grants nothing by
+      // declaring a permission in the manifest: without this the microphone
+      // opens onto silence, and a conversation in which one is never heard is
+      // harder to diagnose than one that says plainly it may not listen.
+      try {
+        const allowed = await player.current.requestPermissionsAsync()
+        if (!allowed.granted) {
+          if (alive.current) {
+            setError(allowed.canAskAgain === false
+              ? 'Le micro est refusé pour eBio. Autorisez-le dans les réglages du téléphone.'
+              : 'Sans le micro, elle ne peut pas vous entendre.')
+            setState('off')
+          }
+          return
+        }
+      }
+      catch {
+        if (alive.current) {
+          setError('Le micro n\'est pas disponible sur cet appareil.')
+          setState('off')
+        }
+        return
+      }
+
       const token = await getChatToken()
       if (!token) {
         if (alive.current) {
