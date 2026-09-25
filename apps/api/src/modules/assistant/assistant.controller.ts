@@ -2,11 +2,14 @@ import type { Response } from 'express'
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import type { AssistantCartLineInput, AssistantSpeakInput, AssistantTurnInput } from './contracts/assistant.contract'
 import { Buffer } from 'node:buffer'
+import { Readable } from 'node:stream'
+import { pipeline } from 'node:stream/promises'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { BadRequestException, Controller, Param, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { AssistantService } from './assistant.service'
 import { AssistantVoiceService } from './assistant.voice'
 import { assistantCartLineSchema, assistantSpeakSchema, assistantTurnSchema } from './contracts/assistant.contract'
@@ -23,6 +26,7 @@ export class AssistantController {
   constructor(
     private readonly assistantService: AssistantService,
     private readonly voice: AssistantVoiceService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   @Post('turn')
@@ -133,9 +137,12 @@ export class AssistantController {
     @TypedBody(assistantSpeakSchema) body: AssistantSpeakInput,
     @Res() res: Response,
   ): Promise<void> {
-    const audio = await this.voice.speak(body.texte)
+    const { voiceSpeed } = await this.platformSettings.getAssistantIdentity()
+    const audio = await this.voice.speak(body.texte, voiceSpeed)
     res.setHeader('Content-Type', 'audio/mpeg')
     res.setHeader('Cache-Control', 'no-store')
-    res.send(audio)
+    // Piped rather than collected: holding the whole file here before sending
+    // it doubled the wait before the first sound came out of the phone.
+    await pipeline(Readable.fromWeb(audio as never), res)
   }
 }

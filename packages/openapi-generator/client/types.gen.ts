@@ -91,10 +91,13 @@ export type BannerOffers = {
 /**
  * AssistantSetting
  *
- * Ouvrir ou fermer l'assistant conversationnel
+ * Ouvrir ou fermer l'assistant conversationnel, et régler son identité
  */
 export type AssistantSetting = {
   enabled: boolean;
+  name?: string;
+  avatarUrl?: string | null;
+  voiceSpeed?: number;
 };
 
 /**
@@ -2248,6 +2251,7 @@ export const MediaContext = {
   BANNER_IMAGE: "BANNER_IMAGE",
   ANNOUNCEMENT_IMAGE: "ANNOUNCEMENT_IMAGE",
   DELIVERY_PROOF: "DELIVERY_PROOF",
+  ASSISTANT_AVATAR: "ASSISTANT_AVATAR",
 } as const;
 
 /**
@@ -4923,10 +4927,13 @@ export type AdminAssistantControllerUpdateData = {
   /**
    * AssistantSetting
    *
-   * Ouvrir ou fermer l'assistant conversationnel
+   * Ouvrir ou fermer l'assistant conversationnel, et régler son identité
    */
   body: {
     enabled: boolean;
+    name?: string;
+    avatarUrl?: string | null;
+    voiceSpeed?: number;
   };
   path?: never;
   query?: never;
@@ -5494,7 +5501,8 @@ export type MediaControllerInitiateUploadData = {
       | "CATEGORY_IMAGE"
       | "BANNER_IMAGE"
       | "ANNOUNCEMENT_IMAGE"
-      | "DELIVERY_PROOF";
+      | "DELIVERY_PROOF"
+      | "ASSISTANT_AVATAR";
     entityType?: string;
     entityId?: string;
     parts: number;

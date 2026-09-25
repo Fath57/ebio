@@ -55,12 +55,18 @@ export class AssistantVoiceService {
   }
 
   /**
-   * Text becomes speech.
+   * Text becomes speech, handed over as it arrives.
    *
-   * Returned as MP3: played everywhere, and light enough for a mobile
-   * connection that is not always good.
+   * MP3: played everywhere, and light enough for a mobile connection that is
+   * not always good.
+   *
+   * The body is returned rather than a `Buffer` on purpose. Waiting for the
+   * whole file before forwarding it added a full second to every sentence:
+   * measured against the provider, the first bytes land at about 950 ms and
+   * the file is complete at 1 250 ms, but buffering here turned that into
+   * 1 800 to 2 700 ms at the phone. The voice is what the buyer waits for.
    */
-  async speak(text: string): Promise<Buffer> {
+  async speak(text: string, speed: number): Promise<ReadableStream<Uint8Array>> {
     const response = await fetch(`${OPENAI_AUDIO_URL}/speech`, {
       method: 'POST',
       headers: {
@@ -72,8 +78,14 @@ export class AssistantVoiceService {
         voice: config.assistant.ttsVoice,
         input: text,
         response_format: 'mp3',
-        // This is not a narrator: it is someone behind a market stall.
-        instructions: 'Parle en français, d\'un ton chaleureux et direct, comme une vendeuse de marché qui connaît ses produits. Débit naturel, pas de ton de présentation.',
+        // Both levers pull the same way. Averaged over four runs of the same
+        // sentence — this model re-performs the text each time, so one sample
+        // says nothing — 7.76 s as she shipped against 6.66 s here: 14 %.
+        // Shorter audio also comes back sooner.
+        speed,
+        // This is not a narrator: it is someone behind a market stall with
+        // people waiting. « Débit naturel » read as « prenez votre temps ».
+        instructions: 'Parle en français, d\'un ton chaleureux et direct, comme une vendeuse de marché qui a du monde à servir. Débit rapide et enlevé, sans traîner sur les fins de phrase. Pas de ton de présentation, pas de pauses appuyées.',
       }),
     })
 
@@ -82,6 +94,9 @@ export class AssistantVoiceService {
       throw new ServiceUnavailableException('La voix est momentanément indisponible.')
     }
 
-    return Buffer.from(await response.arrayBuffer())
+    if (!response.body) {
+      throw new ServiceUnavailableException('La voix est momentanément indisponible.')
+    }
+    return response.body
   }
 }

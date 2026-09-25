@@ -1,4 +1,5 @@
 import type PostHog from 'posthog-react-native'
+import { requireOptionalNativeModule } from 'expo-modules-core'
 import { APP_VARIANT } from './app-variant'
 
 /**
@@ -48,6 +49,34 @@ let client: PostHog | null = null
 let started = false
 let allowed = true
 
+/**
+ * The native modules the library reads on its way up.
+ *
+ * They are declared optional by the package, but "optional" means the JS
+ * package may be absent — not that its native half may be. Each of these is
+ * installed in `node_modules` and missing from a binary that was built before
+ * they were added, and that is exactly the case that took the app down.
+ */
+const NATIVE_MODULES = ['ExpoApplication', 'ExpoDevice', 'ExpoLocalization']
+
+/**
+ * Is there anything under the library to stand on?
+ *
+ * `requireOptionalNativeModule` answers `null` instead of throwing, so asking
+ * is free. Importing the library without them is not: evaluating its module
+ * graph fails, and the failure does not come back as a rejected promise that
+ * a `catch` could hold — it comes back as a startup error, and the app shows
+ * a black screen. Measured on a dev client built before PostHog was added.
+ */
+function nativeSideIsThere(): boolean {
+  try {
+    return NATIVE_MODULES.every(name => requireOptionalNativeModule(name) !== null)
+  }
+  catch {
+    return false
+  }
+}
+
 /** Started once, lazily: an app that never measures never loads the library. */
 async function ensureClient(): Promise<PostHog | null> {
   if (!KEY || !allowed) {
@@ -57,6 +86,15 @@ async function ensureClient(): Promise<PostHog | null> {
     return client
   }
   started = true
+
+  // Asked before importing, never after: once the import has begun there is
+  // no catching what it breaks.
+  if (!nativeSideIsThere()) {
+    console.warn('[analytics] modules natifs absents de ce binaire : mesure désactivée. Reconstruire le client de développement pour la réactiver.')
+    client = null
+    return null
+  }
+
   try {
     const { default: PostHogClient } = await import('posthog-react-native')
     client = new PostHogClient(KEY, {
@@ -74,7 +112,7 @@ async function ensureClient(): Promise<PostHog | null> {
     return client
   }
   catch {
-    // A build without the native modules, or a bad key. Measuring is never
+    // A bad key, or anything else the library dislikes. Measuring is never
     // worth breaking the app for.
     client = null
     return null

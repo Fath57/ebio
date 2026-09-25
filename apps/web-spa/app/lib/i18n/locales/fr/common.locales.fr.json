@@ -1293,13 +1293,23 @@
         "error": "Impossible d’enregistrer le taux. Réessayez."
       },
       "assistant": {
-        "title": "Assita, l’assistante de courses",
-        "description": "Assita permet à un acheteur de faire ses courses en parlant. Chaque échange appelle un modèle payant : fermez-la si la dépense doit être contenue, ou si elle répond mal.",
-        "toggleLabel": "Ouvrir Assita aux acheteurs",
+        "title": "{{name}}, l’assistante de courses",
+        "description": "{{name}} permet à un acheteur de faire ses courses en parlant. Chaque échange appelle un modèle payant : fermez-la si la dépense doit être contenue, ou si elle répond mal.",
+        "toggleLabel": "Ouvrir {{name}} aux acheteurs",
         "stateOpen": "Ouverte : le bouton apparaît dans l'application et les conversations sont possibles.",
         "stateClosed": "Fermée : le bouton disparaît de l'application et toute conversation est refusée.",
         "saved": "Enregistré. Le changement s’applique dans la minute.",
-        "error": "Le changement n'a pas été enregistré."
+        "error": "Le changement n'a pas été enregistré.",
+        "nameLabel": "Son prénom",
+        "namePlaceholder": "Assita",
+        "nameHint": "Ce prénom entre dans ses propres instructions : elle le donne quand on le lui demande. Les conversations déjà ouvertes gardent l’ancien.",
+        "nameInvalid": "Lettres, espaces, apostrophes et traits d’union seulement, de 2 à 30 caractères.",
+        "avatarLabel": "Son portrait",
+        "avatarHint": "Affiché en haut de l’écran de conversation et pendant qu’elle parle.",
+        "avatarDefault": "Aucun portrait choisi : celui livré avec l’application est utilisé.",
+        "avatarReset": "Remettre le portrait d’origine",
+        "speedLabel": "Son débit de parole",
+        "speedHint": "Réglez à l’oreille. ×1 était son débit d’origine — jugé trop lent. Au-delà de ×1,25 elle commence à manger les fins de phrase."
       },
       "productReview": {
         "title": "Avis sur les produits",

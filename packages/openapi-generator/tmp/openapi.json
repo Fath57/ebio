@@ -3952,7 +3952,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Ouvrir ou fermer l'assistant conversationnel",
+          "description": "Ouvrir ou fermer l'assistant conversationnel, et régler son identité",
           "content": {
             "application/json": {
               "schema": {
@@ -3960,6 +3960,28 @@
                 "properties": {
                   "enabled": {
                     "type": "boolean"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 30,
+                    "pattern": "^[A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF][A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF '’-]*$"
+                  },
+                  "avatarUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "voiceSpeed": {
+                    "type": "number",
+                    "minimum": 0.8,
+                    "maximum": 1.4
                   }
                 },
                 "required": [
@@ -3967,7 +3989,7 @@
                 ],
                 "additionalProperties": false,
                 "title": "AssistantSetting",
-                "description": "Ouvrir ou fermer l'assistant conversationnel"
+                "description": "Ouvrir ou fermer l'assistant conversationnel, et régler son identité"
               }
             }
           }
@@ -5262,7 +5284,8 @@
                       "CATEGORY_IMAGE",
                       "BANNER_IMAGE",
                       "ANNOUNCEMENT_IMAGE",
-                      "DELIVERY_PROOF"
+                      "DELIVERY_PROOF",
+                      "ASSISTANT_AVATAR"
                     ],
                     "title": "MediaContext",
                     "description": "Contexte d'utilisation du média"
@@ -17438,6 +17461,28 @@
         "properties": {
           "enabled": {
             "type": "boolean"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 30,
+            "pattern": "^[A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF][A-Za-z\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u00FF '’-]*$"
+          },
+          "avatarUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "voiceSpeed": {
+            "type": "number",
+            "minimum": 0.8,
+            "maximum": 1.4
           }
         },
         "required": [
@@ -17445,7 +17490,7 @@
         ],
         "additionalProperties": false,
         "title": "AssistantSetting",
-        "description": "Ouvrir ou fermer l'assistant conversationnel"
+        "description": "Ouvrir ou fermer l'assistant conversationnel, et régler son identité"
       },
       "ProductReviewTiming": {
         "type": "object",
@@ -23232,7 +23277,8 @@
           "CATEGORY_IMAGE",
           "BANNER_IMAGE",
           "ANNOUNCEMENT_IMAGE",
-          "DELIVERY_PROOF"
+          "DELIVERY_PROOF",
+          "ASSISTANT_AVATAR"
         ],
         "title": "MediaContext",
         "description": "Contexte d'utilisation du média"

@@ -1293,13 +1293,23 @@
         "error": "Could not save the rate. Try again."
       },
       "assistant": {
-        "title": "Assita, the shopping assistant",
-        "description": "Assita lets a buyer shop by talking. Every exchange calls a paid model: close her to contain spending, or when she answers badly.",
-        "toggleLabel": "Open Assita to buyers",
-        "stateOpen": "Open: the button shows in the app and conversations are allowed.",
+        "title": "{{name}}, the shopping assistant",
+        "description": "{{name}} lets a buyer do their shopping by talking. Every exchange calls a paid model: close her if spending must be contained, or if she is answering badly.",
+        "toggleLabel": "Open {{name}} to buyers",
+        "stateOpen": "Open: the button appears in the app and conversations are possible.",
         "stateClosed": "Closed: the button disappears from the app and every conversation is refused.",
-        "saved": "Saved. The change applies within a minute.",
-        "error": "The change was not saved."
+        "saved": "Saved. The change applies within the minute.",
+        "error": "The change was not saved.",
+        "nameLabel": "Her first name",
+        "namePlaceholder": "Assita",
+        "nameHint": "This name goes into her own instructions: she gives it when asked. Conversations already open keep the old one.",
+        "nameInvalid": "Letters, spaces, apostrophes and hyphens only, 2 to 30 characters.",
+        "avatarLabel": "Her portrait",
+        "avatarHint": "Shown at the top of the conversation screen and while she speaks.",
+        "avatarDefault": "No portrait chosen: the one shipped with the app is used.",
+        "avatarReset": "Restore the original portrait",
+        "speedLabel": "Her speech rate",
+        "speedHint": "Tune it by ear. ×1 was her original pace — judged too slow. Past ×1.25 she starts clipping the ends of sentences."
       },
       "productReview": {
         "title": "Product reviews",

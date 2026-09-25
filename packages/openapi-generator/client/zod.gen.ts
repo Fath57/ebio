@@ -39,10 +39,19 @@ export const zBannerOffers = z.object({
 /**
  * AssistantSetting
  *
- * Ouvrir ou fermer l'assistant conversationnel
+ * Ouvrir ou fermer l'assistant conversationnel, et régler son identité
  */
 export const zAssistantSetting = z.object({
   enabled: z.boolean(),
+  name: z.optional(
+    z
+      .string()
+      .min(2)
+      .max(30)
+      .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ '’-]*$/),
+  ),
+  avatarUrl: z.optional(z.union([z.url(), z.null()])),
+  voiceSpeed: z.optional(z.number().gte(0.8).lte(1.4)),
 });
 
 /**
@@ -1979,6 +1988,7 @@ export const zMediaContext = z.enum([
   "BANNER_IMAGE",
   "ANNOUNCEMENT_IMAGE",
   "DELIVERY_PROOF",
+  "ASSISTANT_AVATAR",
 ]);
 
 /**
@@ -4610,6 +4620,15 @@ export const zAdminAssistantControllerGetData = z.object({
 export const zAdminAssistantControllerUpdateData = z.object({
   body: z.object({
     enabled: z.boolean(),
+    name: z.optional(
+      z
+        .string()
+        .min(2)
+        .max(30)
+        .regex(/^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ '’-]*$/),
+    ),
+    avatarUrl: z.optional(z.union([z.url(), z.null()])),
+    voiceSpeed: z.optional(z.number().gte(0.8).lte(1.4)),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -4983,6 +5002,7 @@ export const zMediaControllerInitiateUploadData = z.object({
       "BANNER_IMAGE",
       "ANNOUNCEMENT_IMAGE",
       "DELIVERY_PROOF",
+      "ASSISTANT_AVATAR",
     ]),
     entityType: z.optional(z.string()),
     entityId: z.optional(
