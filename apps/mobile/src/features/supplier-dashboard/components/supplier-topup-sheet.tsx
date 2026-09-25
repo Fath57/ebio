@@ -165,7 +165,7 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
           <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.title, { color: semantic.textPrimary }]}>Recharger mon portefeuille</Text>
             <Text style={[styles.hint, { color: semantic.textSecondary }]}>
-              {hint ?? 'Le paiement passe par FedaPay (Mobile Money ou carte). Le solde est crédité dès la confirmation.'}
+              {hint ?? 'Paiement par Mobile Money ou carte. Le solde est crédité dès la confirmation.'}
             </Text>
             <View style={styles.presetRow}>
               {presets.map(preset => (

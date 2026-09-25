@@ -1,5 +1,19 @@
 import { z } from 'zod'
 
+/**
+ * What a courier needs to find a door.
+ *
+ * One rule, stated once: the two order endpoints asked for three characters
+ * and ten, with two different wordings, so the same address was accepted on
+ * one path and refused on the other — which reads as an arbitrary rule rather
+ * than a requirement. "Cotonou" is a city, not an address.
+ */
+export const deliveryAddressSchema = z
+  .string()
+  .trim()
+  .min(10, 'Adresse trop courte : indiquez le quartier et un repère, par exemple « Fidjrossè, en face de la pharmacie »')
+  .max(500)
+
 export const orderStatusEnum = z.enum([
   'PENDING_PAYMENT',
   'PLACED',
@@ -43,7 +57,7 @@ export const createOrderSchema = z.object({
   supplierId: z.string().uuid(),
   pickupMode: pickupModeEnum,
   paymentMethod: paymentMethodEnum,
-  deliveryAddress: z.string().trim().min(3, 'Adresse de livraison trop courte : indiquez le quartier et un repère').max(500).optional(),
+  deliveryAddress: deliveryAddressSchema.optional(),
   deliveryLatitude: z.number().min(-90).max(90).optional(),
   deliveryLongitude: z.number().min(-180).max(180).optional(),
   deliverySlot: z.string().max(200).optional(),

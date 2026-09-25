@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { deliveryReasonEnum } from '../../settings/contracts/delivery-pricing.contract'
-import { orderItemInputSchema, paymentMethodEnum, pickupModeEnum } from './order.contract'
+import { deliveryAddressSchema, orderItemInputSchema, paymentMethodEnum, pickupModeEnum } from './order.contract'
 
 /**
  * The unified checkout: one cart spanning several shops, a single payment, N
@@ -83,7 +83,7 @@ export const checkoutPreviewResponseSchema = z.object({
 export const createCheckoutSchema = z.object({
   items: z.array(orderItemInputSchema).min(1, 'Le panier est vide'),
   pickupMode: pickupModeEnum,
-  deliveryAddress: z.string().trim().min(10, 'Indiquez le quartier et un repère').max(500).optional(),
+  deliveryAddress: deliveryAddressSchema.optional(),
   deliveryLatitude: z.number().min(-90).max(90).optional(),
   deliveryLongitude: z.number().min(-180).max(180).optional(),
   paymentMethod: paymentMethodEnum,

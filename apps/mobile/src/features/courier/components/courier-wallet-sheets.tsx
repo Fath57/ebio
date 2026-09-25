@@ -255,8 +255,8 @@ export function TopupSheet({ visible, onClose, debt, onSubmit }: TopupSheetProps
       <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Recharger mon portefeuille</Text>
       <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
         {debt > 0
-          ? `Vous devez ${debt.toLocaleString('fr-FR')} FCFA de commission eBio. Le paiement passe par FedaPay (Mobile Money ou carte).`
-          : 'Le paiement passe par FedaPay (Mobile Money ou carte). Le solde est crédité dès la confirmation.'}
+          ? `Vous devez ${debt.toLocaleString('fr-FR')} FCFA de commission eBio. Paiement par Mobile Money ou carte.`
+          : 'Paiement par Mobile Money ou carte. Le solde est crédité dès la confirmation.'}
       </Text>
       <View style={styles.presetRow}>
         {presets.map(preset => (

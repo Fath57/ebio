@@ -341,7 +341,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
           <View style={[styles.modalCard, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.modalTitle, { color: semantic.textPrimary }]}>Recharger mon portefeuille</Text>
             <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
-              Le paiement passe par FedaPay (Mobile Money ou carte). Le solde est crédité dès la confirmation.
+              Paiement par Mobile Money ou carte. Le solde est crédité dès la confirmation.
             </Text>
             <View style={styles.presetRow}>
               {TOPUP_PRESETS.map(preset => (

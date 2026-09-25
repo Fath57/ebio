@@ -446,6 +446,12 @@ export function CheckoutFlow({
     }
   }, [promoInput, basketItems, orderSummary.total])
 
+  // Said while typing rather than after the fact; empty is a separate case,
+  // handled by the button's own guard.
+  const addressTooShort = !isPickup
+    && deliveryAddress.trim().length > 0
+    && deliveryAddress.trim().length < MIN_ADDRESS_LENGTH
+
   const handleProceedToPayment = useCallback(async () => {
     const trimmedAddress = deliveryAddress.trim()
     // The button is disabled meanwhile; this guards the alert-driven re-entry.
@@ -457,7 +463,10 @@ export function CheckoutFlow({
       return
     }
     if (orderSummary.deliveryMode === 'DELIVERY' && trimmedAddress.length < MIN_ADDRESS_LENGTH) {
-      appAlert('Adresse trop courte', 'Indiquez le quartier et un repère (ex. en face de la pharmacie) pour que le livreur vous trouve.')
+      appAlert(
+        'Adresse de livraison incomplète',
+        'Ajoutez le quartier et un repère, par exemple « Fidjrossè, en face de la pharmacie ». Le livreur n\'a que ça pour vous trouver.',
+      )
       return
     }
     // One last chance to round out the basket, just before paying.
@@ -728,13 +737,28 @@ export function CheckoutFlow({
                   Adresse de livraison *
                 </Text>
                 <TextInput
-                  style={[styles.textInput, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
+                  style={[
+                    styles.textInput,
+                    {
+                      color: semantic.textPrimary,
+                      backgroundColor: semantic.bgSurface,
+                      borderColor: addressTooShort ? colors.coral[600] : semantic.borderNormal,
+                    },
+                  ]}
                   placeholder="Quartier, rue, repère (ex. en face de la pharmacie)"
                   placeholderTextColor={semantic.textTertiary}
                   value={deliveryAddress}
                   onChangeText={setDeliveryAddress}
                   multiline
                 />
+                {/* The requirement was only ever said once the button had been
+                    pressed, in a dialog that named no field. It belongs here,
+                    where it can be acted on. */}
+                <Text style={[styles.addressHint, { color: addressTooShort ? colors.coral[600] : semantic.textTertiary }]}>
+                  {addressTooShort
+                    ? 'Trop court pour guider le livreur : ajoutez le quartier et un repère, par exemple « Fidjrossè, en face de la pharmacie ».'
+                    : 'Le quartier et un repère suffisent : c\'est ce que le livreur lit pour vous trouver.'}
+                </Text>
 
                 <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>
                   Créneau souhaité (optionnel)
@@ -916,7 +940,7 @@ export function CheckoutFlow({
             <View style={styles.paymentInfo}>
               <CircleCheck size={14} color={semantic.textTertiary} strokeWidth={2} />
               <Text style={[styles.paymentInfoText, { color: semantic.textTertiary }]}>
-                Paiement sécurisé via FedaPay (Mobile Money, Visa, Mastercard)
+                Paiement sécurisé par Mobile Money, Visa ou Mastercard
               </Text>
             </View>
           )}
@@ -1298,6 +1322,7 @@ const styles = StyleSheet.create({
   },
   promoButtonText: { ...typography.bodyS, fontFamily: fonts.sansSb },
   promoError: { ...typography.caption, color: colors.coral[600], marginTop: spacing[1] },
+  addressHint: { ...typography.caption, marginTop: spacing[1] },
 
   walletOption: {
     flexDirection: 'row',

@@ -535,7 +535,9 @@ export function OrderTracking({
               <Text style={[styles.infoLabel, { color: semantic.textTertiary }]}>Paiement</Text>
               <Text style={[styles.infoValue, { color: semantic.textPrimary }]}>
                 {order.paymentMethod === 'FEDAPAY'
-                  ? 'FedaPay'
+                  // The gateway's name means nothing to the buyer, and it has
+                  // already changed once. What was used to pay does not.
+                  ? 'Mobile Money ou carte'
                   : order.paymentMethod === 'WALLET'
                     ? 'Portefeuille eBio'
                     : order.pickupMode === 'DELIVERY' ? 'Espèces à la livraison' : 'Espèces au retrait'}
