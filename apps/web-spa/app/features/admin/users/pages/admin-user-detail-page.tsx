@@ -13,6 +13,7 @@ import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { AuditTimeline } from '../components/audit-timeline'
+import { BuyerCheckoutPanel } from '../components/buyer-checkout-panel'
 import { UserSanctionDialog } from '../components/user-sanction-dialogs'
 import { UserStatusBadge } from '../components/user-status-badge'
 import {
@@ -225,6 +226,8 @@ export default function AdminUserDetailPage() {
                 )}
           </CardContent>
         </Card>
+
+        <BuyerCheckoutPanel userId={user.id} />
 
         <Card className="md:col-span-2">
           <CardHeader>

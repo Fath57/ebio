@@ -463,6 +463,140 @@
         }
       }
     },
+    "/api/otp-auth/biometric/enroll": {
+      "post": {
+        "operationId": "BiometricController_enroll",
+        "tags": [
+          "Biometric"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Faire confiance à cet appareil",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "label": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  }
+                },
+                "required": [
+                  "deviceId",
+                  "label"
+                ],
+                "additionalProperties": false,
+                "title": "BiometricEnroll",
+                "description": "Faire confiance à cet appareil"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/biometric/verify": {
+      "post": {
+        "operationId": "BiometricController_verify",
+        "tags": [
+          "Biometric"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Connexion par empreinte",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "deviceId": {
+                    "type": "string",
+                    "minLength": 8,
+                    "maxLength": 128
+                  },
+                  "secret": {
+                    "type": "string",
+                    "minLength": 32,
+                    "maxLength": 256
+                  }
+                },
+                "required": [
+                  "deviceId",
+                  "secret"
+                ],
+                "additionalProperties": false,
+                "title": "BiometricVerify",
+                "description": "Connexion par empreinte"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/biometric/devices": {
+      "get": {
+        "operationId": "BiometricController_devices",
+        "tags": [
+          "Biometric"
+        ],
+        "parameters": [
+          {
+            "name": "deviceId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/otp-auth/biometric/devices/{id}": {
+      "delete": {
+        "operationId": "BiometricController_revoke",
+        "tags": [
+          "Biometric"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/posts/{postSlug}/comments": {
       "post": {
         "operationId": "CommentsController_createComment",
@@ -6483,6 +6617,209 @@
         }
       }
     },
+    "/api/cart": {
+      "get": {
+        "operationId": "CartController_read",
+        "tags": [
+          "Cart"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "CartController_sync",
+        "tags": [
+          "Cart"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Le panier tel que l'application le détient",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "items": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "supplierId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "maximum": 999
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "supplierId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false
+                    }
+                  }
+                },
+                "required": [
+                  "items"
+                ],
+                "additionalProperties": false,
+                "title": "CartSync",
+                "description": "Le panier tel que l'application le détient"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "CartController_clear",
+        "tags": [
+          "Cart"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/carts/stats": {
+      "get": {
+        "operationId": "AdminCartsController_summary",
+        "tags": [
+          "AdminCarts"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/carts/settings/reminders": {
+      "get": {
+        "operationId": "AdminCartsController_reminderSettings",
+        "tags": [
+          "AdminCarts"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminCartsController_setReminderSettings",
+        "tags": [
+          "AdminCarts"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Délai avant relance d'un panier abandonné, et nombre de relances",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "heures": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 168
+                  },
+                  "relances": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5
+                  }
+                },
+                "required": [
+                  "heures",
+                  "relances"
+                ],
+                "additionalProperties": false,
+                "title": "CartReminderSettings",
+                "description": "Délai avant relance d'un panier abandonné, et nombre de relances"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/carts/attempts": {
+      "get": {
+        "operationId": "AdminCartsController_attemptsFor",
+        "tags": [
+          "AdminCarts"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/carts/of": {
+      "get": {
+        "operationId": "AdminCartsController_cartOf",
+        "tags": [
+          "AdminCarts"
+        ],
+        "parameters": [
+          {
+            "name": "userId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/assistant/turn": {
       "post": {
         "operationId": "AssistantController_turn",
@@ -6911,7 +7248,7 @@
                   },
                   "deliveryAddress": {
                     "type": "string",
-                    "minLength": 3,
+                    "minLength": 10,
                     "maxLength": 500
                   },
                   "deliveryLatitude": {
@@ -16154,6 +16491,69 @@
         "title": "ProductReviewTiming",
         "description": "Délai et relances de la demande d'avis produit"
       },
+      "CartSync": {
+        "type": "object",
+        "properties": {
+          "items": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "productId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "supplierId": {
+                  "type": "string",
+                  "format": "uuid",
+                  "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 999
+                }
+              },
+              "required": [
+                "productId",
+                "supplierId",
+                "quantity"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "additionalProperties": false,
+        "title": "CartSync",
+        "description": "Le panier tel que l'application le détient"
+      },
+      "CartReminderSettings": {
+        "type": "object",
+        "properties": {
+          "heures": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 168
+          },
+          "relances": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          }
+        },
+        "required": [
+          "heures",
+          "relances"
+        ],
+        "additionalProperties": false,
+        "title": "CartReminderSettings",
+        "description": "Délai avant relance d'un panier abandonné, et nombre de relances"
+      },
       "UpdateUser": {
         "type": "object",
         "properties": {
@@ -18008,7 +18408,7 @@
           },
           "deliveryAddress": {
             "type": "string",
-            "minLength": 3,
+            "minLength": 10,
             "maxLength": 500
           },
           "deliveryLatitude": {
@@ -18710,6 +19110,50 @@
         "additionalProperties": false,
         "title": "AssistantSpeak",
         "description": "Faire dire une réponse à voix haute"
+      },
+      "BiometricEnroll": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          }
+        },
+        "required": [
+          "deviceId",
+          "label"
+        ],
+        "additionalProperties": false,
+        "title": "BiometricEnroll",
+        "description": "Faire confiance à cet appareil"
+      },
+      "BiometricVerify": {
+        "type": "object",
+        "properties": {
+          "deviceId": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 128
+          },
+          "secret": {
+            "type": "string",
+            "minLength": 32,
+            "maxLength": 256
+          }
+        },
+        "required": [
+          "deviceId",
+          "secret"
+        ],
+        "additionalProperties": false,
+        "title": "BiometricVerify",
+        "description": "Connexion par empreinte"
       },
       "OtpRequest": {
         "type": "object",

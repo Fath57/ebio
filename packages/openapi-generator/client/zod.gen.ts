@@ -56,6 +56,41 @@ export const zProductReviewTiming = z.object({
 });
 
 /**
+ * CartSync
+ *
+ * Le panier tel que l'application le détient
+ */
+export const zCartSync = z.object({
+  items: z
+    .array(
+      z.object({
+        productId: z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        supplierId: z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+        quantity: z.int().gte(1).lte(999),
+      }),
+    )
+    .max(200),
+});
+
+/**
+ * CartReminderSettings
+ *
+ * Délai avant relance d'un panier abandonné, et nombre de relances
+ */
+export const zCartReminderSettings = z.object({
+  heures: z.int().gte(1).lte(168),
+  relances: z.int().gte(0).lte(5),
+});
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -752,6 +787,26 @@ export const zAssistantCartAdjustment = z.object({
  */
 export const zAssistantSpeak = z.object({
   texte: z.string().min(1).max(2000),
+});
+
+/**
+ * BiometricEnroll
+ *
+ * Faire confiance à cet appareil
+ */
+export const zBiometricEnroll = z.object({
+  deviceId: z.string().min(8).max(128),
+  label: z.string().min(1).max(120),
+});
+
+/**
+ * BiometricVerify
+ *
+ * Connexion par empreinte
+ */
+export const zBiometricVerify = z.object({
+  deviceId: z.string().min(8).max(128),
+  secret: z.string().min(32).max(256),
 });
 
 /**
@@ -2567,7 +2622,7 @@ export const zCreateOrder = z.object({
     ),
   pickupMode: zPickupMode,
   paymentMethod: zPaymentMethod,
-  deliveryAddress: z.optional(z.string().min(3).max(500)),
+  deliveryAddress: z.optional(z.string().min(10).max(500)),
   deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   deliverySlot: z.optional(z.string().max(200)),
@@ -3363,6 +3418,40 @@ export const zOtpAuthControllerResetPasswordData = z.object({
     newPassword: z.string().min(8),
   }),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zBiometricControllerEnrollData = z.object({
+  body: z.object({
+    deviceId: z.string().min(8).max(128),
+    label: z.string().min(1).max(120),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zBiometricControllerVerifyData = z.object({
+  body: z.object({
+    deviceId: z.string().min(8).max(128),
+    secret: z.string().min(32).max(256),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zBiometricControllerDevicesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    deviceId: z.string(),
+  }),
+});
+
+export const zBiometricControllerRevokeData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 
@@ -5140,6 +5229,79 @@ export const zWalletAdminControllerWalletsOverviewData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zCartControllerClearData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCartControllerReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCartControllerSyncData = z.object({
+  body: z.object({
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          supplierId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          quantity: z.int().gte(1).lte(999),
+        }),
+      )
+      .max(200),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminCartsControllerSummaryData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminCartsControllerReminderSettingsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminCartsControllerSetReminderSettingsData = z.object({
+  body: z.object({
+    heures: z.int().gte(1).lte(168),
+    relances: z.int().gte(0).lte(5),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminCartsControllerAttemptsForData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    userId: z.string(),
+  }),
+});
+
+export const zAdminCartsControllerCartOfData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    userId: z.string(),
+  }),
+});
+
 export const zAssistantControllerTurnData = z.object({
   body: z.object({
     sessionId: z.optional(
@@ -5282,7 +5444,7 @@ export const zOrdersControllerCreateData = z.object({
       ),
     pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
     paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
-    deliveryAddress: z.optional(z.string().min(3).max(500)),
+    deliveryAddress: z.optional(z.string().min(10).max(500)),
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     deliverySlot: z.optional(z.string().max(200)),

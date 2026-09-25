@@ -108,6 +108,29 @@ export type ProductReviewTiming = {
 };
 
 /**
+ * CartSync
+ *
+ * Le panier tel que l'application le détient
+ */
+export type CartSync = {
+  items: Array<{
+    productId: string;
+    supplierId: string;
+    quantity: number;
+  }>;
+};
+
+/**
+ * CartReminderSettings
+ *
+ * Délai avant relance d'un panier abandonné, et nombre de relances
+ */
+export type CartReminderSettings = {
+  heures: number;
+  relances: number;
+};
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -1028,6 +1051,26 @@ export type AssistantCartAdjustment = {
  */
 export type AssistantSpeak = {
   texte: string;
+};
+
+/**
+ * BiometricEnroll
+ *
+ * Faire confiance à cet appareil
+ */
+export type BiometricEnroll = {
+  deviceId: string;
+  label: string;
+};
+
+/**
+ * BiometricVerify
+ *
+ * Connexion par empreinte
+ */
+export type BiometricVerify = {
+  deviceId: string;
+  secret: string;
 };
 
 /**
@@ -3044,6 +3087,70 @@ export type OtpAuthControllerResetPasswordData = {
 
 export type OtpAuthControllerResetPasswordResponses = {
   201: unknown;
+};
+
+export type BiometricControllerEnrollData = {
+  /**
+   * BiometricEnroll
+   *
+   * Faire confiance à cet appareil
+   */
+  body: {
+    deviceId: string;
+    label: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/biometric/enroll";
+};
+
+export type BiometricControllerEnrollResponses = {
+  201: unknown;
+};
+
+export type BiometricControllerVerifyData = {
+  /**
+   * BiometricVerify
+   *
+   * Connexion par empreinte
+   */
+  body: {
+    deviceId: string;
+    secret: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/otp-auth/biometric/verify";
+};
+
+export type BiometricControllerVerifyResponses = {
+  201: unknown;
+};
+
+export type BiometricControllerDevicesData = {
+  body?: never;
+  path?: never;
+  query: {
+    deviceId: string;
+  };
+  url: "/api/otp-auth/biometric/devices";
+};
+
+export type BiometricControllerDevicesResponses = {
+  200: unknown;
+};
+
+export type BiometricControllerRevokeData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/otp-auth/biometric/devices/{id}";
+};
+
+export type BiometricControllerRevokeResponses = {
+  200: unknown;
 };
 
 export type CommentsControllerGetCommentsData = {
@@ -5832,6 +5939,117 @@ export type WalletAdminControllerWalletsOverviewData = {
 };
 
 export type WalletAdminControllerWalletsOverviewResponses = {
+  200: unknown;
+};
+
+export type CartControllerClearData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/cart";
+};
+
+export type CartControllerClearResponses = {
+  200: unknown;
+};
+
+export type CartControllerReadData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/cart";
+};
+
+export type CartControllerReadResponses = {
+  200: unknown;
+};
+
+export type CartControllerSyncData = {
+  /**
+   * CartSync
+   *
+   * Le panier tel que l'application le détient
+   */
+  body: {
+    items: Array<{
+      productId: string;
+      supplierId: string;
+      quantity: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/cart";
+};
+
+export type CartControllerSyncResponses = {
+  200: unknown;
+};
+
+export type AdminCartsControllerSummaryData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/carts/stats";
+};
+
+export type AdminCartsControllerSummaryResponses = {
+  200: unknown;
+};
+
+export type AdminCartsControllerReminderSettingsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/carts/settings/reminders";
+};
+
+export type AdminCartsControllerReminderSettingsResponses = {
+  200: unknown;
+};
+
+export type AdminCartsControllerSetReminderSettingsData = {
+  /**
+   * CartReminderSettings
+   *
+   * Délai avant relance d'un panier abandonné, et nombre de relances
+   */
+  body: {
+    heures: number;
+    relances: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/carts/settings/reminders";
+};
+
+export type AdminCartsControllerSetReminderSettingsResponses = {
+  200: unknown;
+};
+
+export type AdminCartsControllerAttemptsForData = {
+  body?: never;
+  path?: never;
+  query: {
+    userId: string;
+  };
+  url: "/api/admin/carts/attempts";
+};
+
+export type AdminCartsControllerAttemptsForResponses = {
+  200: unknown;
+};
+
+export type AdminCartsControllerCartOfData = {
+  body?: never;
+  path?: never;
+  query: {
+    userId: string;
+  };
+  url: "/api/admin/carts/of";
+};
+
+export type AdminCartsControllerCartOfResponses = {
   200: unknown;
 };
 

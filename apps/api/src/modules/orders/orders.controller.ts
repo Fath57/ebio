@@ -18,6 +18,9 @@ import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
+import { CartService } from '../cart/cart.service'
+import { CheckoutAttemptsService } from '../cart/checkout-attempts.service'
+import { CheckoutAttemptKind, CheckoutAttemptOutcome } from '../cart/entities/checkout-attempt.entity'
 import { SuppliersService } from '../suppliers/suppliers.service'
 import { CheckoutService } from './checkout.service'
 import { checkoutPreviewSchema, createCheckoutSchema } from './contracts/checkout.contract'
@@ -39,7 +42,46 @@ export class OrdersController {
     private readonly ordersService: OrdersService,
     private readonly checkoutService: CheckoutService,
     private readonly suppliersService: SuppliersService,
+    private readonly attempts: CheckoutAttemptsService,
+    private readonly cart: CartService,
   ) {}
+
+  /**
+   * What the basket weighed, for the diary.
+   *
+   * Counts and a total, never a product: the refusal is what answers "I can't
+   * order", and the contents are read elsewhere under their own permission.
+   */
+  /**
+   * Why no delivery could be priced, said plainly.
+   *
+   * The enum is written for the code; an agent reading the log needs the
+   * sentence the buyer was shown, or the two of them are not talking about
+   * the same thing.
+   */
+  private whyNoDelivery(reason: string): string {
+    const reasons: Record<string, string> = {
+      NO_POSITION: 'L\'acheteur n\'avait pas posé son repère sur la carte',
+      NO_SHOP_POSITION: 'La boutique n\'a pas de position enregistrée',
+      OUT_OF_RANGE: 'Adresse hors de la zone livrée',
+    }
+    return reasons[reason] ?? `Livraison impossible (${reason})`
+  }
+
+  private factsOf(
+    items: Array<{ quantity: number }>,
+    options: { total?: number, shopCount?: number, distanceKm?: number } = {},
+  ) {
+    return {
+      // The request names products, not shops — those are worked out server
+      // side — so the count comes from the answer, and is unknown on a refusal
+      // that never got that far.
+      shopCount: options.shopCount ?? 0,
+      itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
+      total: options.total ?? 0,
+      distanceKm: options.distanceKm,
+    }
+  }
 
   /**
    * The whole cart as it would be charged — every shop together,
@@ -55,7 +97,34 @@ export class OrdersController {
     @Session() session: LoggedInBetterAuthSession,
     @TypedBody(checkoutPreviewSchema) body: z.infer<typeof checkoutPreviewSchema>,
   ) {
-    return this.checkoutService.preview(session.user.id, body)
+    try {
+      const quote = await this.checkoutService.preview(session.user.id, body)
+      // A quote can succeed and still lead nowhere — out of zone, no drop-off
+      // point — and that is exactly what someone calls about.
+      const blocked = quote.deliveryFee === null && quote.deliveryReason !== 'PICKUP'
+      await this.attempts.record(
+        session.user.id,
+        CheckoutAttemptKind.QUOTE,
+        blocked ? CheckoutAttemptOutcome.REFUSED : CheckoutAttemptOutcome.OK,
+        this.factsOf(body.items, {
+          total: quote.itemsTotal,
+          shopCount: quote.suppliers.length,
+          distanceKm: quote.deliveryDistanceKm ?? undefined,
+        }),
+        blocked ? this.whyNoDelivery(quote.deliveryReason) : undefined,
+      )
+      return quote
+    }
+    catch (error) {
+      await this.attempts.record(
+        session.user.id,
+        CheckoutAttemptKind.QUOTE,
+        CheckoutAttemptOutcome.REFUSED,
+        this.factsOf(body.items),
+        error instanceof Error ? error.message : undefined,
+      )
+      throw error
+    }
   }
 
   /** Places the whole cart: one payment, N orders. */
@@ -66,7 +135,31 @@ export class OrdersController {
     @Session() session: LoggedInBetterAuthSession,
     @TypedBody(createCheckoutSchema) body: z.infer<typeof createCheckoutSchema>,
   ) {
-    return this.checkoutService.create(session.user.id, body)
+    try {
+      const checkout = await this.checkoutService.create(session.user.id, body)
+      await this.attempts.record(
+        session.user.id,
+        CheckoutAttemptKind.ORDER,
+        CheckoutAttemptOutcome.OK,
+        this.factsOf(body.items, {
+          total: checkout.orders.reduce((sum, order) => sum + order.total, 0),
+          shopCount: checkout.orders.length,
+        }),
+      )
+      // The basket became orders: there is nothing left to be reminded of.
+      await this.cart.clear(session.user.id)
+      return checkout
+    }
+    catch (error) {
+      await this.attempts.record(
+        session.user.id,
+        CheckoutAttemptKind.ORDER,
+        CheckoutAttemptOutcome.REFUSED,
+        this.factsOf(body.items),
+        error instanceof Error ? error.message : undefined,
+      )
+      throw error
+    }
   }
 
   @Post()

@@ -13,6 +13,8 @@ export const DELIVERY_PRICING_KEY = 'delivery_pricing'
 export const BANNER_OFFERS_KEY = 'banner_offers'
 export const ASSISTANT_ENABLED_KEY = 'assistant_enabled'
 export const PRODUCT_REVIEW_DELAY_HOURS_KEY = 'product_review_delay_hours'
+export const CART_REMINDER_HOURS_KEY = 'cart_reminder_hours'
+export const CART_REMINDER_COUNT_KEY = 'cart_reminder_count'
 export const PRODUCT_REVIEW_MAX_INVITES_KEY = 'product_review_max_invites'
 export const ANNOUNCEMENT_INTERVAL_HOURS_KEY = 'announcement_interval_hours'
 export const ANNOUNCEMENT_OFFERS_KEY = 'announcement_offers'
@@ -51,6 +53,13 @@ export const DEFAULT_ASSISTANT_ENABLED = false
  * food.
  */
 export const DEFAULT_PRODUCT_REVIEW_DELAY_HOURS = 12
+/**
+ * Long enough that a basket left mid-afternoon is not chased before evening,
+ * short enough that the reason for filling it has not passed.
+ */
+export const DEFAULT_CART_REMINDER_HOURS = 6
+/** One message. A basket that drew two and stayed put has been decided on. */
+export const DEFAULT_CART_REMINDER_COUNT = 1
 
 /** Beyond this, not answering is an answer. */
 export const DEFAULT_PRODUCT_REVIEW_MAX_INVITES = 3
@@ -176,6 +185,26 @@ export class PlatformSettingsService {
   async setBannerOffers(config: BannerOffersInput): Promise<void> {
     const sorted = { ...config, offers: [...config.offers].sort((a, b) => a.days - b.days) }
     await this.set(BANNER_OFFERS_KEY, JSON.stringify(sorted))
+  }
+
+  /** How long a basket sits still before it is called abandoned. */
+  async getCartReminderHours(): Promise<number> {
+    return this.readInteger(CART_REMINDER_HOURS_KEY, DEFAULT_CART_REMINDER_HOURS, 1, 168)
+  }
+
+  async setCartReminderHours(hours: number): Promise<void> {
+    this.assertInteger(hours, 1, 168, 'Le délai doit être un nombre d\'heures entre 1 et 168')
+    await this.set(CART_REMINDER_HOURS_KEY, String(hours))
+  }
+
+  /** Reminders per basket. Zero switches the whole thing off. */
+  async getCartReminderCount(): Promise<number> {
+    return this.readInteger(CART_REMINDER_COUNT_KEY, DEFAULT_CART_REMINDER_COUNT, 0, 5)
+  }
+
+  async setCartReminderCount(count: number): Promise<void> {
+    this.assertInteger(count, 0, 5, 'Le nombre de relances doit être compris entre 0 et 5')
+    await this.set(CART_REMINDER_COUNT_KEY, String(count))
   }
 
   /** Hours between the delivery and the product-review ask. */

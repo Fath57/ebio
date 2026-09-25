@@ -28,6 +28,8 @@ export enum NotificationType {
   NEW_REVIEW = 'NEW_REVIEW',
   /** Invitation to review the products received, deferred after delivery. */
   PRODUCT_REVIEW_INVITE = 'PRODUCT_REVIEW_INVITE',
+  /** The basket has not moved in a while; a nudge, capped in number. */
+  CART_REMINDER = 'CART_REMINDER',
   ESCROW_REMINDER = 'ESCROW_REMINDER',
   PROMOTIONAL = 'PROMOTIONAL',
   SYSTEM = 'SYSTEM',

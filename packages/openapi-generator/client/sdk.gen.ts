@@ -34,6 +34,16 @@ import type {
   AdminBannerRequestsControllerListResponses,
   AdminBannerRequestsControllerRejectData,
   AdminBannerRequestsControllerRejectResponses,
+  AdminCartsControllerAttemptsForData,
+  AdminCartsControllerAttemptsForResponses,
+  AdminCartsControllerCartOfData,
+  AdminCartsControllerCartOfResponses,
+  AdminCartsControllerReminderSettingsData,
+  AdminCartsControllerReminderSettingsResponses,
+  AdminCartsControllerSetReminderSettingsData,
+  AdminCartsControllerSetReminderSettingsResponses,
+  AdminCartsControllerSummaryData,
+  AdminCartsControllerSummaryResponses,
   AdminControllerBroadcastNotificationData,
   AdminControllerBroadcastNotificationResponses,
   AdminControllerGetCommissionOrdersData,
@@ -206,6 +216,20 @@ import type {
   BannersControllerRemoveResponses,
   BannersControllerUpdateData,
   BannersControllerUpdateResponses,
+  BiometricControllerDevicesData,
+  BiometricControllerDevicesResponses,
+  BiometricControllerEnrollData,
+  BiometricControllerEnrollResponses,
+  BiometricControllerRevokeData,
+  BiometricControllerRevokeResponses,
+  BiometricControllerVerifyData,
+  BiometricControllerVerifyResponses,
+  CartControllerClearData,
+  CartControllerClearResponses,
+  CartControllerReadData,
+  CartControllerReadResponses,
+  CartControllerSyncData,
+  CartControllerSyncResponses,
   CategoriesControllerCreateData,
   CategoriesControllerCreateResponses,
   CategoriesControllerFindByIdData,
@@ -931,6 +955,58 @@ export const otpAuthControllerResetPassword = <
       ...options.headers,
     },
   });
+
+export const biometricControllerEnroll = <ThrowOnError extends boolean = false>(
+  options: Options<BiometricControllerEnrollData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    BiometricControllerEnrollResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/biometric/enroll",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const biometricControllerVerify = <ThrowOnError extends boolean = false>(
+  options: Options<BiometricControllerVerifyData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    BiometricControllerVerifyResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/otp-auth/biometric/verify",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const biometricControllerDevices = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<BiometricControllerDevicesData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    BiometricControllerDevicesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/otp-auth/biometric/devices", ...options });
+
+export const biometricControllerRevoke = <ThrowOnError extends boolean = false>(
+  options: Options<BiometricControllerRevokeData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    BiometricControllerRevokeResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/otp-auth/biometric/devices/{id}", ...options });
 
 export const commentsControllerGetComments = <
   ThrowOnError extends boolean = false,
@@ -2582,6 +2658,102 @@ export const walletAdminControllerWalletsOverview = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/wallets", ...options });
+
+export const cartControllerClear = <ThrowOnError extends boolean = false>(
+  options?: Options<CartControllerClearData, ThrowOnError>,
+) =>
+  (options?.client ?? client).delete<
+    CartControllerClearResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/cart", ...options });
+
+export const cartControllerRead = <ThrowOnError extends boolean = false>(
+  options?: Options<CartControllerReadData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    CartControllerReadResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/cart", ...options });
+
+export const cartControllerSync = <ThrowOnError extends boolean = false>(
+  options: Options<CartControllerSyncData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    CartControllerSyncResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/cart",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminCartsControllerSummary = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminCartsControllerSummaryData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminCartsControllerSummaryResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/carts/stats", ...options });
+
+export const adminCartsControllerReminderSettings = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminCartsControllerReminderSettingsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminCartsControllerReminderSettingsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/carts/settings/reminders", ...options });
+
+export const adminCartsControllerSetReminderSettings = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminCartsControllerSetReminderSettingsData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminCartsControllerSetReminderSettingsResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/carts/settings/reminders",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminCartsControllerAttemptsFor = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminCartsControllerAttemptsForData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminCartsControllerAttemptsForResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/carts/attempts", ...options });
+
+export const adminCartsControllerCartOf = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminCartsControllerCartOfData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminCartsControllerCartOfResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/carts/of", ...options });
 
 export const assistantControllerTurn = <ThrowOnError extends boolean = false>(
   options: Options<AssistantControllerTurnData, ThrowOnError>,
