@@ -39,6 +39,28 @@ export const OfflineCache = {
   },
 }
 
+/**
+ * What belongs to whoever was signed in, and to nobody else.
+ *
+ * Wiping everything would take the device identifier and the chosen theme
+ * with it; leaving everything hands the next person the previous one's
+ * basket. So the list is named, and grows when something account-bound is
+ * stored.
+ */
+const ACCOUNT_KEYS = [
+  'ebio_cart',
+  'search_history',
+  'sync:search_history',
+  'sync:supplier_registration_draft',
+]
+
+/** Forgets the signed-out account's local traces. */
+export async function clearAccountData(): Promise<void> {
+  storageCache.delete('search_history')
+  storageCache.delete('supplier_registration_draft')
+  await AsyncStorage.multiRemove(ACCOUNT_KEYS)
+}
+
 // Simple sync key-value for non-async contexts (biometric keys, device IDs)
 export const storage = {
   getString(key: string): string | null {

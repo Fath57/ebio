@@ -2,6 +2,7 @@ import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-si
 import { useEffect, useState } from 'react'
 import { unregisterPushToken } from '../features/notifications/push-token'
 import { apiFetch, clearTokens, setSessionToken } from '../utils/api-client'
+import { clearAccountData } from '../utils/offline-storage'
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
 const GOOGLE_WEB_CLIENT_ID = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID ?? ''
@@ -400,6 +401,10 @@ export async function signOut(): Promise<void> {
     // Ignore
   }
   await clearTokens()
+  // The basket, the searches, a half-filled shop registration: all of it
+  // belonged to the account that just left, and the next person to sign in on
+  // this phone would have found it waiting.
+  await clearAccountData()
   notifyAuthChange()
 }
 

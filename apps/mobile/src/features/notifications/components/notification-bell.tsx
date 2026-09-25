@@ -2,22 +2,44 @@ import { useFocusEffect } from '@react-navigation/native'
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import { useCallback, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useSession } from '../../../lib/auth-client'
 import { colors, fonts } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { NOTIFICATION_AUDIENCE } from '../../../utils/app-variant'
 
-/** Unread notifications for this app's audience, re-counted on every focus. */
+/**
+ * Unread notifications for this app's audience, re-counted on every focus.
+ *
+ * Tied to who is signed in: signing out used to leave the badge showing the
+ * previous account's count, because a refused request was treated like a
+ * network hiccup and the old value was kept.
+ */
 export function useUnreadNotificationCount(): number {
+  const { data: session } = useSession()
+  const userId = session?.user.id ?? null
   const [count, setCount] = useState(0)
 
   useFocusEffect(
     useCallback(() => {
+      if (userId === null) {
+        setCount(0)
+        return
+      }
+
       let cancelled = false
       async function load(): Promise<void> {
         try {
           const res = await apiFetch(`/api/notifications/count?audience=${NOTIFICATION_AUDIENCE}`)
-          if (res.ok && !cancelled) {
+          if (cancelled) {
+            return
+          }
+          // A refused session is not a hiccup: there is nothing to keep.
+          if (res.status === 401) {
+            setCount(0)
+            return
+          }
+          if (res.ok) {
             const data = await res.json() as { count?: number }
             setCount(typeof data.count === 'number' ? data.count : 0)
           }
@@ -30,7 +52,7 @@ export function useUnreadNotificationCount(): number {
       return () => {
         cancelled = true
       }
-    }, []),
+    }, [userId]),
   )
 
   return count

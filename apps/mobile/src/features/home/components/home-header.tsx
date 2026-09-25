@@ -8,10 +8,11 @@ import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import { useCallback, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
-import { NOTIFICATION_AUDIENCE } from '../../../utils/app-variant'
 import { AssistantEntryIcon } from '../../assistant/components/assistant-entry-icon'
+import { useUnreadNotificationCount } from '../../notifications/components/notification-bell'
 
 interface HomeHeaderProps {
   /** Libellé de la position courante (ex. « Cotonou, Akpakpa »). */
@@ -62,59 +63,50 @@ function useAssistantEnabled(): boolean {
   return enabled
 }
 
-/** Unread notifications, re-counted whenever the home screen regains focus. */
-function useUnreadCount(): number {
-  const [count, setCount] = useState(0)
-
-  useFocusEffect(
-    useCallback(() => {
-      let cancelled = false
-      async function load(): Promise<void> {
-        try {
-          const res = await apiFetch(`/api/notifications/count?audience=${NOTIFICATION_AUDIENCE}`)
-          if (res.ok && !cancelled) {
-            const data = await res.json() as { count?: number }
-            setCount(typeof data.count === 'number' ? data.count : 0)
-          }
-        }
-        catch {
-          // keep the previous count on a network hiccup
-        }
-      }
-      load()
-      return () => {
-        cancelled = true
-      }
-    }, []),
-  )
-
-  return count
-}
-
-/** Wallet balance (FCFA), null while unknown or when signed out. */
+/**
+ * Wallet balance (FCFA), null while unknown or when signed out.
+ *
+ * Tied to who is signed in. It used to keep whatever it last read, so after a
+ * sign-out the header still showed the previous account's money: the request
+ * came back refused, and a refusal was handled like a network hiccup.
+ */
 function useWalletBalance(): number | null {
+  const { data: session } = useSession()
+  const userId = session?.user.id ?? null
   const [balance, setBalance] = useState<number | null>(null)
 
   useFocusEffect(
     useCallback(() => {
+      if (userId === null) {
+        setBalance(null)
+        return
+      }
+
       let cancelled = false
       async function load(): Promise<void> {
         try {
           const res = await apiFetch('/api/wallet/me?limit=1')
-          if (res.ok && !cancelled) {
+          if (cancelled) {
+            return
+          }
+          if (res.status === 401) {
+            setBalance(null)
+            return
+          }
+          if (res.ok) {
             const data = await res.json() as { balance?: number }
             setBalance(typeof data.balance === 'number' ? data.balance : null)
           }
         }
         catch {
-          // keep the previous value
+          // keep the previous value on a network hiccup
         }
       }
       load()
       return () => {
         cancelled = true
       }
-    }, []),
+    }, [userId]),
   )
 
   return balance
@@ -139,7 +131,7 @@ export function HomeHeader({
   onOpenAssistant,
 }: HomeHeaderProps) {
   const insets = useSafeAreaInsets()
-  const unreadCount = useUnreadCount()
+  const unreadCount = useUnreadNotificationCount()
   const balance = useWalletBalance()
   const assistantEnabled = useAssistantEnabled()
 

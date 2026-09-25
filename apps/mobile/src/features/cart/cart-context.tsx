@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as React from 'react'
 import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
+import { useSession } from '../../lib/auth-client'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -249,6 +250,8 @@ const CartContext = createContext<CartContextValue>({
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, { items: [], deliveryMode: 'DELIVERY', hydrated: false })
   const isFirstRender = useRef(true)
+  const { data: session, isPending } = useSession()
+  const userId = session?.user.id ?? null
 
   // Hydrate from AsyncStorage on mount
   useEffect(() => {
@@ -263,6 +266,31 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
     hydrate()
   }, [])
+
+  /**
+   * The basket belongs to whoever filled it.
+   *
+   * It is kept on the device so it survives a restart, and nothing used to
+   * remove it on sign-out: the next person to sign in on the same phone
+   * inherited the previous one's articles. Emptying storage alone would not
+   * do — the provider stays mounted and writes its items straight back.
+   *
+   * `undefined` means the session has not resolved yet; comparing against it
+   * would empty the basket of someone who never left.
+   */
+  const knownUserRef = useRef<string | null | undefined>(undefined)
+  useEffect(() => {
+    if (isPending) {
+      return
+    }
+    const previous = knownUserRef.current
+    knownUserRef.current = userId
+    if (previous === undefined || previous === userId) {
+      return
+    }
+    dispatch({ type: 'CLEAR_ALL' })
+    void AsyncStorage.removeItem(STORAGE_KEY)
+  }, [userId, isPending])
 
   // Persist to AsyncStorage on every change (skip initial render)
   useEffect(() => {
