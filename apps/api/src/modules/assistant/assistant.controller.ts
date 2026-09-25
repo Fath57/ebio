@@ -5,13 +5,14 @@ import { Buffer } from 'node:buffer'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { TypedBody } from '@lonestone/nzoth/server'
-import { BadRequestException, Controller, Param, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
+import { BadRequestException, Controller, Get, NotFoundException, Param, Patch, Post, Res, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common'
 import { FileInterceptor } from '@nestjs/platform-express'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { AssistantService } from './assistant.service'
 import { AssistantVoiceService } from './assistant.voice'
+import { AssistantVoiceTickets } from './assistant.voice-tickets'
 import { assistantCartLineSchema, assistantSpeakSchema, assistantTurnSchema } from './contracts/assistant.contract'
 
 /**
@@ -27,6 +28,7 @@ export class AssistantController {
     private readonly assistantService: AssistantService,
     private readonly voice: AssistantVoiceService,
     private readonly platformSettings: PlatformSettingsService,
+    private readonly tickets: AssistantVoiceTickets,
   ) {}
 
   @Post('turn')
@@ -126,23 +128,44 @@ export class AssistantController {
   }
 
   /**
-   * The answer, spoken aloud.
+   * Claims the right to hear an answer.
    *
-   * Separate from the turn: the text appears as soon as it is verified, the
-   * voice follows. Waiting for the audio before showing the sentence would
-   * leave the screen blank for a full second.
+   * Two steps because the phone plays straight from the network — the sound
+   * starts before the file is whole — and an audio player reads a URL, it
+   * cannot send a body. The sentence stays here; the URL carries a random
+   * identifier and nothing else.
    */
-  @Post('speak')
-  async speak(
+  @Post('voice')
+  async prepareVoice(
+    @Session() session: LoggedInBetterAuthSession,
     @TypedBody(assistantSpeakSchema) body: AssistantSpeakInput,
+  ) {
+    return { id: this.tickets.issue(body.texte, session.user.id) }
+  }
+
+  /**
+   * The answer, spoken, streamed as it is made.
+   *
+   * One synthesis for the whole answer rather than one per sentence. The
+   * sentences were being split to start sooner, but they arrive within a tenth
+   * of a second of each other — measured: first sentence at 1 156 ms, end of
+   * turn at 1 242 ms — so the split bought almost nothing and cost the voice
+   * its continuity: a gap between each file, and prosody starting over.
+   */
+  @Get('voice/:id')
+  async streamVoice(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
     @Res() res: Response,
   ): Promise<void> {
+    const texte = this.tickets.redeem(id, session.user.id)
+    if (texte === null) {
+      throw new NotFoundException('Cette voix n\'est plus disponible.')
+    }
     const { voiceSpeed } = await this.platformSettings.getAssistantIdentity()
-    const audio = await this.voice.speak(body.texte, voiceSpeed)
+    const audio = await this.voice.speak(texte, voiceSpeed)
     res.setHeader('Content-Type', 'audio/mpeg')
     res.setHeader('Cache-Control', 'no-store')
-    // Piped rather than collected: holding the whole file here before sending
-    // it doubled the wait before the first sound came out of the phone.
     await pipeline(Readable.fromWeb(audio as never), res)
   }
 }

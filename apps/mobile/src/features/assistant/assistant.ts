@@ -1,4 +1,3 @@
-import * as FileSystem from 'expo-file-system/legacy'
 import { apiFetch, apiUrl, getSessionToken } from '../../utils/api-client'
 
 /** One line of the cart the conversation is building, as the server holds it. */
@@ -161,15 +160,18 @@ export async function transcribe(uri: string): Promise<string> {
 }
 
 /**
- * The sentence, spoken aloud.
+ * The answer, ready to be heard.
  *
- * Written to a cache file rather than returned as a `data:` URI: Android's
- * audio player cannot read a data URI, and the voice would have fallen silent
- * without saying why. The file is named per turn — the player would not
- * reload a source whose URI had not changed.
+ * Returns a URL rather than a file. The phone hands that URL to the player,
+ * which streams it: the sound starts before the whole thing has arrived, and
+ * there is no copy to write, encode or delete.
+ *
+ * One call for the whole answer, not one per sentence. Splitting was meant to
+ * start sooner, but the sentences arrive within a tenth of a second of each
+ * other — the split bought almost nothing and cost the voice its continuity.
  */
-export async function speak(text: string): Promise<string | null> {
-  const res = await apiFetch('/api/assistant/speak', {
+export async function voiceUrl(text: string): Promise<{ uri: string, headers: Record<string, string> } | null> {
+  const res = await apiFetch('/api/assistant/voice', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ texte: text }),
@@ -178,34 +180,16 @@ export async function speak(text: string): Promise<string | null> {
     return null
   }
 
-  const blob = await res.blob()
-  const base64 = await new Promise<string | null>((resolve) => {
-    const reader = new FileReader()
-    reader.onerror = () => resolve(null)
-    reader.onload = () => {
-      const result = typeof reader.result === 'string' ? reader.result : null
-      // `readAsDataURL` returns "data:audio/mpeg;base64,…": only what follows
-      // the comma is the content.
-      resolve(result === null ? null : result.slice(result.indexOf(',') + 1))
-    }
-    reader.readAsDataURL(blob)
-  })
-
-  if (base64 === null) {
+  const { id } = await res.json() as { id?: string }
+  if (!id) {
     return null
   }
 
-  const uri = `${FileSystem.cacheDirectory}assistant-${Date.now()}.mp3`
-  await FileSystem.writeAsStringAsync(uri, base64, { encoding: FileSystem.EncodingType.Base64 })
-  return uri
-}
-
-/** A previous turn's file has no business lingering in the cache. */
-export function discardSpoken(uri: string | null): void {
-  if (uri === null) {
-    return
+  const token = await getSessionToken()
+  return {
+    uri: `${apiUrl()}/api/assistant/voice/${id}`,
+    // The player fetches on its own: it carries the session itself, since it
+    // is not the one that signed in.
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
   }
-  FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {
-    // Already gone: nothing to do.
-  })
 }
