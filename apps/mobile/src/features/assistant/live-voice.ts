@@ -1,9 +1,28 @@
-import type { RecordingConfig, Subscription } from '@mykin-ai/expo-audio-stream'
+import type { ExpoPlayAudioStream, RecordingConfig, Subscription } from '@mykin-ai/expo-audio-stream'
 import type { AssistantCartLine } from './assistant'
-import { ExpoPlayAudioStream } from '@mykin-ai/expo-audio-stream'
+import { requireOptionalNativeModule } from 'expo-modules-core'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { io } from 'socket.io-client'
 import { apiUrl, getChatToken } from '../../utils/api-client'
+
+/**
+ * The microphone and loudspeaker, loaded only once we know they are there.
+ *
+ * The library reaches for its native half the moment it is imported, and a
+ * binary built before it was added has no native half — that is a startup
+ * crash, not a caught error, because the failure is in evaluating the module
+ * graph and by then we have already let it begin. So the native side is asked
+ * for first, and the import only happens if it answers.
+ *
+ * A build without it keeps the typed conversation, which needs nothing native.
+ */
+async function audio(): Promise<typeof ExpoPlayAudioStream | null> {
+  if (requireOptionalNativeModule('ExpoPlayAudioStream') === null) {
+    return null
+  }
+  const loaded = await import('@mykin-ai/expo-audio-stream')
+  return loaded.ExpoPlayAudioStream
+}
 
 /**
  * Where the spoken conversation is held.
@@ -87,6 +106,14 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
   const [error, setError] = useState<string | null>(null)
 
   const socketRef = useRef<ReturnType<typeof io> | null>(null)
+  /**
+   * The sound library, once loaded.
+   *
+   * Held for the life of the line rather than asked for at each use: a tenth
+   * of a second of her voice arrives ten times a second, and that path has no
+   * business awaiting anything.
+   */
+  const player = useRef<typeof ExpoPlayAudioStream | null>(null)
   const micOn = useRef(false)
   /**
    * The microphone listener, held so it can be released.
@@ -120,14 +147,14 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
     if (micOn.current) {
       micOn.current = false
       try {
-        await ExpoPlayAudioStream.stopMicrophone()
+        await player.current?.stopMicrophone()
       }
       catch {
         // Already stopped, or never started. Either way there is nothing to do.
       }
     }
     try {
-      await ExpoPlayAudioStream.stopAudio()
+      await player.current?.stopAudio()
     }
     catch {
       // Same: silence is the desired end state, however we get there.
@@ -148,8 +175,8 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
     turn.current += 1
     saidSoFar.current = ''
     try {
-      await ExpoPlayAudioStream.clearPlaybackQueueByTurnId(String(dropped))
-      await ExpoPlayAudioStream.stopAudio()
+      await player.current?.clearPlaybackQueueByTurnId(String(dropped))
+      await player.current?.stopAudio()
     }
     catch {
       // Nothing was playing.
@@ -173,6 +200,15 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
     setState('opening')
 
     async function connect(): Promise<void> {
+      player.current = await audio()
+      if (player.current === null) {
+        if (alive.current) {
+          setError('Cette version de l\'application ne sait pas encore parler. Écrivez-lui en attendant la mise à jour.')
+          setState('off')
+        }
+        return
+      }
+
       const token = await getChatToken()
       if (!token) {
         if (alive.current) {
@@ -186,7 +222,7 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
       // must not hear itself: conversation mode is what turns on the phone's
       // echo cancellation.
       try {
-        await ExpoPlayAudioStream.setSoundConfig({
+        await player.current.setSoundConfig({
           sampleRate: RATE,
           playbackMode: 'conversation',
         })
@@ -233,8 +269,8 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
           case 'audio':
             if (raw.chunk) {
               setState('answering')
-              void ExpoPlayAudioStream
-                .playAudio(raw.chunk, String(turn.current), 'pcm_s16le')
+              void player.current
+                ?.playAudio(raw.chunk, String(turn.current), 'pcm_s16le')
                 .catch(() => {
                   // One lost tenth of a second is not worth ending a
                   // conversation over.
@@ -287,7 +323,7 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
        */
       async function listen(): Promise<void> {
         try {
-          const { subscription } = await ExpoPlayAudioStream.startMicrophone({
+          const { subscription } = await (player.current?.startMicrophone({
             sampleRate: RATE,
             channels: 1,
             encoding: 'pcm_16bit',
@@ -297,7 +333,7 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
                 socketRef.current?.emit('voice', { type: 'audio', chunk: event.data })
               }
             },
-          })
+          }) ?? { subscription: undefined })
           micTap.current = subscription ?? null
           micOn.current = true
           if (alive.current) {
