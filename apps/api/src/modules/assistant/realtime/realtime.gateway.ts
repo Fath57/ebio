@@ -106,6 +106,9 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
       client.data.waiting = undefined
 
       client.emit('event', { type: 'ready' })
+      // What is already in the basket, before a word is said: one comes back
+      // to a conversation, and an empty panel would suggest it was lost.
+      await session.publishCart()
       this.logger.log(`Voix ouverte pour ${payload.sub}`)
     }
     catch (error) {

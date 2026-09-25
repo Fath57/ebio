@@ -1,3 +1,5 @@
+import type { AssistantCartLine } from '../tools/cart.tools'
+
 /**
  * What crosses the wire between the phone and us during a spoken exchange.
  *
@@ -48,7 +50,7 @@ export type RealtimeOutbound
     | { type: 'audio', chunk: string }
     | { type: 'transcript', text: string }
     | { type: 'heard', text: string }
-    | { type: 'cart', cart: unknown }
+    | { type: 'cart', cart: AssistantCartLine[] }
     | { type: 'done' }
     | { type: 'error', message: string }
 

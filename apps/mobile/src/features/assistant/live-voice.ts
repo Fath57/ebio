@@ -184,6 +184,22 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
   const saidSoFar = useRef('')
   /** Guards against a late callback touching a screen that has gone. */
   const alive = useRef(true)
+  /**
+   * When the loudspeaker will have finished, in milliseconds.
+   *
+   * The microphone says nothing while she talks. The phone already opens it on
+   * the voice-communication path with the hardware echo canceller attached,
+   * and it is still not enough: a loudspeaker at arm's length gets heard, the
+   * far end writes her own words down as the buyer's, and she answers herself
+   * — which is exactly what the screen showed, « C'est nous. », « J'écoute. »,
+   * in the buyer's bubbles.
+   *
+   * Counted from the sound itself rather than waited for as an event: each
+   * slice is so many bytes of 24 kHz, so we know to the millisecond when the
+   * queue runs dry. A lost slice shortens the wait instead of muting her
+   * conversation partner forever.
+   */
+  const quietUntil = useRef(0)
 
   const stopEverything = useCallback(async () => {
     const socket = socketRef.current
@@ -224,6 +240,9 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
     const dropped = turn.current
     turn.current += 1
     saidSoFar.current = ''
+    // She has been cut off, so the loudspeaker falls silent now and the
+    // microphone has no reason to keep waiting for her.
+    quietUntil.current = 0
     try {
       await player.current?.clearPlaybackQueueByTurnId(String(dropped))
       await player.current?.stopAudio()
@@ -302,8 +321,11 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
           playbackMode: 'conversation',
         })
       }
-      catch {
-        // A phone that refuses the setting still plays; it may just echo.
+      catch (caught) {
+        // Said out loud rather than swallowed: refused, playback falls back to
+        // 44 100 Hz and her voice comes out fast and high — a symptom one
+        // would otherwise chase for a long time.
+        console.warn('[voix] réglage du lecteur refusé', caught)
       }
 
       const socket = io(`${WS_URL}/ws/assistant`, {
@@ -343,6 +365,9 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
 
           case 'audio':
             if (raw.chunk) {
+              // Base64 to bytes to seconds of 16-bit mono at 24 kHz.
+              const seconds = ((raw.chunk.length * 3) / 4) / (24_000 * 2)
+              quietUntil.current = Math.max(quietUntil.current, Date.now()) + seconds * 1000
               setState('answering')
               void player.current
                 ?.playAudio(raw.chunk, String(turn.current), 'pcm_s16le')
@@ -403,6 +428,12 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
             encoding: 'pcm_16bit',
             interval: SLICE_MS,
             onAudioStream: async (event) => {
+              // A quarter second of margin: the last of her voice leaves the
+              // loudspeaker after the queue is empty, and the room keeps a
+              // little of it.
+              if (Date.now() < quietUntil.current + 250) {
+                return
+              }
               if (typeof event.data === 'string') {
                 socketRef.current?.emit('voice', { type: 'audio', chunk: halve(event.data) })
               }

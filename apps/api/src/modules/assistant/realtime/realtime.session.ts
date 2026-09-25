@@ -6,6 +6,7 @@ import { Logger } from '@nestjs/common'
 import WebSocket from 'ws'
 import { z } from 'zod'
 import { config } from '../../../config/env.config'
+import { loadState } from '../tools/cart.tools'
 
 const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime'
 
@@ -177,6 +178,15 @@ export class RealtimeSession {
   /** What the microphone has sent, counted to tell silence from a dead line. */
   private heardBytes = 0
 
+  /**
+   * The cart as last sent to the phone.
+   *
+   * Compared rather than sent blind: a turn that only answered a question
+   * changes nothing, and a basket that redraws itself at every sentence looks
+   * like it is doing something when it is not.
+   */
+  private cartSignature = ''
+
   /** What the session has cost, in US dollars, and what made up the bill. */
   public cost(): { usd: number, turns: number, audioIn: number, audioOut: number } {
     const r = RealtimeSession.RATES
@@ -328,6 +338,31 @@ export class RealtimeSession {
       })
     }
 
+    await this.publishCart()
     this.send({ type: 'response.create' })
+  }
+
+  /**
+   * Says what the basket holds, when it has changed.
+   *
+   * Read back from the database rather than assembled from what the tools
+   * returned: what the buyer sees on screen is then the same thing the
+   * checkout will charge for, which is the whole reason the tools write to a
+   * table instead of to a conversation.
+   */
+  @EnsureRequestContext()
+  public async publishCart(): Promise<void> {
+    try {
+      const { cart } = await loadState(this.em, this.context.sessionId)
+      const signature = JSON.stringify(cart)
+      if (signature !== this.cartSignature) {
+        this.cartSignature = signature
+        this.emit({ type: 'cart', cart })
+      }
+    }
+    catch (error) {
+      // A basket we failed to read is not worth ending a conversation over.
+      this.logger.warn(`Panier illisible — ${error}`)
+    }
   }
 }
