@@ -27,6 +27,7 @@ import {
   Settings,
   Shield,
   ShieldCheck,
+  ShoppingBasket,
   ShoppingCart,
   Store,
   Sun,
@@ -145,6 +146,7 @@ export default function AppLayout() {
       group: { label: t('nav.groups.sales'), icon: <ShoppingCart className="h-4 w-4" /> },
       items: [
         { to: '/admin/commandes', label: t('nav.orders'), icon: <ClipboardList className="h-4 w-4" />, permission: { action: 'read', subject: 'Order' } },
+        { to: '/admin/paniers', label: 'Paniers', icon: <ShoppingBasket className="h-4 w-4" />, permission: { action: 'read', subject: 'Settings' } },
         { to: '/admin/livraisons', label: t('nav.deliveries'), icon: <Truck className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },

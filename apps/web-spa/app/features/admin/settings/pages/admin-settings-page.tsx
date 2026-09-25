@@ -19,14 +19,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/compon
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@boilerstone/ui/components/primitives/tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CreditCard, LayoutGrid, Megaphone, Percent, ShoppingBasket } from 'lucide-react'
+import { Bot, CreditCard, LayoutGrid, Megaphone, Percent } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { AnnouncementsManager } from '../../announcements/components/announcements-manager'
-import { CartReminderForm } from '../../carts/components/cart-reminder-form'
-import { CartsOverview } from '../../carts/components/carts-overview'
 import { HomeSectionsManager } from '../../home-sections/components/home-sections-manager'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { AssistantToggle } from '../forms/assistant-toggle'
@@ -313,10 +311,6 @@ export default function AdminSettingsPage() {
             <Megaphone className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.announcements')}
           </TabsTrigger>
-          <TabsTrigger value="paniers">
-            <ShoppingBasket className="mr-2 h-4 w-4" />
-            Paniers
-          </TabsTrigger>
           <TabsTrigger value="assistant">
             <Bot className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.assistant')}
@@ -332,24 +326,6 @@ export default function AdminSettingsPage() {
               </CardHeader>
               <CardContent>
                 <HomeSectionsManager />
-              </CardContent>
-            </Card>
-          </Can>
-        </TabsContent>
-
-        <TabsContent value="paniers" className="mt-6 space-y-6">
-          <Can action="manage" subject="all">
-            <CartsOverview />
-            <Card>
-              <CardHeader>
-                <CardTitle>Relance des paniers abandonnés</CardTitle>
-                <p className="text-muted-foreground text-sm">
-                  Un panier oublié quelques heures n'est pas une décision : c'est un
-                  téléphone qui a sonné. Un message le dit ; une série dit autre chose.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <CartReminderForm />
               </CardContent>
             </Card>
           </Can>

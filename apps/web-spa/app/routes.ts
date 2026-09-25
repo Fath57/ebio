@@ -64,6 +64,7 @@ export default [
       route('admin/livreurs/:courierId', 'features/admin/couriers/pages/admin-courier-detail-page.tsx'),
 
       // Admin — Utilisateurs
+      route('admin/paniers', 'features/admin/carts/pages/admin-carts-page.tsx'),
       route('admin/utilisateurs', 'features/admin/users/pages/admin-users-page.tsx'),
       route('admin/utilisateurs/:userId', 'features/admin/users/pages/admin-user-detail-page.tsx'),
 
