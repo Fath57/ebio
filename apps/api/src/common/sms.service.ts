@@ -19,14 +19,27 @@ function statusFrom(body: string): { ok: boolean, status: string | null, message
 /**
  * What a refusal actually means, in words.
  *
- * Wirepick answers 200 whatever happens, and its codes are three letters.
- * Each of these cost a round of guessing to identify, so they are written
- * down rather than left for the next person to rediscover.
+ * Wirepick answers 200 whatever happens and refuses with three letters. The
+ * wording comes from the operator's own table — guessing at them is how `NCR`
+ * gets read as "no credit", which it is not.
  */
+const REFUSALS: Record<string, string> = {
+  NCR: 'aucune route configurée pour ce compte chez Wirepick — à faire provisionner par l\'opérateur',
+  NSF: 'compte Wirepick sans crédit',
+  INV: 'numéro de destination invalide',
+  PHN: 'longueur de numéro invalide',
+  LEN: 'message trop long',
+  MAX: 'quota quotidien atteint',
+  MAP: 'quota quotidien atteint chez l\'opérateur',
+  NPZ: 'tarif réseau non configuré chez Wirepick',
+  PNP: 'opérateur non provisionné',
+  IPV: 'adresse IP appelante non autorisée',
+  NRC: 'pas d\'accusé de réception de l\'opérateur (le message est tout de même facturé)',
+}
+
 function explain(status: string | null, body: string): string {
-  if (status === 'NCR') {
-    // The billing fields come back empty with it, which is the tell.
-    return 'compte Wirepick sans crédit — rien ne partira tant qu\'il n\'est pas rechargé'
+  if (status && REFUSALS[status]) {
+    return `${REFUSALS[status]} (${status})`
   }
   if (/SND-Unregistered/i.test(body)) {
     return 'expéditeur non enregistré pour ce compte Wirepick'
@@ -34,7 +47,7 @@ function explain(status: string | null, body: string): string {
   if (/PWD-Invalid/i.test(body)) {
     return 'identifiants Wirepick refusés'
   }
-  return status ? `statut ${status}` : 'réponse inattendue'
+  return status ? `refus Wirepick : ${status}` : 'réponse inattendue'
 }
 
 /** Wirepick wants a bare number; everything else here carries the `+`. */
