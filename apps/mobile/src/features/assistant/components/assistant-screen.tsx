@@ -275,6 +275,15 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
     ))
   }, [voice.said])
 
+  // What goes wrong on the line is said where every other failure is said.
+  // Kept in the line's own state it was visible to nobody, and a button that
+  // lights up and goes out again explains nothing.
+  useEffect(() => {
+    if (voice.error !== null) {
+      setError(voice.error)
+    }
+  }, [voice.error])
+
   // The line is a cost while it is open, so it closes with the screen.
   useEffect(() => {
     return () => {
