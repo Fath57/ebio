@@ -14,6 +14,7 @@ import UserPen from 'lucide-react-native/dist/esm/icons/user-pen'
 import * as React from 'react'
 import { ActivityIndicator, AppState, Platform, Pressable, ScrollView, StatusBar, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { BiometricSetting } from '../features/auth/components/biometric-setting'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
 import { LoginScreen } from '../features/auth/components/login-screen'
@@ -617,6 +618,11 @@ function SupplierAccountHome({ navigation }: any) {
           <KeyRound size={20} color={semantic.textSecondary} strokeWidth={2} />
           <Text style={[styles.accountRowText, { color: semantic.textPrimary }]}>Modifier mon mot de passe</Text>
         </Pressable>
+        {/* Same card shape as the rows above; the component brings its own
+            padding, so it only needs the surface. */}
+        <View style={[styles.accountCard, { backgroundColor: semantic.bgCard }]}>
+          <BiometricSetting />
+        </View>
         <Pressable
           style={[styles.accountRow, styles.accountSignOut, { borderColor: colors.coral[400] }]}
           onPress={confirmSignOut}
@@ -782,6 +788,10 @@ const styles = StyleSheet.create({
   accountContainer: {
     padding: spacing[4],
     gap: spacing[2],
+  },
+  accountCard: {
+    borderRadius: radius.lg,
+    overflow: 'hidden',
   },
   accountRow: {
     flexDirection: 'row',

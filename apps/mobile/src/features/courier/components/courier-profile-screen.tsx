@@ -13,6 +13,7 @@ import { signOut } from '../../../lib/auth-client'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { BiometricSetting } from '../../auth/components/biometric-setting'
 import { appAlert } from '../../common/components/app-alert'
 import { StarRating } from '../../common/components/star-rating'
 import { VEHICLE_LABELS } from '../types'
@@ -246,6 +247,10 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
         </Pressable>
       </View>
 
+      <View style={[styles.biometricCard, { backgroundColor: semantic.bgCard }]}>
+        <BiometricSetting />
+      </View>
+
       <Pressable
         style={[styles.signOut, { borderColor: colors.coral[400] }]}
         onPress={confirmSignOut}
@@ -366,6 +371,11 @@ const styles = StyleSheet.create({
   editText: {
     ...typography.caption,
     fontSize: 13,
+  },
+  biometricCard: {
+    borderRadius: radius.lg,
+    overflow: 'hidden',
+    marginBottom: spacing[3],
   },
   signOut: {
     height: 44,
