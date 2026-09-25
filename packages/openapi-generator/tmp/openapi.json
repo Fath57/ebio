@@ -3054,9 +3054,15 @@
                     ]
                   },
                   "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "subtitle": {
                     "anyOf": [
@@ -3088,7 +3094,6 @@
                 },
                 "required": [
                   "targetType",
-                  "title",
                   "durationDays"
                 ],
                 "additionalProperties": false,
@@ -3296,9 +3301,15 @@
                     ]
                   },
                   "title": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   },
                   "subtitle": {
                     "anyOf": [
@@ -3339,7 +3350,6 @@
                 },
                 "required": [
                   "targetType",
-                  "title",
                   "startsAt",
                   "endsAt"
                 ],
@@ -18462,9 +18472,15 @@
             ]
           },
           "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "subtitle": {
             "anyOf": [
@@ -18496,7 +18512,6 @@
         },
         "required": [
           "targetType",
-          "title",
           "durationDays"
         ],
         "additionalProperties": false,
@@ -18564,9 +18579,15 @@
             ]
           },
           "title": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "subtitle": {
             "anyOf": [
@@ -18607,7 +18628,6 @@
         },
         "required": [
           "targetType",
-          "title",
           "startsAt",
           "endsAt"
         ],

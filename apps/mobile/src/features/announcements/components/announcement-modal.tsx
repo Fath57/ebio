@@ -1,6 +1,6 @@
 import type { Announcement } from '../hooks/use-announcement'
 import X from 'lucide-react-native/dist/esm/icons/x'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import {
   Animated,
   Easing,
@@ -32,12 +32,54 @@ interface AnnouncementModalProps {
  *
  * Le mouvement dure un peu moins d'une demi-seconde : au-delà on attend, en
  * deçà on sursaute.
+ *
+ * Une annonce sans titre est une affiche : on ne montre qu'elle, sans cadre ni
+ * bouton par-dessus. Lui ajouter un texte de service reviendrait à écrire sur
+ * le visuel de quelqu'un.
  */
 export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: AnnouncementModalProps) {
   const { semantic } = useTheme()
   const { width } = useWindowDimensions()
   const entrance = useRef(new Animated.Value(0)).current
   const visible = announcement !== null
+
+  /**
+   * Le format de l'affiche, mesuré avant de l'ouvrir.
+   *
+   * C'est ce qui permet de la montrer entière **et** de remplir la carte : la
+   * carte prend son rapport, donc l'image la couvre exactement — ni bandes
+   * blanches, ni recadrage. Imposer un format aurait fait l'un ou l'autre, et
+   * couper le visuel de quelqu'un qui l'a payé n'est pas une option.
+   */
+  const [imageRatio, setImageRatio] = useState<number | null>(null)
+
+  useEffect(() => {
+    const uri = announcement?.imageUrl ?? null
+    if (uri === null) {
+      setImageRatio(null)
+      return
+    }
+
+    let cancelled = false
+    Image.getSize(
+      uri,
+      (imageWidth, imageHeight) => {
+        if (!cancelled && imageHeight > 0) {
+          setImageRatio(imageWidth / imageHeight)
+        }
+      },
+      () => {
+        // Mesure impossible : un format lisible vaut mieux que pas d'annonce.
+        if (!cancelled) {
+          setImageRatio(4 / 5)
+        }
+      },
+    )
+
+    return () => {
+      cancelled = true
+    }
+  }, [announcement?.imageUrl])
 
   useEffect(() => {
     if (!visible) {
@@ -61,6 +103,14 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
 
   const cardWidth = Math.min(width - spacing[8], 420)
   const isTappable = announcement.targetType !== 'NONE'
+  const hasText = (announcement.title ?? '').trim().length > 0
+  const imageOnly = !hasText && announcement.imageUrl !== null
+
+  // Tant que le format n'est pas connu, on n'ouvre pas : la carte sauterait
+  // d'une forme à l'autre sous les yeux.
+  if (imageOnly && imageRatio === null) {
+    return null
+  }
 
   return (
     <Modal transparent animationType="fade" visible onRequestClose={onDismiss}>
@@ -94,50 +144,62 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
           </Pressable>
 
           {announcement.imageUrl !== null && (
-            <Image
-              source={{ uri: announcement.imageUrl }}
-              style={styles.image}
-              resizeMode="cover"
-              accessible={false}
-            />
+            <Pressable
+              onPress={() => (isTappable ? onOpenTarget(announcement) : onDismiss())}
+              accessibilityRole={isTappable ? 'button' : 'image'}
+              accessibilityLabel={announcement.shopName === null
+                ? 'Annonce eBio'
+                : `Annonce de ${announcement.shopName}`}
+            >
+              <Image
+                source={{ uri: announcement.imageUrl }}
+                style={imageOnly ? [styles.imageAlone, { aspectRatio: imageRatio ?? 4 / 5 }] : styles.image}
+                resizeMode="cover"
+                accessible={false}
+              />
+            </Pressable>
           )}
 
-          <View style={styles.body}>
-            {announcement.shopName !== null && (
-              <Text style={[styles.shop, { color: semantic.textTertiary }]} numberOfLines={1}>
-                {announcement.shopName}
-              </Text>
-            )}
+          {imageOnly
+            ? null
+            : (
+                <View style={styles.body}>
+                  {announcement.shopName !== null && (
+                    <Text style={[styles.shop, { color: semantic.textTertiary }]} numberOfLines={1}>
+                      {announcement.shopName}
+                    </Text>
+                  )}
 
-            <Text style={[styles.title, { color: semantic.textPrimary }]}>{announcement.title}</Text>
+                  <Text style={[styles.title, { color: semantic.textPrimary }]}>{announcement.title}</Text>
 
-            {announcement.subtitle !== null && (
-              <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>{announcement.subtitle}</Text>
-            )}
+                  {announcement.subtitle !== null && (
+                    <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>{announcement.subtitle}</Text>
+                  )}
 
-            <View style={styles.actions}>
-              {isTappable && (
-                <Pressable
-                  style={styles.primary}
-                  onPress={() => onOpenTarget(announcement)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Voir"
-                >
-                  <Text style={styles.primaryText}>Voir</Text>
-                </Pressable>
+                  <View style={styles.actions}>
+                    {isTappable && (
+                      <Pressable
+                        style={styles.primary}
+                        onPress={() => onOpenTarget(announcement)}
+                        accessibilityRole="button"
+                        accessibilityLabel="Voir"
+                      >
+                        <Text style={styles.primaryText}>Voir</Text>
+                      </Pressable>
+                    )}
+                    <Pressable
+                      style={styles.secondary}
+                      onPress={onDismiss}
+                      accessibilityRole="button"
+                      accessibilityLabel={isTappable ? 'Plus tard' : 'Fermer'}
+                    >
+                      <Text style={[styles.secondaryText, { color: semantic.textSecondary }]}>
+                        {isTappable ? 'Plus tard' : 'Fermer'}
+                      </Text>
+                    </Pressable>
+                  </View>
+                </View>
               )}
-              <Pressable
-                style={styles.secondary}
-                onPress={onDismiss}
-                accessibilityRole="button"
-                accessibilityLabel={isTappable ? 'Plus tard' : 'Fermer'}
-              >
-                <Text style={[styles.secondaryText, { color: semantic.textSecondary }]}>
-                  {isTappable ? 'Plus tard' : 'Fermer'}
-                </Text>
-              </Pressable>
-            </View>
-          </View>
         </Animated.View>
       </View>
     </Modal>
@@ -167,6 +229,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
+  },
+  /** Le rapport vient de l'image : elle remplit la carte sans être coupée. */
+  imageAlone: {
+    width: '100%',
   },
   image: {
     width: '100%',

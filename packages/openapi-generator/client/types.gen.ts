@@ -954,7 +954,7 @@ export type BroadcastNotification = {
 export type AnnouncementRequestInput = {
   targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
   targetId?: string | null;
-  title: string;
+  title?: string | null;
   subtitle?: string | null;
   imageUrl?: string | null;
   durationDays: number;
@@ -983,7 +983,7 @@ export type RejectAnnouncement = {
 export type PlatformAnnouncementInput = {
   targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
   targetId?: string | null;
-  title: string;
+  title?: string | null;
   subtitle?: string | null;
   imageUrl?: string | null;
   startsAt: string;
@@ -4320,7 +4320,7 @@ export type SupplierAnnouncementRequestsControllerCreateData = {
   body: {
     targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
     targetId?: string | null;
-    title: string;
+    title?: string | null;
     subtitle?: string | null;
     imageUrl?: string | null;
     durationDays: number;
@@ -4417,7 +4417,7 @@ export type AdminAnnouncementsControllerCreateData = {
   body: {
     targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
     targetId?: string | null;
-    title: string;
+    title?: string | null;
     subtitle?: string | null;
     imageUrl?: string | null;
     startsAt: string;

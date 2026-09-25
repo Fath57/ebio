@@ -12,26 +12,39 @@ const targetSchema = z.object({
  * La durée choisit l'offre, et l'offre fixe le prix : la boutique ne propose
  * pas un montant, elle prend un tarif affiché.
  */
+/**
+ * Une annonce dit quelque chose, d'une façon ou d'une autre.
+ *
+ * Un visuel se suffit souvent à lui-même — une affiche porte déjà son texte.
+ * Le titre devient donc facultatif dès qu'il y a une image, mais l'un des deux
+ * est exigé : une annonce vide n'aurait rien à montrer.
+ */
+function hasSomethingToShow(value: { title?: string | null, imageUrl?: string | null }): boolean {
+  return (value.title ?? '').trim().length > 0 || (value.imageUrl ?? '').trim().length > 0
+}
+
+const NOTHING_TO_SHOW = 'Une annonce demande au moins un titre ou une image'
+
 export const announcementRequestSchema = targetSchema.extend({
-  title: z.string().trim().min(1).max(120),
+  title: z.string().trim().max(120).nullable().optional(),
   subtitle: z.string().trim().max(500).nullable().optional(),
   imageUrl: z.string().max(1024).nullable().optional(),
   durationDays: z.number().int().min(1).max(60),
-}).meta({
+}).refine(hasSomethingToShow, { message: NOTHING_TO_SHOW, path: ['title'] }).meta({
   title: 'AnnouncementRequestInput',
   description: 'Demande d\'annonce à l\'ouverture de l\'application',
 })
 
 /** Ce qu'eBio publie pour son compte, sans paiement ni approbation. */
 export const platformAnnouncementSchema = targetSchema.extend({
-  title: z.string().trim().min(1).max(120),
+  title: z.string().trim().max(120).nullable().optional(),
   subtitle: z.string().trim().max(500).nullable().optional(),
   imageUrl: z.string().max(1024).nullable().optional(),
   startsAt: z.string(),
   endsAt: z.string(),
   priority: z.number().int().min(0).max(100).optional(),
   active: z.boolean().optional(),
-}).meta({
+}).refine(hasSomethingToShow, { message: NOTHING_TO_SHOW, path: ['title'] }).meta({
   title: 'PlatformAnnouncementInput',
   description: 'Une annonce publiée par eBio',
 })

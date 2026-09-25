@@ -48,7 +48,7 @@ export class AnnouncementsController {
     return {
       announcement: {
         id: announcement.id,
-        title: announcement.title,
+        title: announcement.title ?? null,
         subtitle: announcement.subtitle ?? null,
         imageUrl: announcement.imageUrl ?? null,
         targetType: announcement.targetType,

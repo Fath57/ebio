@@ -668,7 +668,7 @@ export const zBroadcastNotification = z.object({
 export const zAnnouncementRequestInput = z.object({
   targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
   targetId: z.optional(z.union([z.string().max(1024), z.null()])),
-  title: z.string().min(1).max(120),
+  title: z.optional(z.union([z.string().max(120), z.null()])),
   subtitle: z.optional(z.union([z.string().max(500), z.null()])),
   imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
   durationDays: z.int().gte(1).lte(60),
@@ -697,7 +697,7 @@ export const zRejectAnnouncement = z.object({
 export const zPlatformAnnouncementInput = z.object({
   targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
   targetId: z.optional(z.union([z.string().max(1024), z.null()])),
-  title: z.string().min(1).max(120),
+  title: z.optional(z.union([z.string().max(120), z.null()])),
   subtitle: z.optional(z.union([z.string().max(500), z.null()])),
   imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
   startsAt: z.string(),
@@ -4182,7 +4182,7 @@ export const zSupplierAnnouncementRequestsControllerCreateData = z.object({
   body: z.object({
     targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
     targetId: z.optional(z.union([z.string().max(1024), z.null()])),
-    title: z.string().min(1).max(120),
+    title: z.optional(z.union([z.string().max(120), z.null()])),
     subtitle: z.optional(z.union([z.string().max(500), z.null()])),
     imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
     durationDays: z.int().gte(1).lte(60),
@@ -4238,7 +4238,7 @@ export const zAdminAnnouncementsControllerCreateData = z.object({
   body: z.object({
     targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
     targetId: z.optional(z.union([z.string().max(1024), z.null()])),
-    title: z.string().min(1).max(120),
+    title: z.optional(z.union([z.string().max(120), z.null()])),
     subtitle: z.optional(z.union([z.string().max(500), z.null()])),
     imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
     startsAt: z.string(),

@@ -21,7 +21,7 @@ export enum AnnouncementRequestStatus {
 @Entity({ tableName: 'announcement_requests' })
 @Index({ properties: ['supplier', 'createdAt'] })
 export class AnnouncementRequest {
-  [OptionalProps]?: 'id' | 'status' | 'subtitle' | 'imageUrl' | 'targetId' | 'rejectionReason' | 'announcement' | 'paidAt' | 'createdAt'
+  [OptionalProps]?: 'id' | 'title' | 'status' | 'subtitle' | 'imageUrl' | 'targetId' | 'rejectionReason' | 'announcement' | 'paidAt' | 'createdAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -29,8 +29,9 @@ export class AnnouncementRequest {
   @ManyToOne(() => Supplier, { fieldName: 'supplier_id', deleteRule: 'cascade' })
   supplier!: Rel<Supplier>
 
-  @Property()
-  title!: string
+  /** Nul quand l'annonce est un visuel seul : l'affiche porte son texte. */
+  @Property({ nullable: true })
+  title?: string | null
 
   @Property({ length: 500, nullable: true })
   subtitle?: string | null

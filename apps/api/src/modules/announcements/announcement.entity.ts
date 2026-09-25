@@ -21,13 +21,14 @@ export enum AnnouncementOrigin {
 @Entity({ tableName: 'announcements' })
 @Index({ properties: ['active', 'startsAt'] })
 export class Announcement {
-  [OptionalProps]?: 'id' | 'active' | 'priority' | 'subtitle' | 'imageUrl' | 'targetId' | 'supplier' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'title' | 'active' | 'priority' | 'subtitle' | 'imageUrl' | 'targetId' | 'supplier' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  @Property()
-  title!: string
+  /** Nul quand l'annonce est un visuel seul : l'affiche porte son texte. */
+  @Property({ nullable: true })
+  title?: string | null
 
   @Property({ length: 500, nullable: true })
   subtitle?: string | null

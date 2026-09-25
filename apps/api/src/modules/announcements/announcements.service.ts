@@ -16,6 +16,17 @@ import { Announcement, AnnouncementOrigin } from './announcement.entity'
 
 const MAX_PENDING_PER_SHOP = 3
 
+/**
+ * Comment nommer une annonce qui n'a pas de titre.
+ *
+ * Un visuel seul n'en porte pas, mais le relevé du portefeuille et la file du
+ * back-office ont besoin de la désigner. « Visuel » est ce que la boutique
+ * lira sur sa ligne de débit.
+ */
+function labelOf(title: string | null | undefined): string {
+  return (title ?? '').trim().length > 0 ? (title as string) : 'Visuel'
+}
+
 @Injectable()
 export class AnnouncementsService {
   constructor(
@@ -96,7 +107,7 @@ export class AnnouncementsService {
 
     const request = this.em.create(AnnouncementRequest, {
       supplier,
-      title: data.title,
+      title: data.title ?? null,
       subtitle: data.subtitle ?? null,
       imageUrl: data.imageUrl ?? null,
       targetType: data.targetType as BannerTargetType,
@@ -113,7 +124,7 @@ export class AnnouncementsService {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.BANNER_PAYMENT,
           amount: offer.price,
-          description: `Annonce ${offer.days} jour(s) — « ${data.title} »`,
+          description: `Annonce ${offer.days} jour(s) — « ${labelOf(data.title)} »`,
         })
       }
       catch (error) {
@@ -181,7 +192,7 @@ export class AnnouncementsService {
     const endsAt = new Date(startsAt.getTime() + request.durationDays * 24 * 60 * 60 * 1000)
 
     const announcement = this.em.create(Announcement, {
-      title: request.title,
+      title: request.title ?? null,
       subtitle: request.subtitle ?? null,
       imageUrl: request.imageUrl ?? null,
       targetType: request.targetType,
@@ -224,7 +235,7 @@ export class AnnouncementsService {
     }
 
     const announcement = this.em.create(Announcement, {
-      title: data.title,
+      title: data.title ?? null,
       subtitle: data.subtitle ?? null,
       imageUrl: data.imageUrl ?? null,
       targetType: data.targetType as BannerTargetType,

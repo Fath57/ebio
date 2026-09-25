@@ -3,7 +3,8 @@ import { apiFetch } from '../../../utils/api-client'
 
 export interface Announcement {
   id: string
-  title: string
+  /** Nul quand l'annonce est un visuel seul. */
+  title: string | null
   subtitle: string | null
   imageUrl: string | null
   targetType: 'SUPPLIER' | 'PRODUCT' | 'URL' | 'NONE'
