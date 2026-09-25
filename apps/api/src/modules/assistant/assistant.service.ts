@@ -74,7 +74,13 @@ export class AssistantService {
    * cannot be called by mistake. A prompt instruction, by contrast, can be
    * talked around.
    */
-  private toolset(): AssistantTool[] {
+  /**
+   * The tools, shared with the spoken session.
+   *
+   * One list for both ways of talking to her: a tool that exists in writing
+   * and not in speech would be a second assistant with a second doctrine.
+   */
+  toolset(): AssistantTool[] {
     return [
       searchProductsTool(this.search),
       viewCartTool(this.em),

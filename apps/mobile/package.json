@@ -27,6 +27,7 @@
     "@expo-google-fonts/dm-serif-display": "^0.2.3",
     "@expo-google-fonts/jetbrains-mono": "^0.2.3",
     "@expo-google-fonts/plus-jakarta-sans": "^0.2.3",
+    "@mykin-ai/expo-audio-stream": "^0.3.5",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/netinfo": "11.4.1",
     "@react-native-google-signin/google-signin": "^16.1.2",

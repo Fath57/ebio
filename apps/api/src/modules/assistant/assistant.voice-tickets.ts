@@ -34,17 +34,19 @@ export class AssistantVoiceTickets {
   }
 
   /**
-   * Redeems a ticket, once.
+   * Redeems a ticket, as many times as the player asks within its life.
    *
-   * Removed on read: a player that retries gets nothing, which is the right
-   * answer — the turn it belonged to is over.
+   * It used to be consumed on first read, which sounded tidy and was wrong: a
+   * native player does not fetch a stream once. It reconnects, asks for a byte
+   * range, retries a stall — and every one of those got a 404, so the voice
+   * cut out mid-sentence. The ticket expires on time instead, which is what
+   * actually bounds it.
    */
   redeem(id: string, userId: string): string | null {
     const ticket = this.tickets.get(id)
     if (!ticket || ticket.expiresAt <= Date.now() || ticket.userId !== userId) {
       return null
     }
-    this.tickets.delete(id)
     return ticket.texte
   }
 

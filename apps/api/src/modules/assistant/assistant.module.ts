@@ -10,6 +10,7 @@ import { AssistantVoiceService } from './assistant.voice'
 import { AssistantVoiceTickets } from './assistant.voice-tickets'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
+import { AssistantRealtimeGateway } from './realtime/realtime.gateway'
 
 /**
  * The assistant owns no business rules: its tools are the existing services.
@@ -25,7 +26,7 @@ import { AssistantTurn } from './entities/assistant-turn.entity'
     PlatformSettingsModule,
   ],
   controllers: [AssistantController],
-  providers: [AssistantService, AssistantVoiceService, AssistantVoiceTickets],
+  providers: [AssistantService, AssistantVoiceService, AssistantVoiceTickets, AssistantRealtimeGateway],
   exports: [AssistantService, AssistantVoiceService],
 })
 export class AssistantModule {}

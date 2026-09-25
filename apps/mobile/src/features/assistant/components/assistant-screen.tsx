@@ -12,11 +12,12 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
-import { streamTurn, transcribe, voiceUrl } from '../assistant'
+import { streamTurn, voiceUrl } from '../assistant'
 import { useAssistantIdentity } from '../identity'
+import { useLiveVoice } from '../live-voice'
 import { AssistantCartPanel } from './assistant-cart-panel'
 import { AssistantSpeaking } from './assistant-speaking'
-import { AssistantVoiceButton } from './assistant-voice-button'
+import { AssistantTalkButton } from './assistant-talk-button'
 
 interface Exchange {
   id: string
@@ -86,6 +87,23 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
    * changes, so the player is created by hand, per answer, and released.
    */
   const playerRef = useRef<ReturnType<typeof createAudioPlayer> | null>(null)
+  /**
+   * Which turn the voice belongs to.
+   *
+   * A reply is fetched before it can be played, and a new turn can start
+   * during that wait. Without this, the older request came back and spoke over
+   * the newer answer — two voices at once, one of them saying something that
+   * had already been said.
+   */
+  const voiceTurn = useRef(0)
+  /**
+   * The spoken exchange being built, if one is.
+   *
+   * A spoken turn arrives in pieces and not in a fixed order: her first words
+   * can reach us before the transcription of the buyer's. So the exchange is
+   * created by whichever piece comes first, and the others fill it in.
+   */
+  const spoken = useRef<string | null>(null)
 
   const busy = activity !== 'idle'
 
@@ -109,13 +127,15 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
    * is still coming down, which is what removes the wait without cutting the
    * answer into pieces.
    */
-  const readAloud = useCallback(async (text: string) => {
+  const readAloud = useCallback(async (text: string, turn: number) => {
     if (!voiceOn || text.trim().length === 0) {
       return
     }
 
     const source = await voiceUrl(text)
-    if (source === null) {
+    // A newer turn started while this one was being fetched: it owns the voice
+    // now, and this answer has nothing left to say.
+    if (source === null || voiceTurn.current !== turn) {
       return
     }
 
@@ -125,6 +145,9 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
       const player = createAudioPlayer(source)
       playerRef.current = player
       player.addListener('playbackStatusUpdate', (status) => {
+        if (voiceTurn.current !== turn) {
+          return
+        }
         setSpeaking(status.playing)
         if (status.didJustFinish) {
           setSpeaking(false)
@@ -146,6 +169,13 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
 
     setDraft('')
     setError(null)
+    // The previous answer stops here, before anything is awaited: silencing it
+    // inside the fetch below would leave it talking for a full second over
+    // what comes next.
+    voiceTurn.current += 1
+    playerRef.current?.remove()
+    playerRef.current = null
+    setSpeaking(false)
     const id = `${Date.now()}-${Math.random()}`
     // What was said appears before the answer: the buyer checks the
     // transcription while the assistant is still working.
@@ -183,7 +213,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
           setCart(event.cart)
           update(exchange => ({ ...exchange, answered: event.reply }))
           setActivity('idle')
-          void readAloud(event.reply)
+          void readAloud(event.reply, voiceTurn.current)
           scrollToEnd()
           break
         case 'error':
@@ -198,25 +228,59 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
     })
   }, [busy, readAloud, scrollToEnd, sessionId])
 
-  /** A recording becomes text, shown first, then sent. */
-  const onRecorded = useCallback(async (uri: string) => {
-    setActivity('hearing')
-    setError(null)
-    try {
-      const heard = await transcribe(uri)
-      if (heard.length === 0) {
-        setActivity('idle')
-        setError('Je n\'ai rien entendu. Réessayez ?')
-        return
-      }
-      setActivity('idle')
-      send(heard)
+  /**
+   * Opens the spoken exchange, or finds the one already open.
+   *
+   * Whichever piece of the turn arrives first creates it, so neither the
+   * transcription nor her answer has to wait on the other.
+   */
+  const spokenTurn = useCallback((): string => {
+    if (spoken.current === null) {
+      const id = `voix-${Date.now()}-${Math.random()}`
+      spoken.current = id
+      setExchanges(previous => [...previous, { id, said: '', answered: null }])
     }
-    catch (caught) {
-      setActivity('idle')
-      setError(caught instanceof Error ? caught.message : 'Je n\'ai pas pu vous entendre.')
+    return spoken.current
+  }, [])
+
+  const heardAloud = useCallback((text: string) => {
+    const id = spokenTurn()
+    setExchanges(previous => previous.map(
+      exchange => exchange.id === id ? { ...exchange, said: text.trim() } : exchange,
+    ))
+    scrollToEnd()
+  }, [scrollToEnd, spokenTurn])
+
+  const answeredAloud = useCallback((text: string) => {
+    const id = spokenTurn()
+    spoken.current = null
+    setExchanges(previous => previous.map(
+      exchange => exchange.id === id ? { ...exchange, answered: text } : exchange,
+    ))
+    scrollToEnd()
+  }, [scrollToEnd, spokenTurn])
+
+  const voice = useLiveVoice({ onHeard: heardAloud, onSaid: answeredAloud, onCart: setCart })
+  const closeVoice = voice.close
+
+  // Her answer is written as she says it, not once she has finished: the whole
+  // point of streaming her voice is that nothing waits for the end of a turn.
+  useEffect(() => {
+    const id = spoken.current
+    if (id === null || voice.said.length === 0) {
+      return
     }
-  }, [send])
+    setExchanges(previous => previous.map(
+      exchange => exchange.id === id ? { ...exchange, answered: voice.said } : exchange,
+    ))
+  }, [voice.said])
+
+  // The line is a cost while it is open, so it closes with the screen.
+  useEffect(() => {
+    return () => {
+      closeVoice()
+    }
+  }, [closeVoice])
 
   const changeQuantity = useCallback(async (productId: string, quantity: number) => {
     if (!sessionId || adjusting) {
@@ -304,11 +368,15 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
 
           {exchanges.map(exchange => (
             <View key={exchange.id} style={styles.exchange}>
-              <View style={styles.saidRow}>
-                <View style={styles.said}>
-                  <Text style={styles.saidText}>{exchange.said}</Text>
+              {/* Empty until the transcription lands, and an empty grey pill
+                * reads as a mistake rather than as waiting. */}
+              {exchange.said.length > 0 && (
+                <View style={styles.saidRow}>
+                  <View style={styles.said}>
+                    <Text style={styles.saidText}>{exchange.said}</Text>
+                  </View>
                 </View>
-              </View>
+              )}
 
               {exchange.answered === null
                 ? (
@@ -377,10 +445,11 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
                 </View>
               )
             : (
-                <AssistantVoiceButton
-                  onRecorded={uri => void onRecorded(uri)}
-                  onError={setError}
-                  disabled={busy}
+                <AssistantTalkButton
+                  state={voice.state}
+                  onOpen={voice.open}
+                  onClose={voice.close}
+                  onHush={voice.hush}
                 />
               )}
 
