@@ -441,7 +441,7 @@ function SupplierBannerRequestsWrapper({ navigation }: any) {
   )
 }
 
-/** Le même formulaire, pour l'annonce à l'ouverture de l'application. */
+/** The same form, for the announcement shown when the app opens. */
 function SupplierAnnouncementRequestFormWrapper({ navigation }: any) {
   return (
     <SafeScreen>

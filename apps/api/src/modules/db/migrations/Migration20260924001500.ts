@@ -1,14 +1,14 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * L'extension `unaccent`, pour que la recherche ignore les accents.
+ * The `unaccent` extension, so search ignores accents.
  *
- * Le catalogue est saisi sans accents — « Tomates fraiches », « Panier de
- * legumes » — alors que la dictée vocale en met. « légumes » ne trouvait donc
- * rien, et l'assistant annonçait une rupture qui n'existait pas.
+ * The catalogue is typed without accents — "Tomates fraiches", "Panier de
+ * legumes" — while speech dictation adds them. So "légumes" found nothing, and
+ * the assistant announced a shortage that did not exist.
  *
- * `unaccent` est marquée *trusted* depuis PostgreSQL 13 : le propriétaire de la
- * base la crée sans être superutilisateur.
+ * `unaccent` has been marked *trusted* since PostgreSQL 13: the database owner
+ * can create it without being a superuser.
  */
 export class Migration20260924001500 extends Migration {
   override async up(): Promise<void> {
@@ -16,7 +16,7 @@ export class Migration20260924001500 extends Migration {
   }
 
   override async down(): Promise<void> {
-    // Laissée en place : d'autres requêtes s'en servent déjà, et la retirer
-    // ferait échouer la recherche au lieu de revenir en arrière proprement.
+    // Left in place: other queries already rely on it, and dropping it would
+    // break search rather than roll anything back cleanly.
   }
 }

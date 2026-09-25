@@ -24,19 +24,19 @@ export class UsersService {
   }
 
   /**
-   * La version des documents en vigueur.
+   * The version of the documents in force.
    *
-   * Une constante, et non un réglage : changer les textes se fait en
-   * déployant, et la trace doit dire ce qui a été accepté ce jour-là. Aucun
-   * re-consentement n'est demandé aux comptes existants quand elle change.
+   * A constant rather than a setting: changing the texts happens by deploying,
+   * and the record has to say what was accepted that day. No re-consent is
+   * asked of existing accounts when it changes.
    */
   private static readonly TERMS_VERSION = '2026-09'
 
   /**
-   * Enregistrer l'accord, une fois pour toutes.
+   * Record the agreement, once and for all.
    *
-   * La première acceptation n'est jamais écrasée : ce qui compte est le
-   * moment où l'accord a été donné, pas la dernière fois qu'on l'a redit.
+   * The first acceptance is never overwritten: what matters is the moment
+   * agreement was given, not the last time it was restated.
    */
   async acceptTerms(id: string, from: string): Promise<User> {
     const user = await this.findById(id)

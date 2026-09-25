@@ -5,15 +5,15 @@ import { config } from '../../config/env.config'
 const OPENAI_AUDIO_URL = 'https://api.openai.com/v1/audio'
 
 /**
- * Ce que l'assistant entend, et ce qu'il dit.
+ * What the assistant hears, and what she says.
  *
- * Deux fonctions séparées du reste, derrière une interface étroite : le prix
- * de ce poste bougera, et le jour où l'on change de fournisseur il n'y a que
- * ce fichier à réécrire. La conversation, elle, ne sait pas qu'il existe.
+ * Two functions kept apart behind a narrow interface: the price of this line
+ * item will move, and the day we change provider this is the only file to
+ * rewrite. The conversation itself does not know it exists.
  *
- * L'audio n'est jamais conservé : il entre, il est transcrit, il disparaît.
- * Ce qui reste de la parole, c'est le texte — visible par l'acheteur, et
- * vérifiable après coup.
+ * Audio is never kept: it comes in, it is transcribed, it is gone. What
+ * remains of the speech is the text — visible to the buyer, and checkable
+ * afterwards.
  */
 @Injectable()
 export class AssistantVoiceService {
@@ -28,10 +28,10 @@ export class AssistantVoiceService {
   }
 
   /**
-   * L'audio devient du texte.
+   * Audio becomes text.
    *
-   * La langue est imposée : laisser deviner ferait basculer une phrase courte
-   * — « oui », « deux kilos » — vers l'anglais une fois sur dix.
+   * The language is forced: letting it guess would tip a short phrase — "oui",
+   * "deux kilos" — into English one time in ten.
    */
   async transcribe(audio: Buffer, filename: string, mimeType: string): Promise<string> {
     const form = new FormData()
@@ -55,10 +55,10 @@ export class AssistantVoiceService {
   }
 
   /**
-   * Le texte devient de la voix.
+   * Text becomes speech.
    *
-   * Rendu en MP3 : lu partout, et assez léger pour une connexion mobile qui
-   * n'est pas toujours bonne.
+   * Returned as MP3: played everywhere, and light enough for a mobile
+   * connection that is not always good.
    */
   async speak(text: string): Promise<Buffer> {
     const response = await fetch(`${OPENAI_AUDIO_URL}/speech`, {
@@ -72,7 +72,7 @@ export class AssistantVoiceService {
         voice: config.assistant.ttsVoice,
         input: text,
         response_format: 'mp3',
-        // Ce n'est pas un narrateur : c'est quelqu'un derrière un étal.
+        // This is not a narrator: it is someone behind a market stall.
         instructions: 'Parle en français, d\'un ton chaleureux et direct, comme une vendeuse de marché qui connaît ses produits. Débit naturel, pas de ton de présentation.',
       }),
     })

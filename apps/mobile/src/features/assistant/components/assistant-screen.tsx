@@ -27,11 +27,11 @@ interface Exchange {
 }
 
 /**
- * Ce que fait Assita, en un coup d'œil.
+ * What Assita is doing, at a glance.
  *
- * Trois états et pas davantage : elle écoute, elle cherche, elle parle. Une
- * assistante dont on ne sait pas si elle écoute est une assistante qu'on
- * interrompt au mauvais moment.
+ * Three states and no more: she listens, she searches, she speaks. An
+ * assistant you cannot tell is listening is one you interrupt at the wrong
+ * moment.
  */
 type Activity = 'idle' | 'hearing' | 'thinking' | 'speaking'
 
@@ -49,14 +49,14 @@ interface AssistantScreenProps {
 }
 
 /**
- * Assita, en conversation.
+ * Assita, in conversation.
  *
- * L'écran n'est pas un décor : la voix ne laisse aucune trace, donc tout ce qui
- * a été compris s'écrit — ce qu'on a dit, ce qu'il a répondu, ce qu'il a mis
- * dans le panier et ce que ça coûte. C'est ce qui rend l'échange vérifiable.
+ * The screen is not decoration: speech leaves no trace, so everything that was
+ * understood is written down — what was said, what she answered, what she put
+ * in the cart and what it costs. That is what makes the exchange checkable.
  *
- * La réponse s'affiche phrase par phrase, au rythme où le serveur la vérifie :
- * on n'attend pas la fin du tour pour lire le début.
+ * The answer appears sentence by sentence, at the pace the server verifies it:
+ * nobody waits for the end of a turn to read its beginning.
  */
 export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   const { semantic } = useTheme()
@@ -76,13 +76,13 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   const [voiceOn, setVoiceOn] = useState(true)
 
   /**
-   * La lecture, pilotée à la main.
+   * Playback, driven by hand.
    *
-   * `useAudioPlayer` ne rejouait pas quand la source changeait : le fichier
-   * était chargé, `play()` appelé, et rien ne sortait. Un lecteur créé pour
-   * chaque réponse, joué puis libéré, ne laisse pas de place au doute. Le mode
-   * audio est reposé à chaque fois parce que l'enregistrement le change, et
-   * qu'en conversation écrite il n'aurait jamais été posé du tout.
+   * `useAudioPlayer` did not replay when the source changed: the file was
+   * loaded, `play()` was called, and nothing came out. A player created per
+   * answer, played, then released, leaves no room for doubt. The audio mode is
+   * set again every time because recording changes it, and in a typed
+   * conversation it would never have been set at all.
    */
   const playerRef = useRef<ReturnType<typeof createAudioPlayer> | null>(null)
   const [speaking, setSpeaking] = useState(false)
@@ -131,7 +131,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
       player.play()
     }
     catch {
-      // Une voix qui ne sort pas n'empêche pas de lire : le texte est déjà là.
+      // A voice that fails to play blocks nothing: the text is already there.
       setSpeaking(false)
     }
   }, [voiceOn])
@@ -378,8 +378,8 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
                 />
               )}
 
-          {/* Écrire au lieu de parler : pour un mot que la transcription
-            * n'attrape pas, ou là où l'on ne peut pas parler. */}
+          {/* Typing instead of speaking: for a word transcription misses, or
+            * somewhere speaking is not an option. */}
           <Pressable
             style={styles.switchMode}
             onPress={() => setTyping(mode => !mode)}

@@ -1,10 +1,10 @@
 import { AssistantService } from '../assistant.service'
 
 /**
- * Ce que l'assistant sait faire, et surtout ce qu'il ne sait pas.
+ * What the assistant can do, and above all what it cannot.
  *
- * Le service est construit avec des dépendances vides : on n'interroge ici
- * que la liste des outils, pas leur exécution.
+ * The service is built with empty dependencies: only the list of tools is
+ * inspected here, never their execution.
  */
 function toolset() {
   const service = new AssistantService({} as never, {} as never, {} as never, {} as never, {} as never)
@@ -12,10 +12,10 @@ function toolset() {
 }
 
 describe('outils de l\'assistant', () => {
-  // La garantie centrale de la spec 008. L'absence est le garde-fou : une
-  // consigne d'invite se contourne, un outil qui n'existe pas ne s'appelle
-  // pas. Ce test rend l'absence permanente, y compris contre le prochain
-  // développeur qui trouverait pratique d'ajouter `payer()`.
+  // Spec 008's central guarantee. Absence is the guardrail: a prompt
+  // instruction can be talked around, a tool that does not exist cannot be
+  // called. This test makes the absence permanent, including against the next
+  // developer who finds it handy to add `payer()`.
   it('ne comporte aucun outil touchant au paiement', () => {
     const forbidden = /pay|paiement|regler|régler|debit|débit|carte|mobile_money/i
     const offenders = toolset().filter(t => forbidden.test(t.name))
@@ -30,16 +30,16 @@ describe('outils de l\'assistant', () => {
     expect(names).toContain('statut_commande')
   })
 
-  // Le seul autorisé à produire un montant global. S'il disparaissait, le
-  // modèle additionnerait de lui-même sans que rien ne l'en empêche.
+  // The only one allowed to produce an overall amount. If it disappeared, the
+  // model would add things up itself with nothing to stop it.
   it('garde estimer_commande comme unique source des totaux', () => {
     const estimate = toolset().find(t => t.name === 'estimer_commande')
     expect(estimate).toBeDefined()
     expect(estimate?.description).toMatch(/jamais additionner soi-même/i)
   })
 
-  // La tentation la plus naturelle d'un modèle de langage, et la plus chère
-  // en confiance : annoncer une heure d'arrivée qu'il ne connaît pas.
+  // A language model's most natural temptation, and the costliest in trust:
+  // announcing an arrival time it does not know.
   it('interdit explicitement l\'estimation d\'un délai dans le suivi', () => {
     const status = toolset().find(t => t.name === 'statut_commande')
     expect(status?.description).toMatch(/jamais estimer un délai/i)

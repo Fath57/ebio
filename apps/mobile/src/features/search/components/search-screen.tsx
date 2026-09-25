@@ -43,10 +43,10 @@ interface SearchScreenProps {
   initialValidatedOnly?: boolean
   initialPromoOnly?: boolean
   /**
-   * Les critères d'une section de l'accueil, quand on arrive par « Tout voir ».
+   * A home section's criteria, when arriving through "Tout voir".
    *
-   * Sans eux, le listing montrait autre chose que le rail dont il venait —
-   * une section « moins de 1 000 F » s'ouvrait sur le catalogue entier.
+   * Without them the listing showed something other than the rail it came
+   * from — a "moins de 1 000 F" section opened onto the whole catalogue.
    */
   initialSupplierId?: string
   initialMaxPrice?: number
@@ -108,8 +108,8 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         q: q || undefined,
         latitude,
         longitude,
-        // Ce que l'acheteur a réglé lui-même prime sur ce que la section
-        // proposait : il vient d'ouvrir le panneau de filtres pour ça.
+        // What the buyer set themselves wins over what the section proposed:
+        // they just opened the filter panel for exactly that.
         radius: appliedFilters.radius !== undefined ? appliedFilters.radius * 1000 : initialRadius,
         category,
         maxPrice: appliedFilters.maxPrice ?? initialMaxPrice,

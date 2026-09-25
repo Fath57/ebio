@@ -25,11 +25,11 @@ function money(value: number): string {
 }
 
 /**
- * Le panier de la conversation, toujours au même endroit.
+ * The conversation's cart, always in the same place.
  *
- * Il tient le bas de l'écran parce que c'est ce qu'on vérifie : la charte veut
- * le total visible sans avoir à le chercher, et une conversation vocale n'offre
- * aucune autre preuve de ce qui a été compris.
+ * It holds the bottom of the screen because it is what gets checked: the
+ * charter wants the total visible without hunting for it, and a spoken
+ * conversation offers no other proof of what was understood.
  */
 export function AssistantCartPanel({
   cart,

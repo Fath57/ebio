@@ -1,25 +1,24 @@
 import { PaymentProvider } from './payment.entity'
 
 /**
- * Chez qui vérifier une transaction, d'après la transaction elle-même.
+ * Where to verify a transaction, decided by the transaction itself.
  *
- * La bascule d'un prestataire à l'autre ne se fait pas d'un coup : les
- * applications déjà installées embarquent le widget de l'ancien et ouvriront
- * leur paiement chez lui, quoi que le serveur ait configuré depuis. Vérifier
- * chez le prestataire courant reviendrait à chercher leur transaction là où
- * elle n'existe pas — et à ne jamais créditer quelqu'un qui a pourtant payé.
+ * Switching from one provider to another does not happen all at once: apps
+ * already installed carry the old one's widget and will open their payment
+ * there, whatever the server has been configured to since. Verifying with the
+ * current provider would mean looking for their transaction where it does not
+ * exist — and never crediting someone who did pay.
  *
- * On regarde donc la transaction plutôt que le réglage :
+ * So we read the transaction rather than the setting:
  *
- * - si le serveur a lui-même ouvert celle-ci, il sait de qui elle vient ;
- * - sinon, un identifiant tout en chiffres est un identifiant FedaPay
- *   (« 510148 »), là où INTRAM rend dix caractères alphanumériques
- *   (« ZnSXVuakcF »).
+ * - if the server opened this one itself, it knows whose it is;
+ * - otherwise an all-digit id is a FedaPay id ("510148"), whereas INTRAM
+ *   returns ten alphanumeric characters ("ZnSXVuakcF").
  *
- * La forme suffit parce que les deux ne se ressemblent pas. Un identifiant
- * INTRAM entièrement numérique est possible en théorie — dix chiffres tirés
- * sur soixante-deux caractères — et c'est précisément ce que le premier cas
- * rattrape : ceux-là, le serveur les a ouverts et les reconnaît.
+ * Shape is enough because the two do not resemble each other. An all-numeric
+ * INTRAM id is possible in theory — ten digits drawn from sixty-two characters
+ * — and that is exactly what the first case catches: those, the server opened
+ * and recognises.
  */
 export function providerForTransaction(
   presentedId: string,

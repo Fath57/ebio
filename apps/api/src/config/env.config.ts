@@ -133,9 +133,9 @@ export const configValidationSchema = z.object({
    */
   // ── Assistant vocal ──────────────────────────────────────────────────────
   /**
-   * Le modèle, choisi dans le registre du module `ai` — qui porte déjà les
-   * fournisseurs, leurs clés, la limitation de débit et la télémétrie. Rien
-   * de tout cela n'est à refaire ici.
+   * The model, chosen from the `ai` module's registry — which already carries
+   * the providers, their keys, rate limiting and telemetry. None of that needs
+   * rebuilding here.
    */
   ASSISTANT_MODEL: z.enum([
     'CLAUDE_HAIKU_4_5',
@@ -146,16 +146,16 @@ export const configValidationSchema = z.object({
     'MISTRAL_SMALL',
   ]).default('CLAUDE_HAIKU_4_5'),
   /**
-   * Nombre maximal d'allers-retours d'outils dans un tour. Une boucle folle
-   * coûterait une fortune sans que personne ne s'en aperçoive avant la facture.
+   * The maximum number of tool round trips in one turn. A runaway loop would
+   * cost a fortune before anyone noticed, and the bill comes later.
    */
   ASSISTANT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(8),
   /**
-   * L'oreille. Whisper est le plus robuste sur les accents et le bruit — la
-   * recherche de la spec 008 le retient pour cette raison, pas pour son prix.
+   * The ear. Whisper is the most robust on accents and noise — spec 008's
+   * research picks it for that reason, not for its price.
    */
   ASSISTANT_STT_MODEL: z.string().default('whisper-1'),
-  /** La voix, et son timbre. Féminin : la métaphore est celle d'une vendeuse. */
+  /** The voice, and its timbre. Female: the metaphor is a market seller. */
   ASSISTANT_TTS_MODEL: z.string().default('gpt-4o-mini-tts'),
   ASSISTANT_TTS_VOICE: z.string().default('shimmer'),
 

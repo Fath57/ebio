@@ -14,44 +14,43 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
 
 /**
- * L'enregistrement, avec la mesure du niveau d'entrée.
+ * Recording, with input-level metering.
  *
- * Le préréglage haute qualité ne la demande pas ; sans elle, rien à l'écran ne
- * peut réagir à la voix — et un micro dont on ne voit pas s'il entend est un
- * micro dans lequel on parle pour rien.
+ * The high-quality preset does not ask for it; without it nothing on screen
+ * can react to the voice — and a microphone you cannot see hearing is a
+ * microphone you speak into for nothing.
  */
 const PRESET = { ...RecordingPresets.HIGH_QUALITY, isMeteringEnabled: true }
 
-/** Assez souvent pour suivre la voix, assez rare pour ne pas chauffer. */
+/** Often enough to follow a voice, rare enough not to burn the battery. */
 const METER_INTERVAL_MS = 100
 
 /**
- * Le temps d'écoute du fond sonore, avant de juger quoi que ce soit.
+ * How long we listen to the room before judging anything.
  *
- * Un seuil fixe ne marche pas : dans une pièce calme le fond est à -50 dB,
- * dans un marché il monte à -30, et le silence n'y redescend jamais sous une
- * valeur écrite d'avance. On mesure donc l'ambiance du moment, puis on juge
- * par rapport à elle.
+ * A fixed threshold does not work: in a quiet room the floor sits at -50 dB,
+ * in a market it rises to -30, and silence there never drops below a value
+ * written in advance. So we measure the room as it is, then judge against it.
  */
 const AMBIENT_SAMPLE_MS = 700
 
 /**
- * Ce qui sépare une voix du fond, en décibels.
+ * What separates a voice from the room, in decibels.
  *
- * Parler juste au-dessus du bruit n'arrive pas : une voix proche du micro
- * dépasse son environnement de 12 à 20 dB. La marge retenue laisse passer une
- * voix basse sans confondre un passage de moto avec une phrase.
+ * Nobody speaks just barely above the noise: a voice close to the microphone
+ * beats its surroundings by 12 to 20 dB. The margin chosen lets a quiet voice
+ * through without mistaking a passing motorbike for a sentence.
  */
 const VOICE_ABOVE_AMBIENT_DB = 9
 
-/** Le temps de silence qui clôt un tour de parole, une fois qu'on a parlé. */
+/** The silence that ends a turn, once something has been said. */
 const SILENCE_BEFORE_STOP_MS = 1600
 
 /**
- * Au-delà, on arrête quoi qu'il arrive.
+ * Past this, we stop whatever happens.
  *
- * Un micro laissé ouvert dans un endroit bruyant enregistrerait sans fin, et
- * la transcription se paie à la minute.
+ * A microphone left open in a noisy place would record forever, and
+ * transcription is billed by the minute.
  */
 const MAX_RECORDING_MS = 45_000
 
@@ -64,10 +63,10 @@ interface AssistantVoiceButtonProps {
 }
 
 /**
- * Du décibel vers une part de 0 à 1, pour ce que l'œil doit voir.
+ * From decibels to a 0-to-1 share, for what the eye should see.
  *
- * Mesuré depuis le fond sonore de l'endroit : dans un marché, un anneau calé
- * sur zéro absolu resterait allumé en permanence et ne dirait plus rien.
+ * Measured from the room's own noise floor: in a market, a ring anchored to
+ * absolute zero would stay lit permanently and stop saying anything.
  */
 function loudness(db: number | undefined, ambientDb: number | null): number {
   if (db === undefined || !Number.isFinite(db)) {
@@ -79,16 +78,17 @@ function loudness(db: number | undefined, ambientDb: number | null): number {
 }
 
 /**
- * Le bouton pour parler.
+ * The button to speak.
  *
- * Large et bas dans l'écran : on fait ses courses debout, souvent avec l'autre
- * main occupée, et c'est le pouce qui l'atteint. Un appui démarre ; ensuite,
- * se taire suffit — l'enregistrement se ferme tout seul après un silence, ce
- * qui est la seule façon de commander sans toucher l'écran. Le second appui
- * reste possible pour couper court.
+ * Wide and low on the screen: shopping happens standing up, often with the
+ * other hand busy, and it is the thumb that reaches it. One press starts;
+ * after that, falling silent is enough — the recording closes on its own,
+ * which is the only way to order without touching the screen. A second press
+ * is still there to cut things short.
  *
- * L'anneau suit la voix. Ce n'est pas une décoration : c'est la seule preuve
- * que le micro entend, et sans elle on ne sait pas si l'on parle dans le vide.
+ * The ring follows the voice. It is not decoration: it is the only proof that
+ * the microphone hears, and without it nobody knows they are speaking into
+ * nothing.
  */
 export function AssistantVoiceButton({ onRecorded, onError, disabled }: AssistantVoiceButtonProps) {
   const recorder = useAudioRecorder(PRESET)
@@ -100,7 +100,7 @@ export function AssistantVoiceButton({ onRecorded, onError, disabled }: Assistan
   const silenceSince = useRef<number | null>(null)
   const stopRef = useRef<() => void>(() => {})
 
-  // Le fond sonore mesuré au début de l'écoute, et le seuil qui en découle.
+  // The room noise measured as listening starts, and the threshold it sets.
   const startedAt = useRef<number>(0)
   const ambient = useRef<number | null>(null)
   const ambientSamples = useRef<number[]>([])
@@ -123,8 +123,8 @@ export function AssistantVoiceButton({ onRecorded, onError, disabled }: Assistan
 
   stopRef.current = () => void stop()
 
-  // L'anneau suit le niveau mesuré, sans animation d'attente : ce qui bouge
-  // ici, c'est la voix, et rien d'autre.
+  // The ring follows the measured level, with no idle animation: what moves
+  // here is the voice, and nothing else.
   const level = listening ? loudness(state.metering, ambient.current) : 0
   useEffect(() => {
     Animated.timing(ring, {
@@ -134,9 +134,9 @@ export function AssistantVoiceButton({ onRecorded, onError, disabled }: Assistan
     }).start()
   }, [level, ring])
 
-  // On a parlé, puis on s'est tu : le tour est fini. Le silence ne compte
-  // qu'après avoir entendu quelque chose, sinon l'enregistrement se fermerait
-  // avant qu'on ait ouvert la bouche.
+  // Something was said, then silence: the turn is over. Silence only counts
+  // after something has been heard, or the recording would close before the
+  // buyer had opened their mouth.
   useEffect(() => {
     if (!listening) {
       silenceSince.current = null
@@ -149,15 +149,15 @@ export function AssistantVoiceButton({ onRecorded, onError, disabled }: Assistan
     const db = state.metering ?? -160
     const elapsed = Date.now() - startedAt.current
 
-    // Les premières centaines de millisecondes servent à écouter l'endroit où
-    // l'on se trouve. On ne juge rien pendant ce temps-là.
+    // The first few hundred milliseconds are spent listening to the room.
+    // Nothing is judged during that time.
     if (ambient.current === null) {
       ambientSamples.current.push(db)
       if (elapsed < AMBIENT_SAMPLE_MS) {
         return
       }
-      // La médiane plutôt que la moyenne : un claquement pendant la mesure
-      // fausserait le seuil pour tout le reste du tour.
+      // The median rather than the mean: one slam during the measurement
+      // would skew the threshold for the rest of the turn.
       const sorted = [...ambientSamples.current].sort((a, b) => a - b)
       ambient.current = sorted[Math.floor(sorted.length / 2)] ?? -50
       return

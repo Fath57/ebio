@@ -32,10 +32,10 @@ import { HomeBannerCarousel } from './home-banner-carousel'
 import { HomeHeader } from './home-header'
 
 /**
- * Ce que l'application sait dessiner, et ce que le back-office peut choisir.
+ * What the app can draw, and what the back-office may choose.
  *
- * Une liste fermée : un nom inconnu laisserait un trou dans le rail, alors
- * qu'un défaut se remarque à peine.
+ * A closed list: an unknown name would leave a hole in the rail, whereas a
+ * default is barely noticed.
  */
 const SECTION_ICONS: Record<string, typeof MapPin> = {
   'map-pin': MapPin,
@@ -48,7 +48,7 @@ const SECTION_ICONS: Record<string, typeof MapPin> = {
   'clock': Clock,
 }
 
-/** Les pictogrammes qui appellent l'attention se colorent en corail. */
+/** The icons that call for attention are coloured coral. */
 const WARM_ICONS = new Set(['tag', 'flame', 'map-pin'])
 
 interface HomeScreenProps {
@@ -57,7 +57,7 @@ interface HomeScreenProps {
   onOpenMap: () => void
   onNavigateToSupplier: (supplierId: string) => void
   onNavigateToProduct: (productId: string) => void
-  /** Rouvre la recherche avec les critères de la section. */
+  /** Reopens the search with the section's criteria. */
   onSeeAll: (title: string, criteria: HomeSectionCriteria) => void
   onPickLocation: () => void
   onOpenNotifications: () => void
@@ -98,8 +98,8 @@ export function HomeScreen({
   // publiée, on retombe sur une sélection automatique — promotions, à défaut
   // fournisseurs validés, à défaut les plus proches — pour ne jamais laisser
   // la section vide.
-  // Sans bannière publiée, on pioche dans ce que les sections ont déjà rendu
-  // plutôt que de relancer une recherche pour rien.
+  // With no published banner, we draw from what the sections already
+  // returned rather than firing another search for nothing.
   const fallbackSource = sections.flatMap(section => section.results)
   const banners: HomeBanner[] = editorialBanners.length > 0
     ? editorialBanners
@@ -164,8 +164,8 @@ export function HomeScreen({
                     Icon={SECTION_ICONS[section.icon ?? ''] ?? Sparkles}
                     iconColor={WARM_ICONS.has(section.icon ?? '') ? colors.coral[400] : colors.green[400]}
                     data={section.results}
-                    // Une section composée à la main montre déjà tout ce
-                    // qu'elle contient : « Tout voir » n'y mène nulle part.
+                    // A hand-picked section already shows everything it
+                    // holds: "Tout voir" would lead nowhere.
                     onSeeAll={section.criteria === null
                       ? null
                       : () => onSeeAll(section.title, section.criteria ?? {})}
@@ -186,7 +186,7 @@ function HomeSection({ title, subtitle, Icon, iconColor, data, onSeeAll, onNavig
   Icon: typeof MapPin
   iconColor: string
   data: SearchResult[]
-  /** Nul pour une section qui montre déjà tout. */
+  /** Null for a section that already shows everything. */
   onSeeAll: (() => void) | null
   onNavigateToProduct: (productId: string) => void
   textColor: string

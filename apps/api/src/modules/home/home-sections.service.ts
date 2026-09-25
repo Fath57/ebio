@@ -6,24 +6,24 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { SearchService } from '../search/search.service'
 import { HomeSection, HomeSectionMode } from './home-section.entity'
 
-/** Une section prête à afficher : ce qu'elle dit, et ce qu'elle montre. */
+/** A section ready to display: what it says, and what it shows. */
 export interface ResolvedHomeSection {
   id: string
   title: string
   subtitle: string | null
   icon: string | null
   /**
-   * Les critères, rendus tels quels.
+   * The criteria, returned as they are.
    *
-   * L'application en a besoin pour « Tout voir » : elle rouvre la recherche
-   * avec les mêmes filtres plutôt qu'un endpoint de plus. Nul pour une
-   * section composée à la main, où le rail montre déjà tout.
+   * The app needs them for "Tout voir": it reopens the search with the same
+   * filters rather than calling one more endpoint. Null for a hand-picked
+   * section, where the rail already shows everything.
    */
   criteria: HomeSectionCriteria | null
   results: SearchResult[]
 }
 
-/** Où se trouve l'acheteur, quand on le sait. */
+/** Where the buyer is, when we know. */
 export interface BuyerPosition {
   latitude?: number
   longitude?: number
@@ -36,17 +36,17 @@ export class HomeSectionsService {
     private readonly search: SearchService,
   ) {}
 
-  /** Toutes les sections, éteintes comprises : c'est la vue du back-office. */
+  /** Every section, switched-off ones included: the back-office view. */
   async listAll(): Promise<HomeSection[]> {
     return this.em.find(HomeSection, {}, { orderBy: { position: 'ASC' } })
   }
 
   /**
-   * Les sections telles que l'acheteur les voit, produits inclus.
+   * The sections as the buyer sees them, products included.
    *
-   * Une section qui ne rend rien est écartée plutôt que montrée vide : un
-   * titre suivi d'un rail vide donne l'impression d'une application cassée,
-   * et « En promotion » n'a rien à dire les jours sans promotion.
+   * A section that returns nothing is dropped rather than shown empty: a title
+   * followed by an empty rail reads as a broken app, and "En promotion" has
+   * nothing to say on days without promotions.
    */
   async listForBuyer(position: BuyerPosition): Promise<ResolvedHomeSection[]> {
     const sections = await this.em.find(
@@ -70,11 +70,11 @@ export class HomeSectionsService {
   }
 
   /**
-   * Les produits d'une section.
+   * A section's products.
    *
-   * Tout passe par la recherche, y compris la composition à la main : elle
-   * porte déjà la boutique, la distance, le stock et le prix promotionnel —
-   * tout ce qu'une carte affiche, et qu'il faudrait sinon refaire ici.
+   * Everything goes through the search, hand-picked lists included: it already
+   * carries the shop, the distance, the stock and the promotional price —
+   * everything a card displays, and which would otherwise be rebuilt here.
    */
   private async resolve(section: HomeSection, position: BuyerPosition): Promise<SearchResult[]> {
     const criteria = section.criteria ?? {}
@@ -82,8 +82,8 @@ export class HomeSectionsService {
     const query = {
       latitude: position.latitude,
       longitude: position.longitude,
-      // Le rayon de la recherche est en mètres, le réglage en kilomètres :
-      // personne ne pense une zone de chalandise en mètres.
+      // The search radius is in metres, the setting in kilometres: nobody
+      // thinks of a catchment area in metres.
       radius: criteria.maxDistanceKm !== undefined ? criteria.maxDistanceKm * 1000 : undefined,
       category: criteria.categorySlug,
       supplierId: criteria.supplierId,
@@ -105,8 +105,8 @@ export class HomeSectionsService {
       return response.results
     }
 
-    // L'ordre voulu par le back-office, et non celui de la recherche : une
-    // section composée à la main l'est aussi dans son ordre.
+    // The order the back-office intended, not the search's: a hand-picked
+    // section is hand-picked in its order too.
     const wanted = section.productIds ?? []
     const byProduct = new Map(response.results.map(result => [result.product.id, result]))
     return wanted.map(id => byProduct.get(id)).filter((result): result is SearchResult => result !== undefined)
@@ -114,8 +114,8 @@ export class HomeSectionsService {
 
   async create(input: HomeSectionInput): Promise<HomeSection> {
     this.assertCoherent(input)
-    // `findOne` refuse un filtre vide : on demande la liste et on prend la
-    // dernière, ce qui revient au même sur une table de cette taille.
+    // `findOne` refuses an empty filter: ask for the list and take the last,
+    // which amounts to the same on a table this size.
     const [last] = await this.em.find(HomeSection, {}, { orderBy: { position: 'DESC' }, limit: 1 })
     const section = this.em.create(HomeSection, {
       title: input.title,
@@ -164,10 +164,10 @@ export class HomeSectionsService {
   }
 
   /**
-   * Réordonner d'un coup, plutôt qu'une position à la fois.
+   * Reorder in one go rather than one position at a time.
    *
-   * Envoyer la liste entière évite les états intermédiaires où deux sections
-   * partagent la même place — ce qui arrive dès qu'on déplace en deux appels.
+   * Sending the whole list avoids the in-between states where two sections
+   * share a place — which happens as soon as a move takes two calls.
    */
   async reorder(ids: string[]): Promise<HomeSection[]> {
     const sections = await this.em.find(HomeSection, { id: { $in: ids } })
@@ -185,11 +185,11 @@ export class HomeSectionsService {
   }
 
   /**
-   * Une section doit pouvoir rendre quelque chose.
+   * A section has to be able to return something.
    *
-   * Composée à la main sans produit, ou par critères sans critère, elle
-   * n'afficherait rien — autant le dire au moment où on l'enregistre plutôt
-   * que de laisser quelqu'un chercher pourquoi son rail est absent.
+   * Hand-picked with no product, or criteria-based with no criterion, it would
+   * show nothing — better to say so when it is saved than to leave someone
+   * wondering why their rail is missing.
    */
   private assertCoherent(input: HomeSectionInput): void {
     if (input.mode === 'MANUAL' && (input.productIds ?? []).length === 0) {

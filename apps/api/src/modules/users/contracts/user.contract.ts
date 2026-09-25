@@ -8,7 +8,7 @@ export const userResponseSchema = z.object({
   role: z.enum(['BUYER', 'SUPPLIER', 'COURIER', 'ADMIN']),
   image: z.string().url().nullable(),
   biometricEnabled: z.boolean(),
-  /** Null tant que la personne n'a pas accepté les conditions. */
+  /** Null until the person has accepted the terms. */
   termsAcceptedAt: z.string().nullable(),
   createdAt: z.string().datetime(),
   /** Staff members only: the back-office role they hold (null = super administrator). */
@@ -36,11 +36,11 @@ export type UpdateUser = z.infer<typeof updateUserSchema>
 export type UserSummary = z.infer<typeof userSummarySchema>
 
 /**
- * L'acceptation des conditions, telle que l'application la déclare.
+ * The acceptance of the terms, as the app declares it.
  *
- * `depuis` dit de quelle application vient l'accord : une même personne peut
- * s'inscrire comme acheteuse puis devenir livreuse, et l'endroit où elle a
- * accepté fait partie de ce qu'on doit pouvoir montrer.
+ * `depuis` says which app the agreement came from: the same person may sign up
+ * as a buyer and later become a courier, and where they accepted is part of
+ * what has to be showable.
  */
 export const acceptTermsSchema = z.object({
   depuis: z.enum(['client', 'supplier', 'courier', 'web']),

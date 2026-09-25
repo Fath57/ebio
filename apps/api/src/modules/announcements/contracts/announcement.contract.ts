@@ -2,22 +2,22 @@ import { z } from 'zod'
 
 const targetSchema = z.object({
   targetType: z.enum(['SUPPLIER', 'PRODUCT', 'URL', 'NONE']),
-  /** L'identifiant visé, ou l'adresse pour un lien externe. */
+  /** The id being pointed at, or the address for an external link. */
   targetId: z.string().max(1024).nullable().optional(),
 })
 
 /**
- * Ce qu'une boutique demande.
+ * What a shop requests.
  *
- * La durée choisit l'offre, et l'offre fixe le prix : la boutique ne propose
- * pas un montant, elle prend un tarif affiché.
+ * The duration picks the offer, and the offer sets the price: the shop does
+ * not propose an amount, it takes a posted rate.
  */
 /**
- * Une annonce dit quelque chose, d'une façon ou d'une autre.
+ * An announcement says something, one way or another.
  *
- * Un visuel se suffit souvent à lui-même — une affiche porte déjà son texte.
- * Le titre devient donc facultatif dès qu'il y a une image, mais l'un des deux
- * est exigé : une annonce vide n'aurait rien à montrer.
+ * A poster is often enough on its own — it already carries its text. So the
+ * title becomes optional as soon as there is an image, but one of the two is
+ * required: an empty announcement would have nothing to show.
  */
 function hasSomethingToShow(value: { title?: string | null, imageUrl?: string | null }): boolean {
   return (value.title ?? '').trim().length > 0 || (value.imageUrl ?? '').trim().length > 0
@@ -35,7 +35,7 @@ export const announcementRequestSchema = targetSchema.extend({
   description: 'Demande d\'annonce à l\'ouverture de l\'application',
 })
 
-/** Ce qu'eBio publie pour son compte, sans paiement ni approbation. */
+/** What eBio publishes on its own behalf, with no payment or approval. */
 export const platformAnnouncementSchema = targetSchema.extend({
   title: z.string().trim().max(120).nullable().optional(),
   subtitle: z.string().trim().max(500).nullable().optional(),
@@ -53,7 +53,7 @@ export const rejectAnnouncementSchema = z.object({
   reason: z.string().trim().min(1).max(500),
 }).meta({ title: 'RejectAnnouncement' })
 
-/** Quand l'annonce approuvée commence ; par défaut, tout de suite. */
+/** When the approved announcement starts; right away by default. */
 export const approveAnnouncementSchema = z.object({
   startsAt: z.string().nullable().optional(),
   priority: z.number().int().min(0).max(100).optional(),

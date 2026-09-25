@@ -1,10 +1,10 @@
 import { searchTerms } from '../search.service'
 
 /**
- * « huile arachide » ne rendait rien alors que « huile » et « arachide »
- * rendaient chacun quelque chose : la requête entière était cherchée comme une
- * sous-chaîne, et l'apostrophe de « Huile d'arachide pure » suffisait à tout
- * faire échouer. Personne n'écrit le nom exact d'un produit.
+ * "huile arachide" returned nothing while "huile" and "arachide" each returned
+ * something: the whole query was searched as one substring, and the apostrophe
+ * in "Huile d'arachide pure" was enough to break it. Nobody types a product's
+ * exact name.
  */
 describe('découpage d\'une recherche', () => {
   it('sépare les mots, qui seront tous exigés', () => {
@@ -15,8 +15,8 @@ describe('découpage d\'une recherche', () => {
     expect(searchTerms('  piment   frais  ')).toEqual(['piment', 'frais'])
   })
 
-  // « d' » dans « huile d'arachide » ne discrimine rien et ferait
-  // correspondre la moitié du catalogue.
+  // "d'" in "huile d'arachide" discriminates nothing and would match half the
+  // catalogue.
   it('écarte les mots d\'une seule lettre', () => {
     expect(searchTerms('huile d arachide')).toEqual(['huile', 'arachide'])
   })
@@ -29,15 +29,16 @@ describe('découpage d\'une recherche', () => {
     expect(searchTerms('   ')).toEqual([])
   })
 
-  // « deux piments » ne trouvait pas « Piment frais local », et l'assistant
-  // annonçait une rupture qui n'existait pas.
+  // "deux piments" did not find "Piment frais local", and the assistant
+  // announced a shortage that did not exist.
   it('retire le pluriel, pour que « piments » trouve « Piment »', () => {
     expect(searchTerms('piments')).toEqual(['piment'])
     expect(searchTerms('huiles bio')).toEqual(['huile', 'bio'])
   })
 
-  // Couper le « s » de « frais » donnerait « frai », qui ramène les fraises ;
-  // celui de « pois » donnerait « poi », qui ramène le poivre et le poisson.
+  // Stripping the "s" from "frais" would give "frai", which drags in
+  // strawberries; from "pois" it would give "poi", which drags in pepper and
+  // fish.
   it('laisse tranquilles les mots qui finissent en « s » sans être pluriels', () => {
     expect(searchTerms('pois')).toEqual(['pois'])
     expect(searchTerms('piment frais')).toEqual(['piment', 'frais'])
@@ -48,8 +49,8 @@ describe('découpage d\'une recherche', () => {
     expect(searchTerms('choux')).toEqual(['chou'])
   })
 
-  // Chaque mot est exigé dans le nom du produit : garder « avec » revenait à
-  // chercher un produit qui s'appelle « avec ».
+  // Every word is required in the product name: keeping "avec" meant looking
+  // for a product called "avec".
   it('écarte les mots de liaison', () => {
     expect(searchTerms('du gari avec de l huile')).toEqual(['gari', 'huile'])
   })
@@ -58,17 +59,17 @@ describe('découpage d\'une recherche', () => {
     expect(searchTerms('les')).toEqual(['les'])
   })
 
-  // Le scénario d'origine : « je cherche du gari avec de l'huile rouge ».
-  // Aucun produit ne porte le mot « rouge » — c'est l'huile de palme.
+  // The original scenario: "je cherche du gari avec de l'huile rouge". No
+  // product carries the word "rouge" — it is palm oil.
   it('traduit le vocabulaire d\'ici : « huile rouge » est de l\'huile de palme', () => {
     expect(searchTerms('huile rouge')).toEqual(['huile', 'palme'])
     expect(searchTerms('gari et huiles rouges')).toEqual(['gari', 'huile', 'palme'])
   })
 })
 
-// L'assistant a cherché « tomate 2 kg » et n'a rien rendu, alors que le
-// catalogue porte « Tomates fraiches bio ». Chaque mot étant exigé dans le
-// nom, « 2 » et « kg » condamnaient la requête.
+// The assistant searched "tomate 2 kg" and returned nothing, while the
+// catalogue carries "Tomates fraiches bio". Since every word is required in
+// the name, "2" and "kg" doomed the query.
 it('écarte la quantité et son unité', () => {
   expect(searchTerms('tomate 2 kg')).toEqual(['tomate'])
   expect(searchTerms('2 litres d huile')).toEqual(['huile'])

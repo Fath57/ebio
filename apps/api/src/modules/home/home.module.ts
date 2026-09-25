@@ -6,10 +6,10 @@ import { AdminHomeSectionsController, HomeController } from './home-sections.con
 import { HomeSectionsService } from './home-sections.service'
 
 /**
- * Les sections de l'accueil.
+ * The home sections.
  *
- * Rien de métier ici : une section est une recherche enregistrée, et c'est
- * `SearchModule` qui sait chercher.
+ * No domain logic here: a section is a saved search, and `SearchModule` is
+ * what knows how to search.
  */
 @Module({
   imports: [MikroOrmModule.forFeature([HomeSection]), SearchModule],

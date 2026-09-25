@@ -17,11 +17,11 @@ import { Announcement, AnnouncementOrigin } from './announcement.entity'
 const MAX_PENDING_PER_SHOP = 3
 
 /**
- * Comment nommer une annonce qui n'a pas de titre.
+ * How to name an announcement that has no title.
  *
- * Un visuel seul n'en porte pas, mais le relevé du portefeuille et la file du
- * back-office ont besoin de la désigner. « Visuel » est ce que la boutique
- * lira sur sa ligne de débit.
+ * A poster alone carries none, but the wallet statement and the back-office
+ * queue need to refer to it. "Visuel" is what the shop will read on its debit
+ * line.
  */
 function labelOf(title: string | null | undefined): string {
   return (title ?? '').trim().length > 0 ? (title as string) : 'Visuel'
@@ -36,12 +36,12 @@ export class AnnouncementsService {
   ) {}
 
   /**
-   * L'annonce à montrer maintenant, s'il y en a une.
+   * The announcement to show now, if there is one.
    *
-   * Une seule : deux modaux l'un après l'autre, personne ne lit le second. La
-   * plus prioritaire parmi celles en cours que l'acheteur n'a pas vues depuis
-   * l'intervalle réglé — une annonce qui revient à chaque ouverture cesse
-   * d'être lue au bout de deux fois.
+   * Only one: two modals back to back and nobody reads the second. The highest
+   * priority among those running that the buyer has not seen within the
+   * configured interval — an announcement that returns on every opening stops
+   * being read after the second time.
    */
   async currentFor(userId: string): Promise<Announcement | null> {
     const intervalHours = await this.settings.getAnnouncementIntervalHours()
@@ -68,10 +68,10 @@ export class AnnouncementsService {
   }
 
   /**
-   * Noter qu'elle a été vue.
+   * Record that it was seen.
    *
-   * Écrit en une instruction : l'application peut très bien envoyer deux fois
-   * le même signal, et deux lignes pour un même couple n'auraient aucun sens.
+   * Written in a single statement: the app may well send the same signal
+   * twice, and two rows for one pair would make no sense.
    */
   async markSeen(userId: string, announcementId: string): Promise<void> {
     await this.em.getConnection().execute(
@@ -83,7 +83,7 @@ export class AnnouncementsService {
     )
   }
 
-  // ─── Demandes des boutiques ────────────────────────────────────────────────
+  // ─── Shop requests ─────────────────────────────────────────────────────────
 
   async requestForSupplier(supplierId: string, data: AnnouncementRequestInput): Promise<AnnouncementRequest> {
     const supplier = await this.em.findOne(Supplier, { id: supplierId })
@@ -117,7 +117,7 @@ export class AnnouncementsService {
     })
     await this.em.flush()
 
-    // Payer d'abord : une demande qu'on ne peut pas payer n'existe pas.
+    // Pay first: a request that cannot be paid does not exist.
     if (offer.price > 0) {
       const wallet = await this.walletService.getOrCreate({ supplierId })
       try {
@@ -177,10 +177,10 @@ export class AnnouncementsService {
   }
 
   /**
-   * Approuver : la demande devient une annonce qui court.
+   * Approving: the request becomes a running announcement.
    *
-   * La durée payée commence au démarrage choisi, et non au dépôt — une
-   * boutique qui attend trois jours d'approbation ne doit pas les perdre.
+   * The paid duration starts at the chosen start, not when the request was
+   * filed — a shop that waits three days for approval must not lose them.
    */
   async approveRequest(requestId: string, data: ApproveAnnouncementInput): Promise<AnnouncementRequest> {
     const request = await this.loadRequest(requestId)
@@ -252,10 +252,10 @@ export class AnnouncementsService {
   }
 
   /**
-   * Éteindre plutôt que supprimer.
+   * Switch off rather than delete.
    *
-   * Une annonce payée laisse une trace : sa demande la référence, et les vues
-   * comptées disent ce que la boutique a eu pour son argent.
+   * A paid announcement leaves a trail: its request references it, and the
+   * counted views say what the shop got for its money.
    */
   async setActive(id: string, active: boolean): Promise<Announcement> {
     const announcement = await this.em.findOne(Announcement, { id })
@@ -275,7 +275,7 @@ export class AnnouncementsService {
     return request
   }
 
-  /** Rembourser ce qui n'a pas été diffusé. */
+  /** Refund what was never shown. */
   private async refund(request: AnnouncementRequest, description: string): Promise<void> {
     if (request.paidAt === null || request.paidAt === undefined || request.price <= 0) {
       return

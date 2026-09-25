@@ -1,14 +1,13 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * Les sections de l'accueil, sorties du code.
+ * The home sections, taken out of the code.
  *
- * « Près de vous », « Validé eBio » et « En promotion » étaient écrites en dur
- * dans l'application : renommer l'une d'elles demandait un build et une
- * soumission au Play Store. Elles deviennent des lignes.
+ * "Près de vous", "Validé eBio" and "En promotion" were hard-coded in the app:
+ * renaming one meant a build and a Play Store submission. They become rows.
  *
- * Les trois existantes sont recréées à l'identique, pour que rien ne change à
- * l'écran le jour du déploiement.
+ * The three existing ones are recreated identically, so nothing changes on
+ * screen the day this deploys.
  */
 export class Migration20260925120000 extends Migration {
   override async up(): Promise<void> {
@@ -30,7 +29,7 @@ export class Migration20260925120000 extends Migration {
     this.addSql(`CREATE INDEX IF NOT EXISTS "home_sections_order_idx"
       ON "home_sections" ("active", "position")`)
 
-    // Sur une base où la table existait déjà sans cette colonne.
+    // For a database where the table already existed without this column.
     this.addSql('ALTER TABLE "home_sections" ADD COLUMN IF NOT EXISTS "icon" varchar(32) NULL')
 
     this.addSql(`INSERT INTO "home_sections" ("title", "icon", "mode", "criteria", "position")

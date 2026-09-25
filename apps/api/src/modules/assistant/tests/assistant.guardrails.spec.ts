@@ -23,8 +23,8 @@ describe('montants prononcés', () => {
     expect(amountsIn('Ça fait 5 500 pour l\'instant.')).toEqual([5500])
   })
 
-  // « deux kilos » n'est pas un prix : confondre les deux ferait échouer
-  // chaque tour où l'assistant répète une quantité.
+  // "deux kilos" is not a price: confusing the two would fail every turn
+  // where the assistant repeats a quantity.
   it('ignore les petits nombres, qui sont des quantités', () => {
     expect(amountsIn('Deux kilos, c\'est noté.')).toEqual([])
   })
@@ -37,8 +37,8 @@ describe('ancrage des montants', () => {
     expect(ungroundedAmounts('Le gari blanc, c\'est 1 500 le kilo.', tools)).toEqual([])
   })
 
-  // Le défaut qui compte : un modèle qui additionne lui-même. Il tombe juste
-  // souvent, et faux le jour où une promotion s'applique.
+  // The failure that matters: a model doing the sum itself. It lands right
+  // often enough, and wrong the day a promotion applies.
   it('refuse un total que nul outil n\'a rendu', () => {
     expect(ungroundedAmounts('Ça nous fait 3 000 en tout.', tools)).toEqual([3000])
   })
@@ -60,8 +60,8 @@ describe('longueur d\'un tour', () => {
     expect(isTurnTooLong(reply)).toBe(false)
   })
 
-  // C'était la première rédaction de la spec : à lire ça passe, à l'oreille
-  // on décroche à la moitié.
+  // This was the spec's first draft: it reads fine, and loses the listener
+  // halfway through.
   it('refuse le paragraphe qu\'on ne peut pas écouter', () => {
     const reply = [
       'J\'ai du gari chez deux boutiques : du gari blanc à 1 500 le kilo chez Mama Adjo, et du gari Sohui à 1 800 chez Fidjrossè Bio.',
@@ -92,10 +92,10 @@ describe('ce qui trahit la machine', () => {
 })
 
 /**
- * Ce que l'invite demande mais ne garantit pas.
+ * What the prompt asks for but cannot guarantee.
  *
- * Trouvés en poussant l'assistant : il a annoncé « 1 600, livraison comprise »
- * sans avoir rien calculé, et mis des astérisques autour d'un nom de boutique.
+ * Found by pushing the assistant: it announced "1 600, livraison comprise"
+ * having computed nothing, and put asterisks around a shop name.
  */
 describe('vérification d\'une réponse', () => {
   const searched: RecordedToolCall[] = [
@@ -112,8 +112,8 @@ describe('vérification d\'une réponse', () => {
     expect(breaches[0].what).toContain('1600')
   })
 
-  // Le prix d'un produit trouvé deux tours plus tôt reste légitime : sans
-  // cette mémoire, l'alarme sonnerait à chaque phrase d'une conversation.
+  // A price found two turns earlier stays legitimate: without this memory the
+  // alarm would ring on every sentence of a conversation.
   it('accepte un montant vu plus tôt dans la conversation', () => {
     expect(groundingBreaches('Je vous avais dit 2 500 le litre.', [], [2500])).toEqual([])
   })
@@ -141,15 +141,15 @@ describe('mise en voix', () => {
     expect(forSpeech('## Vos commandes\n- du gari\n- de l\'huile')).toBe('Vos commandes\ndu gari\ndu l\'huile'.replace('du l\'huile', 'de l\'huile'))
   })
 
-  // « 2 * 3 » ou une apostrophe ne doivent pas être pris pour du balisage.
+  // "2 * 3" or an apostrophe must not be mistaken for markup.
   it('ne touche pas au texte ordinaire', () => {
     expect(forSpeech('Il reste 2 * 3 kilos, c\'est tout.')).toBe('Il reste 2 * 3 kilos, c\'est tout.')
   })
 })
 
 /**
- * Le défaut le plus grave vu sur téléphone : « C'est noté » alors que le
- * panier était resté vide. On croit avoir commandé, et on ne l'a pas fait.
+ * The worst failure seen on the phone: "C'est noté" while the cart had stayed
+ * empty. You believe you have ordered, and you have not.
  */
 describe('ajout annoncé', () => {
   const added: RecordedToolCall[] = [
@@ -172,15 +172,15 @@ describe('ajout annoncé', () => {
     expect(groundingBreaches('Voilà, c\'est dans le panier.', added)).toEqual([])
   })
 
-  // Une question n'est pas une annonce : « je vous en mets deux ? » propose.
+  // A question is not an announcement: "je vous en mets deux ?" offers.
   it('ne reprend pas une proposition ordinaire', () => {
     expect(groundingBreaches('Il me reste du piment frais. Ça vous dit ?', searchedOnly)).toEqual([])
   })
 })
 
 /**
- * La diffusion n'attend pas la fin du tour, mais elle n'envoie jamais une
- * phrase à moitié écrite : un montant coupé en deux ne se vérifie pas.
+ * Streaming does not wait for the end of a turn, but it never sends a half
+ * written sentence: half an amount cannot be checked.
  */
 describe('découpe du flux en phrases', () => {
   it('rend les phrases achevées et garde le reste', () => {
@@ -198,17 +198,17 @@ describe('découpe du flux en phrases', () => {
   })
 })
 
-// Le modèle oublie parfois l'espace après le point : « je regarde.J'ai du
-// gari » s'afficherait collé, et ne se vérifierait qu'en bloc.
+// The model sometimes forgets the space after a full stop: "je regarde.J'ai
+// du gari" would render run together, and could only be checked as one block.
 it('sépare deux phrases que le modèle a collées', () => {
   expect(takeSentences('Je regarde.J\'ai du gari. ').sentences)
     .toEqual(['Je regarde.', 'J\'ai du gari.'])
 })
 
 /**
- * Vu sur téléphone : « Salut, comment tu vas ? » a déclenché la phrase de
- * repli. La réponse contenait « je vous mets », que l'invite enseigne
- * pourtant comme une proposition — et une proposition n'engage rien.
+ * Seen on the phone: "Salut, comment tu vas ?" triggered the fallback
+ * sentence. The answer contained "je vous mets", which the prompt itself
+ * teaches as an offer — and an offer commits to nothing.
  */
 describe('proposer n\'est pas annoncer', () => {
   const searchedOnly: RecordedToolCall[] = [

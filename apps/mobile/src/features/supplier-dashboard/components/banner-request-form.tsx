@@ -83,12 +83,12 @@ export function computeMissingTopup(price: number, balance: number): number {
 }
 
 /**
- * Ce que la boutique achète.
+ * What the shop is buying.
  *
- * Bannière et annonce se demandent de la même façon — un visuel, une cible,
- * une durée prise dans une grille, payée d'avance au portefeuille. Seuls le
- * vocabulaire, les tarifs et l'endroit où l'on dépose changent, et c'est
- * exactement ce que porte cet objet.
+ * A banner and an announcement are requested the same way — artwork, a target,
+ * a duration taken from a price grid, paid up front from the wallet. Only the
+ * wording, the rates and where the request is filed differ, and that is
+ * exactly what this object carries.
  */
 const KINDS = {
   banner: {
@@ -115,7 +115,7 @@ interface BannerRequestFormProps {
   onGoBack: () => void
   /** Called once the request has been created (and paid). */
   onCreated: () => void
-  /** Bannière par défaut : c'est ce que ce formulaire faisait avant. */
+  /** Banner by default: that is what this form used to do. */
   kind?: RequestKind
 }
 

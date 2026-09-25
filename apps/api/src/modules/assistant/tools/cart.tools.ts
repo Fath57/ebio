@@ -6,13 +6,12 @@ import { Product } from '../../products/entities/product.entity'
 import { AssistantSession } from '../entities/assistant-session.entity'
 
 /**
- * Le panier de la conversation.
+ * The conversation's cart.
  *
- * eBio n'a pas de panier côté serveur : il vit dans l'application, et le
- * passage en caisse reçoit ses lignes dans la requête. L'assistant tient donc
- * le sien dans sa session, et l'application le reprend quand la conversation
- * aboutit — plutôt que d'inventer un second panier serveur qui divergerait du
- * premier au premier bug.
+ * eBio has no server-side cart: it lives in the app, and checkout receives its
+ * lines in the request. So the assistant keeps its own in the session, and the
+ * app picks it up when the conversation lands — rather than inventing a second
+ * server cart that would drift from the first at the first bug.
  */
 export interface AssistantCartLine {
   productId: string
@@ -36,15 +35,15 @@ export async function loadState(em: EntityManager, sessionId: string): Promise<{
 }
 
 /**
- * Écrit une ligne du panier **en une seule instruction**.
+ * Writes one cart line **in a single statement**.
  *
- * Le modèle appelle ses outils en parallèle : « mets-moi de l'huile et du
- * piment » déclenche deux ajouts dans le même pas. En lecture-modification-
- * écriture, les deux lisent le panier vide et le second écrase le premier —
- * un article disparaît en silence, et l'assistant annonce quand même que
- * tout y est. Postgres fait donc la fusion lui-même.
+ * The model calls its tools in parallel: "mets-moi de l'huile et du piment"
+ * fires two additions in the same step. Read-modify-write has both read the
+ * empty cart and the second overwrite the first — an item vanishes silently,
+ * and the assistant announces that everything is there anyway. So Postgres
+ * does the merge itself.
  *
- * `line` à `null` retire la ligne de `productId`.
+ * `line` at `null` removes the line for `productId`.
  */
 export async function writeCartLine(
   em: EntityManager,
@@ -71,13 +70,13 @@ export async function writeCartLine(
     [targetId ?? '', line ? JSON.stringify([line]) : '[]', sessionId],
   )
 
-  // L'entité en mémoire porte encore l'ancien état : la suite du tour lirait
-  // un panier périmé.
+  // The in-memory entity still carries the old state: the rest of the turn
+  // would read a stale cart.
   em.clear()
   return (rows[0]?.state as SessionState).cart ?? []
 }
 
-/** Le panier tel qu'on le dit à voix haute : des lignes et un sous-total. */
+/** The cart as it is said aloud: lines and a subtotal. */
 function describe(cart: AssistantCartLine[]) {
   return {
     lignes: cart.map(line => ({
@@ -122,8 +121,8 @@ export function addToCartTool(em: EntityManager) {
     async execute(args: z.infer<typeof parameters>, context: AssistantToolContext) {
       const product = await em.findOne(Product, { id: args.produitId }, { populate: ['supplier'] })
       if (!product) {
-        // Dire « introuvable » plutôt que de laisser le modèle conclure : il
-        // s'agit probablement d'un identifiant qu'il a inventé.
+        // Say "not found" rather than let the model draw its own conclusion:
+        // this is most likely an id it made up.
         return { erreur: 'Produit introuvable. Utilisez chercher_produits et reprenez l\'identifiant rendu.' }
       }
       if (product.stock < args.quantite) {

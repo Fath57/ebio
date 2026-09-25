@@ -51,7 +51,7 @@ export function cartTotal(cart: AssistantCartLine[]): number {
   return cart.reduce((sum, line) => sum + line.pricePerUnit * line.quantity, 0)
 }
 
-/** Ce qui arrive de l'assistant pendant qu'il parle. */
+/** What comes back from the assistant while she is speaking. */
 export type AssistantStreamEvent
   = | { type: 'session', sessionId: string }
     | { type: 'phrase', text: string }
@@ -61,14 +61,15 @@ export type AssistantStreamEvent
     | { type: 'error', message: string }
 
 /**
- * Le tour, reçu au fil de l'eau.
+ * The turn, received as it comes.
  *
- * `fetch` de React Native ne rend pas de flux : il faut attendre la réponse
- * entière, ce qui annule tout l'intérêt. `XMLHttpRequest` expose, lui, le texte
- * déjà reçu à chaque progression — on y relit ce qui vient d'arriver.
+ * React Native's `fetch` does not expose a stream: you wait for the whole
+ * response, which defeats the point. `XMLHttpRequest`, on the other hand,
+ * exposes the text received so far on every progress event — we read what has
+ * just arrived from there.
  *
- * Rend une fonction qui coupe : si l'acheteur quitte l'écran, le tour n'a pas
- * à continuer de coûter.
+ * Returns a function that cuts: if the buyer leaves the screen, the turn has
+ * no business carrying on and costing money.
  */
 export function streamTurn(
   message: string,
@@ -80,8 +81,8 @@ export function streamTurn(
   let cancelled = false
 
   function drain(text: string): void {
-    // Un événement est complet quand la ligne vide qui le termine est arrivée :
-    // sans cela on lirait un JSON coupé en deux.
+    // An event is complete once the blank line that ends it has arrived:
+    // without that we would read a JSON document cut in half.
     let boundary = text.indexOf('\n\n', consumed)
     while (boundary !== -1) {
       const raw = text.slice(consumed, boundary).trim()
@@ -91,7 +92,7 @@ export function streamTurn(
           onEvent(JSON.parse(raw.slice(6)) as AssistantStreamEvent)
         }
         catch {
-          // Un événement illisible ne doit pas emporter la conversation.
+          // One unreadable event must not take the conversation down.
         }
       }
       boundary = text.indexOf('\n\n', consumed)
@@ -130,10 +131,10 @@ export function streamTurn(
 }
 
 /**
- * Ce qui a été dit, mis par écrit.
+ * What was said, written down.
  *
- * L'enregistrement part tel quel : la transcription se fait sur le serveur,
- * où la clé vit, et l'audio n'y est pas conservé.
+ * The recording goes up as is: transcription happens on the server, where the
+ * key lives, and the audio is not kept there.
  */
 export async function transcribe(uri: string): Promise<string> {
   const form = new FormData()
@@ -143,8 +144,8 @@ export async function transcribe(uri: string): Promise<string> {
     type: 'audio/m4a',
   } as unknown as Blob)
 
-  // Pas `apiFetch` : il impose `application/json`, alors qu'un envoi multipart
-  // doit laisser la plateforme poser sa propre frontière.
+  // Not `apiFetch`: it forces `application/json`, while a multipart upload
+  // must let the platform set its own boundary.
   const token = await getSessionToken()
   const res = await fetch(`${apiUrl()}/api/assistant/transcribe`, {
     method: 'POST',
@@ -160,12 +161,12 @@ export async function transcribe(uri: string): Promise<string> {
 }
 
 /**
- * La phrase, dite à voix haute.
+ * The sentence, spoken aloud.
  *
- * Écrite dans un fichier du cache plutôt que rendue en `data:` : le lecteur
- * audio d'Android ne sait pas lire une URI de données, et la voix se serait
- * tue sans rien dire. Le fichier porte un nom par tour — le lecteur ne
- * rechargerait pas une source dont l'URI n'a pas changé.
+ * Written to a cache file rather than returned as a `data:` URI: Android's
+ * audio player cannot read a data URI, and the voice would have fallen silent
+ * without saying why. The file is named per turn — the player would not
+ * reload a source whose URI had not changed.
  */
 export async function speak(text: string): Promise<string | null> {
   const res = await apiFetch('/api/assistant/speak', {
@@ -183,8 +184,8 @@ export async function speak(text: string): Promise<string | null> {
     reader.onerror = () => resolve(null)
     reader.onload = () => {
       const result = typeof reader.result === 'string' ? reader.result : null
-      // `readAsDataURL` rend « data:audio/mpeg;base64,… » : seul l'après-virgule
-      // est le contenu.
+      // `readAsDataURL` returns "data:audio/mpeg;base64,…": only what follows
+      // the comma is the content.
       resolve(result === null ? null : result.slice(result.indexOf(',') + 1))
     }
     reader.readAsDataURL(blob)
@@ -199,12 +200,12 @@ export async function speak(text: string): Promise<string | null> {
   return uri
 }
 
-/** Le fichier d'un tour précédent n'a plus à traîner dans le cache. */
+/** A previous turn's file has no business lingering in the cache. */
 export function discardSpoken(uri: string | null): void {
   if (uri === null) {
     return
   }
   FileSystem.deleteAsync(uri, { idempotent: true }).catch(() => {
-    // Déjà parti : rien à faire.
+    // Already gone: nothing to do.
   })
 }

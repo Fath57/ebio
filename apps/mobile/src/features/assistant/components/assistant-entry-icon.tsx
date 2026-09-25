@@ -9,13 +9,13 @@ interface AssistantEntryIconProps {
 }
 
 /**
- * L'étincelle qui mène à Assita, et qui bouge juste assez pour être vue.
+ * The spark that leads to Assita, moving just enough to be noticed.
  *
- * Une entrée nouvelle ne se trouve pas toute seule au milieu d'une barre déjà
- * pleine. Le halo part lentement, toutes les quatre secondes : assez pour que
- * l'œil l'attrape en passant, assez rare pour qu'on l'oublie ensuite. Rien ne
- * tourne, rien ne clignote — la charte ne veut pas d'un élément qui s'agite
- * sans rien dire, et celui-ci dit « il y a quelque chose ici ».
+ * A new entry point does not find itself in the middle of an already crowded
+ * bar. The halo leaves slowly, every four seconds: enough for the eye to catch
+ * it in passing, rare enough to be forgotten afterwards. Nothing spins,
+ * nothing blinks — the charter does not want an element fidgeting for no
+ * reason, and this one says "there is something here".
  */
 export function AssistantEntryIcon({ size = 20, color = colors.green[600] }: AssistantEntryIconProps) {
   const pulse = useRef(new Animated.Value(0)).current
@@ -29,7 +29,7 @@ export function AssistantEntryIcon({ size = 20, color = colors.green[600] }: Ass
           easing: Easing.out(Easing.quad),
           useNativeDriver: true,
         }),
-        // Le temps mort fait tout : sans lui, ce serait un clignotant.
+        // The dead time is what makes it: without it this would be a blinker.
         Animated.delay(2600),
       ]),
     )

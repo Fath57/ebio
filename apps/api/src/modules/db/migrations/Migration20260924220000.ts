@@ -1,16 +1,15 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * `intram` parmi les prestataires acceptés par la table des paiements.
+ * `intram` among the providers the payments table accepts.
  *
- * La contrainte datait d'avant INTRAM et n'avait jamais protesté : les
- * recharges de portefeuille n'écrivent pas dans `payments`, et c'est tout ce
- * qu'on avait essayé. La première commande payée chez INTRAM aurait échoué à
- * l'insertion — après le paiement, donc avec un acheteur débité et une
- * commande jamais marquée payée.
+ * The constraint predates INTRAM and had never complained: wallet top-ups do
+ * not write to `payments`, and that is all we had tried. The first order paid
+ * through INTRAM would have failed on insert — after the payment, so with a
+ * buyer debited and an order never marked paid.
  *
- * L'énumération du code porte aussi `stripe` et `pawerpayer` ; on les garde
- * pour ne pas invalider l'existant.
+ * The code enum also carries `stripe` and `pawerpayer`; they are kept so as
+ * not to invalidate what exists.
  */
 export class Migration20260924220000 extends Migration {
   override async up(): Promise<void> {
@@ -20,6 +19,6 @@ export class Migration20260924220000 extends Migration {
   }
 
   override async down(): Promise<void> {
-    // Revenir en arrière rejetterait des paiements déjà enregistrés.
+    // Rolling back would reject payments already recorded.
   }
 }

@@ -4,19 +4,19 @@ import { BannerTargetType } from '../banners/banner.entity'
 import { Supplier } from '../suppliers/supplier.entity'
 
 export enum AnnouncementOrigin {
-  /** Publiée par eBio, sans paiement. */
+  /** Published by eBio, with no payment. */
   PLATFORM = 'PLATFORM',
-  /** Demandée et payée par une boutique. */
+  /** Requested and paid for by a shop. */
   SUPPLIER = 'SUPPLIER',
 }
 
 /**
- * Ce qui s'affiche à l'ouverture de l'application.
+ * What appears when the app opens.
  *
- * Une annonce interrompt : elle se place devant ce que l'acheteur venait
- * faire. C'est pour cela qu'elle est datée, qu'elle ne revient pas avant un
- * délai réglé, et qu'il n'en passe qu'une à la fois — deux modaux l'un après
- * l'autre, personne ne les lit.
+ * An announcement interrupts: it stands in front of what the buyer came to do.
+ * That is why it is dated, why it does not come back before a configured
+ * delay, and why only one goes through at a time — two modals back to back and
+ * nobody reads either.
  */
 @Entity({ tableName: 'announcements' })
 @Index({ properties: ['active', 'startsAt'] })
@@ -26,7 +26,7 @@ export class Announcement {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  /** Nul quand l'annonce est un visuel seul : l'affiche porte son texte. */
+  /** Null when the announcement is a poster alone: it carries its own text. */
   @Property({ nullable: true })
   title?: string | null
 
@@ -45,7 +45,7 @@ export class Announcement {
   @Enum({ items: () => AnnouncementOrigin })
   origin!: AnnouncementOrigin
 
-  /** La boutique qui l'a payée ; nul pour une annonce d'eBio. */
+  /** The shop that paid for it; null for an eBio announcement. */
   @ManyToOne(() => Supplier, { fieldName: 'supplier_id', nullable: true })
   supplier?: Rel<Supplier> | null
 
@@ -59,10 +59,10 @@ export class Announcement {
   active: boolean = true
 
   /**
-   * Qui passe en premier quand plusieurs annonces sont en cours.
+   * Who goes first when several announcements are running.
    *
-   * Une seule s'affiche par ouverture : la plus prioritaire que l'acheteur
-   * n'a pas vue récemment.
+   * Only one shows per opening: the highest priority one the buyer has not
+   * seen recently.
    */
   @Property({ default: 0 })
   priority: number = 0

@@ -1,11 +1,11 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * La trace de l'acceptation des conditions.
+ * The record of the terms being accepted.
  *
- * L'écran d'inscription portait déjà la case à cocher, mais elle ne quittait
- * jamais le téléphone : elle désactivait le bouton et rien d'autre. En cas de
- * contestation, il n'y avait rien à produire.
+ * The sign-up screen already carried the checkbox, but it never left the
+ * phone: it disabled the button and nothing more. In a dispute there was
+ * nothing to produce.
  */
 export class Migration20260925100000 extends Migration {
   override async up(): Promise<void> {
@@ -15,6 +15,6 @@ export class Migration20260925100000 extends Migration {
   }
 
   override async down(): Promise<void> {
-    // Supprimer ces colonnes reviendrait à détruire la preuve.
+    // Dropping these columns would destroy the evidence.
   }
 }

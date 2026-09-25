@@ -14,11 +14,10 @@ import {
 import { AnnouncementsService } from './announcements.service'
 
 /**
- * Les annonces affichées à l'ouverture de l'application.
+ * The announcements shown when the app opens.
  *
- * Même circuit d'argent que les bannières — le portefeuille de la boutique est
- * débité au dépôt, un refus rembourse — pour que les deux se comprennent l'un
- * par l'autre.
+ * Same money circuit as the banners — the shop's wallet is debited when the
+ * request is filed, a rejection refunds it — so that each explains the other.
  */
 @Module({
   imports: [

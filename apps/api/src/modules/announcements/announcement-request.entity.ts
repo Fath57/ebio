@@ -12,11 +12,11 @@ export enum AnnouncementRequestStatus {
 }
 
 /**
- * La demande d'une boutique pour une annonce, payée d'avance.
+ * A shop's request for an announcement, paid up front.
  *
- * Même circuit que les bannières : le portefeuille est débité au dépôt, un
- * refus ou une annulation rembourse. Payer d'abord est ce qui rend la file
- * d'attente sérieuse — une demande qu'on ne peut pas payer n'existe pas.
+ * Same circuit as the banners: the wallet is debited when the request is
+ * filed, a rejection or a cancellation refunds it. Paying first is what makes
+ * the queue serious — a request that cannot be paid does not exist.
  */
 @Entity({ tableName: 'announcement_requests' })
 @Index({ properties: ['supplier', 'createdAt'] })
@@ -29,7 +29,7 @@ export class AnnouncementRequest {
   @ManyToOne(() => Supplier, { fieldName: 'supplier_id', deleteRule: 'cascade' })
   supplier!: Rel<Supplier>
 
-  /** Nul quand l'annonce est un visuel seul : l'affiche porte son texte. */
+  /** Null when the announcement is a poster alone: it carries its own text. */
   @Property({ nullable: true })
   title?: string | null
 
@@ -48,7 +48,7 @@ export class AnnouncementRequest {
   @Property({ fieldName: 'duration_days', type: 'int' })
   durationDays!: number
 
-  /** Prix figé au dépôt, FCFA : changer l'offre ne change pas les demandes. */
+  /** Price frozen when filed, FCFA: changing the offer leaves requests alone. */
   @Property({ type: 'int' })
   price!: number
 

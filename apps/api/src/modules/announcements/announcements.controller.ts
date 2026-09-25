@@ -27,17 +27,17 @@ import {
   rejectAnnouncementSchema,
 } from './contracts/announcement.contract'
 
-/** Ce que l'acheteur voit en ouvrant l'application. */
+/** What the buyer sees on opening the app. */
 @Controller('announcements')
 @UseGuards(AuthGuard)
 export class AnnouncementsController {
   constructor(private readonly announcements: AnnouncementsService) {}
 
   /**
-   * L'annonce du moment, ou rien.
+   * The announcement of the moment, or nothing.
    *
-   * Rendre `null` plutôt qu'un tableau vide : l'application a une décision à
-   * prendre — ouvrir un modal ou non — et pas une liste à parcourir.
+   * Returning `null` rather than an empty array: the app has a decision to
+   * make — open a modal or not — not a list to walk.
    */
   @Get('current')
   async current(@Session() session: LoggedInBetterAuthSession) {
@@ -65,7 +65,7 @@ export class AnnouncementsController {
   }
 }
 
-/** Ce qu'une boutique demande, et paie. */
+/** What a shop requests, and pays for. */
 @Controller('suppliers/me/announcement-requests')
 @UseGuards(AuthGuard, ActiveSupplierGuard)
 export class SupplierAnnouncementRequestsController {
@@ -75,7 +75,7 @@ export class SupplierAnnouncementRequestsController {
     private readonly settings: PlatformSettingsService,
   ) {}
 
-  /** Les tarifs affichés, pour que la boutique choisisse une durée. */
+  /** The posted prices, so the shop can pick a duration. */
   @Get('offers')
   async offers() {
     return this.settings.getAnnouncementOffers()

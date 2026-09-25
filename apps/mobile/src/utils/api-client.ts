@@ -4,11 +4,11 @@ import { parseAccountBlock, setAccountBlock } from './account-block'
 const API_URL = process.env.EXPO_PUBLIC_API_URL ?? 'http://localhost:3000'
 
 /**
- * Où vit l'API.
+ * Where the API lives.
  *
- * Exposée pour les appels qui ne peuvent pas passer par `apiFetch` : un envoi
- * multipart, dont la frontière est posée par la plateforme, et un flux lu par
- * `XMLHttpRequest`. Les deux ont besoin de composer leurs propres en-têtes.
+ * Exposed for the calls that cannot go through `apiFetch`: a multipart upload,
+ * whose boundary is set by the platform, and a stream read by
+ * `XMLHttpRequest`. Both need to compose their own headers.
  */
 export function apiUrl(): string {
   return API_URL

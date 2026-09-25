@@ -2,9 +2,9 @@ import { PaymentProvider } from '../payment.entity'
 import { providerForTransaction } from '../provider-for-transaction'
 
 /**
- * Le jour de la bascule, une application installée continue d'ouvrir son
- * paiement chez l'ancien prestataire. Vérifier chez le nouveau reviendrait à
- * ne pas créditer quelqu'un qui a payé.
+ * On switchover day, an installed app keeps opening its payment with the old
+ * provider. Verifying with the new one would mean failing to credit someone
+ * who paid.
  */
 describe('à qui appartient une transaction', () => {
   it('reconnaît un identifiant FedaPay à ses chiffres', () => {
@@ -15,9 +15,9 @@ describe('à qui appartient une transaction', () => {
     expect(providerForTransaction('ZnSXVuakcF', null)).toBe(PaymentProvider.INTRAM)
   })
 
-  // Le cas qui départage : dix chiffres tirés au sort chez INTRAM ne se
-  // distinguent pas d'un identifiant FedaPay. Le serveur, lui, sait qu'il a
-  // ouvert celui-là.
+  // The case that decides it: ten digits drawn at random by INTRAM are
+  // indistinguishable from a FedaPay id. The server, though, knows it opened
+  // that one.
   it('fait confiance à ce que le serveur a ouvert lui-même', () => {
     expect(providerForTransaction('1234567890', '1234567890')).toBe(PaymentProvider.INTRAM)
   })

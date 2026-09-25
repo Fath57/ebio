@@ -27,7 +27,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 
-/** Ce que l'application sait dessiner. Un nom libre laisserait un trou. */
+/** What the app can draw. A free-form name would leave a hole. */
 const ICONS = ['map-pin', 'badge-check', 'tag', 'sparkles', 'star', 'leaf', 'flame', 'clock'] as const
 
 const formSchema = z.object({
@@ -71,7 +71,7 @@ interface HomeSectionFormProps {
   isPending: boolean
 }
 
-/** Rien de coché n'est pas un critère : `undefined` plutôt que `false`. */
+/** An unchecked box is not a criterion: `undefined` rather than `false`. */
 function compact(values: Record<string, unknown>): Record<string, unknown> {
   return Object.fromEntries(
     Object.entries(values).filter(([, value]) =>
@@ -80,12 +80,11 @@ function compact(values: Record<string, unknown>): Record<string, unknown> {
 }
 
 /**
- * Créer ou modifier une section de l'accueil.
+ * Creating or editing a home section.
  *
- * Deux façons de la remplir, exclusives : des critères — une recherche
- * enregistrée — ou une liste de produits choisis un par un. Le formulaire
- * n'affiche que celle qui est retenue, parce que voir les deux laisse croire
- * qu'elles se combinent.
+ * Two ways to fill it, mutually exclusive: criteria — a saved search — or a
+ * list of products picked one by one. The form only shows the one in use,
+ * because seeing both suggests they combine.
  */
 export function HomeSectionForm({ initial, onSubmit, onCancel, isPending }: HomeSectionFormProps) {
   const criteria = (initial?.criteria ?? {}) as Record<string, unknown>

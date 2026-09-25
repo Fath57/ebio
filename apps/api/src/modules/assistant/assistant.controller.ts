@@ -12,10 +12,10 @@ import { AssistantVoiceService } from './assistant.voice'
 import { assistantCartLineSchema, assistantSpeakSchema, assistantTurnSchema } from './contracts/assistant.contract'
 
 /**
- * L'assistant, en texte.
+ * The assistant, in text.
  *
- * L'audio viendra s'ajouter autour de cette route sans la remplacer : la
- * conversation est le sujet, et elle se teste entièrement au clavier.
+ * Audio is added around this route rather than replacing it: the conversation
+ * is the subject, and it can be tested entirely from a keyboard.
  */
 @Controller('assistant')
 @UseGuards(AuthGuard)
@@ -39,10 +39,11 @@ export class AssistantController {
   }
 
   /**
-   * Corriger une ligne à la main, sans quitter la conversation.
+   * Correcting a line by hand, without leaving the conversation.
    *
-   * L'écran rend le panier entier et non la ligne touchée : le serveur reste
-   * la source, et rien ne peut diverger si l'assistant écrit au même moment.
+   * The response carries the whole cart rather than the line that was touched:
+   * the server stays the source, and nothing can drift if the assistant writes
+   * at the same moment.
    */
   @Patch(':sessionId/cart')
   async adjustCart(
@@ -60,11 +61,11 @@ export class AssistantController {
   }
 
   /**
-   * Le même tour, dit au fil de l'eau.
+   * The same turn, delivered as it comes.
    *
-   * Écrit à la main sur la réponse plutôt que par `@Sse` : la route est un
-   * POST — elle porte un message — et `@Sse` vise les GET. Le flux s'arrête
-   * si le téléphone raccroche, sinon un tour abandonné continuerait de coûter.
+   * Written onto the response by hand rather than through `@Sse`: the route is
+   * a POST — it carries a message — and `@Sse` targets GETs. The stream stops
+   * if the phone hangs up, otherwise an abandoned turn would keep costing.
    */
   @Post('turn/stream')
   async turnStream(
@@ -104,11 +105,11 @@ export class AssistantController {
   }
 
   /**
-   * Ce qui a été dit, mis par écrit.
+   * What was said, written down.
    *
-   * Rendu à l'écran avant d'être envoyé : la transcription se trompera, et
-   * « deux kilos » entendu « douze » doit se voir tout de suite. L'audio n'est
-   * pas conservé — il n'existe que le temps de l'appel.
+   * Shown on screen before being sent: transcription will get things wrong,
+   * and "deux kilos" heard as "douze" must be visible at once. The audio is
+   * not kept — it exists only for the length of the call.
    */
   @Post('transcribe')
   @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 25 * 1024 * 1024 } }))
@@ -121,11 +122,11 @@ export class AssistantController {
   }
 
   /**
-   * La réponse, dite à voix haute.
+   * The answer, spoken aloud.
    *
-   * Séparée du tour : le texte s'affiche dès qu'il est vérifié, la voix arrive
-   * derrière. Attendre l'audio pour montrer la phrase rendrait l'écran muet
-   * pendant une seconde entière.
+   * Separate from the turn: the text appears as soon as it is verified, the
+   * voice follows. Waiting for the audio before showing the sentence would
+   * leave the screen blank for a full second.
    */
   @Post('speak')
   async speak(

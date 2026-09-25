@@ -369,9 +369,9 @@ export class PaymentsService {
       }
     }
 
-    // Même raison que pour la recharge : on suit la transaction présentée, pas
-    // le prestataire du moment. Les applications d'avant la bascule paient
-    // encore chez l'ancien.
+    // Same reason as the wallet top-up: we follow the transaction presented,
+    // not the provider of the day. Apps from before the switch still pay with
+    // the old one.
     const provider = providerForTransaction(
       data.fedapayTransactionId,
       checkout.providerTransactionId ?? null,

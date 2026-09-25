@@ -4,12 +4,12 @@ import { User } from '../auth/auth.entity'
 import { Announcement } from './announcement.entity'
 
 /**
- * La dernière fois qu'une personne a vu une annonce.
+ * The last time a person saw an announcement.
  *
- * Une ligne par couple, et non une par affichage : ce qu'on veut savoir est
- * « faut-il la remontrer ? », pas combien de fois elle est passée. Le compteur
- * est gardé quand même, parce qu'une annonce vue cinq fois sans effet dit
- * quelque chose à qui l'a payée.
+ * One row per pair, not one per display: what we want to know is "should it be
+ * shown again?", not how many times it went by. The counter is kept anyway,
+ * because an announcement seen five times to no effect tells the shop that
+ * paid for it something.
  */
 @Entity({ tableName: 'announcement_views' })
 @Unique({ properties: ['announcement', 'user'] })

@@ -18,24 +18,24 @@ import { useTheme } from '../../../theme/theme-context'
 interface AnnouncementModalProps {
   announcement: Announcement | null
   onDismiss: () => void
-  /** Suivre ce que l'annonce désigne — une boutique, un produit, un lien. */
+  /** Follow what the announcement points at — a shop, a product, a link. */
   onOpenTarget: (announcement: Announcement) => void
 }
 
 /**
- * L'annonce du jour, à l'ouverture.
+ * The announcement of the day, on opening.
  *
- * Elle interrompt : elle se met devant ce que l'acheteur venait faire. Deux
- * conséquences sur la façon de la présenter — elle arrive doucement plutôt
- * qu'en sautant à l'écran, et elle se ferme d'un geste évident. Une annonce
- * qui surgit brutalement se ferme par réflexe, sans être lue.
+ * It interrupts: it stands in front of what the buyer came to do. Two
+ * consequences for how it is presented — it arrives gently rather than
+ * snapping onto the screen, and it closes with an obvious gesture. Something
+ * that bursts in gets dismissed by reflex, unread.
  *
- * Le mouvement dure un peu moins d'une demi-seconde : au-delà on attend, en
- * deçà on sursaute.
+ * The movement lasts a little under half a second: longer and you wait,
+ * shorter and you flinch.
  *
- * Une annonce sans titre est une affiche : on ne montre qu'elle, sans cadre ni
- * bouton par-dessus. Lui ajouter un texte de service reviendrait à écrire sur
- * le visuel de quelqu'un.
+ * An announcement without a title is a poster: only it is shown, with no frame
+ * or button over it. Adding service copy would be writing on someone's
+ * artwork.
  */
 export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: AnnouncementModalProps) {
   const { semantic } = useTheme()
@@ -44,12 +44,12 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
   const visible = announcement !== null
 
   /**
-   * Le format de l'affiche, mesuré avant de l'ouvrir.
+   * The poster's aspect ratio, measured before opening it.
    *
-   * C'est ce qui permet de la montrer entière **et** de remplir la carte : la
-   * carte prend son rapport, donc l'image la couvre exactement — ni bandes
-   * blanches, ni recadrage. Imposer un format aurait fait l'un ou l'autre, et
-   * couper le visuel de quelqu'un qui l'a payé n'est pas une option.
+   * This is what lets it be shown whole **and** fill the card: the card takes
+   * its ratio, so the image covers it exactly — no white bands, no cropping.
+   * Imposing a format would have caused one or the other, and cutting into the
+   * artwork of someone who paid for it is not an option.
    */
   const [imageRatio, setImageRatio] = useState<number | null>(null)
 
@@ -69,7 +69,7 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
         }
       },
       () => {
-        // Mesure impossible : un format lisible vaut mieux que pas d'annonce.
+        // Measurement failed: a readable shape beats no announcement at all.
         if (!cancelled) {
           setImageRatio(4 / 5)
         }
@@ -90,8 +90,8 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
     Animated.timing(entrance, {
       toValue: 1,
       duration: 420,
-      // Une décélération : la carte arrive vite puis se pose, au lieu de
-      // glisser d'un bout à l'autre à vitesse constante.
+      // An ease-out: the card comes in fast then settles, instead of sliding
+      // across at a constant speed.
       easing: Easing.out(Easing.cubic),
       useNativeDriver: true,
     }).start()
@@ -106,8 +106,8 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
   const hasText = (announcement.title ?? '').trim().length > 0
   const imageOnly = !hasText && announcement.imageUrl !== null
 
-  // Tant que le format n'est pas connu, on n'ouvre pas : la carte sauterait
-  // d'une forme à l'autre sous les yeux.
+  // While the ratio is unknown we do not open: the card would jump from one
+  // shape to another in front of the reader.
   if (imageOnly && imageRatio === null) {
     return null
   }
@@ -115,8 +115,8 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
   return (
     <Modal transparent animationType="fade" visible onRequestClose={onDismiss}>
       <View style={styles.backdrop}>
-        {/* Toucher à côté ferme : c'est le geste qu'on fait devant ce qu'on
-          * n'a pas demandé. */}
+        {/* Tapping outside closes: it is the gesture people make at
+          * something they did not ask for. */}
         <Pressable style={StyleSheet.absoluteFill} onPress={onDismiss} accessibilityLabel="Fermer l'annonce" />
 
         <Animated.View
@@ -230,14 +230,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.85)',
   },
-  /** Le rapport vient de l'image : elle remplit la carte sans être coupée. */
+  /** The ratio comes from the image: it fills the card without being cut. */
   imageAlone: {
     width: '100%',
   },
   image: {
     width: '100%',
-    // Le format des bannières du catalogue : une annonce n'a pas à inventer
-    // le sien, les boutiques préparent déjà des visuels à ce rapport.
+    // The catalogue banners' shape: an announcement need not invent its own,
+    // shops already prepare artwork at this ratio.
     aspectRatio: 16 / 9,
   },
   body: {

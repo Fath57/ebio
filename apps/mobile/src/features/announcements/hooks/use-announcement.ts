@@ -3,26 +3,26 @@ import { apiFetch } from '../../../utils/api-client'
 
 export interface Announcement {
   id: string
-  /** Nul quand l'annonce est un visuel seul. */
+  /** Null when the announcement is a poster alone. */
   title: string | null
   subtitle: string | null
   imageUrl: string | null
   targetType: 'SUPPLIER' | 'PRODUCT' | 'URL' | 'NONE'
   targetId: string | null
-  /** La boutique qui l'a payée ; nul pour une annonce d'eBio. */
+  /** The shop that paid for it; null for an eBio announcement. */
   shopName: string | null
 }
 
 /**
- * L'annonce à montrer à l'ouverture, s'il y en a une.
+ * The announcement to show on opening, if there is one.
  *
- * Le serveur décide : il sait ce que cette personne a déjà vu et depuis quand,
- * et il n'en rend qu'une. L'application n'a donc rien à arbitrer — elle ouvre
- * un modal ou n'en ouvre pas.
+ * The server decides: it knows what this person has already seen and when, and
+ * it returns only one. So the app has nothing to arbitrate — it opens a modal
+ * or it does not.
  *
- * « Vue » est signalé à l'affichage et non à la fermeture : quelqu'un qui tue
- * l'application sans fermer le modal l'a vue quand même, et la retrouver à
- * chaque lancement serait insupportable.
+ * "Seen" is reported on display rather than on dismissal: someone who kills
+ * the app without closing the modal has seen it anyway, and finding it again
+ * on every launch would be unbearable.
  */
 export function useAnnouncement(): {
   announcement: Announcement | null
@@ -49,7 +49,7 @@ export function useAnnouncement(): {
         void apiFetch(`/api/announcements/${data.announcement.id}/seen`, { method: 'POST' })
       }
       catch {
-        // Hors ligne : pas d'annonce, et surtout pas d'écran d'erreur pour ça.
+        // Offline: no announcement, and above all no error screen for it.
       }
     }
 

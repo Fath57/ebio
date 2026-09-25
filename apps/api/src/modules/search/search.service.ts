@@ -109,15 +109,15 @@ const STOPWORDS = new Set([
 ])
 
 /**
- * Les mots d'une quantité, écartés eux aussi.
+ * The words of a quantity, dropped as well.
  *
- * L'assistant a cherché « tomate 2 kg » et n'a rien rendu, alors que le
- * catalogue porte « Tomates fraiches bio » : chaque mot est exigé dans le nom,
- * donc « 2 » et « kg » condamnaient la requête. Quelqu'un qui tape « 2 kg de
- * tomates » dans la barre de recherche tombait sur le même mur.
+ * The assistant searched "tomate 2 kg" and returned nothing, while the
+ * catalogue carries "Tomates fraiches bio": every word is required in the
+ * name, so "2" and "kg" doomed the query. Someone typing "2 kg de tomates"
+ * into the search bar hit the same wall.
  *
- * Aucun produit du catalogue ne porte une unité dans son nom ; le jour où l'un
- * s'appellera « Huile 5 litres », il faudra le chercher autrement.
+ * No catalogue product carries a unit in its name; the day one is called
+ * "Huile 5 litres", it will have to be found another way.
  */
 const QUANTITY_WORDS = new Set([
   'kg',
@@ -143,7 +143,7 @@ const QUANTITY_WORDS = new Set([
   'unités',
 ])
 
-/** Un nombre écrit en chiffres ne désigne aucun produit. */
+/** A number written in digits names no product. */
 function isQuantity(term: string): boolean {
   return /^\d+(?:[.,]\d+)?$/.test(term) || QUANTITY_WORDS.has(term.toLowerCase())
 }
@@ -296,15 +296,14 @@ export class SearchService {
       baseParams.push(newerThanDays)
     }
 
-    // Une liste vide ne veut pas dire « tous » : une section composée à la
-    // main dont on a retiré le dernier produit doit rendre le vide.
+    // An empty list does not mean "everything": a hand-picked section whose
+    // last product was removed must return nothing.
     if (productIds !== undefined) {
       if (productIds.length === 0) {
         return { results: [], total: 0, page, hasMore: false }
       }
-      // Un emplacement par identifiant : le pilote ne sait pas lier un tableau
-      // JavaScript derrière `ANY(?::uuid[])`, il l'aplatit et le SQL ne se
-      // lit plus.
+      // One placeholder per id: the driver cannot bind a JavaScript array
+      // behind `ANY(?::uuid[])` — it flattens it and the SQL stops parsing.
       whereClause += `  AND p.id IN (${productIds.map(() => '?').join(', ')})\n`
       baseParams.push(...productIds)
     }

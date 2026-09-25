@@ -1,12 +1,11 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * Le compte des invitations à donner son avis sur les produits.
+ * The count of invitations to review the products.
  *
- * L'avis était demandé dans la foulée de la notation de commande, au moment
- * de la livraison — on notait donc un produit qu'on n'avait pas encore ouvert.
- * Il part maintenant des heures plus tard, et ces deux colonnes portent ce
- * qu'il faut pour ne pas relancer indéfiniment.
+ * The review was asked for right after the order rating, at delivery — so a
+ * product was rated before it had been opened. It now goes out hours later,
+ * and these two columns hold what is needed to stop reminding forever.
  */
 export class Migration20260925090000 extends Migration {
   override async up(): Promise<void> {

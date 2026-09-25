@@ -53,12 +53,11 @@ function day(value: string): string {
 }
 
 /**
- * Les annonces affichées à l'ouverture de l'application cliente.
+ * The announcements shown when the buyer app opens.
  *
- * Deux choses au même endroit, parce qu'elles se décident ensemble : les
- * demandes payées par les boutiques, qui attendent un avis, et ce qui est en
- * cours de diffusion. Refuser rembourse — c'est le circuit des bannières, et
- * la boutique n'a rien à réclamer.
+ * Two things in one place, because they are decided together: the shops' paid
+ * requests waiting on a verdict, and what is currently running. Rejecting
+ * refunds — it is the banner circuit, and the shop has nothing to chase.
  */
 export function AnnouncementsManager() {
   const queryClient = useQueryClient()

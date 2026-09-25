@@ -11,9 +11,9 @@ import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
 
 /**
- * L'assistant ne possède aucune règle commerciale : ses outils sont les
- * services existants. C'est ce qui rend l'ancrage tenable — il ne peut dire
- * que ce que le domaine lui répond.
+ * The assistant owns no business rules: its tools are the existing services.
+ * That is what makes grounding tenable — it can only say what the domain
+ * answers.
  */
 @Module({
   imports: [

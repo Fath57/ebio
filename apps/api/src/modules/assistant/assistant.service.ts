@@ -20,17 +20,17 @@ import { lastOrdersTool, ongoingOrdersTool, orderStatusTool } from './tools/orde
 import { searchProductsTool } from './tools/search-products.tool'
 
 /**
- * Ce qui part vers l'écran pendant qu'il parle.
+ * What reaches the screen while she is speaking.
  *
- * Une phrase à la fois plutôt qu'un mot à la fois : c'est le grain auquel on
- * peut vérifier. Un montant coupé en deux ne s'ancre pas, et « 2 500 » ne doit
- * pas s'afficher au moment où le modèle a écrit « 2 ».
+ * One sentence at a time rather than one word: that is the grain at which
+ * anything can be checked. Half an amount cannot be grounded, and "2 500" must
+ * not appear the moment the model has written "2".
  */
 export type AssistantStreamEvent
   = | { type: 'session', sessionId: string }
     | { type: 'phrase', text: string }
     | { type: 'cart', cart: AssistantCartLine[] }
-  /** Ce qui a été dit ne tenait pas : l'écran efface et on recommence. */
+  /** What was said did not hold: the screen clears and we start over. */
     | { type: 'reset' }
     | { type: 'done', reply: string, cart: AssistantCartLine[] }
     | { type: 'error', message: string }
@@ -55,11 +55,11 @@ export class AssistantService {
   ) {}
 
   /**
-   * L'assistant peut être fermé depuis le back-office.
+   * The assistant can be closed from the back-office.
    *
-   * Vérifié à chaque tour plutôt qu'au démarrage : couper un assistant qui
-   * répond mal ne doit pas demander un déploiement, et la conversation en
-   * cours s'arrête au tour suivant.
+   * Checked on every turn rather than at boot: cutting off an assistant that
+   * answers badly must not require a deploy, and a conversation in progress
+   * stops at its next turn.
    */
   private async assertOpen(): Promise<void> {
     if (!(await this.platformSettings.getAssistantEnabled())) {
@@ -68,10 +68,11 @@ export class AssistantService {
   }
 
   /**
-   * Tout ce que le modèle sait faire.
+   * Everything the model can do, and nothing more.
    *
-   * Il n'y a pas d'outil de paiement, et c'est le garde-fou : ce qui n'existe
-   * pas ne s'appelle pas par erreur. Une consigne d'invite, elle, se contourne.
+   * There is no payment tool, and that is the guardrail: what does not exist
+   * cannot be called by mistake. A prompt instruction, by contrast, can be
+   * talked around.
    */
   private toolset(): AssistantTool[] {
     return [
@@ -94,16 +95,16 @@ export class AssistantService {
   }
 
   /**
-   * Un tour de parole, en texte.
+   * One turn of the conversation, in text.
    *
-   * L'audio viendra se brancher autour, sans toucher à ceci : la conversation
-   * est le vrai sujet, et elle se teste entièrement au clavier.
+   * Audio plugs in around this without touching it: the conversation is the
+   * real subject, and it can be tested entirely from a keyboard.
    */
   /**
-   * Ce qu'il faut pour parler : la conversation, ses outils, son historique.
+   * What a turn needs: the conversation, its tools, its history.
    *
-   * Partagé par le tour d'un bloc et le tour diffusé — c'est le même échange,
-   * seule la façon de le rendre change.
+   * Shared by the one-shot turn and the streamed one — it is the same
+   * exchange, only the way it is delivered differs.
    */
   private async prepareTurn(buyerId: string, sessionId: string | null, message: string) {
     await this.assertOpen()
@@ -127,8 +128,8 @@ export class AssistantService {
         execute: async (args: unknown) => {
           const startedAt = Date.now()
           const result = await definition.execute(args as never, context)
-          // Journalisé pour pouvoir le relire : un ancrage qu'on ne peut pas
-          // vérifier après coup n'est pas un ancrage.
+          // Recorded so it can be read back: grounding that cannot be
+          // verified afterwards is not grounding.
           recorded.push({ name: definition.name, args, result, ms: Date.now() - startedAt })
           return result
         },
@@ -136,8 +137,8 @@ export class AssistantService {
     ]))
 
     const history = session.messages as AiCoreMessage[]
-    // L'invite système ouvre le fil une seule fois : elle fait partie de la
-    // conversation, elle ne se répète pas à chaque tour.
+    // The system prompt opens the thread once: it is part of the
+    // conversation, not something repeated on every turn.
     const messages: AiCoreMessage[] = history.length > 0
       ? [...history, { role: 'user', content: message }]
       : [
@@ -148,13 +149,13 @@ export class AssistantService {
     return { session, tools, messages, recorded }
   }
 
-  /** Le panier tel qu'il est en base, relu après les écritures du tour. */
+  /** The cart as the database holds it, re-read after the turn's writes. */
   private async currentCart(sessionId: string): Promise<AssistantCartLine[]> {
     const fresh = await this.em.findOneOrFail(AssistantSession, { id: sessionId })
     return (fresh.state as { cart?: AssistantCartLine[] }).cart ?? []
   }
 
-  /** Clôt un tour : l'historique, la trace, les montants retenus. */
+  /** Closes a turn: the history, the trace, the amounts kept. */
   private async closeTurn(
     session: AssistantSession,
     messages: AiCoreMessage[],
@@ -188,8 +189,8 @@ export class AssistantService {
         tools,
         model: config.assistant.model,
         options: {
-          // Une boucle bornée : un modèle qui s'entête sur un outil coûterait
-          // une fortune sans que personne ne le voie avant la facture.
+          // A bounded loop: a model that keeps hammering a tool would cost a
+          // fortune before anyone noticed, and the bill comes later.
           stopWhen: config.assistant.maxSteps,
         },
       })
@@ -214,16 +215,16 @@ export class AssistantService {
   }
 
   /**
-   * Une seconde chance, quand ce qui a été dit ne tient pas face aux outils.
+   * A second chance, when what was said does not survive the tools.
    *
-   * Le modèle annonce parfois un total qu'il a additionné lui-même, ou dit la
-   * livraison comprise alors que rien ne l'a calculée. L'invite le lui interdit
-   * déjà ; une invite ne garantit rien. On le lui met sous les yeux et on lui
-   * redonne la parole, une fois — avec ses outils, pour qu'il puisse aller
-   * chercher le chiffre au lieu de le retirer.
+   * The model sometimes announces a total it added up itself, or claims
+   * delivery is included when nothing computed it. The prompt already forbids
+   * both; a prompt guarantees nothing. So we put the breach in front of it and
+   * hand the floor back, once — with its tools, so it can go and fetch the
+   * figure rather than drop it.
    *
-   * Le tour fautif ne reste pas dans l'historique : l'acheteur ne l'a jamais
-   * entendu, et le laisser là apprendrait au modèle que c'était acceptable.
+   * The offending turn does not stay in the history: the buyer never heard it,
+   * and leaving it there would teach the model that it was acceptable.
    */
   private async repairIfUngrounded(
     session: AssistantSession,
@@ -244,9 +245,9 @@ export class AssistantService {
       messages: [
         ...messages,
         { role: 'assistant', content: text },
-        // Rôle « user » et non « system » : un second message système en fin de
-        // conversation est refusé par Anthropic (« multiple system messages
-        // separated by user/assistant »), et la reprise échouait en silence.
+        // Role "user" and not "system": a second system message at the end of
+        // a conversation is refused by Anthropic ("multiple system messages
+        // separated by user/assistant"), and the repair failed silently.
         { role: 'user', content: breaches.map(breach => breach.fix).join('\n') },
       ],
       tools,
@@ -256,8 +257,8 @@ export class AssistantService {
 
     const second = forSpeech(repaired.result)
     if (groundingBreaches(second, recorded, known).length > 0) {
-      // Deux fois de suite : on ne laisse pas passer un prix que personne n'a
-      // fixé. Mieux vaut une phrase qui n'avance rien qu'un montant inventé.
+      // Twice in a row: a price nobody set does not get through. A sentence
+      // that says nothing beats an invented amount.
       this.logger.error(`Ancrage toujours rompu après reprise (session ${session.id})`)
       return 'Attendez, je me suis embrouillée sur les chiffres. Redites-moi ce qu\'il vous faut ?'
     }
@@ -266,11 +267,12 @@ export class AssistantService {
   }
 
   /**
-   * Les montants que les outils ont rendus, gardés pour les tours suivants.
+   * The amounts the tools returned, kept for the turns that follow.
    *
-   * Redire un prix trouvé deux tours plus tôt est normal : sans mémoire, la
-   * vérification le prendrait pour une invention et reprendrait le modèle à
-   * chaque phrase. Écrit à part du panier, qui s'écrit ailleurs au même moment.
+   * Repeating a price found two turns ago is normal: without this memory the
+   * check would read it as an invention and correct the model on every
+   * sentence. Written apart from the cart, which is written elsewhere at the
+   * same moment.
    */
   private async rememberAmounts(sessionId: string, recorded: RecordedToolCall[]): Promise<void> {
     const amounts = [...amountsFromTools(recorded)]
@@ -298,17 +300,17 @@ export class AssistantService {
   }
 
   /**
-   * Le même tour, dit au fil de l'eau.
+   * The same turn, delivered as it comes.
    *
-   * La diffusion et la vérification se contredisent : lire un montant inventé
-   * à voix haute avant de pouvoir le reprendre, c'est exactement ce que les
-   * garde-fous existent pour empêcher. D'où le grain de la phrase — on ne
-   * diffuse qu'une phrase achevée *et* vérifiée. L'attente tombe de tout le
-   * tour à une phrase, sans rien céder sur l'ancrage.
+   * Streaming and verification pull against each other: reading an invented
+   * amount aloud before it can be taken back is exactly what the guardrails
+   * exist to prevent. Hence the sentence as the unit — only a sentence that is
+   * both finished *and* checked goes out. The wait drops from a whole turn to
+   * one sentence, conceding nothing on grounding.
    *
-   * Si une phrase ne tient pas, rien de plus n'est diffusé : on reprend le
-   * tour entier hors flux et l'écran efface ce qu'il montrait. C'est rare, et
-   * mieux vaut un effacement qu'un prix que personne n'a fixé.
+   * If a sentence does not hold, nothing further is streamed: the whole turn
+   * is redone off-stream and the screen clears what it was showing. It is
+   * rare, and a cleared screen beats a price nobody set.
    */
   async* handleTurnStream(
     buyerId: string,
@@ -320,7 +322,7 @@ export class AssistantService {
 
     const known = (session.state as { montants?: number[] }).montants ?? []
     let spoken = ''
-    /** Tout ce que le modèle a écrit, diffusé ou non : la reprise en a besoin. */
+    /** Everything the model wrote, streamed or not: the repair needs it. */
     let collected = ''
     let buffer = ''
     let breached = false
@@ -348,10 +350,10 @@ export class AssistantService {
               continue
             }
 
-            // Seuls les montants se jugent phrase par phrase : un chiffre
-            // prononcé vient forcément d'un outil déjà appelé. Le reste —
-            // « c'est noté », « livraison comprise » — dépend d'outils qui
-            // peuvent suivre le texte dans le flux, et se juge à la fin.
+            // Only amounts can be judged sentence by sentence: a figure
+            // spoken must come from a tool already called. The rest — "c'est
+            // noté", "livraison comprise" — depends on tools that may follow
+            // the text in the stream, and is judged at the end.
             if (ungroundedAmounts(clean, recorded).some(amount => !known.includes(amount))) {
               breached = true
               continue
@@ -362,8 +364,8 @@ export class AssistantService {
           }
         }
 
-        // Le panier se remplit sous les yeux, pendant qu'il parle : c'est la
-        // preuve visible que ce qu'il dit a bien eu lieu.
+        // The cart fills up in plain sight while she speaks: it is the
+        // visible proof that what she says actually happened.
         if (event.type === 'tool-result') {
           const cart = await this.currentCart(session.id)
           const signature = JSON.stringify(cart)
@@ -373,9 +375,9 @@ export class AssistantService {
           }
         }
 
-        // Le flux peut se rompre en cours de phrase. Sans ce cas, la boucle
-        // s'arrêtait sans bruit et le texte partiel était enregistré comme la
-        // réponse : un tour s'est terminé sur « D'accord. J ».
+        // The stream can break mid-sentence. Without this branch the loop
+        // ended quietly and the partial text was stored as the answer: one
+        // turn finished on "D'accord. J".
         if (event.type === 'error') {
           this.logger.error(`Flux interrompu (session ${session.id}) — ${JSON.stringify((event as { error?: unknown }).error ?? event)}`)
           failed = true
@@ -385,9 +387,9 @@ export class AssistantService {
         if (event.type === 'done') {
           usage = (event as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
 
-          // « stop » est la seule fin propre. « length », « tool-calls » ou
-          // autre veulent dire que le modèle n'a pas fini sa phrase, et une
-          // phrase inachevée ne doit pas devenir la réponse.
+          // "stop" is the only clean ending. "length", "tool-calls" or
+          // anything else means the model did not finish its sentence, and an
+          // unfinished sentence must not become the answer.
           const reason = (event as { finishReason?: string }).finishReason
           if (reason !== undefined && reason !== 'stop') {
             this.logger.error(`Tour inachevé (session ${session.id}) — fin « ${reason} »`)
@@ -403,13 +405,13 @@ export class AssistantService {
     }
 
     if (failed) {
-      // Rien n'est enregistré : une réponse coupée en deux vaut moins que pas
-      // de réponse, et le tour se refait.
+      // Nothing is stored: half an answer is worth less than none, and the
+      // turn can simply be taken again.
       yield { type: 'error', message: 'La réponse s\'est interrompue. Redites-moi ?' }
       return
     }
 
-    // La dernière phrase n'est suivie d'aucune espace : elle sort du tampon ici.
+    // The last sentence has no space after it: it leaves the buffer here.
     const tail = forSpeech(buffer)
     if (tail.length > 0) {
       collected = `${collected}${collected.length > 0 ? ' ' : ''}${tail}`
@@ -420,9 +422,10 @@ export class AssistantService {
       }
     }
 
-    // Le tour est fini : tous les outils ont été appelés, tout est jugeable.
-    // La reprise porte sur le texte entier — y compris la phrase fautive, que
-    // l'on ne jette surtout pas, sans quoi il n'y aurait plus rien à corriger.
+    // The turn is over: every tool has been called, so everything can be
+    // judged. The repair works on the whole text — including the offending
+    // sentence, which must not be thrown away or there would be nothing left
+    // to correct.
     let reply = collected
     if (breached || groundingBreaches(collected, recorded, known).length > 0) {
       reply = await this.repairIfUngrounded(session, messages, tools, collected, recorded)
@@ -435,11 +438,11 @@ export class AssistantService {
   }
 
   /**
-   * Le panier corrigé à la main, sans passer par la parole.
+   * The cart corrected by hand, without going through speech.
    *
-   * Retirer une ligne se dit mal et se touche bien. La correction passe par la
-   * même écriture atomique que les outils : l'acheteur peut très bien appuyer
-   * pendant que l'assistant ajoute autre chose.
+   * Removing a line is awkward to say and easy to tap. The correction goes
+   * through the same atomic write as the tools: the buyer may well press while
+   * the assistant is adding something else.
    */
   async adjustCart(buyerId: string, sessionId: string, productId: string, quantity: number): Promise<AssistantCartLine[]> {
     const session = await this.em.findOne(AssistantSession, { id: sessionId, buyer: { id: buyerId } })

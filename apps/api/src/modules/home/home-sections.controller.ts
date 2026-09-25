@@ -10,10 +10,10 @@ import { homeSectionInputSchema, homeSectionOrderSchema } from './contracts/home
 import { HomeSectionsService } from './home-sections.service'
 
 /**
- * L'accueil, tel que l'application le reçoit.
+ * The home screen, as the app receives it.
  *
- * Ouvert sans authentification : la page d'accueil se regarde avant de se
- * connecter, et la position suffit à la composer.
+ * Open without authentication: the home page is looked at before signing in,
+ * and a position is enough to compose it.
  */
 @Controller('home')
 export class HomeController {
@@ -34,7 +34,7 @@ export class HomeController {
 }
 
 /**
- * Les sections vues du back-office : celles qui sont éteintes comprises.
+ * The sections as the back-office sees them, switched-off ones included.
  */
 @Controller('admin/home-sections')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)

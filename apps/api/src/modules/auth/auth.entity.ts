@@ -87,30 +87,29 @@ export class User {
   statusChangedBy?: string
 
   /**
-   * Quand cette personne a accepté les conditions et la politique de
-   * confidentialité.
+   * When this person accepted the terms and the privacy policy.
    *
-   * La case était cochée dans l'écran d'inscription et n'allait nulle part :
-   * elle bloquait le bouton, et c'est tout. En cas de contestation il n'y
-   * avait rien à montrer. Ces trois colonnes sont la trace — la date, d'où
-   * elle vient, et quel texte était en vigueur ce jour-là.
+   * The box was ticked on the sign-up screen and went nowhere: it gated the
+   * button, and that was all. In a dispute there was nothing to show. These
+   * three columns are the record — the date, where it came from, and which
+   * text was in force that day.
    *
-   * La première acceptation ne s'écrase jamais : ce qui compte est le moment
-   * où l'accord a été donné, pas la dernière fois qu'on l'a redit.
+   * The first acceptance is never overwritten: what matters is the moment
+   * agreement was given, not the last time it was restated.
    */
   @Property({ fieldName: 'terms_accepted_at', nullable: true })
   termsAcceptedAt?: Date | null
 
-  /** L'application depuis laquelle l'accord a été donné. */
+  /** The app the agreement was given from. */
   @Property({ fieldName: 'terms_accepted_from', nullable: true })
   termsAcceptedFrom?: string | null
 
   /**
-   * La version des documents acceptés.
+   * The version of the documents accepted.
    *
-   * Enregistrée sans mécanique de re-consentement : on ne redemande rien aux
-   * comptes existants quand les textes changent. Mais savoir *ce qui* a été
-   * accepté est précisément ce qui sépare une preuve d'une date.
+   * Recorded with no re-consent machinery: existing accounts are asked nothing
+   * when the texts change. But knowing *what* was accepted is precisely what
+   * separates evidence from a date.
    */
   @Property({ fieldName: 'terms_version', nullable: true })
   termsVersion?: string | null

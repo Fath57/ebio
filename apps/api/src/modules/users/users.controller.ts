@@ -33,11 +33,11 @@ export class UsersController {
   }
 
   /**
-   * Enregistrer que les conditions ont été acceptées.
+   * Record that the terms were accepted.
    *
-   * Appelée par l'application juste après une inscription réussie, quel que
-   * soit le chemin — téléphone, courriel ou Google. La case cochée à l'écran
-   * ne quittait jamais le téléphone ; elle laisse désormais une trace datée.
+   * Called by the app right after a successful sign-up, whichever path was
+   * taken — phone, email or Google. The box ticked on screen never left the
+   * phone; it now leaves a dated record.
    */
   @Post('me/terms')
   async acceptTerms(

@@ -70,10 +70,10 @@ interface SuggestionCardProps {
   item: RecommendedProduct
   /** Calculée depuis la largeur de l'écran, pour que la suivante dépasse. */
   width: number
-  /** Ce qu'il y a déjà dans le panier pour ce produit ; 0 s'il n'y est pas. */
+  /** What the cart already holds for this product; 0 when it holds none. */
   quantity: number
   onAdd: ((item: RecommendedProduct) => void) | null
-  /** Change la quantité d'une ligne déjà là ; 0 la retire. */
+  /** Changes the quantity of a line already there; 0 removes it. */
   onChangeQuantity: ((item: RecommendedProduct, next: number) => void) | null
   onOpen: ((productId: string) => void) | null
   reasonLabels: ReasonLabels
@@ -115,9 +115,9 @@ function SuggestionCard({ item, quantity, onAdd, onChangeQuantity, onOpen, reaso
       )}
       <PromotionChips labels={promotionChipLabels(item.promotionTypes)} maxVisible={2} />
       {/*
-        * Une fois l'article pris, le bouton devient un compteur : une
-        * suggestion ne se prend pas toujours à l'unité, et il fallait sinon
-        * quitter la caisse pour passer de un à trois kilos.
+        * Once the item is taken, the button becomes a stepper: a suggestion is
+        * not always taken one at a time, and going from one kilo to three
+        * otherwise meant leaving checkout entirely.
         */}
       {onAdd && quantity === 0 && (
         <TouchableOpacity
@@ -191,9 +191,8 @@ export function BasketSuggestions({
     return null
   }
 
-  // La ligne du panier, pas seulement sa présence : c'est elle qui porte la
-  // quantité à afficher et l'identifiant qu'attendent `updateQuantity` et
-  // `removeItem`.
+  // The cart line, not just whether it is there: it carries the quantity to
+  // display and the id that `updateQuantity` and `removeItem` expect.
   const cartLineFor = (productId: string) =>
     cartItems.find(line => line.productId === productId && line.supplierId === supplierId) ?? null
 

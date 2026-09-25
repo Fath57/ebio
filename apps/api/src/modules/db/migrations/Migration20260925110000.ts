@@ -1,13 +1,13 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * La liste des types de notification, remise à jour.
+ * The list of notification types, brought up to date.
  *
- * La contrainte énumère les valeurs à la main et personne ne pense à elle en
- * ajoutant un type : l'invitation à donner son avis sur les produits a été
- * refusée à l'insertion. Même famille que `payments_provider_check` la veille
- * — une énumération dupliquée entre le code et la base finit toujours par
- * diverger. La liste est ici regénérée depuis l'énumération TypeScript.
+ * The constraint enumerates its values by hand and nobody thinks of it when
+ * adding a type: the product-review invitation was refused on insert. Same
+ * family as `payments_provider_check` the day before — an enum duplicated
+ * between the code and the database always ends up diverging. The list here is
+ * regenerated from the TypeScript enum.
  */
 export class Migration20260925110000 extends Migration {
   override async up(): Promise<void> {
@@ -17,6 +17,6 @@ export class Migration20260925110000 extends Migration {
   }
 
   override async down(): Promise<void> {
-    // Restreindre à nouveau rejetterait des notifications déjà enregistrées.
+    // Narrowing it again would reject notifications already recorded.
   }
 }

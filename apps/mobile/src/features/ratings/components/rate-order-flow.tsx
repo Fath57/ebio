@@ -30,14 +30,14 @@ interface DeliveryFeedbackState {
 type Step = 'loading' | 'shop' | 'courier' | 'tip'
 
 /**
- * Noter sa commande, à la livraison : la boutique (quatre critères), puis le
- * livreur (étoiles et pourboire). Les étapes déjà faites, ou sans objet quand
- * la boutique a livré elle-même, sont sautées.
+ * Rating an order, at delivery: the shop (four criteria), then the courier
+ * (stars and a tip). Steps already done, or moot when the shop delivered
+ * itself, are skipped.
  *
- * Les produits n'y sont plus. On les notait ici, au moment où le colis arrive
- * — donc avant d'avoir rien goûté, et l'avis portait sur l'emballage. La
- * demande part maintenant quelques heures plus tard, par notification, vers
- * un écran qui ne fait que cela.
+ * The products are no longer here. They used to be rated at the moment the
+ * parcel arrives — so before anything had been tasted, and the review was
+ * about the packaging. The ask now goes out hours later, by notification, to a
+ * screen that does nothing else.
  */
 export function RateOrderFlow({ orderId, supplierId, hasReview, tipOnly = false, onDone, onBack, onOpenWallet }: RateOrderFlowProps) {
   const { semantic } = useTheme()

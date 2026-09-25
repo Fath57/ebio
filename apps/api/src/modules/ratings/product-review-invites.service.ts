@@ -7,11 +7,11 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 
 /**
- * Une ligne de commande livrée qui attend encore un avis.
+ * A delivered order still waiting on a review.
  *
- * Écrit en SQL parce que la question porte sur une absence — « les commandes
- * dont au moins un article n'a pas d'avis » — et qu'un `NOT EXISTS` le dit
- * mieux qu'un aller-retour d'entités.
+ * Written in SQL because the question is about an absence — "orders where at
+ * least one item has no review" — and a `NOT EXISTS` says it better than a
+ * round trip through entities.
  */
 interface PendingOrder {
   id: string
@@ -32,19 +32,19 @@ export class ProductReviewInvitesService {
   ) {}
 
   /**
-   * Inviter l'acheteur à donner son avis, un moment après la livraison.
+   * Invite the buyer to review, a while after the delivery.
    *
-   * Demander au moment où on pose le colis n'a pas de sens : personne n'a
-   * encore ouvert le sac, et l'avis porterait sur l'emballage. On attend donc,
-   * et on relance — un nombre de fois borné, parce que ne pas répondre est
-   * aussi une réponse.
+   * Asking as the parcel is set down makes no sense: nobody has opened the bag
+   * yet, and the review would be about the packaging. So we wait, and we
+   * remind — a bounded number of times, because not answering is an answer
+   * too.
    *
-   * Toutes les dix minutes : l'exactitude à la minute n'a aucun intérêt ici,
-   * et une requête large qui tourne sans cesse coûterait plus qu'elle ne rend.
+   * Every ten minutes: minute-level accuracy is worth nothing here, and a
+   * broad query running constantly would cost more than it returns.
    */
   @Cron('0 */10 * * * *')
-  // Hors requête, l'EntityManager global est refusé : le décorateur ouvre le
-  // contexte que MikroORM exige. Même piège que les crons de diffusion.
+  // Outside a request the global EntityManager is refused: the decorator
+  // opens the context MikroORM demands. Same trap as the dispatch crons.
   @EnsureRequestContext()
   async inviteForDeliveredOrders(): Promise<void> {
     const [delayHours, maxInvites] = await Promise.all([
@@ -103,14 +103,14 @@ export class ProductReviewInvitesService {
         sent += 1
       }
       catch (error) {
-        // Une invitation perdue n'est pas une raison d'abandonner les autres ;
-        // le compteur n'ayant pas bougé, celle-ci repassera au prochain tour.
+        // One lost invitation is no reason to drop the others; since the
+        // counter did not move, this one comes back on the next pass.
         this.logger.error(`Invitation d'avis échouée pour la commande ${order.order_number} — ${error}`)
       }
     }
 
-    // Le nombre réellement parti, pas le nombre de candidates : la première
-    // version annonçait huit envois alors que les huit avaient échoué.
+    // What actually went out, not how many were candidates: the first version
+    // announced eight sends when all eight had failed.
     this.logger.log(`Avis produit : ${sent}/${pending.length} invitation(s) envoyée(s)`)
   }
 }

@@ -3,7 +3,7 @@ import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { ASSISTANT_AVATAR } from '../avatar'
 
-/** Le nombre d'ondes. Trois suffisent à donner le mouvement ; cinq brouillent. */
+/** How many waves. Three carry the movement; five blur it. */
 const RINGS = [0, 1, 2]
 
 const RING_DURATION_MS = 2200
@@ -14,18 +14,18 @@ interface AssistantSpeakingProps {
 }
 
 /**
- * Ce qu'on voit quand elle parle.
+ * What you see while she is speaking.
  *
- * La spec refusait « la sphère animée et l'onde sonore décorative », et elle
- * avait raison sur le principe : ce qui bouge sans rien dire détourne du panier
- * et du total. Celle-ci dit quelque chose — elle n'existe que pendant que le
- * son sort, et disparaît à la seconde où il s'arrête. C'est l'équivalent visuel
- * de voir quelqu'un remuer les lèvres : on sait qu'il faut écouter, et on sait
- * quand c'est fini.
+ * The spec refused "the animated sphere and the decorative sound wave", and it
+ * was right in principle: anything that moves without saying something pulls
+ * attention away from the cart and the total. This one says something — it
+ * exists only while sound is coming out, and vanishes the second it stops. It
+ * is the visual equivalent of seeing someone's lips move: you know to listen,
+ * and you know when it is over.
  *
- * Les ondes partent de l'avatar, décalées dans le temps, et s'effacent en
- * s'élargissant. Rien ne clignote, rien ne tourne : une voix porte loin et
- * s'éteint, c'est ce que le dessin imite.
+ * The waves leave the avatar, staggered in time, and fade as they widen.
+ * Nothing blinks, nothing spins: a voice carries and dies away, and that is
+ * what the drawing imitates.
  */
 export function AssistantSpeaking({ speaking }: AssistantSpeakingProps) {
   const waves = useRef(RINGS.map(() => new Animated.Value(0))).current
@@ -38,8 +38,8 @@ export function AssistantSpeaking({ speaking }: AssistantSpeakingProps) {
 
     const loops = waves.map((wave, index) => Animated.loop(
       Animated.sequence([
-        // Le décalage entre les ondes fait la profondeur : sans lui, les trois
-        // cercles n'en formeraient qu'un.
+        // The stagger between waves is what gives depth: without it the three
+        // circles would read as one.
         Animated.delay((index * RING_DURATION_MS) / RINGS.length),
         Animated.timing(wave, {
           toValue: 1,

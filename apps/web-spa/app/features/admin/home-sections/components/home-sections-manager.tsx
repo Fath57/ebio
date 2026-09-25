@@ -28,12 +28,12 @@ interface HomeSectionRow extends HomeSectionPayload {
 const QUERY_KEY = ['admin', 'home-sections']
 
 /**
- * Les sections de l'accueil, rangées comme l'acheteur les verra.
+ * The home sections, arranged as the buyer will see them.
  *
- * Elles étaient écrites en dur dans l'application : renommer « Validé eBio »
- * demandait un build et une soumission au Play Store. La liste est ici dans
- * son ordre d'affichage, et se réordonne d'un cran à la fois — c'est le geste
- * qu'on fait, et il évite les états où deux sections se disputent une place.
+ * They used to be hard-coded in the app: renaming "Validé eBio" meant a build
+ * and a Play Store submission. The list here is in display order, and moves a
+ * notch at a time — that is the gesture people make, and it avoids the states
+ * where two sections fight over a place.
  */
 export function HomeSectionsManager() {
   const queryClient = useQueryClient()
@@ -104,7 +104,7 @@ export function HomeSectionsManager() {
     onSuccess: refresh,
   })
 
-  /** Un cran à la fois : c'est le geste qu'on fait devant une liste. */
+  /** One notch at a time: that is the gesture people make at a list. */
   const move = (index: number, direction: -1 | 1): void => {
     const next = [...sections]
     const target = index + direction
@@ -209,8 +209,8 @@ export function HomeSectionsManager() {
               size="icon"
               variant="ghost"
               aria-label={`Supprimer ${section.title}`}
-              // Éteindre suffit dans presque tous les cas ; supprimer perd
-              // les critères, et c'est ce qu'on confirme.
+              // Switching off is enough in almost every case; deleting loses
+              // the criteria, and that is what gets confirmed.
               onClick={() => setDeleting(section)}
             >
               <Trash2 className="text-destructive h-4 w-4" />

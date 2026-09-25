@@ -122,9 +122,9 @@ function SearchHomeWrapper({ navigation }: any) {
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
         onOpenAssistant={() => navigation.navigate('Assistant')}
         onSeeAll={(title, criteria) => {
-          // Les critères de la section rouvrent la recherche telle quelle :
-          // plus de correspondance à maintenir entre trois noms figés et
-          // trois jeux de filtres.
+          // The section's criteria reopen the search as they are: no mapping
+          // left to maintain between three frozen names and three sets of
+          // filters.
           navigation.navigate('SearchResults', {
             title,
             validatedOnly: criteria.validatedOnly === true,
@@ -144,12 +144,12 @@ function SearchHomeWrapper({ navigation }: any) {
 }
 
 /**
- * L'assistant, et le passage de relais au paiement.
+ * The assistant, and the handover to checkout.
  *
- * La conversation tient son panier côté serveur ; la caisse, elle, ne connaît
- * que le panier de l'application. On recopie donc les lignes avant de basculer,
- * sans toucher à ce qui s'y trouvait déjà : l'acheteur a pu commencer à la main
- * puis continuer en parlant.
+ * The conversation keeps its cart server-side; checkout only knows the app's
+ * cart. So the lines are copied across before switching, without touching what
+ * was already there: the buyer may have started by hand and carried on by
+ * speaking.
  */
 function AssistantWrapper({ navigation }: any) {
   const { addItem } = useCart()
@@ -583,11 +583,11 @@ function CheckoutWrapper({ route, navigation }: any) {
         orderSummary={orderSummary}
         customer={customer}
         onComplete={(orderNumber, orderId) => {
-          // Tout le panier, pas une boutique : depuis le panier unifié, un
-          // passage en caisse facture l'ensemble et crée une commande par
-          // boutique. `clearSupplierCart(orderSummary.supplierId)` ne vidait
-          // rien du tout — `OrderSummary` ne porte pas de `supplierId`, il
-          // valait `undefined`, et le panier restait entier après la commande.
+          // The whole cart, not one shop: since the unified cart, one
+          // checkout bills everything and creates an order per shop.
+          // `clearSupplierCart(orderSummary.supplierId)` cleared nothing at
+          // all — `OrderSummary` carries no `supplierId`, so it was
+          // `undefined`, and the cart stayed whole after the order.
           clearAll()
           navigation.replace('OrderSuccess', { orderNumber, orderId })
         }}
@@ -779,10 +779,10 @@ function OrderTrackingWrapper({ route, navigation }: any) {
 }
 
 /**
- * L'écran d'avis produit, atteint depuis la notification différée.
+ * The product-review screen, reached from the deferred notification.
  *
- * Séparé de `RateOrder` parce qu'il se vit à un autre moment : la boutique et
- * le livreur se jugent à l'arrivée du colis, le produit une fois consommé.
+ * Separate from `RateOrder` because it happens at another moment: the shop and
+ * the courier are judged when the parcel arrives, the product once eaten.
  */
 function RateProductsWrapper({ route, navigation }: any) {
   const { orderId } = route.params ?? {}
@@ -1067,18 +1067,18 @@ export function AppNavigation() {
         />
       </Tab.Navigator>
 
-      {/* L'annonce du jour, posée au-dessus de la navigation pour survivre au
-        * changement d'onglet — la fermer est un geste, pas un effet de bord. */}
+      {/* The announcement of the day, mounted above the navigator so it
+        * survives a tab change — closing it is a gesture, not a side effect. */}
       <BuyerAnnouncement />
     </NavigationContainer>
   )
 }
 
 /**
- * L'annonce à l'ouverture, et ce qu'elle désigne.
+ * The announcement on opening, and what it points at.
  *
- * Ce que l'annonce pointe s'ouvre dans la pile d'accueil : une boutique, un
- * produit, ou un lien externe qui sort de l'application.
+ * Whatever it targets opens in the home stack: a shop, a product, or an
+ * external link that leaves the app.
  */
 function BuyerAnnouncement() {
   const { announcement, dismiss } = useAnnouncement()

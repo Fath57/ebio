@@ -106,11 +106,11 @@ export type DeliveryQuoteRequest = z.infer<typeof deliveryQuoteRequestSchema>
 export type DeliveryQuoteResponse = z.infer<typeof deliveryQuoteResponseSchema>
 
 /**
- * L'interrupteur de l'assistant.
+ * The assistant's switch.
  *
- * Un objet plutôt qu'un booléen nu : le corps d'une requête se lit mieux, et
- * le réglage pourra gagner un champ — une liste d'acheteurs, un plafond de
- * dépense — sans casser ce qui l'appelle.
+ * An object rather than a bare boolean: a request body reads better that way,
+ * and the setting can gain a field — a list of buyers, a spending cap —
+ * without breaking its callers.
  */
 export const assistantSettingSchema = z.object({
   enabled: z.boolean(),
@@ -122,10 +122,10 @@ export const assistantSettingSchema = z.object({
 export type AssistantSettingInput = z.infer<typeof assistantSettingSchema>
 
 /**
- * Quand demander un avis sur les produits, et combien de fois relancer.
+ * When to ask for product reviews, and how many times to remind.
  *
- * Le délai court depuis la livraison pour la première invitation, puis depuis
- * la précédente pour chaque relance : un seul nombre à comprendre.
+ * The delay runs from the delivery for the first invitation, then from the
+ * previous one for each reminder: a single number to understand.
  */
 export const productReviewTimingSchema = z.object({
   delaiHeures: z.coerce.number().int().min(1).max(720),

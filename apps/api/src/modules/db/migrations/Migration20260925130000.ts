@@ -1,11 +1,11 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * Les annonces affichées à l'ouverture de l'application.
+ * The announcements shown when the app opens.
  *
- * Trois tables : l'annonce, la demande payée d'une boutique — même circuit que
- * les bannières — et ce que chaque acheteur a déjà vu, qui est ce qui empêche
- * une annonce de revenir à chaque ouverture.
+ * Three tables: the announcement, a shop's paid request — same circuit as the
+ * banners — and what each buyer has already seen, which is what stops an
+ * announcement coming back on every opening.
  */
 export class Migration20260925130000 extends Migration {
   override async up(): Promise<void> {
@@ -51,9 +51,9 @@ export class Migration20260925130000 extends Migration {
     this.addSql(`CREATE INDEX IF NOT EXISTS "announcement_requests_status_idx"
       ON "announcement_requests" ("status")`)
 
-    // Une ligne par couple, pas une par affichage : ce qu'on veut savoir est
-    // « faut-il la remontrer ? ». La contrainte d'unicité est ce qui permet
-    // l'écriture en une seule instruction.
+    // One row per pair, not one per display: what we want to know is "should
+    // it be shown again?". The unique constraint is what allows the write to
+    // happen in a single statement.
     this.addSql(`CREATE TABLE IF NOT EXISTS "announcement_views" (
       "id" uuid PRIMARY KEY DEFAULT gen_random_uuid(),
       "announcement_id" uuid NOT NULL REFERENCES "announcements" ("id") ON DELETE CASCADE,

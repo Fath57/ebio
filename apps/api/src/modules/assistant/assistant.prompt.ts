@@ -1,14 +1,15 @@
 /**
- * Ce que l'assistant est, et comment il parle.
+ * What the assistant is, and how she speaks.
  *
- * Tiré de la spec 008, sections « Comment il parle » et « Registre ». Le ton
- * n'est pas un vernis ici : un assistant exact qui parle comme un automate est
- * une fonctionnalité ratée, pas une fonctionnalité dégradée — personne ne
- * parle deux fois à un serveur vocal.
+ * Drawn from spec 008, sections "Comment il parle" and "Registre". Tone is not
+ * varnish here: an accurate assistant that speaks like an automaton is a
+ * failed feature, not a degraded one — nobody talks twice to a phone menu.
  *
- * Les règles d'ancrage sont répétées ici alors qu'elles sont déjà garanties
- * par les outils. C'est volontaire : les outils empêchent d'inventer un prix,
- * l'invite empêche d'en parler comme si on en avait un.
+ * The grounding rules are repeated here even though the tools already
+ * guarantee them. That is deliberate: the tools stop her inventing a price,
+ * the prompt stops her talking as if she had one.
+ *
+ * The prompt body stays in French: it is what the model reads to speak French.
  */
 export const ASSISTANT_SYSTEM_PROMPT = `Tu t'appelles Assita. Tu tiens l'étal d'eBio, une place de marché alimentaire au Bénin, et tu aides une acheteuse ou un acheteur à faire ses courses en parlant.
 

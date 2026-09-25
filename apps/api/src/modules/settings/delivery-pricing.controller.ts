@@ -63,12 +63,11 @@ export class AdminBannerOffersController {
 }
 
 /**
- * L'assistant, ouvert ou fermé, depuis le back-office.
+ * The assistant, open or closed, from the back-office.
  *
- * Chaque tour de parole appelle un modèle payant : il faut pouvoir le couper
- * sans déployer, que ce soit pour maîtriser la dépense ou parce qu'il répond
- * mal. Le réglage s'applique dans la minute — le cache des réglages est vidé à
- * l'écriture.
+ * Every turn calls a paid model: it has to be possible to cut it off without
+ * deploying, whether to contain spending or because it is answering badly. The
+ * setting applies within the minute — the settings cache is cleared on write.
  */
 @Controller('admin/assistant')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
@@ -91,10 +90,10 @@ export class AdminAssistantController {
 }
 
 /**
- * Le moment où l'on demande son avis à l'acheteur.
+ * When the buyer is asked for their review.
  *
- * Réglable parce que le bon délai dépend de ce qu'on vend : douze heures
- * conviennent à de la nourriture, ce serait trop tôt pour du savon.
+ * Configurable because the right delay depends on what is sold: twelve hours
+ * suit food, and would be far too early for soap.
  */
 @Controller('admin/product-review-timing')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)

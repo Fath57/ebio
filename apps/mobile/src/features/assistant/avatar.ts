@@ -1,9 +1,9 @@
 /**
- * Le visage de l'assistant.
+ * The assistant's face.
  *
- * Dans son propre module parce qu'un `require` d'image — la façon dont React
- * Native résout un asset — n'est ni un import ni une instruction ordinaire :
- * placé dans un écran, il se retrouve coincé entre deux règles de lint qui se
- * contredisent. Ici, il est importé comme n'importe quoi d'autre.
+ * In a module of its own because an image `require` — the way React Native
+ * resolves an asset — is neither an import nor an ordinary statement: placed
+ * inside a screen, it ends up caught between two lint rules that contradict
+ * each other. Here it is imported like anything else.
  */
 export const ASSISTANT_AVATAR = require('../../../assets/assistant-avatar.png') as number

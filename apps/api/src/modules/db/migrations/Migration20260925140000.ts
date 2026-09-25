@@ -1,12 +1,12 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * Le titre d'une annonce devient facultatif.
+ * An announcement's title becomes optional.
  *
- * Un visuel se suffit souvent à lui-même : une affiche porte déjà son texte,
- * et lui redemander un titre obligeait à en inventer un qui s'afficherait
- * par-dessus. L'un des deux reste exigé — une annonce vide n'aurait rien à
- * montrer —, mais c'est le contrat qui le vérifie, là où la règle se lit.
+ * A poster is often enough on its own: it already carries its text, and asking
+ * for a title on top forced someone to invent one that would be written over
+ * it. One of the two is still required — an empty announcement would have
+ * nothing to show — but the contract is what checks it, where the rule reads.
  */
 export class Migration20260925140000 extends Migration {
   override async up(): Promise<void> {
@@ -15,6 +15,7 @@ export class Migration20260925140000 extends Migration {
   }
 
   override async down(): Promise<void> {
-    // Remettre la contrainte rejetterait les annonces déjà publiées sans titre.
+    // Restoring the constraint would reject announcements already published
+    // without a title.
   }
 }

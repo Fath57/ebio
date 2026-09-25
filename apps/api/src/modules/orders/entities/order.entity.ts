@@ -139,11 +139,11 @@ export class Order {
   escrowReleasedAt?: Date
 
   /**
-   * Combien de fois on a déjà invité l'acheteur à donner son avis produit.
+   * How many times the buyer has been invited to review the products.
    *
-   * L'invitation part des heures après la livraison, pas au moment où on
-   * dépose le colis : on ne juge pas un produit qu'on n'a pas encore ouvert.
-   * Le compteur borne la relance — au-delà, le silence est une réponse.
+   * The invitation goes out hours after the delivery, not as the parcel is set
+   * down: nobody judges a product they have not opened. The counter bounds the
+   * reminders — beyond it, silence is an answer.
    */
   @Property({ fieldName: 'review_invites_sent', default: 0 })
   reviewInvitesSent: number = 0

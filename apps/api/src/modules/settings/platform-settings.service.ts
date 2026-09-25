@@ -44,27 +44,27 @@ export const DEFAULT_COURIER_MAX_DEBT = 5_000
 export const DEFAULT_ASSISTANT_ENABLED = false
 
 /**
- * Le temps qu'on laisse avant de demander un avis sur un produit.
+ * How long we wait before asking for a product review.
  *
- * Demander à la livraison n'a pas de sens : personne n'a encore ouvert le sac.
- * Douze heures laissent passer un repas, ce qui est le minimum pour avoir un
- * avis sur de la nourriture.
+ * Asking at delivery makes no sense: nobody has opened the bag yet. Twelve
+ * hours let a meal happen, which is the minimum for having an opinion about
+ * food.
  */
 export const DEFAULT_PRODUCT_REVIEW_DELAY_HOURS = 12
 
-/** Au-delà, ne pas répondre est une réponse. */
+/** Beyond this, not answering is an answer. */
 export const DEFAULT_PRODUCT_REVIEW_MAX_INVITES = 3
 
 /**
- * Le temps avant qu'une même annonce puisse réapparaître.
+ * How long before the same announcement may appear again.
  *
- * Une annonce interrompt : elle se met devant ce que l'acheteur venait faire.
- * Une fois par jour est le rythme qui se supporte ; réglable parce qu'une
- * annonce courte et importante mérite parfois d'insister.
+ * An announcement interrupts: it stands in front of what the buyer came to do.
+ * Once a day is the rhythm people tolerate; configurable because a short,
+ * important announcement sometimes deserves to insist.
  */
 export const DEFAULT_ANNOUNCEMENT_INTERVAL_HOURS = 24
 
-/** Durées et prix proposés aux boutiques pour une annonce. */
+/** Durations and prices offered to shops for an announcement. */
 export const DEFAULT_ANNOUNCEMENT_OFFERS: BannerOffersInput = {
   offers: [
     { days: 1, price: 2_000 },
@@ -178,7 +178,7 @@ export class PlatformSettingsService {
     await this.set(BANNER_OFFERS_KEY, JSON.stringify(sorted))
   }
 
-  /** Heures entre la livraison et la demande d'avis sur les produits. */
+  /** Hours between the delivery and the product-review ask. */
   async getProductReviewDelayHours(): Promise<number> {
     return this.readInteger(PRODUCT_REVIEW_DELAY_HOURS_KEY, DEFAULT_PRODUCT_REVIEW_DELAY_HOURS, 1, 720)
   }
@@ -188,7 +188,7 @@ export class PlatformSettingsService {
     await this.set(PRODUCT_REVIEW_DELAY_HOURS_KEY, String(hours))
   }
 
-  /** Nombre total d'invitations, relances comprises. */
+  /** Total number of invitations, reminders included. */
   async getProductReviewMaxInvites(): Promise<number> {
     return this.readInteger(PRODUCT_REVIEW_MAX_INVITES_KEY, DEFAULT_PRODUCT_REVIEW_MAX_INVITES, 1, 10)
   }
@@ -198,7 +198,7 @@ export class PlatformSettingsService {
     await this.set(PRODUCT_REVIEW_MAX_INVITES_KEY, String(count))
   }
 
-  /** Heures avant qu'une même annonce puisse réapparaître au même acheteur. */
+  /** Hours before the same announcement may reappear to the same buyer. */
   async getAnnouncementIntervalHours(): Promise<number> {
     return this.readInteger(ANNOUNCEMENT_INTERVAL_HOURS_KEY, DEFAULT_ANNOUNCEMENT_INTERVAL_HOURS, 1, 720)
   }
@@ -245,7 +245,7 @@ export class PlatformSettingsService {
     this.cache.clear()
   }
 
-  /** Un entier borné, ou le défaut si la ligne manque ou ne se lit pas. */
+  /** A bounded integer, or the default when the row is missing or unreadable. */
   private async readInteger(key: string, fallback: number, min: number, max: number): Promise<number> {
     const raw = await this.get(key)
     const value = raw === null ? Number.NaN : Number(raw)

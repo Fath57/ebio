@@ -219,8 +219,8 @@ export function handleNotificationTap(data: Record<string, unknown>) {
       }
       break
     case 'PRODUCT_REVIEW_INVITE':
-      // Un écran qui ne fait que cela : l'invitation arrive des heures après
-      // la livraison, la notation de la commande est déjà derrière nous.
+      // A screen that does nothing else: the invitation arrives hours after
+      // the delivery, with the order rating already behind us.
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'RateProducts',
@@ -271,8 +271,8 @@ function handleCourierTap(type: string, data: Record<string, unknown>) {
       navigationRef.navigate('Courses')
       break
     case 'PRODUCT_REVIEW_INVITE':
-      // Un écran qui ne fait que cela : l'invitation arrive des heures après
-      // la livraison, la notation de la commande est déjà derrière nous.
+      // A screen that does nothing else: the invitation arrives hours after
+      // the delivery, with the order rating already behind us.
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'RateProducts',
@@ -339,8 +339,8 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
       }
       break
     case 'PRODUCT_REVIEW_INVITE':
-      // Un écran qui ne fait que cela : l'invitation arrive des heures après
-      // la livraison, la notation de la commande est déjà derrière nous.
+      // A screen that does nothing else: the invitation arrives hours after
+      // the delivery, with the order rating already behind us.
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'RateProducts',

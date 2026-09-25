@@ -12,12 +12,12 @@ interface RateProductsScreenProps {
 }
 
 /**
- * Donner son avis sur ce qu'on a reçu, une fois qu'on l'a consommé.
+ * Reviewing what you received, once you have consumed it.
  *
- * Cet écran existe séparément de la notation de commande pour une raison de
- * fond : on notait le produit au moment de la livraison, avant d'avoir rien
- * goûté. L'invitation arrive maintenant quelques heures plus tard et mène
- * directement ici — la boutique et le livreur, eux, se jugent à l'arrivée.
+ * This screen exists apart from the order rating for a substantive reason: the
+ * product used to be rated at delivery, before anything had been tasted. The
+ * invitation now arrives hours later and leads straight here — the shop and
+ * the courier, for their part, are judged on arrival.
  */
 export function RateProductsScreen({ orderId, onDone, onBack }: RateProductsScreenProps) {
   const { semantic } = useTheme()

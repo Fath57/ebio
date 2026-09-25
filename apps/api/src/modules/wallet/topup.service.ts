@@ -107,10 +107,10 @@ export class TopupService {
     }
 
     if (topup.status === TopupStatus.PENDING) {
-      // Chez qui vérifier se lit sur la transaction, pas sur le réglage : une
-      // application installée avant la bascule ouvre encore son paiement chez
-      // l'ancien prestataire, et la chercher chez le nouveau reviendrait à ne
-      // pas créditer quelqu'un qui a payé.
+      // Where to verify is read from the transaction, not from the setting: an
+      // app installed before the switch still opens its payment with the old
+      // provider, and looking for it at the new one would mean failing to
+      // credit someone who paid.
       const provider = providerForTransaction(fedapayTransactionId, topup.fedapayTransactionId ?? null)
 
       let check

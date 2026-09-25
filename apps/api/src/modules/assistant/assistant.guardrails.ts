@@ -1,28 +1,28 @@
 import type { RecordedToolCall } from './tools/assistant-tool'
 
 /**
- * Les règles de la spec 008, rendues mécaniques.
+ * The rules of spec 008, made mechanical.
  *
- * L'ancrage et le ton sont décrits dans l'invite, mais une invite ne se teste
- * pas : elle se relit et on croit ce qu'on lit. Ces fonctions transforment les
- * deux règles qui comptent en quelque chose qui échoue.
+ * Grounding and tone are described in the prompt, but a prompt cannot be
+ * tested: it is re-read, and one believes what one reads. These functions turn
+ * the two rules that matter into something that can fail.
  *
- * Ce sont des **heuristiques**, et elles s'assument comme telles : elles
- * repèrent un assistant qui dérape, pas un assistant parfait.
+ * They are **heuristics** and make no secret of it: they catch an assistant
+ * going off the rails, not a perfect one.
  */
 
-/** En dessous, un nombre est une quantité — « deux kilos », « 5 bouteilles ». */
+/** Below this, a number is a quantity — "deux kilos", "5 bouteilles". */
 const AMOUNT_THRESHOLD = 100
 
-/** Au-delà, un tour de parole ne tient plus dans une oreille. */
+/** Beyond this, a turn no longer fits in one listening. */
 const MAX_SENTENCES = 3
 
 /**
- * Les nombres d'un texte qui ressemblent à des montants.
+ * The numbers in a text that look like amounts.
  *
- * Le français écrit les milliers avec une espace — parfois insécable, parfois
- * fine — et la voix les dicte de même. Les trois formes sont acceptées, sinon
- * « 5 500 » se lirait comme deux nombres.
+ * French writes thousands with a space — sometimes non-breaking, sometimes
+ * thin — and dictation produces the same. All three forms are accepted, or
+ * "5 500" would read as two numbers.
  */
 export function amountsIn(text: string): number[] {
   const matches = text.matchAll(/\d[\d\xA0\u202F ]*\d|\d+/g)
@@ -31,7 +31,7 @@ export function amountsIn(text: string): number[] {
     .filter(value => Number.isFinite(value) && value >= AMOUNT_THRESHOLD)
 }
 
-/** Tous les nombres qu'un outil a rendus, à n'importe quelle profondeur. */
+/** Every number a tool returned, at any depth. */
 export function amountsFromTools(toolCalls: RecordedToolCall[]): Set<number> {
   const found = new Set<number>()
 
@@ -54,17 +54,17 @@ export function amountsFromTools(toolCalls: RecordedToolCall[]): Set<number> {
 }
 
 /**
- * Les montants prononcés que nul outil n'a rendus.
+ * The spoken amounts that no tool returned.
  *
- * Vide est la seule réponse acceptable. Un montant inventé sur une place de
- * marché engage un vendeur sur un prix qu'il n'a pas fixé.
+ * Empty is the only acceptable answer. An invented amount on a marketplace
+ * commits a shop to a price it never set.
  */
 export function ungroundedAmounts(reply: string, toolCalls: RecordedToolCall[]): number[] {
   const known = amountsFromTools(toolCalls)
   return amountsIn(reply).filter(amount => !known.has(amount))
 }
 
-/** Le nombre de phrases d'un tour, ponctuation forte faisant foi. */
+/** How many sentences a turn holds, going by terminal punctuation. */
 export function sentenceCount(reply: string): number {
   return reply.split(/[.!?…]+/).map(part => part.trim()).filter(Boolean).length
 }
@@ -74,10 +74,10 @@ export function isTurnTooLong(reply: string): boolean {
 }
 
 /**
- * Ce qui trahit la machine.
+ * What gives the machine away.
  *
- * Tiré de la liste de la spec : annoncer le nombre d'options, nommer ses
- * propres actions, parler de « panier » comme d'un objet technique.
+ * Taken from the spec's list: announcing how many options there are, naming
+ * one's own actions, talking about "le panier" as a technical object.
  */
 const MACHINE_TELLS: Array<{ pattern: RegExp, why: string }> = [
   { pattern: /\bj[e'’]\s*(vais|vas)\s+(maintenant\s+)?(ajouter|rechercher|chercher|procéder)/i, why: 'nomme sa propre action' },
@@ -92,14 +92,14 @@ export function machineTells(reply: string): string[] {
 }
 
 /**
- * « Livraison comprise », et ses variantes.
+ * "Livraison comprise", and its variants.
  *
- * Un total juste peut habiller une phrase fausse. L'outil prévient déjà le
- * modèle quand l'adresse manque ; ceci vérifie qu'il en a tenu compte.
+ * A correct total can dress up a false sentence. The tool already warns the
+ * model when the address is missing; this checks that it listened.
  */
 const DELIVERY_INCLUDED = /\b(?:livraison|frais\s+de\s+livraison)\s+(?:comprise?s?|inclus(?:e|es)?)\b|\btout\s+compris\b/i
 
-/** Les frais de livraison ont-ils été réellement calculés ? */
+/** Were the delivery fees actually computed? */
 export function deliveryFeeIsKnown(toolCalls: RecordedToolCall[]): boolean {
   return toolCalls.some(call =>
     call.name === 'estimer_commande'
@@ -107,24 +107,24 @@ export function deliveryFeeIsKnown(toolCalls: RecordedToolCall[]): boolean {
 }
 
 /**
- * Une réponse qui annonce un ajout au panier.
+ * An answer that announces something was added to the cart.
  *
- * Volontairement étroit : reprendre le modèle à tort abîmerait la conversation.
- * Ce qui est visé, c'est la phrase qui fait croire que la commande contient
- * l'article.
+ * Deliberately narrow: correcting the model wrongly would damage the
+ * conversation. What is targeted is the sentence that makes a buyer believe
+ * the order contains the item.
  *
- * Les frontières sont unicode et non `\b` : en JavaScript `\b` est ASCII, et
- * « noté\b » ne correspond jamais puisque « é » n'est pas un caractère de mot.
+ * The boundaries are unicode rather than `\b`: in JavaScript `\b` is ASCII, and
+ * "noté\b" never matches because "é" is not a word character.
  */
 const CLAIMS_ADDED = /(?:c['’]est|ça y est|voilà)[^.!?]{0,25}(?:dans (?:le|votre) panier|ajouté(?:e|s)?|noté(?:e|s)?)(?!\p{L})|je vous (?:le|la|les|en)?\s?(?:mets|ai mis|rajoute|ajoute)(?!\p{L})|dans (?:le|votre) panier(?!\p{L})/iu
 
 /**
- * Une annonce d'ajout, et non une proposition.
+ * An announcement, not an offer.
  *
- * « Je vous mets deux kilos ? » est une question — c'est même la phrase que
- * l'invite enseigne. La prendre pour une annonce faisait reprendre le modèle
- * sur un simple bonjour, jusqu'à la phrase de repli. Seule une phrase qui
- * n'interroge pas engage quelque chose.
+ * "Je vous mets deux kilos ?" is a question — it is even the phrasing the
+ * prompt teaches. Reading it as an announcement had the model corrected on a
+ * plain hello, all the way down to the fallback sentence. Only a sentence that
+ * does not ask commits to anything.
  */
 function announcesAddition(reply: string): boolean {
   return reply
@@ -133,25 +133,25 @@ function announcesAddition(reply: string): boolean {
     .some(sentence => CLAIMS_ADDED.test(sentence))
 }
 
-/** Le panier a-t-il réellement changé pendant ce tour ? */
+/** Did the cart actually change during this turn? */
 export function cartWasTouched(toolCalls: RecordedToolCall[]): boolean {
   return toolCalls.some(call => call.name === 'ajouter_au_panier' || call.name === 'retirer_du_panier')
 }
 
-/** Ce qui, dans une réponse, ne tient pas debout face aux outils appelés. */
+/** What, in an answer, does not stand up against the tools that ran. */
 export interface GroundingBreach {
-  /** Ce qui cloche, pour le journal. */
+  /** What is wrong, for the log. */
   what: string
-  /** Ce qu'on redemande au modèle, écrit pour lui. */
+  /** What we ask the model to do about it, written for it. */
   fix: string
 }
 
 /**
- * L'écart entre ce qui a été dit et ce qui a été vérifié.
+ * The gap between what was said and what was verified.
  *
- * Les montants connus viennent de toute la conversation et pas du seul tour :
- * redire un prix trouvé deux tours plus tôt est légitime, et le prendre pour
- * une invention ferait sonner l'alarme à chaque échange.
+ * The known amounts come from the whole conversation, not the current turn
+ * alone: repeating a price found two turns ago is legitimate, and reading it
+ * as an invention would raise the alarm on every exchange.
  */
 export function groundingBreaches(
   reply: string,
@@ -190,11 +190,11 @@ export function groundingBreaches(
 }
 
 /**
- * La réponse telle qu'elle sera entendue.
+ * The answer as it will be heard.
  *
- * Le modèle met des astérisques autour des noms de boutique ; une synthèse
- * vocale les lit ou les avale de travers. Rien de ce qui se voit à l'écrit
- * n'a de sens à l'oreille.
+ * The model puts asterisks around shop names; speech synthesis either reads
+ * them out or swallows them badly. Nothing that only makes sense in writing
+ * makes sense to an ear.
  */
 export function forSpeech(reply: string): string {
   return reply
@@ -208,20 +208,20 @@ export function forSpeech(reply: string): string {
 }
 
 /**
- * Découpe un flux de texte en phrases achevées.
+ * Splits a stream of text into finished sentences.
  *
- * Rend les phrases terminées et garde le reste : une phrase n'est diffusée
- * qu'une fois entière, parce qu'on ne peut pas vérifier un demi-montant.
- * « 2 500 » ne doit pas partir au moment où le modèle a écrit « 2 ».
+ * Returns the completed ones and keeps the rest: a sentence is only streamed
+ * once whole, because half an amount cannot be checked. "2 500" must not go
+ * out the moment the model has written "2".
  */
 export function takeSentences(buffer: string): { sentences: string[], rest: string } {
   const sentences: string[] = []
   let rest = buffer
 
-  // Une ponctuation forte clôt une phrase quand une espace ou une majuscule la
-  // suit. Sans cela, le point pourrait appartenir à un nombre ; et le modèle
-  // oublie parfois l'espace — « je regarde.J'ai du gari » est bien deux
-  // phrases, qu'il faut séparer avant de les afficher.
+  // Terminal punctuation closes a sentence when a space or a capital follows.
+  // Without that, the dot could belong to a number; and the model sometimes
+  // forgets the space — "je regarde.J'ai du gari" really is two sentences, and
+  // they must be separated before being shown.
   const boundary = /[.!?…]+(?:\s|(?=\p{Lu}))/u
 
   let match = boundary.exec(rest)

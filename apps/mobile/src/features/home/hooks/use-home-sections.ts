@@ -2,7 +2,7 @@ import type { SearchResult } from '../../search/hooks/use-search'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
-/** Les critères d'une section, tels que le back-office les a définis. */
+/** A section's criteria, as the back-office defined them. */
 export interface HomeSectionCriteria {
   categorySlug?: string
   supplierId?: string
@@ -20,21 +20,21 @@ export interface HomeSection {
   title: string
   subtitle: string | null
   icon: string | null
-  /** Nul pour une section composée à la main : le rail montre déjà tout. */
+  /** Null for a hand-picked section: the rail already shows everything. */
   criteria: HomeSectionCriteria | null
   results: SearchResult[]
 }
 
 /**
- * Les sections de l'accueil, telles que le back-office les a rangées.
+ * The home sections, in the order the back-office arranged them.
  *
- * Elles étaient écrites en dur ici — « Près de vous », « Validé eBio », « En
- * promotion » — et chacune tirait sa propre recherche. Trois allers-retours
- * pour trois rails figés ; c'en est un seul, et les rails se renomment, se
- * réordonnent et s'ajoutent sans toucher à l'application.
+ * They used to be hard-coded here — "Près de vous", "Validé eBio", "En
+ * promotion" — and each fired its own search. Three round trips for three
+ * frozen rails; now it is one, and rails can be renamed, reordered and added
+ * without touching the app.
  *
- * Le serveur écarte déjà les sections vides : un titre suivi d'un rail vide
- * donne l'impression d'une application cassée.
+ * The server already drops empty sections: a title followed by an empty rail
+ * reads as a broken app.
  */
 export function useHomeSections(latitude: number, longitude: number): { sections: HomeSection[], loading: boolean } {
   const [sections, setSections] = useState<HomeSection[]>([])
@@ -56,7 +56,7 @@ export function useHomeSections(latitude: number, longitude: number): { sections
         }
       }
       catch {
-        // Hors ligne : l'accueil garde ce qu'il avait plutôt que de se vider.
+        // Offline: the home screen keeps what it had rather than emptying.
       }
       finally {
         if (!cancelled) {

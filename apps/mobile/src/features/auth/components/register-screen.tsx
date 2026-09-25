@@ -59,13 +59,12 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
   const [acceptedTerms, setAcceptedTerms] = useState(false)
 
   /**
-   * Clore l'inscription, et laisser la trace de l'accord.
+   * Close the sign-up, and leave a record of the agreement.
    *
-   * La case cochée ne quittait jamais le téléphone : elle désactivait le
-   * bouton, et il n'y avait rien à produire en cas de contestation. Le
-   * serveur l'enregistre désormais, avec la date et l'application d'où elle
-   * vient. Un échec réseau ne bloque pas l'inscription — le compte existe
-   * déjà à ce stade — mais il est signalé dans la console.
+   * The ticked box never left the phone: it disabled the button, and there was
+   * nothing to produce in a dispute. The server now records it, with the date
+   * and the app it came from. A network failure does not block the sign-up —
+   * the account already exists by then — but it is reported to the console.
    */
   const finishRegistration = useCallback(async () => {
     try {
