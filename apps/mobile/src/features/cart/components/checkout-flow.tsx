@@ -23,6 +23,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { track } from '../../../utils/analytics'
 import { apiFetch } from '../../../utils/api-client'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
@@ -325,6 +326,15 @@ export function CheckoutFlow({
     [liveItems, orderSummary.items],
   )
   const basketProductIds = useMemo(() => basketItems.map(item => item.productId), [basketItems])
+
+  // Once per visit to this screen: the funnel counts people who reached the
+  // checkout, not renders of it.
+  useEffect(() => {
+    track('caisse_ouverte', { articles: basketItems.length })
+    // The basket is read once on arrival on purpose — adding it to the
+    // dependencies would fire again on every quantity change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
   /**
    * The basket as it was on arrival, which is what the rail is built against.
    *
@@ -565,6 +575,9 @@ export function CheckoutFlow({
           ?? error?.errors?.[0]?.message
           ?? (error?.message === 'Validation failed' ? undefined : error?.message)
           ?? 'Impossible de créer la commande. Veuillez réessayer.'
+        // The reason travels with the event: a refusal rate says something is
+        // wrong, a refusal reason says what to change.
+        track('caisse_refusee', { motif: message, paiement: effectiveChoice })
         // Cash cap or cash disabled: the server explains, the buyer picks another way.
         if (orderRes.status === 400 && effectiveChoice === 'CASH' && typeof error?.message === 'string') {
           appAlert('Paiement en espèces', error.message)
@@ -573,6 +586,12 @@ export function CheckoutFlow({
         appAlert('Erreur', message)
         return
       }
+
+      track('commande_passee', {
+        montant: typeof order.totalAmount === 'number' ? order.totalAmount : 0,
+        paiement: effectiveChoice,
+        articles: basketItems.length,
+      })
 
       setOrderNumber(order.orderNumber ?? order.id)
       if (typeof order.totalAmount === 'number') {

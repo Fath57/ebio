@@ -1,6 +1,7 @@
 import { GoogleSignin, statusCodes } from '@react-native-google-signin/google-signin'
 import { useEffect, useState } from 'react'
 import { unregisterPushToken } from '../features/notifications/push-token'
+import { forget, identify } from '../utils/analytics'
 import { apiFetch, clearTokens, setSessionToken } from '../utils/api-client'
 import { clearAccountData } from '../utils/offline-storage'
 
@@ -405,6 +406,8 @@ export async function signOut(): Promise<void> {
   // belonged to the account that just left, and the next person to sign in on
   // this phone would have found it waiting.
   await clearAccountData()
+  // What happens next on this phone belongs to whoever comes after them.
+  forget()
   notifyAuthChange()
 }
 
@@ -422,6 +425,12 @@ export function notifyAuthChange() {
   hasChecked = false
   getSession().then((session) => {
     cachedUser = session.user
+    // Ties what follows to a person — which is what turns a stream of taps
+    // into "this buyer could not check out twice", and what makes it personal
+    // data, so `forget` above matters as much.
+    if (session.user) {
+      identify(session.user.id)
+    }
     hasChecked = true
     notifyListeners()
   })

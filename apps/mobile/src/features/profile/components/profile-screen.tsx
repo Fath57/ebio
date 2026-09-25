@@ -1,5 +1,6 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
+import ChartNoAxesColumn from 'lucide-react-native/dist/esm/icons/chart-no-axes-column'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleQuestionMark from 'lucide-react-native/dist/esm/icons/circle-question-mark'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
@@ -22,6 +23,7 @@ import {
   Image,
   ScrollView,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -29,8 +31,10 @@ import {
 import { notifyAuthChange, signOut, useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { ANALYTICS_CONSENT_KEY, setAnalyticsAllowed } from '../../../utils/analytics'
 import { apiFetch } from '../../../utils/api-client'
 import { BRAND_LOGO } from '../../../utils/app-variant'
+import { storage } from '../../../utils/offline-storage'
 import { BiometricSetting } from '../../auth/components/biometric-setting'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -80,6 +84,27 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
   const [supplierStatus, setSupplierStatus] = useState<{ isSupplier: boolean, supplierId: string | null, validationStatus: string | null, shopName: string | null }>({ isSupplier: false, supplierId: null, validationStatus: null, shopName: null })
   const [loading, setLoading] = useState(true)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
+
+  /**
+   * Whether this phone reports how the app is used.
+   *
+   * Kept on the device rather than on the account: a refusal given before
+   * signing in is still a refusal.
+   */
+  const [analyticsOn, setAnalyticsOn] = useState(
+    () => storage.getString(ANALYTICS_CONSENT_KEY) !== '1',
+  )
+
+  function handleToggleAnalytics(value: boolean) {
+    setAnalyticsOn(value)
+    setAnalyticsAllowed(value)
+    if (value) {
+      storage.delete(ANALYTICS_CONSENT_KEY)
+    }
+    else {
+      storage.set(ANALYTICS_CONSENT_KEY, '1')
+    }
+  }
 
   const sessionUserId = session?.user?.id ?? null
 
@@ -423,6 +448,31 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
 
               <View style={styles.menuDivider} />
 
+              {/* Refusing must be as easy as being measured is invisible. */}
+              <View style={styles.menuItemRow}>
+                <View style={styles.menuItemLeft}>
+                  <View style={[styles.menuIconContainer, { backgroundColor: colors.blue[50] }]}>
+                    <ChartNoAxesColumn size={18} color={colors.blue[600]} />
+                  </View>
+                  <View style={styles.analyticsLabel}>
+                    <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>
+                      Aider à améliorer l'application
+                    </Text>
+                    <Text style={[styles.analyticsHint, { color: semantic.textTertiary }]}>
+                      Nous mesurons ce qui est utilisé, jamais ce que vous écrivez
+                    </Text>
+                  </View>
+                </View>
+                <Switch
+                  value={analyticsOn}
+                  onValueChange={handleToggleAnalytics}
+                  trackColor={{ true: colors.green[400], false: colors.neutral[200] }}
+                  thumbColor={colors.neutral[0]}
+                />
+              </View>
+
+              <View style={styles.menuDivider} />
+
               <MenuItem
                 icon={Bell}
                 iconBg={colors.blue[50]}
@@ -729,6 +779,14 @@ const styles = StyleSheet.create({
   },
   menuGroup: {
     overflow: 'hidden',
+  },
+  analyticsLabel: {
+    flex: 1,
+    gap: 2,
+  },
+  analyticsHint: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
   },
   menuItemRow: {
     flexDirection: 'row',

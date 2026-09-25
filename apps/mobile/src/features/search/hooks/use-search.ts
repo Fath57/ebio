@@ -1,5 +1,6 @@
 import type { CategoryItem } from '../../../utils/category-icons'
 import { useCallback, useRef, useState } from 'react'
+import { track } from '../../../utils/analytics'
 import { apiFetch } from '../../../utils/api-client'
 import { FALLBACK_CATEGORIES, getCategoryFallbackIcon } from '../../../utils/category-icons'
 import { OfflineCache } from '../../../utils/offline-storage'
@@ -105,6 +106,11 @@ export function useSearchProducts() {
       const res = await apiFetch(`/api/search/products?${params.toString()}`)
       if (res.ok) {
         const data: SearchResponse = await res.json()
+        if (page === 1 && filters.q) {
+          // A search that returns nothing is the catalogue's shopping list —
+          // the one measurement here that names something to go and fix.
+          track('recherche', { terme: filters.q, resultats: data.total })
+        }
         setResults(prev => (append ? [...prev, ...data.results] : data.results))
         setTotal(data.total)
         setHasMore(data.hasMore)

@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as React from 'react'
 import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { useSession } from '../../lib/auth-client'
+import { track } from '../../utils/analytics'
 import { apiFetch } from '../../utils/api-client'
 
 // ---------------------------------------------------------------------------
@@ -353,6 +354,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
 
   const addItem = useCallback((input: AddItemInput) => {
     dispatch({ type: 'ADD_ITEM', input })
+    track('panier_ajout', { produit: input.productId, boutique: input.supplierId })
   }, [])
 
   const updateQuantity = useCallback((itemId: string, quantity: number) => {

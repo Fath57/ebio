@@ -31,6 +31,7 @@ import { OnboardingScreen } from './src/features/onboarding/components/onboardin
 import { colors } from './src/theme/theme'
 import { ThemeProvider } from './src/theme/theme-context'
 import { useAccountBlock } from './src/utils/account-block'
+import { ANALYTICS_CONSENT_KEY, setAnalyticsAllowed } from './src/utils/analytics'
 import { hydrateStorageCache, storage } from './src/utils/offline-storage'
 
 SplashScreen.preventAutoHideAsync()
@@ -47,7 +48,13 @@ export default function App(): React.JSX.Element | null {
   useEffect(() => {
     // Also hydrates the sync storage cache (registration drafts rely on it).
     hydrateStorageCache()
-      .then(() => setShowOnboarding(storage.getString(ONBOARDING_KEY) !== '1'))
+      .then(() => {
+        setShowOnboarding(storage.getString(ONBOARDING_KEY) !== '1')
+        // Read before anything can be measured: a refusal given on a previous
+        // run must apply from the first screen of this one, not from the
+        // moment the profile happens to be opened.
+        setAnalyticsAllowed(storage.getString(ANALYTICS_CONSENT_KEY) !== '1')
+      })
       .catch(() => setShowOnboarding(false))
   }, [])
   // Notifications are mounted once inside each variant's navigation root,

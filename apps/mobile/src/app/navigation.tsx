@@ -6,8 +6,8 @@ import type { AssistantCartLine } from '../features/assistant/assistant'
 // de types de React Navigation.
 import type { ProductDetailProduct, ProductDetailSupplier } from '../features/catalog/components/product-detail-screen'
 import type { ApiProductDetail, ApiSupplierDetail } from '../features/catalog/product-detail-mapping'
-
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
+
 import { getFocusedRouteNameFromRoute, NavigationContainer, StackActions } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
@@ -60,6 +60,7 @@ import { WalletScreen } from '../features/wallet/components/wallet-screen'
 import { useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
+import { track } from '../utils/analytics'
 import { apiFetch, chatFetch } from '../utils/api-client'
 import { navigationRef } from './navigation-ref'
 
@@ -120,7 +121,10 @@ function SearchHomeWrapper({ navigation }: any) {
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
-        onOpenAssistant={() => navigation.navigate('Assistant')}
+        onOpenAssistant={() => {
+          track('assistant_ouvert')
+          navigation.navigate('Assistant')
+        }}
         onSeeAll={(title, criteria, productIds) => {
           // The section's criteria reopen the search as they are: no mapping
           // left to maintain between three frozen names and three sets of

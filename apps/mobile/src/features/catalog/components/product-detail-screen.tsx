@@ -29,6 +29,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { track } from '../../../utils/analytics'
 import { apiFetch } from '../../../utils/api-client'
 import { MAX_ITEM_QUANTITY, useCart } from '../../cart/cart-context'
 import { BasketSuggestions } from '../../cart/components/basket-suggestions'
@@ -155,6 +156,12 @@ export function ProductDetailScreen({
   )
   const chipLabels = promotions ? promotionChipLabelsFor(promotions) : promotionChipLabels(promotionTypes)
   const suggestionSeed = useMemo(() => [product.id], [product.id])
+
+  // Once per product shown, not once per render: the question is how many
+  // products get looked at, not how often React redraws one.
+  useEffect(() => {
+    track('produit_vu', { produit: product.id, boutique: supplier.id })
+  }, [product.id, supplier.id])
 
   /**
    * Going from the rating down to the reviews.

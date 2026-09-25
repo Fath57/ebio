@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Linking, Platform } from 'react-native'
 import { navigationRef } from '../../../app/navigation-ref'
 import { useSession } from '../../../lib/auth-client'
+import { track } from '../../../utils/analytics'
 import { apiFetch } from '../../../utils/api-client'
 import { APP_VARIANT } from '../../../utils/app-variant'
 import { storage } from '../../../utils/offline-storage'
@@ -194,6 +195,7 @@ export function handleNotificationTap(data: Record<string, unknown>) {
   // the screen whether or not the report gets through.
   const campaignId = data.campaignId
   if (typeof campaignId === 'string' && campaignId.length > 0) {
+    track('campagne_ouverte', { campagne: campaignId })
     void apiFetch(`/api/campaigns/${campaignId}/opened`, { method: 'POST' }).catch(() => {
       // Offline, or signed out. The screen still opens.
     })
