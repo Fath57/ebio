@@ -1,0 +1,16 @@
+/*
+ * The back-office's single Tailwind entry.
+ *
+ * `@theme` is only honoured inside the stylesheet Tailwind compiles. Loaded as
+ * a second, separate stylesheet, `ebio-tokens.css` was parsed by the browser
+ * alone: the at-rule was dropped, `--color-ebio-*` never reached `:root`, and
+ * every `bg-ebio-green-600` / `text-ebio-coral-600` in the app resolved to
+ * nothing — white badge text on a transparent background. Importing both into
+ * one file puts the brand tokens back in the compiler's graph.
+ */
+@import "@boilerstone/ui/globals.css";
+@import "./ebio-tokens.css";
+
+/* The ui package declares its own sources; the back-office's own screens live
+   here and must be scanned too, or their classes are never generated. */
+@source "../";

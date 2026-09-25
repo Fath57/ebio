@@ -7,8 +7,7 @@ import { AbilityProvider } from '@/lib/casl/ability-context'
 import { queryClient } from '@/lib/query-client'
 import useTheme from './hooks/useTheme'
 import '@/lib/i18n/i18n-client'
-import '@boilerstone/ui/globals.css'
-import '@/styles/ebio-tokens.css'
+import '@/styles/app.css'
 
 client.setConfig({
   baseUrl: import.meta.env.VITE_API_URL,
