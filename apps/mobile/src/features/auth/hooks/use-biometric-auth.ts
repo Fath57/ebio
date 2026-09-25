@@ -1,7 +1,7 @@
 import * as LocalAuthentication from 'expo-local-authentication'
 import * as SecureStore from 'expo-secure-store'
 import { useCallback, useEffect, useState } from 'react'
-import { Platform } from 'react-native'
+import { AppState, Platform } from 'react-native'
 import { apiFetch, setSessionToken } from '../../../utils/api-client'
 
 /**
@@ -169,29 +169,45 @@ export function useBiometricAuth() {
     }
   }, [])
 
-  useEffect(() => {
-    async function check(): Promise<void> {
-      try {
-        const compatible = await LocalAuthentication.hasHardwareAsync()
-        const enrolled = await LocalAuthentication.isEnrolledAsync()
-        setIsAvailable(compatible && enrolled)
-        if (!compatible || !enrolled) {
-          // Said out loud, because the switch simply is not drawn and the
-          // absence looks the same whatever the reason: no sensor, no
-          // fingerprint recorded on the phone, or a build without the native
-          // half. Three different things to do about it.
-          console.warn(`[empreinte] masquée — capteur ${compatible ? 'présent' : 'absent'}, empreinte ${enrolled ? 'enrôlée' : 'non enrôlée'}`)
-        }
+  const check = useCallback(async (): Promise<void> => {
+    try {
+      const compatible = await LocalAuthentication.hasHardwareAsync()
+      const enrolled = await LocalAuthentication.isEnrolledAsync()
+      setIsAvailable(compatible && enrolled)
+      if (!compatible || !enrolled) {
+        // Said out loud, because the switch simply is not drawn and the
+        // absence looks the same whatever the reason: no sensor, no
+        // fingerprint recorded on the phone, or a build without the native
+        // half. Three different things to do about it.
+        console.warn(`[empreinte] masquée — capteur ${compatible ? 'présent' : 'absent'}, empreinte ${enrolled ? 'enrôlée' : 'non enrôlée'}`)
       }
-      catch (caught) {
-        // Swallowed, this left the switch hidden with no trace at all.
-        console.warn('[empreinte] impossible d\'interroger le capteur', caught)
-        setIsAvailable(false)
-      }
-      await refresh()
     }
-    check()
+    catch (caught) {
+      // Swallowed, this left the switch hidden with no trace at all.
+      console.warn('[empreinte] impossible d\'interroger le capteur', caught)
+      setIsAvailable(false)
+    }
+    await refresh()
   }, [refresh])
+
+  useEffect(() => {
+    check()
+
+    // Asked again whenever the app comes back to the front.
+    //
+    // Recording a fingerprint means leaving for the phone's settings and
+    // coming back — and the answer was only ever asked for once, at mount. So
+    // one did exactly what the switch requires and the switch still was not
+    // there, which reads as the feature being broken.
+    const watch = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        void check()
+      }
+    })
+    return () => {
+      watch.remove()
+    }
+  }, [check])
 
   const enable = useCallback(async (): Promise<boolean> => {
     if (!(await promptFingerprint('Activer la connexion par empreinte'))) {
