@@ -114,12 +114,48 @@ export type DeliveryQuoteResponse = z.infer<typeof deliveryQuoteResponseSchema>
  */
 export const assistantSettingSchema = z.object({
   enabled: z.boolean(),
+  /**
+   * The name she answers to.
+   *
+   * It reaches her own prompt, so it is bounded and kept to plain characters:
+   * a name is a name, not a place to slip a second set of instructions. The
+   * range is written out rather than using `\p{L}`: the pattern travels to the
+   * generated client through JSON Schema, which carries no flags, and the
+   * rebuilt expression would not compile without `u`.
+   */
+  name: z.string().trim().min(2).max(30).regex(/^[A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF][A-Za-z\u00C0-\u00D6\u00D8-\u00F6\u00F8-\u00FF '’-]*$/, {
+    message: 'Le nom ne peut contenir que des lettres, espaces, apostrophes et traits d\'union',
+  }).optional(),
+  /** Her portrait. `null` puts back the one shipped with the app. */
+  avatarUrl: z.string().url().nullable().optional(),
+  /**
+   * How fast she speaks, as a multiplier.
+   *
+   * Adjustable because the right pace is a matter of ear, not of doctrine.
+   * The default was chosen on measurement — four readings of the same
+   * sentence averaged 7.76 s at the original setting against 6.66 s — and the
+   * range is left wide because 14 % may not be enough for everyone.
+   */
+  voiceSpeed: z.number().min(0.8).max(1.4).optional(),
 }).meta({
   title: 'AssistantSetting',
-  description: 'Ouvrir ou fermer l\'assistant conversationnel',
+  description: 'Ouvrir ou fermer l\'assistant conversationnel, et régler son identité',
 })
 
 export type AssistantSettingInput = z.infer<typeof assistantSettingSchema>
+
+/** The name and face the apps show, resolved. */
+export const assistantIdentitySchema = z.object({
+  name: z.string(),
+  avatarUrl: z.string().nullable(),
+  /** Speech rate multiplier; defaulted so rows saved before it still parse. */
+  voiceSpeed: z.number().min(0.8).max(1.4).default(1.15),
+}).meta({
+  title: 'AssistantIdentity',
+  description: 'Le nom et le portrait de l\'assistante',
+})
+
+export type AssistantIdentity = z.infer<typeof assistantIdentitySchema>
 
 /**
  * When to ask for product reviews, and how many times to remind.

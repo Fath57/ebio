@@ -33,6 +33,8 @@ export enum MediaContext {
   /** Poster of an announcement: shown whole, so never cropped to a ratio. */
   ANNOUNCEMENT_IMAGE = 'ANNOUNCEMENT_IMAGE',
   DELIVERY_PROOF = 'DELIVERY_PROOF',
+  /** The conversational assistant's portrait, set from the back-office. */
+  ASSISTANT_AVATAR = 'ASSISTANT_AVATAR',
 }
 
 @Entity({ tableName: 'media' })

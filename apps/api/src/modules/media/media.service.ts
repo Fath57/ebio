@@ -50,6 +50,10 @@ const SHARED_PREFIX: Partial<Record<MediaContext, string>> = {
   // the day the feature ships. Give it `announcement_image/` once that prefix
   // is added to the bucket's PublicReadImages statement.
   [MediaContext.ANNOUNCEMENT_IMAGE]: 'banner_image',
+  // The assistant's portrait is shown to every buyer who opens her, so it has
+  // to be publicly readable from day one. Give it `assistant_avatar/` once
+  // that prefix joins the bucket's PublicReadImages statement.
+  [MediaContext.ASSISTANT_AVATAR]: 'banner_image',
 }
 
 function storagePrefix(context: MediaContext): string {

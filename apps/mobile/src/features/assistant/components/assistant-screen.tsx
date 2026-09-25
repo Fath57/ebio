@@ -1,5 +1,4 @@
 import type { AssistantCartLine } from '../assistant'
-import { createAudioPlayer, setAudioModeAsync } from 'expo-audio'
 import ArrowUp from 'lucide-react-native/dist/esm/icons/arrow-up'
 import Keyboard from 'lucide-react-native/dist/esm/icons/keyboard'
 import Volume2 from 'lucide-react-native/dist/esm/icons/volume-2'
@@ -12,8 +11,9 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
-import { discardSpoken, speak, streamTurn, transcribe } from '../assistant'
-import { ASSISTANT_AVATAR } from '../avatar'
+import { streamTurn, transcribe } from '../assistant'
+import { useAssistantIdentity } from '../identity'
+import { SpeechQueue } from '../speech-queue'
 import { AssistantCartPanel } from './assistant-cart-panel'
 import { AssistantSpeaking } from './assistant-speaking'
 import { AssistantVoiceButton } from './assistant-voice-button'
@@ -59,6 +59,7 @@ interface AssistantScreenProps {
  * nobody waits for the end of a turn to read its beginning.
  */
 export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
+  const assistant = useAssistantIdentity()
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   const scrollRef = useRef<ScrollView>(null)
@@ -75,17 +76,19 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   const [typing, setTyping] = useState(false)
   const [voiceOn, setVoiceOn] = useState(true)
 
-  /**
-   * Playback, driven by hand.
-   *
-   * `useAudioPlayer` did not replay when the source changed: the file was
-   * loaded, `play()` was called, and nothing came out. A player created per
-   * answer, played, then released, leaves no room for doubt. The audio mode is
-   * set again every time because recording changes it, and in a typed
-   * conversation it would never have been set at all.
-   */
-  const playerRef = useRef<ReturnType<typeof createAudioPlayer> | null>(null)
   const [speaking, setSpeaking] = useState(false)
+
+  /**
+   * The voice, one sentence behind the text at most.
+   *
+   * Each sentence is synthesised as it arrives instead of waiting for the end
+   * of the turn: the answer used to be spoken in one block, which left three
+   * to four seconds of silence after the text had already appeared.
+   */
+  const speechRef = useRef<SpeechQueue | null>(null)
+  if (speechRef.current === null) {
+    speechRef.current = new SpeechQueue(setSpeaking)
+  }
 
   const busy = activity !== 'idle'
 
@@ -96,45 +99,12 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   // The stream is cut when the screen goes: an abandoned turn would keep
   // costing for an answer nobody will read.
   useEffect(() => {
+    const speech = speechRef.current
     return () => {
       stopStream.current?.()
-      playerRef.current?.remove()
+      speech?.stop()
     }
   }, [])
-
-  /** Reads the finished answer aloud, when the voice is on. */
-  const readAloud = useCallback(async (text: string) => {
-    if (!voiceOn || text.trim().length === 0) {
-      return
-    }
-
-    const uri = await speak(text)
-    if (uri === null) {
-      return
-    }
-
-    try {
-      await setAudioModeAsync({ allowsRecording: false, playsInSilentMode: true })
-
-      playerRef.current?.remove()
-      const player = createAudioPlayer({ uri })
-      playerRef.current = player
-
-      player.addListener('playbackStatusUpdate', (status) => {
-        setSpeaking(status.playing)
-        if (status.didJustFinish) {
-          setSpeaking(false)
-          discardSpoken(uri)
-        }
-      })
-
-      player.play()
-    }
-    catch {
-      // A voice that fails to play blocks nothing: the text is already there.
-      setSpeaking(false)
-    }
-  }, [voiceOn])
 
   const send = useCallback((message: string) => {
     const text = message.trim()
@@ -166,6 +136,11 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
             ...exchange,
             answered: exchange.answered === null ? event.text : `${exchange.answered} ${event.text}`,
           }))
+          // Spoken now, not at the end: this sentence is already true — the
+          // server only sends it once it has been checked.
+          if (voiceOn) {
+            speechRef.current?.push(event.text)
+          }
           scrollToEnd()
           break
         case 'cart':
@@ -173,19 +148,21 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
           break
         case 'reset':
           // The server took back what it had started saying: clear it rather
-          // than leave a half-sentence that no longer leads anywhere.
+          // than leave a half-sentence that no longer leads anywhere — and cut
+          // the voice too, which would otherwise finish reading it out.
           update(exchange => ({ ...exchange, answered: null }))
+          speechRef.current?.reset()
           break
         case 'done':
           setCart(event.cart)
           update(exchange => ({ ...exchange, answered: event.reply }))
           setActivity('idle')
-          void readAloud(event.reply)
           scrollToEnd()
           break
         case 'error':
           // The turn is dropped rather than left hanging: a half-built cart
           // that nobody confirmed is worse than a conversation that stops.
+          speechRef.current?.reset()
           setExchanges(previous => previous.filter(exchange => exchange.id !== id))
           setDraft(text)
           setError(event.message)
@@ -193,7 +170,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
           break
       }
     })
-  }, [busy, readAloud, scrollToEnd, sessionId])
+  }, [busy, scrollToEnd, sessionId, voiceOn])
 
   /** A recording becomes text, shown first, then sent. */
   const onRecorded = useCallback(async (uri: string) => {
@@ -248,17 +225,19 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader
-        title="Assita"
+        title={assistant.name}
         subtitle={ACTIVITY_LABEL[activity]}
         onBack={onGoBack}
-        leadingSlot={<Image source={ASSISTANT_AVATAR} style={styles.headerAvatar} accessible={false} />}
+        leadingSlot={<Image source={assistant.avatar} style={styles.headerAvatar} accessible={false} />}
         rightSlot={(
           <Pressable
             onPress={() => {
               setVoiceOn((on) => {
+                // Muting cuts what is playing and drops what was queued: a
+                // sentence still coming out after the button was pressed would
+                // make the button look broken.
                 if (on) {
-                  playerRef.current?.pause()
-                  setSpeaking(false)
+                  speechRef.current?.reset()
                 }
                 return !on
               })
@@ -285,7 +264,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
         >
           {empty && (
             <View style={styles.opening}>
-              <Image source={ASSISTANT_AVATAR} style={styles.openingAvatar} accessible={false} />
+              <Image source={assistant.avatar} style={styles.openingAvatar} accessible={false} />
               <Text style={[styles.openingTitle, { color: semantic.textPrimary }]}>
                 Dites-moi ce qu'il vous faut.
               </Text>
@@ -306,7 +285,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
 
               {exchange.answered === null
                 ? (
-                    <View style={styles.pending} accessibilityLabel="Assita cherche">
+                    <View style={styles.pending} accessibilityLabel={`${assistant.name} cherche`}>
                       <ActivityIndicator size="small" color={colors.green[400]} />
                       <Text style={[styles.pendingText, { color: semantic.textTertiary }]}>Elle cherche…</Text>
                     </View>
@@ -355,7 +334,7 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
                     autoFocus
                     editable={!busy}
                     onSubmitEditing={() => send(draft)}
-                    accessibilityLabel="Votre message pour Assita"
+                    accessibilityLabel={`Votre message pour ${assistant.name}`}
                   />
                   <Pressable
                     style={[styles.send, draft.trim().length === 0 && styles.sendIdle]}

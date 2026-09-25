@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { Animated, Easing, Image, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
-import { ASSISTANT_AVATAR } from '../avatar'
+import { useAssistantIdentity } from '../identity'
 
 /** How many waves. Three carry the movement; five blur it. */
 const RINGS = [0, 1, 2]
@@ -28,6 +28,7 @@ interface AssistantSpeakingProps {
  * what the drawing imitates.
  */
 export function AssistantSpeaking({ speaking }: AssistantSpeakingProps) {
+  const assistant = useAssistantIdentity()
   const waves = useRef(RINGS.map(() => new Animated.Value(0))).current
 
   useEffect(() => {
@@ -73,10 +74,13 @@ export function AssistantSpeaking({ speaking }: AssistantSpeakingProps) {
             }]}
           />
         ))}
-        <Image source={ASSISTANT_AVATAR} style={styles.avatar} accessible={false} />
+        <Image source={assistant.avatar} style={styles.avatar} accessible={false} />
       </View>
 
-      <Text style={styles.label}>Assita vous répond…</Text>
+      <Text style={styles.label}>
+        {assistant.name}
+        {' vous répond…'}
+      </Text>
     </View>
   )
 }

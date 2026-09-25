@@ -11,7 +11,7 @@ import { CheckoutService } from '../orders/checkout.service'
 import { SearchService } from '../search/search.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { amountsFromTools, forSpeech, groundingBreaches, takeSentences, ungroundedAmounts } from './assistant.guardrails'
-import { ASSISTANT_SYSTEM_PROMPT } from './assistant.prompt'
+import { assistantSystemPrompt } from './assistant.prompt'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
 import { addToCartTool, loadState, removeFromCartTool, viewCartTool, writeCartLine } from './tools/cart.tools'
@@ -138,11 +138,13 @@ export class AssistantService {
 
     const history = session.messages as AiCoreMessage[]
     // The system prompt opens the thread once: it is part of the
-    // conversation, not something repeated on every turn.
+    // conversation, not something repeated on every turn. Her name is read
+    // here rather than at boot, so renaming her from the back-office takes
+    // effect on the next conversation without a deploy.
     const messages: AiCoreMessage[] = history.length > 0
       ? [...history, { role: 'user', content: message }]
       : [
-          { role: 'system', content: ASSISTANT_SYSTEM_PROMPT },
+          { role: 'system', content: assistantSystemPrompt((await this.platformSettings.getAssistantIdentity()).name) },
           { role: 'user', content: message },
         ]
 

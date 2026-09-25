@@ -12,6 +12,7 @@ import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
 import { AssistantEntryIcon } from '../../assistant/components/assistant-entry-icon'
+import { useAssistantIdentity } from '../../assistant/identity'
 import { useUnreadNotificationCount } from '../../notifications/components/notification-bell'
 
 interface HomeHeaderProps {
@@ -134,6 +135,7 @@ export function HomeHeader({
   const unreadCount = useUnreadNotificationCount()
   const balance = useWalletBalance()
   const assistantEnabled = useAssistantEnabled()
+  const assistant = useAssistantIdentity()
 
   return (
     <View style={[styles.band, { paddingTop: insets.top + spacing[2] }]}>
@@ -199,7 +201,7 @@ export function HomeHeader({
             style={styles.circle}
             onPress={onOpenAssistant}
             accessibilityRole="button"
-            accessibilityLabel="Faire mes courses en parlant à Assita"
+            accessibilityLabel={`Faire mes courses en parlant à ${assistant.name}`}
           >
             <AssistantEntryIcon />
           </Pressable>

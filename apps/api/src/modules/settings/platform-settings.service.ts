@@ -1,11 +1,11 @@
 import type { DeliveryPricingConfig } from '../../common/delivery-fee'
 import type { AppVersions } from '../app-version/app-version.contract'
-import type { BannerOffersInput } from './contracts/delivery-pricing.contract'
+import type { AssistantIdentity, BannerOffersInput } from './contracts/delivery-pricing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { DEFAULT_DELIVERY_PRICING } from '../../common/delivery-fee'
 import { appVersionsSchema } from '../app-version/app-version.contract'
-import { bannerOffersSchema, deliveryPricingConfigSchema } from './contracts/delivery-pricing.contract'
+import { assistantIdentitySchema, bannerOffersSchema, deliveryPricingConfigSchema } from './contracts/delivery-pricing.contract'
 import { PlatformSetting } from './platform-setting.entity'
 
 export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
@@ -14,6 +14,7 @@ export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
 export const DELIVERY_PRICING_KEY = 'delivery_pricing'
 export const BANNER_OFFERS_KEY = 'banner_offers'
 export const ASSISTANT_ENABLED_KEY = 'assistant_enabled'
+export const ASSISTANT_IDENTITY_KEY = 'assistant_identity'
 export const PRODUCT_REVIEW_DELAY_HOURS_KEY = 'product_review_delay_hours'
 export const CART_REMINDER_HOURS_KEY = 'cart_reminder_hours'
 export const CART_REMINDER_COUNT_KEY = 'cart_reminder_count'
@@ -47,6 +48,22 @@ export const DEFAULT_COURIER_MAX_DEBT = 5_000
  * dark makes that a decision instead of a side effect.
  */
 export const DEFAULT_ASSISTANT_ENABLED = false
+
+/**
+ * Who she is, until someone says otherwise.
+ *
+ * The name is the one her prompt has carried since the first day, and a null
+ * portrait means the one bundled with the app — changing the setting must be a
+ * decision, never a side effect of shipping this.
+ */
+export const DEFAULT_ASSISTANT_IDENTITY: AssistantIdentity = {
+  name: 'Assita',
+  avatarUrl: null,
+  // Measured over four runs rather than guessed: the same sentence averaged
+  // 7.76 s at the rate she shipped with and 6.66 s here. The slider goes to
+  // 1.4 for whoever finds that still too patient.
+  voiceSpeed: 1.15,
+}
 
 /**
  * How long we wait before asking for a product review.
@@ -302,6 +319,32 @@ export class PlatformSettingsService {
 
   async setAssistantEnabled(enabled: boolean): Promise<void> {
     await this.set(ASSISTANT_ENABLED_KEY, enabled ? 'true' : 'false')
+  }
+
+  /**
+   * Her name and her portrait, always answerable.
+   *
+   * A malformed row falls back to the defaults rather than raising: this is
+   * read on the public settings route and on every assistant turn, and an
+   * assistant that will not speak because a name was saved badly is a worse
+   * failure than one that answers to `Assita`.
+   */
+  async getAssistantIdentity(): Promise<AssistantIdentity> {
+    const raw = await this.get(ASSISTANT_IDENTITY_KEY)
+    if (raw === null) {
+      return DEFAULT_ASSISTANT_IDENTITY
+    }
+    try {
+      const parsed = assistantIdentitySchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_ASSISTANT_IDENTITY
+    }
+    catch {
+      return DEFAULT_ASSISTANT_IDENTITY
+    }
+  }
+
+  async setAssistantIdentity(identity: AssistantIdentity): Promise<void> {
+    await this.set(ASSISTANT_IDENTITY_KEY, JSON.stringify(identity))
   }
 
   /** Admin edits call this so the new value applies immediately. */

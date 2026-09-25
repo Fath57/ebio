@@ -63,11 +63,15 @@ export class AdminBannerOffersController {
 }
 
 /**
- * The assistant, open or closed, from the back-office.
+ * The assistant, from the back-office: open or closed, and who she is.
  *
  * Every turn calls a paid model: it has to be possible to cut it off without
  * deploying, whether to contain spending or because it is answering badly. The
  * setting applies within the minute — the settings cache is cleared on write.
+ *
+ * Her name and her portrait sit here too. They are not decoration: the name
+ * goes into her own instructions, and the portrait is the first thing a buyer
+ * sees of her.
  */
 @Controller('admin/assistant')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
@@ -78,14 +82,40 @@ export class AdminAssistantController {
   @CanRead('Settings')
   @Get()
   async get() {
-    return { enabled: await this.platformSettings.getAssistantEnabled() }
+    const identity = await this.platformSettings.getAssistantIdentity()
+    return {
+      enabled: await this.platformSettings.getAssistantEnabled(),
+      name: identity.name,
+      avatarUrl: identity.avatarUrl,
+      voiceSpeed: identity.voiceSpeed,
+    }
   }
 
   @CanManage('Settings')
   @Put()
   async update(@TypedBody(assistantSettingSchema) body: AssistantSettingInput) {
     await this.platformSettings.setAssistantEnabled(body.enabled)
-    return { enabled: await this.platformSettings.getAssistantEnabled() }
+
+    // Absent means "leave it alone", so the switch can still be flicked on its
+    // own without the toggle silently renaming her.
+    if (body.name !== undefined || body.avatarUrl !== undefined || body.voiceSpeed !== undefined) {
+      const current = await this.platformSettings.getAssistantIdentity()
+      await this.platformSettings.setAssistantIdentity({
+        name: body.name ?? current.name,
+        // `null` is a value here, not an omission: it puts back the portrait
+        // shipped with the app.
+        avatarUrl: body.avatarUrl !== undefined ? body.avatarUrl : current.avatarUrl,
+        voiceSpeed: body.voiceSpeed ?? current.voiceSpeed,
+      })
+    }
+
+    const identity = await this.platformSettings.getAssistantIdentity()
+    return {
+      enabled: await this.platformSettings.getAssistantEnabled(),
+      name: identity.name,
+      avatarUrl: identity.avatarUrl,
+      voiceSpeed: identity.voiceSpeed,
+    }
   }
 }
 

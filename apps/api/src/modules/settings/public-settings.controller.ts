@@ -14,6 +14,16 @@ export class PublicSettingsController {
     // The apps hide the assistant's entry point when it is closed: a button
     // that answers "indisponible" is worse than no button.
     const assistantEnabled = await this.platformSettings.getAssistantEnabled()
-    return { cashOnDeliveryMaxAmount, courierMaxDebt, bannerOffers, assistantEnabled }
+    // Her name and her face travel with the switch: the apps write her name
+    // into their own labels, and a null portrait means the one they ship.
+    const assistant = await this.platformSettings.getAssistantIdentity()
+    return {
+      cashOnDeliveryMaxAmount,
+      courierMaxDebt,
+      bannerOffers,
+      assistantEnabled,
+      assistantName: assistant.name,
+      assistantAvatarUrl: assistant.avatarUrl,
+    }
   }
 }

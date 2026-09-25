@@ -12,6 +12,7 @@ import Square from 'lucide-react-native/dist/esm/icons/square'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
+import { useAssistantIdentity } from '../identity'
 
 /**
  * Recording, with input-level metering.
@@ -91,6 +92,7 @@ function loudness(db: number | undefined, ambientDb: number | null): number {
  * nothing.
  */
 export function AssistantVoiceButton({ onRecorded, onError, disabled }: AssistantVoiceButtonProps) {
+  const assistant = useAssistantIdentity()
   const recorder = useAudioRecorder(PRESET)
   const state = useAudioRecorderState(recorder, METER_INTERVAL_MS)
   const listening = state.isRecording
@@ -253,7 +255,7 @@ export function AssistantVoiceButton({ onRecorded, onError, disabled }: Assistan
           }}
           disabled={disabled}
           accessibilityRole="button"
-          accessibilityLabel={listening ? 'Arrêter et envoyer' : 'Parler à Assita'}
+          accessibilityLabel={listening ? 'Arrêter et envoyer' : `Parler à ${assistant.name}`}
         >
           {listening
             ? <Square size={26} color={colors.neutral[0]} strokeWidth={2.4} fill={colors.neutral[0]} />

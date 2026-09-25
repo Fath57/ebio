@@ -28,6 +28,7 @@ import { AnnouncementsManager } from '../../announcements/components/announcemen
 import { AppVersionForm } from '../../app-version/components/app-version-form'
 import { HomeSectionsManager } from '../../home-sections/components/home-sections-manager'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
+import { AssistantIdentity } from '../forms/assistant-identity'
 import { AssistantToggle } from '../forms/assistant-toggle'
 import { BannerOffersForm } from '../forms/banner-offers-form'
 import { CashLimitForm } from '../forms/cash-limit-form'
@@ -70,6 +71,13 @@ function fetchBannerOffersQueryOptions() {
   }
 }
 
+interface AssistantSetting {
+  enabled: boolean
+  name: string
+  avatarUrl: string | null
+  voiceSpeed: number
+}
+
 function fetchAssistantQueryOptions() {
   return {
     queryKey: ['admin', 'assistant'],
@@ -77,7 +85,7 @@ function fetchAssistantQueryOptions() {
       const response = await adminAssistantControllerGet()
       if (response.error)
         throw new Error('Failed to fetch assistant setting')
-      return response.data as { enabled: boolean }
+      return response.data as AssistantSetting
     },
   }
 }
@@ -241,11 +249,20 @@ export default function AdminSettingsPage() {
   })
 
   const { mutate: updateAssistant, isPending: isAssistantPending } = useMutation({
-    mutationFn: async (enabled: boolean) => {
-      const response = await adminAssistantControllerUpdate({ body: { enabled } })
+    // The switch and the identity share one route, so every call carries the
+    // current `enabled`: saving a name must never close her by omission.
+    mutationFn: async (input: Partial<AssistantSetting> & { enabled: boolean }) => {
+      const response = await adminAssistantControllerUpdate({
+        body: {
+          enabled: input.enabled,
+          ...(input.name !== undefined ? { name: input.name } : {}),
+          ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
+          ...(input.voiceSpeed !== undefined ? { voiceSpeed: input.voiceSpeed } : {}),
+        },
+      })
       if (response.error)
         throw new Error('Failed to update assistant setting')
-      return response.data as { enabled: boolean }
+      return response.data as AssistantSetting
     },
     onMutate: () => {
       setAssistantFeedback(null)
@@ -372,18 +389,30 @@ export default function AdminSettingsPage() {
           <Can action="manage" subject="all">
             <Card>
               <CardHeader>
-                <CardTitle>{t('admin.settings.assistant.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.assistant.description')}</p>
+                <CardTitle>{t('admin.settings.assistant.title', { name: assistant?.name ?? 'Assita' })}</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  {t('admin.settings.assistant.description', { name: assistant?.name ?? 'Assita' })}
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 {isAssistantLoading || !assistant
                   ? <Skeleton className="h-12 w-full" />
                   : (
-                      <AssistantToggle
-                        enabled={assistant.enabled}
-                        onChange={updateAssistant}
-                        isPending={isAssistantPending}
-                      />
+                      <>
+                        <AssistantToggle
+                          name={assistant.name}
+                          enabled={assistant.enabled}
+                          onChange={enabled => updateAssistant({ enabled })}
+                          isPending={isAssistantPending}
+                        />
+                        <AssistantIdentity
+                          name={assistant.name}
+                          avatarUrl={assistant.avatarUrl}
+                          voiceSpeed={assistant.voiceSpeed}
+                          onSave={identity => updateAssistant({ enabled: assistant.enabled, ...identity })}
+                          isPending={isAssistantPending}
+                        />
+                      </>
                     )}
                 {assistantFeedback === 'saved' && (
                   <p className="text-sm text-green-600">{t('admin.settings.assistant.saved')}</p>
