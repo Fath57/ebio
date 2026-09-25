@@ -1234,6 +1234,31 @@ export type UpdateBanner = {
 };
 
 /**
+ * CampaignInput
+ *
+ * Une notification de diffusion
+ */
+export type CampaignInput = {
+  title: string;
+  body: string;
+  imageUrl?: string | null;
+  app: CampaignApp;
+  segment: CampaignSegment;
+  targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+  targetId?: string | null;
+  scheduledAt?: string | null;
+};
+
+/**
+ * CampaignTest
+ *
+ * Envoi d'essai à une personne
+ */
+export type CampaignTest = {
+  userId: string;
+};
+
+/**
  * CreateConversation
  *
  * Create or retrieve an existing conversation with a supplier
@@ -2628,6 +2653,41 @@ export const BannerTargetType = {
  */
 export type BannerTargetType =
   (typeof BannerTargetType)[keyof typeof BannerTargetType];
+
+/**
+ * CampaignApp
+ */
+export const CampaignApp = {
+  CLIENT: "client",
+  SUPPLIER: "supplier",
+  COURIER: "courier",
+} as const;
+
+/**
+ * CampaignApp
+ */
+export type CampaignApp = (typeof CampaignApp)[keyof typeof CampaignApp];
+
+/**
+ * CampaignSegment
+ *
+ * À qui la campagne s'adresse
+ */
+export const CampaignSegment = {
+  ALL: "ALL",
+  ACTIVE: "ACTIVE",
+  NEVER_ORDERED: "NEVER_ORDERED",
+  LAPSED: "LAPSED",
+  WITH_CART: "WITH_CART",
+} as const;
+
+/**
+ * CampaignSegment
+ *
+ * À qui la campagne s'adresse
+ */
+export type CampaignSegment =
+  (typeof CampaignSegment)[keyof typeof CampaignSegment];
 
 /**
  * AiCoreMessage
@@ -6075,6 +6135,110 @@ export type AdminAppVersionControllerWriteData = {
 
 export type AdminAppVersionControllerWriteResponses = {
   200: unknown;
+};
+
+export type CampaignsControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/campaigns";
+};
+
+export type CampaignsControllerListResponses = {
+  200: unknown;
+};
+
+export type CampaignsControllerCreateData = {
+  /**
+   * CampaignInput
+   *
+   * Une notification de diffusion
+   */
+  body: {
+    title: string;
+    body: string;
+    imageUrl?: string | null;
+    /**
+     * CampaignApp
+     */
+    app: "client" | "supplier" | "courier";
+    /**
+     * CampaignSegment
+     *
+     * À qui la campagne s'adresse
+     */
+    segment: "ALL" | "ACTIVE" | "NEVER_ORDERED" | "LAPSED" | "WITH_CART";
+    targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+    targetId?: string | null;
+    scheduledAt?: string | null;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/campaigns";
+};
+
+export type CampaignsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type CampaignsControllerReachData = {
+  body?: never;
+  path?: never;
+  query: {
+    app: string;
+    segment: string;
+  };
+  url: "/api/admin/campaigns/reach";
+};
+
+export type CampaignsControllerReachResponses = {
+  200: unknown;
+};
+
+export type CampaignsControllerTestData = {
+  /**
+   * CampaignTest
+   *
+   * Envoi d'essai à une personne
+   */
+  body: {
+    userId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/campaigns/{id}/test";
+};
+
+export type CampaignsControllerTestResponses = {
+  201: unknown;
+};
+
+export type CampaignsControllerSendData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/campaigns/{id}/send";
+};
+
+export type CampaignsControllerSendResponses = {
+  201: unknown;
+};
+
+export type CampaignsControllerCancelData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/campaigns/{id}/cancel";
+};
+
+export type CampaignsControllerCancelResponses = {
+  201: unknown;
 };
 
 export type CartControllerClearData = {

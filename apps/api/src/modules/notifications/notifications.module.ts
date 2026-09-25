@@ -12,6 +12,8 @@ import { NotificationsService } from './notifications.service'
   imports: [MikroOrmModule.forFeature([Notification, DeviceToken, User]), SmsModule],
   controllers: [NotificationsController],
   providers: [FcmService, NotificationsService],
-  exports: [NotificationsService],
+  // FcmService goes out too: the campaigns send their own pushes, in one
+  // multicast rather than one notification row per person.
+  exports: [NotificationsService, FcmService],
 })
 export class NotificationsModule {}

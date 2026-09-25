@@ -230,6 +230,18 @@ import type {
   BiometricControllerRevokeResponses,
   BiometricControllerVerifyData,
   BiometricControllerVerifyResponses,
+  CampaignsControllerCancelData,
+  CampaignsControllerCancelResponses,
+  CampaignsControllerCreateData,
+  CampaignsControllerCreateResponses,
+  CampaignsControllerListData,
+  CampaignsControllerListResponses,
+  CampaignsControllerReachData,
+  CampaignsControllerReachResponses,
+  CampaignsControllerSendData,
+  CampaignsControllerSendResponses,
+  CampaignsControllerTestData,
+  CampaignsControllerTestResponses,
   CartControllerClearData,
   CartControllerClearResponses,
   CartControllerReadData,
@@ -2744,6 +2756,74 @@ export const adminAppVersionControllerWrite = <
       ...options.headers,
     },
   });
+
+export const campaignsControllerList = <ThrowOnError extends boolean = false>(
+  options?: Options<CampaignsControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    CampaignsControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/campaigns", ...options });
+
+export const campaignsControllerCreate = <ThrowOnError extends boolean = false>(
+  options: Options<CampaignsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CampaignsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/campaigns",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const campaignsControllerReach = <ThrowOnError extends boolean = false>(
+  options: Options<CampaignsControllerReachData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    CampaignsControllerReachResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/campaigns/reach", ...options });
+
+export const campaignsControllerTest = <ThrowOnError extends boolean = false>(
+  options: Options<CampaignsControllerTestData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CampaignsControllerTestResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/campaigns/{id}/test",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const campaignsControllerSend = <ThrowOnError extends boolean = false>(
+  options: Options<CampaignsControllerSendData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CampaignsControllerSendResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/campaigns/{id}/send", ...options });
+
+export const campaignsControllerCancel = <ThrowOnError extends boolean = false>(
+  options: Options<CampaignsControllerCancelData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CampaignsControllerCancelResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/campaigns/{id}/cancel", ...options });
 
 export const cartControllerClear = <ThrowOnError extends boolean = false>(
   options?: Options<CartControllerClearData, ThrowOnError>,

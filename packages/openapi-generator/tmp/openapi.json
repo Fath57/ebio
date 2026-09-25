@@ -6821,6 +6821,251 @@
         }
       }
     },
+    "/api/admin/campaigns": {
+      "get": {
+        "operationId": "CampaignsController_list",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "CampaignsController_create",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Une notification de diffusion",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "body": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "imageUrl": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1024
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "app": {
+                    "type": "string",
+                    "enum": [
+                      "client",
+                      "supplier",
+                      "courier"
+                    ],
+                    "title": "CampaignApp"
+                  },
+                  "segment": {
+                    "type": "string",
+                    "enum": [
+                      "ALL",
+                      "ACTIVE",
+                      "NEVER_ORDERED",
+                      "LAPSED",
+                      "WITH_CART"
+                    ],
+                    "title": "CampaignSegment",
+                    "description": "À qui la campagne s'adresse"
+                  },
+                  "targetType": {
+                    "type": "string",
+                    "enum": [
+                      "SUPPLIER",
+                      "PRODUCT",
+                      "URL",
+                      "NONE"
+                    ]
+                  },
+                  "targetId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 1024
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "scheduledAt": {
+                    "anyOf": [
+                      {
+                        "type": "string"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "title",
+                  "body",
+                  "app",
+                  "segment",
+                  "targetType"
+                ],
+                "additionalProperties": false,
+                "title": "CampaignInput",
+                "description": "Une notification de diffusion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/campaigns/reach": {
+      "get": {
+        "operationId": "CampaignsController_reach",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "app",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "segment",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/campaigns/{id}/test": {
+      "post": {
+        "operationId": "CampaignsController_test",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Envoi d'essai à une personne",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "userId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "userId"
+                ],
+                "additionalProperties": false,
+                "title": "CampaignTest",
+                "description": "Envoi d'essai à une personne"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/campaigns/{id}/send": {
+      "post": {
+        "operationId": "CampaignsController_send",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/campaigns/{id}/cancel": {
+      "post": {
+        "operationId": "CampaignsController_cancel",
+        "tags": [
+          "Campaigns"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/cart": {
       "get": {
         "operationId": "CartController_read",
@@ -19820,6 +20065,94 @@
         "title": "UpdateBanner",
         "description": "Update a banner — every field optional"
       },
+      "CampaignInput": {
+        "type": "object",
+        "properties": {
+          "title": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "body": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 500
+          },
+          "imageUrl": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "app": {
+            "$ref": "#/components/schemas/CampaignApp"
+          },
+          "segment": {
+            "$ref": "#/components/schemas/CampaignSegment"
+          },
+          "targetType": {
+            "type": "string",
+            "enum": [
+              "SUPPLIER",
+              "PRODUCT",
+              "URL",
+              "NONE"
+            ]
+          },
+          "targetId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1024
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "scheduledAt": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "title",
+          "body",
+          "app",
+          "segment",
+          "targetType"
+        ],
+        "additionalProperties": false,
+        "title": "CampaignInput",
+        "description": "Une notification de diffusion"
+      },
+      "CampaignTest": {
+        "type": "object",
+        "properties": {
+          "userId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "userId"
+        ],
+        "additionalProperties": false,
+        "title": "CampaignTest",
+        "description": "Envoi d'essai à une personne"
+      },
       "CreateConversation": {
         "type": "object",
         "properties": {
@@ -22801,6 +23134,27 @@
         ],
         "title": "BannerTargetType",
         "description": "What the banner points to when tapped"
+      },
+      "CampaignApp": {
+        "type": "string",
+        "enum": [
+          "client",
+          "supplier",
+          "courier"
+        ],
+        "title": "CampaignApp"
+      },
+      "CampaignSegment": {
+        "type": "string",
+        "enum": [
+          "ALL",
+          "ACTIVE",
+          "NEVER_ORDERED",
+          "LAPSED",
+          "WITH_CART"
+        ],
+        "title": "CampaignSegment",
+        "description": "À qui la campagne s'adresse"
       },
       "AiCoreMessage": {
         "type": "object",

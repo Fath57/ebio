@@ -19,6 +19,7 @@ import {
   LayoutDashboard,
   LifeBuoy,
   LogOut,
+  Megaphone,
   Monitor,
   Moon,
   Package,
@@ -176,6 +177,7 @@ export default function AppLayout() {
       items: [
         { to: '/admin/utilisateurs', label: t('nav.users'), icon: <Users className="h-4 w-4" />, permission: { action: 'read', subject: 'User' } },
         { to: '/admin/moderation', label: t('nav.moderation'), icon: <ShieldCheck className="h-4 w-4" />, permission: { action: 'manage', subject: 'ContentReport' } },
+        { to: '/admin/campagnes', label: 'Campagnes', icon: <Megaphone className="h-4 w-4" />, permission: { action: 'read', subject: 'Settings' } },
       ],
     },
     {

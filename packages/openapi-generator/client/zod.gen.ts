@@ -979,6 +979,19 @@ export const zRejectBannerRequest = z.object({
 });
 
 /**
+ * CampaignTest
+ *
+ * Envoi d'essai à une personne
+ */
+export const zCampaignTest = z.object({
+  userId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+});
+
+/**
  * CreateConversation
  *
  * Create or retrieve an existing conversation with a supplier
@@ -2878,6 +2891,40 @@ export const zUpdateBanner = z.object({
       z.null(),
     ]),
   ),
+});
+
+/**
+ * CampaignApp
+ */
+export const zCampaignApp = z.enum(["client", "supplier", "courier"]);
+
+/**
+ * CampaignSegment
+ *
+ * À qui la campagne s'adresse
+ */
+export const zCampaignSegment = z.enum([
+  "ALL",
+  "ACTIVE",
+  "NEVER_ORDERED",
+  "LAPSED",
+  "WITH_CART",
+]);
+
+/**
+ * CampaignInput
+ *
+ * Une notification de diffusion
+ */
+export const zCampaignInput = z.object({
+  title: z.string().min(1).max(120),
+  body: z.string().min(1).max(500),
+  imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
+  app: zCampaignApp,
+  segment: zCampaignSegment,
+  targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
+  targetId: z.optional(z.union([z.string().max(1024), z.null()])),
+  scheduledAt: z.optional(z.union([z.string(), z.null()])),
 });
 
 /**
@@ -5316,6 +5363,66 @@ export const zAdminAppVersionControllerWriteData = z.object({
     }),
   }),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCampaignsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCampaignsControllerCreateData = z.object({
+  body: z.object({
+    title: z.string().min(1).max(120),
+    body: z.string().min(1).max(500),
+    imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
+    app: z.enum(["client", "supplier", "courier"]),
+    segment: z.enum(["ALL", "ACTIVE", "NEVER_ORDERED", "LAPSED", "WITH_CART"]),
+    targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
+    targetId: z.optional(z.union([z.string().max(1024), z.null()])),
+    scheduledAt: z.optional(z.union([z.string(), z.null()])),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCampaignsControllerReachData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    app: z.string(),
+    segment: z.string(),
+  }),
+});
+
+export const zCampaignsControllerTestData = z.object({
+  body: z.object({
+    userId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCampaignsControllerSendData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCampaignsControllerCancelData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 

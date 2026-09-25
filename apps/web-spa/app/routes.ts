@@ -65,6 +65,7 @@ export default [
 
       // Admin — Utilisateurs
       route('admin/paniers', 'features/admin/carts/pages/admin-carts-page.tsx'),
+      route('admin/campagnes', 'features/admin/campaigns/pages/admin-campaigns-page.tsx'),
       route('admin/utilisateurs', 'features/admin/users/pages/admin-users-page.tsx'),
       route('admin/utilisateurs/:userId', 'features/admin/users/pages/admin-user-detail-page.tsx'),
 

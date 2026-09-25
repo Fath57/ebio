@@ -12,6 +12,14 @@ export interface PushOptions {
   collapseKey?: string
   /** Android notification channel; defaults to 'ebio-default'. */
   channelId?: string
+  /**
+   * A picture shown in the tray, for the messages that are worth one.
+   *
+   * It must be reachable without credentials — the phone fetches it itself,
+   * and a link it cannot open simply yields a notification without a picture
+   * rather than no notification at all.
+   */
+  imageUrl?: string
 }
 
 @Injectable()
@@ -64,7 +72,14 @@ export class FcmService implements OnModuleInit {
 
     const message: Message = {
       token,
-      notification: { title, body },
+      // The picture is declared on each platform as well as at the top: the
+      // common field alone is ignored by some Android versions, and iOS needs
+      // it under `fcmOptions` to show anything at all.
+      notification: {
+        title,
+        body,
+        ...(options?.imageUrl ? { imageUrl: options.imageUrl } : {}),
+      },
       data: data ?? {},
       android: {
         priority: 'high',
@@ -74,6 +89,7 @@ export class FcmService implements OnModuleInit {
           sound: 'default',
           channelId: options?.channelId ?? 'ebio-default',
           ...(options?.collapseKey ? { tag: options.collapseKey } : {}),
+          ...(options?.imageUrl ? { imageUrl: options.imageUrl } : {}),
         },
       },
       apns: {
@@ -84,8 +100,11 @@ export class FcmService implements OnModuleInit {
         payload: {
           aps: {
             sound: 'default',
+            // Without this the extension that downloads the picture never runs.
+            ...(options?.imageUrl ? { mutableContent: true } : {}),
           },
         },
+        ...(options?.imageUrl ? { fcmOptions: { imageUrl: options.imageUrl } } : {}),
       },
     }
 
