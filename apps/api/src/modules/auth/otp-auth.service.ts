@@ -3,6 +3,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
 import { hashPassword, verifyPassword } from 'better-auth/crypto'
 import { Account, Session, User, UserRole } from './auth.entity'
+import { signSessionToken } from './session-token'
 
 @Injectable()
 export class OtpAuthService {
@@ -46,7 +47,7 @@ export class OtpAuthService {
     const session = await this.createSession(fork, user)
 
     return {
-      accessToken: session.token,
+      accessToken: signSessionToken(session.token),
       user: {
         id: user.id,
         name: user.name,
@@ -83,7 +84,7 @@ export class OtpAuthService {
     await fork.flush()
 
     return {
-      accessToken: session.token,
+      accessToken: signSessionToken(session.token),
       user: {
         id: user.id,
         name: user.name,
@@ -118,7 +119,7 @@ export class OtpAuthService {
     await fork.flush()
 
     return {
-      accessToken: session.token,
+      accessToken: signSessionToken(session.token),
       user: {
         id: user.id,
         name: user.name,

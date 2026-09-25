@@ -3,7 +3,8 @@ import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
 import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import Mail from 'lucide-react-native/dist/esm/icons/mail'
 import PhoneIcon from 'lucide-react-native/dist/esm/icons/phone'
-import { useState } from 'react'
+import ScanFace from 'lucide-react-native/dist/esm/icons/scan-face'
+import { useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -21,6 +22,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { hasBiometricSecret, signInWithBiometrics } from '../hooks/use-biometric-auth'
 import { GoogleSignInButton } from './google-sign-in-button'
 
 interface LoginScreenProps {
@@ -41,6 +43,43 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
   const [loading, setLoading] = useState(false)
+  /**
+   * Whether this phone holds a secret to sign in with.
+   *
+   * Asked once on arrival rather than rendered optimistically: the keystore is
+   * read asynchronously, and a button that appears and then vanishes is worse
+   * than one that arrives a moment late.
+   */
+  const [canUseFingerprint, setCanUseFingerprint] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+    hasBiometricSecret().then((held) => {
+      if (!cancelled) {
+        setCanUseFingerprint(held)
+      }
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  async function handleFingerprintLogin(): Promise<void> {
+    setError('')
+    setLoading(true)
+    const { ok, error: failure } = await signInWithBiometrics()
+    setLoading(false)
+    if (ok) {
+      notifyAuthChange()
+      onLoginSuccess()
+      return
+    }
+    if (failure) {
+      setError(failure)
+      // The secret was dropped by the sign-in helper, so the button goes too.
+      setCanUseFingerprint(await hasBiometricSecret())
+    }
+  }
   const [error, setError] = useState<string | null>(null)
 
   const iconColor = semantic.textTertiary
@@ -223,6 +262,22 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
                   Se connecter avec un e-mail
                 </Text>
               </Pressable>
+
+              {/* Only where a secret is actually held: offering a fingerprint
+                  that cannot work is worse than not offering one. */}
+              {canUseFingerprint && (
+                <Pressable
+                  onPress={handleFingerprintLogin}
+                  disabled={loading}
+                  hitSlop={8}
+                  style={styles.fingerprintButton}
+                  accessibilityRole="button"
+                  accessibilityLabel="Se connecter avec l'empreinte"
+                >
+                  <ScanFace size={20} color={colors.green[600]} strokeWidth={2} />
+                  <Text style={styles.fingerprintText}>Utiliser mon empreinte</Text>
+                </Pressable>
+              )}
             </>
           )}
 
@@ -387,6 +442,17 @@ const styles = StyleSheet.create({
   submitButtonText: { ...typography.h3, color: colors.neutral[0] },
 
   methodSwitch: { alignSelf: 'center', marginTop: spacing[1] },
+  fingerprintButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    alignSelf: 'center',
+    minHeight: 44,
+    paddingHorizontal: spacing[4],
+    marginTop: spacing[2],
+  },
+  fingerprintText: { ...typography.bodyS, fontFamily: fonts.sansSb, color: colors.green[600] },
   methodSwitchText: { ...typography.bodyS, fontFamily: fonts.sansSb },
 
   toggleRow: {

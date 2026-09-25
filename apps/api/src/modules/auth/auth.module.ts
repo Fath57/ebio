@@ -27,6 +27,8 @@ import { AuthModuleOptions, ConfigurableModuleClass, MODULE_OPTIONS_TOKEN } from
 import { Account, Session, User, Verification } from './auth.entity'
 import { AuthGuard } from './auth.guard'
 import { AuthService } from './auth.service'
+import { BiometricController } from './biometric.controller'
+import { BiometricService } from './biometric.service'
 import { Permission } from './entities/permission.entity'
 import { Role } from './entities/role.entity'
 import { OtpAuthController } from './otp-auth.controller'
@@ -39,11 +41,12 @@ import { OtpAuthService } from './otp-auth.service'
     EmailModule,
     MikroOrmModule.forFeature([User, Session, Account, Verification, Role, Permission]),
   ],
-  controllers: [OtpAuthController],
+  controllers: [OtpAuthController, BiometricController],
   providers: [
     SmsService,
     OtpService,
     OtpAuthService,
+    BiometricService,
     {
       provide: MODULE_OPTIONS_TOKEN,
       useFactory: (emailService: EmailService): AuthModuleOptions => {

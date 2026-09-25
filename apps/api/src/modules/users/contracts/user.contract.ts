@@ -7,7 +7,6 @@ export const userResponseSchema = z.object({
   phone: z.string().nullable(),
   role: z.enum(['BUYER', 'SUPPLIER', 'COURIER', 'ADMIN']),
   image: z.string().url().nullable(),
-  biometricEnabled: z.boolean(),
   /** Null until the person has accepted the terms. */
   termsAcceptedAt: z.string().nullable(),
   createdAt: z.string().datetime(),

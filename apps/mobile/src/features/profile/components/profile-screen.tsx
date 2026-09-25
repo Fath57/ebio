@@ -1,3 +1,4 @@
+import type { TrustedDeviceRow } from '../../auth/hooks/use-biometric-auth'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
@@ -33,6 +34,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { BRAND_LOGO } from '../../../utils/app-variant'
+import { useBiometricAuth } from '../../auth/hooks/use-biometric-auth'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
 
@@ -43,7 +45,6 @@ interface UserProfile {
   phone: string | null
   role: 'BUYER' | 'SUPPLIER' | 'ADMIN'
   image: string | null
-  biometricEnabled: boolean
 }
 
 type ThemeMode = 'light' | 'dark' | 'system'
@@ -81,7 +82,15 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [supplierStatus, setSupplierStatus] = useState<{ isSupplier: boolean, supplierId: string | null, validationStatus: string | null, shopName: string | null }>({ isSupplier: false, supplierId: null, validationStatus: null, shopName: null })
   const [loading, setLoading] = useState(true)
-  const [biometricEnabled, setBiometricEnabled] = useState(false)
+  const {
+    isAvailable: biometricAvailable,
+    isEnabled: biometricEnabled,
+    devices: trustedDevices,
+    busy: biometricBusy,
+    enable: enableBiometrics,
+    revoke: revokeDevice,
+  } = useBiometricAuth()
+  const [revoking, setRevoking] = useState<TrustedDeviceRow | null>(null)
   const [showLogoutModal, setShowLogoutModal] = useState(false)
 
   const sessionUserId = session?.user?.id ?? null
@@ -106,7 +115,6 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
         if (profileRes.ok) {
           const data = await profileRes.json()
           setProfile(data)
-          setBiometricEnabled(data.biometricEnabled ?? false)
         }
         else {
           setProfile(null)
@@ -131,16 +139,21 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
     }
   }, [sessionUserId, refreshTrigger])
 
+  /**
+   * Turning it on trusts this phone; turning it off takes the trust away.
+   *
+   * It used to PATCH a route that does not exist. `apiFetch` does not throw on
+   * a 404, so the switch stayed on and nothing had happened — it read as saved
+   * until the next time the screen loaded.
+   */
   async function handleToggleBiometric(value: boolean) {
-    setBiometricEnabled(value)
-    try {
-      await apiFetch('/api/users/me/settings', {
-        method: 'PATCH',
-        body: JSON.stringify({ biometricEnabled: value }),
-      })
+    if (value) {
+      await enableBiometrics()
+      return
     }
-    catch {
-      setBiometricEnabled(!value)
+    const current = trustedDevices.find(device => device.current)
+    if (current) {
+      await revokeDevice(current.id, true)
     }
   }
 
@@ -436,22 +449,61 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
               PARAMÈTRES
             </Text>
             <View style={[styles.menuGroup, { backgroundColor: semantic.bgCard }]}>
-              <View style={styles.menuItemRow}>
-                <View style={styles.menuItemLeft}>
-                  <View style={[styles.menuIconContainer, { backgroundColor: colors.green[50] }]}>
-                    <ScanFace size={18} color={colors.green[600]} />
+              {biometricAvailable && (
+                <>
+                  <View style={styles.menuItemRow}>
+                    <View style={styles.menuItemLeft}>
+                      <View style={[styles.menuIconContainer, { backgroundColor: colors.green[50] }]}>
+                        <ScanFace size={18} color={colors.green[600]} />
+                      </View>
+                      <View style={styles.biometricLabel}>
+                        <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>
+                          Connexion par empreinte
+                        </Text>
+                        <Text style={[styles.biometricHint, { color: semantic.textTertiary }]}>
+                          Sur ce téléphone, sans retaper votre mot de passe
+                        </Text>
+                      </View>
+                    </View>
+                    <Switch
+                      value={biometricEnabled}
+                      disabled={biometricBusy}
+                      onValueChange={handleToggleBiometric}
+                      trackColor={{ true: colors.green[400], false: colors.neutral[200] }}
+                      thumbColor={colors.neutral[0]}
+                    />
                   </View>
-                  <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>
-                    Biométrie
-                  </Text>
-                </View>
-                <Switch
-                  value={biometricEnabled}
-                  onValueChange={handleToggleBiometric}
-                  trackColor={{ true: colors.green[400], false: colors.neutral[200] }}
-                  thumbColor={colors.neutral[0]}
-                />
-              </View>
+
+                  {/* Other phones are listed so they can be taken away from
+                      here — that is the whole point of trusting them one by
+                      one rather than keeping a single key per account. */}
+                  {trustedDevices.filter(device => !device.current).map(device => (
+                    <View key={device.id} style={styles.trustedRow}>
+                      <View style={styles.biometricLabel}>
+                        <Text style={[styles.trustedName, { color: semantic.textSecondary }]}>
+                          {device.label}
+                        </Text>
+                        <Text style={[styles.biometricHint, { color: semantic.textTertiary }]}>
+                          {device.lastUsedAt === null
+                            ? 'Jamais utilisé'
+                            : `Utilisé le ${new Date(device.lastUsedAt).toLocaleDateString('fr-FR')}`}
+                        </Text>
+                      </View>
+                      <TouchableOpacity
+                        hitSlop={10}
+                        disabled={biometricBusy}
+                        onPress={() => setRevoking(device)}
+                        accessibilityRole="button"
+                        accessibilityLabel={`Retirer ${device.label}`}
+                      >
+                        <Text style={styles.trustedRevoke}>Retirer</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ))}
+
+                  <View style={styles.menuDivider} />
+                </>
+              )}
 
               <View style={styles.menuDivider} />
 
@@ -525,6 +577,25 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
           confirmStyle="destructive"
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutModal(false)}
+        />
+
+        <ConfirmModal
+          visible={revoking !== null}
+          icon={ScanFace}
+          iconColor={colors.coral[400]}
+          iconBg={colors.coral[50]}
+          title={revoking === null ? '' : `Retirer ${revoking.label} ?`}
+          message="Ce téléphone ne pourra plus ouvrir votre compte avec une empreinte. Le mot de passe fonctionnera toujours."
+          confirmLabel="Retirer"
+          confirmStyle="destructive"
+          onConfirm={() => {
+            const device = revoking
+            setRevoking(null)
+            if (device) {
+              void revokeDevice(device.id, device.current)
+            }
+          }}
+          onCancel={() => setRevoking(null)}
         />
       </ScrollView>
     </View>
@@ -761,6 +832,31 @@ const styles = StyleSheet.create({
   },
   menuGroup: {
     overflow: 'hidden',
+  },
+  biometricLabel: {
+    flex: 1,
+    gap: 2,
+  },
+  biometricHint: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+  },
+  trustedRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    paddingHorizontal: spacing[4],
+    paddingBottom: spacing[3],
+    paddingLeft: spacing[4] + 36 + spacing[3],
+  },
+  trustedName: {
+    fontFamily: fonts.sansMd,
+    fontSize: 14,
+  },
+  trustedRevoke: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
+    color: colors.coral[600],
   },
   menuItemRow: {
     flexDirection: 'row',

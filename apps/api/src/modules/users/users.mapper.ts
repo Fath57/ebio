@@ -13,7 +13,6 @@ export class UserMapper {
       phone: user.phone ?? null,
       role: user.role,
       image: user.image ?? null,
-      biometricEnabled: user.biometricEnabled,
       // The app uses this to know whether agreement has already been given.
       termsAcceptedAt: user.termsAcceptedAt ? user.termsAcceptedAt.toISOString() : null,
       createdAt: user.createdAt.toISOString(),

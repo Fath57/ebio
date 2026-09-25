@@ -28,7 +28,7 @@ export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED'
 
 @Entity({ tableName: 'users' })
 export class User {
-  [OptionalProps]?: 'id' | 'emailVerified' | 'role' | 'biometricEnabled' | 'status' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'emailVerified' | 'role' | 'status' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -58,12 +58,6 @@ export class User {
 
   @Property({ fieldName: 'deviceId', nullable: true })
   deviceId?: string
-
-  @Property({ fieldName: 'biometricEnabled', default: false })
-  biometricEnabled: boolean = false
-
-  @Property({ fieldName: 'biometricKey', nullable: true })
-  biometricKey?: string
 
   @Property({ fieldName: 'lastLoginAt', nullable: true })
   lastLoginAt?: Date
