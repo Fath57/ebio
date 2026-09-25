@@ -91,7 +91,11 @@ export class User {
    * The first acceptance is never overwritten: what matters is the moment
    * agreement was given, not the last time it was restated.
    */
-  @Property({ fieldName: 'terms_accepted_at', nullable: true })
+  // The type is spelled out: from a `Date | null` union the decorator infers
+  // nothing, so the driver's raw string came back untouched and every read of
+  // this user died on `.toISOString()`. Every other nullable date here does
+  // the same.
+  @Property({ fieldName: 'terms_accepted_at', type: 'Date', nullable: true })
   termsAcceptedAt?: Date | null
 
   /** The app the agreement was given from. */
