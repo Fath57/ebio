@@ -15,9 +15,9 @@ export interface Announcement {
 /**
  * L'annonce à montrer à l'ouverture, s'il y en a une.
  *
- * Le serveur décide : il connaît ce que cette personne a déjà vu et depuis
- * quand, et il n'en rend qu'une. L'application n'a donc rien à arbitrer — elle
- * ouvre un modal ou n'en ouvre pas.
+ * Le serveur décide : il sait ce que cette personne a déjà vu et depuis quand,
+ * et il n'en rend qu'une. L'application n'a donc rien à arbitrer — elle ouvre
+ * un modal ou n'en ouvre pas.
  *
  * « Vue » est signalé à l'affichage et non à la fermeture : quelqu'un qui tue
  * l'application sans fermer le modal l'a vue quand même, et la retrouver à
@@ -38,6 +38,7 @@ export function useAnnouncement(): {
         if (!res.ok || cancelled) {
           return
         }
+
         const data = await res.json() as { announcement: Announcement | null }
         if (data.announcement === null) {
           return
