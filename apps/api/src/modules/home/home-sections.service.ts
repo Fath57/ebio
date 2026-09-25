@@ -23,6 +23,28 @@ export interface ResolvedHomeSection {
   results: SearchResult[]
 }
 
+/** A section as the back-office edits it: the row, plus its picks by name. */
+export interface AdminHomeSection {
+  id: string
+  title: string
+  subtitle: string | null
+  icon: string | null
+  mode: HomeSectionMode
+  criteria: HomeSectionCriteria | null
+  productIds: string[] | null
+  position: number
+  active: boolean
+  limit: number
+  products: PickedProduct[]
+}
+
+/** A hand-picked product, named well enough to be recognised in a list. */
+export interface PickedProduct {
+  id: string
+  name: string
+  shopName: string
+}
+
 /** Where the buyer is, when we know. */
 export interface BuyerPosition {
   latitude?: number
@@ -36,9 +58,59 @@ export class HomeSectionsService {
     private readonly search: SearchService,
   ) {}
 
-  /** Every section, switched-off ones included: the back-office view. */
-  async listAll(): Promise<HomeSection[]> {
-    return this.em.find(HomeSection, {}, { orderBy: { position: 'ASC' } })
+  /**
+   * Every section, switched-off ones included: the back-office view.
+   *
+   * Hand-picked sections come back with their products named. Sending bare
+   * identifiers meant the edit form reopened on an empty list, and since it
+   * refuses to save nothing, adding one product to get past that replaced all
+   * the others.
+   */
+  async listAll(): Promise<AdminHomeSection[]> {
+    const sections = await this.em.find(HomeSection, {}, { orderBy: { position: 'ASC' } })
+    const named = await this.nameProducts(sections.flatMap(section => section.productIds ?? []))
+
+    // Plain objects, not the entities: a property grafted onto an entity is
+    // dropped on serialisation, which only shows up as a silently missing
+    // field at the other end.
+    return sections.map(section => ({
+      id: section.id,
+      title: section.title,
+      subtitle: section.subtitle ?? null,
+      icon: section.icon ?? null,
+      mode: section.mode,
+      criteria: section.criteria ?? null,
+      productIds: section.productIds ?? null,
+      position: section.position,
+      active: section.active,
+      limit: section.limit,
+      products: (section.productIds ?? [])
+        .map(id => named.get(id))
+        .filter((product): product is PickedProduct => product !== undefined),
+    }))
+  }
+
+  /**
+   * Names for a set of product ids, in one query.
+   *
+   * The shop's name travels with it: two shops sell "Tomates fraîches", and a
+   * list of identical lines is not a list anybody can check.
+   */
+  private async nameProducts(ids: string[]): Promise<Map<string, PickedProduct>> {
+    const unique = [...new Set(ids)]
+    if (unique.length === 0) {
+      return new Map()
+    }
+
+    const rows = await this.em.getConnection().execute<Array<{ id: string, name: string, shop_name: string }>>(
+      `SELECT p.id, p.name, s.shop_name
+         FROM products p
+         JOIN suppliers s ON s.id = p.supplier_id
+        WHERE p.id IN (${unique.map(() => '?').join(', ')})`,
+      unique,
+    )
+
+    return new Map(rows.map(row => [row.id, { id: row.id, name: row.name, shopName: row.shop_name }]))
   }
 
   /**
@@ -78,10 +150,17 @@ export class HomeSectionsService {
    */
   private async resolve(section: HomeSection, position: BuyerPosition): Promise<SearchResult[]> {
     const criteria = section.criteria ?? {}
+    const handPicked = section.mode === HomeSectionMode.MANUAL
 
     const query = {
-      latitude: position.latitude,
-      longitude: position.longitude,
+      // A hand-picked section is shown without a position, so no catchment
+      // area applies to it. The search bounds an ordinary query to 50 km by
+      // default, which quietly dropped the picks from farther shops: the
+      // back-office chose those products on purpose, distance is not the
+      // question any more. Cards then show no distance, which is honest —
+      // it is not what put them there.
+      latitude: handPicked ? undefined : position.latitude,
+      longitude: handPicked ? undefined : position.longitude,
       // The search radius is in metres, the setting in kilometres: nobody
       // thinks of a catchment area in metres.
       radius: criteria.maxDistanceKm !== undefined ? criteria.maxDistanceKm * 1000 : undefined,
@@ -94,14 +173,14 @@ export class HomeSectionsService {
       validatedOnly: criteria.validatedOnly === true ? 'true' : 'false',
       promoOnly: criteria.promoOnly === true ? 'true' : 'false',
       sortBy: criteria.sortBy ?? 'distance',
-      productIds: section.mode === HomeSectionMode.MANUAL ? (section.productIds ?? []) : undefined,
+      productIds: handPicked ? (section.productIds ?? []) : undefined,
       page: 1,
       limit: section.limit,
     } as SearchProductsQuery
 
     const response = await this.search.searchProducts(query)
 
-    if (section.mode !== HomeSectionMode.MANUAL) {
+    if (!handPicked) {
       return response.results
     }
 
@@ -169,7 +248,7 @@ export class HomeSectionsService {
    * Sending the whole list avoids the in-between states where two sections
    * share a place — which happens as soon as a move takes two calls.
    */
-  async reorder(ids: string[]): Promise<HomeSection[]> {
+  async reorder(ids: string[]): Promise<AdminHomeSection[]> {
     const sections = await this.em.find(HomeSection, { id: { $in: ids } })
     if (sections.length !== ids.length) {
       throw new BadRequestException('La liste ne correspond pas aux sections existantes')

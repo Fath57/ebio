@@ -23,6 +23,8 @@ interface HomeSectionRow extends HomeSectionPayload {
   id: string
   position: number
   active: boolean
+  /** Hand-picked products, named, so the form reopens on what was chosen. */
+  products?: Array<{ id: string, name: string, shopName: string }>
 }
 
 const QUERY_KEY = ['admin', 'home-sections']
@@ -122,7 +124,7 @@ export function HomeSectionsManager() {
   if (creating || editing) {
     return (
       <HomeSectionForm
-        initial={editing ?? undefined}
+        initial={editing === null ? undefined : { ...editing, productNames: editing.products ?? [] }}
         isPending={isCreating || isUpdating}
         onCancel={() => {
           setCreating(false)
