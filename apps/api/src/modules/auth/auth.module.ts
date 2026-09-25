@@ -16,7 +16,7 @@ import {
 } from '@nestjs/core'
 import { toNodeHandler } from 'better-auth/node'
 import { createAuthMiddleware } from 'better-auth/plugins'
-import { OtpService } from '../../common/otp.service'
+import { OtpModule } from '../../common/otp.module'
 import { SmsModule } from '../../common/sms.module'
 import { createBetterAuth } from '../../config/better-auth.config'
 import { config } from '../../config/env.config'
@@ -40,11 +40,11 @@ import { OtpAuthService } from './otp-auth.service'
     DiscoveryModule,
     EmailModule,
     SmsModule,
+    OtpModule,
     MikroOrmModule.forFeature([User, Session, Account, Verification, Role, Permission]),
   ],
   controllers: [OtpAuthController, BiometricController],
   providers: [
-    OtpService,
     OtpAuthService,
     BiometricService,
     {

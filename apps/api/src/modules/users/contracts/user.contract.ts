@@ -16,13 +16,36 @@ export const userResponseSchema = z.object({
   permissions: z.array(z.object({ action: z.string(), subject: z.string() })),
 }).meta({ title: 'UserResponse', description: 'Public user profile' })
 
+/**
+ * What can be changed without proving anything.
+ *
+ * The e-mail is not here on purpose: it can reset a password, so letting it be
+ * set by a simple write would let anyone claim an address that is not theirs
+ * and take over the account behind it. It changes through
+ * `me/email/request` + `me/email/confirm`, which prove possession.
+ */
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  email: z.string().email().optional(),
   phone: z.string().optional(),
   image: z.string().url().optional(),
   deviceId: z.string().optional(),
 }).meta({ title: 'UpdateUser', description: 'Update user profile' })
+
+/** Asks for a code at the address someone wants to start using. */
+export const emailChangeRequestSchema = z.object({
+  email: z.string().email(),
+}).meta({
+  title: 'EmailChangeRequest',
+  description: 'Demande un code de confirmation à la nouvelle adresse',
+})
+
+export const emailChangeConfirmSchema = z.object({
+  email: z.string().email(),
+  code: z.string().length(6),
+}).meta({
+  title: 'EmailChangeConfirm',
+  description: 'Confirme la nouvelle adresse avec le code reçu',
+})
 
 export const userSummarySchema = z.object({
   id: z.string().uuid(),
@@ -32,6 +55,8 @@ export const userSummarySchema = z.object({
 
 export type UserResponse = z.infer<typeof userResponseSchema>
 export type UpdateUser = z.infer<typeof updateUserSchema>
+export type EmailChangeRequest = z.infer<typeof emailChangeRequestSchema>
+export type EmailChangeConfirm = z.infer<typeof emailChangeConfirmSchema>
 export type UserSummary = z.infer<typeof userSummarySchema>
 
 /**

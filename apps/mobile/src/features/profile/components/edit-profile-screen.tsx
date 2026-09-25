@@ -50,6 +50,67 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+
+  /**
+   * Changing the address, in two steps.
+   *
+   * `initialEmail` is what the account holds; the button only appears once
+   * what is typed differs from it, so nobody is asked to confirm an address
+   * they never touched.
+   */
+  const [initialEmail, setInitialEmail] = useState('')
+  const [emailStep, setEmailStep] = useState<'idle' | 'code'>('idle')
+  const [emailCode, setEmailCode] = useState('')
+  const [emailBusy, setEmailBusy] = useState(false)
+  const emailChanged = email.trim().length > 0 && email.trim() !== initialEmail
+
+  async function handleEmailRequest() {
+    setError(null)
+    setEmailBusy(true)
+    try {
+      const res = await apiFetch('/api/users/me/email/request', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim() }),
+      })
+      const data = await res.json().catch(() => ({})) as { message?: string }
+      if (!res.ok) {
+        setError(data.message ?? 'Impossible d\'envoyer le code')
+        return
+      }
+      setEmailStep('code')
+    }
+    catch {
+      setError('Erreur de connexion. Vérifiez votre réseau.')
+    }
+    finally {
+      setEmailBusy(false)
+    }
+  }
+
+  async function handleEmailConfirm() {
+    setError(null)
+    setEmailBusy(true)
+    try {
+      const res = await apiFetch('/api/users/me/email/confirm', {
+        method: 'POST',
+        body: JSON.stringify({ email: email.trim(), code: emailCode.trim() }),
+      })
+      const data = await res.json().catch(() => ({})) as { message?: string }
+      if (!res.ok) {
+        setError(data.message ?? 'Code invalide ou expiré')
+        return
+      }
+      setInitialEmail(email.trim())
+      setEmailStep('idle')
+      setEmailCode('')
+    }
+    catch {
+      setError('Erreur de connexion. Vérifiez votre réseau.')
+    }
+    finally {
+      setEmailBusy(false)
+    }
+  }
   const [error, setError] = useState<string | null>(null)
   const [showSuccess, setShowSuccess] = useState(false)
 
@@ -70,6 +131,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
           // Filter out placeholder emails generated for phone registrations
           const isPlaceholderEmail = data.email?.endsWith('@phone.ebio.app')
           setEmail(isPlaceholderEmail ? '' : (data.email ?? ''))
+          setInitialEmail(isPlaceholderEmail ? '' : (data.email ?? ''))
           setPhone(data.phone ?? '')
           setImageUri(data.image ?? null)
         }
@@ -102,9 +164,9 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
     setError(null)
     setSaving(true)
     try {
+      // The address is not saved here: it can reset a password, so it goes
+      // through a code sent to it. See `handleEmailChange` below.
       const body: Record<string, string> = { name: name.trim() }
-      if (email.trim())
-        body.email = email.trim()
       if (phone.trim())
         body.phone = phone.trim()
 
@@ -222,12 +284,58 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
               placeholderTextColor={placeholderColor}
               value={email}
               onChangeText={setEmail}
+              editable={emailStep === 'idle'}
               keyboardType="email-address"
               autoCapitalize="none"
               autoComplete="email"
               autoCorrect={false}
             />
           </View>
+
+          {/* An address that can reset a password is confirmed before it is
+              kept: the code goes to it, and reading the code is the proof. */}
+          {emailChanged && emailStep === 'idle' && (
+            <Pressable onPress={handleEmailRequest} disabled={emailBusy} style={styles.emailAction}>
+              <Text style={styles.emailActionText}>
+                {emailBusy ? 'Envoi…' : 'Confirmer cette adresse'}
+              </Text>
+            </Pressable>
+          )}
+
+          {emailStep === 'code' && (
+            <View style={styles.emailConfirm}>
+              <Text style={[styles.emailHint, { color: semantic.textSecondary }]}>
+                {`Un code à 6 chiffres a été envoyé à ${email.trim()}.`}
+              </Text>
+              <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                <TextInput
+                  style={[styles.input, { color: semantic.textPrimary, fontFamily: fonts.sans }]}
+                  placeholder="000000"
+                  placeholderTextColor={placeholderColor}
+                  value={emailCode}
+                  onChangeText={setEmailCode}
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+              </View>
+              <View style={styles.emailActions}>
+                <Pressable onPress={handleEmailConfirm} disabled={emailBusy || emailCode.length < 6} style={styles.emailAction}>
+                  <Text style={styles.emailActionText}>
+                    {emailBusy ? 'Vérification…' : 'Valider'}
+                  </Text>
+                </Pressable>
+                <Pressable
+                  onPress={() => {
+                    setEmailStep('idle')
+                    setEmailCode('')
+                  }}
+                  style={styles.emailAction}
+                >
+                  <Text style={[styles.emailActionText, { color: semantic.textTertiary }]}>Annuler</Text>
+                </Pressable>
+              </View>
+            </View>
+          )}
 
           <Text style={[styles.label, { color: semantic.textSecondary }]}>Téléphone</Text>
           <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
@@ -286,6 +394,29 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
 }
 
 const styles = StyleSheet.create({
+  emailAction: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[1],
+  },
+  emailActionText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
+    color: colors.green[600],
+  },
+  emailConfirm: {
+    gap: spacing[2],
+    marginTop: spacing[2],
+  },
+  emailActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[5],
+  },
+  emailHint: {
+    fontFamily: fonts.sans,
+    fontSize: 13,
+  },
   flex: { flex: 1 },
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   scrollContent: { flexGrow: 1, paddingHorizontal: spacing[6] },

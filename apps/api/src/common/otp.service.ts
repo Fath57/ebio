@@ -106,6 +106,58 @@ export class OtpService {
     return { success: true }
   }
 
+  /**
+   * A code sent to an address someone wants to start using.
+   *
+   * Kept apart from the sign-up code under its own identifier: a code asked
+   * for while changing an address must not let anyone create an account, and
+   * the other way round.
+   */
+  async sendEmailChangeOtp(email: string): Promise<{ success: boolean, error?: string }> {
+    const fork = this.em.fork()
+
+    const recent = await fork.findOne(Verification, {
+      identifier: `email-change:${email}`,
+      createdAt: { $gte: new Date(Date.now() - OTP_COOLDOWN_SECONDS * 1000) },
+    })
+    if (recent) {
+      return { success: false, error: 'Veuillez patienter avant de renvoyer un code' }
+    }
+
+    await fork.nativeDelete(Verification, { identifier: `email-change:${email}` })
+
+    const code = randomInt(100000, 999999).toString()
+    fork.create(Verification, {
+      identifier: `email-change:${email}`,
+      value: code,
+      expiresAt: new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000),
+    })
+    await fork.flush()
+
+    await this.emailService.sendTemplatedEmail({
+      to: email,
+      subject: 'eBio — Confirmez votre nouvelle adresse',
+      template: 'otp-code',
+      data: { otpCode: code, userName: null, expiresInMinutes: OTP_TTL_MINUTES },
+    })
+
+    return { success: true }
+  }
+
+  async verifyEmailChangeOtp(email: string, code: string): Promise<boolean> {
+    const fork = this.em.fork()
+    const verification = await fork.findOne(Verification, {
+      identifier: `email-change:${email}`,
+      value: code,
+      expiresAt: { $gte: new Date() },
+    })
+    if (!verification) {
+      return false
+    }
+    await fork.nativeDelete(Verification, { id: verification.id })
+    return true
+  }
+
   async verifyEmailOtp(email: string, code: string): Promise<boolean> {
     const fork = this.em.fork()
 
