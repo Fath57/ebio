@@ -408,7 +408,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.neutral[200],
   },
-  methodTabText: { ...typography.bodyS, fontFamily: fonts.medium },
+  methodTabText: { ...typography.bodyS, fontFamily: fonts.sansMd },
 
   form: { gap: spacing[4] },
   inputContainer: {

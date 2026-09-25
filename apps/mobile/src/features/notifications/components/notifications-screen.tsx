@@ -202,7 +202,7 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
       {notifications.length === 0
         ? (
             <View style={styles.empty}>
-              <BellOff size={48} color={colors.neutral[300]} strokeWidth={1.5} />
+              <BellOff size={48} color={colors.neutral[400]} strokeWidth={1.5} />
               <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>
                 Aucune notification
               </Text>

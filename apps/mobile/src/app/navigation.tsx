@@ -213,7 +213,13 @@ function SearchLocationPickerWrapper({ navigation }: any) {
         initialLatitude={latitude}
         initialLongitude={longitude}
         onConfirm={(coords) => {
-          setManualLocation(coords)
+          // The picker says "no name yet" with null, the store only knows
+          // "absent" — they mean the same thing and only one can be stored.
+          setManualLocation({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            label: coords.label ?? undefined,
+          })
           navigation.goBack()
         }}
         onGoBack={() => navigation.goBack()}
@@ -430,22 +436,33 @@ function ChatStackScreen() {
         )}
       </ChatStack.Screen>
       <ChatStack.Screen name="ChatDetail">
-        {({ route, navigation }) => (
-          <SafeScreen>
-            <ChatDetailScreen
-              conversationId={route.params.conversationId}
-              currentUserId={currentUserId}
-              peerName={route.params.peerName}
-              isSupplier={route.params.isSupplier}
-              orderId={route.params.orderId}
-              kind={route.params.kind ?? 'SUPPLIER'}
-              onGoBack={() => navigation.goBack()}
-              onOpenOrder={(oid) => {
-                navigation.navigate('Commandes', { screen: 'OrderTracking', params: { orderId: oid } })
-              }}
-            />
-          </SafeScreen>
-        )}
+        {({ route, navigation }) => {
+          // The stack is created untyped, so its params arrive as a bare
+          // object. Named here, once, rather than read blindly five times.
+          const params = (route.params ?? {}) as {
+            conversationId: string
+            peerName: string
+            isSupplier?: boolean
+            orderId?: string
+            kind?: 'SUPPLIER' | 'SUPPORT'
+          }
+          return (
+            <SafeScreen>
+              <ChatDetailScreen
+                conversationId={params.conversationId}
+                currentUserId={currentUserId}
+                peerName={params.peerName}
+                isSupplier={params.isSupplier}
+                orderId={params.orderId}
+                kind={params.kind ?? 'SUPPLIER'}
+                onGoBack={() => navigation.goBack()}
+                onOpenOrder={(oid) => {
+                  navigation.navigate('Commandes', { screen: 'OrderTracking', params: { orderId: oid } })
+                }}
+              />
+            </SafeScreen>
+          )
+        }}
       </ChatStack.Screen>
     </ChatStack.Navigator>
   )
@@ -935,7 +952,7 @@ function popTabStackToTop(navigation: any, tabName: string) {
   // Read on press rather than captured when the listener is created: the route
   // frozen in the closure would carry the state from before the screen was
   // opened.
-  const state = navigation.getState().routes.find(r => r.name === tabName)?.state
+  const state = navigation.getState().routes.find((r: { name: string }) => r.name === tabName)?.state
   // `key` is missing until the stack has mounted; an `index` of 0 means we are
   // already at its root. Nothing to pop in either case.
   if (!state?.key || !state.index) {
