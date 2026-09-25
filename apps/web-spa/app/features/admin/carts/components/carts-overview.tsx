@@ -4,6 +4,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { useQuery } from '@tanstack/react-query'
+import { ProductThumb } from '../../common/components/product-thumb'
 
 interface CartStats {
   abandonApresHeures: number
@@ -12,7 +13,7 @@ interface CartStats {
   montantAbandonne: number
   relancesEnvoyees: number
   relancesAbouties: number
-  produitsAbandonnes: Array<{ name: string, shopName: string, baskets: number, quantity: number }>
+  produitsAbandonnes: Array<{ name: string, shopName: string, imageUrl: string | null, baskets: number, quantity: number }>
 }
 
 function money(value: number): string {
@@ -90,8 +91,9 @@ export function CartsOverview() {
             : (
                 <ul className="divide-y">
                   {data.produitsAbandonnes.map(product => (
-                    <li key={`${product.shopName}-${product.name}`} className="flex items-center justify-between py-2">
-                      <div className="min-w-0">
+                    <li key={`${product.shopName}-${product.name}`} className="flex items-center gap-3 py-2">
+                      <ProductThumb url={product.imageUrl} />
+                      <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{product.name}</p>
                         <p className="text-muted-foreground text-sm">{product.shopName}</p>
                       </div>

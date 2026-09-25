@@ -11,7 +11,7 @@ export interface CartStats {
   /** Reminders sent that were followed by an order within a day. */
   relancesAbouties: number
   relancesEnvoyees: number
-  produitsAbandonnes: Array<{ name: string, shopName: string, baskets: number, quantity: number }>
+  produitsAbandonnes: Array<{ name: string, shopName: string, imageUrl: string | null, baskets: number, quantity: number }>
 }
 
 /**
@@ -63,16 +63,24 @@ export class CartStatsService {
     const products = await connection.execute<Array<{
       name: string
       shop_name: string
+      photo: string | null
       baskets: string
       quantity: string
     }>>(
+      // The photo travels with the name: a list of product names alone is not
+      // a list anyone reads — "huile d'arachide" and "huile de palme" look the
+      // same at a glance, their pictures do not.
       `SELECT ci.product_name AS name,
               s.shop_name,
+              -- photos is jsonb, not a Postgres array: a subscript would be
+              -- read as a JSON path and quietly give nothing.
+              MIN(p.photos->>0) AS photo,
               COUNT(DISTINCT ci.cart_id)::text AS baskets,
               SUM(ci.quantity)::text AS quantity
        FROM cart_items ci
        JOIN carts c ON c.id = ci.cart_id
        JOIN suppliers s ON s.id = ci.supplier_id
+       JOIN products p ON p.id = ci.product_id
        WHERE c.updated_at <= NOW() - (? * INTERVAL '1 hour')
        GROUP BY ci.product_name, s.shop_name
        ORDER BY COUNT(DISTINCT ci.cart_id) DESC
@@ -89,6 +97,7 @@ export class CartStatsService {
       produitsAbandonnes: products.map(row => ({
         name: row.name,
         shopName: row.shop_name,
+        imageUrl: row.photo ?? null,
         baskets: Number(row.baskets),
         quantity: Number(row.quantity),
       })),

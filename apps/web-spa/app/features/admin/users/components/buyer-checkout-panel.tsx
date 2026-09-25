@@ -9,6 +9,7 @@ import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { Eye } from 'lucide-react'
 import { useState } from 'react'
+import { ProductThumb } from '../../common/components/product-thumb'
 
 interface Attempt {
   id: string
@@ -25,6 +26,7 @@ interface Attempt {
 interface CartLine {
   name: string
   supplierName: string
+  imageUrl: string | null
   quantity: number
   pricePerUnit: number
 }
@@ -150,8 +152,10 @@ export function BuyerCheckoutPanel({ userId }: { userId: string }) {
                 : (
                     <ul className="divide-y">
                       {cart.items.map(item => (
-                        <li key={`${item.supplierName}-${item.name}`} className="flex items-center justify-between py-1.5 text-sm">
-                          <span className="min-w-0 truncate">
+                        <li key={`${item.supplierName}-${item.name}`} className="flex items-center gap-3 py-1.5 text-sm">
+                          {/* A product is never a name on its own. */}
+                          <ProductThumb url={item.imageUrl} size={36} />
+                          <span className="min-w-0 flex-1 truncate">
                             {item.name}
                             <span className="text-muted-foreground">
                               {' · '}

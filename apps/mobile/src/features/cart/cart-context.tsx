@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage'
 import * as React from 'react'
 import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { useSession } from '../../lib/auth-client'
+import { apiFetch } from '../../utils/api-client'
 
 // ---------------------------------------------------------------------------
 // Types
@@ -68,6 +69,12 @@ type CartAction
     | { type: 'CLEAR_ALL' }
 
 const STORAGE_KEY = 'ebio_cart'
+
+/**
+ * Long enough that a held-down stepper sends once, short enough that closing
+ * the app right after an add still gets the basket across.
+ */
+const SYNC_DEBOUNCE_MS = 1200
 
 function generateId(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 9)}`
@@ -306,6 +313,43 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
       // Silently ignore persistence errors
     })
   }, [state.items, state.deliveryMode, state.hydrated])
+
+  /**
+   * Hands the basket to the server, a moment after it stops changing.
+   *
+   * Debounced because a stepper held down fires on every tap, and the server
+   * only needs to know where it landed. The phone stays the authority while
+   * the app is open; the server keeps the copy that outlives it — the one
+   * that follows its owner to another device and can be reminded about.
+   *
+   * Failures are swallowed: the basket on this phone is intact either way,
+   * and an error message about a background sync would explain nothing to
+   * the person holding it.
+   */
+  useEffect(() => {
+    if (!state.hydrated || userId === null) {
+      return
+    }
+
+    const timer = setTimeout(() => {
+      void apiFetch('/api/cart', {
+        method: 'PUT',
+        body: JSON.stringify({
+          items: state.items.map(item => ({
+            productId: item.productId,
+            supplierId: item.supplierId,
+            quantity: item.quantity,
+          })),
+        }),
+      }).catch(() => {
+        // Offline, or the session just ended: nothing to tell the buyer.
+      })
+    }, SYNC_DEBOUNCE_MS)
+
+    return () => {
+      clearTimeout(timer)
+    }
+  }, [state.items, state.hydrated, userId])
 
   const addItem = useCallback((input: AddItemInput) => {
     dispatch({ type: 'ADD_ITEM', input })
