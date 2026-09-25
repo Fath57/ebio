@@ -28,22 +28,28 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { Can } from '@/lib/casl/can'
+import { CatalogNoShopSelected, CatalogScopeBar } from '../components/catalog-scope-bar'
 import {
   deleteProductMutationOptions,
   fetchProductsQueryOptions,
   updateProductMutationOptions,
 } from '../utils/catalog-queries'
+import { catalogPath, useCatalogScope } from '../utils/catalog-scope'
 
 export default function CatalogPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const [editingStock, setEditingStock] = useState<{ id: string, value: number } | null>(null)
+  const { supplierId, shopId, onBehalf, awaitingShop } = useCatalogScope()
 
-  const { data: products, isLoading, isError } = useQuery(fetchProductsQueryOptions())
+  const { data: products, isLoading, isError } = useQuery({
+    ...fetchProductsQueryOptions(supplierId),
+    enabled: !awaitingShop,
+  })
 
   const { mutate: updateProduct } = useMutation({
-    ...updateProductMutationOptions,
+    ...updateProductMutationOptions(supplierId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       setEditingStock(null)
@@ -51,7 +57,7 @@ export default function CatalogPage() {
   })
 
   const { mutate: deleteProduct } = useMutation({
-    ...deleteProductMutationOptions,
+    ...deleteProductMutationOptions(supplierId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success(t('catalog.deleteSuccess'))
@@ -67,9 +73,19 @@ export default function CatalogPage() {
     }
   }
 
+  if (awaitingShop) {
+    return (
+      <div className="space-y-6">
+        <CatalogScopeBar />
+        <CatalogNoShopSelected />
+      </div>
+    )
+  }
+
   if (isLoading) {
     return (
       <div className="space-y-4">
+        <CatalogScopeBar />
         <Skeleton className="h-10 w-full" />
         <Skeleton className="h-64 w-full" />
       </div>
@@ -78,12 +94,15 @@ export default function CatalogPage() {
 
   if (isError) {
     return (
-      <Card className="flex flex-col items-center justify-center py-16">
-        <p className="text-lg font-semibold text-destructive">{t('common.error')}</p>
-        <Button variant="outline" className="mt-4" onClick={() => queryClient.invalidateQueries({ queryKey: ['products'] })}>
-          {t('common.retry')}
-        </Button>
-      </Card>
+      <div className="space-y-6">
+        <CatalogScopeBar />
+        <Card className="flex flex-col items-center justify-center py-16">
+          <p className="text-lg font-semibold text-destructive">{t('common.error')}</p>
+          <Button variant="outline" className="mt-4" onClick={() => queryClient.invalidateQueries({ queryKey: ['products'] })}>
+            {t('common.retry')}
+          </Button>
+        </Card>
+      </div>
     )
   }
 
@@ -91,12 +110,16 @@ export default function CatalogPage() {
 
   return (
     <div className="space-y-6">
+      <CatalogScopeBar />
+
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-2xl font-bold">{t('catalog.title')}</h2>
+          <h2 className="text-2xl font-bold">
+            {onBehalf ? t('catalog.scope.shopTitle') : t('catalog.title')}
+          </h2>
           <p className="text-muted-foreground">
-            {t('catalog.description')}
+            {onBehalf ? t('catalog.scope.shopDescription') : t('catalog.description')}
             {productList.length > 0 && (
               <span className="ml-1 text-sm">
                 (
@@ -110,7 +133,7 @@ export default function CatalogPage() {
         </div>
         <Can action="create" subject="Product">
           <Button asChild>
-            <Link to="/catalogue/nouveau">
+            <Link to={catalogPath('/catalogue/nouveau', shopId)}>
               <PlusCircle className="mr-2 h-4 w-4" />
               {t('catalog.addProduct')}
             </Link>
@@ -127,7 +150,7 @@ export default function CatalogPage() {
               <p className="mt-1 text-sm text-muted-foreground">{t('catalog.empty.description')}</p>
               <Can action="create" subject="Product">
                 <Button className="mt-6" asChild>
-                  <Link to="/catalogue/nouveau">
+                  <Link to={catalogPath('/catalogue/nouveau', shopId)}>
                     <PlusCircle className="mr-2 h-4 w-4" />
                     {t('catalog.addFirstProduct')}
                   </Link>
@@ -158,7 +181,7 @@ export default function CatalogPage() {
                       <TableRow
                         key={product.id}
                         className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => navigate(`/catalogue/${product.id}`)}
+                        onClick={() => navigate(catalogPath(`/catalogue/${product.id}`, shopId))}
                       >
                         {/* Photo */}
                         <TableCell>
@@ -257,7 +280,7 @@ export default function CatalogPage() {
                         <TableCell onClick={e => e.stopPropagation()}>
                           <div className="flex gap-1">
                             <Can action="update" subject="Product">
-                              <Button size="sm" variant="ghost" onClick={() => navigate(`/catalogue/${product.id}/modifier`)}>
+                              <Button size="sm" variant="ghost" onClick={() => navigate(catalogPath(`/catalogue/${product.id}/modifier`, shopId))}>
                                 <Pencil className="h-4 w-4" />
                               </Button>
                             </Can>

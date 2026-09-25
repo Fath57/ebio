@@ -15,7 +15,7 @@ import {
 } from '@boilerstone/ui/components/primitives/table'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Ban, RotateCcw, Tag } from 'lucide-react'
+import { ArrowLeft, Ban, ImageOff, Pencil, RotateCcw, Tag } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
@@ -66,8 +66,16 @@ function SupplierProductsCard({ supplierId, isValidated, onManagePromotions }: S
 
   return (
     <Card>
-      <CardHeader>
+      <CardHeader className="flex flex-row items-center justify-between gap-4">
         <CardTitle>{t('admin.suppliers.detail.products.title')}</CardTitle>
+        <Can action="manage" subject="Product">
+          <Button variant="outline" size="sm" asChild>
+            <Link to={`/catalogue?boutique=${supplierId}`}>
+              <Pencil className="mr-2 h-4 w-4" />
+              {t('admin.suppliers.detail.products.openStudio')}
+            </Link>
+          </Button>
+        </Can>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading && <Skeleton className="h-24 w-full" />}
@@ -82,6 +90,7 @@ function SupplierProductsCard({ supplierId, isValidated, onManagePromotions }: S
           <Table>
             <TableHeader>
               <TableRow>
+                <TableHead className="w-14" />
                 <TableHead>{t('admin.suppliers.detail.products.columns.name')}</TableHead>
                 <TableHead className="text-right">{t('admin.suppliers.detail.products.columns.price')}</TableHead>
                 <TableHead>{t('admin.suppliers.detail.products.columns.status')}</TableHead>
@@ -92,6 +101,21 @@ function SupplierProductsCard({ supplierId, isValidated, onManagePromotions }: S
             <TableBody>
               {products.map(product => (
                 <TableRow key={product.id}>
+                  <TableCell>
+                    {product.thumbnail ?? product.photo
+                      ? (
+                          <img
+                            src={product.thumbnail ?? product.photo!}
+                            alt={product.name}
+                            className="h-10 w-10 rounded-lg object-cover"
+                          />
+                        )
+                      : (
+                          <span className="bg-muted text-muted-foreground flex h-10 w-10 items-center justify-center rounded-lg">
+                            <ImageOff className="h-4 w-4" />
+                          </span>
+                        )}
+                  </TableCell>
                   <TableCell className="font-medium">{product.name}</TableCell>
                   <TableCell className="text-right">
                     {product.promotionalPrice !== null

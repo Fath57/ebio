@@ -77,6 +77,7 @@ export const ADMIN_PERMISSIONS_CATALOG: CatalogSection[] = [
     key: 'catalog',
     permissions: [
       { key: 'products', action: 'read', subject: 'Product', description: 'Voir tous les produits' },
+      { key: 'productsManage', action: 'manage', subject: 'Product', description: 'Modifier le catalogue d\'une boutique à sa place' },
       { key: 'categories', action: 'manage', subject: 'Category', description: 'Gérer les catégories' },
       { key: 'units', action: 'manage', subject: 'ProductUnit', description: 'Gérer les unités de vente' },
       { key: 'promoCodes', action: 'manage', subject: 'PromoCode', description: 'Gérer les codes promo' },

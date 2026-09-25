@@ -7,29 +7,32 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { CatalogScopeBar } from '../components/catalog-scope-bar'
 import { ProductForm } from '../forms/product-form'
 import { createProductMutationOptions, setProductPromotion } from '../utils/catalog-queries'
+import { catalogPath, useCatalogScope } from '../utils/catalog-scope'
 
 export default function ProductCreatePage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { supplierId, shopId } = useCatalogScope()
 
   const { mutate, isPending } = useMutation({
     mutationFn: async (data: ProductFormData) => {
       // Promotion goes through its own endpoint; photos only exist on edit
       const { hasPromotion, promotionalPrice, promotionExpiresAt, photos: _photos, ...body } = data
-      const product = await createProductMutationOptions.mutationFn(body as unknown as CreateProduct)
+      const product = await createProductMutationOptions(supplierId).mutationFn(body as unknown as CreateProduct)
       const productId = (product as { id?: string } | undefined)?.id
       if (productId && hasPromotion && promotionalPrice && promotionExpiresAt)
-        await setProductPromotion(productId, promotionalPrice, promotionExpiresAt)
+        await setProductPromotion(supplierId, productId, promotionalPrice, promotionExpiresAt)
       return product
     },
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       toast.success(t('catalog.form.createSuccess'))
       const productId = (data as { id?: string })?.id
-      navigate(productId ? `/catalogue/${productId}` : '/catalogue')
+      navigate(catalogPath(productId ? `/catalogue/${productId}` : '/catalogue', shopId))
     },
     onError: () => {
       toast.error(t('catalog.form.createError'))
@@ -42,8 +45,9 @@ export default function ProductCreatePage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      <CatalogScopeBar />
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/catalogue')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(catalogPath('/catalogue', shopId))}>
           <ArrowLeft className="mr-1 h-4 w-4" />
           {t('common.back')}
         </Button>

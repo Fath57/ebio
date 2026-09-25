@@ -8,6 +8,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ArrowLeft } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
+import { CatalogScopeBar } from '../components/catalog-scope-bar'
 import { ProductForm } from '../forms/product-form'
 import {
   clearProductPromotion,
@@ -15,12 +16,14 @@ import {
   setProductPromotion,
   updateProductMutationOptions,
 } from '../utils/catalog-queries'
+import { catalogPath, useCatalogScope } from '../utils/catalog-scope'
 
 export default function ProductEditPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const { productId } = useParams()
+  const { supplierId, shopId } = useCatalogScope()
 
   const { data: product, isLoading } = useQuery(fetchProductByIdQueryOptions(productId!))
   const hadPromotion = (product as { promotionalPrice?: number | null } | undefined)?.promotionalPrice != null
@@ -30,21 +33,21 @@ export default function ProductEditPage() {
       // Promotion goes through its own endpoint. `photos` carries the kept
       // existing URLs so an edit no longer wipes photos not re-uploaded.
       const { hasPromotion, promotionalPrice, promotionExpiresAt, ...body } = data
-      const updated = await updateProductMutationOptions.mutationFn({
+      const updated = await updateProductMutationOptions(supplierId).mutationFn({
         id: productId!,
         ...(body as unknown as UpdateProduct),
       })
       if (hasPromotion && promotionalPrice && promotionExpiresAt)
-        await setProductPromotion(productId!, promotionalPrice, promotionExpiresAt)
+        await setProductPromotion(supplierId, productId!, promotionalPrice, promotionExpiresAt)
       else if (!hasPromotion && hadPromotion)
-        await clearProductPromotion(productId!)
+        await clearProductPromotion(supplierId, productId!)
       return updated
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['products'] })
       queryClient.invalidateQueries({ queryKey: ['products', productId] })
       toast.success(t('catalog.form.updateSuccess'))
-      navigate(`/catalogue/${productId}`)
+      navigate(catalogPath(`/catalogue/${productId}`, shopId))
     },
     onError: () => {
       toast.error(t('catalog.form.updateError'))
@@ -70,8 +73,9 @@ export default function ProductEditPage() {
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      <CatalogScopeBar />
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" onClick={() => navigate('/catalogue')}>
+        <Button variant="ghost" size="sm" onClick={() => navigate(catalogPath('/catalogue', shopId))}>
           <ArrowLeft className="mr-1 h-4 w-4" />
           {t('common.back')}
         </Button>

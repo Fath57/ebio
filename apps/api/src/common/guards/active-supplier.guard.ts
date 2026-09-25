@@ -4,16 +4,15 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { ForbiddenException, Injectable } from '@nestjs/common'
 import { Supplier, ValidationStatus } from '../../modules/suppliers/supplier.entity'
 
-/** Méthodes sans effet de bord : consulter reste permis, écrire non. */
+/** Side-effect-free methods: looking stays allowed, writing does not. */
 const READ_METHODS = new Set(['GET', 'HEAD', 'OPTIONS'])
 
 /**
- * Interdit toute écriture à un fournisseur suspendu.
+ * Refuses every write from a suspended supplier.
  *
- * Sans cette garde, la suspension se limitait à masquer la boutique des
- * recherches — le fournisseur pouvait continuer à modifier son catalogue et à
- * traiter des commandes. Les lectures restent ouvertes pour qu'il puisse
- * constater sa situation et consulter son historique.
+ * Without this guard, suspension only hid the shop from searches — the
+ * supplier could still edit their catalogue and process orders. Reads stay
+ * open so they can see their situation and consult their history.
  */
 @Injectable()
 export class ActiveSupplierGuard implements CanActivate {
@@ -26,8 +25,8 @@ export class ActiveSupplierGuard implements CanActivate {
       return true
     }
 
-    // `AuthGuard` dépose l'utilisateur Better Auth (`id`) ; les contextes JWT
-    // exposent `sub`. On accepte les deux formes.
+    // `AuthGuard` puts the Better Auth user (`id`) here; JWT contexts expose
+    // `sub` instead. Both shapes are accepted.
     const user = (request as Request & { user?: { id?: string, sub?: string } }).user
     const userId = user?.id ?? user?.sub
     if (!userId) {
@@ -40,7 +39,7 @@ export class ActiveSupplierGuard implements CanActivate {
       { fields: ['validationStatus'] },
     )
 
-    // Pas de profil fournisseur : la garde ne le concerne pas.
+    // No supplier profile: this guard does not concern them.
     if (!supplier) {
       return true
     }

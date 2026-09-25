@@ -9,8 +9,10 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate, useParams } from 'react-router'
 import { fetchActiveProductUnitsQueryOptions } from '@/features/admin/product-units/utils/product-units-queries'
+import { CatalogScopeBar } from '../components/catalog-scope-bar'
 import { ProductCompositionSection } from '../components/product-composition-section'
 import { fetchProductByIdQueryOptions } from '../utils/catalog-queries'
+import { catalogPath, useCatalogScope } from '../utils/catalog-scope'
 
 interface Variant { id: string, label: string, pricePerUnit: number, stock: number }
 
@@ -55,6 +57,7 @@ export default function ProductDetailPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const { productId } = useParams()
+  const { shopId, onBehalf } = useCatalogScope()
   const [selectedPhoto, setSelectedPhoto] = useState(0)
   const [selectedVariant, setSelectedVariant] = useState<Variant | null>(null)
 
@@ -81,7 +84,7 @@ export default function ProductDetailPage() {
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <Package className="h-12 w-12 text-muted-foreground" />
         <p className="mt-4 text-lg font-medium">{t('catalog.detail.notFound')}</p>
-        <Button variant="outline" className="mt-4" onClick={() => navigate('/catalogue')}>
+        <Button variant="outline" className="mt-4" onClick={() => navigate(catalogPath('/catalogue', shopId))}>
           {t('common.back')}
         </Button>
       </div>
@@ -100,10 +103,14 @@ export default function ProductDetailPage() {
 
   return (
     <div className="max-w-6xl mx-auto">
+      <div className="mb-6">
+        <CatalogScopeBar />
+      </div>
+
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 mb-6 text-sm text-muted-foreground">
-        <button type="button" onClick={() => navigate('/catalogue')} className="hover:text-foreground transition-colors">
-          {t('catalog.title')}
+        <button type="button" onClick={() => navigate(catalogPath('/catalogue', shopId))} className="hover:text-foreground transition-colors">
+          {onBehalf ? t('catalog.scope.shopTitle') : t('catalog.title')}
         </button>
         <span>/</span>
         <span className="text-foreground font-medium truncate">{product.name}</span>
@@ -329,7 +336,7 @@ export default function ProductDetailPage() {
           <Button
             size="lg"
             className="w-full mt-4"
-            onClick={() => navigate(`/catalogue/${product.id}/modifier`)}
+            onClick={() => navigate(catalogPath(`/catalogue/${product.id}/modifier`, shopId))}
           >
             <Edit className="mr-2 h-4 w-4" />
             {t('catalog.detail.editProduct')}

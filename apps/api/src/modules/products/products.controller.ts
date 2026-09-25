@@ -4,6 +4,7 @@ import { PaginationParams, TypedBody } from '@lonestone/nzoth/server'
 import {
   Controller,
   Delete,
+  ForbiddenException,
   Get,
   NotFoundException,
   Param,
@@ -15,12 +16,13 @@ import {
 } from '@nestjs/common'
 import { z } from 'zod'
 import { CanCreate, CanDelete, CanUpdate } from '../../common/decorators/check-permissions.decorator'
-import { Roles } from '../../common/decorators/roles.decorator'
 import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
+import { AuditService } from '../admin/audit.service'
 import { Public, Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
+import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { SuppliersService } from '../suppliers/suppliers.service'
 import {
@@ -45,6 +47,8 @@ export class ProductsController {
     private readonly stockAlertService: StockAlertService,
     private readonly suppliersService: SuppliersService,
     private readonly promotionsService: PromotionsService,
+    private readonly caslAbilityFactory: CaslAbilityFactory,
+    private readonly audit: AuditService,
   ) {}
 
   @Get('suppliers/:supplierId/products')
@@ -69,7 +73,15 @@ export class ProductsController {
     }
 
     const supplier = await this.suppliersService.findById(resolvedId)
-    if (supplier.validationStatus !== ValidationStatus.VALIDATED && supplierId !== 'me') {
+
+    // Someone from eBio who may work inside a catalogue sees it as the shop
+    // does — otherwise the studio would show a truncated catalogue and let
+    // them edit a product they cannot see.
+    const manages = session?.user?.id
+      ? (await this.caslAbilityFactory.createForUser(session.user as never)).can('manage', 'Product')
+      : false
+
+    if (supplier.validationStatus !== ValidationStatus.VALIDATED && supplierId !== 'me' && !manages) {
       return emptyResult
     }
 
@@ -78,6 +90,7 @@ export class ProductsController {
     // by id too, not just by the `me` alias, keeps the dashboard working
     // whichever form it uses.
     const isOwner = supplierId === 'me'
+      || manages
       || (!!session?.user?.id && supplier.user?.id === session.user.id)
 
     const result = await this.productsService.findBySupplierId(
@@ -126,49 +139,104 @@ export class ProductsController {
     return { ...ProductMapper.toResponse(product, variants, promotions), stats }
   }
 
-  @Post('suppliers/me/products')
-  @Roles('SUPPLIER')
+  /**
+   * Which shop this write is for, and whether the caller may make it.
+   *
+   * `me` is a shop owner working on their own catalogue. Anything else is
+   * someone from eBio working on a shop's behalf, which takes the permission
+   * to manage suppliers — and is written down, because "the shop changed its
+   * price" and "eBio changed the shop's price" are not the same fact, and the
+   * difference matters the day it has to be explained.
+   *
+   * Returns the shop id and whether it was acted on from the outside.
+   */
+  private async resolveShop(
+    session: LoggedInBetterAuthSession,
+    supplierId: string,
+  ): Promise<{ id: string, onBehalf: boolean }> {
+    if (supplierId === 'me') {
+      const own = await this.suppliersService.findByUserId(session.user.id)
+      return { id: own.id, onBehalf: false }
+    }
+
+    // `manage Product` is the back-office right to work inside a shop's
+    // catalogue — deliberately not `manage Supplier`, which is about
+    // validating and suspending shops, a different job.
+    const ability = await this.caslAbilityFactory.createForUser(session.user as never)
+    if (!ability.can('manage', 'Product')) {
+      throw new ForbiddenException('Vous ne pouvez pas modifier le catalogue d\'une autre boutique')
+    }
+    // It must exist: a typo in an id should say so rather than create a
+    // product nobody will ever find.
+    const shop = await this.suppliersService.findById(supplierId)
+    return { id: shop.id, onBehalf: true }
+  }
+
+  /** Written after the fact and never in the way: a trace must not fail a sale. */
+  private noteOnBehalf(
+    session: LoggedInBetterAuthSession,
+    shop: { id: string, onBehalf: boolean },
+    action: string,
+    productId: string,
+  ): void {
+    if (!shop.onBehalf) {
+      return
+    }
+    void this.audit.record({
+      actorUserId: session.user.id,
+      action,
+      targetType: 'product',
+      targetId: productId,
+      payload: { supplierId: shop.id },
+    })
+  }
+
+  @Post('suppliers/:supplierId/products')
   @UseGuards(RolesGuard, CaslGuard)
   @CanCreate('Product')
   async create(
     @Session() session: LoggedInBetterAuthSession,
+    @Param('supplierId') supplierId: string,
     @TypedBody(createProductSchema) body: z.infer<typeof createProductSchema>,
   ) {
-    const supplier = await this.suppliersService.findByUserId(session.user.id)
-    const product = await this.productsService.create(supplier.id, body)
+    const shop = await this.resolveShop(session, supplierId)
+    const product = await this.productsService.create(shop.id, body)
+    this.noteOnBehalf(session, shop, 'PRODUCT_CREATED_ON_BEHALF', product.id)
     const variants = await this.productsService.getVariantsByProductId(product.id)
     return ProductMapper.toResponse(product, variants)
   }
 
-  @Put('suppliers/me/products/:id')
-  @Roles('SUPPLIER')
+  @Put('suppliers/:supplierId/products/:id')
   @UseGuards(RolesGuard, CaslGuard)
   @CanUpdate('Product')
   async update(
     @Session() session: LoggedInBetterAuthSession,
+    @Param('supplierId') supplierId: string,
     @Param('id') id: string,
     @TypedBody(updateProductSchema) body: z.infer<typeof updateProductSchema>,
   ) {
-    const supplier = await this.suppliersService.findByUserId(session.user.id)
-    const product = await this.productsService.update(id, supplier.id, body)
+    const shop = await this.resolveShop(session, supplierId)
+    const product = await this.productsService.update(id, shop.id, body)
+    this.noteOnBehalf(session, shop, 'PRODUCT_UPDATED_ON_BEHALF', product.id)
     const variants = await this.productsService.getVariantsByProductId(product.id)
     return ProductMapper.toResponse(product, variants)
   }
 
-  @Patch('suppliers/me/products/:id/stock')
-  @Roles('SUPPLIER')
+  @Patch('suppliers/:supplierId/products/:id/stock')
   @UseGuards(RolesGuard, CaslGuard)
   @CanUpdate('Product')
   async updateStock(
     @Session() session: LoggedInBetterAuthSession,
+    @Param('supplierId') supplierId: string,
     @Param('id') id: string,
     @TypedBody(stockUpdateSchema) body: z.infer<typeof stockUpdateSchema>,
   ) {
-    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    const shop = await this.resolveShop(session, supplierId)
     const previousProduct = await this.productsService.findById(id)
     const previousStock = previousProduct.stock
 
-    const product = await this.productsService.updateStock(id, supplier.id, body.stock)
+    const product = await this.productsService.updateStock(id, shop.id, body.stock)
+    this.noteOnBehalf(session, shop, 'PRODUCT_STOCK_SET_ON_BEHALF', product.id)
 
     if (previousStock === 0 && body.stock > 0) {
       await this.stockAlertService.notifyOnRestock(id)
@@ -178,55 +246,58 @@ export class ProductsController {
     return ProductMapper.toResponse(product, variants)
   }
 
-  @Delete('suppliers/me/products/:id')
-  @Roles('SUPPLIER')
+  @Delete('suppliers/:supplierId/products/:id')
   @UseGuards(RolesGuard, CaslGuard)
   @CanDelete('Product')
   async softDelete(
     @Session() session: LoggedInBetterAuthSession,
+    @Param('supplierId') supplierId: string,
     @Param('id') id: string,
   ) {
-    const supplier = await this.suppliersService.findByUserId(session.user.id)
-    await this.productsService.softDelete(id, supplier.id)
+    const shop = await this.resolveShop(session, supplierId)
+    await this.productsService.softDelete(id, shop.id)
+    this.noteOnBehalf(session, shop, 'PRODUCT_DELETED_ON_BEHALF', id)
     return { success: true }
   }
 
-  @Post('suppliers/me/products/:id/promotion')
-  @Roles('SUPPLIER')
+  @Post('suppliers/:supplierId/products/:id/promotion')
   @UseGuards(RolesGuard, CaslGuard)
   @CanUpdate('Product')
   async setPromotion(
     @Session() session: LoggedInBetterAuthSession,
+    @Param('supplierId') supplierId: string,
     @Param('id') id: string,
     @TypedBody(promotionSchema) body: z.infer<typeof promotionSchema>,
   ) {
     // Legacy shape kept for older app versions; the row lives in product_promotions.
-    const supplier = await this.suppliersService.findByUserId(session.user.id)
-    const product = await this.productsService.findByIdAndVerifyOwnership(id, supplier.id)
+    const shop = await this.resolveShop(session, supplierId)
+    const product = await this.productsService.findByIdAndVerifyOwnership(id, shop.id)
     await this.promotionsService.create(product, PromotionAuthor.SUPPLIER, {
       type: 'PRICE',
       promoPrice: body.promotionalPrice,
       endsAt: body.expiresAt,
     })
+    this.noteOnBehalf(session, shop, 'PRODUCT_PROMOTION_SET_ON_BEHALF', product.id)
     const variants = await this.productsService.getVariantsByProductId(product.id)
     const promotions = await this.promotionsService.listForProduct(product.id)
     return ProductMapper.toResponse(product, variants, promotions)
   }
 
-  @Delete('suppliers/me/products/:id/promotion')
-  @Roles('SUPPLIER')
+  @Delete('suppliers/:supplierId/products/:id/promotion')
   @UseGuards(RolesGuard, CaslGuard)
   @CanUpdate('Product')
   async clearPromotion(
     @Session() session: LoggedInBetterAuthSession,
+    @Param('supplierId') supplierId: string,
     @Param('id') id: string,
   ) {
-    const supplier = await this.suppliersService.findByUserId(session.user.id)
-    const product = await this.productsService.findByIdAndVerifyOwnership(id, supplier.id)
+    const shop = await this.resolveShop(session, supplierId)
+    const product = await this.productsService.findByIdAndVerifyOwnership(id, shop.id)
     for (const promotion of await this.promotionsService.listForProduct(product.id, true)) {
       if (promotion.type === 'PRICE' && promotion.isActive)
         await this.promotionsService.remove(product.id, promotion.id)
     }
+    this.noteOnBehalf(session, shop, 'PRODUCT_PROMOTION_CLEARED_ON_BEHALF', product.id)
     const variants = await this.productsService.getVariantsByProductId(product.id)
     return ProductMapper.toResponse(product, variants, await this.promotionsService.listForProduct(product.id))
   }

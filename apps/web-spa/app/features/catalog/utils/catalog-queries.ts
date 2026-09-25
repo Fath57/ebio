@@ -69,32 +69,48 @@ export function fetchProductByIdQueryOptions(productId: string) {
   }
 }
 
-export const createProductMutationOptions = {
-  mutationFn: async (data: CreateProduct) => {
-    const response = await productsControllerCreate({
-      body: data,
-    })
-    if (response.error)
-      throw new Error('Failed to create product')
-    return response.data
-  },
+/**
+ * Every write names the shop it is for.
+ *
+ * `me` is a shop owner on their own catalogue; a shop id is someone from eBio
+ * working on that shop's behalf, which the API checks and records.
+ */
+export function createProductMutationOptions(supplierId: string) {
+  return {
+    mutationFn: async (data: CreateProduct) => {
+      const response = await productsControllerCreate({
+        path: { supplierId },
+        body: data,
+      })
+      if (response.error)
+        throw new Error('Failed to create product')
+      return response.data
+    },
+  }
 }
 
-export const updateProductMutationOptions = {
-  mutationFn: async ({ id, ...data }: UpdateProduct & { id: string }) => {
-    const response = await productsControllerUpdate({
-      path: { id },
-      body: data,
-    })
-    if (response.error)
-      throw new Error('Failed to update product')
-    return response.data
-  },
+export function updateProductMutationOptions(supplierId: string) {
+  return {
+    mutationFn: async ({ id, ...data }: UpdateProduct & { id: string }) => {
+      const response = await productsControllerUpdate({
+        path: { supplierId, id },
+        body: data,
+      })
+      if (response.error)
+        throw new Error('Failed to update product')
+      return response.data
+    },
+  }
 }
 
-export async function setProductPromotion(id: string, promotionalPrice: number, expiresAt: string) {
+export async function setProductPromotion(
+  supplierId: string,
+  id: string,
+  promotionalPrice: number,
+  expiresAt: string,
+) {
   const response = await productsControllerSetPromotion({
-    path: { id },
+    path: { supplierId, id },
     body: { promotionalPrice, expiresAt: new Date(expiresAt) },
   })
   if (response.error)
@@ -102,22 +118,24 @@ export async function setProductPromotion(id: string, promotionalPrice: number, 
   return response.data
 }
 
-export async function clearProductPromotion(id: string) {
+export async function clearProductPromotion(supplierId: string, id: string) {
   const response = await productsControllerClearPromotion({
-    path: { id },
+    path: { supplierId, id },
   })
   if (response.error)
     throw new Error('Failed to clear promotion')
   return response.data
 }
 
-export const deleteProductMutationOptions = {
-  mutationFn: async (id: string) => {
-    const response = await productsControllerSoftDelete({
-      path: { id },
-    })
-    if (response.error)
-      throw new Error('Failed to delete product')
-    return response.data
-  },
+export function deleteProductMutationOptions(supplierId: string) {
+  return {
+    mutationFn: async (id: string) => {
+      const response = await productsControllerSoftDelete({
+        path: { supplierId, id },
+      })
+      if (response.error)
+        throw new Error('Failed to delete product')
+      return response.data
+    },
+  }
 }
