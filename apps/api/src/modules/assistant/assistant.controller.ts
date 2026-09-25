@@ -128,6 +128,26 @@ export class AssistantController {
   }
 
   /**
+   * The answer, spoken, in one request.
+   *
+   * Kept for the builds already in people's hands: 1.5.1 asks for its voice
+   * this way, and an endpoint removed under a released app is a feature that
+   * stops working on phones nobody can update on demand. New builds use the
+   * two-step pair below, which can be streamed by the player itself.
+   */
+  @Post('speak')
+  async speak(
+    @TypedBody(assistantSpeakSchema) body: AssistantSpeakInput,
+    @Res() res: Response,
+  ): Promise<void> {
+    const { voiceSpeed } = await this.platformSettings.getAssistantIdentity()
+    const audio = await this.voice.speak(body.texte, voiceSpeed)
+    res.setHeader('Content-Type', 'audio/mpeg')
+    res.setHeader('Cache-Control', 'no-store')
+    await pipeline(Readable.fromWeb(audio as never), res)
+  }
+
+  /**
    * Claims the right to hear an answer.
    *
    * Two steps because the phone plays straight from the network — the sound
