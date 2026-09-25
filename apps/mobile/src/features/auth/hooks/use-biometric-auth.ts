@@ -171,9 +171,23 @@ export function useBiometricAuth() {
 
   useEffect(() => {
     async function check(): Promise<void> {
-      const compatible = await LocalAuthentication.hasHardwareAsync()
-      const enrolled = await LocalAuthentication.isEnrolledAsync()
-      setIsAvailable(compatible && enrolled)
+      try {
+        const compatible = await LocalAuthentication.hasHardwareAsync()
+        const enrolled = await LocalAuthentication.isEnrolledAsync()
+        setIsAvailable(compatible && enrolled)
+        if (!compatible || !enrolled) {
+          // Said out loud, because the switch simply is not drawn and the
+          // absence looks the same whatever the reason: no sensor, no
+          // fingerprint recorded on the phone, or a build without the native
+          // half. Three different things to do about it.
+          console.warn(`[empreinte] masquée — capteur ${compatible ? 'présent' : 'absent'}, empreinte ${enrolled ? 'enrôlée' : 'non enrôlée'}`)
+        }
+      }
+      catch (caught) {
+        // Swallowed, this left the switch hidden with no trace at all.
+        console.warn('[empreinte] impossible d\'interroger le capteur', caught)
+        setIsAvailable(false)
+      }
       await refresh()
     }
     check()
