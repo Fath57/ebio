@@ -158,28 +158,23 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
       <ScrollView
         contentContainerStyle={[
           styles.scrollContent,
-          { paddingTop: insets.top + spacing[12], paddingBottom: insets.bottom + spacing[8] },
+          { paddingTop: insets.top + spacing[6], paddingBottom: insets.bottom + TAB_BAR_CLEARANCE },
         ]}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* Brand */}
+        {/* The screen used to open on three welcomes stacked — a tagline, a
+            title and a subtitle — before showing a single field. One is
+            enough, and the fields arrive above the fold. */}
         <View style={styles.brandContainer}>
           <Image
             source={BRAND_LOGO}
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={[styles.brandSubtitle, { color: semantic.textSecondary }]}>
-            Produits bio, près de chez vous
-          </Text>
         </View>
 
-        {/* Title */}
         <Text style={[styles.title, { color: semantic.textPrimary }]}>Bon retour !</Text>
-        <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
-          Connectez-vous pour continuer
-        </Text>
 
         {/* Error banner */}
         {error && (
@@ -257,27 +252,34 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
                     )}
               </Pressable>
 
-              <Pressable onPress={switchMethod} hitSlop={8} style={styles.methodSwitch}>
-                <Text style={[styles.methodSwitchText, { color: semantic.textPrimaryColor }]}>
-                  Se connecter avec un e-mail
-                </Text>
-              </Pressable>
-
-              {/* Only where a secret is actually held: offering a fingerprint
-                  that cannot work is worse than not offering one. */}
-              {canUseFingerprint && (
-                <Pressable
-                  onPress={handleFingerprintLogin}
-                  disabled={loading}
-                  hitSlop={8}
-                  style={styles.fingerprintButton}
-                  accessibilityRole="button"
-                  accessibilityLabel="Se connecter avec l'empreinte"
-                >
-                  <ScanFace size={20} color={colors.green[600]} strokeWidth={2} />
-                  <Text style={styles.fingerprintText}>Utiliser mon empreinte</Text>
+              {/* Two ways of signing in, side by side rather than stacked:
+                  they are alternatives to each other, and a column of them
+                  pushed everything below off the screen. The fingerprint
+                  shows only where a secret is held — offering one that
+                  cannot work is worse than not offering it. */}
+              <View style={styles.alternativesRow}>
+                <Pressable onPress={switchMethod} hitSlop={10} style={styles.alternative}>
+                  <Mail size={18} color={colors.green[600]} strokeWidth={2} />
+                  <Text style={styles.alternativeText}>E-mail</Text>
                 </Pressable>
-              )}
+
+                {canUseFingerprint && (
+                  <>
+                    <View style={[styles.alternativeSeparator, { backgroundColor: semantic.borderLight }]} />
+                    <Pressable
+                      onPress={handleFingerprintLogin}
+                      disabled={loading}
+                      hitSlop={10}
+                      style={styles.alternative}
+                      accessibilityRole="button"
+                      accessibilityLabel="Se connecter avec l'empreinte"
+                    >
+                      <ScanFace size={18} color={colors.green[600]} strokeWidth={2} />
+                      <Text style={styles.alternativeText}>Empreinte</Text>
+                    </Pressable>
+                  </>
+                )}
+              </View>
             </>
           )}
 
@@ -357,6 +359,21 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
           )}
 
           {/* ─── Google ─── */}
+          {/* Signing in and signing up are the two ways in, so they sit
+              together. Below the alternatives it fell under the fold, behind
+              the floating tab bar, and someone without an account found no
+              way to make one. */}
+          <View style={styles.toggleRow}>
+            <Text style={[styles.toggleLabel, { color: semantic.textSecondary }]}>
+              Pas encore de compte ?
+            </Text>
+            <Pressable onPress={onNavigateToRegister} hitSlop={8}>
+              <Text style={[styles.toggleLink, { color: semantic.textPrimaryColor }]}>
+                Créer un compte
+              </Text>
+            </Pressable>
+          </View>
+
           <View style={styles.dividerRow}>
             <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
             <Text style={[styles.dividerText, { color: semantic.textTertiary }]}>ou</Text>
@@ -371,32 +388,31 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
             onError={setError}
           />
 
-          {/* Toggle to register */}
-          <View style={styles.toggleRow}>
-            <Text style={[styles.toggleLabel, { color: semantic.textSecondary }]}>
-              Pas encore de compte ?
-            </Text>
-            <Pressable onPress={onNavigateToRegister} hitSlop={8}>
-              <Text style={[styles.toggleLink, { color: semantic.textPrimaryColor }]}>
-                Créer un compte
-              </Text>
-            </Pressable>
-          </View>
         </View>
       </ScrollView>
     </KeyboardAwareView>
   )
 }
 
+/**
+ * Room for the floating tab bar.
+ *
+ * It sits over the content rather than beside it, so the last rows of a
+ * scroll are hidden under it. A constant rather than the measured height:
+ * this screen is also shown outside the tabs, where asking for that height
+ * throws.
+ */
+const TAB_BAR_CLEARANCE = 96
+
 const styles = StyleSheet.create({
   flex: { flex: 1 },
   scrollContent: { flexGrow: 1, paddingHorizontal: spacing[6] },
 
   brandContainer: { alignItems: 'center', marginBottom: spacing[12] },
-  logo: { width: 140, height: 90, marginBottom: spacing[2] },
+  logo: { width: 104, height: 66 },
   brandSubtitle: { ...typography.bodyS, marginTop: spacing[1] },
 
-  title: { ...typography.h1, marginBottom: spacing[1] },
+  title: { ...typography.h1, marginBottom: spacing[5] },
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
@@ -442,6 +458,22 @@ const styles = StyleSheet.create({
   submitButtonText: { ...typography.h3, color: colors.neutral[0] },
 
   methodSwitch: { alignSelf: 'center', marginTop: spacing[1] },
+  alternativesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[4],
+    minHeight: 44,
+    marginTop: spacing[1],
+  },
+  alternative: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    paddingVertical: spacing[2],
+  },
+  alternativeText: { ...typography.bodyS, fontFamily: fonts.sansSb, color: colors.green[600] },
+  alternativeSeparator: { width: 1, height: 18 },
   fingerprintButton: {
     flexDirection: 'row',
     alignItems: 'center',
