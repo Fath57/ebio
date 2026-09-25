@@ -87,7 +87,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
     // worker ('web' on one side only) — which moved the fingerprint and made
     // the build refuse its own runtime version. There is no web target.
     platforms: ['android', 'ios'],
-    version: '1.4.0',
+    version: '1.5.0',
     scheme: v.scheme,
     orientation: 'portrait',
     icon: withFallback(v.icon, './assets/icon.png'),
