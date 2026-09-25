@@ -48,10 +48,24 @@ export function UpdatePrompt() {
 function UpdateBanner() {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
-  const { isUpdatePending, isRestarting } = useUpdatesState!()
+  const {
+    isUpdatePending,
+    isRestarting,
+    isDownloading,
+    downloadError,
+  } = useUpdatesState!()
   const [dismissed, setDismissed] = useState(false)
+  /**
+   * A download of ours that did not finish.
+   *
+   * The module reports its own failures through `downloadError`, but the
+   * fetch started below is ours, and its failure was swallowed — so a version
+   * waiting on the server stayed invisible to someone whose network dropped
+   * mid-download.
+   */
+  const [failed, setFailed] = useState(false)
   const slide = useRef(new Animated.Value(-120)).current
-  const visible = isUpdatePending && !dismissed
+  const visible = (isUpdatePending || ((failed || downloadError !== undefined) && !isUpdatePending)) && !dismissed
   // Seeded at mount: the module already checks once at startup, and a check
   // in flight must not be started a second time.
   const lastCheck = useRef(Date.now())
@@ -89,11 +103,14 @@ function UpdateBanner() {
           const result = await Updates!.checkForUpdateAsync()
           if (result.isAvailable) {
             await Updates!.fetchUpdateAsync()
+            setFailed(false)
           }
         }
         catch {
-          // Offline, or the server is unreachable. The next return to the
-          // foreground tries again; nothing is worth saying here.
+          // Offline mid-download, no room left, a bundle that would not
+          // apply. Saying nothing left someone on an old version with no way
+          // to know one was waiting — the band below offers to try again.
+          setFailed(true)
         }
         finally {
           checking.current = false
@@ -105,6 +122,28 @@ function UpdateBanner() {
     }
   }, [])
 
+  /**
+   * Tries the download again, on demand.
+   *
+   * The automatic attempt happens on returning to the app and no more often
+   * than every few minutes; someone who has just reconnected should not have
+   * to wait for that, nor guess that waiting is what is needed.
+   */
+  const handleRetry = useCallback(() => {
+    setFailed(false)
+    void (async () => {
+      try {
+        const result = await Updates!.checkForUpdateAsync()
+        if (result.isAvailable) {
+          await Updates!.fetchUpdateAsync()
+        }
+      }
+      catch {
+        setFailed(true)
+      }
+    })()
+  }, [])
+
   const handleReload = useCallback(() => {
     Updates?.reloadAsync().catch(() => {
       // A failed reload leaves the running version in place; the update is
@@ -113,7 +152,11 @@ function UpdateBanner() {
     })
   }, [])
 
-  if (!isUpdatePending && !isRestarting) {
+  // Two things worth interrupting for: a version ready to apply, and a
+  // version that exists but could not be fetched. Everything else — checking,
+  // downloading — happens quietly.
+  const stuck = (failed || downloadError !== undefined) && !isUpdatePending
+  if (!isUpdatePending && !isRestarting && !stuck) {
     return null
   }
 
@@ -123,32 +166,50 @@ function UpdateBanner() {
       style={[
         styles.band,
         {
-          backgroundColor: semantic.bgPrimaryLight,
+          backgroundColor: stuck ? colors.earth[50] : semantic.bgPrimaryLight,
           paddingTop: insets.top + spacing[2],
           transform: [{ translateY: slide }],
         },
       ]}
     >
-      <Download size={18} color={colors.green[600]} strokeWidth={2.2} />
+      <Download size={18} color={stuck ? colors.earth[600] : colors.green[600]} strokeWidth={2.2} />
       <View style={styles.texts}>
         <Text style={[styles.title, { color: semantic.textPrimary }]}>
-          Mise à jour prête
+          {stuck ? 'Mise à jour disponible' : 'Mise à jour prête'}
         </Text>
         <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
-          Elle s'appliquera au prochain lancement.
+          {stuck
+            ? 'Le téléchargement n\'a pas abouti. Vérifiez votre connexion.'
+            : 'Elle s\'appliquera au prochain lancement.'}
         </Text>
       </View>
-      <Pressable
-        style={styles.action}
-        onPress={handleReload}
-        disabled={isRestarting}
-        accessibilityRole="button"
-        accessibilityLabel="Redémarrer maintenant pour appliquer la mise à jour"
-      >
-        {isRestarting
-          ? <ActivityIndicator size="small" color={colors.neutral[0]} />
-          : <Text style={styles.actionText}>Redémarrer</Text>}
-      </Pressable>
+      {stuck
+        ? (
+            <Pressable
+              style={[styles.action, { backgroundColor: colors.earth[600] }]}
+              onPress={handleRetry}
+              disabled={isDownloading}
+              accessibilityRole="button"
+              accessibilityLabel="Réessayer de télécharger la mise à jour"
+            >
+              {isDownloading
+                ? <ActivityIndicator size="small" color={colors.neutral[0]} />
+                : <Text style={styles.actionText}>Réessayer</Text>}
+            </Pressable>
+          )
+        : (
+            <Pressable
+              style={styles.action}
+              onPress={handleReload}
+              disabled={isRestarting}
+              accessibilityRole="button"
+              accessibilityLabel="Redémarrer maintenant pour appliquer la mise à jour"
+            >
+              {isRestarting
+                ? <ActivityIndicator size="small" color={colors.neutral[0]} />
+                : <Text style={styles.actionText}>Redémarrer</Text>}
+            </Pressable>
+          )}
       <Pressable
         style={styles.dismiss}
         onPress={() => setDismissed(true)}
