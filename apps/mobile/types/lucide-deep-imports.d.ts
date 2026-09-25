@@ -12,8 +12,8 @@
  * loudly, rather than silently rendering nothing.
  */
 declare module 'lucide-react-native/dist/esm/icons/*' {
-  import type { ForwardRefExoticComponent } from 'react'
   import type { LucideProps } from 'lucide-react-native'
+  import type { ForwardRefExoticComponent } from 'react'
 
   const icon: ForwardRefExoticComponent<LucideProps>
   export default icon
