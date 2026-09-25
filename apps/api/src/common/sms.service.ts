@@ -7,13 +7,34 @@ import { config } from '../config/env.config'
  * XML rather than JSON, and `ACT` is the only status that means the message
  * left. Anything else is a refusal dressed as a 200.
  */
-function statusFrom(body: string): { ok: boolean, messageId: string | null } {
+function statusFrom(body: string): { ok: boolean, status: string | null, messageId: string | null } {
   // Whitespace is trimmed afterwards rather than matched: padding the capture
   // with `\s*` on both sides gives the engine two ways to read the same text,
   // which is how a tag turns into a stall.
   const status = /<status>([^<]*)<\/status>/i.exec(body)?.[1]?.trim() ?? null
   const messageId = /<msgid>([^<]*)<\/msgid>/i.exec(body)?.[1]?.trim() ?? null
-  return { ok: status === 'ACT', messageId: messageId || null }
+  return { ok: status === 'ACT', status, messageId: messageId || null }
+}
+
+/**
+ * What a refusal actually means, in words.
+ *
+ * Wirepick answers 200 whatever happens, and its codes are three letters.
+ * Each of these cost a round of guessing to identify, so they are written
+ * down rather than left for the next person to rediscover.
+ */
+function explain(status: string | null, body: string): string {
+  if (status === 'NCR') {
+    // The billing fields come back empty with it, which is the tell.
+    return 'compte Wirepick sans crédit — rien ne partira tant qu\'il n\'est pas rechargé'
+  }
+  if (/SND-Unregistered/i.test(body)) {
+    return 'expéditeur non enregistré pour ce compte Wirepick'
+  }
+  if (/PWD-Invalid/i.test(body)) {
+    return 'identifiants Wirepick refusés'
+  }
+  return status ? `statut ${status}` : 'réponse inattendue'
 }
 
 /** Wirepick wants a bare number; everything else here carries the `+`. */
@@ -71,11 +92,11 @@ export class SmsService {
       throw new Error('SMS send failed')
     }
 
-    const { ok, messageId } = statusFrom(body)
+    const { ok, status, messageId } = statusFrom(body)
     if (!ok) {
       // A 200 with a refusal inside is the failure that costs the most time:
       // without this the code above would call it a success.
-      this.logger.error(`SMS non accepté pour ${phone} : ${body.slice(0, 200)}`)
+      this.logger.error(`SMS non envoyé à ${phone} — ${explain(status, body)}`)
       throw new Error('SMS send failed')
     }
 
