@@ -6075,6 +6075,19 @@ export type WalletAdminControllerWalletsOverviewResponses = {
   200: unknown;
 };
 
+export type AnalyticsControllerFunnelReportData = {
+  body?: never;
+  path?: never;
+  query: {
+    days: string;
+  };
+  url: "/api/admin/analytics/funnel";
+};
+
+export type AnalyticsControllerFunnelReportResponses = {
+  200: unknown;
+};
+
 export type AppVersionControllerForAppData = {
   body?: never;
   path?: never;

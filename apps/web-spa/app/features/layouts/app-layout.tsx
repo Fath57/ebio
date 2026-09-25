@@ -12,6 +12,7 @@ import {
   CheckCircle,
   ClipboardList,
   CreditCard,
+  Filter,
   FolderTree,
   Globe,
   Images,
@@ -148,6 +149,7 @@ export default function AppLayout() {
       items: [
         { to: '/admin/commandes', label: t('nav.orders'), icon: <ClipboardList className="h-4 w-4" />, permission: { action: 'read', subject: 'Order' } },
         { to: '/admin/paniers', label: 'Paniers', icon: <ShoppingBasket className="h-4 w-4" />, permission: { action: 'read', subject: 'Settings' } },
+        { to: '/admin/entonnoir', label: 'Entonnoir', icon: <Filter className="h-4 w-4" />, permission: { action: 'read', subject: 'Order' } },
         { to: '/admin/livraisons', label: t('nav.deliveries'), icon: <Truck className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },

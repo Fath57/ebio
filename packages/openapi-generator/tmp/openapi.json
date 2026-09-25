@@ -6694,6 +6694,29 @@
         }
       }
     },
+    "/api/admin/analytics/funnel": {
+      "get": {
+        "operationId": "AnalyticsController_funnelReport",
+        "tags": [
+          "Analytics"
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/app-version": {
       "get": {
         "operationId": "AppVersionController_forApp",

@@ -188,6 +188,8 @@ import type {
   AiExampleUseCasesControllerUseCase4ChatSessionResponses,
   AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData,
   AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses,
+  AnalyticsControllerFunnelReportData,
+  AnalyticsControllerFunnelReportResponses,
   AnnouncementsControllerCurrentData,
   AnnouncementsControllerCurrentResponses,
   AnnouncementsControllerSeenData,
@@ -2718,6 +2720,17 @@ export const walletAdminControllerWalletsOverview = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/wallets", ...options });
+
+export const analyticsControllerFunnelReport = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AnalyticsControllerFunnelReportData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AnalyticsControllerFunnelReportResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/analytics/funnel", ...options });
 
 export const appVersionControllerForApp = <
   ThrowOnError extends boolean = false,

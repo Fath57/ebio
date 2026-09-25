@@ -5333,6 +5333,14 @@ export const zWalletAdminControllerWalletsOverviewData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAnalyticsControllerFunnelReportData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    days: z.string(),
+  }),
+});
+
 export const zAppVersionControllerForAppData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
