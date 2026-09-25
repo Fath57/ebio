@@ -1,7 +1,7 @@
 import type { PushOptions } from './fcm.service'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
-import { config } from '../../config/env.config'
+import { SmsService } from '../../common/sms.service'
 import { User } from '../auth/auth.entity'
 import { DeviceToken } from './device-token.entity'
 import { FcmService } from './fcm.service'
@@ -107,6 +107,7 @@ export class NotificationsService {
   constructor(
     private readonly em: EntityManager,
     private readonly fcmService: FcmService,
+    private readonly sms: SmsService,
   ) {}
 
   async send(options: SendNotificationOptions): Promise<void> {
@@ -243,11 +244,16 @@ export class NotificationsService {
   }
 
   private async sendSms(user: User, message: string): Promise<void> {
-    if (!config.sms.apiKey || !user.phone) {
-      this.logger.warn('SMS not configured or user has no phone — skipping SMS')
+    if (!user.phone) {
       return
     }
-    // TODO: Implement SMS via Africa's Talking SDK
-    this.logger.debug(`[SMS] → ${user.phone}: ${message}`)
+    try {
+      await this.sms.send(user.phone, message)
+    }
+    catch {
+      // A notification has other channels; failing the whole send because the
+      // operator refused one message would lose the push as well. The SMS
+      // service has already said what went wrong.
+    }
   }
 }

@@ -174,10 +174,18 @@ export const configValidationSchema = z.object({
    */
   PAYOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('fedapay'),
 
-  // SMS (Africa's Talking)
-  AT_API_KEY: z.string().optional(),
-  AT_USERNAME: z.string().optional(),
-  AT_SENDER_ID: z.string().default('eBio'),
+  /**
+   * SMS — Wirepick.
+   *
+   * A GET with the credentials in the query string and an XML answer; the
+   * operator is the one that actually delivers to Benin numbers. Without the
+   * four values the service writes the message to the log instead of sending
+   * it, which is what a developer wants and what a test environment needs.
+   */
+  WIREPICK_URL: z.string().default('https://apisms.wirepick.com/httpsms/send'),
+  WIREPICK_USER: z.string().optional(),
+  WIREPICK_PASSWORD: z.string().optional(),
+  WIREPICK_SENDER_ID: z.string().default('eBio'),
 
   // Firebase Cloud Messaging
   FCM_PROJECT_ID: z.string().optional(),
@@ -326,9 +334,10 @@ export const config = {
     environment: configParsed.data.FEDAPAY_ENVIRONMENT,
   },
   sms: {
-    apiKey: configParsed.data.AT_API_KEY,
-    username: configParsed.data.AT_USERNAME,
-    senderId: configParsed.data.AT_SENDER_ID,
+    url: configParsed.data.WIREPICK_URL,
+    user: configParsed.data.WIREPICK_USER,
+    password: configParsed.data.WIREPICK_PASSWORD,
+    senderId: configParsed.data.WIREPICK_SENDER_ID,
   },
   fcm: {
     projectId: configParsed.data.FCM_PROJECT_ID,

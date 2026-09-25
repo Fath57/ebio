@@ -1,5 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
+import { SmsModule } from '../../common/sms.module'
 import { User } from '../auth/auth.entity'
 import { DeviceToken } from './device-token.entity'
 import { FcmService } from './fcm.service'
@@ -8,7 +9,7 @@ import { NotificationsController } from './notifications.controller'
 import { NotificationsService } from './notifications.service'
 
 @Module({
-  imports: [MikroOrmModule.forFeature([Notification, DeviceToken, User])],
+  imports: [MikroOrmModule.forFeature([Notification, DeviceToken, User]), SmsModule],
   controllers: [NotificationsController],
   providers: [FcmService, NotificationsService],
   exports: [NotificationsService],
