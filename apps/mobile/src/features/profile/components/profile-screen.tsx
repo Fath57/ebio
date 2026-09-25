@@ -190,7 +190,7 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
         </TouchableOpacity>
 
         {/* Theme selector — available even when not logged in */}
-        <View style={[styles.themeSelector, { backgroundColor: semantic.bgCard, marginTop: spacing[8] }]}>
+        <View style={[styles.themeSelector, styles.guestThemeSelector, { backgroundColor: semantic.bgCard }]}>
           {THEME_OPTIONS.map((opt) => {
             const isActive = mode === opt.value
             return (
@@ -726,6 +726,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingVertical: spacing[1],
     gap: spacing[1],
+  },
+  /**
+   * The same selector, alone on the signed-out screen.
+   *
+   * Everywhere else it is a full-width band between other bands, so square
+   * corners read as a section. Centred on an empty page it is a card and
+   * nothing else, and a bare rectangle hugging its own text looked like a
+   * layout that had failed.
+   */
+  guestThemeSelector: {
+    alignSelf: 'stretch',
+    marginTop: spacing[8],
+    borderRadius: radius.lg,
   },
   themeOption: {
     flex: 1,
