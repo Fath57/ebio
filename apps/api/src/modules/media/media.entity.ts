@@ -30,6 +30,8 @@ export enum MediaContext {
   COMMUNITY_MEDIA = 'COMMUNITY_MEDIA',
   CATEGORY_IMAGE = 'CATEGORY_IMAGE',
   BANNER_IMAGE = 'BANNER_IMAGE',
+  /** Poster of an announcement: shown whole, so never cropped to a ratio. */
+  ANNOUNCEMENT_IMAGE = 'ANNOUNCEMENT_IMAGE',
   DELIVERY_PROOF = 'DELIVERY_PROOF',
 }
 

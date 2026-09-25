@@ -2102,6 +2102,7 @@ export const MediaContext = {
   COMMUNITY_MEDIA: "COMMUNITY_MEDIA",
   CATEGORY_IMAGE: "CATEGORY_IMAGE",
   BANNER_IMAGE: "BANNER_IMAGE",
+  ANNOUNCEMENT_IMAGE: "ANNOUNCEMENT_IMAGE",
   DELIVERY_PROOF: "DELIVERY_PROOF",
 } as const;
 
@@ -5144,6 +5145,7 @@ export type MediaControllerInitiateUploadData = {
       | "COMMUNITY_MEDIA"
       | "CATEGORY_IMAGE"
       | "BANNER_IMAGE"
+      | "ANNOUNCEMENT_IMAGE"
       | "DELIVERY_PROOF";
     entityType?: string;
     entityId?: string;

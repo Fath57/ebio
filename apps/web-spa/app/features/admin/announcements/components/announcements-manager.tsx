@@ -1,5 +1,7 @@
+import type { AnnouncementFormData } from '../forms/announcement-form'
 import {
   adminAnnouncementsControllerApprove,
+  adminAnnouncementsControllerCreate,
   adminAnnouncementsControllerGetInterval,
   adminAnnouncementsControllerList,
   adminAnnouncementsControllerListRequests,
@@ -15,12 +17,16 @@ import { Label } from '@boilerstone/ui/components/primitives/label'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Switch } from '@boilerstone/ui/components/primitives/switch'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Plus } from 'lucide-react'
 import { useState } from 'react'
+import { AnnouncementForm } from '../forms/announcement-form'
 
 interface AnnouncementRequestRow {
   id: string
-  title: string
+  /** Null when the poster carries the words itself. */
+  title: string | null
   subtitle: string | null
+  imageUrl: string | null
   durationDays: number
   price: number
   status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
@@ -31,8 +37,9 @@ interface AnnouncementRequestRow {
 
 interface AnnouncementRow {
   id: string
-  title: string
+  title: string | null
   subtitle: string | null
+  imageUrl: string | null
   origin: 'PLATFORM' | 'SUPPLIER'
   startsAt: string
   endsAt: string
@@ -53,6 +60,27 @@ function day(value: string): string {
 }
 
 /**
+ * Something to read in a list, and in a button's label.
+ *
+ * A poster-only announcement has no title, and an empty row cannot be talked
+ * about — least of all by a screen reader announcing "Éteindre".
+ */
+function label(row: { title: string | null }): string {
+  return row.title ?? 'Visuel sans titre'
+}
+
+/** `datetime-local` (local time) → ISO, which is what the API stores. */
+function toIso(value: string): string {
+  return new Date(value).toISOString()
+}
+
+/** Empty field means "not filled", which the API reads as null, not as "". */
+function orNull(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed.length > 0 ? trimmed : null
+}
+
+/**
  * The announcements shown when the buyer app opens.
  *
  * Two things in one place, because they are decided together: the shops' paid
@@ -63,6 +91,7 @@ export function AnnouncementsManager() {
   const queryClient = useQueryClient()
   const [rejecting, setRejecting] = useState<AnnouncementRequestRow | null>(null)
   const [reason, setReason] = useState('')
+  const [creating, setCreating] = useState(false)
 
   const { data: requests = [], isLoading: loadingRequests } = useQuery({
     queryKey: REQUESTS_KEY,
@@ -133,6 +162,33 @@ export function AnnouncementsManager() {
     onSuccess: refresh,
   })
 
+  const { mutate: create, isPending: isCreating } = useMutation({
+    mutationFn: async (data: AnnouncementFormData) => {
+      const response = await adminAnnouncementsControllerCreate({
+        body: {
+          title: orNull(data.title),
+          subtitle: orNull(data.subtitle),
+          imageUrl: orNull(data.imageUrl),
+          targetType: data.targetType,
+          // A link lives in the same column as an id: the target type says
+          // how to read it.
+          targetId: data.targetType === 'URL' ? orNull(data.targetUrl) : orNull(data.targetId),
+          startsAt: toIso(data.startsAt),
+          endsAt: toIso(data.endsAt),
+          priority: data.priority,
+          active: data.active,
+        } as never,
+      })
+      if (response.error)
+        throw new Error('Failed to create announcement')
+      return response.data
+    },
+    onSuccess: () => {
+      setCreating(false)
+      refresh()
+    },
+  })
+
   const { mutate: saveInterval, isPending: isSavingInterval } = useMutation({
     mutationFn: async (hours: number) => {
       const response = await adminAnnouncementsControllerSetInterval({ body: { intervalleHeures: hours } as never })
@@ -147,6 +203,16 @@ export function AnnouncementsManager() {
 
   if (loadingRequests || loadingLive) {
     return <Skeleton className="h-64 w-full" />
+  }
+
+  if (creating) {
+    return (
+      <AnnouncementForm
+        isPending={isCreating}
+        onCancel={() => setCreating(false)}
+        onSubmit={data => create(data)}
+      />
+    )
   }
 
   return (
@@ -165,8 +231,15 @@ export function AnnouncementsManager() {
               <ul className="divide-y rounded-md border">
                 {requests.map(request => (
                   <li key={request.id} className="flex items-center gap-3 p-3">
+                    {request.imageUrl && (
+                      <img
+                        src={request.imageUrl}
+                        alt=""
+                        className="bg-muted h-10 w-10 shrink-0 rounded object-cover"
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium">{request.title}</p>
+                      <p className="font-medium">{label(request)}</p>
                       <p className="text-muted-foreground text-sm">
                         {request.supplier?.shopName ?? 'Boutique inconnue'}
                         {' · '}
@@ -191,11 +264,17 @@ export function AnnouncementsManager() {
       </section>
 
       <section className="space-y-3">
-        <div>
-          <h3 className="font-medium">Annonces</h3>
-          <p className="text-muted-foreground text-sm">
-            Une seule s'affiche par ouverture : la plus prioritaire que l'acheteur n'a pas vue récemment.
-          </p>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h3 className="font-medium">Annonces</h3>
+            <p className="text-muted-foreground text-sm">
+              Une seule s'affiche par ouverture : la plus prioritaire que l'acheteur n'a pas vue récemment.
+            </p>
+          </div>
+          <Button size="sm" onClick={() => setCreating(true)}>
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle annonce
+          </Button>
         </div>
 
         {live.length === 0
@@ -204,9 +283,16 @@ export function AnnouncementsManager() {
               <ul className="divide-y rounded-md border">
                 {live.map(announcement => (
                   <li key={announcement.id} className="flex items-center gap-3 p-3">
+                    {announcement.imageUrl && (
+                      <img
+                        src={announcement.imageUrl}
+                        alt=""
+                        className="bg-muted h-10 w-10 shrink-0 rounded object-cover"
+                      />
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="font-medium">{announcement.title}</span>
+                        <span className="font-medium">{label(announcement)}</span>
                         <Badge variant="outline">
                           {announcement.origin === 'PLATFORM' ? 'eBio' : announcement.supplier?.shopName ?? 'Boutique'}
                         </Badge>
@@ -217,7 +303,7 @@ export function AnnouncementsManager() {
                     </div>
                     <Switch
                       checked={announcement.active}
-                      aria-label={announcement.active ? `Éteindre ${announcement.title}` : `Allumer ${announcement.title}`}
+                      aria-label={announcement.active ? `Éteindre ${label(announcement)}` : `Allumer ${label(announcement)}`}
                       onCheckedChange={active => setActive({ id: announcement.id, active })}
                     />
                   </li>
@@ -255,7 +341,9 @@ export function AnnouncementsManager() {
         <DialogContent>
           <div className="space-y-4">
             <div>
-              <h3 className="text-lg font-semibold">{`Refuser « ${rejecting?.title ?? ''} » ?`}</h3>
+              <h3 className="text-lg font-semibold">
+                {`Refuser « ${rejecting ? label(rejecting) : ''} » ?`}
+              </h3>
               <p className="text-muted-foreground text-sm">
                 {`${money(rejecting?.price ?? 0)} seront recrédités au portefeuille de la boutique. La raison lui est transmise.`}
               </p>

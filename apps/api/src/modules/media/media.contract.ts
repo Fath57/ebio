@@ -20,6 +20,7 @@ export const mediaContextEnum = z.enum([
   'COMMUNITY_MEDIA',
   'CATEGORY_IMAGE',
   'BANNER_IMAGE',
+  'ANNOUNCEMENT_IMAGE',
   'DELIVERY_PROOF',
 ]).meta({
   title: 'MediaContext',

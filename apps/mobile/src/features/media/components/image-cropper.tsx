@@ -26,7 +26,7 @@ export interface CropRequest {
   width?: number
   height?: number
   /** Ratio imposé. Sans lui, l'utilisateur choisit parmi les formats proposés. */
-  aspect?: [number, number]
+  aspect?: readonly [number, number]
 }
 
 export interface CropResult {

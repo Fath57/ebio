@@ -20,6 +20,7 @@ export type MediaContext
     | 'COMMUNITY_MEDIA'
     | 'DELIVERY_PROOF'
     | 'BANNER_IMAGE'
+    | 'ANNOUNCEMENT_IMAGE'
 
 /**
  * Format proposé par défaut selon l'usage de l'image. Une pièce d'identité ou
@@ -47,7 +48,7 @@ interface UseMediaUploadOptions {
   maxFiles?: number
   mediaTypes?: ImagePicker.MediaType[]
   /** Crop ratio handed to the native editor (e.g. `[2, 1]` for a banner). */
-  aspect?: [number, number]
+  aspect?: readonly [number, number]
 }
 
 export function useMediaUpload(options: UseMediaUploadOptions) {

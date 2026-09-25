@@ -35,6 +35,27 @@ const IMAGE_WEBP_QUALITY = 80
 const THUMB_SIZE = 320
 const THUMB_WEBP_QUALITY = 70
 
+/**
+ * Where an object is filed in the bucket.
+ *
+ * The prefix is not decoration: the bucket grants public read on a named list
+ * of them, so an image filed outside that list is stored and then unreadable —
+ * which looks like a broken upload and is not one.
+ *
+ * The context is the prefix by default. An override belongs here when a new
+ * context must be visible without waiting for the bucket policy to grow.
+ */
+const SHARED_PREFIX: Partial<Record<MediaContext, string>> = {
+  // A poster is as public as a banner and lives with them, so it is readable
+  // the day the feature ships. Give it `announcement_image/` once that prefix
+  // is added to the bucket's PublicReadImages statement.
+  [MediaContext.ANNOUNCEMENT_IMAGE]: 'banner_image',
+}
+
+function storagePrefix(context: MediaContext): string {
+  return SHARED_PREFIX[context] ?? context.toLowerCase()
+}
+
 @Injectable()
 export class MediaService {
   private readonly s3 = createS3Client()
@@ -58,7 +79,7 @@ export class MediaService {
     }
 
     const ext = input.fileName.split('.').pop()?.toLowerCase() ?? 'bin'
-    const s3Key = `${input.context.toLowerCase()}/${randomUUID()}.${ext}`
+    const s3Key = `${storagePrefix(input.context as MediaContext)}/${randomUUID()}.${ext}`
 
     // Create media record in DB
     const media = this.em.create(Media, {

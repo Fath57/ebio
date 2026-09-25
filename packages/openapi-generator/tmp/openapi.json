@@ -5015,6 +5015,7 @@
                       "COMMUNITY_MEDIA",
                       "CATEGORY_IMAGE",
                       "BANNER_IMAGE",
+                      "ANNOUNCEMENT_IMAGE",
                       "DELIVERY_PROOF"
                     ],
                     "title": "MediaContext",
@@ -21556,6 +21557,7 @@
           "COMMUNITY_MEDIA",
           "CATEGORY_IMAGE",
           "BANNER_IMAGE",
+          "ANNOUNCEMENT_IMAGE",
           "DELIVERY_PROOF"
         ],
         "title": "MediaContext",

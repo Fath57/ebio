@@ -1852,6 +1852,7 @@ export const zMediaContext = z.enum([
   "COMMUNITY_MEDIA",
   "CATEGORY_IMAGE",
   "BANNER_IMAGE",
+  "ANNOUNCEMENT_IMAGE",
   "DELIVERY_PROOF",
 ]);
 
@@ -4719,6 +4720,7 @@ export const zMediaControllerInitiateUploadData = z.object({
       "COMMUNITY_MEDIA",
       "CATEGORY_IMAGE",
       "BANNER_IMAGE",
+      "ANNOUNCEMENT_IMAGE",
       "DELIVERY_PROOF",
     ]),
     entityType: z.optional(z.string()),

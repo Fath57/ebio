@@ -92,6 +92,9 @@ export function computeMissingTopup(price: number, balance: number): number {
  */
 const KINDS = {
   banner: {
+    /** The carousel draws banners 2:1, so the shop frames it itself. */
+    imageContext: 'BANNER_IMAGE',
+    imageAspect: [2, 1],
     screenTitle: 'Demander une bannière',
     lead: 'Votre visuel en haut de l\'accueil, pendant la durée choisie.',
     offersFrom: 'settings',
@@ -100,6 +103,10 @@ const KINDS = {
     approvalNote: 'eBio valide votre bannière sous 24 h.',
   },
   announcement: {
+    // The modal fits the poster's own shape; cropping it here would cut the
+    // artwork a shop just paid for, often through its own words.
+    imageContext: 'ANNOUNCEMENT_IMAGE',
+    imageAspect: undefined,
     screenTitle: 'Demander une annonce',
     lead: 'Votre message s\'affiche à l\'ouverture de l\'application, une fois par jour et par acheteur.',
     offersFrom: 'announcements',
@@ -128,7 +135,10 @@ interface BannerRequestFormProps {
 export function BannerRequestForm({ onGoBack, onCreated, kind = 'banner' }: BannerRequestFormProps) {
   const config = KINDS[kind]
   const { semantic } = useTheme()
-  const { uploading, pickAndUpload } = useMediaUpload({ context: 'BANNER_IMAGE', aspect: [2, 1] })
+  const { uploading, pickAndUpload } = useMediaUpload({
+    context: config.imageContext,
+    aspect: config.imageAspect,
+  })
 
   const [offers, setOffers] = useState<BannerOffer[]>([])
   const [balance, setBalance] = useState<number | null>(null)

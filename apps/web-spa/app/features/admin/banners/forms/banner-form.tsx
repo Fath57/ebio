@@ -1,5 +1,5 @@
 import type { Resolver } from 'react-hook-form'
-import type { PickerOption } from '../components/entity-picker'
+import type { PickerOption } from '../../common/components/entity-picker'
 import type { BannerTargetType } from '../utils/banners-queries'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
@@ -19,10 +19,10 @@ import * as React from 'react'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
+import { EntityPicker } from '../../common/components/entity-picker'
+import { searchProducts, searchSuppliers } from '../../common/utils/target-search'
 import { BannerImageField } from '../components/banner-image-field'
 import { BannerPreview } from '../components/banner-preview'
-import { EntityPicker } from '../components/entity-picker'
-import { searchProducts, searchSuppliers } from '../utils/target-search'
 
 const bannerSchema = z.object({
   title: z.string().min(1),
