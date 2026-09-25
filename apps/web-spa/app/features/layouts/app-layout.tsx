@@ -161,6 +161,7 @@ export default function AppLayout() {
     {
       group: { label: t('nav.groups.catalog'), icon: <Package className="h-4 w-4" /> },
       items: [
+        { to: '/admin/produits', label: t('nav.allProducts'), icon: <Package className="h-4 w-4" />, permission: { action: 'read', subject: 'Product' } },
         { to: '/admin/categories', label: t('nav.categories'), icon: <FolderTree className="h-4 w-4" />, permission: { action: 'manage', subject: 'Category' } },
         { to: '/admin/unites', label: t('nav.productUnits'), icon: <Ruler className="h-4 w-4" />, permission: { action: 'manage', subject: 'ProductUnit' } },
         { to: '/admin/bannieres', label: t('nav.banners'), icon: <Images className="h-4 w-4" />, permission: { action: 'manage', subject: 'Banner' } },

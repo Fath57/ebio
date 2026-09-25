@@ -89,6 +89,9 @@ export default [
       route('admin/avis-signales', 'features/admin/review-moderation/pages/review-moderation-page.tsx'),
       route('admin/support', 'features/admin/support/pages/support-inbox-page.tsx'),
 
+      // Admin — Catalogue de la plateforme
+      route('admin/produits', 'features/admin/products/pages/admin-products-page.tsx'),
+
       // Admin — Categories
       route('admin/categories', 'features/admin/categories/pages/categories-page.tsx'),
       route('admin/categories/nouveau', 'features/admin/categories/pages/category-create-page.tsx'),

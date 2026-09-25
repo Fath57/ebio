@@ -1045,6 +1045,161 @@ export class AdminService {
     }
   }
 
+  /**
+   * The whole platform's catalogue, filtered and paginated.
+   *
+   * Counted and read in two queries rather than one windowed count: the count
+   * has no need of the joins that only serve the display, and a filtered list
+   * whose total lies is worse than no total at all.
+   */
+  async getCatalogue(params: {
+    q?: string
+    supplierId?: string
+    categoryId?: string
+    status?: string
+    stock?: string
+    promo?: boolean
+    sortBy?: string
+    sortDir?: string
+    page: number
+    limit: number
+  }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
+    const conditions: string[] = ['TRUE']
+    const values: unknown[] = []
+
+    if (params.q) {
+      conditions.push('(p.name ILIKE ? OR s.shop_name ILIKE ?)')
+      values.push(`%${params.q}%`, `%${params.q}%`)
+    }
+    if (params.supplierId) {
+      conditions.push('p.supplier_id = ?')
+      values.push(params.supplierId)
+    }
+    if (params.categoryId) {
+      conditions.push('p.category_id = ?')
+      values.push(params.categoryId)
+    }
+    if (params.status && ['ACTIVE', 'OUT_OF_STOCK', 'HIDDEN'].includes(params.status)) {
+      conditions.push('p.status = ?')
+      values.push(params.status)
+    }
+
+    // "Low" means low for this product: a threshold the shop sets itself, not
+    // a number chosen here for everyone.
+    if (params.stock === 'out') {
+      conditions.push('p.stock = 0')
+    }
+    else if (params.stock === 'low') {
+      conditions.push('p.stock > 0 AND p.stock <= p.stock_alert_threshold')
+    }
+    else if (params.stock === 'in') {
+      conditions.push('p.stock > p.stock_alert_threshold')
+    }
+
+    // The column form of a discount, mirroring `livePromotionalPrice` in
+    // `products.mapper.ts`: a price that has not started or has run out is not
+    // a price. Read straight from the column, the list would strike through
+    // prices whose promotion ended weeks ago.
+    const LEGACY_DISCOUNT = `(CASE
+      WHEN p.promotional_price IS NOT NULL
+       AND p.promotional_price < p.price_per_unit
+       AND (p.promotion_starts_at IS NULL OR p.promotion_starts_at <= NOW())
+       AND (p.promotion_expires_at IS NULL OR p.promotion_expires_at > NOW())
+      THEN p.promotional_price
+    END)`
+
+    // A promotion counts as live only while it runs — an expired row would
+    // otherwise keep the product in the list forever.
+    //
+    // Two mechanisms coexist: the `product_promotions` rows, and the older
+    // `promotional_price` column still written by the legacy endpoint. Both
+    // are checked, because both are what the price column shows struck
+    // through — a filter that ignored one would contradict the list under it.
+    const LIVE_PROMOTION = `(
+      EXISTS (
+        SELECT 1 FROM product_promotions pp
+        WHERE pp.product_id = p.id
+          AND pp.is_active
+          AND pp.starts_at <= NOW()
+          AND (pp.ends_at IS NULL OR pp.ends_at > NOW())
+      )
+      OR ${LEGACY_DISCOUNT} IS NOT NULL
+    )`
+    if (params.promo) {
+      conditions.push(LIVE_PROMOTION)
+    }
+
+    const where = conditions.join(' AND ')
+    const connection = this.em.getConnection()
+
+    const [counted] = await connection.execute<Array<{ total: string }>>(
+      `SELECT COUNT(*)::text AS total
+       FROM products p
+       JOIN suppliers s ON s.id = p.supplier_id
+       WHERE ${where}`,
+      [...values],
+    )
+    const total = Number(counted?.total ?? 0)
+
+    // Whitelisted: the sort column reaches the SQL text itself, so it can never
+    // come from the query string as written.
+    const SORTS: Record<string, string> = {
+      name: 'p.name',
+      price: 'p.price_per_unit',
+      stock: 'p.stock',
+      shop: 's.shop_name',
+      created: 'p."createdAt"',
+    }
+    const sortColumn = SORTS[params.sortBy ?? ''] ?? 'p."createdAt"'
+    const sortDirection = params.sortDir === 'asc' ? 'ASC' : 'DESC'
+
+    const limit = Math.min(Math.max(params.limit, 1), 100)
+    const page = Math.max(params.page, 1)
+
+    const rows = await connection.execute<Array<Record<string, unknown>>>(
+      // The photo travels with the name: a list of product names alone is not
+      // a list anyone reads. `photos` is jsonb, so `->>0`, never a subscript.
+      `SELECT p.id, p.name, p.photos->>0 AS photo, p.price_per_unit,
+              ${LEGACY_DISCOUNT} AS promotional_price,
+              p.unit, p.stock, p.stock_alert_threshold,
+              p.status, p."createdAt",
+              c.id AS category_id, c.name AS category_name,
+              s.id AS supplier_id, s.shop_name, s.validation_status,
+              ${LIVE_PROMOTION} AS has_promotion
+       FROM products p
+       JOIN suppliers s ON s.id = p.supplier_id
+       JOIN categories c ON c.id = p.category_id
+       WHERE ${where}
+       ORDER BY ${sortColumn} ${sortDirection}
+       LIMIT ? OFFSET ?`,
+      [...values, limit, (page - 1) * limit],
+    )
+
+    return {
+      items: rows.map(r => ({
+        id: r.id as string,
+        name: r.name as string,
+        photo: (r.photo as string) ?? null,
+        pricePerUnit: Number(r.price_per_unit ?? 0),
+        promotionalPrice: r.promotional_price != null ? Number(r.promotional_price) : null,
+        hasPromotion: Boolean(r.has_promotion),
+        unit: (r.unit as string) ?? null,
+        stock: Number(r.stock ?? 0),
+        stockAlertThreshold: Number(r.stock_alert_threshold ?? 0),
+        status: r.status as string,
+        categoryId: r.category_id as string,
+        categoryName: r.category_name as string,
+        supplierId: r.supplier_id as string,
+        supplierName: r.shop_name as string,
+        supplierValidationStatus: r.validation_status as string,
+        createdAt: r.createdAt as Date,
+      })),
+      total,
+      page,
+      limit,
+    }
+  }
+
   async getSupplierById(supplierId: string): Promise<unknown> {
     const rows = await this.em.getConnection().execute(
       `SELECT s.id, s.shop_name, s.type, s.mode, s.validation_status, s.timezone,

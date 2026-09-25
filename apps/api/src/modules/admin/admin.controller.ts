@@ -321,6 +321,42 @@ export class AdminController {
     return this.adminService.getProducts({ q, supplierId, limit: Number(limit) })
   }
 
+  /**
+   * Every product of every shop, browsable.
+   *
+   * Separate from `products` above, which caps at fifty and only ever shows
+   * what is on sale: a picker and a catalogue are not the same screen, and
+   * making one serve both would quietly hide withdrawn products from whoever
+   * came looking for exactly those.
+   */
+  @CanRead('Product')
+  @Get('catalogue')
+  async getCatalogue(
+    @Query('q') q?: string,
+    @Query('supplierId') supplierId?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('status') status?: string,
+    @Query('stock') stock?: string,
+    @Query('promo') promo?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortDir') sortDir?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '25',
+  ) {
+    return this.adminService.getCatalogue({
+      q,
+      supplierId,
+      categoryId,
+      status,
+      stock,
+      promo: promo === 'true',
+      sortBy,
+      sortDir,
+      page: Number(page),
+      limit: Number(limit),
+    })
+  }
+
   @CanRead('User')
   @Get('users')
   async getUsers(
