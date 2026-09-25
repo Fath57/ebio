@@ -113,6 +113,10 @@ export class SmsService {
       throw new Error('SMS send failed')
     }
 
-    this.logger.debug(`[SMS] → ${phone}: envoyé${messageId ? ` (${messageId})` : ''}`)
+    // Said at a level production prints, and with the identifier Wirepick
+    // gives back. `ACT` means they accepted and billed the message, not that a
+    // handset received it — when one never arrives, this identifier is the only
+    // thing that can be put in front of them.
+    this.logger.log(`[SMS] → ${phone} : accepté par Wirepick${messageId ? ` (msgid ${messageId})` : ' (sans identifiant)'}`)
   }
 }
