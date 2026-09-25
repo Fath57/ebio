@@ -1,8 +1,10 @@
 import type { DeliveryPricingConfig } from '../../common/delivery-fee'
+import type { AppVersions } from '../app-version/app-version.contract'
 import type { BannerOffersInput } from './contracts/delivery-pricing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { DEFAULT_DELIVERY_PRICING } from '../../common/delivery-fee'
+import { appVersionsSchema } from '../app-version/app-version.contract'
 import { bannerOffersSchema, deliveryPricingConfigSchema } from './contracts/delivery-pricing.contract'
 import { PlatformSetting } from './platform-setting.entity'
 
@@ -18,6 +20,7 @@ export const CART_REMINDER_COUNT_KEY = 'cart_reminder_count'
 export const PRODUCT_REVIEW_MAX_INVITES_KEY = 'product_review_max_invites'
 export const ANNOUNCEMENT_INTERVAL_HOURS_KEY = 'announcement_interval_hours'
 export const ANNOUNCEMENT_OFFERS_KEY = 'announcement_offers'
+export const APP_VERSIONS_KEY = 'app_versions'
 
 export const DEFAULT_BANNER_OFFERS: BannerOffersInput = {
   offers: [
@@ -72,6 +75,19 @@ export const DEFAULT_PRODUCT_REVIEW_MAX_INVITES = 3
  * important announcement sometimes deserves to insist.
  */
 export const DEFAULT_ANNOUNCEMENT_INTERVAL_HOURS = 24
+
+/**
+ * What the apps are told before anyone sets anything.
+ *
+ * The minimum sits at the first published version: nobody is ever blocked by
+ * a default. Raising it is a deliberate act, for the release that must not be
+ * skipped.
+ */
+export const DEFAULT_APP_VERSIONS = {
+  client: { minimum: '1.0.0', latest: '1.4.0' },
+  supplier: { minimum: '1.0.0', latest: '1.4.0' },
+  courier: { minimum: '1.0.0', latest: '1.4.0' },
+} as const
 
 /** Durations and prices offered to shops for an announcement. */
 export const DEFAULT_ANNOUNCEMENT_OFFERS: BannerOffersInput = {
@@ -235,6 +251,25 @@ export class PlatformSettingsService {
   async setAnnouncementIntervalHours(hours: number): Promise<void> {
     this.assertInteger(hours, 1, 720, 'L\'intervalle doit être un nombre d\'heures entre 1 et 720')
     await this.set(ANNOUNCEMENT_INTERVAL_HOURS_KEY, String(hours))
+  }
+
+  /** Minimum and latest version of each app. */
+  async getAppVersions(): Promise<AppVersions> {
+    const raw = await this.get(APP_VERSIONS_KEY)
+    if (raw === null) {
+      return DEFAULT_APP_VERSIONS
+    }
+    try {
+      const parsed = appVersionsSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_APP_VERSIONS
+    }
+    catch {
+      return DEFAULT_APP_VERSIONS
+    }
+  }
+
+  async setAppVersions(versions: AppVersions): Promise<void> {
+    await this.set(APP_VERSIONS_KEY, JSON.stringify(versions))
   }
 
   async getAnnouncementOffers(): Promise<BannerOffersInput> {

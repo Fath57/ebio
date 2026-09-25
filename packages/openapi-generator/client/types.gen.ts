@@ -137,10 +137,28 @@ export type CartReminderSettings = {
  */
 export type UpdateUser = {
   name?: string;
-  email?: string;
   phone?: string;
   image?: string;
   deviceId?: string;
+};
+
+/**
+ * EmailChangeRequest
+ *
+ * Demande un code de confirmation à la nouvelle adresse
+ */
+export type EmailChangeRequest = {
+  email: string;
+};
+
+/**
+ * EmailChangeConfirm
+ *
+ * Confirme la nouvelle adresse avec le code reçu
+ */
+export type EmailChangeConfirm = {
+  email: string;
+  code: string;
 };
 
 /**
@@ -1022,6 +1040,17 @@ export type PlatformAnnouncementInput = {
  */
 export type AnnouncementInterval = {
   intervalleHeures: number;
+};
+
+/**
+ * AppVersions
+ *
+ * Versions minimale et courante de chaque application
+ */
+export type AppVersions = {
+  client: AppVersionRule;
+  supplier: AppVersionRule;
+  courier: AppVersionRule;
 };
 
 /**
@@ -2528,6 +2557,14 @@ export const DisputeResolution = {
  */
 export type DisputeResolution =
   (typeof DisputeResolution)[keyof typeof DisputeResolution];
+
+/**
+ * AppVersionRule
+ */
+export type AppVersionRule = {
+  minimum: string;
+  latest: string;
+};
 
 /**
  * SearchProductsQuery
@@ -5191,7 +5228,6 @@ export type UsersControllerUpdateMeData = {
    */
   body: {
     name?: string;
-    email?: string;
     phone?: string;
     image?: string;
     deviceId?: string;
@@ -5203,6 +5239,43 @@ export type UsersControllerUpdateMeData = {
 
 export type UsersControllerUpdateMeResponses = {
   200: unknown;
+};
+
+export type UsersControllerRequestEmailChangeData = {
+  /**
+   * EmailChangeRequest
+   *
+   * Demande un code de confirmation à la nouvelle adresse
+   */
+  body: {
+    email: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/users/me/email/request";
+};
+
+export type UsersControllerRequestEmailChangeResponses = {
+  201: unknown;
+};
+
+export type UsersControllerConfirmEmailChangeData = {
+  /**
+   * EmailChangeConfirm
+   *
+   * Confirme la nouvelle adresse avec le code reçu
+   */
+  body: {
+    email: string;
+    code: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/users/me/email/confirm";
+};
+
+export type UsersControllerConfirmEmailChangeResponses = {
+  201: unknown;
 };
 
 export type UsersControllerAcceptTermsData = {
@@ -5939,6 +6012,68 @@ export type WalletAdminControllerWalletsOverviewData = {
 };
 
 export type WalletAdminControllerWalletsOverviewResponses = {
+  200: unknown;
+};
+
+export type AppVersionControllerForAppData = {
+  body?: never;
+  path?: never;
+  query: {
+    app: string;
+  };
+  url: "/api/app-version";
+};
+
+export type AppVersionControllerForAppResponses = {
+  200: unknown;
+};
+
+export type AdminAppVersionControllerReadData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/app-version";
+};
+
+export type AdminAppVersionControllerReadResponses = {
+  200: unknown;
+};
+
+export type AdminAppVersionControllerWriteData = {
+  /**
+   * AppVersions
+   *
+   * Versions minimale et courante de chaque application
+   */
+  body: {
+    /**
+     * AppVersionRule
+     */
+    client: {
+      minimum: string;
+      latest: string;
+    };
+    /**
+     * AppVersionRule
+     */
+    supplier: {
+      minimum: string;
+      latest: string;
+    };
+    /**
+     * AppVersionRule
+     */
+    courier: {
+      minimum: string;
+      latest: string;
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/app-version";
+};
+
+export type AdminAppVersionControllerWriteResponses = {
   200: unknown;
 };
 

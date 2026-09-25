@@ -23,6 +23,7 @@ import { AccountBlockedScreen } from './src/features/auth/components/account-blo
 import { CartProvider } from './src/features/cart/cart-context'
 import { AnimatedSplash } from './src/features/common/components/animated-splash'
 import { AppAlertHost } from './src/features/common/components/app-alert'
+import { StoreUpdateGate } from './src/features/common/components/store-update-gate'
 import { UpdatePrompt } from './src/features/common/components/update-prompt'
 import { LocationProvider } from './src/features/common/location-context'
 import { ImageCropperHost } from './src/features/media/components/image-cropper'
@@ -106,6 +107,8 @@ export default function App(): React.JSX.Element | null {
             <AppAlertHost />
             <ImageCropperHost />
             <UpdatePrompt />
+            {/* The store's version, which no over-the-air update can bring. */}
+            <StoreUpdateGate />
             <StatusBar style="auto" />
             {showOnboarding === true && (
               <OnboardingScreen

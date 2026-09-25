@@ -20,6 +20,10 @@ import type {
   AdminAnnouncementsControllerSetActiveResponses,
   AdminAnnouncementsControllerSetIntervalData,
   AdminAnnouncementsControllerSetIntervalResponses,
+  AdminAppVersionControllerReadData,
+  AdminAppVersionControllerReadResponses,
+  AdminAppVersionControllerWriteData,
+  AdminAppVersionControllerWriteResponses,
   AdminAssistantControllerGetData,
   AdminAssistantControllerGetResponses,
   AdminAssistantControllerUpdateData,
@@ -190,6 +194,8 @@ import type {
   AnnouncementsControllerSeenResponses,
   AppControllerGetHelloData,
   AppControllerGetHelloResponses,
+  AppVersionControllerForAppData,
+  AppVersionControllerForAppResponses,
   AssistantControllerAdjustCartData,
   AssistantControllerAdjustCartResponses,
   AssistantControllerSpeakData,
@@ -698,8 +704,12 @@ import type {
   TrainingControllerGetMyProgressResponses,
   UsersControllerAcceptTermsData,
   UsersControllerAcceptTermsResponses,
+  UsersControllerConfirmEmailChangeData,
+  UsersControllerConfirmEmailChangeResponses,
   UsersControllerGetMeData,
   UsersControllerGetMeResponses,
+  UsersControllerRequestEmailChangeData,
+  UsersControllerRequestEmailChangeResponses,
   UsersControllerUpdateMeData,
   UsersControllerUpdateMeResponses,
   WalletAdminControllerActOnNumberData,
@@ -2049,6 +2059,42 @@ export const usersControllerUpdateMe = <ThrowOnError extends boolean = false>(
     },
   });
 
+export const usersControllerRequestEmailChange = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UsersControllerRequestEmailChangeData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    UsersControllerRequestEmailChangeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/users/me/email/request",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const usersControllerConfirmEmailChange = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UsersControllerConfirmEmailChangeData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    UsersControllerConfirmEmailChangeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/users/me/email/confirm",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const usersControllerAcceptTerms = <
   ThrowOnError extends boolean = false,
 >(
@@ -2658,6 +2704,46 @@ export const walletAdminControllerWalletsOverview = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/wallets", ...options });
+
+export const appVersionControllerForApp = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AppVersionControllerForAppData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AppVersionControllerForAppResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/app-version", ...options });
+
+export const adminAppVersionControllerRead = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminAppVersionControllerReadData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminAppVersionControllerReadResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/app-version", ...options });
+
+export const adminAppVersionControllerWrite = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAppVersionControllerWriteData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminAppVersionControllerWriteResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/app-version",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const cartControllerClear = <ThrowOnError extends boolean = false>(
   options?: Options<CartControllerClearData, ThrowOnError>,

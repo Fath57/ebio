@@ -5033,11 +5033,6 @@
                     "minLength": 2,
                     "maxLength": 100
                   },
-                  "email": {
-                    "type": "string",
-                    "format": "email",
-                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
-                  },
                   "phone": {
                     "type": "string"
                   },
@@ -5058,6 +5053,88 @@
         },
         "responses": {
           "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/users/me/email/request": {
+      "post": {
+        "operationId": "UsersController_requestEmailChange",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Demande un code de confirmation à la nouvelle adresse",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  }
+                },
+                "required": [
+                  "email"
+                ],
+                "additionalProperties": false,
+                "title": "EmailChangeRequest",
+                "description": "Demande un code de confirmation à la nouvelle adresse"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/users/me/email/confirm": {
+      "post": {
+        "operationId": "UsersController_confirmEmailChange",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Confirme la nouvelle adresse avec le code reçu",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  },
+                  "code": {
+                    "type": "string",
+                    "minLength": 6,
+                    "maxLength": 6
+                  }
+                },
+                "required": [
+                  "email",
+                  "code"
+                ],
+                "additionalProperties": false,
+                "title": "EmailChangeConfirm",
+                "description": "Confirme la nouvelle adresse avec le code reçu"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
             "description": ""
           }
         }
@@ -6610,6 +6687,133 @@
           "WalletAdmin"
         ],
         "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/app-version": {
+      "get": {
+        "operationId": "AppVersionController_forApp",
+        "tags": [
+          "AppVersion"
+        ],
+        "parameters": [
+          {
+            "name": "app",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/app-version": {
+      "get": {
+        "operationId": "AdminAppVersionController_read",
+        "tags": [
+          "AdminAppVersion"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminAppVersionController_write",
+        "tags": [
+          "AdminAppVersion"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Versions minimale et courante de chaque application",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "client": {
+                    "type": "object",
+                    "properties": {
+                      "minimum": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      },
+                      "latest": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      }
+                    },
+                    "required": [
+                      "minimum",
+                      "latest"
+                    ],
+                    "additionalProperties": false,
+                    "title": "AppVersionRule"
+                  },
+                  "supplier": {
+                    "type": "object",
+                    "properties": {
+                      "minimum": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      },
+                      "latest": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      }
+                    },
+                    "required": [
+                      "minimum",
+                      "latest"
+                    ],
+                    "additionalProperties": false,
+                    "title": "AppVersionRule"
+                  },
+                  "courier": {
+                    "type": "object",
+                    "properties": {
+                      "minimum": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      },
+                      "latest": {
+                        "type": "string",
+                        "pattern": "^\\d+\\.\\d+\\.\\d+$"
+                      }
+                    },
+                    "required": [
+                      "minimum",
+                      "latest"
+                    ],
+                    "additionalProperties": false,
+                    "title": "AppVersionRule"
+                  }
+                },
+                "required": [
+                  "client",
+                  "supplier",
+                  "courier"
+                ],
+                "additionalProperties": false,
+                "title": "AppVersions",
+                "description": "Versions minimale et courante de chaque application"
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -16562,11 +16766,6 @@
             "minLength": 2,
             "maxLength": 100
           },
-          "email": {
-            "type": "string",
-            "format": "email",
-            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
-          },
           "phone": {
             "type": "string"
           },
@@ -16581,6 +16780,44 @@
         "additionalProperties": false,
         "title": "UpdateUser",
         "description": "Update user profile"
+      },
+      "EmailChangeRequest": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "additionalProperties": false,
+        "title": "EmailChangeRequest",
+        "description": "Demande un code de confirmation à la nouvelle adresse"
+      },
+      "EmailChangeConfirm": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          },
+          "code": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 6
+          }
+        },
+        "required": [
+          "email",
+          "code"
+        ],
+        "additionalProperties": false,
+        "title": "EmailChangeConfirm",
+        "description": "Confirme la nouvelle adresse avec le code reçu"
       },
       "AcceptTerms": {
         "type": "object",
@@ -19051,6 +19288,28 @@
         "additionalProperties": false,
         "title": "AnnouncementInterval",
         "description": "Temps avant qu'une même annonce puisse réapparaître"
+      },
+      "AppVersions": {
+        "type": "object",
+        "properties": {
+          "client": {
+            "$ref": "#/components/schemas/AppVersionRule"
+          },
+          "supplier": {
+            "$ref": "#/components/schemas/AppVersionRule"
+          },
+          "courier": {
+            "$ref": "#/components/schemas/AppVersionRule"
+          }
+        },
+        "required": [
+          "client",
+          "supplier",
+          "courier"
+        ],
+        "additionalProperties": false,
+        "title": "AppVersions",
+        "description": "Versions minimale et courante de chaque application"
       },
       "AssistantTurn": {
         "type": "object",
@@ -22376,6 +22635,25 @@
         ],
         "title": "DisputeResolution",
         "description": "Resolution outcome for a dispute"
+      },
+      "AppVersionRule": {
+        "type": "object",
+        "properties": {
+          "minimum": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          },
+          "latest": {
+            "type": "string",
+            "pattern": "^\\d+\\.\\d+\\.\\d+$"
+          }
+        },
+        "required": [
+          "minimum",
+          "latest"
+        ],
+        "additionalProperties": false,
+        "title": "AppVersionRule"
       },
       "SearchProductsQuery": {
         "type": "object",

@@ -19,12 +19,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/compon
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@boilerstone/ui/components/primitives/tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CreditCard, LayoutGrid, Megaphone, Percent } from 'lucide-react'
+import { Bot, CreditCard, LayoutGrid, Megaphone, Percent, Smartphone } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { AnnouncementsManager } from '../../announcements/components/announcements-manager'
+import { AppVersionForm } from '../../app-version/components/app-version-form'
 import { HomeSectionsManager } from '../../home-sections/components/home-sections-manager'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { AssistantToggle } from '../forms/assistant-toggle'
@@ -311,6 +312,10 @@ export default function AdminSettingsPage() {
             <Megaphone className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.announcements')}
           </TabsTrigger>
+          <TabsTrigger value="apps">
+            <Smartphone className="mr-2 h-4 w-4" />
+            Applications
+          </TabsTrigger>
           <TabsTrigger value="assistant">
             <Bot className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.assistant')}
@@ -326,6 +331,24 @@ export default function AdminSettingsPage() {
               </CardHeader>
               <CardContent>
                 <HomeSectionsManager />
+              </CardContent>
+            </Card>
+          </Can>
+        </TabsContent>
+
+        <TabsContent value="apps" className="mt-6 space-y-6">
+          <Can action="manage" subject="all">
+            <Card>
+              <CardHeader>
+                <CardTitle>Versions des applications</CardTitle>
+                <p className="text-muted-foreground text-sm">
+                  Les mises à jour automatiques ne transportent que le code JavaScript. Une
+                  version qui demande un changement natif ne peut venir que du Play Store —
+                  et l'application ne peut pas le deviner seule.
+                </p>
+              </CardHeader>
+              <CardContent>
+                <AppVersionForm />
               </CardContent>
             </Card>
           </Can>

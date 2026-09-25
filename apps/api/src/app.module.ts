@@ -11,6 +11,7 @@ import { AdminModule } from './modules/admin/admin.module'
 import { AuditModule } from './modules/admin/audit.module'
 import { AiModule } from './modules/ai/ai.module'
 import { AnnouncementsModule } from './modules/announcements/announcements.module'
+import { AppVersionModule } from './modules/app-version/app-version.module'
 import { AssistantModule } from './modules/assistant/assistant.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { RolesModule } from './modules/auth/roles/roles.module'
@@ -128,6 +129,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     ExampleModule,
     SearchModule,
     AnnouncementsModule,
+    AppVersionModule,
     CartModule,
     AssistantModule,
     HomeModule,

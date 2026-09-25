@@ -97,16 +97,36 @@ export const zCartReminderSettings = z.object({
  */
 export const zUpdateUser = z.object({
   name: z.optional(z.string().min(2).max(100)),
-  email: z.optional(
-    z
-      .email()
-      .regex(
-        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
-      ),
-  ),
   phone: z.optional(z.string()),
   image: z.optional(z.url()),
   deviceId: z.optional(z.string()),
+});
+
+/**
+ * EmailChangeRequest
+ *
+ * Demande un code de confirmation à la nouvelle adresse
+ */
+export const zEmailChangeRequest = z.object({
+  email: z
+    .email()
+    .regex(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+    ),
+});
+
+/**
+ * EmailChangeConfirm
+ *
+ * Confirme la nouvelle adresse avec le code reçu
+ */
+export const zEmailChangeConfirm = z.object({
+  email: z
+    .email()
+    .regex(
+      /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+    ),
+  code: z.string().length(6),
 });
 
 /**
@@ -2695,6 +2715,25 @@ export const zDisputeResolutionInput = z.object({
 });
 
 /**
+ * AppVersionRule
+ */
+export const zAppVersionRule = z.object({
+  minimum: z.string().regex(/^\d+\.\d+\.\d+$/),
+  latest: z.string().regex(/^\d+\.\d+\.\d+$/),
+});
+
+/**
+ * AppVersions
+ *
+ * Versions minimale et courante de chaque application
+ */
+export const zAppVersions = z.object({
+  client: zAppVersionRule,
+  supplier: zAppVersionRule,
+  courier: zAppVersionRule,
+});
+
+/**
  * SearchProductsQuery
  *
  * Geolocation-based product search
@@ -4767,16 +4806,34 @@ export const zUsersControllerGetMeData = z.object({
 export const zUsersControllerUpdateMeData = z.object({
   body: z.object({
     name: z.optional(z.string().min(2).max(100)),
-    email: z.optional(
-      z
-        .email()
-        .regex(
-          /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
-        ),
-    ),
     phone: z.optional(z.string()),
     image: z.optional(z.url()),
     deviceId: z.optional(z.string()),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zUsersControllerRequestEmailChangeData = z.object({
+  body: z.object({
+    email: z
+      .email()
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zUsersControllerConfirmEmailChangeData = z.object({
+  body: z.object({
+    email: z
+      .email()
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+    code: z.string().length(6),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -5225,6 +5282,39 @@ export const zWalletAdminControllerListTopupsData = z.object({
 
 export const zWalletAdminControllerWalletsOverviewData = z.object({
   body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAppVersionControllerForAppData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    app: z.string(),
+  }),
+});
+
+export const zAdminAppVersionControllerReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminAppVersionControllerWriteData = z.object({
+  body: z.object({
+    client: z.object({
+      minimum: z.string().regex(/^\d+\.\d+\.\d+$/),
+      latest: z.string().regex(/^\d+\.\d+\.\d+$/),
+    }),
+    supplier: z.object({
+      minimum: z.string().regex(/^\d+\.\d+\.\d+$/),
+      latest: z.string().regex(/^\d+\.\d+\.\d+$/),
+    }),
+    courier: z.object({
+      minimum: z.string().regex(/^\d+\.\d+\.\d+$/),
+      latest: z.string().regex(/^\d+\.\d+\.\d+$/),
+    }),
+  }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
