@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common'
 import { NotificationsModule } from '../notifications/notifications.module'
-import { CampaignsController } from './campaigns.controller'
+import { CampaignFeedbackController, CampaignsController } from './campaigns.controller'
 import { CampaignsService } from './campaigns.service'
 
 /**
@@ -8,7 +8,7 @@ import { CampaignsService } from './campaigns.service'
  */
 @Module({
   imports: [NotificationsModule],
-  controllers: [CampaignsController],
+  controllers: [CampaignsController, CampaignFeedbackController],
   providers: [CampaignsService],
 })
 export class CampaignsModule {}

@@ -230,6 +230,8 @@ import type {
   BiometricControllerRevokeResponses,
   BiometricControllerVerifyData,
   BiometricControllerVerifyResponses,
+  CampaignFeedbackControllerOpenedData,
+  CampaignFeedbackControllerOpenedResponses,
   CampaignsControllerCancelData,
   CampaignsControllerCancelResponses,
   CampaignsControllerCreateData,
@@ -2824,6 +2826,17 @@ export const campaignsControllerCancel = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({ url: "/api/admin/campaigns/{id}/cancel", ...options });
+
+export const campaignFeedbackControllerOpened = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CampaignFeedbackControllerOpenedData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CampaignFeedbackControllerOpenedResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/campaigns/{id}/opened", ...options });
 
 export const cartControllerClear = <ThrowOnError extends boolean = false>(
   options?: Options<CartControllerClearData, ThrowOnError>,

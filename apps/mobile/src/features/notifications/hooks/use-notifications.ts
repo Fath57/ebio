@@ -1,6 +1,6 @@
 import * as Notifications from 'expo-notifications'
 import { useEffect, useRef, useState } from 'react'
-import { Platform } from 'react-native'
+import { Linking, Platform } from 'react-native'
 import { navigationRef } from '../../../app/navigation-ref'
 import { useSession } from '../../../lib/auth-client'
 import { apiFetch } from '../../../utils/api-client'
@@ -188,6 +188,17 @@ export function handleNotificationTap(data: Record<string, unknown>) {
     return
   }
 
+  // A campaign carries its own identifier. Reporting the open is what turns
+  // "handed to a phone" into "read by someone" — the only figure that says
+  // whether a campaign was worth sending. Fire and forget: a tap must open
+  // the screen whether or not the report gets through.
+  const campaignId = data.campaignId
+  if (typeof campaignId === 'string' && campaignId.length > 0) {
+    void apiFetch(`/api/campaigns/${campaignId}/opened`, { method: 'POST' }).catch(() => {
+      // Offline, or signed out. The screen still opens.
+    })
+  }
+
   const type = data.type as string
 
   if (APP_VARIANT === 'courier') {
@@ -257,9 +268,50 @@ export function handleNotificationTap(data: Record<string, unknown>) {
     case 'STOCK_AVAILABLE':
       navigationRef.navigate('Accueil')
       break
+    case 'PROMOTIONAL':
+      openCampaignTarget(data)
+      break
     default:
       break
   }
+}
+
+/**
+ * Where a campaign leads.
+ *
+ * The destination was chosen when the message was written, so it travels with
+ * it rather than being guessed from the type. Without one, the home screen —
+ * which is where someone tapping an offer expects to land anyway.
+ */
+function openCampaignTarget(data: Record<string, unknown>) {
+  const targetId = typeof data.targetId === 'string' ? data.targetId : null
+
+  switch (data.targetType) {
+    case 'PRODUCT':
+      if (targetId) {
+        navigationRef.navigate('Accueil', { screen: 'ProductDetail', params: { productId: targetId } })
+        return
+      }
+      break
+    case 'SUPPLIER':
+      if (targetId) {
+        navigationRef.navigate('Accueil', { screen: 'SupplierProfile', params: { supplierId: targetId } })
+        return
+      }
+      break
+    case 'URL':
+      if (targetId) {
+        void Linking.openURL(targetId).catch(() => {
+          navigationRef.navigate('Accueil')
+        })
+        return
+      }
+      break
+    default:
+      break
+  }
+
+  navigationRef.navigate('Accueil')
 }
 
 /** Courier variant tabs: Courses / Historique / Profil. */

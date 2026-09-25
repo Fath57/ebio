@@ -7066,6 +7066,29 @@
         }
       }
     },
+    "/api/campaigns/{id}/opened": {
+      "post": {
+        "operationId": "CampaignFeedbackController_opened",
+        "tags": [
+          "CampaignFeedback"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/cart": {
       "get": {
         "operationId": "CartController_read",

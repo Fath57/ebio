@@ -6241,6 +6241,19 @@ export type CampaignsControllerCancelResponses = {
   201: unknown;
 };
 
+export type CampaignFeedbackControllerOpenedData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/campaigns/{id}/opened";
+};
+
+export type CampaignFeedbackControllerOpenedResponses = {
+  201: unknown;
+};
+
 export type CartControllerClearData = {
   body?: never;
   path?: never;

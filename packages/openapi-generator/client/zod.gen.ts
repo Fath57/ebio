@@ -5426,6 +5426,14 @@ export const zCampaignsControllerCancelData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zCampaignFeedbackControllerOpenedData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zCartControllerClearData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),

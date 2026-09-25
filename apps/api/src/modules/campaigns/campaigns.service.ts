@@ -37,6 +37,25 @@ const SEGMENTS: Record<CampaignSegment, string> = {
     )`,
 }
 
+/** A campaign as the back-office reads it: the row plus how many opened it. */
+export interface AdminCampaign {
+  id: string
+  title: string
+  body: string
+  imageUrl: string | null
+  app: string
+  segment: CampaignSegment
+  targetType: string
+  targetId: string | null
+  status: CampaignStatus
+  scheduledAt: string | null
+  sentAt: string | null
+  recipients: number
+  sent: number
+  failed: number
+  opened: number
+}
+
 /** Sent in slices: one failure should not take the rest with it. */
 const BATCH_SIZE = 200
 
@@ -69,8 +88,65 @@ export class CampaignsService {
     return Number(rows[0]?.count ?? 0)
   }
 
-  async list(): Promise<Campaign[]> {
-    return this.em.find(Campaign, {}, { orderBy: { createdAt: 'DESC' }, limit: 100 })
+  /**
+   * The campaigns, each with how many people opened it.
+   *
+   * Counted here rather than kept on the row: an open arrives long after the
+   * send, from a phone, and a counter incremented from there would drift the
+   * first time two taps landed together.
+   */
+  async list(): Promise<AdminCampaign[]> {
+    const campaigns = await this.em.find(Campaign, {}, { orderBy: { createdAt: 'DESC' }, limit: 100 })
+    if (campaigns.length === 0) {
+      return []
+    }
+
+    const rows = await this.em.getConnection().execute<Array<{ campaign_id: string, count: string }>>(
+      `SELECT campaign_id, COUNT(*)::text AS count
+       FROM campaign_opens
+       WHERE campaign_id IN (${campaigns.map(() => '?').join(', ')})
+       GROUP BY campaign_id`,
+      campaigns.map(campaign => campaign.id),
+    )
+    const opens = new Map(rows.map(row => [row.campaign_id, Number(row.count)]))
+
+    // Plain objects, not the entities: a property grafted onto an entity is
+    // dropped on serialisation and arrives undefined at the other end — the
+    // same trap the cart statistics fell into this morning.
+    return campaigns.map(campaign => ({
+      id: campaign.id,
+      title: campaign.title,
+      body: campaign.body,
+      imageUrl: campaign.imageUrl ?? null,
+      app: campaign.app,
+      segment: campaign.segment,
+      targetType: campaign.targetType,
+      targetId: campaign.targetId ?? null,
+      status: campaign.status,
+      scheduledAt: campaign.scheduledAt?.toISOString() ?? null,
+      sentAt: campaign.sentAt?.toISOString() ?? null,
+      recipients: campaign.recipients,
+      sent: campaign.sent,
+      failed: campaign.failed,
+      opened: opens.get(campaign.id) ?? 0,
+    }))
+  }
+
+  /**
+   * Records that someone opened a campaign.
+   *
+   * Idempotent: the same person tapping twice, or an app replaying the tap
+   * that launched it, must not count twice. The conflict is swallowed rather
+   * than checked first — two taps at once would slip between the check and
+   * the write.
+   */
+  async recordOpen(campaignId: string, userId: string): Promise<void> {
+    await this.em.getConnection().execute(
+      `INSERT INTO campaign_opens (campaign_id, user_id)
+       VALUES (?, ?)
+       ON CONFLICT (campaign_id, user_id) DO NOTHING`,
+      [campaignId, userId],
+    )
   }
 
   async create(input: CampaignInput, authorId: string): Promise<Campaign> {

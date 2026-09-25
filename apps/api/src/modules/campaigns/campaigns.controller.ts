@@ -19,6 +19,28 @@ import { CampaignSegment } from './entities/campaign.entity'
  * every phone at once is not an everyday act, and it should take the same
  * standing as changing what the platform does.
  */
+/**
+ * What the app reports back.
+ *
+ * Separate from the admin controller: this is written to by every phone, not
+ * by the few people who compose campaigns.
+ */
+@Controller('campaigns')
+@UseGuards(AuthGuard)
+export class CampaignFeedbackController {
+  constructor(private readonly campaigns: CampaignsService) {}
+
+  /** Called when someone taps the notification. Counted once per person. */
+  @Post(':id/opened')
+  async opened(
+    @Session() session: LoggedInBetterAuthSession,
+    @Param('id') id: string,
+  ) {
+    await this.campaigns.recordOpen(id, session.user.id)
+    return { recorded: true }
+  }
+}
+
 @Controller('admin/campaigns')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
 @Roles('ADMIN')

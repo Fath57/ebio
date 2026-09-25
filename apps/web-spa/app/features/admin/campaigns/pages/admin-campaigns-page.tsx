@@ -29,6 +29,8 @@ interface CampaignRow {
   recipients: number
   sent: number
   failed: number
+  /** People who tapped it, counted once each. */
+  opened: number
 }
 
 const KEY = ['admin', 'campaigns']
@@ -181,6 +183,8 @@ export default function AdminCampaignsPage() {
                             {' · '}
                             {SEGMENTS[campaign.segment] ?? campaign.segment}
                             {campaign.status === 'SENT' && ` · ${campaign.sent}/${campaign.recipients} remis`}
+                            {campaign.status === 'SENT' && campaign.sent > 0
+                              && ` · ${campaign.opened} ouverte${campaign.opened > 1 ? 's' : ''} (${Math.round((campaign.opened / campaign.sent) * 100)} %)`}
                             {campaign.status === 'SCHEDULED' && campaign.scheduledAt && ` · le ${moment(campaign.scheduledAt)}`}
                             {campaign.sentAt && ` · ${moment(campaign.sentAt)}`}
                           </p>
