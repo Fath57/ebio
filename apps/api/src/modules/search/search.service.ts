@@ -221,6 +221,11 @@ export class SearchService {
     // Sans rayon explicite on borne quand même : sinon une recherche depuis
     // Nantes remonte les fournisseurs de Cotonou à 4 500 km.
     const radiusMeters = radius !== undefined && radius > 0 ? radius : DEFAULT_RADIUS_METERS
+    // A list of identifiers is not a proximity query: someone naming exactly
+    // which products they want is not asking what is nearby, and the default
+    // bound would drop the far ones without a word. The position is still
+    // read, so the cards keep telling how far each shop is.
+    const boundByDistance = hasLocation && productIds === undefined
     const baseParams: unknown[] = []
 
     // A suspended shop disappears from the catalogue, always. Filtering on
@@ -231,7 +236,7 @@ export class SearchService {
         AND s.validation_status <> 'SUSPENDED'
     `
 
-    if (hasLocation) {
+    if (boundByDistance) {
       whereClause += `  AND s.location IS NOT NULL\n`
       whereClause += `  AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, ?)\n`
       baseParams.push(longitude, latitude, radiusMeters)

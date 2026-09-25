@@ -20,6 +20,8 @@ interface SearchFilters {
   supplierId?: string
   /** Listed less than N days ago — what "nouveau" actually means. */
   newerThanDays?: number
+  /** Exactly these products, for a hand-picked home section. */
+  productIds?: string[]
   sortBy?: 'distance' | 'rating' | 'price'
   page?: number
 }
@@ -75,9 +77,13 @@ export function useSearchProducts() {
   const fetchPage = useCallback(async (filters: SearchFilters, page: number, append: boolean) => {
     const params = new URLSearchParams()
     Object.entries({ ...filters, page, limit: PAGE_SIZE }).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        params.append(key, String(value))
+      if (value === undefined || value === null) {
+        return
       }
+      // An array stringifies to "a,b,c" on its own, which is what the API
+      // reads back. Spelling it out so it stays deliberate rather than a
+      // lucky default of String().
+      params.append(key, Array.isArray(value) ? value.join(',') : String(value))
     })
 
     if (page === 1 && filters.q) {

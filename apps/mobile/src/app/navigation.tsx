@@ -121,12 +121,14 @@ function SearchHomeWrapper({ navigation }: any) {
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
         onOpenAssistant={() => navigation.navigate('Assistant')}
-        onSeeAll={(title, criteria) => {
+        onSeeAll={(title, criteria, productIds) => {
           // The section's criteria reopen the search as they are: no mapping
           // left to maintain between three frozen names and three sets of
-          // filters.
+          // filters. A hand-picked section carries its products instead, and
+          // they are all the filter it needs.
           navigation.navigate('SearchResults', {
             title,
+            productIds: productIds ?? undefined,
             validatedOnly: criteria.validatedOnly === true,
             promoOnly: criteria.promoOnly === true,
             category: criteria.categorySlug,
@@ -189,6 +191,7 @@ function SearchResultsWrapper({ route, navigation }: any) {
         initialValidatedOnly={params.validatedOnly}
         initialPromoOnly={params.promoOnly}
         initialSupplierId={params.supplierId}
+        initialProductIds={params.productIds}
         initialMaxPrice={params.maxPrice}
         initialMinRating={params.minRating}
         initialNewerThanDays={params.newerThanDays}

@@ -49,6 +49,13 @@ interface SearchScreenProps {
    * from — a "moins de 1 000 F" section opened onto the whole catalogue.
    */
   initialSupplierId?: string
+  /**
+   * The exact products to list, for a hand-picked section.
+   *
+   * They win over every other filter: someone naming which products they
+   * want is not asking what else looks like them.
+   */
+  initialProductIds?: string[]
   initialMaxPrice?: number
   initialMinRating?: number
   initialNewerThanDays?: number
@@ -61,7 +68,7 @@ interface SearchScreenProps {
   initialAutoFocus?: boolean
 }
 
-export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
+export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialProductIds, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
@@ -117,12 +124,13 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         minRating: initialMinRating,
         newerThanDays: initialNewerThanDays,
         supplierId: initialSupplierId,
+        productIds: initialProductIds,
         sortBy: initialSortBy,
         validatedOnly: initialValidatedOnly || undefined,
         promoOnly: initialPromoOnly || undefined,
       })
     },
-    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy],
+    [query, selectedCategory, appliedFilters, search, latitude, longitude, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialProductIds, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy],
   )
 
   useEffect(() => {

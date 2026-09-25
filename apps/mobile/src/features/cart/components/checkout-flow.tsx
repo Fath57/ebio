@@ -325,9 +325,24 @@ export function CheckoutFlow({
     [liveItems, orderSummary.items],
   )
   const basketProductIds = useMemo(() => basketItems.map(item => item.productId), [basketItems])
+  /**
+   * The basket as it was on arrival, which is what the rail is built against.
+   *
+   * It decides which products the suggestions leave out. Recomputing it from
+   * the live basket made a suggestion disappear the instant it was added — it
+   * had just joined the basket, so it excluded itself — and the quantity
+   * stepper that had appeared on it went with it.
+   */
+  const [suggestionSeed, setSuggestionSeed] = useState<string[] | null>(null)
+  useEffect(() => {
+    if (suggestionSeed === null && basketProductIds.length > 0) {
+      setSuggestionSeed(basketProductIds)
+    }
+  }, [basketProductIds, suggestionSeed])
+
   // Suggestions stay the first shop's: they only make sense
   // against one catalogue.
-  const { items: upsellItems } = useRecommendations(basketItems[0]?.supplierId ?? '', basketProductIds, 4)
+  const { items: upsellItems } = useRecommendations(basketItems[0]?.supplierId ?? '', suggestionSeed ?? basketProductIds, 4)
   // Single source of truth for the summary: promotions, gifts, promo code and
   // delivery fee are all priced by the API.
   const previewInput = useMemo(() => ({
@@ -954,7 +969,7 @@ export function CheckoutFlow({
               <BasketSuggestions
                 supplierId={basketItems[0]?.supplierId ?? ''}
                 supplierName={basketItems[0]?.supplierName ?? ''}
-                productIds={basketProductIds}
+                productIds={suggestionSeed ?? basketProductIds}
                 items={upsellItems}
                 hideTitle
               />

@@ -20,8 +20,10 @@ export interface HomeSection {
   title: string
   subtitle: string | null
   icon: string | null
-  /** Null for a hand-picked section: the rail already shows everything. */
+  /** Null for a hand-picked section, which names its products instead. */
   criteria: HomeSectionCriteria | null
+  /** The chosen products, for a hand-picked section; null otherwise. */
+  productIds: string[] | null
   results: SearchResult[]
 }
 

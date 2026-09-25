@@ -20,6 +20,14 @@ export interface ResolvedHomeSection {
    * section, where the rail already shows everything.
    */
   criteria: HomeSectionCriteria | null
+  /**
+   * The picks, for a hand-picked section.
+   *
+   * "Tout voir" reopens them as they are. Without this the rail was all there
+   * was, and a section holding more products than it displays kept the rest
+   * out of reach with nothing to say so.
+   */
+  productIds: string[] | null
   results: SearchResult[]
 }
 
@@ -134,6 +142,7 @@ export class HomeSectionsService {
         subtitle: section.subtitle ?? null,
         icon: section.icon ?? null,
         criteria: section.mode === HomeSectionMode.MANUAL ? null : (section.criteria ?? {}),
+        productIds: section.mode === HomeSectionMode.MANUAL ? (section.productIds ?? []) : null,
         results: await this.resolve(section, position),
       })),
     )
@@ -153,14 +162,8 @@ export class HomeSectionsService {
     const handPicked = section.mode === HomeSectionMode.MANUAL
 
     const query = {
-      // A hand-picked section is shown without a position, so no catchment
-      // area applies to it. The search bounds an ordinary query to 50 km by
-      // default, which quietly dropped the picks from farther shops: the
-      // back-office chose those products on purpose, distance is not the
-      // question any more. Cards then show no distance, which is honest —
-      // it is not what put them there.
-      latitude: handPicked ? undefined : position.latitude,
-      longitude: handPicked ? undefined : position.longitude,
+      latitude: position.latitude,
+      longitude: position.longitude,
       // The search radius is in metres, the setting in kilometres: nobody
       // thinks of a catchment area in metres.
       radius: criteria.maxDistanceKm !== undefined ? criteria.maxDistanceKm * 1000 : undefined,

@@ -58,7 +58,7 @@ interface HomeScreenProps {
   onNavigateToSupplier: (supplierId: string) => void
   onNavigateToProduct: (productId: string) => void
   /** Reopens the search with the section's criteria. */
-  onSeeAll: (title: string, criteria: HomeSectionCriteria) => void
+  onSeeAll: (title: string, criteria: HomeSectionCriteria, productIds: string[] | null) => void
   onPickLocation: () => void
   onOpenNotifications: () => void
   onOpenWallet: () => void
@@ -164,11 +164,7 @@ export function HomeScreen({
                     Icon={SECTION_ICONS[section.icon ?? ''] ?? Sparkles}
                     iconColor={WARM_ICONS.has(section.icon ?? '') ? colors.coral[400] : colors.green[400]}
                     data={section.results}
-                    // A hand-picked section already shows everything it
-                    // holds: "Tout voir" would lead nowhere.
-                    onSeeAll={section.criteria === null
-                      ? null
-                      : () => onSeeAll(section.title, section.criteria ?? {})}
+                    onSeeAll={() => onSeeAll(section.title, section.criteria ?? {}, section.productIds)}
                     onNavigateToProduct={onNavigateToProduct}
                     textColor={semantic.textSecondary}
                   />

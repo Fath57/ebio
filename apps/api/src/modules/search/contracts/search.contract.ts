@@ -22,8 +22,15 @@ export const searchProductsQuerySchema = z.object({
    * Going through the search rather than a separate query gives the shop, the
    * distance and the promotional price for free — everything a card displays
    * and which would otherwise have to be rebuilt.
+   *
+   * Read from a query string as well as from code, so a single identifier
+   * arrives as text and several as a comma-separated list. Declaring an array
+   * alone rejected the one-product case, which is the commonest of all.
    */
-  productIds: z.array(z.string().uuid()).max(50).optional(),
+  productIds: z.preprocess(
+    value => (typeof value === 'string' ? value.split(',').filter(Boolean) : value),
+    z.array(z.string().uuid()).max(50),
+  ).optional(),
   sortBy: z.enum(['distance', 'rating', 'price']).default('distance'),
   page: z.coerce.number().default(1),
   limit: z.coerce.number().max(50).default(20),
