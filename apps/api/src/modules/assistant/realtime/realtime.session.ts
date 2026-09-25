@@ -114,7 +114,19 @@ export class RealtimeSession {
 
   /** A slice of what the microphone heard. */
   appendAudio(base64: string): void {
+    // The first slice is worth saying out loud. A line that opens and then
+    // goes quiet looks identical to one that is working and hearing nothing,
+    // and the two are fixed in opposite places.
+    if (this.heardBytes === 0) {
+      this.logger.log(`Premier son du téléphone : ${base64.length} caractères`)
+    }
+    this.heardBytes += (base64.length * 3) / 4
     this.send({ type: 'input_audio_buffer.append', audio: base64 })
+  }
+
+  /** How long the microphone has been sending, in seconds of sound. */
+  public heard(): number {
+    return this.heardBytes / (24_000 * 2)
   }
 
   /**
@@ -161,6 +173,9 @@ export class RealtimeSession {
    * affordable.
    */
   private spend = { turns: 0, textIn: 0, audioIn: 0, cachedIn: 0, textOut: 0, audioOut: 0 }
+
+  /** What the microphone has sent, counted to tell silence from a dead line. */
+  private heardBytes = 0
 
   /** What the session has cost, in US dollars, and what made up the bill. */
   public cost(): { usd: number, turns: number, audioIn: number, audioOut: number } {

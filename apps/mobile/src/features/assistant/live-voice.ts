@@ -44,16 +44,66 @@ const WS_URL = process.env.EXPO_PUBLIC_WS_URL ?? apiUrl()
 export type LineState = 'off' | 'opening' | 'listening' | 'thinking' | 'answering'
 
 /**
- * The only sample rate the far end accepts, and so the only one the microphone
- * may run at.
- *
- * The published type of the recorder lists 16 000, 44 100 and 48 000 because
- * those are the rates it was written for; the native side asks the device
- * directly and refuses out loud if it cannot oblige. A device that cannot
- * record at 24 000 gets a plain error rather than a conversation that sounds
- * like a chipmunk.
+ * The only rate the far end accepts, in either direction — it refuses 16 000
+ * for being too low and 48 000 for being too high, in those words.
  */
-const RATE = 24_000 as unknown as NonNullable<RecordingConfig['sampleRate']>
+const WIRE_RATE = 24_000
+
+/**
+ * What the microphone actually runs at.
+ *
+ * The recorder allows exactly three rates and 24 000 is not among them, so we
+ * take the one that divides into it: every pair of samples becomes one, which
+ * is an honest halving rather than a resampling, and averaging the pair does
+ * the low-pass that dropping one of them would skip.
+ */
+const RECORD_RATE = 48_000 as NonNullable<RecordingConfig['sampleRate']>
+
+/** Base64, decoded by hand: nothing in the bundle does it, and this runs ten times a second. */
+const B64_ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/'
+const B64_INDEX = new Uint8Array(128)
+for (let i = 0; i < B64_ALPHABET.length; i += 1) {
+  B64_INDEX[B64_ALPHABET.charCodeAt(i)] = i
+}
+
+/**
+ * One slice of 48 kHz sound, halved to 24 kHz, as raw bytes.
+ *
+ * The recorder hands over base64; the socket takes bytes. Between the two the
+ * sample pairs are averaged — so the decode that has to happen anyway is the
+ * only pass over the data, and nothing is encoded again on the way out.
+ */
+function halve(base64: string): ArrayBuffer {
+  let end = base64.length
+  while (end > 0 && base64.charCodeAt(end - 1) === 61) {
+    end -= 1
+  }
+
+  const bytes = new Uint8Array((end * 3) >> 2)
+  let written = 0
+  let buffer = 0
+  let bits = 0
+  for (let i = 0; i < end; i += 1) {
+    buffer = (buffer << 6) | B64_INDEX[base64.charCodeAt(i)]
+    bits += 6
+    if (bits >= 8) {
+      bits -= 8
+      bytes[written] = (buffer >> bits) & 0xFF
+      written += 1
+    }
+  }
+
+  const pairs = written >> 2
+  const halved = new Int16Array(pairs)
+  for (let i = 0; i < pairs; i += 1) {
+    const at = i << 2
+    // Little-endian, sign-extended: the top bit is a sign, not a loud sample.
+    const first = ((bytes[at + 1] << 8) | bytes[at]) << 16 >> 16
+    const second = ((bytes[at + 3] << 8) | bytes[at + 2]) << 16 >> 16
+    halved[i] = (first + second) >> 1
+  }
+  return halved.buffer
+}
 
 /** A tenth of a second of sound per message: short enough not to be heard as lag. */
 const SLICE_MS = 100
@@ -247,7 +297,8 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
       // echo cancellation.
       try {
         await player.current.setSoundConfig({
-          sampleRate: RATE,
+          // Playback has no such restriction — it takes the rate it is given.
+          sampleRate: WIRE_RATE as NonNullable<RecordingConfig['sampleRate']>,
           playbackMode: 'conversation',
         })
       }
@@ -340,21 +391,20 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
       /**
        * Opens the microphone and keeps it open.
        *
-       * The slices go out exactly as the recorder produces them: 16-bit PCM at
-       * the rate the far end asked for, already in base64. Nothing is decoded
-       * or resampled on the way — ten times a second is often enough that any
-       * work done here would be work done ten times a second.
+       * The recorder runs at 48 kHz because it refuses the 24 kHz the far end
+       * insists on, so each slice is halved on the way out — one pass over a
+       * tenth of a second of sound, ten times a second.
        */
       async function listen(): Promise<void> {
         try {
           const { subscription } = await (player.current?.startMicrophone({
-            sampleRate: RATE,
+            sampleRate: RECORD_RATE,
             channels: 1,
             encoding: 'pcm_16bit',
             interval: SLICE_MS,
             onAudioStream: async (event) => {
               if (typeof event.data === 'string') {
-                socketRef.current?.emit('voice', { type: 'audio', chunk: event.data })
+                socketRef.current?.emit('voice', { type: 'audio', chunk: halve(event.data) })
               }
             },
           }) ?? { subscription: undefined })

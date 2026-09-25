@@ -1,5 +1,6 @@
 import type { JwtPayload } from '../../../common/guards/jwt-auth.guard'
 import type { RealtimeInbound } from './realtime.contract'
+import { Buffer } from 'node:buffer'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Logger } from '@nestjs/common'
@@ -118,10 +119,11 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
     // too fine to reason about; the total for one buyer's errand is the figure
     // that decides whether speaking stays switched on.
     const spent = client.data.session?.cost()
-    if (spent && spent.turns > 0) {
+    const heard = client.data.session?.heard() ?? 0
+    if (spent) {
       this.logger.log(
-        `Voix close pour ${client.data.userId} — ${spent.turns} tour(s), `
-        + `${spent.audioIn} audio entrant / ${spent.audioOut} sortant, ${spent.usd.toFixed(4)} $`,
+        `Voix close pour ${client.data.userId} — ${heard.toFixed(1)} s entendues, `
+        + `${spent.turns} tour(s), ${spent.audioOut} audio sortant, ${spent.usd.toFixed(4)} $`,
       )
     }
 
@@ -147,7 +149,11 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
   private dispatch(session: RealtimeSession, message: RealtimeInbound): void {
     switch (message.type) {
       case 'audio':
-        session.appendAudio(message.chunk)
+        session.appendAudio(
+          typeof message.chunk === 'string'
+            ? message.chunk
+            : Buffer.from(message.chunk).toString('base64'),
+        )
         break
       case 'interrupt':
         session.interrupt()

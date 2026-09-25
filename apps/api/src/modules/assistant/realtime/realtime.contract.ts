@@ -9,8 +9,11 @@
 /**
  * Sent by the phone.
  *
- * - `audio` carries a slice of microphone sound: PCM 16-bit, 24 kHz, mono,
- *   base64. It arrives continuously, for as long as the screen is open.
+ * - `audio` carries a slice of microphone sound: PCM 16-bit, 24 kHz, mono. It
+ *   arrives continuously, for as long as the screen is open, and as raw bytes
+ *   rather than base64 — the phone already spends a decode per slice halving
+ *   48 kHz down to the only rate the far end accepts, and socket.io carries
+ *   binary perfectly well. A string is still read, for anything that sends one.
  * - `interrupt` says the buyer wants her to stop talking now — a tap on the
  *   button, not a word spoken over her. Speaking over her is noticed by the
  *   far end on its own.
@@ -20,7 +23,7 @@
  * milliseconds of silence cannot tell.
  */
 export type RealtimeInbound
-  = | { type: 'audio', chunk: string }
+  = | { type: 'audio', chunk: string | ArrayBufferLike }
     | { type: 'interrupt' }
 
 /**
