@@ -1,3 +1,4 @@
+import type { ScrollView } from 'react-native'
 import type { ProductPromotion } from '../promotions'
 import type { NutritionalValues, ProductCompositionData } from './product-composition'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
@@ -155,6 +156,21 @@ export function ProductDetailScreen({
   const chipLabels = promotions ? promotionChipLabelsFor(promotions) : promotionChipLabels(promotionTypes)
   const suggestionSeed = useMemo(() => [product.id], [product.id])
 
+  /**
+   * Going from the rating down to the reviews.
+   *
+   * The position is measured rather than guessed: the block sits under an
+   * image, a description and a promotion strip, none of which have a fixed
+   * height. A little is left above it so the heading is not flush against
+   * the floating header.
+   */
+  const scrollRef = useRef<ScrollView | null>(null)
+  const reviewsY = useRef(0)
+
+  const scrollToReviews = useCallback(() => {
+    scrollRef.current?.scrollTo({ y: Math.max(0, reviewsY.current - spacing[4]), animated: true })
+  }, [])
+
   /** La quantité affichée est celle du panier : il n'y a plus d'état local. */
   const cartItem = useMemo(() => {
     for (const group of groups) {
@@ -256,6 +272,7 @@ export function ProductDetailScreen({
       />
 
       <Animated.ScrollView
+        ref={scrollRef}
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: 64 + insets.bottom + spacing[6] + cartBarClearance }}
         showsVerticalScrollIndicator={false}
@@ -391,7 +408,11 @@ export function ProductDetailScreen({
                   )}
                   <PromotionChips labels={chipLabels} />
                 </View>
-                <ProductRatingLine average={product.ratingAvg ?? null} count={product.ratingCount ?? 0} />
+                <ProductRatingLine
+                  average={product.ratingAvg ?? null}
+                  count={product.ratingCount ?? 0}
+                  onPress={scrollToReviews}
+                />
               </View>
 
               {/* Le geste d'achat est ici, à hauteur du prix : il n'y a plus de
@@ -460,7 +481,12 @@ export function ProductDetailScreen({
         {/* ============================================================== */}
         {/* AVIS DU PRODUIT                                                 */}
         {/* ============================================================== */}
-        <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
+        <View
+          style={[styles.divider, { backgroundColor: semantic.bgPage }]}
+          onLayout={(event) => {
+            reviewsY.current = event.nativeEvent.layout.y
+          }}
+        />
         <ProductReviewsSection productId={product.id} onSeeAll={() => onSeeAllReviews?.(product.id)} />
 
         {/* ============================================================== */}

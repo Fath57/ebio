@@ -166,12 +166,24 @@ export function ProductReviewsSection({ productId, onSeeAll }: ProductReviewsSec
  * The compact line that sits next to the price. Rendered only once the
  * average is published — a lone enthusiastic review must not pass for one.
  */
-export function ProductRatingLine({ average, count }: { average: number | null, count: number }) {
+/**
+ * The rating shown beside the price.
+ *
+ * With `onPress` it becomes a way down to the reviews themselves — which is
+ * what someone reading "4,2 (18 avis)" is reaching for. Without it, it stays
+ * what it was: a line of text.
+ */
+export function ProductRatingLine({ average, count, onPress }: {
+  average: number | null
+  count: number
+  onPress?: () => void
+}) {
   const { semantic } = useTheme()
   if (average === null) {
     return null
   }
-  return (
+
+  const line = (
     <View style={styles.inlineRating}>
       <Star size={13} color={colors.earth[400]} fill={colors.earth[400]} strokeWidth={0} />
       <Text style={[styles.inlineAverage, { color: semantic.textPrimary }]}>{formatAverage(average)}</Text>
@@ -179,6 +191,22 @@ export function ProductRatingLine({ average, count }: { average: number | null, 
         {count > 1 ? `(${count} avis)` : '(1 avis)'}
       </Text>
     </View>
+  )
+
+  if (!onPress) {
+    return line
+  }
+
+  return (
+    <Pressable
+      onPress={onPress}
+      // The line is short; the touch target is not.
+      hitSlop={12}
+      accessibilityRole="button"
+      accessibilityLabel={count > 1 ? `Voir les ${count} avis` : 'Voir l\'avis'}
+    >
+      {line}
+    </Pressable>
   )
 }
 
