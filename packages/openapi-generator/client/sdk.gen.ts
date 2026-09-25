@@ -4,6 +4,22 @@ import type { Client, Options as Options2, TDataShape } from "./client";
 import { client } from "./client.gen";
 import { aiExampleControllerChatResponseTransformer } from "./transformers.gen";
 import type {
+  AdminAnnouncementsControllerApproveData,
+  AdminAnnouncementsControllerApproveResponses,
+  AdminAnnouncementsControllerCreateData,
+  AdminAnnouncementsControllerCreateResponses,
+  AdminAnnouncementsControllerGetIntervalData,
+  AdminAnnouncementsControllerGetIntervalResponses,
+  AdminAnnouncementsControllerListData,
+  AdminAnnouncementsControllerListRequestsData,
+  AdminAnnouncementsControllerListRequestsResponses,
+  AdminAnnouncementsControllerListResponses,
+  AdminAnnouncementsControllerRejectData,
+  AdminAnnouncementsControllerRejectResponses,
+  AdminAnnouncementsControllerSetActiveData,
+  AdminAnnouncementsControllerSetActiveResponses,
+  AdminAnnouncementsControllerSetIntervalData,
+  AdminAnnouncementsControllerSetIntervalResponses,
   AdminAssistantControllerGetData,
   AdminAssistantControllerGetResponses,
   AdminAssistantControllerUpdateData,
@@ -158,6 +174,10 @@ import type {
   AiExampleUseCasesControllerUseCase4ChatSessionResponses,
   AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedData,
   AiExampleUseCasesControllerUseCase5ChatSessionWithTurnsMergedResponses,
+  AnnouncementsControllerCurrentData,
+  AnnouncementsControllerCurrentResponses,
+  AnnouncementsControllerSeenData,
+  AnnouncementsControllerSeenResponses,
   AppControllerGetHelloData,
   AppControllerGetHelloResponses,
   AssistantControllerAdjustCartData,
@@ -560,6 +580,14 @@ import type {
   StaffInboxControllerMineResponses,
   StaffInboxControllerSendDigestData,
   StaffInboxControllerSendDigestResponses,
+  SupplierAnnouncementRequestsControllerCancelData,
+  SupplierAnnouncementRequestsControllerCancelResponses,
+  SupplierAnnouncementRequestsControllerCreateData,
+  SupplierAnnouncementRequestsControllerCreateResponses,
+  SupplierAnnouncementRequestsControllerListData,
+  SupplierAnnouncementRequestsControllerListResponses,
+  SupplierAnnouncementRequestsControllerOffersData,
+  SupplierAnnouncementRequestsControllerOffersResponses,
   SupplierBannerRequestsControllerCancelData,
   SupplierBannerRequestsControllerCancelResponses,
   SupplierBannerRequestsControllerCreateData,
@@ -1316,114 +1344,70 @@ export const searchControllerGetCategories = <
     ThrowOnError
   >({ url: "/api/search/categories", ...options });
 
-export const assistantControllerTurn = <ThrowOnError extends boolean = false>(
-  options: Options<AssistantControllerTurnData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    AssistantControllerTurnResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/assistant/turn",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const assistantControllerAdjustCart = <
+export const announcementsControllerCurrent = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<AssistantControllerAdjustCartData, ThrowOnError>,
+  options?: Options<AnnouncementsControllerCurrentData, ThrowOnError>,
 ) =>
-  (options.client ?? client).patch<
-    AssistantControllerAdjustCartResponses,
+  (options?.client ?? client).get<
+    AnnouncementsControllerCurrentResponses,
     unknown,
     ThrowOnError
-  >({
-    url: "/api/assistant/{sessionId}/cart",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  >({ url: "/api/announcements/current", ...options });
 
-export const assistantControllerTurnStream = <
+export const announcementsControllerSeen = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<AssistantControllerTurnStreamData, ThrowOnError>,
+  options: Options<AnnouncementsControllerSeenData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    AssistantControllerTurnStreamResponses,
+    AnnouncementsControllerSeenResponses,
     unknown,
     ThrowOnError
-  >({
-    url: "/api/assistant/turn/stream",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  >({ url: "/api/announcements/{id}/seen", ...options });
 
-export const assistantControllerTranscribe = <
+export const supplierAnnouncementRequestsControllerOffers = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<AssistantControllerTranscribeData, ThrowOnError>,
+  options?: Options<
+    SupplierAnnouncementRequestsControllerOffersData,
+    ThrowOnError
+  >,
 ) =>
-  (options?.client ?? client).post<
-    AssistantControllerTranscribeResponses,
+  (options?.client ?? client).get<
+    SupplierAnnouncementRequestsControllerOffersResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/assistant/transcribe", ...options });
+  >({ url: "/api/suppliers/me/announcement-requests/offers", ...options });
 
-export const assistantControllerSpeak = <ThrowOnError extends boolean = false>(
-  options: Options<AssistantControllerSpeakData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    AssistantControllerSpeakResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/assistant/speak",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const ordersControllerPreviewCheckout = <
+export const supplierAnnouncementRequestsControllerList = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<OrdersControllerPreviewCheckoutData, ThrowOnError>,
+  options?: Options<
+    SupplierAnnouncementRequestsControllerListData,
+    ThrowOnError
+  >,
 ) =>
-  (options.client ?? client).post<
-    OrdersControllerPreviewCheckoutResponses,
+  (options?.client ?? client).get<
+    SupplierAnnouncementRequestsControllerListResponses,
     unknown,
     ThrowOnError
-  >({
-    url: "/api/orders/checkout/preview",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  >({ url: "/api/suppliers/me/announcement-requests", ...options });
 
-export const ordersControllerCreateCheckout = <
+export const supplierAnnouncementRequestsControllerCreate = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<OrdersControllerCreateCheckoutData, ThrowOnError>,
+  options: Options<
+    SupplierAnnouncementRequestsControllerCreateData,
+    ThrowOnError
+  >,
 ) =>
   (options.client ?? client).post<
-    OrdersControllerCreateCheckoutResponses,
+    SupplierAnnouncementRequestsControllerCreateResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/orders/checkout",
+    url: "/api/suppliers/me/announcement-requests",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -1431,24 +1415,42 @@ export const ordersControllerCreateCheckout = <
     },
   });
 
-export const ordersControllerFindAll = <ThrowOnError extends boolean = false>(
-  options: Options<OrdersControllerFindAllData, ThrowOnError>,
+export const supplierAnnouncementRequestsControllerCancel = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    SupplierAnnouncementRequestsControllerCancelData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    SupplierAnnouncementRequestsControllerCancelResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/announcement-requests/{id}/cancel", ...options });
+
+export const adminAnnouncementsControllerListRequests = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAnnouncementsControllerListRequestsData, ThrowOnError>,
 ) =>
   (options.client ?? client).get<
-    OrdersControllerFindAllResponses,
+    AdminAnnouncementsControllerListRequestsResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/orders", ...options });
+  >({ url: "/api/admin/announcements/requests", ...options });
 
-export const ordersControllerCreate = <ThrowOnError extends boolean = false>(
-  options: Options<OrdersControllerCreateData, ThrowOnError>,
+export const adminAnnouncementsControllerApprove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAnnouncementsControllerApproveData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    OrdersControllerCreateResponses,
+    AdminAnnouncementsControllerApproveResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/orders",
+    url: "/api/admin/announcements/requests/{id}/approve",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -1456,15 +1458,17 @@ export const ordersControllerCreate = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const ordersControllerPreview = <ThrowOnError extends boolean = false>(
-  options: Options<OrdersControllerPreviewData, ThrowOnError>,
+export const adminAnnouncementsControllerReject = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAnnouncementsControllerRejectData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    OrdersControllerPreviewResponses,
+    AdminAnnouncementsControllerRejectResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/orders/preview",
+    url: "/api/admin/announcements/requests/{id}/reject",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -1472,42 +1476,271 @@ export const ordersControllerPreview = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const ordersControllerFindById = <ThrowOnError extends boolean = false>(
-  options: Options<OrdersControllerFindByIdData, ThrowOnError>,
+export const adminAnnouncementsControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminAnnouncementsControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminAnnouncementsControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/announcements", ...options });
+
+export const adminAnnouncementsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAnnouncementsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminAnnouncementsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/announcements",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminAnnouncementsControllerSetActive = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAnnouncementsControllerSetActiveData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminAnnouncementsControllerSetActiveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/announcements/{id}/active", ...options });
+
+export const adminAnnouncementsControllerGetInterval = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminAnnouncementsControllerGetIntervalData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminAnnouncementsControllerGetIntervalResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/announcements/settings/interval", ...options });
+
+export const adminAnnouncementsControllerSetInterval = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAnnouncementsControllerSetIntervalData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminAnnouncementsControllerSetIntervalResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/announcements/settings/interval",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const publicSettingsControllerGetPublic = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<PublicSettingsControllerGetPublicData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    PublicSettingsControllerGetPublicResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/settings/public", ...options });
+
+export const deliveryPricingControllerQuote = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<DeliveryPricingControllerQuoteData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    DeliveryPricingControllerQuoteResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/delivery-pricing/quote",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminDeliveryPricingControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminDeliveryPricingControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminDeliveryPricingControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/delivery-pricing", ...options });
+
+export const adminDeliveryPricingControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminDeliveryPricingControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminDeliveryPricingControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/delivery-pricing",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminBannerOffersControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminBannerOffersControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminBannerOffersControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/banner-offers", ...options });
+
+export const adminBannerOffersControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminBannerOffersControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminBannerOffersControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/banner-offers",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminAssistantControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminAssistantControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminAssistantControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/assistant", ...options });
+
+export const adminAssistantControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminAssistantControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminAssistantControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/assistant",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminProductReviewTimingControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminProductReviewTimingControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminProductReviewTimingControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/product-review-timing", ...options });
+
+export const adminProductReviewTimingControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminProductReviewTimingControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminProductReviewTimingControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/product-review-timing",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const suppliersControllerRegister = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerRegisterData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SuppliersControllerRegisterResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/register",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const suppliersControllerFindNearby = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerFindNearbyData, ThrowOnError>,
 ) =>
   (options.client ?? client).get<
-    OrdersControllerFindByIdResponses,
+    SuppliersControllerFindNearbyResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/orders/{id}", ...options });
+  >({ url: "/api/suppliers/nearby", ...options });
 
-export const ordersControllerInvoice = <ThrowOnError extends boolean = false>(
-  options: Options<OrdersControllerInvoiceData, ThrowOnError>,
+export const suppliersControllerFindById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerFindByIdData, ThrowOnError>,
 ) =>
   (options.client ?? client).get<
-    OrdersControllerInvoiceResponses,
+    SuppliersControllerFindByIdResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/orders/{id}/invoice", ...options });
+  >({ url: "/api/suppliers/{id}", ...options });
 
-export const ordersControllerAccept = <ThrowOnError extends boolean = false>(
-  options: Options<OrdersControllerAcceptData, ThrowOnError>,
+export const suppliersControllerUpdateMe = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerUpdateMeData, ThrowOnError>,
 ) =>
-  (options.client ?? client).patch<
-    OrdersControllerAcceptResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/orders/{id}/accept", ...options });
-
-export const ordersControllerReject = <ThrowOnError extends boolean = false>(
-  options: Options<OrdersControllerRejectData, ThrowOnError>,
-) =>
-  (options.client ?? client).patch<
-    OrdersControllerRejectResponses,
+  (options.client ?? client).put<
+    SuppliersControllerUpdateMeResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/orders/{id}/reject",
+    url: "/api/suppliers/me",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -1515,63 +1748,326 @@ export const ordersControllerReject = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const ordersControllerUpdateStatus = <
+export const suppliersControllerGetMyStatus = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<OrdersControllerUpdateStatusData, ThrowOnError>,
+  options?: Options<SuppliersControllerGetMyStatusData, ThrowOnError>,
 ) =>
-  (options.client ?? client).patch<
-    OrdersControllerUpdateStatusResponses,
+  (options?.client ?? client).get<
+    SuppliersControllerGetMyStatusResponses,
     unknown,
     ThrowOnError
-  >({
-    url: "/api/orders/{id}/status",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  >({ url: "/api/suppliers/me/status", ...options });
 
-export const ordersControllerConfirmDelivery = <
+export const suppliersControllerGetDashboard = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<OrdersControllerConfirmDeliveryData, ThrowOnError>,
+  options?: Options<SuppliersControllerGetDashboardData, ThrowOnError>,
 ) =>
-  (options.client ?? client).patch<
-    OrdersControllerConfirmDeliveryResponses,
+  (options?.client ?? client).get<
+    SuppliersControllerGetDashboardResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/orders/{id}/confirm-delivery", ...options });
+  >({ url: "/api/suppliers/me/dashboard", ...options });
 
-export const ordersControllerConfirmDeliveryPost = <
+export const suppliersControllerCreateDeliveryZone = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<OrdersControllerConfirmDeliveryPostData, ThrowOnError>,
+  options: Options<SuppliersControllerCreateDeliveryZoneData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    OrdersControllerConfirmDeliveryPostResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/orders/{id}/confirm-delivery", ...options });
-
-export const ordersControllerCreateDispute = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<OrdersControllerCreateDisputeData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    OrdersControllerCreateDisputeResponses,
+    SuppliersControllerCreateDeliveryZoneResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/orders/{id}/dispute",
+    url: "/api/suppliers/me/delivery-zones",
     ...options,
     headers: {
       "Content-Type": "application/json",
       ...options.headers,
     },
   });
+
+export const suppliersControllerDeleteDeliveryZone = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerDeleteDeliveryZoneData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    SuppliersControllerDeleteDeliveryZoneResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/delivery-zones/{zoneId}", ...options });
+
+export const suppliersControllerGetSettings = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SuppliersControllerGetSettingsData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SuppliersControllerGetSettingsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/settings", ...options });
+
+export const suppliersControllerUpdateOpeningHours = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerUpdateOpeningHoursData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SuppliersControllerUpdateOpeningHoursResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/settings/opening-hours",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const suppliersControllerUpdateMode = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerUpdateModeData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SuppliersControllerUpdateModeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/settings/mode",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const suppliersControllerGetAnalytics = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerGetAnalyticsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SuppliersControllerGetAnalyticsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/analytics", ...options });
+
+export const suppliersControllerGetTopProducts = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SuppliersControllerGetTopProductsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SuppliersControllerGetTopProductsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/analytics/top-products", ...options });
+
+export const suppliersControllerGetRatingsOverview = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SuppliersControllerGetRatingsOverviewData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SuppliersControllerGetRatingsOverviewResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/analytics/ratings", ...options });
+
+export const salesPointsControllerFindMine = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<SalesPointsControllerFindMineData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    SalesPointsControllerFindMineResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/sales-points", ...options });
+
+export const salesPointsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    SalesPointsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/sales-points",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const salesPointsControllerFindBySupplier = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerFindBySupplierData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SalesPointsControllerFindBySupplierResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/{supplierId}/sales-points", ...options });
+
+export const salesPointsControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    SalesPointsControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/sales-points/{id}", ...options });
+
+export const salesPointsControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesPointsControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    SalesPointsControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/sales-points/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const usersControllerGetMe = <ThrowOnError extends boolean = false>(
+  options?: Options<UsersControllerGetMeData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    UsersControllerGetMeResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/users/me", ...options });
+
+export const usersControllerUpdateMe = <ThrowOnError extends boolean = false>(
+  options: Options<UsersControllerUpdateMeData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    UsersControllerUpdateMeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/users/me",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const usersControllerAcceptTerms = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<UsersControllerAcceptTermsData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    UsersControllerAcceptTermsResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/users/me/terms",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const mediaControllerInitiateUpload = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerInitiateUploadData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    MediaControllerInitiateUploadResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/media/upload",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const mediaControllerCompleteUpload = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerCompleteUploadData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    MediaControllerCompleteUploadResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/media/complete",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const mediaControllerDeleteMedia = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerDeleteMediaData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    MediaControllerDeleteMediaResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/{id}", ...options });
+
+export const mediaControllerFindById = <ThrowOnError extends boolean = false>(
+  options: Options<MediaControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    MediaControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/{id}", ...options });
+
+export const mediaControllerGetDownloadUrl = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerGetDownloadUrlData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    MediaControllerGetDownloadUrlResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/{id}/download", ...options });
+
+export const mediaControllerFindByEntity = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<MediaControllerFindByEntityData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    MediaControllerFindByEntityResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/media/entity/{entityType}/{entityId}", ...options });
 
 export const notificationsControllerRegisterToken = <
   ThrowOnError extends boolean = false,
@@ -1663,289 +2159,6 @@ export const notificationsControllerSendTestNotification = <
     unknown,
     ThrowOnError
   >({ url: "/api/notifications/test", ...options });
-
-export const paymentsControllerGetPaymentInfo = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentsControllerGetPaymentInfoData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    PaymentsControllerGetPaymentInfoResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/payments/orders/{id}/info", ...options });
-
-export const paymentsControllerInitiateNoRedirectPayment = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<
-    PaymentsControllerInitiateNoRedirectPaymentData,
-    ThrowOnError
-  >,
-) =>
-  (options.client ?? client).post<
-    PaymentsControllerInitiateNoRedirectPaymentResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/payments/initiate",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentsControllerInitiateCheckoutPayment = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentsControllerInitiateCheckoutPaymentData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    PaymentsControllerInitiateCheckoutPaymentResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/payments/initiate-checkout",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentsControllerInitiateCartPayment = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentsControllerInitiateCartPaymentData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    PaymentsControllerInitiateCartPaymentResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/payments/cart/initiate",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentsControllerVerifyCartPayment = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentsControllerVerifyCartPaymentData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    PaymentsControllerVerifyCartPaymentResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/payments/cart/verify",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentsControllerVerifyCheckoutPayment = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentsControllerVerifyCheckoutPaymentData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    PaymentsControllerVerifyCheckoutPaymentResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/payments/verify-checkout",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentsControllerGetPaymentStatus = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentsControllerGetPaymentStatusData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    PaymentsControllerGetPaymentStatusResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/payments/orders/{id}/status", ...options });
-
-export const checkoutsControllerCompensate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<CheckoutsControllerCompensateData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    CheckoutsControllerCompensateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/checkouts/{id}/compensate",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentsWebhookControllerHandleFedaPayWebhook = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<
-    PaymentsWebhookControllerHandleFedaPayWebhookData,
-    ThrowOnError
-  >,
-) =>
-  (options?.client ?? client).post<
-    PaymentsWebhookControllerHandleFedaPayWebhookResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/payments/webhook/fedapay", ...options });
-
-export const paymentsWebhookControllerHandleIntramWebhook = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<
-    PaymentsWebhookControllerHandleIntramWebhookData,
-    ThrowOnError
-  >,
-) =>
-  (options.client ?? client).post<
-    PaymentsWebhookControllerHandleIntramWebhookResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/payments/webhook/intram", ...options });
-
-export const paymentsWebhookControllerHandleStripeWebhook = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<
-    PaymentsWebhookControllerHandleStripeWebhookData,
-    ThrowOnError
-  >,
-) =>
-  (options.client ?? client).post<
-    PaymentsWebhookControllerHandleStripeWebhookResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/payments/webhook/stripe", ...options });
-
-export const paymentsWebhookControllerHandlePawerPayerWebhook = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<
-    PaymentsWebhookControllerHandlePawerPayerWebhookData,
-    ThrowOnError
-  >,
-) =>
-  (options?.client ?? client).post<
-    PaymentsWebhookControllerHandlePawerPayerWebhookResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/payments/webhook/pawerpayer", ...options });
-
-export const paymentMethodAdminControllerList = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<PaymentMethodAdminControllerListData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    PaymentMethodAdminControllerListResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/payment-methods", ...options });
-
-export const paymentMethodAdminControllerCreate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentMethodAdminControllerCreateData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    PaymentMethodAdminControllerCreateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/payment-methods",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentMethodAdminControllerRemove = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentMethodAdminControllerRemoveData, ThrowOnError>,
-) =>
-  (options.client ?? client).delete<
-    PaymentMethodAdminControllerRemoveResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/payment-methods/{id}", ...options });
-
-export const paymentMethodAdminControllerGetOne = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentMethodAdminControllerGetOneData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    PaymentMethodAdminControllerGetOneResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/payment-methods/{id}", ...options });
-
-export const paymentMethodAdminControllerUpdate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentMethodAdminControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).patch<
-    PaymentMethodAdminControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/payment-methods/{id}",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const paymentMethodAdminControllerToggleActive = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<PaymentMethodAdminControllerToggleActiveData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    PaymentMethodAdminControllerToggleActiveResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/payment-methods/{id}/toggle", ...options });
-
-export const paymentMethodPublicControllerGetAvailable = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<
-    PaymentMethodPublicControllerGetAvailableData,
-    ThrowOnError
-  >,
-) =>
-  (options?.client ?? client).get<
-    PaymentMethodPublicControllerGetAvailableResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/payment-methods/available", ...options });
 
 export const walletControllerGetMyWallet = <
   ThrowOnError extends boolean = false,
@@ -2370,17 +2583,15 @@ export const walletAdminControllerWalletsOverview = <
     ThrowOnError
   >({ url: "/api/admin/wallets", ...options });
 
-export const suppliersControllerRegister = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerRegisterData, ThrowOnError>,
+export const assistantControllerTurn = <ThrowOnError extends boolean = false>(
+  options: Options<AssistantControllerTurnData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    SuppliersControllerRegisterResponses,
+    AssistantControllerTurnResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/suppliers/register",
+    url: "/api/assistant/turn",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -2388,119 +2599,17 @@ export const suppliersControllerRegister = <
     },
   });
 
-export const suppliersControllerFindNearby = <
+export const assistantControllerAdjustCart = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<SuppliersControllerFindNearbyData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    SuppliersControllerFindNearbyResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/nearby", ...options });
-
-export const suppliersControllerFindById = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerFindByIdData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    SuppliersControllerFindByIdResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/{id}", ...options });
-
-export const suppliersControllerUpdateMe = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerUpdateMeData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    SuppliersControllerUpdateMeResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/suppliers/me",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const suppliersControllerGetMyStatus = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<SuppliersControllerGetMyStatusData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    SuppliersControllerGetMyStatusResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/status", ...options });
-
-export const suppliersControllerGetDashboard = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<SuppliersControllerGetDashboardData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    SuppliersControllerGetDashboardResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/dashboard", ...options });
-
-export const suppliersControllerCreateDeliveryZone = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerCreateDeliveryZoneData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    SuppliersControllerCreateDeliveryZoneResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/suppliers/me/delivery-zones",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const suppliersControllerDeleteDeliveryZone = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerDeleteDeliveryZoneData, ThrowOnError>,
-) =>
-  (options.client ?? client).delete<
-    SuppliersControllerDeleteDeliveryZoneResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/delivery-zones/{zoneId}", ...options });
-
-export const suppliersControllerGetSettings = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<SuppliersControllerGetSettingsData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    SuppliersControllerGetSettingsResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/settings", ...options });
-
-export const suppliersControllerUpdateOpeningHours = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerUpdateOpeningHoursData, ThrowOnError>,
+  options: Options<AssistantControllerAdjustCartData, ThrowOnError>,
 ) =>
   (options.client ?? client).patch<
-    SuppliersControllerUpdateOpeningHoursResponses,
+    AssistantControllerAdjustCartResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/suppliers/me/settings/opening-hours",
+    url: "/api/assistant/{sessionId}/cart",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -2508,119 +2617,164 @@ export const suppliersControllerUpdateOpeningHours = <
     },
   });
 
-export const suppliersControllerUpdateMode = <
+export const assistantControllerTurnStream = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<SuppliersControllerUpdateModeData, ThrowOnError>,
+  options: Options<AssistantControllerTurnStreamData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AssistantControllerTurnStreamResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/assistant/turn/stream",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const assistantControllerTranscribe = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AssistantControllerTranscribeData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    AssistantControllerTranscribeResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/assistant/transcribe", ...options });
+
+export const assistantControllerSpeak = <ThrowOnError extends boolean = false>(
+  options: Options<AssistantControllerSpeakData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AssistantControllerSpeakResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/assistant/speak",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerPreviewCheckout = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerPreviewCheckoutData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerPreviewCheckoutResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/checkout/preview",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerCreateCheckout = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerCreateCheckoutData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerCreateCheckoutResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/checkout",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerFindAll = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerFindAllData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    OrdersControllerFindAllResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders", ...options });
+
+export const ordersControllerCreate = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerPreview = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerPreviewData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerPreviewResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/preview",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerFindById = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    OrdersControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/{id}", ...options });
+
+export const ordersControllerInvoice = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerInvoiceData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    OrdersControllerInvoiceResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/{id}/invoice", ...options });
+
+export const ordersControllerAccept = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerAcceptData, ThrowOnError>,
 ) =>
   (options.client ?? client).patch<
-    SuppliersControllerUpdateModeResponses,
+    OrdersControllerAcceptResponses,
     unknown,
     ThrowOnError
-  >({
-    url: "/api/suppliers/me/settings/mode",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
+  >({ url: "/api/orders/{id}/accept", ...options });
 
-export const suppliersControllerGetAnalytics = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerGetAnalyticsData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    SuppliersControllerGetAnalyticsResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/analytics", ...options });
-
-export const suppliersControllerGetTopProducts = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerGetTopProductsData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    SuppliersControllerGetTopProductsResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/analytics/top-products", ...options });
-
-export const suppliersControllerGetRatingsOverview = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<SuppliersControllerGetRatingsOverviewData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    SuppliersControllerGetRatingsOverviewResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/analytics/ratings", ...options });
-
-export const salesPointsControllerFindMine = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<SalesPointsControllerFindMineData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    SalesPointsControllerFindMineResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/sales-points", ...options });
-
-export const salesPointsControllerCreate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SalesPointsControllerCreateData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    SalesPointsControllerCreateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/suppliers/me/sales-points",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const salesPointsControllerFindBySupplier = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SalesPointsControllerFindBySupplierData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    SalesPointsControllerFindBySupplierResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/{supplierId}/sales-points", ...options });
-
-export const salesPointsControllerRemove = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SalesPointsControllerRemoveData, ThrowOnError>,
-) =>
-  (options.client ?? client).delete<
-    SalesPointsControllerRemoveResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/suppliers/me/sales-points/{id}", ...options });
-
-export const salesPointsControllerUpdate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SalesPointsControllerUpdateData, ThrowOnError>,
+export const ordersControllerReject = <ThrowOnError extends boolean = false>(
+  options: Options<OrdersControllerRejectData, ThrowOnError>,
 ) =>
   (options.client ?? client).patch<
-    SalesPointsControllerUpdateResponses,
+    OrdersControllerRejectResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/suppliers/me/sales-points/{id}",
+    url: "/api/orders/{id}/reject",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -2628,42 +2782,275 @@ export const salesPointsControllerUpdate = <
     },
   });
 
-export const usersControllerGetMe = <ThrowOnError extends boolean = false>(
-  options?: Options<UsersControllerGetMeData, ThrowOnError>,
+export const ordersControllerUpdateStatus = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerUpdateStatusData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    OrdersControllerUpdateStatusResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/{id}/status",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const ordersControllerConfirmDelivery = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerConfirmDeliveryData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    OrdersControllerConfirmDeliveryResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/{id}/confirm-delivery", ...options });
+
+export const ordersControllerConfirmDeliveryPost = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerConfirmDeliveryPostData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerConfirmDeliveryPostResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/{id}/confirm-delivery", ...options });
+
+export const ordersControllerCreateDispute = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerCreateDisputeData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    OrdersControllerCreateDisputeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/orders/{id}/dispute",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerGetPaymentInfo = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerGetPaymentInfoData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    PaymentsControllerGetPaymentInfoResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/orders/{id}/info", ...options });
+
+export const paymentsControllerInitiateNoRedirectPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    PaymentsControllerInitiateNoRedirectPaymentData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerInitiateNoRedirectPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/initiate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerInitiateCheckoutPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerInitiateCheckoutPaymentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerInitiateCheckoutPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/initiate-checkout",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerInitiateCartPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerInitiateCartPaymentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerInitiateCartPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/cart/initiate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerVerifyCartPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerVerifyCartPaymentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerVerifyCartPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/cart/verify",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerVerifyCheckoutPayment = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerVerifyCheckoutPaymentData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentsControllerVerifyCheckoutPaymentResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/payments/verify-checkout",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsControllerGetPaymentStatus = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsControllerGetPaymentStatusData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    PaymentsControllerGetPaymentStatusResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/orders/{id}/status", ...options });
+
+export const checkoutsControllerCompensate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CheckoutsControllerCompensateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CheckoutsControllerCompensateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/checkouts/{id}/compensate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentsWebhookControllerHandleFedaPayWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<
+    PaymentsWebhookControllerHandleFedaPayWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options?.client ?? client).post<
+    PaymentsWebhookControllerHandleFedaPayWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/fedapay", ...options });
+
+export const paymentsWebhookControllerHandleIntramWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    PaymentsWebhookControllerHandleIntramWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    PaymentsWebhookControllerHandleIntramWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/intram", ...options });
+
+export const paymentsWebhookControllerHandleStripeWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    PaymentsWebhookControllerHandleStripeWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    PaymentsWebhookControllerHandleStripeWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/stripe", ...options });
+
+export const paymentsWebhookControllerHandlePawerPayerWebhook = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<
+    PaymentsWebhookControllerHandlePawerPayerWebhookData,
+    ThrowOnError
+  >,
+) =>
+  (options?.client ?? client).post<
+    PaymentsWebhookControllerHandlePawerPayerWebhookResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/pawerpayer", ...options });
+
+export const paymentMethodAdminControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<PaymentMethodAdminControllerListData, ThrowOnError>,
 ) =>
   (options?.client ?? client).get<
-    UsersControllerGetMeResponses,
+    PaymentMethodAdminControllerListResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/users/me", ...options });
+  >({ url: "/api/admin/payment-methods", ...options });
 
-export const usersControllerUpdateMe = <ThrowOnError extends boolean = false>(
-  options: Options<UsersControllerUpdateMeData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    UsersControllerUpdateMeResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/users/me",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const usersControllerAcceptTerms = <
+export const paymentMethodAdminControllerCreate = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<UsersControllerAcceptTermsData, ThrowOnError>,
+  options: Options<PaymentMethodAdminControllerCreateData, ThrowOnError>,
 ) =>
   (options.client ?? client).post<
-    UsersControllerAcceptTermsResponses,
+    PaymentMethodAdminControllerCreateResponses,
     unknown,
     ThrowOnError
   >({
-    url: "/api/users/me/terms",
+    url: "/api/admin/payment-methods",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -2671,83 +3058,70 @@ export const usersControllerAcceptTerms = <
     },
   });
 
-export const mediaControllerInitiateUpload = <
+export const paymentMethodAdminControllerRemove = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<MediaControllerInitiateUploadData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    MediaControllerInitiateUploadResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/media/upload",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const mediaControllerCompleteUpload = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<MediaControllerCompleteUploadData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    MediaControllerCompleteUploadResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/media/complete",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const mediaControllerDeleteMedia = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<MediaControllerDeleteMediaData, ThrowOnError>,
+  options: Options<PaymentMethodAdminControllerRemoveData, ThrowOnError>,
 ) =>
   (options.client ?? client).delete<
-    MediaControllerDeleteMediaResponses,
+    PaymentMethodAdminControllerRemoveResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/media/{id}", ...options });
+  >({ url: "/api/admin/payment-methods/{id}", ...options });
 
-export const mediaControllerFindById = <ThrowOnError extends boolean = false>(
-  options: Options<MediaControllerFindByIdData, ThrowOnError>,
-) =>
-  (options.client ?? client).get<
-    MediaControllerFindByIdResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/media/{id}", ...options });
-
-export const mediaControllerGetDownloadUrl = <
+export const paymentMethodAdminControllerGetOne = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<MediaControllerGetDownloadUrlData, ThrowOnError>,
+  options: Options<PaymentMethodAdminControllerGetOneData, ThrowOnError>,
 ) =>
   (options.client ?? client).get<
-    MediaControllerGetDownloadUrlResponses,
+    PaymentMethodAdminControllerGetOneResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/media/{id}/download", ...options });
+  >({ url: "/api/admin/payment-methods/{id}", ...options });
 
-export const mediaControllerFindByEntity = <
+export const paymentMethodAdminControllerUpdate = <
   ThrowOnError extends boolean = false,
 >(
-  options: Options<MediaControllerFindByEntityData, ThrowOnError>,
+  options: Options<PaymentMethodAdminControllerUpdateData, ThrowOnError>,
 ) =>
-  (options.client ?? client).get<
-    MediaControllerFindByEntityResponses,
+  (options.client ?? client).patch<
+    PaymentMethodAdminControllerUpdateResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/media/entity/{entityType}/{entityId}", ...options });
+  >({
+    url: "/api/admin/payment-methods/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const paymentMethodAdminControllerToggleActive = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentMethodAdminControllerToggleActiveData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    PaymentMethodAdminControllerToggleActiveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payment-methods/{id}/toggle", ...options });
+
+export const paymentMethodPublicControllerGetAvailable = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<
+    PaymentMethodPublicControllerGetAvailableData,
+    ThrowOnError
+  >,
+) =>
+  (options?.client ?? client).get<
+    PaymentMethodPublicControllerGetAvailableResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payment-methods/available", ...options });
 
 export const couriersControllerRegister = <
   ThrowOnError extends boolean = false,
@@ -3210,151 +3584,6 @@ export const adminCouriersControllerRebroadcastDelivery = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/deliveries/{id}/rebroadcast", ...options });
-
-export const publicSettingsControllerGetPublic = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<PublicSettingsControllerGetPublicData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    PublicSettingsControllerGetPublicResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/settings/public", ...options });
-
-export const deliveryPricingControllerQuote = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<DeliveryPricingControllerQuoteData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    DeliveryPricingControllerQuoteResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/delivery-pricing/quote",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const adminDeliveryPricingControllerGet = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<AdminDeliveryPricingControllerGetData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    AdminDeliveryPricingControllerGetResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/delivery-pricing", ...options });
-
-export const adminDeliveryPricingControllerUpdate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<AdminDeliveryPricingControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    AdminDeliveryPricingControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/delivery-pricing",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const adminBannerOffersControllerGet = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<AdminBannerOffersControllerGetData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    AdminBannerOffersControllerGetResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/banner-offers", ...options });
-
-export const adminBannerOffersControllerUpdate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<AdminBannerOffersControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    AdminBannerOffersControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/banner-offers",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const adminAssistantControllerGet = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<AdminAssistantControllerGetData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    AdminAssistantControllerGetResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/assistant", ...options });
-
-export const adminAssistantControllerUpdate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<AdminAssistantControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    AdminAssistantControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/assistant",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const adminProductReviewTimingControllerGet = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<AdminProductReviewTimingControllerGetData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    AdminProductReviewTimingControllerGetResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/product-review-timing", ...options });
-
-export const adminProductReviewTimingControllerUpdate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<AdminProductReviewTimingControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    AdminProductReviewTimingControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/product-review-timing",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
 
 export const promoCodesControllerValidate = <
   ThrowOnError extends boolean = false,

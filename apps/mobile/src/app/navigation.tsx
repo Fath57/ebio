@@ -1,11 +1,12 @@
+import type { Announcement } from '../features/announcements/hooks/use-announcement'
 import type { AssistantCartLine } from '../features/assistant/assistant'
-
 // @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
 // The two directives above must stay at the top of the file: an import
 // placed before them disables the `@ts-nocheck` and wakes the React
 // de types de React Navigation.
 import type { ProductDetailProduct, ProductDetailSupplier } from '../features/catalog/components/product-detail-screen'
 import type { ApiProductDetail, ApiSupplierDetail } from '../features/catalog/product-detail-mapping'
+
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { getFocusedRouteNameFromRoute, NavigationContainer, StackActions } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
@@ -15,8 +16,10 @@ import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
-import { ActivityIndicator, Animated, Platform, StatusBar, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Animated, Linking, Platform, StatusBar, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AnnouncementModal } from '../features/announcements/components/announcement-modal'
+import { useAnnouncement } from '../features/announcements/hooks/use-announcement'
 import { AssistantScreen } from '../features/assistant/components/assistant-screen'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
@@ -118,7 +121,7 @@ function SearchHomeWrapper({ navigation }: any) {
         onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
         onOpenAssistant={() => navigation.navigate('Assistant')}
-        onSeeAll={(title: string, criteria: Record<string, unknown>) => {
+        onSeeAll={(title, criteria) => {
           // Les critères de la section rouvrent la recherche telle quelle :
           // plus de correspondance à maintenir entre trois noms figés et
           // trois jeux de filtres.
@@ -131,7 +134,7 @@ function SearchHomeWrapper({ navigation }: any) {
             maxPrice: criteria.maxPrice,
             minRating: criteria.minRating,
             newerThanDays: criteria.newerThanDays,
-            radius: typeof criteria.maxDistanceKm === 'number' ? criteria.maxDistanceKm * 1000 : undefined,
+            radius: criteria.maxDistanceKm === undefined ? undefined : criteria.maxDistanceKm * 1000,
             sortBy: criteria.sortBy,
           })
         }}
@@ -811,7 +814,6 @@ function RateOrderWrapper({ route, navigation }: any) {
         onDone={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
         onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
-        onOpenAssistant={() => navigation.navigate('Assistant')}
       />
     </SafeScreen>
   )
@@ -926,7 +928,7 @@ const Tab = createBottomTabNavigator()
  * after our listener. So we target the child stack directly through `target`,
  * the only way for an action to travel down: otherwise it bubbles up.
  */
-function popTabStackToTop(navigation, tabName: string) {
+function popTabStackToTop(navigation: any, tabName: string) {
   // Read on press rather than captured when the listener is created: the route
   // frozen in the closure would carry the state from before the screen was
   // opened.
@@ -1064,6 +1066,39 @@ export function AppNavigation() {
           })}
         />
       </Tab.Navigator>
+
+      {/* L'annonce du jour, posée au-dessus de la navigation pour survivre au
+        * changement d'onglet — la fermer est un geste, pas un effet de bord. */}
+      <BuyerAnnouncement />
     </NavigationContainer>
   )
+}
+
+/**
+ * L'annonce à l'ouverture, et ce qu'elle désigne.
+ *
+ * Ce que l'annonce pointe s'ouvre dans la pile d'accueil : une boutique, un
+ * produit, ou un lien externe qui sort de l'application.
+ */
+function BuyerAnnouncement() {
+  const { announcement, dismiss } = useAnnouncement()
+
+  const open = (item: Announcement): void => {
+    dismiss()
+    if (item.targetId === null) {
+      return
+    }
+
+    if (item.targetType === 'SUPPLIER') {
+      navigationRef.navigate('Accueil', { screen: 'SupplierProfile', params: { supplierId: item.targetId } })
+    }
+    else if (item.targetType === 'PRODUCT') {
+      navigationRef.navigate('Accueil', { screen: 'ProductDetail', params: { productId: item.targetId } })
+    }
+    else if (item.targetType === 'URL') {
+      void Linking.openURL(item.targetId)
+    }
+  }
+
+  return <AnnouncementModal announcement={announcement} onDismiss={dismiss} onOpenTarget={open} />
 }

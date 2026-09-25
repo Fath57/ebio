@@ -19,11 +19,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/compon
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@boilerstone/ui/components/primitives/tabs'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CreditCard, LayoutGrid, Percent } from 'lucide-react'
+import { Bot, CreditCard, LayoutGrid, Megaphone, Percent } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
+import { AnnouncementsManager } from '../../announcements/components/announcements-manager'
 import { HomeSectionsManager } from '../../home-sections/components/home-sections-manager'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { AssistantToggle } from '../forms/assistant-toggle'
@@ -306,6 +307,10 @@ export default function AdminSettingsPage() {
             <LayoutGrid className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.home')}
           </TabsTrigger>
+          <TabsTrigger value="annonces">
+            <Megaphone className="mr-2 h-4 w-4" />
+            {t('admin.settings.tabs.announcements')}
+          </TabsTrigger>
           <TabsTrigger value="assistant">
             <Bot className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.assistant')}
@@ -321,6 +326,20 @@ export default function AdminSettingsPage() {
               </CardHeader>
               <CardContent>
                 <HomeSectionsManager />
+              </CardContent>
+            </Card>
+          </Can>
+        </TabsContent>
+
+        <TabsContent value="annonces" className="mt-6 space-y-6">
+          <Can action="manage" subject="all">
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.announcements.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.announcements.description')}</p>
+              </CardHeader>
+              <CardContent>
+                <AnnouncementsManager />
               </CardContent>
             </Card>
           </Can>

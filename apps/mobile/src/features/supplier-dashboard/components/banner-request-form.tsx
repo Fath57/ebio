@@ -82,10 +82,41 @@ export function computeMissingTopup(price: number, balance: number): number {
   return Math.max(rounded, MIN_TOPUP)
 }
 
+/**
+ * Ce que la boutique achète.
+ *
+ * Bannière et annonce se demandent de la même façon — un visuel, une cible,
+ * une durée prise dans une grille, payée d'avance au portefeuille. Seuls le
+ * vocabulaire, les tarifs et l'endroit où l'on dépose changent, et c'est
+ * exactement ce que porte cet objet.
+ */
+const KINDS = {
+  banner: {
+    screenTitle: 'Demander une bannière',
+    lead: 'Votre visuel en haut de l\'accueil, pendant la durée choisie.',
+    offersFrom: 'settings',
+    endpoint: '/api/suppliers/me/banner-requests',
+    noun: 'bannière',
+    approvalNote: 'eBio valide votre bannière sous 24 h.',
+  },
+  announcement: {
+    screenTitle: 'Demander une annonce',
+    lead: 'Votre message s\'affiche à l\'ouverture de l\'application, une fois par jour et par acheteur.',
+    offersFrom: 'announcements',
+    endpoint: '/api/suppliers/me/announcement-requests',
+    noun: 'annonce',
+    approvalNote: 'eBio valide votre annonce sous 24 h.',
+  },
+} as const
+
+export type RequestKind = keyof typeof KINDS
+
 interface BannerRequestFormProps {
   onGoBack: () => void
   /** Called once the request has been created (and paid). */
   onCreated: () => void
+  /** Bannière par défaut : c'est ce que ce formulaire faisait avant. */
+  kind?: RequestKind
 }
 
 /**
@@ -94,7 +125,8 @@ interface BannerRequestFormProps {
  * submit; when the balance is short, a FedaPay top-up is proposed and the
  * submission retried once it is confirmed.
  */
-export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProps) {
+export function BannerRequestForm({ onGoBack, onCreated, kind = 'banner' }: BannerRequestFormProps) {
+  const config = KINDS[kind]
   const { semantic } = useTheme()
   const { uploading, pickAndUpload } = useMediaUpload({ context: 'BANNER_IMAGE', aspect: [2, 1] })
 
@@ -140,15 +172,17 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
     async function load() {
       try {
         const [settingsRes, allProducts] = await Promise.all([
-          apiFetch('/api/settings/public'),
+          apiFetch(config.offersFrom === 'settings'
+            ? '/api/settings/public'
+            : '/api/suppliers/me/announcement-requests/offers'),
           loadAllProducts(),
         ])
         if (cancelled) {
           return
         }
         if (settingsRes.ok) {
-          const data = await settingsRes.json() as { bannerOffers?: { offers?: BannerOffer[] } }
-          const list = data.bannerOffers?.offers ?? []
+          const data = await settingsRes.json() as { bannerOffers?: { offers?: BannerOffer[] }, offers?: BannerOffer[] }
+          const list = data.bannerOffers?.offers ?? data.offers ?? []
           setOffers(list)
           setDurationDays(list[0]?.days ?? null)
         }
@@ -237,7 +271,7 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
       if (effectiveDelay > 0) {
         body.requestedStartAt = new Date(Date.now() + effectiveDelay * 24 * 60 * 60 * 1000).toISOString()
       }
-      const res = await apiFetch('/api/suppliers/me/banner-requests', {
+      const res = await apiFetch(config.endpoint, {
         method: 'POST',
         body: JSON.stringify(body),
       })
@@ -253,7 +287,7 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
       }
       appAlert(
         'Demande envoyée',
-        `${formatAmount(selectedOffer.price)} ont été débités de votre portefeuille. eBio valide votre bannière sous 24 h.`,
+        `${formatAmount(selectedOffer.price)} ont été débités de votre portefeuille. ${config.approvalNote}`,
       )
       onCreated()
     }
@@ -294,7 +328,7 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
 
   return (
     <KeyboardAwareView style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Nouvelle bannière" onBack={onGoBack} />
+      <ScreenHeader title={config.screenTitle} onBack={onGoBack} />
       <ScrollView contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[10] }]} showsVerticalScrollIndicator={false} keyboardShouldPersistTaps="handled">
         {/* Visual */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Visuel (format 2:1)</Text>
@@ -339,7 +373,7 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
           value={title}
           onChangeText={setTitle}
           maxLength={TITLE_MAX}
-          accessibilityLabel="Titre de la bannière"
+          accessibilityLabel={`Titre de l\u2019${config.noun}`}
         />
         <Text style={[styles.counter, { color: semantic.textTertiary }]}>{`${title.length}/${TITLE_MAX}`}</Text>
 
@@ -351,7 +385,7 @@ export function BannerRequestForm({ onGoBack, onCreated }: BannerRequestFormProp
           value={subtitle}
           onChangeText={setSubtitle}
           maxLength={SUBTITLE_MAX}
-          accessibilityLabel="Sous-titre de la bannière"
+          accessibilityLabel={`Sous-titre de l\u2019${config.noun}`}
         />
         <Text style={[styles.counter, { color: semantic.textTertiary }]}>{`${subtitle.length}/${SUBTITLE_MAX}`}</Text>
 

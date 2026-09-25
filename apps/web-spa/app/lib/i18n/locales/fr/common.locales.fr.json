@@ -1024,7 +1024,8 @@
         "commissions": "Commissions",
         "payments": "Paiements",
         "assistant": "Assita",
-        "home": "Accueil"
+        "home": "Accueil",
+        "announcements": "Annonces"
       },
       "paymentMethods": {
         "title": "Moyens de paiement",
@@ -1190,6 +1191,10 @@
       "homeSections": {
         "title": "Sections de l'accueil",
         "description": "Ce que l'acheteur voit en ouvrant l'application : les rails de produits, leur titre, leur ordre et ce qu'ils contiennent. Ils étaient écrits dans le code — les renommer demandait une nouvelle version de l'application."
+      },
+      "announcements": {
+        "title": "Annonces à l'ouverture",
+        "description": "Le message qui s'affiche quand un acheteur ouvre l'application. Une boutique peut en demander une, payée depuis son portefeuille comme une bannière ; eBio peut en publier pour son compte."
       }
     },
     "site": {

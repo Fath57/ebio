@@ -1024,7 +1024,8 @@
         "commissions": "Commissions",
         "payments": "Payments",
         "assistant": "Assita",
-        "home": "Home"
+        "home": "Home",
+        "announcements": "Announcements"
       },
       "paymentMethods": {
         "title": "Payment methods",
@@ -1190,6 +1191,10 @@
       "homeSections": {
         "title": "Home sections",
         "description": "What the buyer sees on opening the app: the product rails, their titles, their order and what they hold. They used to live in the code — renaming one meant shipping a new app version."
+      },
+      "announcements": {
+        "title": "Announcements on opening",
+        "description": "The message shown when a buyer opens the app. A shop can request one, paid from its wallet like a banner; eBio can publish its own."
       }
     },
     "site": {

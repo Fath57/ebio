@@ -364,6 +364,7 @@ function SupplierSettingsWrapper({ navigation }: any) {
         onNavigateToSalesPoints={() => navigation.navigate('SupplierSalesPoints')}
         onNavigateToPromoCodes={() => navigation.navigate('SupplierPromoCodes')}
         onNavigateToBannerRequests={() => navigation.navigate('SupplierBannerRequests')}
+        onNavigateToAnnouncementRequest={() => navigation.navigate('SupplierAnnouncementRequestForm')}
         onNavigateToMode={() => navigation.navigate('SupplierMode')}
       />
     </SafeScreen>
@@ -440,6 +441,15 @@ function SupplierBannerRequestsWrapper({ navigation }: any) {
   )
 }
 
+/** Le même formulaire, pour l'annonce à l'ouverture de l'application. */
+function SupplierAnnouncementRequestFormWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <BannerRequestForm kind="announcement" onGoBack={() => navigation.goBack()} onCreated={() => navigation.goBack()} />
+    </SafeScreen>
+  )
+}
+
 function SupplierBannerRequestFormWrapper({ navigation }: any) {
   return (
     <SafeScreen>
@@ -472,6 +482,7 @@ function HomeStackScreen() {
       <HomeStack.Screen name="SupplierPromoCodes" component={SupplierPromoCodesWrapper} />
       <HomeStack.Screen name="SupplierBannerRequests" component={SupplierBannerRequestsWrapper} />
       <HomeStack.Screen name="SupplierBannerRequestForm" component={SupplierBannerRequestFormWrapper} />
+      <HomeStack.Screen name="SupplierAnnouncementRequestForm" component={SupplierAnnouncementRequestFormWrapper} />
       <HomeStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
     </HomeStack.Navigator>
   )

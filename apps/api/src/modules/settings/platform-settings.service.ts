@@ -14,6 +14,8 @@ export const BANNER_OFFERS_KEY = 'banner_offers'
 export const ASSISTANT_ENABLED_KEY = 'assistant_enabled'
 export const PRODUCT_REVIEW_DELAY_HOURS_KEY = 'product_review_delay_hours'
 export const PRODUCT_REVIEW_MAX_INVITES_KEY = 'product_review_max_invites'
+export const ANNOUNCEMENT_INTERVAL_HOURS_KEY = 'announcement_interval_hours'
+export const ANNOUNCEMENT_OFFERS_KEY = 'announcement_offers'
 
 export const DEFAULT_BANNER_OFFERS: BannerOffersInput = {
   offers: [
@@ -52,6 +54,25 @@ export const DEFAULT_PRODUCT_REVIEW_DELAY_HOURS = 12
 
 /** Au-delà, ne pas répondre est une réponse. */
 export const DEFAULT_PRODUCT_REVIEW_MAX_INVITES = 3
+
+/**
+ * Le temps avant qu'une même annonce puisse réapparaître.
+ *
+ * Une annonce interrompt : elle se met devant ce que l'acheteur venait faire.
+ * Une fois par jour est le rythme qui se supporte ; réglable parce qu'une
+ * annonce courte et importante mérite parfois d'insister.
+ */
+export const DEFAULT_ANNOUNCEMENT_INTERVAL_HOURS = 24
+
+/** Durées et prix proposés aux boutiques pour une annonce. */
+export const DEFAULT_ANNOUNCEMENT_OFFERS: BannerOffersInput = {
+  offers: [
+    { days: 1, price: 2_000 },
+    { days: 3, price: 5_000 },
+    { days: 7, price: 10_000 },
+  ],
+  paidSlots: 1,
+}
 
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
@@ -175,6 +196,35 @@ export class PlatformSettingsService {
   async setProductReviewMaxInvites(count: number): Promise<void> {
     this.assertInteger(count, 1, 10, 'Le nombre de relances doit être compris entre 1 et 10')
     await this.set(PRODUCT_REVIEW_MAX_INVITES_KEY, String(count))
+  }
+
+  /** Heures avant qu'une même annonce puisse réapparaître au même acheteur. */
+  async getAnnouncementIntervalHours(): Promise<number> {
+    return this.readInteger(ANNOUNCEMENT_INTERVAL_HOURS_KEY, DEFAULT_ANNOUNCEMENT_INTERVAL_HOURS, 1, 720)
+  }
+
+  async setAnnouncementIntervalHours(hours: number): Promise<void> {
+    this.assertInteger(hours, 1, 720, 'L\'intervalle doit être un nombre d\'heures entre 1 et 720')
+    await this.set(ANNOUNCEMENT_INTERVAL_HOURS_KEY, String(hours))
+  }
+
+  async getAnnouncementOffers(): Promise<BannerOffersInput> {
+    const raw = await this.get(ANNOUNCEMENT_OFFERS_KEY)
+    if (raw === null) {
+      return DEFAULT_ANNOUNCEMENT_OFFERS
+    }
+    try {
+      const parsed = bannerOffersSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_ANNOUNCEMENT_OFFERS
+    }
+    catch {
+      return DEFAULT_ANNOUNCEMENT_OFFERS
+    }
+  }
+
+  async setAnnouncementOffers(config: BannerOffersInput): Promise<void> {
+    const sorted = { ...config, offers: [...config.offers].sort((a, b) => a.days - b.days) }
+    await this.set(ANNOUNCEMENT_OFFERS_KEY, JSON.stringify(sorted))
   }
 
   /** Is the conversational assistant open to buyers? */

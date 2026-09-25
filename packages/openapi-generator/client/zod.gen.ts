@@ -661,6 +661,61 @@ export const zBroadcastNotification = z.object({
 });
 
 /**
+ * AnnouncementRequestInput
+ *
+ * Demande d'annonce à l'ouverture de l'application
+ */
+export const zAnnouncementRequestInput = z.object({
+  targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
+  targetId: z.optional(z.union([z.string().max(1024), z.null()])),
+  title: z.string().min(1).max(120),
+  subtitle: z.optional(z.union([z.string().max(500), z.null()])),
+  imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
+  durationDays: z.int().gte(1).lte(60),
+});
+
+/**
+ * ApproveAnnouncement
+ */
+export const zApproveAnnouncement = z.object({
+  startsAt: z.optional(z.union([z.string(), z.null()])),
+  priority: z.optional(z.int().gte(0).lte(100)),
+});
+
+/**
+ * RejectAnnouncement
+ */
+export const zRejectAnnouncement = z.object({
+  reason: z.string().min(1).max(500),
+});
+
+/**
+ * PlatformAnnouncementInput
+ *
+ * Une annonce publiée par eBio
+ */
+export const zPlatformAnnouncementInput = z.object({
+  targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
+  targetId: z.optional(z.union([z.string().max(1024), z.null()])),
+  title: z.string().min(1).max(120),
+  subtitle: z.optional(z.union([z.string().max(500), z.null()])),
+  imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
+  startsAt: z.string(),
+  endsAt: z.string(),
+  priority: z.optional(z.int().gte(0).lte(100)),
+  active: z.optional(z.boolean()),
+});
+
+/**
+ * AnnouncementInterval
+ *
+ * Temps avant qu'une même annonce puisse réapparaître
+ */
+export const zAnnouncementInterval = z.object({
+  intervalleHeures: z.int().gte(1).lte(720),
+});
+
+/**
  * AssistantTurn
  *
  * Un tour de parole avec l'assistant
@@ -4097,239 +4152,65 @@ export const zSearchControllerGetCategoriesData = z.object({
  */
 export const zSearchControllerGetCategoriesResponse = zCategoriesResponse;
 
-export const zAssistantControllerTurnData = z.object({
-  body: z.object({
-    sessionId: z.optional(
-      z
-        .uuid()
-        .regex(
-          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-        ),
-    ),
-    message: z.string().min(1).max(1000),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAssistantControllerAdjustCartData = z.object({
-  body: z.object({
-    produitId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    quantite: z.int().gte(0).lte(999),
-  }),
-  path: z.object({
-    sessionId: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zAssistantControllerTurnStreamData = z.object({
-  body: z.object({
-    sessionId: z.optional(
-      z
-        .uuid()
-        .regex(
-          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-        ),
-    ),
-    message: z.string().min(1).max(1000),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAssistantControllerTranscribeData = z.object({
+export const zAnnouncementsControllerCurrentData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zAssistantControllerSpeakData = z.object({
+export const zAnnouncementsControllerSeenData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierAnnouncementRequestsControllerOffersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierAnnouncementRequestsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierAnnouncementRequestsControllerCreateData = z.object({
   body: z.object({
-    texte: z.string().min(1).max(2000),
+    targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
+    targetId: z.optional(z.union([z.string().max(1024), z.null()])),
+    title: z.string().min(1).max(120),
+    subtitle: z.optional(z.union([z.string().max(500), z.null()])),
+    imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
+    durationDays: z.int().gte(1).lte(60),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zOrdersControllerPreviewCheckoutData = z.object({
-  body: z.object({
-    items: z
-      .array(
-        z.object({
-          productId: z
-            .uuid()
-            .regex(
-              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-            ),
-          variantId: z.optional(
-            z
-              .uuid()
-              .regex(
-                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-              ),
-          ),
-          quantity: z.int().gte(1).lte(9007199254740991),
-        }),
-      )
-      .min(1),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
-    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
-    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
-    promoCode: z.optional(z.string().max(50)),
+export const zSupplierAnnouncementRequestsControllerCancelData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
   }),
-  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zOrdersControllerCreateCheckoutData = z.object({
-  body: z.object({
-    items: z
-      .array(
-        z.object({
-          productId: z
-            .uuid()
-            .regex(
-              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-            ),
-          variantId: z.optional(
-            z
-              .uuid()
-              .regex(
-                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-              ),
-          ),
-          quantity: z.int().gte(1).lte(9007199254740991),
-        }),
-      )
-      .min(1),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
-    deliveryAddress: z.optional(z.string().min(10).max(500)),
-    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
-    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
-    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
-    promoCode: z.optional(z.string().max(50)),
-    deliverySlot: z.optional(z.string().max(200)),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerFindAllData = z.object({
+export const zAdminAnnouncementsControllerListRequestsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
     status: z.string(),
-    page: z.string(),
-    limit: z.string(),
-    view: z.string(),
   }),
 });
 
-export const zOrdersControllerCreateData = z.object({
+export const zAdminAnnouncementsControllerApproveData = z.object({
   body: z.object({
-    supplierId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
-    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
-    deliveryAddress: z.optional(z.string().min(3).max(500)),
-    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
-    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
-    deliverySlot: z.optional(z.string().max(200)),
-    promoCode: z.optional(z.string().min(1).max(30)),
-    items: z
-      .array(
-        z.object({
-          productId: z
-            .uuid()
-            .regex(
-              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-            ),
-          variantId: z.optional(
-            z
-              .uuid()
-              .regex(
-                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-              ),
-          ),
-          quantity: z.int().gte(1).lte(9007199254740991),
-        }),
-      )
-      .min(1),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerPreviewData = z.object({
-  body: z.object({
-    supplierId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
-    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
-    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
-    promoCode: z.optional(z.string().min(1).max(30)),
-    items: z
-      .array(
-        z.object({
-          productId: z
-            .uuid()
-            .regex(
-              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-            ),
-          variantId: z.optional(
-            z
-              .uuid()
-              .regex(
-                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-              ),
-          ),
-          quantity: z.int().gte(1).lte(9007199254740991),
-        }),
-      )
-      .min(1),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerFindByIdData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerInvoiceData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerAcceptData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerRejectData = z.object({
-  body: z.object({
-    reason: z.string().min(5).max(500),
+    startsAt: z.optional(z.union([z.string(), z.null()])),
+    priority: z.optional(z.int().gte(0).lte(100)),
   }),
   path: z.object({
     id: z.string(),
@@ -4337,243 +4218,8 @@ export const zOrdersControllerRejectData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zOrdersControllerUpdateStatusData = z.object({
+export const zAdminAnnouncementsControllerRejectData = z.object({
   body: z.object({
-    status: z.enum(["PREPARING", "READY", "IN_DELIVERY"]),
-    prepMinutes: z.optional(z.int().gte(1).lte(240)),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerConfirmDeliveryData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerConfirmDeliveryPostData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zOrdersControllerCreateDisputeData = z.object({
-  body: z.object({
-    reason: z.string().min(10).max(2000),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zNotificationsControllerRegisterTokenData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zNotificationsControllerUnregisterTokenData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zNotificationsControllerGetUnreadData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    audience: z.string(),
-  }),
-});
-
-export const zNotificationsControllerGetAllData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    audience: z.string(),
-  }),
-});
-
-export const zNotificationsControllerGetUnreadCountData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    audience: z.string(),
-  }),
-});
-
-export const zNotificationsControllerMarkAsReadData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zNotificationsControllerMarkAllAsReadData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zNotificationsControllerSendTestNotificationData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zPaymentsControllerGetPaymentInfoData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  query: z.optional(z.never()),
-});
-
-/**
- * Payment info for the frontend to display and init Checkout.js
- */
-export const zPaymentsControllerGetPaymentInfoResponse = zPaymentInfo;
-
-export const zPaymentsControllerInitiateNoRedirectPaymentData = z.object({
-  body: z.object({
-    orderId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    paymentMethodId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    phoneNumber: z.optional(z.string().min(8)),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-/**
- * Result after initiating a no-redirect payment
- */
-export const zPaymentsControllerInitiateNoRedirectPaymentResponse =
-  zNoRedirectPaymentResult;
-
-export const zPaymentsControllerInitiateCheckoutPaymentData = z.object({
-  body: z.object({
-    orderId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-/**
- * Result after initiating a no-redirect payment
- */
-export const zPaymentsControllerInitiateCheckoutPaymentResponse =
-  zNoRedirectPaymentResult;
-
-export const zPaymentsControllerInitiateCartPaymentData = z.object({
-  body: z.object({
-    checkoutId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-/**
- * Successful response
- */
-export const zPaymentsControllerInitiateCartPaymentResponse =
-  zCartPaymentResult;
-
-export const zPaymentsControllerVerifyCartPaymentData = z.object({
-  body: z.object({
-    checkoutId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    fedapayTransactionId: z.string().min(1),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-/**
- * Successful response
- */
-export const zPaymentsControllerVerifyCartPaymentResponse = zCartPaymentResult;
-
-export const zPaymentsControllerVerifyCheckoutPaymentData = z.object({
-  body: z.object({
-    orderId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    paymentId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    fedapayTransactionId: z.string().min(1),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-/**
- * Result after verifying a Checkout.js payment
- */
-export const zPaymentsControllerVerifyCheckoutPaymentResponse =
-  zCheckoutVerifyResult;
-
-export const zPaymentsControllerGetPaymentStatusData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  query: z.optional(z.never()),
-});
-
-/**
- * Current payment status for an order
- */
-export const zPaymentsControllerGetPaymentStatusResponse =
-  zPaymentStatusResponse;
-
-export const zCheckoutsControllerCompensateData = z.object({
-  body: z.object({
-    orderId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
     reason: z.string().min(1).max(500),
   }),
   path: z.object({
@@ -4582,444 +4228,160 @@ export const zCheckoutsControllerCompensateData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zPaymentsWebhookControllerHandleFedaPayWebhookData = z.object({
+export const zAdminAnnouncementsControllerListData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zPaymentsWebhookControllerHandleIntramWebhookData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-  headers: z.object({
-    "x-intram-signature": z.string(),
-    "x-intram-timestamp": z.string(),
-  }),
-});
-
-export const zPaymentsWebhookControllerHandleStripeWebhookData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-  headers: z.object({
-    "stripe-signature": z.string(),
-  }),
-});
-
-export const zPaymentsWebhookControllerHandlePawerPayerWebhookData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zPaymentMethodAdminControllerListData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-/**
- * Paginated list of payment methods
- */
-export const zPaymentMethodAdminControllerListResponse = zPaymentMethodList;
-
-export const zPaymentMethodAdminControllerCreateData = z.object({
+export const zAdminAnnouncementsControllerCreateData = z.object({
   body: z.object({
-    name: z.string().min(1).max(255),
-    code: z.string().min(1).max(255),
-    type: z.enum(["mobile", "card"]),
-    provider: z.enum(["fedapay", "stripe", "pawerpayer", "intram"]),
-    countryCode: z.string().min(2).max(3),
-    commission: z.number().gte(0).lte(100).default(0),
-    priority: z.int().gte(0).lte(9007199254740991).default(0),
-    active: z.boolean().default(true),
-    useFedapayCheckout: z.boolean().default(false),
-    supportsPayout: z.boolean().default(false),
-    supportsRefund: z.boolean().default(false),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-/**
- * Payment method details (admin view)
- */
-export const zPaymentMethodAdminControllerCreateResponse = zPaymentMethodOutput;
-
-export const zPaymentMethodAdminControllerRemoveData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  query: z.optional(z.never()),
-});
-
-/**
- * Simple message response
- */
-export const zPaymentMethodAdminControllerRemoveResponse = zMessageResponse;
-
-export const zPaymentMethodAdminControllerGetOneData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  query: z.optional(z.never()),
-});
-
-/**
- * Payment method details (admin view)
- */
-export const zPaymentMethodAdminControllerGetOneResponse = zPaymentMethodOutput;
-
-export const zPaymentMethodAdminControllerUpdateData = z.object({
-  body: z.object({
-    name: z.optional(z.string().min(1).max(255)),
-    code: z.optional(z.string().min(1).max(255)),
-    type: z.optional(z.enum(["mobile", "card"])),
-    provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer", "intram"])),
-    countryCode: z.optional(z.string().min(2).max(3)),
-    commission: z.optional(z.number().gte(0).lte(100)),
-    priority: z.optional(z.int().gte(0).lte(9007199254740991)),
+    targetType: z.enum(["SUPPLIER", "PRODUCT", "URL", "NONE"]),
+    targetId: z.optional(z.union([z.string().max(1024), z.null()])),
+    title: z.string().min(1).max(120),
+    subtitle: z.optional(z.union([z.string().max(500), z.null()])),
+    imageUrl: z.optional(z.union([z.string().max(1024), z.null()])),
+    startsAt: z.string(),
+    endsAt: z.string(),
+    priority: z.optional(z.int().gte(0).lte(100)),
     active: z.optional(z.boolean()),
-    useFedapayCheckout: z.optional(z.boolean()),
-    supportsPayout: z.optional(z.boolean()),
-    supportsRefund: z.optional(z.boolean()),
-    icon: z.optional(z.string().max(500)),
   }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminAnnouncementsControllerSetActiveData = z.object({
+  body: z.optional(z.never()),
   path: z.object({
-    id: z
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminAnnouncementsControllerGetIntervalData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminAnnouncementsControllerSetIntervalData = z.object({
+  body: z.object({
+    intervalleHeures: z.int().gte(1).lte(720),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zPublicSettingsControllerGetPublicData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zDeliveryPricingControllerQuoteData = z.object({
+  body: z.object({
+    supplierId: z
       .uuid()
       .regex(
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
+    itemsTotal: z.number().gte(0),
+    latitude: z.optional(z.number().gte(-90).lte(90)),
+    longitude: z.optional(z.number().gte(-180).lte(180)),
   }),
+  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-/**
- * Payment method details (admin view)
- */
-export const zPaymentMethodAdminControllerUpdateResponse = zPaymentMethodOutput;
-
-export const zPaymentMethodAdminControllerToggleActiveData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-  }),
-  query: z.optional(z.never()),
-});
-
-/**
- * Payment method details (admin view)
- */
-export const zPaymentMethodAdminControllerToggleActiveResponse =
-  zPaymentMethodOutput;
-
-export const zPaymentMethodPublicControllerGetAvailableData = z.object({
+export const zAdminDeliveryPricingControllerGetData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-/**
- * List of available payment methods for a country
- */
-export const zPaymentMethodPublicControllerGetAvailableResponse =
-  zAvailablePaymentMethods;
-
-export const zWalletControllerGetMyWalletData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletControllerGetMyTopupsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletControllerVerifyTopupData = z.object({
+export const zAdminDeliveryPricingControllerUpdateData = z.object({
   body: z.object({
-    fedapayTransactionId: z.string().min(1).max(64),
+    mode: z.enum(["FLAT", "DISTANCE", "ZONES"]),
+    flat: z.object({
+      fee: z.int().gte(0).lte(1000000),
+    }),
+    distance: z.object({
+      baseFee: z.int().gte(0).lte(1000000),
+      perKm: z.int().gte(0).lte(1000000),
+      minFee: z.int().gte(0).lte(1000000),
+      maxFee: z.int().gte(0).lte(1000000),
+      roundTo: z.int().gte(1).lte(10000),
+    }),
+    zones: z
+      .array(
+        z.object({
+          maxKm: z.number().gte(0.1).lte(500),
+          fee: z.int().gte(0).lte(1000000),
+        }),
+      )
+      .min(1)
+      .max(10),
+    freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
+    maxDistanceKm: z.number().gte(0.5).lte(500),
+    grouping: z
+      .object({
+        maxShops: z.int().gte(1).lte(5),
+        maxPickupSpreadKm: z.number().gte(0.1).lte(500),
+      })
+      .default({ maxShops: 2, maxPickupSpreadKm: 3 }),
   }),
-  path: z.object({
-    id: z.string(),
-  }),
+  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zWalletControllerTopupData = z.object({
+export const zAdminBannerOffersControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminBannerOffersControllerUpdateData = z.object({
   body: z.object({
-    amount: z.int().gte(100).lte(1000000),
+    offers: z
+      .array(
+        z.object({
+          days: z.int().gte(1).lte(365),
+          price: z.int().gte(0).lte(10000000),
+        }),
+      )
+      .min(1)
+      .max(6),
+    paidSlots: z.int().gte(0).lte(5),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zSupplierWalletControllerTopupData = z.object({
+export const zAdminAssistantControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminAssistantControllerUpdateData = z.object({
   body: z.object({
-    amount: z.int().gte(100).lte(1000000),
+    enabled: z.boolean(),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
-export const zSupplierWalletControllerVerifyTopupData = z.object({
+export const zAdminProductReviewTimingControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminProductReviewTimingControllerUpdateData = z.object({
   body: z.object({
-    fedapayTransactionId: z.string().min(1).max(64),
+    delaiHeures: z.int().gte(1).lte(720),
+    relancesMaximum: z.int().gte(1).lte(10),
   }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerGetWalletData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zSupplierWalletControllerListNumbersData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerAddNumberData = z.object({
-  body: z.object({
-    phoneNumber: z.string().min(8).max(20),
-    holderName: z.string().min(2).max(100),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerRemoveNumberData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerListWithdrawalsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zSupplierWalletControllerRequestWithdrawalData = z.object({
-  body: z.object({
-    payoutNumberId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    amount: z.int().gte(1000).lte(9007199254740991),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSupplierWalletControllerCancelWithdrawalData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerGetWalletData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zCourierWalletControllerListNumbersData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerAddNumberData = z.object({
-  body: z.object({
-    phoneNumber: z.string().min(8).max(20),
-    holderName: z.string().min(2).max(100),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerRemoveNumberData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerListWithdrawalsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zCourierWalletControllerRequestWithdrawalData = z.object({
-  body: z.object({
-    payoutNumberId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    amount: z.int().gte(1000).lte(9007199254740991),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerCancelWithdrawalData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerTopupData = z.object({
-  body: z.object({
-    amount: z.int().gte(100).lte(1000000),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zCourierWalletControllerListTopupsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zCourierWalletControllerVerifyTopupData = z.object({
-  body: z.object({
-    fedapayTransactionId: z.string().min(1).max(64),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zWalletAdminControllerPlatformOverviewData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    from: z.string(),
-    to: z.string(),
-  }),
-});
-
-export const zWalletAdminControllerPlatformTransactionsData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    account: z.string(),
-  }),
-  query: z.object({
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletAdminControllerListNumbersData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    status: z.string(),
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletAdminControllerActOnNumberData = z.object({
-  body: z.object({
-    action: z.enum(["validate", "reject"]),
-    rejectionReason: z.optional(z.string().min(3).max(255)),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zWalletAdminControllerListWithdrawalsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    status: z.string(),
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletAdminControllerActOnWithdrawalData = z.object({
-  body: z.object({
-    action: z.enum(["approve", "reject"]),
-    rejectionReason: z.optional(z.string().min(3).max(255)),
-  }),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zWalletAdminControllerListTopupsData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.object({
-    status: z.string(),
-    page: z.string(),
-    limit: z.string(),
-  }),
-});
-
-export const zWalletAdminControllerWalletsOverviewData = z.object({
-  body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
@@ -5437,6 +4799,933 @@ export const zMediaControllerFindByEntityData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zNotificationsControllerRegisterTokenData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerUnregisterTokenData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerGetUnreadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    audience: z.string(),
+  }),
+});
+
+export const zNotificationsControllerGetAllData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    audience: z.string(),
+  }),
+});
+
+export const zNotificationsControllerGetUnreadCountData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    audience: z.string(),
+  }),
+});
+
+export const zNotificationsControllerMarkAsReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerMarkAllAsReadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zNotificationsControllerSendTestNotificationData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zWalletControllerGetMyWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletControllerGetMyTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletControllerVerifyTopupData = z.object({
+  body: z.object({
+    fedapayTransactionId: z.string().min(1).max(64),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(1000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(1000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerVerifyTopupData = z.object({
+  body: z.object({
+    fedapayTransactionId: z.string().min(1).max(64),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerGetWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zSupplierWalletControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerAddNumberData = z.object({
+  body: z.object({
+    phoneNumber: z.string().min(8).max(20),
+    holderName: z.string().min(2).max(100),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerRemoveNumberData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zSupplierWalletControllerRequestWithdrawalData = z.object({
+  body: z.object({
+    payoutNumberId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    amount: z.int().gte(1000).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerCancelWithdrawalData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerGetWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zCourierWalletControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerAddNumberData = z.object({
+  body: z.object({
+    phoneNumber: z.string().min(8).max(20),
+    holderName: z.string().min(2).max(100),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerRemoveNumberData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zCourierWalletControllerRequestWithdrawalData = z.object({
+  body: z.object({
+    payoutNumberId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    amount: z.int().gte(1000).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerCancelWithdrawalData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gte(100).lte(1000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCourierWalletControllerListTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zCourierWalletControllerVerifyTopupData = z.object({
+  body: z.object({
+    fedapayTransactionId: z.string().min(1).max(64),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerPlatformOverviewData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    from: z.string(),
+    to: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerPlatformTransactionsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    account: z.string(),
+  }),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerListNumbersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerActOnNumberData = z.object({
+  body: z.object({
+    action: z.enum(["validate", "reject"]),
+    rejectionReason: z.optional(z.string().min(3).max(255)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListWithdrawalsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerActOnWithdrawalData = z.object({
+  body: z.object({
+    action: z.enum(["approve", "reject"]),
+    rejectionReason: z.optional(z.string().min(3).max(255)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerListTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerWalletsOverviewData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerTurnData = z.object({
+  body: z.object({
+    sessionId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    message: z.string().min(1).max(1000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerAdjustCartData = z.object({
+  body: z.object({
+    produitId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    quantite: z.int().gte(0).lte(999),
+  }),
+  path: z.object({
+    sessionId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerTurnStreamData = z.object({
+  body: z.object({
+    sessionId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    message: z.string().min(1).max(1000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerTranscribeData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerSpeakData = z.object({
+  body: z.object({
+    texte: z.string().min(1).max(2000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerPreviewCheckoutData = z.object({
+  body: z.object({
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gte(1).lte(9007199254740991),
+        }),
+      )
+      .min(1),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+    promoCode: z.optional(z.string().max(50)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerCreateCheckoutData = z.object({
+  body: z.object({
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gte(1).lte(9007199254740991),
+        }),
+      )
+      .min(1),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    deliveryAddress: z.optional(z.string().min(10).max(500)),
+    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
+    promoCode: z.optional(z.string().max(50)),
+    deliverySlot: z.optional(z.string().max(200)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerFindAllData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.string(),
+    page: z.string(),
+    limit: z.string(),
+    view: z.string(),
+  }),
+});
+
+export const zOrdersControllerCreateData = z.object({
+  body: z.object({
+    supplierId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
+    deliveryAddress: z.optional(z.string().min(3).max(500)),
+    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+    deliverySlot: z.optional(z.string().max(200)),
+    promoCode: z.optional(z.string().min(1).max(30)),
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gte(1).lte(9007199254740991),
+        }),
+      )
+      .min(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerPreviewData = z.object({
+  body: z.object({
+    supplierId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
+    deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+    deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+    promoCode: z.optional(z.string().min(1).max(30)),
+    items: z
+      .array(
+        z.object({
+          productId: z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+          variantId: z.optional(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          ),
+          quantity: z.int().gte(1).lte(9007199254740991),
+        }),
+      )
+      .min(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerFindByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerInvoiceData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerAcceptData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerRejectData = z.object({
+  body: z.object({
+    reason: z.string().min(5).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerUpdateStatusData = z.object({
+  body: z.object({
+    status: z.enum(["PREPARING", "READY", "IN_DELIVERY"]),
+    prepMinutes: z.optional(z.int().gte(1).lte(240)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerConfirmDeliveryData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerConfirmDeliveryPostData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zOrdersControllerCreateDisputeData = z.object({
+  body: z.object({
+    reason: z.string().min(10).max(2000),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zPaymentsControllerGetPaymentInfoData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Payment info for the frontend to display and init Checkout.js
+ */
+export const zPaymentsControllerGetPaymentInfoResponse = zPaymentInfo;
+
+export const zPaymentsControllerInitiateNoRedirectPaymentData = z.object({
+  body: z.object({
+    orderId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    paymentMethodId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    phoneNumber: z.optional(z.string().min(8)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Result after initiating a no-redirect payment
+ */
+export const zPaymentsControllerInitiateNoRedirectPaymentResponse =
+  zNoRedirectPaymentResult;
+
+export const zPaymentsControllerInitiateCheckoutPaymentData = z.object({
+  body: z.object({
+    orderId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Result after initiating a no-redirect payment
+ */
+export const zPaymentsControllerInitiateCheckoutPaymentResponse =
+  zNoRedirectPaymentResult;
+
+export const zPaymentsControllerInitiateCartPaymentData = z.object({
+  body: z.object({
+    checkoutId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Successful response
+ */
+export const zPaymentsControllerInitiateCartPaymentResponse =
+  zCartPaymentResult;
+
+export const zPaymentsControllerVerifyCartPaymentData = z.object({
+  body: z.object({
+    checkoutId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    fedapayTransactionId: z.string().min(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Successful response
+ */
+export const zPaymentsControllerVerifyCartPaymentResponse = zCartPaymentResult;
+
+export const zPaymentsControllerVerifyCheckoutPaymentData = z.object({
+  body: z.object({
+    orderId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    paymentId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    fedapayTransactionId: z.string().min(1),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Result after verifying a Checkout.js payment
+ */
+export const zPaymentsControllerVerifyCheckoutPaymentResponse =
+  zCheckoutVerifyResult;
+
+export const zPaymentsControllerGetPaymentStatusData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Current payment status for an order
+ */
+export const zPaymentsControllerGetPaymentStatusResponse =
+  zPaymentStatusResponse;
+
+export const zCheckoutsControllerCompensateData = z.object({
+  body: z.object({
+    orderId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    reason: z.string().min(1).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zPaymentsWebhookControllerHandleFedaPayWebhookData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zPaymentsWebhookControllerHandleIntramWebhookData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+  headers: z.object({
+    "x-intram-signature": z.string(),
+    "x-intram-timestamp": z.string(),
+  }),
+});
+
+export const zPaymentsWebhookControllerHandleStripeWebhookData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+  headers: z.object({
+    "stripe-signature": z.string(),
+  }),
+});
+
+export const zPaymentsWebhookControllerHandlePawerPayerWebhookData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zPaymentMethodAdminControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Paginated list of payment methods
+ */
+export const zPaymentMethodAdminControllerListResponse = zPaymentMethodList;
+
+export const zPaymentMethodAdminControllerCreateData = z.object({
+  body: z.object({
+    name: z.string().min(1).max(255),
+    code: z.string().min(1).max(255),
+    type: z.enum(["mobile", "card"]),
+    provider: z.enum(["fedapay", "stripe", "pawerpayer", "intram"]),
+    countryCode: z.string().min(2).max(3),
+    commission: z.number().gte(0).lte(100).default(0),
+    priority: z.int().gte(0).lte(9007199254740991).default(0),
+    active: z.boolean().default(true),
+    useFedapayCheckout: z.boolean().default(false),
+    supportsPayout: z.boolean().default(false),
+    supportsRefund: z.boolean().default(false),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Payment method details (admin view)
+ */
+export const zPaymentMethodAdminControllerCreateResponse = zPaymentMethodOutput;
+
+export const zPaymentMethodAdminControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Simple message response
+ */
+export const zPaymentMethodAdminControllerRemoveResponse = zMessageResponse;
+
+export const zPaymentMethodAdminControllerGetOneData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Payment method details (admin view)
+ */
+export const zPaymentMethodAdminControllerGetOneResponse = zPaymentMethodOutput;
+
+export const zPaymentMethodAdminControllerUpdateData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(1).max(255)),
+    code: z.optional(z.string().min(1).max(255)),
+    type: z.optional(z.enum(["mobile", "card"])),
+    provider: z.optional(z.enum(["fedapay", "stripe", "pawerpayer", "intram"])),
+    countryCode: z.optional(z.string().min(2).max(3)),
+    commission: z.optional(z.number().gte(0).lte(100)),
+    priority: z.optional(z.int().gte(0).lte(9007199254740991)),
+    active: z.optional(z.boolean()),
+    useFedapayCheckout: z.optional(z.boolean()),
+    supportsPayout: z.optional(z.boolean()),
+    supportsRefund: z.optional(z.boolean()),
+    icon: z.optional(z.string().max(500)),
+  }),
+  path: z.object({
+    id: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Payment method details (admin view)
+ */
+export const zPaymentMethodAdminControllerUpdateResponse = zPaymentMethodOutput;
+
+export const zPaymentMethodAdminControllerToggleActiveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  }),
+  query: z.optional(z.never()),
+});
+
+/**
+ * Payment method details (admin view)
+ */
+export const zPaymentMethodAdminControllerToggleActiveResponse =
+  zPaymentMethodOutput;
+
+export const zPaymentMethodPublicControllerGetAvailableData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+/**
+ * List of available payment methods for a country
+ */
+export const zPaymentMethodPublicControllerGetAvailableResponse =
+  zAvailablePaymentMethods;
+
 export const zCouriersControllerRegisterData = z.object({
   body: z.object({
     fullName: z.string().min(2).max(255),
@@ -5824,120 +6113,6 @@ export const zAdminCouriersControllerRebroadcastDeliveryData = z.object({
   path: z.object({
     id: z.string(),
   }),
-  query: z.optional(z.never()),
-});
-
-export const zPublicSettingsControllerGetPublicData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zDeliveryPricingControllerQuoteData = z.object({
-  body: z.object({
-    supplierId: z
-      .uuid()
-      .regex(
-        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-      ),
-    itemsTotal: z.number().gte(0),
-    latitude: z.optional(z.number().gte(-90).lte(90)),
-    longitude: z.optional(z.number().gte(-180).lte(180)),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminDeliveryPricingControllerGetData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminDeliveryPricingControllerUpdateData = z.object({
-  body: z.object({
-    mode: z.enum(["FLAT", "DISTANCE", "ZONES"]),
-    flat: z.object({
-      fee: z.int().gte(0).lte(1000000),
-    }),
-    distance: z.object({
-      baseFee: z.int().gte(0).lte(1000000),
-      perKm: z.int().gte(0).lte(1000000),
-      minFee: z.int().gte(0).lte(1000000),
-      maxFee: z.int().gte(0).lte(1000000),
-      roundTo: z.int().gte(1).lte(10000),
-    }),
-    zones: z
-      .array(
-        z.object({
-          maxKm: z.number().gte(0.1).lte(500),
-          fee: z.int().gte(0).lte(1000000),
-        }),
-      )
-      .min(1)
-      .max(10),
-    freeFrom: z.union([z.int().gte(0).lte(9007199254740991), z.null()]),
-    maxDistanceKm: z.number().gte(0.5).lte(500),
-    grouping: z
-      .object({
-        maxShops: z.int().gte(1).lte(5),
-        maxPickupSpreadKm: z.number().gte(0.1).lte(500),
-      })
-      .default({ maxShops: 2, maxPickupSpreadKm: 3 }),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminBannerOffersControllerGetData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminBannerOffersControllerUpdateData = z.object({
-  body: z.object({
-    offers: z
-      .array(
-        z.object({
-          days: z.int().gte(1).lte(365),
-          price: z.int().gte(0).lte(10000000),
-        }),
-      )
-      .min(1)
-      .max(6),
-    paidSlots: z.int().gte(0).lte(5),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminAssistantControllerGetData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminAssistantControllerUpdateData = z.object({
-  body: z.object({
-    enabled: z.boolean(),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminProductReviewTimingControllerGetData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminProductReviewTimingControllerUpdateData = z.object({
-  body: z.object({
-    delaiHeures: z.int().gte(1).lte(720),
-    relancesMaximum: z.int().gte(1).lte(10),
-  }),
-  path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 

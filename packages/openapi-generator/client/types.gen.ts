@@ -947,6 +947,61 @@ export type BroadcastNotification = {
 };
 
 /**
+ * AnnouncementRequestInput
+ *
+ * Demande d'annonce à l'ouverture de l'application
+ */
+export type AnnouncementRequestInput = {
+  targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+  targetId?: string | null;
+  title: string;
+  subtitle?: string | null;
+  imageUrl?: string | null;
+  durationDays: number;
+};
+
+/**
+ * ApproveAnnouncement
+ */
+export type ApproveAnnouncement = {
+  startsAt?: string | null;
+  priority?: number;
+};
+
+/**
+ * RejectAnnouncement
+ */
+export type RejectAnnouncement = {
+  reason: string;
+};
+
+/**
+ * PlatformAnnouncementInput
+ *
+ * Une annonce publiée par eBio
+ */
+export type PlatformAnnouncementInput = {
+  targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+  targetId?: string | null;
+  title: string;
+  subtitle?: string | null;
+  imageUrl?: string | null;
+  startsAt: string;
+  endsAt: string;
+  priority?: number;
+  active?: boolean;
+};
+
+/**
+ * AnnouncementInterval
+ *
+ * Temps avant qu'une même annonce puisse réapparaître
+ */
+export type AnnouncementInterval = {
+  intervalleHeures: number;
+};
+
+/**
  * AssistantTurn
  *
  * Un tour de parole avec l'assistant
@@ -4210,296 +4265,123 @@ export type SearchControllerGetCategoriesResponses = {
 export type SearchControllerGetCategoriesResponse =
   SearchControllerGetCategoriesResponses[keyof SearchControllerGetCategoriesResponses];
 
-export type AssistantControllerTurnData = {
-  /**
-   * AssistantTurn
-   *
-   * Un tour de parole avec l'assistant
-   */
-  body: {
-    sessionId?: string;
-    message: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/assistant/turn";
-};
-
-export type AssistantControllerTurnResponses = {
-  201: unknown;
-};
-
-export type AssistantControllerAdjustCartData = {
-  /**
-   * AssistantCartAdjustment
-   *
-   * Corriger une ligne du panier de la conversation
-   */
-  body: {
-    produitId: string;
-    quantite: number;
-  };
-  path: {
-    sessionId: string;
-  };
-  query?: never;
-  url: "/api/assistant/{sessionId}/cart";
-};
-
-export type AssistantControllerAdjustCartResponses = {
-  200: unknown;
-};
-
-export type AssistantControllerTurnStreamData = {
-  /**
-   * AssistantTurn
-   *
-   * Un tour de parole avec l'assistant
-   */
-  body: {
-    sessionId?: string;
-    message: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/assistant/turn/stream";
-};
-
-export type AssistantControllerTurnStreamResponses = {
-  201: unknown;
-};
-
-export type AssistantControllerTranscribeData = {
+export type AnnouncementsControllerCurrentData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/api/assistant/transcribe";
+  url: "/api/announcements/current";
 };
 
-export type AssistantControllerTranscribeResponses = {
+export type AnnouncementsControllerCurrentResponses = {
+  200: unknown;
+};
+
+export type AnnouncementsControllerSeenData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/announcements/{id}/seen";
+};
+
+export type AnnouncementsControllerSeenResponses = {
   201: unknown;
 };
 
-export type AssistantControllerSpeakData = {
+export type SupplierAnnouncementRequestsControllerOffersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/announcement-requests/offers";
+};
+
+export type SupplierAnnouncementRequestsControllerOffersResponses = {
+  200: unknown;
+};
+
+export type SupplierAnnouncementRequestsControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/announcement-requests";
+};
+
+export type SupplierAnnouncementRequestsControllerListResponses = {
+  200: unknown;
+};
+
+export type SupplierAnnouncementRequestsControllerCreateData = {
   /**
-   * AssistantSpeak
+   * AnnouncementRequestInput
    *
-   * Faire dire une réponse à voix haute
+   * Demande d'annonce à l'ouverture de l'application
    */
   body: {
-    texte: string;
+    targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+    targetId?: string | null;
+    title: string;
+    subtitle?: string | null;
+    imageUrl?: string | null;
+    durationDays: number;
   };
   path?: never;
   query?: never;
-  url: "/api/assistant/speak";
+  url: "/api/suppliers/me/announcement-requests";
 };
 
-export type AssistantControllerSpeakResponses = {
+export type SupplierAnnouncementRequestsControllerCreateResponses = {
   201: unknown;
 };
 
-export type OrdersControllerPreviewCheckoutData = {
-  /**
-   * CheckoutPreview
-   *
-   * Demande de chiffrage d'un panier multi-boutiques
-   */
-  body: {
-    items: Array<{
-      productId: string;
-      variantId?: string;
-      quantity: number;
-    }>;
-    /**
-     * PickupMode
-     *
-     * How the buyer will receive the order
-     */
-    pickupMode: "ON_SITE" | "DELIVERY";
-    deliveryLatitude?: number;
-    deliveryLongitude?: number;
-    promoCode?: string;
+export type SupplierAnnouncementRequestsControllerCancelData = {
+  body?: never;
+  path: {
+    id: string;
   };
-  path?: never;
   query?: never;
-  url: "/api/orders/checkout/preview";
+  url: "/api/suppliers/me/announcement-requests/{id}/cancel";
 };
 
-export type OrdersControllerPreviewCheckoutResponses = {
+export type SupplierAnnouncementRequestsControllerCancelResponses = {
   201: unknown;
 };
 
-export type OrdersControllerCreateCheckoutData = {
-  /**
-   * CreateCheckout
-   *
-   * Valide un panier multi-boutiques en une seule opération
-   */
-  body: {
-    items: Array<{
-      productId: string;
-      variantId?: string;
-      quantity: number;
-    }>;
-    /**
-     * PickupMode
-     *
-     * How the buyer will receive the order
-     */
-    pickupMode: "ON_SITE" | "DELIVERY";
-    deliveryAddress?: string;
-    deliveryLatitude?: number;
-    deliveryLongitude?: number;
-    /**
-     * PaymentMethod
-     *
-     * Payment method for the order
-     */
-    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
-    promoCode?: string;
-    deliverySlot?: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/orders/checkout";
-};
-
-export type OrdersControllerCreateCheckoutResponses = {
-  201: unknown;
-};
-
-export type OrdersControllerFindAllData = {
+export type AdminAnnouncementsControllerListRequestsData = {
   body?: never;
   path?: never;
   query: {
     status: string;
-    page: string;
-    limit: string;
-    view: string;
   };
-  url: "/api/orders";
+  url: "/api/admin/announcements/requests";
 };
 
-export type OrdersControllerFindAllResponses = {
+export type AdminAnnouncementsControllerListRequestsResponses = {
   200: unknown;
 };
 
-export type OrdersControllerCreateData = {
+export type AdminAnnouncementsControllerApproveData = {
   /**
-   * CreateOrder
-   *
-   * Data required to place a new order
+   * ApproveAnnouncement
    */
   body: {
-    supplierId: string;
-    /**
-     * PickupMode
-     *
-     * How the buyer will receive the order
-     */
-    pickupMode: "ON_SITE" | "DELIVERY";
-    /**
-     * PaymentMethod
-     *
-     * Payment method for the order
-     */
-    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
-    deliveryAddress?: string;
-    deliveryLatitude?: number;
-    deliveryLongitude?: number;
-    deliverySlot?: string;
-    promoCode?: string;
-    items: Array<{
-      productId: string;
-      variantId?: string;
-      quantity: number;
-    }>;
+    startsAt?: string | null;
+    priority?: number;
   };
-  path?: never;
+  path: {
+    id: string;
+  };
   query?: never;
-  url: "/api/orders";
+  url: "/api/admin/announcements/requests/{id}/approve";
 };
 
-export type OrdersControllerCreateResponses = {
+export type AdminAnnouncementsControllerApproveResponses = {
   201: unknown;
 };
 
-export type OrdersControllerPreviewData = {
+export type AdminAnnouncementsControllerRejectData = {
   /**
-   * PreviewOrder
-   *
-   * Basket as it would be charged: promotions, gifts, discount and delivery fee
-   */
-  body: {
-    supplierId: string;
-    /**
-     * PickupMode
-     *
-     * How the buyer will receive the order
-     */
-    pickupMode: "ON_SITE" | "DELIVERY";
-    deliveryLatitude?: number;
-    deliveryLongitude?: number;
-    promoCode?: string;
-    items: Array<{
-      productId: string;
-      variantId?: string;
-      quantity: number;
-    }>;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/orders/preview";
-};
-
-export type OrdersControllerPreviewResponses = {
-  201: unknown;
-};
-
-export type OrdersControllerFindByIdData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/orders/{id}";
-};
-
-export type OrdersControllerFindByIdResponses = {
-  200: unknown;
-};
-
-export type OrdersControllerInvoiceData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/orders/{id}/invoice";
-};
-
-export type OrdersControllerInvoiceResponses = {
-  200: unknown;
-};
-
-export type OrdersControllerAcceptData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/orders/{id}/accept";
-};
-
-export type OrdersControllerAcceptResponses = {
-  200: unknown;
-};
-
-export type OrdersControllerRejectData = {
-  /**
-   * RejectOrder
-   *
-   * Reason for rejecting an order
+   * RejectAnnouncement
    */
   body: {
     reason: string;
@@ -4508,1060 +4390,267 @@ export type OrdersControllerRejectData = {
     id: string;
   };
   query?: never;
-  url: "/api/orders/{id}/reject";
+  url: "/api/admin/announcements/requests/{id}/reject";
 };
 
-export type OrdersControllerRejectResponses = {
-  200: unknown;
-};
-
-export type OrdersControllerUpdateStatusData = {
-  /**
-   * UpdateOrderStatus
-   *
-   * Update order status (supplier only)
-   */
-  body: {
-    status: "PREPARING" | "READY" | "IN_DELIVERY";
-    prepMinutes?: number;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/orders/{id}/status";
-};
-
-export type OrdersControllerUpdateStatusResponses = {
-  200: unknown;
-};
-
-export type OrdersControllerConfirmDeliveryData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/orders/{id}/confirm-delivery";
-};
-
-export type OrdersControllerConfirmDeliveryResponses = {
-  200: unknown;
-};
-
-export type OrdersControllerConfirmDeliveryPostData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/orders/{id}/confirm-delivery";
-};
-
-export type OrdersControllerConfirmDeliveryPostResponses = {
+export type AdminAnnouncementsControllerRejectResponses = {
   201: unknown;
 };
 
-export type OrdersControllerCreateDisputeData = {
-  /**
-   * CreateDispute
-   *
-   * Open a dispute on an order
-   */
-  body: {
-    reason: string;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/orders/{id}/dispute";
-};
-
-export type OrdersControllerCreateDisputeResponses = {
-  201: unknown;
-};
-
-export type NotificationsControllerRegisterTokenData = {
+export type AdminAnnouncementsControllerListData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/api/notifications/register-token";
+  url: "/api/admin/announcements";
 };
 
-export type NotificationsControllerRegisterTokenResponses = {
-  201: unknown;
-};
-
-export type NotificationsControllerUnregisterTokenData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/notifications/unregister-token";
-};
-
-export type NotificationsControllerUnregisterTokenResponses = {
+export type AdminAnnouncementsControllerListResponses = {
   200: unknown;
 };
 
-export type NotificationsControllerGetUnreadData = {
-  body?: never;
-  path?: never;
-  query: {
-    audience: string;
-  };
-  url: "/api/notifications/unread";
-};
-
-export type NotificationsControllerGetUnreadResponses = {
-  200: unknown;
-};
-
-export type NotificationsControllerGetAllData = {
-  body?: never;
-  path?: never;
-  query: {
-    audience: string;
-  };
-  url: "/api/notifications";
-};
-
-export type NotificationsControllerGetAllResponses = {
-  200: unknown;
-};
-
-export type NotificationsControllerGetUnreadCountData = {
-  body?: never;
-  path?: never;
-  query: {
-    audience: string;
-  };
-  url: "/api/notifications/count";
-};
-
-export type NotificationsControllerGetUnreadCountResponses = {
-  200: unknown;
-};
-
-export type NotificationsControllerMarkAsReadData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/notifications/{id}/read";
-};
-
-export type NotificationsControllerMarkAsReadResponses = {
-  200: unknown;
-};
-
-export type NotificationsControllerMarkAllAsReadData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/notifications/read-all";
-};
-
-export type NotificationsControllerMarkAllAsReadResponses = {
-  200: unknown;
-};
-
-export type NotificationsControllerSendTestNotificationData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/notifications/test";
-};
-
-export type NotificationsControllerSendTestNotificationResponses = {
-  201: unknown;
-};
-
-export type PaymentsControllerGetPaymentInfoData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/payments/orders/{id}/info";
-};
-
-export type PaymentsControllerGetPaymentInfoResponses = {
+export type AdminAnnouncementsControllerCreateData = {
   /**
-   * Payment info for the frontend to display and init Checkout.js
-   */
-  200: PaymentInfo;
-};
-
-export type PaymentsControllerGetPaymentInfoResponse =
-  PaymentsControllerGetPaymentInfoResponses[keyof PaymentsControllerGetPaymentInfoResponses];
-
-export type PaymentsControllerInitiateNoRedirectPaymentData = {
-  /**
-   * InitiatePayment
+   * PlatformAnnouncementInput
    *
-   * Input for initiating a no-redirect (USSD) payment
+   * Une annonce publiée par eBio
    */
   body: {
-    orderId: string;
-    paymentMethodId: string;
-    phoneNumber?: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/payments/initiate";
-};
-
-export type PaymentsControllerInitiateNoRedirectPaymentResponses = {
-  /**
-   * Result after initiating a no-redirect payment
-   */
-  200: NoRedirectPaymentResult;
-};
-
-export type PaymentsControllerInitiateNoRedirectPaymentResponse =
-  PaymentsControllerInitiateNoRedirectPaymentResponses[keyof PaymentsControllerInitiateNoRedirectPaymentResponses];
-
-export type PaymentsControllerInitiateCheckoutPaymentData = {
-  /**
-   * InitiateCheckoutInput
-   *
-   * Input for creating a pending payment before opening Checkout.js
-   */
-  body: {
-    orderId: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/payments/initiate-checkout";
-};
-
-export type PaymentsControllerInitiateCheckoutPaymentResponses = {
-  /**
-   * Result after initiating a no-redirect payment
-   */
-  200: NoRedirectPaymentResult;
-};
-
-export type PaymentsControllerInitiateCheckoutPaymentResponse =
-  PaymentsControllerInitiateCheckoutPaymentResponses[keyof PaymentsControllerInitiateCheckoutPaymentResponses];
-
-export type PaymentsControllerInitiateCartPaymentData = {
-  /**
-   * InitiateCartPaymentInput
-   *
-   * Ouvre un paiement unique pour un panier multi-boutiques
-   */
-  body: {
-    checkoutId: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/payments/cart/initiate";
-};
-
-export type PaymentsControllerInitiateCartPaymentResponses = {
-  /**
-   * Successful response
-   */
-  200: CartPaymentResult;
-};
-
-export type PaymentsControllerInitiateCartPaymentResponse =
-  PaymentsControllerInitiateCartPaymentResponses[keyof PaymentsControllerInitiateCartPaymentResponses];
-
-export type PaymentsControllerVerifyCartPaymentData = {
-  /**
-   * VerifyCartPaymentInput
-   *
-   * Confirme le paiement unique et crée les paiements par commande
-   */
-  body: {
-    checkoutId: string;
-    fedapayTransactionId: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/payments/cart/verify";
-};
-
-export type PaymentsControllerVerifyCartPaymentResponses = {
-  /**
-   * Successful response
-   */
-  200: CartPaymentResult;
-};
-
-export type PaymentsControllerVerifyCartPaymentResponse =
-  PaymentsControllerVerifyCartPaymentResponses[keyof PaymentsControllerVerifyCartPaymentResponses];
-
-export type PaymentsControllerVerifyCheckoutPaymentData = {
-  /**
-   * VerifyCheckoutInput
-   *
-   * Input for verifying a payment made via Checkout.js
-   */
-  body: {
-    orderId: string;
-    paymentId: string;
-    fedapayTransactionId: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/payments/verify-checkout";
-};
-
-export type PaymentsControllerVerifyCheckoutPaymentResponses = {
-  /**
-   * Result after verifying a Checkout.js payment
-   */
-  200: CheckoutVerifyResult;
-};
-
-export type PaymentsControllerVerifyCheckoutPaymentResponse =
-  PaymentsControllerVerifyCheckoutPaymentResponses[keyof PaymentsControllerVerifyCheckoutPaymentResponses];
-
-export type PaymentsControllerGetPaymentStatusData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/payments/orders/{id}/status";
-};
-
-export type PaymentsControllerGetPaymentStatusResponses = {
-  /**
-   * Current payment status for an order
-   */
-  200: PaymentStatusResponse;
-};
-
-export type PaymentsControllerGetPaymentStatusResponse =
-  PaymentsControllerGetPaymentStatusResponses[keyof PaymentsControllerGetPaymentStatusResponses];
-
-export type CheckoutsControllerCompensateData = {
-  /**
-   * CompensateCheckout
-   *
-   * Crédite le portefeuille eBio de l'acheteur pour une commande perdue
-   */
-  body: {
-    orderId: string;
-    reason: string;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/checkouts/{id}/compensate";
-};
-
-export type CheckoutsControllerCompensateResponses = {
-  201: unknown;
-};
-
-export type PaymentsWebhookControllerHandleFedaPayWebhookData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/payments/webhook/fedapay";
-};
-
-export type PaymentsWebhookControllerHandleFedaPayWebhookResponses = {
-  201: unknown;
-};
-
-export type PaymentsWebhookControllerHandleIntramWebhookData = {
-  body?: never;
-  headers: {
-    "x-intram-signature": string;
-    "x-intram-timestamp": string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/payments/webhook/intram";
-};
-
-export type PaymentsWebhookControllerHandleIntramWebhookResponses = {
-  201: unknown;
-};
-
-export type PaymentsWebhookControllerHandleStripeWebhookData = {
-  body?: never;
-  headers: {
-    "stripe-signature": string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/payments/webhook/stripe";
-};
-
-export type PaymentsWebhookControllerHandleStripeWebhookResponses = {
-  201: unknown;
-};
-
-export type PaymentsWebhookControllerHandlePawerPayerWebhookData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/payments/webhook/pawerpayer";
-};
-
-export type PaymentsWebhookControllerHandlePawerPayerWebhookResponses = {
-  201: unknown;
-};
-
-export type PaymentMethodAdminControllerListData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/payment-methods";
-};
-
-export type PaymentMethodAdminControllerListResponses = {
-  /**
-   * Paginated list of payment methods
-   */
-  200: PaymentMethodList;
-};
-
-export type PaymentMethodAdminControllerListResponse =
-  PaymentMethodAdminControllerListResponses[keyof PaymentMethodAdminControllerListResponses];
-
-export type PaymentMethodAdminControllerCreateData = {
-  /**
-   * CreatePaymentMethodInput
-   *
-   * Input for creating a payment method
-   */
-  body: {
-    name: string;
-    code: string;
-    type: "mobile" | "card";
-    provider: "fedapay" | "stripe" | "pawerpayer" | "intram";
-    countryCode: string;
-    commission: number;
-    priority: number;
-    active: boolean;
-    useFedapayCheckout: boolean;
-    supportsPayout: boolean;
-    supportsRefund: boolean;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/payment-methods";
-};
-
-export type PaymentMethodAdminControllerCreateResponses = {
-  /**
-   * Payment method details (admin view)
-   */
-  200: PaymentMethodOutput;
-};
-
-export type PaymentMethodAdminControllerCreateResponse =
-  PaymentMethodAdminControllerCreateResponses[keyof PaymentMethodAdminControllerCreateResponses];
-
-export type PaymentMethodAdminControllerRemoveData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/payment-methods/{id}";
-};
-
-export type PaymentMethodAdminControllerRemoveResponses = {
-  /**
-   * Simple message response
-   */
-  200: MessageResponse;
-};
-
-export type PaymentMethodAdminControllerRemoveResponse =
-  PaymentMethodAdminControllerRemoveResponses[keyof PaymentMethodAdminControllerRemoveResponses];
-
-export type PaymentMethodAdminControllerGetOneData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/payment-methods/{id}";
-};
-
-export type PaymentMethodAdminControllerGetOneResponses = {
-  /**
-   * Payment method details (admin view)
-   */
-  200: PaymentMethodOutput;
-};
-
-export type PaymentMethodAdminControllerGetOneResponse =
-  PaymentMethodAdminControllerGetOneResponses[keyof PaymentMethodAdminControllerGetOneResponses];
-
-export type PaymentMethodAdminControllerUpdateData = {
-  /**
-   * UpdatePaymentMethodInput
-   *
-   * Input for updating a payment method
-   */
-  body: {
-    name?: string;
-    code?: string;
-    type?: "mobile" | "card";
-    provider?: "fedapay" | "stripe" | "pawerpayer" | "intram";
-    countryCode?: string;
-    commission?: number;
+    targetType: "SUPPLIER" | "PRODUCT" | "URL" | "NONE";
+    targetId?: string | null;
+    title: string;
+    subtitle?: string | null;
+    imageUrl?: string | null;
+    startsAt: string;
+    endsAt: string;
     priority?: number;
     active?: boolean;
-    useFedapayCheckout?: boolean;
-    supportsPayout?: boolean;
-    supportsRefund?: boolean;
-    icon?: string;
   };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/payment-methods/{id}";
-};
-
-export type PaymentMethodAdminControllerUpdateResponses = {
-  /**
-   * Payment method details (admin view)
-   */
-  200: PaymentMethodOutput;
-};
-
-export type PaymentMethodAdminControllerUpdateResponse =
-  PaymentMethodAdminControllerUpdateResponses[keyof PaymentMethodAdminControllerUpdateResponses];
-
-export type PaymentMethodAdminControllerToggleActiveData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/payment-methods/{id}/toggle";
-};
-
-export type PaymentMethodAdminControllerToggleActiveResponses = {
-  /**
-   * Payment method details (admin view)
-   */
-  200: PaymentMethodOutput;
-};
-
-export type PaymentMethodAdminControllerToggleActiveResponse =
-  PaymentMethodAdminControllerToggleActiveResponses[keyof PaymentMethodAdminControllerToggleActiveResponses];
-
-export type PaymentMethodPublicControllerGetAvailableData = {
-  body?: never;
   path?: never;
   query?: never;
-  url: "/api/payment-methods/available";
+  url: "/api/admin/announcements";
 };
 
-export type PaymentMethodPublicControllerGetAvailableResponses = {
-  /**
-   * List of available payment methods for a country
-   */
-  200: AvailablePaymentMethods;
-};
-
-export type PaymentMethodPublicControllerGetAvailableResponse =
-  PaymentMethodPublicControllerGetAvailableResponses[keyof PaymentMethodPublicControllerGetAvailableResponses];
-
-export type WalletControllerGetMyWalletData = {
-  body?: never;
-  path?: never;
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/wallet/me";
-};
-
-export type WalletControllerGetMyWalletResponses = {
-  200: unknown;
-};
-
-export type WalletControllerGetMyTopupsData = {
-  body?: never;
-  path?: never;
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/wallet/me/topups";
-};
-
-export type WalletControllerGetMyTopupsResponses = {
-  200: unknown;
-};
-
-export type WalletControllerVerifyTopupData = {
-  /**
-   * VerifyTopup
-   *
-   * FedaPay transaction id reported by the checkout widget; the server re-checks it
-   */
-  body: {
-    fedapayTransactionId: string;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/wallet/me/topups/{id}/verify";
-};
-
-export type WalletControllerVerifyTopupResponses = {
+export type AdminAnnouncementsControllerCreateResponses = {
   201: unknown;
 };
 
-export type WalletControllerTopupData = {
-  /**
-   * WalletTopup
-   *
-   * Amount to add to the wallet, paid through FedaPay
-   */
-  body: {
-    amount: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/wallet/topup";
-};
-
-export type WalletControllerTopupResponses = {
-  201: unknown;
-};
-
-export type SupplierWalletControllerTopupData = {
-  /**
-   * WalletTopup
-   *
-   * Amount to add to the wallet, paid through FedaPay
-   */
-  body: {
-    amount: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/suppliers/me/wallet/topup";
-};
-
-export type SupplierWalletControllerTopupResponses = {
-  201: unknown;
-};
-
-export type SupplierWalletControllerVerifyTopupData = {
-  /**
-   * VerifyTopup
-   *
-   * FedaPay transaction id reported by the checkout widget; the server re-checks it
-   */
-  body: {
-    fedapayTransactionId: string;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/suppliers/me/wallet/topups/{id}/verify";
-};
-
-export type SupplierWalletControllerVerifyTopupResponses = {
-  201: unknown;
-};
-
-export type SupplierWalletControllerGetWalletData = {
-  body?: never;
-  path?: never;
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/suppliers/me/wallet";
-};
-
-export type SupplierWalletControllerGetWalletResponses = {
-  200: unknown;
-};
-
-export type SupplierWalletControllerListNumbersData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/suppliers/me/wallet/payout-numbers";
-};
-
-export type SupplierWalletControllerListNumbersResponses = {
-  200: unknown;
-};
-
-export type SupplierWalletControllerAddNumberData = {
-  /**
-   * CreatePayoutNumber
-   *
-   * Mobile Money number to receive withdrawals; operator is derived from the prefix
-   */
-  body: {
-    phoneNumber: string;
-    holderName: string;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/suppliers/me/wallet/payout-numbers";
-};
-
-export type SupplierWalletControllerAddNumberResponses = {
-  201: unknown;
-};
-
-export type SupplierWalletControllerRemoveNumberData = {
+export type AdminAnnouncementsControllerSetActiveData = {
   body?: never;
   path: {
     id: string;
   };
   query?: never;
-  url: "/api/suppliers/me/wallet/payout-numbers/{id}";
+  url: "/api/admin/announcements/{id}/active";
 };
 
-export type SupplierWalletControllerRemoveNumberResponses = {
+export type AdminAnnouncementsControllerSetActiveResponses = {
   200: unknown;
 };
 
-export type SupplierWalletControllerListWithdrawalsData = {
+export type AdminAnnouncementsControllerGetIntervalData = {
   body?: never;
   path?: never;
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/suppliers/me/wallet/withdrawals";
+  query?: never;
+  url: "/api/admin/announcements/settings/interval";
 };
 
-export type SupplierWalletControllerListWithdrawalsResponses = {
+export type AdminAnnouncementsControllerGetIntervalResponses = {
   200: unknown;
 };
 
-export type SupplierWalletControllerRequestWithdrawalData = {
+export type AdminAnnouncementsControllerSetIntervalData = {
   /**
-   * CreateWithdrawal
+   * AnnouncementInterval
    *
-   * Withdrawal request; funds are reserved immediately
+   * Temps avant qu'une même annonce puisse réapparaître
    */
   body: {
-    payoutNumberId: string;
-    amount: number;
+    intervalleHeures: number;
   };
   path?: never;
   query?: never;
-  url: "/api/suppliers/me/wallet/withdrawals";
+  url: "/api/admin/announcements/settings/interval";
 };
 
-export type SupplierWalletControllerRequestWithdrawalResponses = {
+export type AdminAnnouncementsControllerSetIntervalResponses = {
+  200: unknown;
+};
+
+export type PublicSettingsControllerGetPublicData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/settings/public";
+};
+
+export type PublicSettingsControllerGetPublicResponses = {
+  200: unknown;
+};
+
+export type DeliveryPricingControllerQuoteData = {
+  /**
+   * DeliveryQuoteRequest
+   *
+   * What the buyer would pay to have this basket delivered to this point
+   */
+  body: {
+    supplierId: string;
+    itemsTotal: number;
+    latitude?: number;
+    longitude?: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/delivery-pricing/quote";
+};
+
+export type DeliveryPricingControllerQuoteResponses = {
   201: unknown;
 };
 
-export type SupplierWalletControllerCancelWithdrawalData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/suppliers/me/wallet/withdrawals/{id}/cancel";
-};
-
-export type SupplierWalletControllerCancelWithdrawalResponses = {
-  200: unknown;
-};
-
-export type CourierWalletControllerGetWalletData = {
-  body?: never;
-  path?: never;
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/couriers/me/wallet";
-};
-
-export type CourierWalletControllerGetWalletResponses = {
-  200: unknown;
-};
-
-export type CourierWalletControllerListNumbersData = {
+export type AdminDeliveryPricingControllerGetData = {
   body?: never;
   path?: never;
   query?: never;
-  url: "/api/couriers/me/wallet/payout-numbers";
+  url: "/api/admin/delivery-pricing";
 };
 
-export type CourierWalletControllerListNumbersResponses = {
+export type AdminDeliveryPricingControllerGetResponses = {
   200: unknown;
 };
 
-export type CourierWalletControllerAddNumberData = {
+export type AdminDeliveryPricingControllerUpdateData = {
   /**
-   * CreatePayoutNumber
+   * DeliveryPricingConfig
    *
-   * Mobile Money number to receive withdrawals; operator is derived from the prefix
+   * Platform-wide delivery pricing rules (admin-tuned)
    */
   body: {
-    phoneNumber: string;
-    holderName: string;
+    /**
+     * DeliveryPricingMode
+     *
+     * How the platform prices a delivery: one fee, base + per-km, or distance rings
+     */
+    mode: "FLAT" | "DISTANCE" | "ZONES";
+    flat: {
+      fee: number;
+    };
+    distance: {
+      baseFee: number;
+      perKm: number;
+      minFee: number;
+      maxFee: number;
+      roundTo: number;
+    };
+    zones: Array<{
+      maxKm: number;
+      fee: number;
+    }>;
+    freeFrom: number | null;
+    maxDistanceKm: number;
+    grouping: {
+      maxShops: number;
+      maxPickupSpreadKm: number;
+    };
   };
   path?: never;
   query?: never;
-  url: "/api/couriers/me/wallet/payout-numbers";
+  url: "/api/admin/delivery-pricing";
 };
 
-export type CourierWalletControllerAddNumberResponses = {
-  201: unknown;
-};
-
-export type CourierWalletControllerRemoveNumberData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/couriers/me/wallet/payout-numbers/{id}";
-};
-
-export type CourierWalletControllerRemoveNumberResponses = {
+export type AdminDeliveryPricingControllerUpdateResponses = {
   200: unknown;
 };
 
-export type CourierWalletControllerListWithdrawalsData = {
+export type AdminBannerOffersControllerGetData = {
   body?: never;
   path?: never;
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/couriers/me/wallet/withdrawals";
+  query?: never;
+  url: "/api/admin/banner-offers";
 };
 
-export type CourierWalletControllerListWithdrawalsResponses = {
+export type AdminBannerOffersControllerGetResponses = {
   200: unknown;
 };
 
-export type CourierWalletControllerRequestWithdrawalData = {
+export type AdminBannerOffersControllerUpdateData = {
   /**
-   * CreateWithdrawal
+   * BannerOffers
    *
-   * Withdrawal request; funds are reserved immediately
+   * Sponsored banner offers (duration / price) and paid slot count
    */
   body: {
-    payoutNumberId: string;
-    amount: number;
+    offers: Array<{
+      days: number;
+      price: number;
+    }>;
+    paidSlots: number;
   };
   path?: never;
   query?: never;
-  url: "/api/couriers/me/wallet/withdrawals";
+  url: "/api/admin/banner-offers";
 };
 
-export type CourierWalletControllerRequestWithdrawalResponses = {
-  201: unknown;
-};
-
-export type CourierWalletControllerCancelWithdrawalData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/couriers/me/wallet/withdrawals/{id}/cancel";
-};
-
-export type CourierWalletControllerCancelWithdrawalResponses = {
+export type AdminBannerOffersControllerUpdateResponses = {
   200: unknown;
 };
 
-export type CourierWalletControllerTopupData = {
+export type AdminAssistantControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/assistant";
+};
+
+export type AdminAssistantControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminAssistantControllerUpdateData = {
   /**
-   * WalletTopup
+   * AssistantSetting
    *
-   * Amount to add to the wallet, paid through FedaPay
+   * Ouvrir ou fermer l'assistant conversationnel
    */
   body: {
-    amount: number;
+    enabled: boolean;
   };
   path?: never;
   query?: never;
-  url: "/api/couriers/me/wallet/topup";
+  url: "/api/admin/assistant";
 };
 
-export type CourierWalletControllerTopupResponses = {
-  201: unknown;
-};
-
-export type CourierWalletControllerListTopupsData = {
-  body?: never;
-  path?: never;
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/couriers/me/wallet/topups";
-};
-
-export type CourierWalletControllerListTopupsResponses = {
+export type AdminAssistantControllerUpdateResponses = {
   200: unknown;
 };
 
-export type CourierWalletControllerVerifyTopupData = {
+export type AdminProductReviewTimingControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/product-review-timing";
+};
+
+export type AdminProductReviewTimingControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminProductReviewTimingControllerUpdateData = {
   /**
-   * VerifyTopup
+   * ProductReviewTiming
    *
-   * FedaPay transaction id reported by the checkout widget; the server re-checks it
+   * Délai et relances de la demande d'avis produit
    */
   body: {
-    fedapayTransactionId: string;
+    delaiHeures: number;
+    relancesMaximum: number;
   };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/couriers/me/wallet/topups/{id}/verify";
-};
-
-export type CourierWalletControllerVerifyTopupResponses = {
-  201: unknown;
-};
-
-export type WalletAdminControllerPlatformOverviewData = {
-  body?: never;
-  path?: never;
-  query: {
-    from: string;
-    to: string;
-  };
-  url: "/api/admin/platform-accounts";
-};
-
-export type WalletAdminControllerPlatformOverviewResponses = {
-  200: unknown;
-};
-
-export type WalletAdminControllerPlatformTransactionsData = {
-  body?: never;
-  path: {
-    account: string;
-  };
-  query: {
-    page: string;
-    limit: string;
-  };
-  url: "/api/admin/platform-accounts/{account}/transactions";
-};
-
-export type WalletAdminControllerPlatformTransactionsResponses = {
-  200: unknown;
-};
-
-export type WalletAdminControllerListNumbersData = {
-  body?: never;
-  path?: never;
-  query: {
-    status: string;
-    page: string;
-    limit: string;
-  };
-  url: "/api/admin/payout-numbers";
-};
-
-export type WalletAdminControllerListNumbersResponses = {
-  200: unknown;
-};
-
-export type WalletAdminControllerActOnNumberData = {
-  /**
-   * AdminPayoutNumberAction
-   *
-   * Validate or reject a supplier or courier payout number
-   */
-  body: {
-    action: "validate" | "reject";
-    rejectionReason?: string;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/payout-numbers/{id}";
-};
-
-export type WalletAdminControllerActOnNumberResponses = {
-  200: unknown;
-};
-
-export type WalletAdminControllerListWithdrawalsData = {
-  body?: never;
-  path?: never;
-  query: {
-    status: string;
-    page: string;
-    limit: string;
-  };
-  url: "/api/admin/withdrawals";
-};
-
-export type WalletAdminControllerListWithdrawalsResponses = {
-  200: unknown;
-};
-
-export type WalletAdminControllerActOnWithdrawalData = {
-  /**
-   * AdminWithdrawalAction
-   *
-   * Approve triggers the FedaPay payout; reject re-credits the wallet
-   */
-  body: {
-    action: "approve" | "reject";
-    rejectionReason?: string;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/admin/withdrawals/{id}";
-};
-
-export type WalletAdminControllerActOnWithdrawalResponses = {
-  200: unknown;
-};
-
-export type WalletAdminControllerListTopupsData = {
-  body?: never;
-  path?: never;
-  query: {
-    status: string;
-    page: string;
-    limit: string;
-  };
-  url: "/api/admin/wallet-topups";
-};
-
-export type WalletAdminControllerListTopupsResponses = {
-  200: unknown;
-};
-
-export type WalletAdminControllerWalletsOverviewData = {
-  body?: never;
   path?: never;
   query?: never;
-  url: "/api/admin/wallets";
+  url: "/api/admin/product-review-timing";
 };
 
-export type WalletAdminControllerWalletsOverviewResponses = {
+export type AdminProductReviewTimingControllerUpdateResponses = {
   200: unknown;
 };
 
@@ -6157,6 +5246,1361 @@ export type MediaControllerFindByEntityData = {
 export type MediaControllerFindByEntityResponses = {
   200: unknown;
 };
+
+export type NotificationsControllerRegisterTokenData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/register-token";
+};
+
+export type NotificationsControllerRegisterTokenResponses = {
+  201: unknown;
+};
+
+export type NotificationsControllerUnregisterTokenData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/unregister-token";
+};
+
+export type NotificationsControllerUnregisterTokenResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerGetUnreadData = {
+  body?: never;
+  path?: never;
+  query: {
+    audience: string;
+  };
+  url: "/api/notifications/unread";
+};
+
+export type NotificationsControllerGetUnreadResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerGetAllData = {
+  body?: never;
+  path?: never;
+  query: {
+    audience: string;
+  };
+  url: "/api/notifications";
+};
+
+export type NotificationsControllerGetAllResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerGetUnreadCountData = {
+  body?: never;
+  path?: never;
+  query: {
+    audience: string;
+  };
+  url: "/api/notifications/count";
+};
+
+export type NotificationsControllerGetUnreadCountResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerMarkAsReadData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/notifications/{id}/read";
+};
+
+export type NotificationsControllerMarkAsReadResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerMarkAllAsReadData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/read-all";
+};
+
+export type NotificationsControllerMarkAllAsReadResponses = {
+  200: unknown;
+};
+
+export type NotificationsControllerSendTestNotificationData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/notifications/test";
+};
+
+export type NotificationsControllerSendTestNotificationResponses = {
+  201: unknown;
+};
+
+export type WalletControllerGetMyWalletData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/wallet/me";
+};
+
+export type WalletControllerGetMyWalletResponses = {
+  200: unknown;
+};
+
+export type WalletControllerGetMyTopupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/wallet/me/topups";
+};
+
+export type WalletControllerGetMyTopupsResponses = {
+  200: unknown;
+};
+
+export type WalletControllerVerifyTopupData = {
+  /**
+   * VerifyTopup
+   *
+   * FedaPay transaction id reported by the checkout widget; the server re-checks it
+   */
+  body: {
+    fedapayTransactionId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/wallet/me/topups/{id}/verify";
+};
+
+export type WalletControllerVerifyTopupResponses = {
+  201: unknown;
+};
+
+export type WalletControllerTopupData = {
+  /**
+   * WalletTopup
+   *
+   * Amount to add to the wallet, paid through FedaPay
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/wallet/topup";
+};
+
+export type WalletControllerTopupResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerTopupData = {
+  /**
+   * WalletTopup
+   *
+   * Amount to add to the wallet, paid through FedaPay
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/wallet/topup";
+};
+
+export type SupplierWalletControllerTopupResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerVerifyTopupData = {
+  /**
+   * VerifyTopup
+   *
+   * FedaPay transaction id reported by the checkout widget; the server re-checks it
+   */
+  body: {
+    fedapayTransactionId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/wallet/topups/{id}/verify";
+};
+
+export type SupplierWalletControllerVerifyTopupResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerGetWalletData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/suppliers/me/wallet";
+};
+
+export type SupplierWalletControllerGetWalletResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerListNumbersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/wallet/payout-numbers";
+};
+
+export type SupplierWalletControllerListNumbersResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerAddNumberData = {
+  /**
+   * CreatePayoutNumber
+   *
+   * Mobile Money number to receive withdrawals; operator is derived from the prefix
+   */
+  body: {
+    phoneNumber: string;
+    holderName: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/wallet/payout-numbers";
+};
+
+export type SupplierWalletControllerAddNumberResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerRemoveNumberData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/wallet/payout-numbers/{id}";
+};
+
+export type SupplierWalletControllerRemoveNumberResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerListWithdrawalsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/suppliers/me/wallet/withdrawals";
+};
+
+export type SupplierWalletControllerListWithdrawalsResponses = {
+  200: unknown;
+};
+
+export type SupplierWalletControllerRequestWithdrawalData = {
+  /**
+   * CreateWithdrawal
+   *
+   * Withdrawal request; funds are reserved immediately
+   */
+  body: {
+    payoutNumberId: string;
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/wallet/withdrawals";
+};
+
+export type SupplierWalletControllerRequestWithdrawalResponses = {
+  201: unknown;
+};
+
+export type SupplierWalletControllerCancelWithdrawalData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/me/wallet/withdrawals/{id}/cancel";
+};
+
+export type SupplierWalletControllerCancelWithdrawalResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerGetWalletData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/couriers/me/wallet";
+};
+
+export type CourierWalletControllerGetWalletResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerListNumbersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/payout-numbers";
+};
+
+export type CourierWalletControllerListNumbersResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerAddNumberData = {
+  /**
+   * CreatePayoutNumber
+   *
+   * Mobile Money number to receive withdrawals; operator is derived from the prefix
+   */
+  body: {
+    phoneNumber: string;
+    holderName: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/payout-numbers";
+};
+
+export type CourierWalletControllerAddNumberResponses = {
+  201: unknown;
+};
+
+export type CourierWalletControllerRemoveNumberData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/couriers/me/wallet/payout-numbers/{id}";
+};
+
+export type CourierWalletControllerRemoveNumberResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerListWithdrawalsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/couriers/me/wallet/withdrawals";
+};
+
+export type CourierWalletControllerListWithdrawalsResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerRequestWithdrawalData = {
+  /**
+   * CreateWithdrawal
+   *
+   * Withdrawal request; funds are reserved immediately
+   */
+  body: {
+    payoutNumberId: string;
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/withdrawals";
+};
+
+export type CourierWalletControllerRequestWithdrawalResponses = {
+  201: unknown;
+};
+
+export type CourierWalletControllerCancelWithdrawalData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/couriers/me/wallet/withdrawals/{id}/cancel";
+};
+
+export type CourierWalletControllerCancelWithdrawalResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerTopupData = {
+  /**
+   * WalletTopup
+   *
+   * Amount to add to the wallet, paid through FedaPay
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/couriers/me/wallet/topup";
+};
+
+export type CourierWalletControllerTopupResponses = {
+  201: unknown;
+};
+
+export type CourierWalletControllerListTopupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/couriers/me/wallet/topups";
+};
+
+export type CourierWalletControllerListTopupsResponses = {
+  200: unknown;
+};
+
+export type CourierWalletControllerVerifyTopupData = {
+  /**
+   * VerifyTopup
+   *
+   * FedaPay transaction id reported by the checkout widget; the server re-checks it
+   */
+  body: {
+    fedapayTransactionId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/couriers/me/wallet/topups/{id}/verify";
+};
+
+export type CourierWalletControllerVerifyTopupResponses = {
+  201: unknown;
+};
+
+export type WalletAdminControllerPlatformOverviewData = {
+  body?: never;
+  path?: never;
+  query: {
+    from: string;
+    to: string;
+  };
+  url: "/api/admin/platform-accounts";
+};
+
+export type WalletAdminControllerPlatformOverviewResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerPlatformTransactionsData = {
+  body?: never;
+  path: {
+    account: string;
+  };
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/platform-accounts/{account}/transactions";
+};
+
+export type WalletAdminControllerPlatformTransactionsResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerListNumbersData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/payout-numbers";
+};
+
+export type WalletAdminControllerListNumbersResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerActOnNumberData = {
+  /**
+   * AdminPayoutNumberAction
+   *
+   * Validate or reject a supplier or courier payout number
+   */
+  body: {
+    action: "validate" | "reject";
+    rejectionReason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payout-numbers/{id}";
+};
+
+export type WalletAdminControllerActOnNumberResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerListWithdrawalsData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/withdrawals";
+};
+
+export type WalletAdminControllerListWithdrawalsResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerActOnWithdrawalData = {
+  /**
+   * AdminWithdrawalAction
+   *
+   * Approve triggers the FedaPay payout; reject re-credits the wallet
+   */
+  body: {
+    action: "approve" | "reject";
+    rejectionReason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/withdrawals/{id}";
+};
+
+export type WalletAdminControllerActOnWithdrawalResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerListTopupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/wallet-topups";
+};
+
+export type WalletAdminControllerListTopupsResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerWalletsOverviewData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/wallets";
+};
+
+export type WalletAdminControllerWalletsOverviewResponses = {
+  200: unknown;
+};
+
+export type AssistantControllerTurnData = {
+  /**
+   * AssistantTurn
+   *
+   * Un tour de parole avec l'assistant
+   */
+  body: {
+    sessionId?: string;
+    message: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/assistant/turn";
+};
+
+export type AssistantControllerTurnResponses = {
+  201: unknown;
+};
+
+export type AssistantControllerAdjustCartData = {
+  /**
+   * AssistantCartAdjustment
+   *
+   * Corriger une ligne du panier de la conversation
+   */
+  body: {
+    produitId: string;
+    quantite: number;
+  };
+  path: {
+    sessionId: string;
+  };
+  query?: never;
+  url: "/api/assistant/{sessionId}/cart";
+};
+
+export type AssistantControllerAdjustCartResponses = {
+  200: unknown;
+};
+
+export type AssistantControllerTurnStreamData = {
+  /**
+   * AssistantTurn
+   *
+   * Un tour de parole avec l'assistant
+   */
+  body: {
+    sessionId?: string;
+    message: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/assistant/turn/stream";
+};
+
+export type AssistantControllerTurnStreamResponses = {
+  201: unknown;
+};
+
+export type AssistantControllerTranscribeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/assistant/transcribe";
+};
+
+export type AssistantControllerTranscribeResponses = {
+  201: unknown;
+};
+
+export type AssistantControllerSpeakData = {
+  /**
+   * AssistantSpeak
+   *
+   * Faire dire une réponse à voix haute
+   */
+  body: {
+    texte: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/assistant/speak";
+};
+
+export type AssistantControllerSpeakResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerPreviewCheckoutData = {
+  /**
+   * CheckoutPreview
+   *
+   * Demande de chiffrage d'un panier multi-boutiques
+   */
+  body: {
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
+    promoCode?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders/checkout/preview";
+};
+
+export type OrdersControllerPreviewCheckoutResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerCreateCheckoutData = {
+  /**
+   * CreateCheckout
+   *
+   * Valide un panier multi-boutiques en une seule opération
+   */
+  body: {
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    deliveryAddress?: string;
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
+    /**
+     * PaymentMethod
+     *
+     * Payment method for the order
+     */
+    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
+    promoCode?: string;
+    deliverySlot?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders/checkout";
+};
+
+export type OrdersControllerCreateCheckoutResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerFindAllData = {
+  body?: never;
+  path?: never;
+  query: {
+    status: string;
+    page: string;
+    limit: string;
+    view: string;
+  };
+  url: "/api/orders";
+};
+
+export type OrdersControllerFindAllResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerCreateData = {
+  /**
+   * CreateOrder
+   *
+   * Data required to place a new order
+   */
+  body: {
+    supplierId: string;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    /**
+     * PaymentMethod
+     *
+     * Payment method for the order
+     */
+    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
+    deliveryAddress?: string;
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
+    deliverySlot?: string;
+    promoCode?: string;
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders";
+};
+
+export type OrdersControllerCreateResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerPreviewData = {
+  /**
+   * PreviewOrder
+   *
+   * Basket as it would be charged: promotions, gifts, discount and delivery fee
+   */
+  body: {
+    supplierId: string;
+    /**
+     * PickupMode
+     *
+     * How the buyer will receive the order
+     */
+    pickupMode: "ON_SITE" | "DELIVERY";
+    deliveryLatitude?: number;
+    deliveryLongitude?: number;
+    promoCode?: string;
+    items: Array<{
+      productId: string;
+      variantId?: string;
+      quantity: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/orders/preview";
+};
+
+export type OrdersControllerPreviewResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}";
+};
+
+export type OrdersControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerInvoiceData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/invoice";
+};
+
+export type OrdersControllerInvoiceResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerAcceptData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/accept";
+};
+
+export type OrdersControllerAcceptResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerRejectData = {
+  /**
+   * RejectOrder
+   *
+   * Reason for rejecting an order
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/reject";
+};
+
+export type OrdersControllerRejectResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerUpdateStatusData = {
+  /**
+   * UpdateOrderStatus
+   *
+   * Update order status (supplier only)
+   */
+  body: {
+    status: "PREPARING" | "READY" | "IN_DELIVERY";
+    prepMinutes?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/status";
+};
+
+export type OrdersControllerUpdateStatusResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerConfirmDeliveryData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/confirm-delivery";
+};
+
+export type OrdersControllerConfirmDeliveryResponses = {
+  200: unknown;
+};
+
+export type OrdersControllerConfirmDeliveryPostData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/confirm-delivery";
+};
+
+export type OrdersControllerConfirmDeliveryPostResponses = {
+  201: unknown;
+};
+
+export type OrdersControllerCreateDisputeData = {
+  /**
+   * CreateDispute
+   *
+   * Open a dispute on an order
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/orders/{id}/dispute";
+};
+
+export type OrdersControllerCreateDisputeResponses = {
+  201: unknown;
+};
+
+export type PaymentsControllerGetPaymentInfoData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/payments/orders/{id}/info";
+};
+
+export type PaymentsControllerGetPaymentInfoResponses = {
+  /**
+   * Payment info for the frontend to display and init Checkout.js
+   */
+  200: PaymentInfo;
+};
+
+export type PaymentsControllerGetPaymentInfoResponse =
+  PaymentsControllerGetPaymentInfoResponses[keyof PaymentsControllerGetPaymentInfoResponses];
+
+export type PaymentsControllerInitiateNoRedirectPaymentData = {
+  /**
+   * InitiatePayment
+   *
+   * Input for initiating a no-redirect (USSD) payment
+   */
+  body: {
+    orderId: string;
+    paymentMethodId: string;
+    phoneNumber?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/initiate";
+};
+
+export type PaymentsControllerInitiateNoRedirectPaymentResponses = {
+  /**
+   * Result after initiating a no-redirect payment
+   */
+  200: NoRedirectPaymentResult;
+};
+
+export type PaymentsControllerInitiateNoRedirectPaymentResponse =
+  PaymentsControllerInitiateNoRedirectPaymentResponses[keyof PaymentsControllerInitiateNoRedirectPaymentResponses];
+
+export type PaymentsControllerInitiateCheckoutPaymentData = {
+  /**
+   * InitiateCheckoutInput
+   *
+   * Input for creating a pending payment before opening Checkout.js
+   */
+  body: {
+    orderId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/initiate-checkout";
+};
+
+export type PaymentsControllerInitiateCheckoutPaymentResponses = {
+  /**
+   * Result after initiating a no-redirect payment
+   */
+  200: NoRedirectPaymentResult;
+};
+
+export type PaymentsControllerInitiateCheckoutPaymentResponse =
+  PaymentsControllerInitiateCheckoutPaymentResponses[keyof PaymentsControllerInitiateCheckoutPaymentResponses];
+
+export type PaymentsControllerInitiateCartPaymentData = {
+  /**
+   * InitiateCartPaymentInput
+   *
+   * Ouvre un paiement unique pour un panier multi-boutiques
+   */
+  body: {
+    checkoutId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/cart/initiate";
+};
+
+export type PaymentsControllerInitiateCartPaymentResponses = {
+  /**
+   * Successful response
+   */
+  200: CartPaymentResult;
+};
+
+export type PaymentsControllerInitiateCartPaymentResponse =
+  PaymentsControllerInitiateCartPaymentResponses[keyof PaymentsControllerInitiateCartPaymentResponses];
+
+export type PaymentsControllerVerifyCartPaymentData = {
+  /**
+   * VerifyCartPaymentInput
+   *
+   * Confirme le paiement unique et crée les paiements par commande
+   */
+  body: {
+    checkoutId: string;
+    fedapayTransactionId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/cart/verify";
+};
+
+export type PaymentsControllerVerifyCartPaymentResponses = {
+  /**
+   * Successful response
+   */
+  200: CartPaymentResult;
+};
+
+export type PaymentsControllerVerifyCartPaymentResponse =
+  PaymentsControllerVerifyCartPaymentResponses[keyof PaymentsControllerVerifyCartPaymentResponses];
+
+export type PaymentsControllerVerifyCheckoutPaymentData = {
+  /**
+   * VerifyCheckoutInput
+   *
+   * Input for verifying a payment made via Checkout.js
+   */
+  body: {
+    orderId: string;
+    paymentId: string;
+    fedapayTransactionId: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/verify-checkout";
+};
+
+export type PaymentsControllerVerifyCheckoutPaymentResponses = {
+  /**
+   * Result after verifying a Checkout.js payment
+   */
+  200: CheckoutVerifyResult;
+};
+
+export type PaymentsControllerVerifyCheckoutPaymentResponse =
+  PaymentsControllerVerifyCheckoutPaymentResponses[keyof PaymentsControllerVerifyCheckoutPaymentResponses];
+
+export type PaymentsControllerGetPaymentStatusData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/payments/orders/{id}/status";
+};
+
+export type PaymentsControllerGetPaymentStatusResponses = {
+  /**
+   * Current payment status for an order
+   */
+  200: PaymentStatusResponse;
+};
+
+export type PaymentsControllerGetPaymentStatusResponse =
+  PaymentsControllerGetPaymentStatusResponses[keyof PaymentsControllerGetPaymentStatusResponses];
+
+export type CheckoutsControllerCompensateData = {
+  /**
+   * CompensateCheckout
+   *
+   * Crédite le portefeuille eBio de l'acheteur pour une commande perdue
+   */
+  body: {
+    orderId: string;
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/checkouts/{id}/compensate";
+};
+
+export type CheckoutsControllerCompensateResponses = {
+  201: unknown;
+};
+
+export type PaymentsWebhookControllerHandleFedaPayWebhookData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/fedapay";
+};
+
+export type PaymentsWebhookControllerHandleFedaPayWebhookResponses = {
+  201: unknown;
+};
+
+export type PaymentsWebhookControllerHandleIntramWebhookData = {
+  body?: never;
+  headers: {
+    "x-intram-signature": string;
+    "x-intram-timestamp": string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/intram";
+};
+
+export type PaymentsWebhookControllerHandleIntramWebhookResponses = {
+  201: unknown;
+};
+
+export type PaymentsWebhookControllerHandleStripeWebhookData = {
+  body?: never;
+  headers: {
+    "stripe-signature": string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/stripe";
+};
+
+export type PaymentsWebhookControllerHandleStripeWebhookResponses = {
+  201: unknown;
+};
+
+export type PaymentsWebhookControllerHandlePawerPayerWebhookData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/payments/webhook/pawerpayer";
+};
+
+export type PaymentsWebhookControllerHandlePawerPayerWebhookResponses = {
+  201: unknown;
+};
+
+export type PaymentMethodAdminControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/payment-methods";
+};
+
+export type PaymentMethodAdminControllerListResponses = {
+  /**
+   * Paginated list of payment methods
+   */
+  200: PaymentMethodList;
+};
+
+export type PaymentMethodAdminControllerListResponse =
+  PaymentMethodAdminControllerListResponses[keyof PaymentMethodAdminControllerListResponses];
+
+export type PaymentMethodAdminControllerCreateData = {
+  /**
+   * CreatePaymentMethodInput
+   *
+   * Input for creating a payment method
+   */
+  body: {
+    name: string;
+    code: string;
+    type: "mobile" | "card";
+    provider: "fedapay" | "stripe" | "pawerpayer" | "intram";
+    countryCode: string;
+    commission: number;
+    priority: number;
+    active: boolean;
+    useFedapayCheckout: boolean;
+    supportsPayout: boolean;
+    supportsRefund: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/payment-methods";
+};
+
+export type PaymentMethodAdminControllerCreateResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerCreateResponse =
+  PaymentMethodAdminControllerCreateResponses[keyof PaymentMethodAdminControllerCreateResponses];
+
+export type PaymentMethodAdminControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}";
+};
+
+export type PaymentMethodAdminControllerRemoveResponses = {
+  /**
+   * Simple message response
+   */
+  200: MessageResponse;
+};
+
+export type PaymentMethodAdminControllerRemoveResponse =
+  PaymentMethodAdminControllerRemoveResponses[keyof PaymentMethodAdminControllerRemoveResponses];
+
+export type PaymentMethodAdminControllerGetOneData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}";
+};
+
+export type PaymentMethodAdminControllerGetOneResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerGetOneResponse =
+  PaymentMethodAdminControllerGetOneResponses[keyof PaymentMethodAdminControllerGetOneResponses];
+
+export type PaymentMethodAdminControllerUpdateData = {
+  /**
+   * UpdatePaymentMethodInput
+   *
+   * Input for updating a payment method
+   */
+  body: {
+    name?: string;
+    code?: string;
+    type?: "mobile" | "card";
+    provider?: "fedapay" | "stripe" | "pawerpayer" | "intram";
+    countryCode?: string;
+    commission?: number;
+    priority?: number;
+    active?: boolean;
+    useFedapayCheckout?: boolean;
+    supportsPayout?: boolean;
+    supportsRefund?: boolean;
+    icon?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}";
+};
+
+export type PaymentMethodAdminControllerUpdateResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerUpdateResponse =
+  PaymentMethodAdminControllerUpdateResponses[keyof PaymentMethodAdminControllerUpdateResponses];
+
+export type PaymentMethodAdminControllerToggleActiveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payment-methods/{id}/toggle";
+};
+
+export type PaymentMethodAdminControllerToggleActiveResponses = {
+  /**
+   * Payment method details (admin view)
+   */
+  200: PaymentMethodOutput;
+};
+
+export type PaymentMethodAdminControllerToggleActiveResponse =
+  PaymentMethodAdminControllerToggleActiveResponses[keyof PaymentMethodAdminControllerToggleActiveResponses];
+
+export type PaymentMethodPublicControllerGetAvailableData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/payment-methods/available";
+};
+
+export type PaymentMethodPublicControllerGetAvailableResponses = {
+  /**
+   * List of available payment methods for a country
+   */
+  200: AvailablePaymentMethods;
+};
+
+export type PaymentMethodPublicControllerGetAvailableResponse =
+  PaymentMethodPublicControllerGetAvailableResponses[keyof PaymentMethodPublicControllerGetAvailableResponses];
 
 export type CouriersControllerRegisterData = {
   /**
@@ -6757,184 +7201,6 @@ export type AdminCouriersControllerRebroadcastDeliveryData = {
 
 export type AdminCouriersControllerRebroadcastDeliveryResponses = {
   201: unknown;
-};
-
-export type PublicSettingsControllerGetPublicData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/settings/public";
-};
-
-export type PublicSettingsControllerGetPublicResponses = {
-  200: unknown;
-};
-
-export type DeliveryPricingControllerQuoteData = {
-  /**
-   * DeliveryQuoteRequest
-   *
-   * What the buyer would pay to have this basket delivered to this point
-   */
-  body: {
-    supplierId: string;
-    itemsTotal: number;
-    latitude?: number;
-    longitude?: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/delivery-pricing/quote";
-};
-
-export type DeliveryPricingControllerQuoteResponses = {
-  201: unknown;
-};
-
-export type AdminDeliveryPricingControllerGetData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/delivery-pricing";
-};
-
-export type AdminDeliveryPricingControllerGetResponses = {
-  200: unknown;
-};
-
-export type AdminDeliveryPricingControllerUpdateData = {
-  /**
-   * DeliveryPricingConfig
-   *
-   * Platform-wide delivery pricing rules (admin-tuned)
-   */
-  body: {
-    /**
-     * DeliveryPricingMode
-     *
-     * How the platform prices a delivery: one fee, base + per-km, or distance rings
-     */
-    mode: "FLAT" | "DISTANCE" | "ZONES";
-    flat: {
-      fee: number;
-    };
-    distance: {
-      baseFee: number;
-      perKm: number;
-      minFee: number;
-      maxFee: number;
-      roundTo: number;
-    };
-    zones: Array<{
-      maxKm: number;
-      fee: number;
-    }>;
-    freeFrom: number | null;
-    maxDistanceKm: number;
-    grouping: {
-      maxShops: number;
-      maxPickupSpreadKm: number;
-    };
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/delivery-pricing";
-};
-
-export type AdminDeliveryPricingControllerUpdateResponses = {
-  200: unknown;
-};
-
-export type AdminBannerOffersControllerGetData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/banner-offers";
-};
-
-export type AdminBannerOffersControllerGetResponses = {
-  200: unknown;
-};
-
-export type AdminBannerOffersControllerUpdateData = {
-  /**
-   * BannerOffers
-   *
-   * Sponsored banner offers (duration / price) and paid slot count
-   */
-  body: {
-    offers: Array<{
-      days: number;
-      price: number;
-    }>;
-    paidSlots: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/banner-offers";
-};
-
-export type AdminBannerOffersControllerUpdateResponses = {
-  200: unknown;
-};
-
-export type AdminAssistantControllerGetData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/assistant";
-};
-
-export type AdminAssistantControllerGetResponses = {
-  200: unknown;
-};
-
-export type AdminAssistantControllerUpdateData = {
-  /**
-   * AssistantSetting
-   *
-   * Ouvrir ou fermer l'assistant conversationnel
-   */
-  body: {
-    enabled: boolean;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/assistant";
-};
-
-export type AdminAssistantControllerUpdateResponses = {
-  200: unknown;
-};
-
-export type AdminProductReviewTimingControllerGetData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/product-review-timing";
-};
-
-export type AdminProductReviewTimingControllerGetResponses = {
-  200: unknown;
-};
-
-export type AdminProductReviewTimingControllerUpdateData = {
-  /**
-   * ProductReviewTiming
-   *
-   * Délai et relances de la demande d'avis produit
-   */
-  body: {
-    delaiHeures: number;
-    relancesMaximum: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/product-review-timing";
-};
-
-export type AdminProductReviewTimingControllerUpdateResponses = {
-  200: unknown;
 };
 
 export type PromoCodesControllerValidateData = {
