@@ -18,9 +18,9 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import Animated, { FadeInDown, FadeOut, LinearTransition } from 'react-native-reanimated'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { FadeInView } from '../../../utils/animations'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { ScreenHeader } from '../../common/components/screen-header'
 
@@ -263,7 +263,15 @@ export function CartScreen({
                   </Text>
                 </View>
                 {basket.items.map((item, index) => (
-                  <FadeInView key={item.id} delay={index * 80}>
+                  // Les lignes glissent quand l'une part : `LayoutAnimation`
+                  // ne fait rien sous la nouvelle architecture — le journal
+                  // le dit en toutes lettres — et Reanimated, si.
+                  <Animated.View
+                    key={item.id}
+                    layout={LinearTransition.duration(220)}
+                    entering={FadeInDown.delay(index * 60).duration(260)}
+                    exiting={FadeOut.duration(160)}
+                  >
                     <View
                       style={[
                         styles.itemRow,
@@ -383,7 +391,7 @@ export function CartScreen({
                         </View>
                       </View>
                     </View>
-                  </FadeInView>
+                  </Animated.View>
                 ))}
 
                 {promotionHint(basket.items) !== null && (

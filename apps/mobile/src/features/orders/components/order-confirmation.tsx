@@ -1,3 +1,4 @@
+import * as Haptics from 'expo-haptics'
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import * as React from 'react'
 import { useEffect, useRef } from 'react'
@@ -10,6 +11,7 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { Confetti } from '../../common/components/confetti'
 
 interface OrderConfirmationProps {
   orderNumber: string
@@ -27,6 +29,10 @@ export function OrderConfirmation({
   const fadeAnim = useRef(new Animated.Value(0)).current
 
   useEffect(() => {
+    // Une commande passée, ça se fête un peu : la vibration de réussite
+    // arrive avec la coche, pas avant — sinon elle annonce une chose qu'on
+    // ne voit pas encore.
+    void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     Animated.sequence([
       Animated.spring(scaleAnim, {
         toValue: 1,
@@ -45,14 +51,17 @@ export function OrderConfirmation({
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <View style={styles.content}>
-        <Animated.View
-          style={[
-            styles.checkmarkContainer,
-            { transform: [{ scale: scaleAnim }] },
-          ]}
-        >
-          <Check size={48} color={colors.neutral[0]} strokeWidth={3} />
-        </Animated.View>
+        <View style={styles.celebration}>
+          <Confetti />
+          <Animated.View
+            style={[
+              styles.checkmarkContainer,
+              { transform: [{ scale: scaleAnim }] },
+            ]}
+          >
+            <Check size={48} color={colors.neutral[0]} strokeWidth={3} />
+          </Animated.View>
+        </View>
 
         <Animated.View style={[styles.textContainer, { opacity: fadeAnim }]}>
           <Text style={[styles.title, { color: semantic.textPrimary }]}>Commande passée !</Text>
@@ -93,6 +102,10 @@ export function OrderConfirmation({
 }
 
 const styles = StyleSheet.create({
+  celebration: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   screen: {
     flex: 1,
     backgroundColor: colors.neutral[0],

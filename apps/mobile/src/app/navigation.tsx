@@ -16,7 +16,7 @@ import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import ShoppingBagIcon from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import User from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
-import { ActivityIndicator, Animated, Linking, Platform, StatusBar, StyleSheet, Text, View } from 'react-native'
+import { ActivityIndicator, Linking, Platform, StatusBar, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { AnnouncementModal } from '../features/announcements/components/announcement-modal'
 import { useAnnouncement } from '../features/announcements/hooks/use-announcement'
@@ -39,6 +39,8 @@ import { useChatUnreadCount } from '../features/chat/hooks/use-chat-unread-count
 import { openSupportConversation } from '../features/chat/support-chat'
 import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
+import { TabBarIcon } from '../features/common/components/tab-bar-icon'
+import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
 import { useLocation } from '../features/common/location-context'
 import { FavoritesScreen } from '../features/favorites/components/favorites-screen'
 import { HomeScreen } from '../features/home/components/home-screen'
@@ -884,70 +886,22 @@ function RateOrderWrapper({ route, navigation }: any) {
   )
 }
 
-function AnimatedTabIcon({ Icon, size, color, focused }: { Icon: typeof Home, size: number, color: string, focused: boolean }) {
-  const scale = React.useRef(new Animated.Value(1)).current
-
-  React.useEffect(() => {
-    if (focused) {
-      Animated.sequence([
-        Animated.spring(scale, { toValue: 1.25, useNativeDriver: true, speed: 50, bounciness: 12 }),
-        Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }),
-      ]).start()
-    }
-  }, [focused, scale])
-
-  return (
-    <View style={tabIconStyles.wrapper}>
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <Icon size={size} color={color} strokeWidth={focused ? 2.5 : 1.8} />
-      </Animated.View>
-      {focused && <View style={tabIconStyles.dot} />}
-    </View>
-  )
-}
-
+/** L'icône du panier, avec son compteur par-dessus l'icône partagée. */
 function CartTabIcon({ size, color, focused }: { size: number, color: string, focused?: boolean }) {
   const { getItemCount } = useCart()
   const count = getItemCount()
-  const scale = React.useRef(new Animated.Value(1)).current
-
-  React.useEffect(() => {
-    if (focused) {
-      Animated.sequence([
-        Animated.spring(scale, { toValue: 1.25, useNativeDriver: true, speed: 50, bounciness: 12 }),
-        Animated.spring(scale, { toValue: 1, useNativeDriver: true, speed: 30, bounciness: 8 }),
-      ]).start()
-    }
-  }, [focused, scale])
 
   return (
-    <View style={tabIconStyles.wrapper}>
-      <Animated.View style={{ transform: [{ scale }] }}>
-        <ShoppingBagIcon size={size} color={color} strokeWidth={focused ? 2.5 : 1.8} />
-      </Animated.View>
+    <View>
+      <TabBarIcon Icon={ShoppingBagIcon} size={size} color={color} focused={focused === true} />
       {count > 0 && (
         <View style={badgeStyles.badge}>
           <Text style={badgeStyles.badgeText}>{count > 99 ? '99+' : count}</Text>
         </View>
       )}
-      {focused && <View style={tabIconStyles.dot} />}
     </View>
   )
 }
-
-const tabIconStyles = StyleSheet.create({
-  wrapper: {
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.green[400],
-    marginTop: 3,
-  },
-})
 
 const badgeStyles = StyleSheet.create({
   badge: {
@@ -1078,12 +1032,15 @@ export function AppNavigation() {
             tabBarInactiveTintColor: colors.neutral[400],
             tabBarHideOnKeyboard: true,
             tabBarStyle: shouldHide ? { display: 'none' } : baseTabBarStyle,
+            // La marque qui voyage, dessinée derrière la barre : ses coins,
+            // son ombre, ses pastilles et ses marges restent intacts.
+            tabBarBackground: () => <TabFocusIndicator />,
             tabBarIcon: ({ color, size, focused: isFocused }) => {
               if (route.name === 'Panier') {
                 return <CartTabIcon size={size ?? 22} color={color} focused={isFocused} />
               }
               const Icon = TAB_ICONS[route.name]
-              return <AnimatedTabIcon Icon={Icon} size={size ?? 22} color={color} focused={isFocused} />
+              return <TabBarIcon Icon={Icon} size={size ?? 22} color={color} focused={isFocused} />
             },
             tabBarLabelStyle: {
               fontFamily: fonts.sansMd,
