@@ -8,7 +8,6 @@ import Animated, {
   withSpring,
   withTiming,
 } from 'react-native-reanimated'
-import { colors } from '../../../theme/theme'
 
 /** Quick and barely bouncy: a tab bar one uses fifty times a day. */
 const SPRING = { damping: 14, stiffness: 320, mass: 0.5 }
@@ -25,8 +24,11 @@ interface TabBarIconProps {
  *
  * Both directions animate, which is the whole point: the icon being left
  * settles back down while the new one lifts, so the eye follows a handover
- * instead of registering two separate changes. The dot used to appear and
- * vanish outright — a pop, at the exact moment attention was on it.
+ * instead of registering two separate changes.
+ *
+ * Which tab is active is said by the mark that travels along the bar
+ * (`TabFocusIndicator`), not by a dot under each icon: one thing that moves
+ * reads as a move, two things that blink read as two events.
  *
  * Shared by the three apps. The courier and the supplier had no animation at
  * all, only a stroke that thickened.
@@ -50,17 +52,11 @@ export function TabBarIcon({ Icon, size, color, focused }: TabBarIconProps) {
     ],
   }))
 
-  const dotStyle = useAnimatedStyle(() => ({
-    opacity: progress.value,
-    transform: [{ scale: progress.value }],
-  }))
-
   return (
     <View style={styles.wrapper}>
       <Animated.View style={iconStyle}>
         <Icon size={size} color={color} strokeWidth={focused ? 2.5 : 1.8} />
       </Animated.View>
-      <Animated.View style={[styles.dot, dotStyle]} />
     </View>
   )
 }
@@ -69,12 +65,5 @@ const styles = StyleSheet.create({
   wrapper: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  dot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.green[400],
-    marginTop: 3,
   },
 })

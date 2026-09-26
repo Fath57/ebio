@@ -20,6 +20,7 @@ import { appAlert } from '../features/common/components/app-alert'
 import { ConnectivityBanner } from '../features/common/components/connectivity-banner'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { TabBarIcon } from '../features/common/components/tab-bar-icon'
+import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
 import { ActiveDeliveryScreen } from '../features/courier/components/active-delivery-screen'
 import { AvailabilityToggle } from '../features/courier/components/availability-toggle'
 import { CourierProfileScreen } from '../features/courier/components/courier-profile-screen'
@@ -549,6 +550,7 @@ function CourierTabs() {
                 shadowRadius: 12,
                 elevation: 10,
               },
+          tabBarBackground: () => <TabFocusIndicator />,
           tabBarIcon: ({ color, size, focused: isFocused }) => {
             const Icon = TAB_ICONS[route.name]
             return <TabBarIcon Icon={Icon} size={size ?? 22} color={color} focused={isFocused} />

@@ -26,6 +26,7 @@ import { useChatUnreadCount } from '../features/chat/hooks/use-chat-unread-count
 import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { TabBarIcon } from '../features/common/components/tab-bar-icon'
+import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
@@ -720,6 +721,7 @@ function SupplierTabs() {
           tabBarInactiveTintColor: colors.neutral[400],
           tabBarHideOnKeyboard: true,
           tabBarStyle: shouldHide ? { display: 'none' } : baseTabBarStyle,
+          tabBarBackground: () => <TabFocusIndicator />,
           tabBarIcon: ({ color, size, focused: isFocused }) => {
             const Icon = TAB_ICONS[route.name]
             return <TabBarIcon Icon={Icon} size={size ?? 22} color={color} focused={isFocused} />
