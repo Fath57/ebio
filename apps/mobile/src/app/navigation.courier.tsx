@@ -20,7 +20,6 @@ import { appAlert } from '../features/common/components/app-alert'
 import { ConnectivityBanner } from '../features/common/components/connectivity-banner'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { ActiveDeliveryScreen } from '../features/courier/components/active-delivery-screen'
-import { ActiveRunScreen } from '../features/courier/components/active-run-screen'
 import { AvailabilityToggle } from '../features/courier/components/availability-toggle'
 import { CourierProfileScreen } from '../features/courier/components/courier-profile-screen'
 import { CourierRegistrationForm } from '../features/courier/components/courier-registration-form'
@@ -32,7 +31,6 @@ import { CourierOnboardingScreen } from '../features/courier/components/onboardi
 import { CourierPendingScreen } from '../features/courier/components/pending-screen'
 import { ProofScreen } from '../features/courier/components/proof-screen'
 import { useActiveDelivery } from '../features/courier/hooks/use-active-delivery'
-import { useActiveRun } from '../features/courier/hooks/use-active-run'
 import { useCourierProfile } from '../features/courier/hooks/use-courier-profile'
 import { useOffers } from '../features/courier/hooks/use-offers'
 import { useOfflineQueue } from '../features/courier/hooks/use-offline-queue'
@@ -225,14 +223,12 @@ const CoursesStack = createNativeStackNavigator()
 
 function CoursesHomeWrapper({ navigation }: any) {
   const { delivery, loading, refresh } = useActiveDelivery()
-  const { run, loading: runLoading, refresh: refreshRun } = useActiveRun()
   const offers = useOffers()
   const refreshOffers = offers.refresh
   const { profile, refresh: refreshProfile } = useCourierProfile()
   const outOfZoneKm = useOutOfZone(profile)
   const queue = useOfflineQueue(() => {
     refresh()
-    refreshRun()
   })
 
   // A DELIVERY_OFFER push received in foreground refreshes the feed at once.
@@ -248,36 +244,10 @@ function CoursesHomeWrapper({ navigation }: any) {
     }
   }, [refreshOffers])
 
-  if (loading || runLoading) {
+  if (loading) {
     return (
       <SafeScreen>
         <Loading />
-      </SafeScreen>
-    )
-  }
-
-  // The run comes first: while it runs, its pickups are not separate
-  // deliveries, and showing them as such would let the courier believe
-  // they can drop one of them.
-  if (run) {
-    return (
-      <SafeScreen>
-        <ScreenHeader
-          title="Tournée en cours"
-          subtitle={run.shopCount > 1 ? `${run.shopCount} boutiques, une remise` : undefined}
-        />
-        <ConnectivityBanner />
-        <ActiveRunScreen
-          run={run}
-          pendingCount={queue.pendingCount}
-          onCollect={deliveryId => queue.sendTransition(deliveryId, 'pickup')}
-          onDeliver={() => navigation.navigate('CourierProof', { runId: run.id, paymentMethod: run.paymentMethod })}
-          onChanged={() => {
-            refreshRun()
-            refresh()
-            offers.refresh()
-          }}
-        />
       </SafeScreen>
     )
   }
@@ -330,10 +300,7 @@ function CoursesHomeWrapper({ navigation }: any) {
         onAccept={offers.accept}
         onDecline={offers.decline}
         onAccepted={() => {
-          // An accepted run must replace the list at once: refreshing only
-          // the delivery left the former screen up, with an earning of
-          // zero since the fee lives on the run.
-          refreshRun()
+          // The accepted course replaces the list at once.
           refresh()
         }}
         onOpenWallet={() => navigation.navigate('Portefeuille')}
@@ -343,20 +310,14 @@ function CoursesHomeWrapper({ navigation }: any) {
 }
 
 function CourierProofWrapper({ route, navigation }: any) {
-  const { deliveryId, runId, paymentMethod } = route.params
+  const { deliveryId, paymentMethod } = route.params
   const queue = useOfflineQueue()
   return (
     <SafeScreen>
-      <ScreenHeader
-        title={runId ? 'Remise de la tournée' : 'Preuve de livraison'}
-        onBack={() => navigation.goBack()}
-      />
+      <ScreenHeader title="Preuve de livraison" onBack={() => navigation.goBack()} />
       <ProofScreen
         isCash={paymentMethod === 'CASH_ON_DELIVERY'}
-        // A single code closes the whole run; otherwise it is the lone delivery.
-        onComplete={body => (runId
-          ? queue.sendRunTransition(runId, 'deliver', body)
-          : queue.sendTransition(deliveryId, 'complete', body))}
+        onComplete={body => queue.sendTransition(deliveryId, 'complete', body)}
         onDone={() => navigation.popToTop()}
       />
     </SafeScreen>

@@ -1,4 +1,4 @@
-import type { CourierOffer, DeliveryOffer, RunOffer } from '../types'
+import type { CourierOffer, DeliveryOffer } from '../types'
 import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
@@ -83,17 +83,13 @@ function earliestExpiry(offers: CourierOffer[]): number | null {
 }
 
 /**
- * A single offer feed: a lone delivery and a run hold the same place in
- * it. The courier does not need to know which of the two they are being
- * offered to decide — they look at what they earn and where they go.
+ * The offer feed: targeted offers first, then the closest.
  *
- * Targeted offers come first, then the closest one.
+ * It used to merge two feeds, lone deliveries and grouped rounds. Carts hold
+ * one shop now, so a delivery is the only thing there is to offer.
  */
-function mergeOffers(deliveries: DeliveryOffer[], runs: RunOffer[]): CourierOffer[] {
-  const merged: CourierOffer[] = [
-    ...deliveries.map(offer => ({ kind: 'DELIVERY' as const, ...offer })),
-    ...runs.map(offer => ({ kind: 'RUN' as const, ...offer })),
-  ]
+function sortOffers(deliveries: DeliveryOffer[]): CourierOffer[] {
+  const merged: CourierOffer[] = deliveries.map(offer => ({ kind: 'DELIVERY' as const, ...offer }))
   return merged.sort((a, b) => {
     if (a.isTargeted !== b.isTargeted) {
       return a.isTargeted ? -1 : 1
@@ -117,12 +113,7 @@ export function useOffers() {
 
   const load = useCallback(async () => {
     try {
-      // Both feeds are read together: the same unavailability and debt rules
-      // apply to both, and the screen only shows one.
-      const [deliveryRes, runRes] = await Promise.all([
-        apiFetch('/api/deliveries/offers'),
-        apiFetch('/api/runs/offers'),
-      ])
+      const deliveryRes = await apiFetch('/api/deliveries/offers')
       if (deliveryRes.status === 403) {
         const block = await readDebtBlock(deliveryRes)
         setDebtBlock(block)
@@ -135,11 +126,7 @@ export function useOffers() {
       }
       setUnavailable(false)
       setDebtBlock(null)
-      const deliveries = await deliveryRes.json() as DeliveryOffer[]
-      // An unavailable run feed must not empty the screen: lone
-      // deliveries stay claimable.
-      const runs = runRes.ok ? await runRes.json() as RunOffer[] : []
-      setOffers(mergeOffers(deliveries, runs))
+      setOffers(sortOffers(await deliveryRes.json() as DeliveryOffer[]))
     }
     catch {
       // Keep the last list on network errors; pull-to-refresh retries.
@@ -176,7 +163,7 @@ export function useOffers() {
   }, [load])
 
   const accept = useCallback(async (offer: CourierOffer): Promise<AcceptResult> => {
-    const base = offer.kind === 'RUN' ? '/api/runs' : '/api/deliveries'
+    const base = '/api/deliveries'
     try {
       const res = await apiFetch(`${base}/${offer.id}/accept`, { method: 'POST' })
       if (res.ok) {
@@ -202,7 +189,7 @@ export function useOffers() {
   }, [load])
 
   const decline = useCallback(async (offer: CourierOffer): Promise<DeclineResult> => {
-    const base = offer.kind === 'RUN' ? '/api/runs' : '/api/deliveries'
+    const base = '/api/deliveries'
     try {
       const res = await apiFetch(`${base}/${offer.id}/decline`, { method: 'POST' })
       if (res.ok) {

@@ -1,5 +1,5 @@
 import type { AcceptResult, DebtBlock, DeclineResult } from '../hooks/use-offers'
-import type { CourierOffer, DeliveryOffer, RunOffer } from '../types'
+import type { CourierOffer, DeliveryOffer } from '../types'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
@@ -7,7 +7,6 @@ import HandCoins from 'lucide-react-native/dist/esm/icons/hand-coins'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import PackageIcon from 'lucide-react-native/dist/esm/icons/package'
-import Route from 'lucide-react-native/dist/esm/icons/route'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Timer from 'lucide-react-native/dist/esm/icons/timer'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
@@ -137,10 +136,10 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
       onAccepted()
       return
     }
-    const nom = offer.kind === 'RUN' ? 'tournée' : 'course'
+    const nom = 'course'
     if (result.conflict) {
       appAlert(
-        offer.kind === 'RUN' ? 'Tournée indisponible' : 'Course indisponible',
+        'Course indisponible',
         result.message ?? `Un autre livreur a accepté cette ${nom} juste avant vous.`,
       )
     }
@@ -164,134 +163,6 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
       return
     }
     appAlert('Refus impossible', result.message ?? 'Le refus a échoué. Vérifiez votre connexion et réessayez.')
-  }
-
-  /**
-   * A run: what the courier earns, where they ride, and a single
-   * handover at the end. Order numbers are absent — they are of no use
-   * while collecting, the shop and the address are enough.
-   */
-  function renderRun(item: RunOffer) {
-    const isCash = item.paymentMethod === 'CASH_ON_DELIVERY'
-    const targeted = item.isTargeted
-    const cardStyle = targeted
-      ? [styles.card, styles.targetedCard, { backgroundColor: isDark ? colors.green[900] : colors.green[50] }]
-      : [styles.card, { backgroundColor: semantic.bgCard }]
-    return (
-      <View style={cardStyle}>
-        {targeted
-          ? (
-              <View style={styles.targetedHeader}>
-                <View style={styles.targetedBadge} accessibilityLabel="Tournée proposée en priorité">
-                  <Zap size={12} color={colors.neutral[0]} strokeWidth={2.4} />
-                  <Text style={styles.targetedBadgeText}>Proposée en priorité</Text>
-                </View>
-                {item.expiresAt ? <Countdown expiresAt={item.expiresAt} /> : null}
-              </View>
-            )
-          : null}
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderLeft}>
-            <View style={styles.runBadge} accessibilityLabel={`Tournée de ${item.shopCount} boutique${item.shopCount > 1 ? 's' : ''}`}>
-              <Route size={12} color={colors.neutral[0]} strokeWidth={2.4} />
-              <Text style={styles.runBadgeText}>
-                {`${item.shopCount} boutique${item.shopCount > 1 ? 's' : ''}`}
-              </Text>
-            </View>
-            {isCash
-              ? (
-                  <View style={styles.cashBadge} accessibilityLabel="Commande payée en espèces">
-                    <Banknote size={12} color={colors.earth[800]} strokeWidth={2.2} />
-                    <Text style={styles.cashBadgeText}>Espèces</Text>
-                  </View>
-                )
-              : null}
-          </View>
-          {item.distanceKm !== null
-            ? (
-                <Text style={[styles.distance, { color: semantic.textPrimaryColor }]}>
-                  {`1re boutique à ${formatKm(item.distanceKm)}`}
-                </Text>
-              )
-            : null}
-        </View>
-
-        {item.stops.map((stop, index) => (
-          <View key={stop.deliveryId} style={styles.line}>
-            <View style={styles.stopIndex}>
-              <Text style={styles.stopIndexText}>{index + 1}</Text>
-            </View>
-            <Text style={[styles.lineText, { color: semantic.textPrimary }]} numberOfLines={2}>
-              {`${stop.shopName} — ${stop.pickupAddress}`}
-            </Text>
-          </View>
-        ))}
-
-        <View style={styles.line}>
-          <MapPin size={16} color={colors.coral[400]} strokeWidth={2} />
-          <View style={styles.lineText}>
-            <Text style={[styles.lineText, { color: semantic.textPrimary }]} numberOfLines={2}>{item.dropoffAddress}</Text>
-            <Text style={[styles.lineHint, { color: item.dropoffPosition ? colors.green[800] : semantic.textTertiary }]}>
-              {item.dropoffPosition
-                ? `Une seule remise${item.routeKm !== null ? ` · trajet ≈ ${formatKm(item.routeKm)}` : ''}`
-                : 'Adresse approximative (pas de point GPS)'}
-            </Text>
-          </View>
-        </View>
-        <View style={styles.line}>
-          <HandCoins size={16} color={colors.green[600]} strokeWidth={2} />
-          <Text style={[styles.lineText, { color: semantic.textPrimaryColor }]}>
-            Vous gagnez
-            {' '}
-            <Text style={styles.amount}>{formatAmount(item.courierFee)}</Text>
-            {' '}
-            pour la tournée
-          </Text>
-        </View>
-        {isCash && item.cashToShop !== null
-          ? (
-              <View style={styles.line}>
-                <Banknote size={16} color={colors.earth[600]} strokeWidth={2} />
-                <Text style={[styles.lineText, { color: colors.earth[800] }]}>
-                  {`Vous avancez ${formatAmount(item.cashToShop)} aux boutiques · le client vous remet ${formatAmount(item.cashToCollect ?? item.totalAmount)} à la livraison`}
-                </Text>
-              </View>
-            )
-          : null}
-
-        {targeted
-          ? (
-              <View style={styles.actions}>
-                <Pressable
-                  style={styles.declineButton}
-                  onPress={() => decline({ kind: 'RUN', ...item })}
-                  accessibilityRole="button"
-                  accessibilityLabel="Refuser la tournée"
-                >
-                  <Text style={styles.declineText}>Refuser</Text>
-                </Pressable>
-                <Pressable
-                  style={[styles.acceptButton, styles.actionGrow]}
-                  onPress={() => accept({ kind: 'RUN', ...item })}
-                  accessibilityRole="button"
-                  accessibilityLabel="Accepter la tournée"
-                >
-                  <Text style={styles.acceptText}>Accepter la tournée</Text>
-                </Pressable>
-              </View>
-            )
-          : (
-              <Pressable
-                style={styles.acceptButton}
-                onPress={() => accept({ kind: 'RUN', ...item })}
-                accessibilityRole="button"
-                accessibilityLabel="Accepter la tournée"
-              >
-                <Text style={styles.acceptText}>Accepter la tournée</Text>
-              </Pressable>
-            )}
-      </View>
-    )
   }
 
   function renderDelivery(item: DeliveryOffer) {
@@ -419,7 +290,7 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
   }
 
   function renderOffer({ item }: { item: CourierOffer }) {
-    return item.kind === 'RUN' ? renderRun(item) : renderDelivery(item)
+    return renderDelivery(item)
   }
 
   if (debtBlock) {

@@ -123,12 +123,5 @@ export function useOfflineQueue(onFlushed?: () => void) {
     body: Record<string, unknown> = {},
   ) => send(deliveryId, `/api/deliveries/${deliveryId}/${action}`, body), [send])
 
-  /** Handover of a run: a single call closes every one of its orders. */
-  const sendRunTransition = useCallback((
-    runId: string,
-    action: 'deliver',
-    body: Record<string, unknown> = {},
-  ) => send(runId, `/api/runs/${runId}/${action}`, body), [send])
-
-  return { sendTransition, sendRunTransition, pendingCount, flush }
+  return { sendTransition, pendingCount, flush }
 }

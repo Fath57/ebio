@@ -19,6 +19,7 @@ interface Fixture {
   buyerId: string
   supplierId: string
   productId: string
+  otherProductId: string
 }
 
 async function seed(em: EntityManager): Promise<Fixture> {
@@ -62,7 +63,30 @@ async function seed(em: EntityManager): Promise<Fixture> {
     [shop.id, category.id],
   ) as Array<{ id: string }>
 
-  return { buyerId: buyer.id, supplierId: shop.id, productId: product.id }
+  // A second shop, to prove a mixed basket is turned away.
+  const otherUser = await createUserData(em)
+  await em.flush()
+  const [otherShop] = await db.execute(
+    `INSERT INTO suppliers (user_id, shop_name, type, mode, validation_status, location, "createdAt", "updatedAt")
+     VALUES (?, 'Huiles Koffi', 'TRANSFORMER', 'ORDER', 'VALIDATED',
+             ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography, NOW(), NOW())
+     RETURNING id`,
+    [otherUser.id, BOUTIQUE.longitude + 0.01, BOUTIQUE.latitude],
+  ) as Array<{ id: string }>
+
+  const [otherProduct] = await db.execute(
+    `INSERT INTO products (supplier_id, category_id, name, price_per_unit, unit, stock, status, "createdAt", "updatedAt")
+     VALUES (?, ?, 'Huile rouge', 900, 'L', 30, 'ACTIVE', NOW(), NOW())
+     RETURNING id`,
+    [otherShop.id, category.id],
+  ) as Array<{ id: string }>
+
+  return {
+    buyerId: buyer.id,
+    supplierId: shop.id,
+    productId: product.id,
+    otherProductId: otherProduct.id,
+  }
 }
 
 /**
@@ -139,5 +163,27 @@ describe('caisse d\'une seule boutique (e2e)', () => {
     expect(Number(course.delivery_fee)).toBe(Number(order.delivery_fee))
     expect(Number(course.courier_fee)).toBeGreaterThan(0)
     expect(course.delivery_run_id).toBeNull()
+  })
+
+  it('refuse un panier qui mêle deux boutiques, en disant quoi faire', async (context) => {
+    const { em, app } = context as { em: EntityManager, app: INestApplication }
+    const fixture = await seed(em)
+    const checkouts = app.get(CheckoutService)
+
+    const mixed = checkouts.create(fixture.buyerId, {
+      items: [
+        { productId: fixture.productId, quantity: 1 },
+        { productId: fixture.otherProductId, quantity: 1 },
+      ],
+      pickupMode: 'DELIVERY',
+      paymentMethod: 'CASH_ON_DELIVERY',
+      deliveryAddress: 'Cadjehoun, près de la pharmacie',
+      deliveryLatitude: ACHETEUR.latitude,
+      deliveryLongitude: ACHETEUR.longitude,
+    } as Parameters<CheckoutService['create']>[1])
+
+    // Refused rather than priced on a rule that no longer exists: one fee for
+    // two journeys was what the grouping was for, and the grouping is gone.
+    await expect(mixed).rejects.toThrow(/une boutique à la fois/i)
   })
 })

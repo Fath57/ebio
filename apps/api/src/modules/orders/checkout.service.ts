@@ -80,16 +80,20 @@ export class CheckoutService {
    * silence.
    */
   /**
-   * Says out loud when a cart still mixes shops.
+   * One shop per order, and the refusal says how to proceed.
    *
-   * The app orders shop by shop now, so this can only come from a version
-   * installed before that — and those are exactly the ones that still open
-   * grouped rounds. The day this line stops appearing is the day the grouping
-   * can be taken out; without it we would be guessing.
+   * A cart that mixed shops charged one delivery for several journeys,
+   * refused every promo code (a code belongs to a shop), and let a slow shop
+   * hold up another's delivery. The app now orders shop by shop; anything
+   * still sending a mixed basket is an older build, and a plain refusal it
+   * can show beats an order priced on a rule that no longer exists.
    */
-  private noteMixedBasket(baskets: SupplierBasket[]): void {
+  private assertSingleShop(baskets: SupplierBasket[]): void {
     if (baskets.length > 1) {
-      this.logger.warn(`Panier mêlant ${baskets.length} boutiques — version d'application antérieure au panier par boutique`)
+      this.logger.warn(`Panier mêlant ${baskets.length} boutiques — version d'application antérieure`)
+      throw new BadRequestException(
+        'Commandez une boutique à la fois. Mettez à jour l\'application pour retrouver vos paniers par boutique.',
+      )
     }
   }
 
@@ -103,6 +107,7 @@ export class CheckoutService {
 
   async preview(buyerId: string, data: CheckoutPreview): Promise<CheckoutPreviewResponse> {
     const baskets = await this.groupBySupplier(data.items)
+    this.assertSingleShop(baskets)
     this.assertPromoUsable(baskets, data.promoCode)
     const isDelivery = data.pickupMode === 'DELIVERY'
 
@@ -219,8 +224,8 @@ export class CheckoutService {
 
   async create(buyerId: string, data: CreateCheckout): Promise<CreateCheckoutResponse> {
     const baskets = await this.groupBySupplier(data.items)
+    this.assertSingleShop(baskets)
     this.assertPromoUsable(baskets, data.promoCode)
-    this.noteMixedBasket(baskets)
     const isDelivery = data.pickupMode === 'DELIVERY'
     const quote = await this.preview(buyerId, data)
 
@@ -277,10 +282,10 @@ export class CheckoutService {
           {
             checkout,
             orderNumber: orderNumbers[index],
-            // One shop, so the fee belongs on the order rather than on the
-            // wrapper: the courier is paid per order again, and the cash to
-            // collect is read where it has always been read.
-            deliveryFee: baskets.length === 1 ? quote.deliveryFee ?? 0 : 0,
+            // The fee belongs on the order: the courier is paid per order
+            // again, and the cash to collect is read where it has always
+            // been read.
+            deliveryFee: quote.deliveryFee ?? 0,
           },
         )
         entities.push(order)
@@ -303,29 +308,8 @@ export class CheckoutService {
 
     void createdOrders
 
-    // Runs only make sense for delivery, and only for more than one shop.
-    //
-    // A round of a single shop was still a round: it refused individual
-    // acceptance, settled the courier at round level, and waited for « all »
-    // its shops to have prepared. One shop makes all of that ceremony around
-    // an ordinary delivery, which then travels the path isolated deliveries
-    // have always taken.
-    const runIds: string[] = []
-    if (isDelivery && baskets.length > 1) {
-      for (const run of quote.runs) {
-        const created = await this.deliveriesService.createRunForCheckout({
-          checkoutId: checkout.id,
-          supplierIds: run.supplierIds,
-          deliveryFee: run.fee ?? 0,
-          distanceKm: run.distanceKm,
-          pickupSpreadKm: run.pickupSpreadKm,
-        })
-        if (created) {
-          runIds.push(created.id)
-        }
-      }
-    }
-
-    return { checkoutId: checkout.id, orders, deliveryRunIds: runIds }
+    // No rounds any more: a cart holds one shop, so a checkout is one order
+    // and one delivery, taken the way isolated deliveries have always been.
+    return { checkoutId: checkout.id, orders, deliveryRunIds: [] }
   }
 }

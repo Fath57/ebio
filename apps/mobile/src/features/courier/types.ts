@@ -158,75 +158,10 @@ export const FAIL_REASON_LABELS: Record<DeliveryFailReason, string> = {
 }
 
 /**
- * An offered run: several shops to collect from, one handover, one
- * earning. The courier takes it or leaves it whole — they cannot pick
- * half of it, or the single fee promised to the buyer would no longer
- * cover the ride.
+ * One offer in the feed.
+ *
+ * The `kind` survives a second shape that no longer exists — grouped rounds —
+ * and is kept so the screens read as they did; a cart holds one shop, so a
+ * delivery is the only thing there is to offer.
  */
-export interface RunStop {
-  deliveryId: string
-  shopName: string
-  pickupAddress: string
-  orderNumber: string
-}
-
-export interface RunOffer {
-  id: string
-  shopCount: number
-  /** The courier's net earning for the whole run. */
-  courierFee: number
-  /** What the buyer paid for delivery. */
-  deliveryFee: number
-  dropoffAddress: string
-  dropoffPosition: { latitude: number, longitude: number } | null
-  /** Distance from the courier to the first pickup; null without a known position. */
-  distanceKm: number | null
-  /** Distance of the whole run, pickups included. */
-  routeKm: number | null
-  paymentMethod: string
-  totalAmount: number
-  cashToCollect: number | null
-  cashToShop: number | null
-  /** The pickups, in visiting order. */
-  stops: RunStop[]
-  isTargeted: boolean
-  expiresAt: string | null
-  offeredAt: string
-}
-
-/** One offer, lone delivery or run, in a single feed. */
-export type CourierOffer
-  = | ({ kind: 'DELIVERY' } & DeliveryOffer)
-    | ({ kind: 'RUN' } & RunOffer)
-
-/** One pickup of the current run, with its progress. */
-export interface ActiveRunStop {
-  deliveryId: string
-  orderId: string
-  orderNumber: string
-  shopName: string
-  pickupAddress: string
-  pickupPosition: { latitude: number, longitude: number } | null
-  status: DeliveryStatus
-  itemsCount: number
-}
-
-export type RunStatus = 'AWAITING_COURIER' | 'ESCALATED' | 'BUYER_DECISION' | 'ACCEPTED' | 'COLLECTING' | 'DELIVERING' | 'DELIVERED' | 'CANCELLED'
-
-export interface ActiveRun {
-  id: string
-  status: RunStatus
-  shopCount: number
-  courierFee: number
-  deliveryFee: number
-  routeKm: number | null
-  /** Handover code, drawn at the first pickup; null before that. */
-  confirmationCode: string | null
-  dropoffAddress: string
-  dropoffPosition: { latitude: number, longitude: number } | null
-  paymentMethod: string
-  totalAmount: number
-  cashToCollect: number | null
-  cashToShop: number | null
-  stops: ActiveRunStop[]
-}
+export type CourierOffer = { kind: 'DELIVERY' } & DeliveryOffer
