@@ -312,20 +312,28 @@ export function CheckoutFlow({
   const isPickup = orderSummary.deliveryMode === 'PICKUP'
   // `orderSummary` is a snapshot taken when leaving the cart; the basket keeps
   // living in the cart context (suggestions add to it from this very screen).
+  //
+  // Only this shop's, though. Reading the whole cart back was right when one
+  // checkout billed every shop at once; since a basket is ordered shop by
+  // shop it quietly put the other shops' articles into this order — the quote
+  // came back for two shops when one had been tapped.
   const { items: liveItems } = useCart()
   const basketItems = useMemo<OrderSummary['items']>(
-    () => liveItems.length > 0
-      ? liveItems.map(item => ({
-          productId: item.productId,
-          supplierId: item.supplierId,
-          supplierName: item.supplierName,
-          name: item.name,
-          quantity: item.quantity,
-          pricePerUnit: item.pricePerUnit,
-          unit: item.unit,
-        }))
-      : orderSummary.items,
-    [liveItems, orderSummary.items],
+    () => {
+      const live = liveItems.filter(item => item.supplierId === orderSummary.supplierId)
+      return live.length > 0
+        ? live.map(item => ({
+            productId: item.productId,
+            supplierId: item.supplierId,
+            supplierName: item.supplierName,
+            name: item.name,
+            quantity: item.quantity,
+            pricePerUnit: item.pricePerUnit,
+            unit: item.unit,
+          }))
+        : orderSummary.items
+    },
+    [liveItems, orderSummary.items, orderSummary.supplierId],
   )
   const basketProductIds = useMemo(() => basketItems.map(item => item.productId), [basketItems])
 
