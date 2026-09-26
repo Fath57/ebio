@@ -24,6 +24,7 @@ import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen
 import { ConversationList } from '../features/chat/components/conversation-list'
 import { useChatUnreadCount } from '../features/chat/hooks/use-chat-unread-count'
 import { appAlert } from '../features/common/components/app-alert'
+import { ConnectivityBanner } from '../features/common/components/connectivity-banner'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { TabBarIcon } from '../features/common/components/tab-bar-icon'
 import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
@@ -778,6 +779,9 @@ export function SupplierNavigation() {
   return (
     <NavigationContainer ref={navigationRef}>
       <RootSwitch />
+      {/* Une boutique qui prépare une commande doit savoir que le réseau a
+        * coupé : sinon elle croit avoir accepté, et personne n'est prévenu. */}
+      <ConnectivityBanner />
     </NavigationContainer>
   )
 }

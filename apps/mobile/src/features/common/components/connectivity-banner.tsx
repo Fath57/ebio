@@ -5,27 +5,46 @@ import { Animated, StyleSheet, Text, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, spacing } from '../../../theme/theme'
 
+/**
+ * Says out loud that the network has gone.
+ *
+ * Without it the app simply stops answering: a list that never fills, a
+ * button that does nothing. The failure is the network's, but it reads as the
+ * app's — and in a place where connections drop as a matter of course, that
+ * is the difference between « ça a coupé » and « cette app est cassée ».
+ */
 export function ConnectivityBanner() {
   const insets = useSafeAreaInsets()
   const [isConnected, setIsConnected] = useState(true)
+  // Kept mounted while it slides away: unmounting on reconnection made the
+  // banner vanish rather than leave, and a banner that pops out of existence
+  // is one nobody is sure they saw.
+  const [isMounted, setIsMounted] = useState(false)
   const [slideAnim] = useState(new Animated.Value(-50))
 
   useEffect(() => {
     const unsubscribe = NetInfo.addEventListener((state) => {
       const connected = state.isConnected === true
       setIsConnected(connected)
+      if (!connected) {
+        setIsMounted(true)
+      }
 
       Animated.timing(slideAnim, {
         toValue: connected ? -50 : 0,
         duration: 300,
         useNativeDriver: true,
-      }).start()
+      }).start(() => {
+        if (connected) {
+          setIsMounted(false)
+        }
+      })
     })
 
     return unsubscribe
   }, [slideAnim])
 
-  if (isConnected)
+  if (isConnected && !isMounted)
     return null
 
   return (

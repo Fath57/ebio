@@ -38,6 +38,7 @@ import { openDeliveryConversation } from '../features/chat/delivery-chat'
 import { useChatUnreadCount } from '../features/chat/hooks/use-chat-unread-count'
 import { openSupportConversation } from '../features/chat/support-chat'
 import { appAlert } from '../features/common/components/app-alert'
+import { ConnectivityBanner } from '../features/common/components/connectivity-banner'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { TabBarIcon } from '../features/common/components/tab-bar-icon'
 import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
@@ -1094,6 +1095,11 @@ export function AppNavigation() {
 
       {/* The announcement of the day, mounted above the navigator so it
         * survives a tab change — closing it is a gesture, not a side effect. */}
+      {/* Le réseau tombe souvent : l'acheteur doit l'apprendre du bandeau,
+        * pas d'une liste qui ne se remplit jamais. Monté au-dessus du
+        * navigateur, donc visible quel que soit l'onglet. */}
+      <ConnectivityBanner />
+
       <BuyerAnnouncement />
 
       {/* On demande à partir du premier panier : la personne a montré son
