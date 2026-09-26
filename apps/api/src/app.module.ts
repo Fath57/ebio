@@ -35,6 +35,7 @@ import { PaymentsModule } from './modules/payments/payments.module'
 import { ProductsModule } from './modules/products/products.module'
 import { PromoCodesModule } from './modules/promo-codes/promo-codes.module'
 import { RatingsModule } from './modules/ratings/ratings.module'
+import { FavoritesModule } from './modules/favorites/favorites.module'
 import { SearchModule } from './modules/search/search.module'
 import { PlatformSettingsModule } from './modules/settings/platform-settings.module'
 import { StaffInboxModule } from './modules/staff-inbox/staff-inbox.module'
@@ -130,6 +131,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     NestConfigModule,
     ExampleModule,
     SearchModule,
+    FavoritesModule,
     AnnouncementsModule,
     AnalyticsModule,
     AppVersionModule,

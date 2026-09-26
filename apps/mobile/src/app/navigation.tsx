@@ -40,6 +40,7 @@ import { openSupportConversation } from '../features/chat/support-chat'
 import { appAlert } from '../features/common/components/app-alert'
 import { ScreenHeader } from '../features/common/components/screen-header'
 import { useLocation } from '../features/common/location-context'
+import { FavoritesScreen } from '../features/favorites/components/favorites-screen'
 import { HomeScreen } from '../features/home/components/home-screen'
 import { LocationPickerScreen } from '../features/map/components/location-picker-screen'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
@@ -680,6 +681,11 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="HelpCenter" component={HelpCenterWrapper} />
       <ProfileStack.Screen name="Terms" component={TermsWrapper} />
       <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
+      <ProfileStack.Screen name="Favorites" component={FavoritesWrapper} />
+      {/* Ouvrir un favori doit rester dans l'onglet Profil : sans cet écran
+        * ici, la navigation remonte jusqu'à l'onglet Accueil et y dépose
+        * l'acheteur, qui l'y retrouve plus tard sans comprendre. */}
+      <ProfileStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
       <ProfileStack.Screen name="SupplierRegistration" component={SupplierRegistrationWrapper} />
       <ProfileStack.Screen name="ProfileLogin" component={ProfileLoginWrapper} />
       <ProfileStack.Screen name="ProfileRegister" component={ProfileRegisterWrapper} />
@@ -704,6 +710,7 @@ function ProfileHomeWrapper({ navigation }: any) {
       <ProfileScreen
         onNavigateToOrders={() => navigation.navigate('Commandes', { screen: 'MyOrders' })}
         onNavigateToWallet={() => navigation.navigate('BuyerWallet')}
+        onNavigateToFavorites={() => navigation.navigate('Favorites')}
         onNavigateToNotifications={() => navigation.navigate('Notifications')}
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
@@ -712,6 +719,18 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToTerms={() => navigation.navigate('Terms')}
         onNavigateToSupplierRegistration={() => navigation.navigate('SupplierRegistration')}
         refreshTrigger={refreshTrigger}
+      />
+    </SafeScreen>
+  )
+}
+
+function FavoritesWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <FavoritesScreen
+        onGoBack={() => navigation.goBack()}
+        onOpenProduct={productId => navigation.navigate('ProductDetail', { productId })}
+        onExplore={() => navigation.navigate('Accueil', { screen: 'SearchHome' })}
       />
     </SafeScreen>
   )

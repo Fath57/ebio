@@ -34,6 +34,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { MAX_ITEM_QUANTITY, useCart } from '../../cart/cart-context'
 import { BasketSuggestions } from '../../cart/components/basket-suggestions'
 import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
+import { useFavorite } from '../../favorites/hooks/use-favorite'
 import { HeaderIcon, ScrollFadeHeader, useHeaderTint } from '../../common/components/scroll-fade-header'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 import { useProductUnits } from '../hooks/use-product-units'
@@ -106,7 +107,7 @@ export function ProductDetailScreen({
   const { getItemCount, groups, addItem, updateQuantity } = useCart()
   // Keep the content clear of the floating cart bar.
   const cartBarClearance = getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
-  const [isFavorite, setIsFavorite] = useState(false)
+  const { isFavorite, toggle: toggleFavorite } = useFavorite(product.id)
   const [composition, setComposition] = useState<ProductCompositionData | null>(null)
   // Null until the detail fetch answers: the list row's types stand in meanwhile.
   const [promotions, setPromotions] = useState<ProductPromotion[] | null>(null)
@@ -255,7 +256,7 @@ export function ProductDetailScreen({
           <>
             <Pressable
               style={styles.headerButton}
-              onPress={() => setIsFavorite(prev => !prev)}
+              onPress={toggleFavorite}
               accessibilityRole="button"
               accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             >

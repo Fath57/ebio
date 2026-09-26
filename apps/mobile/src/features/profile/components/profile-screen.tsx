@@ -5,6 +5,7 @@ import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleQuestionMark from 'lucide-react-native/dist/esm/icons/circle-question-mark'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import FileText from 'lucide-react-native/dist/esm/icons/file-text'
+import Heart from 'lucide-react-native/dist/esm/icons/heart'
 import Hourglass from 'lucide-react-native/dist/esm/icons/hourglass'
 import KeyRound from 'lucide-react-native/dist/esm/icons/key-round'
 import LogOutIcon from 'lucide-react-native/dist/esm/icons/log-out'
@@ -66,6 +67,7 @@ const ROLE_LABELS: Record<string, string> = {
 interface ProfileScreenProps {
   onNavigateToOrders?: () => void
   onNavigateToWallet?: () => void
+  onNavigateToFavorites?: () => void
   onNavigateToNotifications?: () => void
   onNavigateToLogin?: () => void
   onNavigateToEditProfile?: () => void
@@ -76,7 +78,7 @@ interface ProfileScreenProps {
   refreshTrigger?: number
 }
 
-export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToFavorites, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
   const tabBarHeight = useBottomTabBarHeight()
@@ -417,6 +419,19 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
                 label="Mes commandes"
                 sublabel="Historique et suivi"
                 onPress={() => onNavigateToOrders?.()}
+                semantic={semantic}
+                grouped
+              />
+
+              <View style={styles.menuDivider} />
+
+              <MenuItem
+                icon={Heart}
+                iconBg={colors.coral[50]}
+                iconColor={colors.coral[600]}
+                label="Mes favoris"
+                sublabel="Les produits mis de côté"
+                onPress={() => onNavigateToFavorites?.()}
                 semantic={semantic}
                 grouped
               />
