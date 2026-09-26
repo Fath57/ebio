@@ -1411,6 +1411,18 @@
         "add": "Add a question",
         "deleteConfirm": "Delete this question?"
       },
+      "partners": {
+        "title": "Partners",
+        "description": "The logos shown on the site's home page. A hidden partner stays here without being published.",
+        "name": "Partner name",
+        "logo": "Logo",
+        "active": "Published",
+        "inactive": "Hidden",
+        "order": "Order",
+        "add": "Add a partner",
+        "deleteConfirm": "Remove this partner?",
+        "logoHint": "The name is the alternative text: screen readers announce it, and it shows if the image fails to load."
+      },
       "contact": {
         "title": "Contact form",
         "description": "Messages sent from the site's contact section land in these inboxes.",

@@ -1411,6 +1411,18 @@
         "add": "Ajouter une question",
         "deleteConfirm": "Supprimer cette question ?"
       },
+      "partners": {
+        "title": "Partenaires",
+        "description": "Les logos affichés sur la page d'accueil du site. Un partenaire masqué reste ici sans être publié.",
+        "name": "Nom du partenaire",
+        "logo": "Logo",
+        "active": "Publié",
+        "inactive": "Masqué",
+        "order": "Ordre",
+        "add": "Ajouter un partenaire",
+        "deleteConfirm": "Retirer ce partenaire ?",
+        "logoHint": "Le nom sert d'alternative textuelle : il est lu par les lecteurs d'écran et s'affiche si l'image ne charge pas."
+      },
       "contact": {
         "title": "Formulaire de contact",
         "description": "Les messages envoyés depuis la section « Contactez-nous » du site arrivent dans ces boîtes.",

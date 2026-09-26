@@ -202,8 +202,12 @@ import type {
   AppVersionControllerForAppResponses,
   AssistantControllerAdjustCartData,
   AssistantControllerAdjustCartResponses,
+  AssistantControllerPrepareVoiceData,
+  AssistantControllerPrepareVoiceResponses,
   AssistantControllerSpeakData,
   AssistantControllerSpeakResponses,
+  AssistantControllerStreamVoiceData,
+  AssistantControllerStreamVoiceResponses,
   AssistantControllerTranscribeData,
   AssistantControllerTranscribeResponses,
   AssistantControllerTurnData,
@@ -372,18 +376,26 @@ import type {
   HomeControllerListResponses,
   LandingControllerCreateFaqData,
   LandingControllerCreateFaqResponses,
+  LandingControllerCreatePartnerData,
+  LandingControllerCreatePartnerResponses,
   LandingControllerFindAllFaqsData,
   LandingControllerFindAllFaqsResponses,
+  LandingControllerFindAllPartnersData,
+  LandingControllerFindAllPartnersResponses,
   LandingControllerGetAdminContentData,
   LandingControllerGetAdminContentResponses,
   LandingControllerGetContentData,
   LandingControllerGetContentResponses,
   LandingControllerRemoveFaqData,
   LandingControllerRemoveFaqResponses,
+  LandingControllerRemovePartnerData,
+  LandingControllerRemovePartnerResponses,
   LandingControllerSendContactMessageData,
   LandingControllerSendContactMessageResponses,
   LandingControllerUpdateFaqData,
   LandingControllerUpdateFaqResponses,
+  LandingControllerUpdatePartnerData,
+  LandingControllerUpdatePartnerResponses,
   LandingControllerUpdateSectionData,
   LandingControllerUpdateSectionResponses,
   MediaControllerCompleteUploadData,
@@ -3038,6 +3050,35 @@ export const assistantControllerSpeak = <ThrowOnError extends boolean = false>(
     },
   });
 
+export const assistantControllerPrepareVoice = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AssistantControllerPrepareVoiceData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AssistantControllerPrepareVoiceResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/assistant/voice",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const assistantControllerStreamVoice = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AssistantControllerStreamVoiceData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AssistantControllerStreamVoiceResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/assistant/voice/{id}", ...options });
+
 export const ordersControllerPreviewCheckout = <
   ThrowOnError extends boolean = false,
 >(
@@ -5060,6 +5101,64 @@ export const landingControllerUpdateFaq = <
     ThrowOnError
   >({
     url: "/api/landing/faqs/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const landingControllerFindAllPartners = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<LandingControllerFindAllPartnersData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    LandingControllerFindAllPartnersResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/landing/partners", ...options });
+
+export const landingControllerCreatePartner = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerCreatePartnerData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    LandingControllerCreatePartnerResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/landing/partners",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const landingControllerRemovePartner = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerRemovePartnerData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    LandingControllerRemovePartnerResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/landing/partners/{id}", ...options });
+
+export const landingControllerUpdatePartner = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<LandingControllerUpdatePartnerData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    LandingControllerUpdatePartnerResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/landing/partners/{id}",
     ...options,
     headers: {
       "Content-Type": "application/json",

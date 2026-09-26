@@ -2,6 +2,7 @@ import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { useQuery } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { FaqManager } from '../components/faq-manager'
+import { PartnersManager } from '../components/partners-manager'
 import { ScreensCard } from '../components/screens-card'
 import {
   ContactCard,
@@ -12,14 +13,15 @@ import {
   SupplierCard,
   TrustCard,
 } from '../components/section-cards'
-import { EMPTY_SCREENS, fetchLandingContentQueryOptions, fetchLandingFaqsQueryOptions } from '../utils/site-queries'
+import { EMPTY_SCREENS, fetchLandingContentQueryOptions, fetchLandingFaqsQueryOptions, fetchLandingPartnersQueryOptions } from '../utils/site-queries'
 
 export default function SitePage() {
   const { t } = useTranslation()
   const { data: content, isLoading: isContentLoading } = useQuery(fetchLandingContentQueryOptions())
   const { data: faqs, isLoading: isFaqsLoading } = useQuery(fetchLandingFaqsQueryOptions())
+  const { data: partners, isLoading: arePartnersLoading } = useQuery(fetchLandingPartnersQueryOptions())
 
-  if (isContentLoading || isFaqsLoading || !content) {
+  if (isContentLoading || isFaqsLoading || arePartnersLoading || !content) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-48" />
@@ -43,6 +45,9 @@ export default function SitePage() {
       <SupplierCard initial={content.supplier} />
       <FooterCard initial={content.footer} />
       <ContactCard initial={content.contact} />
+      {/* Dans l'ordre de la page publique : les partenaires y sont juste
+        * avant le formulaire de contact. */}
+      <PartnersManager partners={partners ?? []} />
       <FaqManager faqs={faqs ?? []} />
     </div>
   )

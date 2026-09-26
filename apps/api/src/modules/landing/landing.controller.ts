@@ -1,5 +1,5 @@
 import type { Request } from 'express'
-import type { ContactMessage, CreateLandingFaq, UpdateLandingFaq } from './contracts/landing.contract'
+import type { ContactMessage, CreateLandingFaq, CreateLandingPartner, UpdateLandingFaq, UpdateLandingPartner } from './contracts/landing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import {
   BadRequestException,
@@ -24,9 +24,11 @@ import { AuthGuard } from '../auth/auth.guard'
 import {
   contactMessageSchema,
   createLandingFaqSchema,
+  createLandingPartnerSchema,
   LANDING_SECTION_SCHEMAS,
   landingSectionKeySchema,
   updateLandingFaqSchema,
+  updateLandingPartnerSchema,
 } from './contracts/landing.contract'
 import { LandingService } from './landing.service'
 
@@ -128,6 +130,44 @@ export class LandingController {
   @CanDelete('LandingContent')
   async removeFaq(@Param('id') id: string) {
     await this.landingService.removeFaq(id)
+    return { success: true }
+  }
+
+  // Les partenaires publics voyagent avec le reste du contenu : seule leur
+  // administration a ses propres routes.
+
+  @Get('partners')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard, CaslGuard)
+  async findAllPartners() {
+    return this.landingService.findAllPartners()
+  }
+
+  @Post('partners')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanCreate('LandingContent')
+  async createPartner(@TypedBody(createLandingPartnerSchema) body: CreateLandingPartner) {
+    return this.landingService.createPartner(body)
+  }
+
+  @Patch('partners/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanUpdate('LandingContent')
+  async updatePartner(
+    @Param('id') id: string,
+    @TypedBody(updateLandingPartnerSchema) body: UpdateLandingPartner,
+  ) {
+    return this.landingService.updatePartner(id, body)
+  }
+
+  @Delete('partners/:id')
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @UseGuards(RolesGuard, CaslGuard)
+  @CanDelete('LandingContent')
+  async removePartner(@Param('id') id: string) {
+    await this.landingService.removePartner(id)
     return { success: true }
   }
 }

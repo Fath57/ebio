@@ -1264,6 +1264,28 @@ export const zUpdateLandingFaq = z.object({
 });
 
 /**
+ * CreateLandingPartner
+ *
+ * Ajoute un partenaire au bandeau de la page d'accueil
+ */
+export const zCreateLandingPartner = z.object({
+  name: z.string().min(1).max(120),
+  logoUrl: z.string().min(1).max(2000),
+  isActive: z.boolean().default(true),
+  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateLandingPartner
+ */
+export const zUpdateLandingPartner = z.object({
+  name: z.optional(z.string().min(1).max(120)),
+  logoUrl: z.optional(z.string().min(1).max(2000)),
+  isActive: z.optional(z.boolean()).default(true),
+  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
  * CreateProductReviews
  *
  * Rate the products of a delivered order
@@ -1989,6 +2011,7 @@ export const zMediaContext = z.enum([
   "ANNOUNCEMENT_IMAGE",
   "DELIVERY_PROOF",
   "ASSISTANT_AVATAR",
+  "PARTNER_LOGO",
 ]);
 
 /**
@@ -5003,6 +5026,7 @@ export const zMediaControllerInitiateUploadData = z.object({
       "ANNOUNCEMENT_IMAGE",
       "DELIVERY_PROOF",
       "ASSISTANT_AVATAR",
+      "PARTNER_LOGO",
     ]),
     entityType: z.optional(z.string()),
     entityId: z.optional(
@@ -5659,6 +5683,22 @@ export const zAssistantControllerSpeakData = z.object({
     texte: z.string().min(1).max(2000),
   }),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerPrepareVoiceData = z.object({
+  body: z.object({
+    texte: z.string().min(1).max(2000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAssistantControllerStreamVoiceData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 
@@ -7911,6 +7951,44 @@ export const zLandingControllerUpdateFaqData = z.object({
   body: z.object({
     question: z.optional(z.string().min(1).max(300)),
     answer: z.optional(z.string().min(1).max(2000)),
+    isActive: z.optional(z.boolean()).default(true),
+    sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerFindAllPartnersData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerCreatePartnerData = z.object({
+  body: z.object({
+    name: z.string().min(1).max(120),
+    logoUrl: z.string().min(1).max(2000),
+    isActive: z.boolean().default(true),
+    sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerRemovePartnerData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zLandingControllerUpdatePartnerData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(1).max(120)),
+    logoUrl: z.optional(z.string().min(1).max(2000)),
     isActive: z.optional(z.boolean()).default(true),
     sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
   }),

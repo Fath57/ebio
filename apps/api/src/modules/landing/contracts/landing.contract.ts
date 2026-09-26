@@ -159,3 +159,40 @@ export const landingFaqSchema = z.object({
 export type CreateLandingFaq = z.infer<typeof createLandingFaqSchema>
 export type UpdateLandingFaq = z.infer<typeof updateLandingFaqSchema>
 export type LandingFaqResponse = z.infer<typeof landingFaqSchema>
+
+// --- Partenaires ---
+
+export const createLandingPartnerSchema = z.object({
+  name: z.string().min(1).max(120),
+  logoUrl: z.string().min(1).max(2000),
+  isActive: z.boolean().default(true),
+  sortOrder: z.number().int().min(0).default(0),
+}).meta({
+  title: 'CreateLandingPartner',
+  description: 'Ajoute un partenaire au bandeau de la page d\'accueil',
+  examples: [{
+    name: 'Coopérative de Bohicon',
+    logoUrl: 'https://media.e-bio.org/banner_image/cooperative-bohicon.png',
+    isActive: true,
+    sortOrder: 0,
+  }],
+})
+
+export const updateLandingPartnerSchema = createLandingPartnerSchema.partial().meta({
+  title: 'UpdateLandingPartner',
+})
+
+export const landingPartnerSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  logoUrl: z.string(),
+  isActive: z.boolean(),
+  sortOrder: z.number(),
+}).meta({
+  title: 'LandingPartner',
+  description: 'Un partenaire affiché sur la page d\'accueil',
+})
+
+export type CreateLandingPartner = z.infer<typeof createLandingPartnerSchema>
+export type UpdateLandingPartner = z.infer<typeof updateLandingPartnerSchema>
+export type LandingPartnerResponse = z.infer<typeof landingPartnerSchema>

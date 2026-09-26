@@ -196,6 +196,31 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           </div>
         </section>
 
+        {/* Les partenaires : un bandeau, pas un annuaire. Rien n'est rendu tant
+          * que le back-office n'en a publié aucun — inventer un logo serait
+          * affirmer une caution qu'on n'a pas. */}
+        {content.partners.length > 0 && (
+          <section id="partenaires" className="scroll-mt-20 bg-white">
+            <div className="mx-auto max-w-6xl px-5 py-16">
+              <h2 className="text-center text-2xl font-extrabold tracking-tight text-ink md:text-3xl">
+                Ils nous accompagnent
+              </h2>
+              <ul className="mt-10 flex flex-wrap items-center justify-center gap-x-12 gap-y-8">
+                {content.partners.map(partner => (
+                  <li key={partner.name}>
+                    <img
+                      src={partner.logoUrl}
+                      alt={partner.name}
+                      loading="lazy"
+                      className="h-12 w-auto max-w-40 object-contain md:h-14"
+                    />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
+        )}
+
         <ContactSection />
       </main>
       <SiteFooter footer={content.footer} onDownloadClick={openComingSoon} />

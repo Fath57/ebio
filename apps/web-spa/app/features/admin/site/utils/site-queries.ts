@@ -1,10 +1,14 @@
 import { client } from '@boilerstone/openapi-generator'
 import {
   landingControllerCreateFaq,
+  landingControllerCreatePartner,
   landingControllerFindAllFaqs,
+  landingControllerFindAllPartners,
   landingControllerGetAdminContent,
   landingControllerRemoveFaq,
+  landingControllerRemovePartner,
   landingControllerUpdateFaq,
+  landingControllerUpdatePartner,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export interface LandingHero {
@@ -84,6 +88,14 @@ export interface LandingFaq {
   sortOrder: number
 }
 
+export interface LandingPartner {
+  id: string
+  name: string
+  logoUrl: string
+  isActive: boolean
+  sortOrder: number
+}
+
 /**
  * The captures section is the only one that can be missing: it was added after
  * the seed, so a base where the SQL has not been replayed still edits it.
@@ -127,6 +139,36 @@ export async function updateLandingSection(key: LandingSectionKey, value: unknow
     path: { key },
     body: value,
   })
+  if (response.error)
+    throw new Error(readError(response.error))
+}
+
+export function fetchLandingPartnersQueryOptions() {
+  return {
+    queryKey: ['admin', 'landing', 'partners'],
+    queryFn: async () => {
+      const response = await landingControllerFindAllPartners()
+      if (response.error)
+        throw new Error('Failed to fetch partners')
+      return response.data as unknown as LandingPartner[]
+    },
+  }
+}
+
+export async function createLandingPartner(data: Omit<LandingPartner, 'id'>): Promise<void> {
+  const response = await landingControllerCreatePartner({ body: data })
+  if (response.error)
+    throw new Error(readError(response.error))
+}
+
+export async function updateLandingPartner(id: string, data: Partial<Omit<LandingPartner, 'id'>>): Promise<void> {
+  const response = await landingControllerUpdatePartner({ path: { id }, body: data })
+  if (response.error)
+    throw new Error(readError(response.error))
+}
+
+export async function deleteLandingPartner(id: string): Promise<void> {
+  const response = await landingControllerRemovePartner({ path: { id } })
   if (response.error)
     throw new Error(readError(response.error))
 }

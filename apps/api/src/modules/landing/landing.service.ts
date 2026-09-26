@@ -1,4 +1,4 @@
-import type { ContactMessage, CreateLandingFaq, LandingFaqResponse, LandingSectionKey, UpdateLandingFaq } from './contracts/landing.contract'
+import type { ContactMessage, CreateLandingFaq, CreateLandingPartner, LandingFaqResponse, LandingPartnerResponse, LandingSectionKey, UpdateLandingFaq, UpdateLandingPartner } from './contracts/landing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
@@ -12,6 +12,7 @@ import { EmailService } from '../email/email.service'
 import { CONTACT_REASON_LABELS } from './contracts/landing.contract'
 import { LandingContent } from './entities/landing-content.entity'
 import { LandingFaq } from './entities/landing-faq.entity'
+import { LandingPartner } from './entities/landing-partner.entity'
 
 /** A form filled faster than this was filled by a script, not a person. */
 const MIN_FILL_TIME_MS = 3_000
@@ -33,9 +34,10 @@ export class LandingService {
    * landing keeps its built-in defaults for them.
    */
   async getPublicContent(): Promise<Record<string, unknown>> {
-    const [sections, faqs] = await Promise.all([
+    const [sections, faqs, partners] = await Promise.all([
       this.em.find(LandingContent, {}),
       this.em.find(LandingFaq, { isActive: true }, { orderBy: { sortOrder: 'ASC', createdAt: 'ASC' } }),
+      this.em.find(LandingPartner, { isActive: true }, { orderBy: { sortOrder: 'ASC', createdAt: 'ASC' } }),
     ])
 
     const content: Record<string, unknown> = {}
@@ -47,6 +49,9 @@ export class LandingService {
       }
     }
     content.faq = faqs.map(faq => ({ question: faq.question, answer: faq.answer }))
+    // Rides in the same payload as the rest: the landing draws its whole page
+    // from one call, and a banner of logos is not worth a second.
+    content.partners = partners.map(partner => ({ name: partner.name, logoUrl: partner.logoUrl }))
     return content
   }
 
@@ -178,6 +183,59 @@ export class LandingService {
       throw new NotFoundException('Question introuvable')
     }
     await this.em.removeAndFlush(faq)
+  }
+
+  // --- Partenaires ---
+
+  async findAllPartners(): Promise<LandingPartnerResponse[]> {
+    const partners = await this.em.find(LandingPartner, {}, { orderBy: { sortOrder: 'ASC', createdAt: 'ASC' } })
+    return partners.map(partner => this.toPartnerResponse(partner))
+  }
+
+  async createPartner(data: CreateLandingPartner): Promise<LandingPartnerResponse> {
+    const partner = this.em.create(LandingPartner, {
+      name: data.name,
+      logoUrl: data.logoUrl,
+      isActive: data.isActive,
+      sortOrder: data.sortOrder,
+    })
+    await this.em.flush()
+    return this.toPartnerResponse(partner)
+  }
+
+  async updatePartner(id: string, data: UpdateLandingPartner): Promise<LandingPartnerResponse> {
+    const partner = await this.em.findOne(LandingPartner, { id })
+    if (!partner) {
+      throw new NotFoundException('Partenaire introuvable')
+    }
+    if (data.name !== undefined)
+      partner.name = data.name
+    if (data.logoUrl !== undefined)
+      partner.logoUrl = data.logoUrl
+    if (data.isActive !== undefined)
+      partner.isActive = data.isActive
+    if (data.sortOrder !== undefined)
+      partner.sortOrder = data.sortOrder
+    await this.em.flush()
+    return this.toPartnerResponse(partner)
+  }
+
+  async removePartner(id: string): Promise<void> {
+    const partner = await this.em.findOne(LandingPartner, { id })
+    if (!partner) {
+      throw new NotFoundException('Partenaire introuvable')
+    }
+    await this.em.removeAndFlush(partner)
+  }
+
+  private toPartnerResponse(partner: LandingPartner): LandingPartnerResponse {
+    return {
+      id: partner.id,
+      name: partner.name,
+      logoUrl: partner.logoUrl,
+      isActive: partner.isActive,
+      sortOrder: partner.sortOrder,
+    }
   }
 
   private toFaqResponse(faq: LandingFaq): LandingFaqResponse {

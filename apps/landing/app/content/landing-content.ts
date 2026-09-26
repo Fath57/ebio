@@ -62,6 +62,12 @@ export interface LandingFaqItem {
   answer: string
 }
 
+export interface LandingPartner {
+  name: string
+  /** The name doubles as alternative text: it is read aloud and shown if the image fails. */
+  logoUrl: string
+}
+
 export interface LandingContent {
   hero: LandingHero
   stores: LandingStores
@@ -71,6 +77,7 @@ export interface LandingContent {
   supplier: LandingSupplier
   footer: LandingFooter
   faq: LandingFaqItem[]
+  partners: LandingPartner[]
 }
 
 export const DEFAULT_CONTENT: LandingContent = {
@@ -178,6 +185,7 @@ export const DEFAULT_CONTENT: LandingContent = {
       answer: 'L’inscription est gratuite et vous pouvez vendre dès la validation de votre boutique, sans limite de catalogue. eBio prélève une petite commission sur les produits vendus, jamais sur vos frais de livraison.',
     },
   ],
+  partners: [],
 }
 
 /**
@@ -203,6 +211,9 @@ export function mergeContent(remote: unknown): LandingContent {
     faq: Array.isArray(data.faq) && data.faq.length > 0
       ? (data.faq as LandingFaqItem[])
       : DEFAULT_CONTENT.faq,
+    // No shipped default, unlike the rest: an invented partner would be a
+    // false claim, so an empty list simply hides the section.
+    partners: Array.isArray(data.partners) ? (data.partners as LandingPartner[]) : [],
   }
 }
 

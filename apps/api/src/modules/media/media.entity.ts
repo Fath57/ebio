@@ -35,6 +35,7 @@ export enum MediaContext {
   DELIVERY_PROOF = 'DELIVERY_PROOF',
   /** The conversational assistant's portrait, set from the back-office. */
   ASSISTANT_AVATAR = 'ASSISTANT_AVATAR',
+  PARTNER_LOGO = 'PARTNER_LOGO',
 }
 
 @Entity({ tableName: 'media' })

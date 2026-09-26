@@ -5285,7 +5285,8 @@
                       "BANNER_IMAGE",
                       "ANNOUNCEMENT_IMAGE",
                       "DELIVERY_PROOF",
-                      "ASSISTANT_AVATAR"
+                      "ASSISTANT_AVATAR",
+                      "PARTNER_LOGO"
                     ],
                     "title": "MediaContext",
                     "description": "Contexte d'utilisation du média"
@@ -7559,6 +7560,67 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/assistant/voice": {
+      "post": {
+        "operationId": "AssistantController_prepareVoice",
+        "tags": [
+          "Assistant"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Faire dire une réponse à voix haute",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "texte": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  }
+                },
+                "required": [
+                  "texte"
+                ],
+                "additionalProperties": false,
+                "title": "AssistantSpeak",
+                "description": "Faire dire une réponse à voix haute"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/assistant/voice/{id}": {
+      "get": {
+        "operationId": "AssistantController_streamVoice",
+        "tags": [
+          "Assistant"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": ""
           }
         }
@@ -14399,6 +14461,160 @@
       },
       "delete": {
         "operationId": "LandingController_removeFaq",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/partners": {
+      "get": {
+        "operationId": "LandingController_findAllPartners",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "LandingController_createPartner",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Ajoute un partenaire au bandeau de la page d'accueil",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "logoUrl": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "name",
+                  "logoUrl",
+                  "isActive",
+                  "sortOrder"
+                ],
+                "additionalProperties": false,
+                "title": "CreateLandingPartner",
+                "description": "Ajoute un partenaire au bandeau de la page d'accueil",
+                "examples": [
+                  {
+                    "name": "Coopérative de Bohicon",
+                    "logoUrl": "https://media.e-bio.org/banner_image/cooperative-bohicon.png",
+                    "isActive": true,
+                    "sortOrder": 0
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/landing/partners/{id}": {
+      "patch": {
+        "operationId": "LandingController_updatePartner",
+        "tags": [
+          "Landing"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "logoUrl": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 2000
+                  },
+                  "isActive": {
+                    "default": true,
+                    "type": "boolean"
+                  },
+                  "sortOrder": {
+                    "default": 0,
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateLandingPartner"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "LandingController_removePartner",
         "tags": [
           "Landing"
         ],
@@ -21570,6 +21786,75 @@
         "additionalProperties": false,
         "title": "UpdateLandingFaq"
       },
+      "CreateLandingPartner": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "logoUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "name",
+          "logoUrl",
+          "isActive",
+          "sortOrder"
+        ],
+        "additionalProperties": false,
+        "title": "CreateLandingPartner",
+        "description": "Ajoute un partenaire au bandeau de la page d'accueil",
+        "examples": [
+          {
+            "name": "Coopérative de Bohicon",
+            "logoUrl": "https://media.e-bio.org/banner_image/cooperative-bohicon.png",
+            "isActive": true,
+            "sortOrder": 0
+          }
+        ]
+      },
+      "UpdateLandingPartner": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "logoUrl": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2000
+          },
+          "isActive": {
+            "default": true,
+            "type": "boolean"
+          },
+          "sortOrder": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateLandingPartner"
+      },
       "CreateProductReviews": {
         "type": "object",
         "properties": {
@@ -23278,7 +23563,8 @@
           "BANNER_IMAGE",
           "ANNOUNCEMENT_IMAGE",
           "DELIVERY_PROOF",
-          "ASSISTANT_AVATAR"
+          "ASSISTANT_AVATAR",
+          "PARTNER_LOGO"
         ],
         "title": "MediaContext",
         "description": "Contexte d'utilisation du média"

@@ -1631,6 +1631,28 @@ export type UpdateLandingFaq = {
 };
 
 /**
+ * CreateLandingPartner
+ *
+ * Ajoute un partenaire au bandeau de la page d'accueil
+ */
+export type CreateLandingPartner = {
+  name: string;
+  logoUrl: string;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+/**
+ * UpdateLandingPartner
+ */
+export type UpdateLandingPartner = {
+  name?: string;
+  logoUrl?: string;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+/**
  * CreateProductReviews
  *
  * Rate the products of a delivered order
@@ -2252,6 +2274,7 @@ export const MediaContext = {
   ANNOUNCEMENT_IMAGE: "ANNOUNCEMENT_IMAGE",
   DELIVERY_PROOF: "DELIVERY_PROOF",
   ASSISTANT_AVATAR: "ASSISTANT_AVATAR",
+  PARTNER_LOGO: "PARTNER_LOGO",
 } as const;
 
 /**
@@ -5502,7 +5525,8 @@ export type MediaControllerInitiateUploadData = {
       | "BANNER_IMAGE"
       | "ANNOUNCEMENT_IMAGE"
       | "DELIVERY_PROOF"
-      | "ASSISTANT_AVATAR";
+      | "ASSISTANT_AVATAR"
+      | "PARTNER_LOGO";
     entityType?: string;
     entityId?: string;
     parts: number;
@@ -6580,6 +6604,37 @@ export type AssistantControllerSpeakData = {
 
 export type AssistantControllerSpeakResponses = {
   201: unknown;
+};
+
+export type AssistantControllerPrepareVoiceData = {
+  /**
+   * AssistantSpeak
+   *
+   * Faire dire une réponse à voix haute
+   */
+  body: {
+    texte: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/assistant/voice";
+};
+
+export type AssistantControllerPrepareVoiceResponses = {
+  201: unknown;
+};
+
+export type AssistantControllerStreamVoiceData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/assistant/voice/{id}";
+};
+
+export type AssistantControllerStreamVoiceResponses = {
+  200: unknown;
 };
 
 export type OrdersControllerPreviewCheckoutData = {
@@ -9496,6 +9551,72 @@ export type LandingControllerUpdateFaqData = {
 };
 
 export type LandingControllerUpdateFaqResponses = {
+  200: unknown;
+};
+
+export type LandingControllerFindAllPartnersData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/landing/partners";
+};
+
+export type LandingControllerFindAllPartnersResponses = {
+  200: unknown;
+};
+
+export type LandingControllerCreatePartnerData = {
+  /**
+   * CreateLandingPartner
+   *
+   * Ajoute un partenaire au bandeau de la page d'accueil
+   */
+  body: {
+    name: string;
+    logoUrl: string;
+    isActive: boolean;
+    sortOrder: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/landing/partners";
+};
+
+export type LandingControllerCreatePartnerResponses = {
+  201: unknown;
+};
+
+export type LandingControllerRemovePartnerData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/landing/partners/{id}";
+};
+
+export type LandingControllerRemovePartnerResponses = {
+  200: unknown;
+};
+
+export type LandingControllerUpdatePartnerData = {
+  /**
+   * UpdateLandingPartner
+   */
+  body: {
+    name?: string;
+    logoUrl?: string;
+    isActive?: boolean;
+    sortOrder?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/landing/partners/{id}";
+};
+
+export type LandingControllerUpdatePartnerResponses = {
   200: unknown;
 };
 
