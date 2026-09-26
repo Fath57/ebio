@@ -44,6 +44,7 @@ import { FavoritesScreen } from '../features/favorites/components/favorites-scre
 import { HomeScreen } from '../features/home/components/home-screen'
 import { LocationPickerScreen } from '../features/map/components/location-picker-screen'
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
+import { PushConsentSheet } from '../features/notifications/components/push-consent-sheet'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
 import { OrderConfirmation } from '../features/orders/components/order-confirmation'
 import { OrderList } from '../features/orders/components/order-list'
@@ -1022,6 +1023,9 @@ export function AppNavigation() {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   useNotifications()
+  // Un panier non vide : la première intention visible, et le moment où la
+  // question « on vous prévient ? » veut dire quelque chose.
+  const hasBasket = useCart().getItemCount() > 0
   // The acheteur had no sign a message was waiting: the badge existed in the
   // supplier app only. It refreshes on every socket message, so it appears
   // the moment the message does.
@@ -1134,6 +1138,12 @@ export function AppNavigation() {
       {/* The announcement of the day, mounted above the navigator so it
         * survives a tab change — closing it is a gesture, not a side effect. */}
       <BuyerAnnouncement />
+
+      {/* On demande à partir du premier panier : la personne a montré son
+        * intention, la question a du sens, et elle n'a pas eu besoin de
+        * commander — ceux qui ne l'ont jamais fait sont justement ceux qu'on
+        * veut pouvoir rappeler. */}
+      <PushConsentSheet when={hasBasket} />
     </NavigationContainer>
   )
 }

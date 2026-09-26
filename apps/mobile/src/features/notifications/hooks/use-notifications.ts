@@ -60,6 +60,26 @@ async function setupAndroidChannels(): Promise<void> {
   })
 }
 
+/**
+ * Opens the system dialog, once the buyer has said yes to ours.
+ *
+ * Returns the device token when it is granted, so the caller can register it
+ * straight away rather than wait for the next sign-in.
+ */
+export async function askForPush(): Promise<string | null> {
+  if (Platform.OS === 'web') {
+    return null
+  }
+  const { status: existing } = await Notifications.getPermissionsAsync()
+  if (existing !== 'granted') {
+    const { status } = await Notifications.requestPermissionsAsync()
+    if (status !== 'granted') {
+      return null
+    }
+  }
+  return registerForPush()
+}
+
 export function useNotifications() {
   const [deviceToken, setDeviceToken] = useState<string | null>(null)
   const { data: session } = useSession()
@@ -141,20 +161,22 @@ export function useNotifications() {
   return { deviceToken }
 }
 
+/**
+ * Registers the device, without ever opening the system dialog.
+ *
+ * Asking Android on sign-in put the prompt in front of someone who had not
+ * yet seen what the app does — and a refusal there is **final**, on Android 13
+ * and later. The dialog is now opened by `askForPush` alone, after the app has
+ * asked in its own words and been told yes. This one only picks up a
+ * permission that is already granted.
+ */
 async function registerForPush(): Promise<string | null> {
   if (Platform.OS === 'web') {
     return null
   }
 
-  const { status: existingStatus } = await Notifications.getPermissionsAsync()
-  let finalStatus = existingStatus
-
-  if (existingStatus !== 'granted') {
-    const { status } = await Notifications.requestPermissionsAsync()
-    finalStatus = status
-  }
-
-  if (finalStatus !== 'granted') {
+  const { status } = await Notifications.getPermissionsAsync()
+  if (status !== 'granted') {
     return null
   }
 
