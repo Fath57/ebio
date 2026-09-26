@@ -495,16 +495,19 @@ function CartHomeWrapper({ navigation }: any) {
     availableVariants: [],
   }))
 
-  function handleCheckout() {
-    if (items.length === 0)
+  function handleCheckout(supplierId: string) {
+    const basket = items.filter(i => i.supplierId === supplierId)
+    if (basket.length === 0)
       return
 
-    // The summary is the cart's, every shop together. Each line
-    // carries its shop for display; splitting into orders is the
-    // server's business.
+    // One shop, one order. The cart may hold other shops' baskets; they stay
+    // where they are and are ordered on their own — which is what makes a
+    // promo code usable again, and a refund a single shop's business.
+    const shopName = groups.find(g => g.supplierId === supplierId)?.supplierName ?? ''
     const orderSummary = {
-      shopNames: groups.map(g => g.supplierName),
-      items: items.map(i => ({
+      supplierId,
+      shopNames: [shopName],
+      items: basket.map(i => ({
         productId: i.productId,
         supplierId: i.supplierId,
         supplierName: i.supplierName,
@@ -514,7 +517,7 @@ function CartHomeWrapper({ navigation }: any) {
         unit: i.unit,
       })),
       deliveryMode,
-      total: items.reduce((s, i) => s + i.pricePerUnit * i.quantity, 0),
+      total: basket.reduce((s, i) => s + i.pricePerUnit * i.quantity, 0),
     }
 
     if (!session?.user) {
@@ -593,7 +596,7 @@ function ForgotPasswordWrapper({ navigation }: any) {
 }
 
 function CheckoutWrapper({ route, navigation }: any) {
-  const { clearAll } = useCart()
+  const { clearAll, clearSupplierCart } = useCart()
   const { data: session } = useSession()
   const { orderSummary } = route.params
   const customer = {
@@ -607,12 +610,15 @@ function CheckoutWrapper({ route, navigation }: any) {
         orderSummary={orderSummary}
         customer={customer}
         onComplete={(orderNumber, orderId) => {
-          // The whole cart, not one shop: since the unified cart, one
-          // checkout bills everything and creates an order per shop.
-          // `clearSupplierCart(orderSummary.supplierId)` cleared nothing at
-          // all — `OrderSummary` carries no `supplierId`, so it was
-          // `undefined`, and the cart stayed whole after the order.
-          clearAll()
+          // Only the shop just ordered. The other baskets are separate orders
+          // still waiting to be placed, and emptying them here would throw
+          // away what the buyer had chosen.
+          if (orderSummary.supplierId) {
+            clearSupplierCart(orderSummary.supplierId)
+          }
+          else {
+            clearAll()
+          }
           navigation.replace('OrderSuccess', { orderNumber, orderId })
         }}
         onCancel={() => navigation.goBack()}

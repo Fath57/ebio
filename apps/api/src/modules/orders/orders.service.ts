@@ -125,6 +125,17 @@ export interface CheckoutOrderContext {
    * the same and the unique constraint breaks the whole checkout.
    */
   orderNumber: string
+  /**
+   * The delivery fee this order carries, when it carries one.
+   *
+   * A cart holds one shop now, so the checkout wraps a single order and the
+   * fee belongs on that order, exactly as it did before carts were grouped —
+   * which is what lets the courier be paid per order rather than per round,
+   * and the cash to collect be read off the order. It stays at zero for a
+   * checkout that still groups several shops, where one fee covers a road no
+   * single order paid for.
+   */
+  deliveryFee?: number
 }
 
 interface BasketPricing {
@@ -195,9 +206,11 @@ export class OrdersService {
     const orderNumber = checkoutContext?.orderNumber ?? await this.generateOrderNumber()
     const pricing = await this.priceBasket(buyer, supplier, products, data)
     const { itemEntities, discount, discountedItemsTotal, commission, appliedPromo } = pricing
-    // In a unified cart the delivery is charged once, at checkout level: the
-    // orders it groups carry no share of it.
-    const deliveryFee = checkoutContext ? 0 : pricing.deliveryFee
+    // Grouped across shops, the delivery is charged once at checkout level and
+    // the orders carry no share of it. A checkout of a single shop hands the
+    // fee down, so everything downstream reads it off the order as it always
+    // did.
+    const deliveryFee = checkoutContext ? checkoutContext.deliveryFee ?? 0 : pricing.deliveryFee
     if (!checkoutContext && !pricing.deliveryPriceable) {
       if (pricing.deliveryReason === 'OUT_OF_RANGE') {
         const km = (pricing.deliveryDistanceKm ?? 0).toLocaleString('fr-FR', { maximumFractionDigits: 1 })

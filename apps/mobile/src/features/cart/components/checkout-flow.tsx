@@ -56,7 +56,9 @@ interface CheckoutResult {
 }
 
 interface OrderSummary {
-  /** The cart's shops, for the header. A single one most of the time. */
+  /** The shop being ordered. One basket, one shop, one order. */
+  supplierId: string
+  /** Its name, for the header. A list because older routes carried several. */
   shopNames: string[]
   items: Array<{
     productId: string

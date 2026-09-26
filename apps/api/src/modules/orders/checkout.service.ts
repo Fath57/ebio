@@ -257,7 +257,14 @@ export class CheckoutService {
             deliverySlot: data.deliverySlot,
             promoCode: data.promoCode,
           } as Parameters<OrdersService['create']>[1],
-          { checkout, orderNumber: orderNumbers[index] },
+          {
+            checkout,
+            orderNumber: orderNumbers[index],
+            // One shop, so the fee belongs on the order rather than on the
+            // wrapper: the courier is paid per order again, and the cash to
+            // collect is read where it has always been read.
+            deliveryFee: baskets.length === 1 ? quote.deliveryFee ?? 0 : 0,
+          },
         )
         entities.push(order)
         summaries.push({
@@ -279,10 +286,15 @@ export class CheckoutService {
 
     void createdOrders
 
-    // Runs only make sense for delivery: an on-site pickup happens shop by
-    // shop, there is nothing to group.
+    // Runs only make sense for delivery, and only for more than one shop.
+    //
+    // A round of a single shop was still a round: it refused individual
+    // acceptance, settled the courier at round level, and waited for « all »
+    // its shops to have prepared. One shop makes all of that ceremony around
+    // an ordinary delivery, which then travels the path isolated deliveries
+    // have always taken.
     const runIds: string[] = []
-    if (isDelivery) {
+    if (isDelivery && baskets.length > 1) {
       for (const run of quote.runs) {
         const created = await this.deliveriesService.createRunForCheckout({
           checkoutId: checkout.id,
