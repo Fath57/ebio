@@ -17,6 +17,7 @@ import * as SplashScreen from 'expo-splash-screen'
 import { StatusBar } from 'expo-status-bar'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, View } from 'react-native'
+import { GestureHandlerRootView } from 'react-native-gesture-handler'
 import { SafeAreaProvider } from 'react-native-safe-area-context'
 import { AppNavigation } from './src/app/navigation-entry'
 import { AccountBlockedScreen } from './src/features/auth/components/account-blocked-screen'
@@ -105,32 +106,37 @@ export default function App(): React.JSX.Element | null {
   }
 
   return (
-    <ThemeProvider>
-      <LocationProvider>
-        <CartProvider>
-          <SafeAreaProvider onLayout={onLayoutRootView}>
-            <AppNavigation />
-            {accountBlock && <AccountBlockedScreen block={accountBlock} />}
-            <AppAlertHost />
-            <ImageCropperHost />
-            <UpdatePrompt />
-            {/* The store's version, which no over-the-air update can bring. */}
-            <StoreUpdateGate />
-            <StatusBar style="auto" />
-            {showOnboarding === true && (
-              <OnboardingScreen
-                onFinish={() => {
-                  storage.set(ONBOARDING_KEY, '1')
-                  setShowOnboarding(false)
-                }}
-              />
-            )}
-            {showSplash && (
-              <AnimatedSplash onFinish={() => setShowSplash(false)} />
-            )}
-          </SafeAreaProvider>
-        </CartProvider>
-      </LocationProvider>
-    </ThemeProvider>
+    // Racine des gestes : sans cette enveloppe, un geste de
+    // react-native-gesture-handler n'atteint jamais son composant — et
+    // l'échec est silencieux, le doigt ne fait simplement rien.
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <ThemeProvider>
+        <LocationProvider>
+          <CartProvider>
+            <SafeAreaProvider onLayout={onLayoutRootView}>
+              <AppNavigation />
+              {accountBlock && <AccountBlockedScreen block={accountBlock} />}
+              <AppAlertHost />
+              <ImageCropperHost />
+              <UpdatePrompt />
+              {/* The store's version, which no over-the-air update can bring. */}
+              <StoreUpdateGate />
+              <StatusBar style="auto" />
+              {showOnboarding === true && (
+                <OnboardingScreen
+                  onFinish={() => {
+                    storage.set(ONBOARDING_KEY, '1')
+                    setShowOnboarding(false)
+                  }}
+                />
+              )}
+              {showSplash && (
+                <AnimatedSplash onFinish={() => setShowSplash(false)} />
+              )}
+            </SafeAreaProvider>
+          </CartProvider>
+        </LocationProvider>
+      </ThemeProvider>
+    </GestureHandlerRootView>
   )
 }

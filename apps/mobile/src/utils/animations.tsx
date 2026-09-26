@@ -3,38 +3,8 @@ import * as React from 'react'
 import { useEffect, useRef } from 'react'
 import {
   Animated,
-  LayoutAnimation,
-  Platform,
   Pressable,
-  UIManager,
 } from 'react-native'
-
-// Android ignores LayoutAnimation unless it is switched on, once, before any
-// layout runs. Without this line every `animateNextLayout` below is a no-op on
-// the only platform we ship to today.
-if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
-  UIManager.setLayoutAnimationEnabledExperimental(true)
-}
-
-/**
- * Makes the next layout change glide instead of jump.
- *
- * Call it immediately before the state change that moves things: a line
- * leaving the basket, a card leaving the shelf, a section opening. The rows
- * below slide up into the gap rather than teleporting, which is the whole
- * difference between a list that reacts and a list that redraws.
- *
- * Deliberately short: past about 250 ms a reordering stops reading as a
- * consequence of the tap and starts reading as a delay.
- */
-export function animateNextLayout(duration = 220): void {
-  LayoutAnimation.configureNext({
-    duration,
-    create: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-    update: { type: LayoutAnimation.Types.easeInEaseOut },
-    delete: { type: LayoutAnimation.Types.easeInEaseOut, property: LayoutAnimation.Properties.opacity },
-  })
-}
 
 // ─── Fade-in + slide up on mount ────────────────────────────────────────────
 interface FadeInViewProps {
