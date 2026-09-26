@@ -104,6 +104,14 @@ function SearchStackScreen() {
       <SearchStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
       <SearchStack.Screen name="ProductReviews" component={ProductReviewsWrapper} />
       <SearchStack.Screen name="Assistant" component={AssistantWrapper} />
+      {/* Ouverts depuis l'en-tête de l'accueil, donc empilés ici.
+        *
+        * Les envoyer dans l'onglet Profil y laissait la pile posée sur eux :
+        * on revenait ensuite sur Profil et on retombait sur les
+        * notifications, l'onglet ayant fidèlement gardé ce qu'un autre
+        * onglet y avait mis. */}
+      <SearchStack.Screen name="Notifications" component={NotificationsWrapper} />
+      <SearchStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
     </SearchStack.Navigator>
   )
 }
@@ -119,8 +127,8 @@ function SearchHomeWrapper({ navigation }: any) {
         onPickLocation={() => navigation.navigate('LocationPicker')}
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
-        onOpenNotifications={() => navigation.navigate('Profil', { screen: 'Notifications' })}
-        onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
+        onOpenNotifications={() => navigation.navigate('Notifications')}
+        onOpenWallet={() => navigation.navigate('BuyerWallet')}
         onOpenAssistant={() => {
           track('assistant_ouvert')
           navigation.navigate('Assistant')
@@ -482,6 +490,9 @@ function CartStackScreen() {
       <CartStack.Screen name="ForgotPassword" component={ForgotPasswordWrapper} />
       <CartStack.Screen name="Checkout" component={CheckoutWrapper} />
       <CartStack.Screen name="OrderSuccess" component={OrderSuccessWrapper} />
+      {/* Regarder un article de son panier ne doit pas déplacer l'acheteur
+        * dans l'onglet Accueil, ni l'y laisser en revenant. */}
+      <CartStack.Screen name="ProductDetail" component={ProductDetailWrapper} />
     </CartStack.Navigator>
   )
 }
@@ -539,7 +550,7 @@ function CartHomeWrapper({ navigation }: any) {
         onChangeDeliveryMode={setDeliveryMode}
         onCheckout={handleCheckout}
         onRemoveItem={removeItem}
-        onPressItem={productId => navigation.navigate('Accueil', { screen: 'ProductDetail', params: { productId } })}
+        onPressItem={productId => navigation.navigate('ProductDetail', { productId })}
       />
     </SafeScreen>
   )
@@ -654,6 +665,7 @@ function OrdersStackScreen() {
       <OrdersStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
       <OrdersStack.Screen name="RateOrder" component={RateOrderWrapper} />
       <OrdersStack.Screen name="RateProducts" component={RateProductsWrapper} />
+      <OrdersStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -843,7 +855,7 @@ function RateOrderWrapper({ route, navigation }: any) {
         tipOnly={tipOnly}
         onDone={() => navigation.goBack()}
         onBack={() => navigation.goBack()}
-        onOpenWallet={() => navigation.navigate('Profil', { screen: 'BuyerWallet' })}
+        onOpenWallet={() => navigation.navigate('BuyerWallet')}
       />
     </SafeScreen>
   )
