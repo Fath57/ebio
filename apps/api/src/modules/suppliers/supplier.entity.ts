@@ -48,6 +48,16 @@ export class Supplier {
   @Enum({ items: () => SupplierType })
   type!: SupplierType
 
+  /**
+   * What the shop says about itself.
+   *
+   * A name and a distance tell a buyer where a shop is, never who it is. This
+   * is the one place the shopkeeper speaks in their own words — what they
+   * grow, since when, what they are known for.
+   */
+  @Property({ type: 'text', nullable: true })
+  description?: string
+
   @Property({ fieldName: 'cover_photo', nullable: true })
   coverPhoto?: string
 

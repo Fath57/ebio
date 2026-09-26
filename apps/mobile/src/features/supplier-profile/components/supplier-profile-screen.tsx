@@ -82,6 +82,8 @@ interface SupplierProfile {
   coverPhotoUrl: string | null
   profilePhotoUrl: string | null
   address: string
+  /** Les mots de la boutique sur elle-même. Absente tant qu'elle n'a rien écrit. */
+  description: string | null
   /** Meters to the nearest active place; null when the shop has no position. */
   distance: number | null
   rating: number | null
@@ -400,6 +402,7 @@ export function SupplierProfileScreen({
             coverPhotoUrl: raw.coverPhoto ?? null,
             profilePhotoUrl: raw.profilePhoto ?? null,
             address: raw.address ?? '',
+            description: raw.description ?? null,
             distance: typeof raw.distance === 'number' ? raw.distance * 1000 : null,
             rating: raw.globalRating ?? null,
             reviewCount: raw.totalReviews ?? 0,
@@ -642,6 +645,16 @@ export function SupplierProfileScreen({
               {supplier.distance !== null && ` · ${formatDistance(supplier.distance)}`}
             </Text>
           </View>
+
+          {/* Ce que la boutique dit d'elle-même, juste sous son adresse : le
+              nom et la distance disent où elle est, jamais qui elle est.
+              Rien n'est dessiné tant qu'elle n'a rien écrit — un encart vide
+              vaut moins que pas d'encart. */}
+          {supplier.description !== null && supplier.description.trim().length > 0 && (
+            <Text style={[styles.description, { color: semantic.textSecondary }]}>
+              {supplier.description.trim()}
+            </Text>
+          )}
 
           {/* Rating row */}
           <StarRatingRow
@@ -1014,6 +1027,11 @@ const styles = StyleSheet.create({
   addressText: {
     ...typography.bodyS,
     flex: 1,
+  },
+  description: {
+    ...typography.bodyL,
+    marginTop: spacing[2],
+    lineHeight: 22,
   },
   badgeScroll: {
     marginTop: spacing[1],

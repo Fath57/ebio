@@ -44,6 +44,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
   const [shopName, setShopName] = useState('')
   const [address, setAddress] = useState('')
   const [neighborhood, setNeighborhood] = useState('')
+  const [description, setDescription] = useState('')
   const [mobileMoneyNumber, setMobileMoneyNumber] = useState('')
   const [coverPhoto, setCoverPhoto] = useState<string | null>(null)
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
@@ -66,6 +67,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
           setShopName((data.shopName as string) ?? '')
           setAddress((data.address as string) ?? '')
           setNeighborhood((data.neighborhood as string) ?? '')
+          setDescription((data.description as string) ?? '')
           setMobileMoneyNumber((data.mobileMoneyNumber as string) ?? '')
           setCoverPhoto((data.coverPhoto as string) ?? null)
           setProfilePhoto((data.profilePhoto as string) ?? null)
@@ -136,6 +138,10 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
       const nb = neighborhood.trim()
       if (nb)
         body.neighborhood = nb
+      // Vidée volontairement : on envoie une chaîne vide pour effacer, sinon
+      // le champ omis laisserait l'ancien texte en place et la boutique ne
+      // pourrait jamais retirer ce qu'elle a écrit.
+      body.description = description.trim()
       const mm = mobileMoneyNumber.trim()
       if (mm)
         body.mobileMoneyNumber = mm
@@ -257,6 +263,26 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
           value={neighborhood}
           onChangeText={setNeighborhood}
         />
+
+        <Text style={[styles.label, { color: semantic.textSecondary }]}>Présentation</Text>
+        <TextInput
+          style={[
+            styles.textInput,
+            styles.textArea,
+            { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface },
+          ]}
+          placeholder="Ce que vous cultivez, depuis quand, ce qui fait votre réputation…"
+          placeholderTextColor={semantic.textTertiary}
+          value={description}
+          onChangeText={setDescription}
+          multiline
+          numberOfLines={4}
+          maxLength={600}
+          textAlignVertical="top"
+        />
+        <Text style={[styles.hint, { color: semantic.textTertiary }]}>
+          {`Affichée en tête de votre fiche. ${600 - description.length} caractères restants.`}
+        </Text>
 
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Numéro Mobile Money</Text>
         <TextInput
@@ -391,6 +417,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[3],
     fontFamily: fonts.sans,
     fontSize: 15,
+  },
+  textArea: {
+    minHeight: 110,
+    paddingTop: spacing[3],
+    paddingBottom: spacing[3],
+  },
+  hint: {
+    marginTop: spacing[1],
+    fontFamily: fonts.sans,
+    fontSize: 12,
   },
   infoLine: {
     ...typography.caption,

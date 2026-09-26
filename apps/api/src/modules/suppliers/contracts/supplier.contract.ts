@@ -68,6 +68,8 @@ export const registerSupplierSchema = z.object({
   longitude: z.number().min(-180).max(180).optional(),
   address: z.string().min(2).max(255).optional(),
   neighborhood: z.string().min(2).max(100).optional(),
+  /** Les mots de la boutique sur elle-même, affichés en tête de sa fiche. */
+  description: z.string().max(600).optional(),
   mobileMoneyNumber: z.string().min(8).max(20),
   mode: supplierModeEnum.default('ORDER'),
   deliveryFee: z.number().min(0).optional(),
@@ -102,6 +104,7 @@ export const supplierResponseSchema = z.object({
   longitude: z.number().nullable(),
   address: z.string().nullable(),
   neighborhood: z.string().nullable(),
+  description: z.string().nullable(),
   mobileMoneyNumber: z.string().nullable(),
   validationStatus: validationStatusEnum,
   mode: supplierModeEnum,

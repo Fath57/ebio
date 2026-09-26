@@ -26,6 +26,7 @@ export class SupplierMapper {
       longitude: coordinates?.longitude ?? null,
       address: supplier.address ?? null,
       neighborhood: supplier.neighborhood ?? null,
+      description: supplier.description ?? null,
       mobileMoneyNumber: supplier.mobileMoneyNumber ?? null,
       validationStatus: supplier.validationStatus,
       mode: supplier.mode,
