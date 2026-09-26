@@ -50,6 +50,19 @@ function explain(status: string | null, body: string): string {
   return status ? `refus Wirepick : ${status}` : 'réponse inattendue'
 }
 
+/**
+ * A number one can still recognise, without writing it down in full.
+ *
+ * These lines leave the server: the logs are shipped to the error tracker, so
+ * every one of them is a copy of a buyer's phone number on someone else's
+ * machine. The last four digits are enough to match a line to a person one is
+ * already talking to, which is all a log is for.
+ */
+function masked(phone: string): string {
+  const trimmed = phone.trim()
+  return trimmed.length <= 4 ? '••••' : `${trimmed.slice(0, 4)}••••${trimmed.slice(-4)}`
+}
+
 /** Wirepick wants a bare number; everything else here carries the `+`. */
 function forWirepick(phone: string): string {
   const trimmed = phone.trim()
@@ -74,7 +87,7 @@ export class SmsService {
    */
   async send(phone: string, message: string): Promise<void> {
     if (!this.configured) {
-      this.logger.warn(`[SMS-DEV] → ${phone}: ${message}`)
+      this.logger.warn(`[SMS-DEV] → ${masked(phone)}: ${message}`)
       return
     }
 
@@ -93,7 +106,7 @@ export class SmsService {
       if (!res.ok) {
         // The credentials are in the query string, so the URL never goes to
         // the log — only what came back.
-        this.logger.error(`SMS refusé (${res.status}) pour ${phone} : ${body.slice(0, 200)}`)
+        this.logger.error(`SMS refusé (${res.status}) pour ${masked(phone)} : ${body.slice(0, 200)}`)
         throw new Error('SMS send failed')
       }
     }
@@ -101,7 +114,7 @@ export class SmsService {
       if (error instanceof Error && error.message === 'SMS send failed') {
         throw error
       }
-      this.logger.error(`SMS injoignable pour ${phone} — ${error}`)
+      this.logger.error(`SMS injoignable pour ${masked(phone)} — ${error}`)
       throw new Error('SMS send failed')
     }
 
@@ -109,7 +122,7 @@ export class SmsService {
     if (!ok) {
       // A 200 with a refusal inside is the failure that costs the most time:
       // without this the code above would call it a success.
-      this.logger.error(`SMS non envoyé à ${phone} — ${explain(status, body)}`)
+      this.logger.error(`SMS non envoyé à ${masked(phone)} — ${explain(status, body)}`)
       throw new Error('SMS send failed')
     }
 
@@ -117,6 +130,6 @@ export class SmsService {
     // gives back. `ACT` means they accepted and billed the message, not that a
     // handset received it — when one never arrives, this identifier is the only
     // thing that can be put in front of them.
-    this.logger.log(`[SMS] → ${phone} : accepté par Wirepick${messageId ? ` (msgid ${messageId})` : ' (sans identifiant)'}`)
+    this.logger.log(`[SMS] → ${masked(phone)} : accepté par Wirepick${messageId ? ` (msgid ${messageId})` : ' (sans identifiant)'}`)
   }
 }
