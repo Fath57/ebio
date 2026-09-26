@@ -1,7 +1,7 @@
 import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
 import type { CheckoutPreview, CheckoutPreviewResponse, CreateCheckout, CreateCheckoutResponse } from './contracts/checkout.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, Inject, Injectable, NotFoundException } from '@nestjs/common'
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
 import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from '../payments/entities/checkout.entity'
@@ -32,6 +32,8 @@ interface SupplierBasket {
  */
 @Injectable()
 export class CheckoutService {
+  private readonly logger = new Logger(CheckoutService.name)
+
   constructor(
     private readonly em: EntityManager,
     private readonly ordersService: OrdersService,
@@ -77,6 +79,20 @@ export class CheckoutService {
    * settled, the code is refused beyond one shop rather than costing money in
    * silence.
    */
+  /**
+   * Says out loud when a cart still mixes shops.
+   *
+   * The app orders shop by shop now, so this can only come from a version
+   * installed before that — and those are exactly the ones that still open
+   * grouped rounds. The day this line stops appearing is the day the grouping
+   * can be taken out; without it we would be guessing.
+   */
+  private noteMixedBasket(baskets: SupplierBasket[]): void {
+    if (baskets.length > 1) {
+      this.logger.warn(`Panier mêlant ${baskets.length} boutiques — version d'application antérieure au panier par boutique`)
+    }
+  }
+
   private assertPromoUsable(baskets: SupplierBasket[], promoCode: string | undefined): void {
     if (promoCode && baskets.length > 1) {
       throw new BadRequestException(
@@ -204,6 +220,7 @@ export class CheckoutService {
   async create(buyerId: string, data: CreateCheckout): Promise<CreateCheckoutResponse> {
     const baskets = await this.groupBySupplier(data.items)
     this.assertPromoUsable(baskets, data.promoCode)
+    this.noteMixedBasket(baskets)
     const isDelivery = data.pickupMode === 'DELIVERY'
     const quote = await this.preview(buyerId, data)
 
