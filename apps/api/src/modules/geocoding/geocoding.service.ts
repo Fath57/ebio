@@ -11,6 +11,47 @@ const PLACE_TTL_MS = 30 * 24 * 60 * 60 * 1000
 /** Garde-fou mémoire : au-delà, les entrées les plus anciennes sont évincées. */
 const MAX_ENTRIES = 2000
 
+/**
+ * A Plus Code, Google's grid reference: `4HQ6+2MJ`, or `7FG8Q2+3V` in full.
+ *
+ * The alphabet is deliberately short — no vowels, no letters that look like
+ * digits — so the pattern cannot swallow a real street name.
+ */
+const PLUS_CODE = /^[2-9CFGHJMPQRVWX]{2,8}\+[2-9CFGHJMPQRVWX]{2,3}\b[\s,]*/i
+
+/**
+ * The address a person can read, out of what Google returns for a point.
+ *
+ * Where streets are not named — much of Cotonou — Google answers with a Plus
+ * Code first, and « 4HQ6+2MJ, Cotonou » tells a buyer nothing and a courier
+ * even less. So the first result that is not one is preferred; when every
+ * result is one, the code is dropped and what follows is kept, which leaves
+ * the district and the city. Better a coarse address that means something
+ * than a precise one nobody can act on.
+ */
+export function withoutPlusCode(text: string): string {
+  const stripped = text.trim().replace(PLUS_CODE, '').trim()
+  return stripped.length > 0 ? stripped : text.trim()
+}
+
+export function readableAddress(results: Array<Record<string, unknown>>): string | null {
+  const addresses = results
+    .map(result => result.formatted_address)
+    .filter((address): address is string => typeof address === 'string' && address.trim().length > 0)
+
+  const plain = addresses.find(address => !PLUS_CODE.test(address.trim()))
+  if (plain) {
+    return plain
+  }
+
+  const first = addresses[0]
+  if (!first) {
+    return null
+  }
+  const withoutCode = first.trim().replace(PLUS_CODE, '').trim()
+  return withoutCode.length > 0 ? withoutCode : null
+}
+
 interface CacheEntry<T> {
   value: T
   expiresAt: number
@@ -75,7 +116,9 @@ export class GeocodingService {
       const formatting = (prediction.structured_formatting ?? {}) as Record<string, string>
       return {
         placeId: prediction.place_id as string,
-        label: formatting.main_text ?? (prediction.description as string),
+        // Une suggestion peut arriver en Plus Code elle aussi ; on ne propose
+        // pas à quelqu'un de choisir « 4HQ6+2MJ ».
+        label: withoutPlusCode(formatting.main_text ?? (prediction.description as string)),
         context: formatting.secondary_text ?? '',
       }
     })
@@ -109,7 +152,7 @@ export class GeocodingService {
 
     const resolved: ResolvedPlace = {
       placeId,
-      label: (result.name as string) ?? (result.formatted_address as string) ?? '',
+      label: withoutPlusCode((result.name as string) ?? (result.formatted_address as string) ?? ''),
       latitude: location.lat,
       longitude: location.lng,
     }
@@ -139,7 +182,7 @@ export class GeocodingService {
 
     const data = await this.callGoogle(url)
     const results = (data.results ?? []) as Array<Record<string, unknown>>
-    const label = typeof results[0]?.formatted_address === 'string' ? results[0].formatted_address : null
+    const label = readableAddress(results)
     this.writeCache(cacheKey, { label }, PLACE_TTL_MS)
     return label
   }
