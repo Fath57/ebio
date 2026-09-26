@@ -818,7 +818,10 @@ function NotificationsWrapper({ navigation }: any) {
 function MyOrdersWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <OrderList onOpenOrder={orderId => navigation.navigate('OrderTracking', { orderId })} />
+      <OrderList
+        onOpenOrder={orderId => navigation.navigate('OrderTracking', { orderId })}
+        onGoToCart={() => navigation.navigate('Panier', { screen: 'CartHome' })}
+      />
     </SafeScreen>
   )
 }

@@ -5,6 +5,7 @@ import Car from 'lucide-react-native/dist/esm/icons/car'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import Footprints from 'lucide-react-native/dist/esm/icons/footprints'
 import ImageIcon from 'lucide-react-native/dist/esm/icons/image'
+import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
@@ -22,7 +23,9 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { useTheme } from '../../../theme/theme-context'
 import { ScalePressable, StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
+import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useReorder } from '../hooks/use-reorder'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type FilterTab = 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
@@ -93,9 +96,13 @@ const LIVE_REFRESH_MS = 15_000
 const VEHICLE_ICONS = { MOTO: Bike, BICYCLE: Bike, CAR: Car, ON_FOOT: Footprints } as const
 
 interface OrderItem {
+  /** Needed to put the line back in the basket, at today's price. */
+  productId: string
   productName: string
   productPhoto: string | null
   quantity: number
+  /** A free unit from a promotion: ordering it again would be asking for a gift. */
+  isGift: boolean
 }
 
 interface OrderListItem {
@@ -111,6 +118,8 @@ interface OrderListItem {
 
 interface OrderListProps {
   onOpenOrder: (orderId: string) => void
+  /** Where « Commander à nouveau » leaves the buyer once the basket is filled. */
+  onGoToCart?: () => void
 }
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
@@ -170,13 +179,40 @@ function getFirstPhoto(items: OrderItem[]): string | null {
   return items.find(i => i.productPhoto)?.productPhoto ?? null
 }
 
-export function OrderList({ onOpenOrder }: OrderListProps) {
+export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
   const tabBarHeight = useBottomTabBarHeight()
   const [orders, setOrders] = useState<OrderListItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterTab>('ALL')
   const { semantic } = useTheme()
+  const { isPending: isReordering, reorder } = useReorder()
+
+  /**
+   * Refills the basket from a past order, then says what could not follow.
+   *
+   * Silence would be worse than the missing line: the buyer would reach the
+   * checkout believing they had ordered the same thing.
+   */
+  const handleReorder = useCallback(async (order: OrderListItem): Promise<void> => {
+    try {
+      const outcome = await reorder(order.items)
+      if (outcome.added === 0) {
+        appAlert('Rien à remettre au panier', 'Aucun produit de cette commande n\'est disponible en ce moment.')
+        return
+      }
+      if (outcome.missing.length > 0) {
+        appAlert(
+          'Panier rempli en partie',
+          `${outcome.added} article${outcome.added > 1 ? 's' : ''} remis au panier. Indisponible${outcome.missing.length > 1 ? 's' : ''} : ${outcome.missing.join(', ')}.`,
+        )
+      }
+      onGoToCart?.()
+    }
+    catch (caught) {
+      appAlert('Impossible pour le moment', caught instanceof Error ? caught.message : 'Réessayez dans un instant.')
+    }
+  }, [onGoToCart, reorder])
 
   const fetchOrders = useCallback(async () => {
     try {
@@ -192,9 +228,11 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
           status: o.status as OrderListItem['status'],
           createdAt: o.createdAt as string,
           items: ((o.items ?? []) as Array<Record<string, unknown>>).map(item => ({
+            productId: item.productId as string,
             productName: item.productName as string,
             productPhoto: (item.productPhoto ?? null) as string | null,
             quantity: item.quantity as number,
+            isGift: Boolean(item.isGift),
           })),
           delivery: (o.delivery ?? null) as DeliveryRun | null,
         }))
@@ -347,13 +385,31 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
                     <ChevronRight size={16} color={semantic.textTertiary} />
                   </View>
                 </View>
+
+                {/* Le geste le plus fréquent d'un acheteur de courses : refaire
+                  * celle de la semaine dernière. Offert seulement une fois la
+                  * commande livrée — avant, elle est encore en cours. */}
+                {item.status === 'DELIVERED' && (
+                  <TouchableOpacity
+                    style={[styles.reorderButton, { borderColor: semantic.borderNormal }]}
+                    onPress={() => handleReorder(item)}
+                    disabled={isReordering}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Commander à nouveau chez ${item.supplierName}`}
+                  >
+                    <RotateCcw size={15} color={semantic.textPrimaryColor} />
+                    <Text style={[styles.reorderText, { color: semantic.textPrimaryColor }]}>
+                      {isReordering ? 'Un instant…' : 'Commander à nouveau'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           </StaggerItem>
         </ScalePressable>
       )
     },
-    [onOpenOrder, semantic],
+    [handleReorder, isReordering, onOpenOrder, semantic],
   )
 
   const keyExtractor = useCallback((item: OrderListItem) => item.id, [])
@@ -442,6 +498,21 @@ export function OrderList({ onOpenOrder }: OrderListProps) {
 }
 
 const styles = StyleSheet.create({
+  reorderButton: {
+    marginTop: spacing[3],
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    borderWidth: 1,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing[4],
+  },
+  reorderText: {
+    fontFamily: fonts.sansSb,
+    fontSize: typography.bodyS.fontSize,
+  },
   screen: {
     flex: 1,
   },
