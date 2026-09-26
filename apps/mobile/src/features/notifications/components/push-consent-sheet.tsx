@@ -1,10 +1,13 @@
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
-import { useCallback, useEffect, useState } from 'react'
-import { Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { Animated, Modal, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { askForPush } from '../hooks/use-notifications'
 import { recordAsk, shouldAskForPush } from '../push-consent'
+
+/** Far enough to read as coming from off-screen, short enough not to wait. */
+const SHEET_TRAVEL = 280
 
 interface PushConsentSheetProps {
   /**
@@ -29,6 +32,20 @@ interface PushConsentSheetProps {
 export function PushConsentSheet({ when }: PushConsentSheetProps) {
   const { semantic } = useTheme()
   const [isVisible, setIsVisible] = useState(false)
+  const rise = useRef(new Animated.Value(SHEET_TRAVEL)).current
+
+  useEffect(() => {
+    if (!isVisible) {
+      rise.setValue(SHEET_TRAVEL)
+      return
+    }
+    Animated.spring(rise, {
+      toValue: 0,
+      useNativeDriver: true,
+      speed: 14,
+      bounciness: 4,
+    }).start()
+  }, [isVisible, rise])
 
   useEffect(() => {
     if (!when) {
@@ -61,7 +78,10 @@ export function PushConsentSheet({ when }: PushConsentSheetProps) {
   return (
     <Modal visible={isVisible} transparent animationType="fade" onRequestClose={() => void decline()}>
       <View style={styles.backdrop}>
-        <View style={[styles.sheet, { backgroundColor: semantic.bgCard }]}>
+        {/* Elle monte au ressort plutôt que d'apparaître : une feuille qui
+          * glisse depuis le bas se lit comme une chose qu'on a tirée, un
+          * fondu comme une chose qui s'est imposée. */}
+        <Animated.View style={[styles.sheet, { backgroundColor: semantic.bgCard, transform: [{ translateY: rise }] }]}>
           <View style={[styles.icon, { backgroundColor: semantic.bgPrimaryLight }]}>
             <Bell size={30} color={colors.green[400]} />
           </View>
@@ -80,7 +100,7 @@ export function PushConsentSheet({ when }: PushConsentSheetProps) {
           <TouchableOpacity style={styles.decline} onPress={() => void decline()} accessibilityRole="button">
             <Text style={[styles.declineText, { color: semantic.textTertiary }]}>Plus tard</Text>
           </TouchableOpacity>
-        </View>
+        </Animated.View>
       </View>
     </Modal>
   )

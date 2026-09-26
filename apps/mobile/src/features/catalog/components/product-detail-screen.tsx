@@ -1,6 +1,7 @@
 import type { ScrollView } from 'react-native'
 import type { ProductPromotion } from '../promotions'
 import type { NutritionalValues, ProductCompositionData } from './product-composition'
+import * as Haptics from 'expo-haptics'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import Heart from 'lucide-react-native/dist/esm/icons/heart'
@@ -108,6 +109,12 @@ export function ProductDetailScreen({
   // Keep the content clear of the floating cart bar.
   const cartBarClearance = getItemCount() > 0 ? CART_CTA_BAR_CLEARANCE : 0
   const { isFavorite, toggle: toggleFavorite } = useFavorite(product.id)
+
+  /** Mettre de côté est un geste qu'on veut sentir : il ne laisse rien à l'écran. */
+  const handleToggleFavorite = useCallback(() => {
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
+    toggleFavorite()
+  }, [toggleFavorite])
   const [composition, setComposition] = useState<ProductCompositionData | null>(null)
   // Null until the detail fetch answers: the list row's types stand in meanwhile.
   const [promotions, setPromotions] = useState<ProductPromotion[] | null>(null)
@@ -194,6 +201,9 @@ export function ProductDetailScreen({
     if (!product.isInStock) {
       return
     }
+    // Un petit coup sous le doigt : ajouter au panier change quelque chose,
+    // et le geste mérite d'être senti autant que vu.
+    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light)
     if (cartItem) {
       updateQuantity(cartItem.id, cartItem.quantity + 1)
       return
@@ -256,7 +266,7 @@ export function ProductDetailScreen({
           <>
             <Pressable
               style={styles.headerButton}
-              onPress={toggleFavorite}
+              onPress={handleToggleFavorite}
               accessibilityRole="button"
               accessibilityLabel={isFavorite ? 'Retirer des favoris' : 'Ajouter aux favoris'}
             >

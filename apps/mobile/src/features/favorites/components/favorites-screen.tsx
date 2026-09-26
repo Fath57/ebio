@@ -6,6 +6,7 @@ import { useCallback, useState } from 'react'
 import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { StaggerItem } from '../../../utils/animations'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { useLocation } from '../../common/location-context'
@@ -94,11 +95,15 @@ export function FavoritesScreen({ onGoBack, onOpenProduct, onExplore }: Favorite
             tintColor={colors.green[400]}
           />
         )}
-        renderItem={({ item }) => (
-          <SearchResultCard
-            item={item}
-            onPress={(productId, supplierId) => onOpenProduct(productId, supplierId)}
-          />
+        renderItem={({ item, index }) => (
+          // Les cartes se posent l'une après l'autre plutôt que d'apparaître
+          // d'un bloc : l'œil suit une arrivée, il subit une apparition.
+          <StaggerItem index={index}>
+            <SearchResultCard
+              item={item}
+              onPress={(productId, supplierId) => onOpenProduct(productId, supplierId)}
+            />
+          </StaggerItem>
         )}
         ListEmptyComponent={(
           <View style={styles.empty}>

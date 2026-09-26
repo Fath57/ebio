@@ -3,6 +3,7 @@ import * as React from 'react'
 import { createContext, use, useCallback, useEffect, useMemo, useReducer, useRef } from 'react'
 import { useSession } from '../../lib/auth-client'
 import { track } from '../../utils/analytics'
+import { animateNextLayout } from '../../utils/animations'
 import { apiFetch } from '../../utils/api-client'
 
 // ---------------------------------------------------------------------------
@@ -388,7 +389,16 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     }
   }, [state.items, state.hydrated, userId])
 
+  /**
+   * Every change to the basket glides.
+   *
+   * A line that appears, a quantity that shifts the total, a line that leaves:
+   * without this the rows teleport and the screen reads as a redraw rather
+   * than as an answer to the tap. Declared once here so every screen that
+   * touches the basket inherits it.
+   */
   const addItem = useCallback((input: AddItemInput) => {
+    animateNextLayout()
     dispatch({ type: 'ADD_ITEM', input })
     track('panier_ajout', { produit: input.productId, boutique: input.supplierId })
   }, [])
@@ -398,6 +408,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [])
 
   const removeItem = useCallback((itemId: string) => {
+    animateNextLayout()
     dispatch({ type: 'REMOVE_ITEM', itemId })
   }, [])
 
@@ -410,6 +421,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   }, [state.modes])
 
   const clearSupplierCart = useCallback((supplierId: string) => {
+    animateNextLayout()
     dispatch({ type: 'CLEAR_SUPPLIER', supplierId })
   }, [])
 
