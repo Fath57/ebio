@@ -6,7 +6,9 @@ import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
 import { DeliveriesModule } from '../../deliveries/deliveries.module'
+import { DeliveriesService } from '../../deliveries/deliveries.service'
 import { CheckoutService } from '../checkout.service'
+import { Order } from '../entities/order.entity'
 import { OrdersModule } from '../orders.module'
 
 /** Cotonou: one shop, a buyer a couple of kilometres away. */
@@ -121,5 +123,21 @@ describe('caisse d\'une seule boutique (e2e)', () => {
       [result.checkoutId],
     ) as Array<{ delivery_fee: string }>
     expect(Number(checkout.delivery_fee)).toBe(Number(order.delivery_fee))
+
+    // The courier's pay hangs off this. The delivery snapshots the order's
+    // fee when it is created, and the settlement pays from that snapshot —
+    // so a fee left on the wrapper meant a courier credited nothing at all.
+    const deliveries = app.get(DeliveriesService)
+    const placed = await em.findOneOrFail(Order, { id: result.orders[0].orderId }, { populate: ['supplier', 'checkout'] })
+    const created = await deliveries.createForOrder(placed)
+    expect(created).not.toBeNull()
+
+    const [course] = await db.execute(
+      `SELECT delivery_fee, courier_fee, delivery_run_id FROM deliveries WHERE order_id = ?`,
+      [placed.id],
+    ) as Array<{ delivery_fee: string, courier_fee: string, delivery_run_id: string | null }>
+    expect(Number(course.delivery_fee)).toBe(Number(order.delivery_fee))
+    expect(Number(course.courier_fee)).toBeGreaterThan(0)
+    expect(course.delivery_run_id).toBeNull()
   })
 })
