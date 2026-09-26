@@ -13,7 +13,6 @@ import Star from 'lucide-react-native/dist/esm/icons/star'
 import Tag from 'lucide-react-native/dist/esm/icons/tag'
 import { useEffect } from 'react'
 import {
-  ActivityIndicator,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -22,6 +21,7 @@ import {
 } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { useCategories } from '../../search/hooks/use-search'
@@ -150,8 +150,10 @@ export function HomeScreen({
 
         {loading
           ? (
+              // La forme de ce qui arrive, plutôt qu'un rond sur du vide : la
+              // page ne saute plus quand les cartes se posent.
               <View style={styles.loading}>
-                <ActivityIndicator size="large" color={colors.green[400]} />
+                <ProductCardSkeletonList count={3} />
               </View>
             )
           : (

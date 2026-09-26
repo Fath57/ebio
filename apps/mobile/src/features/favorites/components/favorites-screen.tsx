@@ -3,10 +3,11 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Heart from 'lucide-react-native/dist/esm/icons/heart'
 import { useCallback, useState } from 'react'
-import { ActivityIndicator, FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { FlatList, RefreshControl, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { colors, fonts, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { fetchFavorites } from '../favorites'
@@ -61,8 +62,8 @@ export function FavoritesScreen({ onGoBack, onOpenProduct, onExplore }: Favorite
     return (
       <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
         <ScreenHeader title="Mes favoris" onBack={onGoBack} />
-        <View style={styles.center}>
-          <ActivityIndicator size="large" color={colors.green[400]} />
+        <View style={styles.list}>
+          <ProductCardSkeletonList count={3} />
         </View>
       </View>
     )

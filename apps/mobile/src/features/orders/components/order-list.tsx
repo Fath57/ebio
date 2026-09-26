@@ -11,7 +11,6 @@ import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import {
-  ActivityIndicator,
   FlatList,
   Image,
   StyleSheet,
@@ -25,6 +24,7 @@ import { ScalePressable, StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { useReorder } from '../hooks/use-reorder'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
@@ -456,8 +456,8 @@ export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
       {/* Content */}
       {isLoading
         ? (
-            <View style={styles.centeredContainer}>
-              <ActivityIndicator size="large" color={colors.green[400]} />
+            <View style={styles.skeletonContainer}>
+              <ProductCardSkeletonList count={3} />
             </View>
           )
         : (
@@ -701,6 +701,10 @@ const styles = StyleSheet.create({
   },
 
   // Empty state
+  skeletonContainer: {
+    paddingHorizontal: spacing[4],
+    paddingTop: spacing[3],
+  },
   centeredContainer: {
     flex: 1,
     justifyContent: 'center',
