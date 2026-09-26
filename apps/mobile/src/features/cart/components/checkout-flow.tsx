@@ -1,4 +1,5 @@
 import type { OrderPreview, OrderPreviewLine, PreviewDeliveryReason } from '../hooks/use-order-preview'
+import * as Haptics from 'expo-haptics'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
@@ -20,6 +21,7 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import Animated, { LinearTransition } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -242,6 +244,9 @@ function toLocalLines(items: OrderSummary['items']): OrderPreviewLine[] {
     promotionType: null,
   }))
 }
+
+/** Le bouton de caisse, capable de suivre un changement de disposition. */
+const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity)
 
 export function CheckoutFlow({
   orderSummary,
@@ -987,9 +992,15 @@ export function CheckoutFlow({
           </View>
           {/* Full width, below the amount: the only action of the screen is
               not something to aim at with a thumb. */}
-          <TouchableOpacity
+          <AnimatedTouchable
+            // Le bouton s'enfonce et respire pendant qu'on attend : un bouton
+            // qui ne bouge plus se lit comme un bouton qui n'a pas pris.
+            layout={LinearTransition.duration(200)}
             style={[styles.confirmButton, (isSubmitting || quoteBlocked) && styles.buttonDisabled]}
-            onPress={handleProceedToPayment}
+            onPress={() => {
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium)
+              handleProceedToPayment()
+            }}
             disabled={isSubmitting || quoteBlocked}
             activeOpacity={0.8}
             accessibilityState={{ disabled: isSubmitting || quoteBlocked }}
@@ -1004,7 +1015,7 @@ export function CheckoutFlow({
                     {!quoteBlocked && <ArrowRight size={18} color={colors.neutral[0]} strokeWidth={2.5} />}
                   </>
                 )}
-          </TouchableOpacity>
+          </AnimatedTouchable>
         </View>
 
         <Modal
