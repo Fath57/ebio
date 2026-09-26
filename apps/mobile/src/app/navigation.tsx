@@ -487,7 +487,7 @@ function CartStackScreen() {
 }
 
 function CartHomeWrapper({ navigation }: any) {
-  const { items, groups, deliveryMode, updateQuantity, removeItem, setDeliveryMode } = useCart()
+  const { items, groups, deliveryModeFor, updateQuantity, removeItem, setDeliveryMode } = useCart()
   const { data: session } = useSession()
   const mappedItems = items.map(item => ({
     ...item,
@@ -516,7 +516,7 @@ function CartHomeWrapper({ navigation }: any) {
         pricePerUnit: i.pricePerUnit,
         unit: i.unit,
       })),
-      deliveryMode,
+      deliveryMode: deliveryModeFor(supplierId),
       total: basket.reduce((s, i) => s + i.pricePerUnit * i.quantity, 0),
     }
 
@@ -533,7 +533,7 @@ function CartHomeWrapper({ navigation }: any) {
     <SafeScreen>
       <CartScreen
         items={mappedItems}
-        deliveryMode={deliveryMode}
+        deliveryModeFor={deliveryModeFor}
         onUpdateQuantity={updateQuantity}
         onSelectVariant={() => {}}
         onChangeDeliveryMode={setDeliveryMode}

@@ -53,19 +53,29 @@ export interface AddItemInput {
 // State & Actions
 // ---------------------------------------------------------------------------
 
+/**
+ * How each shop hands its basket over, one shop at a time.
+ *
+ * A cart holds one basket per shop and each is ordered on its own, so the
+ * choice belongs to the shop and not to the cart: one may be worth collecting
+ * on the way home while the other is delivered. Absent from the map means
+ * delivery, which is what most buyers want and what the cart has always
+ * defaulted to.
+ */
+type DeliveryModes = Record<string, DeliveryMode>
+
 interface CartState {
   items: CartItem[]
-  /** One mode for the whole cart: mixed modes are out of scope. */
-  deliveryMode: DeliveryMode
+  modes: DeliveryModes
   hydrated: boolean
 }
 
 type CartAction
-  = | { type: 'HYDRATE', items: CartItem[], deliveryMode: DeliveryMode }
+  = | { type: 'HYDRATE', items: CartItem[], modes: DeliveryModes }
     | { type: 'ADD_ITEM', input: AddItemInput }
     | { type: 'UPDATE_QUANTITY', itemId: string, quantity: number }
     | { type: 'REMOVE_ITEM', itemId: string }
-    | { type: 'SET_DELIVERY_MODE', mode: DeliveryMode }
+    | { type: 'SET_DELIVERY_MODE', supplierId: string, mode: DeliveryMode }
     | { type: 'CLEAR_SUPPLIER', supplierId: string }
     | { type: 'CLEAR_ALL' }
 
@@ -94,37 +104,54 @@ function capQuantity(quantity: number): number {
 
 interface StoredCart {
   items: CartItem[]
-  deliveryMode: DeliveryMode
+  modes: DeliveryModes
 }
 
 /**
  * Reads back the persisted cart, whatever its age.
  *
- * Until now the cart was stored grouped by shop, with a handover mode
- * per group. A buyer updating the app must not lose their cart: the old
- * format is flattened, and when modes diverged we keep delivery — the
- * former code's default, and the least surprising one.
+ * Three shapes have been stored. The oldest grouped items by shop with a mode
+ * per group — which is what we keep again — the middle one flattened
+ * everything under a single mode, and the current one keeps the items flat
+ * with the modes beside them. A buyer updating the app must not lose their
+ * cart, so all three are read; a single stored mode is spread over the shops
+ * that were in the cart, which is exactly what it meant.
  */
 function readStoredCart(raw: string | null): StoredCart {
-  const empty: StoredCart = { items: [], deliveryMode: 'DELIVERY' }
+  const empty: StoredCart = { items: [], modes: {} }
   if (!raw) {
     return empty
   }
   const parsed = JSON.parse(raw) as unknown
+
+  // The oldest shape: one entry per shop, each with its own mode.
   if (Array.isArray(parsed)) {
     const groups = parsed as Array<{ items?: CartItem[], deliveryMode?: DeliveryMode }>
-    return {
-      items: groups.flatMap(group => group.items ?? []),
-      deliveryMode: groups.every(group => group.deliveryMode === 'PICKUP') && groups.length > 0
-        ? 'PICKUP'
-        : 'DELIVERY',
+    const items = groups.flatMap(group => group.items ?? [])
+    const modes: DeliveryModes = {}
+    for (const group of groups) {
+      for (const item of group.items ?? []) {
+        modes[item.supplierId] = group.deliveryMode === 'PICKUP' ? 'PICKUP' : 'DELIVERY'
+      }
+    }
+    return { items, modes }
+  }
+
+  const stored = parsed as Partial<StoredCart> & { deliveryMode?: DeliveryMode }
+  const items = Array.isArray(stored.items) ? stored.items : []
+  if (stored.modes && typeof stored.modes === 'object') {
+    return { items, modes: stored.modes }
+  }
+
+  // The middle shape: one mode for the whole cart. It applied to every shop
+  // in it, so that is where it goes.
+  const modes: DeliveryModes = {}
+  if (stored.deliveryMode === 'PICKUP') {
+    for (const item of items) {
+      modes[item.supplierId] = 'PICKUP'
     }
   }
-  const stored = parsed as Partial<StoredCart>
-  return {
-    items: Array.isArray(stored.items) ? stored.items : [],
-    deliveryMode: stored.deliveryMode === 'PICKUP' ? 'PICKUP' : 'DELIVERY',
-  }
+  return { items, modes }
 }
 
 /** Per-shop view, rebuilt on demand from the flat list. */
@@ -145,7 +172,7 @@ export function groupBySupplier(items: CartItem[]): SupplierCartGroup[] {
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
     case 'HYDRATE': {
-      return { items: action.items, deliveryMode: action.deliveryMode, hydrated: true }
+      return { items: action.items, modes: action.modes, hydrated: true }
     }
 
     case 'ADD_ITEM': {
@@ -198,15 +225,23 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     }
 
     case 'SET_DELIVERY_MODE': {
-      return { ...state, deliveryMode: action.mode }
+      return { ...state, modes: { ...state.modes, [action.supplierId]: action.mode } }
     }
 
     case 'CLEAR_SUPPLIER': {
-      return { ...state, items: state.items.filter(item => item.supplierId !== action.supplierId) }
+      // The shop's choice leaves with its basket: were it kept, adding to that
+      // shop again months later would silently hand back a pickup nobody asked
+      // for this time.
+      const { [action.supplierId]: _gone, ...modes } = state.modes
+      return {
+        ...state,
+        items: state.items.filter(item => item.supplierId !== action.supplierId),
+        modes,
+      }
     }
 
     case 'CLEAR_ALL': {
-      return { ...state, items: [] }
+      return { ...state, items: [], modes: {} }
     }
 
     default:
@@ -224,12 +259,13 @@ interface CartContextValue {
   /** Per-shop view, derived from the items: for display only. */
   groups: SupplierCartGroup[]
   /** One mode for the whole cart. */
-  deliveryMode: DeliveryMode
+  /** How a given shop hands over. Delivery unless it says otherwise. */
+  deliveryModeFor: (supplierId: string) => DeliveryMode
   hydrated: boolean
   addItem: (input: AddItemInput) => void
   updateQuantity: (itemId: string, quantity: number) => void
   removeItem: (itemId: string) => void
-  setDeliveryMode: (mode: DeliveryMode) => void
+  setDeliveryMode: (supplierId: string, mode: DeliveryMode) => void
   clearSupplierCart: (supplierId: string) => void
   clearAll: () => void
   getItemCount: () => number
@@ -239,7 +275,7 @@ interface CartContextValue {
 const CartContext = createContext<CartContextValue>({
   items: [],
   groups: [],
-  deliveryMode: 'DELIVERY',
+  deliveryModeFor: () => 'DELIVERY',
   hydrated: false,
   addItem: () => {},
   updateQuantity: () => {},
@@ -256,7 +292,7 @@ const CartContext = createContext<CartContextValue>({
 // ---------------------------------------------------------------------------
 
 export function CartProvider({ children }: { children: React.ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, { items: [], deliveryMode: 'DELIVERY', hydrated: false })
+  const [state, dispatch] = useReducer(cartReducer, { items: [], modes: {}, hydrated: false })
   const isFirstRender = useRef(true)
   const { data: session, isPending } = useSession()
   const userId = session?.user.id ?? null
@@ -269,7 +305,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         dispatch({ type: 'HYDRATE', ...readStoredCart(raw) })
       }
       catch {
-        dispatch({ type: 'HYDRATE', items: [], deliveryMode: 'DELIVERY' })
+        dispatch({ type: 'HYDRATE', items: [], modes: {} })
       }
     }
     hydrate()
@@ -309,11 +345,11 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     if (!state.hydrated)
       return
 
-    const stored: StoredCart = { items: state.items, deliveryMode: state.deliveryMode }
+    const stored: StoredCart = { items: state.items, modes: state.modes }
     AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(stored)).catch(() => {
       // Silently ignore persistence errors
     })
-  }, [state.items, state.deliveryMode, state.hydrated])
+  }, [state.items, state.modes, state.hydrated])
 
   /**
    * Hands the basket to the server, a moment after it stops changing.
@@ -365,9 +401,13 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     dispatch({ type: 'REMOVE_ITEM', itemId })
   }, [])
 
-  const setDeliveryMode = useCallback((mode: DeliveryMode) => {
-    dispatch({ type: 'SET_DELIVERY_MODE', mode })
+  const setDeliveryMode = useCallback((supplierId: string, mode: DeliveryMode) => {
+    dispatch({ type: 'SET_DELIVERY_MODE', supplierId, mode })
   }, [])
+
+  const deliveryModeFor = useCallback((supplierId: string): DeliveryMode => {
+    return state.modes[supplierId] ?? 'DELIVERY'
+  }, [state.modes])
 
   const clearSupplierCart = useCallback((supplierId: string) => {
     dispatch({ type: 'CLEAR_SUPPLIER', supplierId })
@@ -390,7 +430,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<CartContextValue>(() => ({
     items: state.items,
     groups,
-    deliveryMode: state.deliveryMode,
+    deliveryModeFor,
     hydrated: state.hydrated,
     addItem,
     updateQuantity,
@@ -402,7 +442,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     getTotal,
   }), [
     state.items,
-    state.deliveryMode,
+    deliveryModeFor,
     groups,
     state.hydrated,
     addItem,

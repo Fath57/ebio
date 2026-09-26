@@ -49,13 +49,13 @@ interface CartItem {
 }
 
 interface CartScreenProps {
-  /** The cart, flat. The buyer does not need to know who sells what. */
+  /** Every item, its shop carried on each one. */
   items: CartItem[]
-  /** One mode for the whole cart: the buyer only has one. */
-  deliveryMode: DeliveryMode
+  /** How a given shop hands over. One basket, one choice. */
+  deliveryModeFor: (supplierId: string) => DeliveryMode
   onUpdateQuantity: (itemId: string, quantity: number) => void
   onSelectVariant: (itemId: string, variant: CartVariant) => void
-  onChangeDeliveryMode: (mode: DeliveryMode) => void
+  onChangeDeliveryMode: (supplierId: string, mode: DeliveryMode) => void
   /** Checks out one shop's basket. A cart never mixes two in one order. */
   onCheckout: (supplierId: string) => void
   onRemoveItem: (itemId: string) => void
@@ -182,7 +182,7 @@ export function CartScreen({
   onUpdateQuantity,
   onSelectVariant,
   onChangeDeliveryMode,
-  deliveryMode,
+  deliveryModeFor,
   onCheckout,
   onRemoveItem,
   onContinueShopping,
@@ -395,6 +395,64 @@ export function CartScreen({
                   </View>
                 )}
 
+                {/* Le choix appartient à la boutique : l'une peut valoir le
+                    détour à pied quand l'autre se fait livrer. */}
+                <View style={styles.deliverySection}>
+                  <Text style={[styles.deliveryLabel, { color: semantic.textSecondary }]}>
+                    Mode de livraison
+                  </Text>
+                  <View style={styles.deliveryOptions}>
+                    <TouchableOpacity
+                      style={[
+                        styles.deliveryOption,
+                        { borderColor: semantic.borderNormal },
+                        deliveryModeFor(basket.supplierId) === 'PICKUP' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
+                      ]}
+                      onPress={() => onChangeDeliveryMode(basket.supplierId, 'PICKUP')}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: deliveryModeFor(basket.supplierId) === 'PICKUP' }}
+                    >
+                      <Store
+                        size={16}
+                        color={deliveryModeFor(basket.supplierId) === 'PICKUP' ? colors.green[600] : semantic.textTertiary}
+                      />
+                      <Text
+                        style={[
+                          styles.deliveryOptionText,
+                          { color: semantic.textSecondary },
+                          deliveryModeFor(basket.supplierId) === 'PICKUP' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
+                        ]}
+                      >
+                        Retrait sur place
+                      </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.deliveryOption,
+                        { borderColor: semantic.borderNormal },
+                        deliveryModeFor(basket.supplierId) === 'DELIVERY' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
+                      ]}
+                      onPress={() => onChangeDeliveryMode(basket.supplierId, 'DELIVERY')}
+                      accessibilityRole="radio"
+                      accessibilityState={{ selected: deliveryModeFor(basket.supplierId) === 'DELIVERY' }}
+                    >
+                      <Truck
+                        size={16}
+                        color={deliveryModeFor(basket.supplierId) === 'DELIVERY' ? colors.green[600] : semantic.textTertiary}
+                      />
+                      <Text
+                        style={[
+                          styles.deliveryOptionText,
+                          { color: semantic.textSecondary },
+                          deliveryModeFor(basket.supplierId) === 'DELIVERY' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
+                        ]}
+                      >
+                        Livraison
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
                 {/* Le bouton vit dans la carte de sa boutique : c'est elle
                     qu'on commande, et deux boutiques font deux commandes. */}
                 <View style={[styles.basketFooter, { borderTopColor: semantic.borderLight }]}>
@@ -428,63 +486,6 @@ export function CartScreen({
               </View>
             ))}
 
-            {/* Its own band: the page showing between the two is what separates
-              them now, in place of a card outline. */}
-            <View style={[styles.deliverySection, { backgroundColor: semantic.bgCard }]}>
-              <Text style={[styles.deliveryLabel, { color: semantic.textSecondary }]}>
-                Mode de livraison
-              </Text>
-              <View style={styles.deliveryOptions}>
-                <TouchableOpacity
-                  style={[
-                    styles.deliveryOption,
-                    { borderColor: semantic.borderNormal },
-                    deliveryMode === 'PICKUP' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
-                  ]}
-                  onPress={() => onChangeDeliveryMode('PICKUP')}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: deliveryMode === 'PICKUP' }}
-                >
-                  <Store
-                    size={16}
-                    color={deliveryMode === 'PICKUP' ? colors.green[600] : semantic.textTertiary}
-                  />
-                  <Text
-                    style={[
-                      styles.deliveryOptionText,
-                      { color: semantic.textSecondary },
-                      deliveryMode === 'PICKUP' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
-                    ]}
-                  >
-                    Retrait sur place
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[
-                    styles.deliveryOption,
-                    { borderColor: semantic.borderNormal },
-                    deliveryMode === 'DELIVERY' && [styles.deliveryOptionActive, { backgroundColor: semantic.bgPrimaryLight, borderColor: colors.green[400] }],
-                  ]}
-                  onPress={() => onChangeDeliveryMode('DELIVERY')}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected: deliveryMode === 'DELIVERY' }}
-                >
-                  <Truck
-                    size={16}
-                    color={deliveryMode === 'DELIVERY' ? colors.green[600] : semantic.textTertiary}
-                  />
-                  <Text
-                    style={[
-                      styles.deliveryOptionText,
-                      { color: semantic.textSecondary },
-                      deliveryMode === 'DELIVERY' && [styles.deliveryOptionTextActive, { color: semantic.textPrimaryColor }],
-                    ]}
-                  >
-                    Livraison
-                  </Text>
-                </TouchableOpacity>
-              </View>
-            </View>
           </>
         )}
       </ScrollView>
@@ -713,6 +714,7 @@ const styles = StyleSheet.create({
 
   /* Delivery */
   deliverySection: {
+    marginTop: spacing[2],
     gap: spacing[2],
     paddingHorizontal: spacing[4],
     paddingTop: spacing[4],
