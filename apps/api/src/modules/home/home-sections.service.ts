@@ -135,17 +135,28 @@ export class HomeSectionsService {
       { orderBy: { position: 'ASC' } },
     )
 
-    const resolved = await Promise.all(
-      sections.map(async section => ({
+    // Résolus dans l'ordre, et non en parallèle : un rail trié par distance
+    // doit savoir ce que ceux du dessus ont déjà montré. Sans ça, « Près de
+    // vous », « Validé eBio » et « En promotion » remontaient les mêmes
+    // produits — les plus proches sont proches pour tout le monde.
+    const alreadyShown = new Set<string>()
+    const resolved: ResolvedHomeSection[] = []
+
+    for (const section of sections) {
+      const results = await this.resolve(section, position, alreadyShown)
+      for (const result of results) {
+        alreadyShown.add(result.product.id)
+      }
+      resolved.push({
         id: section.id,
         title: section.title,
         subtitle: section.subtitle ?? null,
         icon: section.icon ?? null,
         criteria: section.mode === HomeSectionMode.MANUAL ? null : (section.criteria ?? {}),
         productIds: section.mode === HomeSectionMode.MANUAL ? (section.productIds ?? []) : null,
-        results: await this.resolve(section, position),
-      })),
-    )
+        results,
+      })
+    }
 
     return resolved.filter(section => section.results.length > 0)
   }
@@ -157,9 +168,23 @@ export class HomeSectionsService {
    * carries the shop, the distance, the stock and the promotional price —
    * everything a card displays, and which would otherwise be rebuilt here.
    */
-  private async resolve(section: HomeSection, position: BuyerPosition): Promise<SearchResult[]> {
+  private async resolve(
+    section: HomeSection,
+    position: BuyerPosition,
+    alreadyShown: ReadonlySet<string> = new Set(),
+  ): Promise<SearchResult[]> {
     const criteria = section.criteria ?? {}
     const handPicked = section.mode === HomeSectionMode.MANUAL
+    const sortBy = criteria.sortBy ?? 'distance'
+    /**
+     * Un rail choisi à la main reste choisi à la main, et un rail trié par
+     * note ou par prix a sa propre raison d'être : seul le tri par distance
+     * répète ce qui est déjà à l'écran, puisque tout le monde a les mêmes
+     * boutiques les plus proches.
+     */
+    const excludeProductIds = !handPicked && sortBy === 'distance' && alreadyShown.size > 0
+      ? [...alreadyShown]
+      : undefined
 
     const query = {
       latitude: position.latitude,
@@ -175,8 +200,9 @@ export class HomeSectionsService {
       inStockOnly: 'true',
       validatedOnly: criteria.validatedOnly === true ? 'true' : 'false',
       promoOnly: criteria.promoOnly === true ? 'true' : 'false',
-      sortBy: criteria.sortBy ?? 'distance',
+      sortBy,
       productIds: handPicked ? (section.productIds ?? []) : undefined,
+      excludeProductIds,
       page: 1,
       limit: section.limit,
     } as SearchProductsQuery
@@ -184,6 +210,13 @@ export class HomeSectionsService {
     const response = await this.search.searchProducts(query)
 
     if (!handPicked) {
+      // Tout écarter jusqu'au vide ferait disparaître le rail : dans une
+      // petite ville, les promotions sont justement les produits d'à côté.
+      // Mieux vaut répéter un produit que perdre « En promotion ».
+      if (response.results.length === 0 && excludeProductIds !== undefined) {
+        const fallback = await this.search.searchProducts({ ...query, excludeProductIds: undefined })
+        return fallback.results
+      }
       return response.results
     }
 

@@ -211,6 +211,7 @@ export class SearchService {
       supplierId,
       newerThanDays,
       productIds,
+      excludeProductIds,
       sortBy,
       page,
       limit,
@@ -311,6 +312,13 @@ export class SearchService {
       // behind `ANY(?::uuid[])` — it flattens it and the SQL stops parsing.
       whereClause += `  AND p.id IN (${productIds.map(() => '?').join(', ')})\n`
       baseParams.push(...productIds)
+    }
+
+    // Écarté plutôt que filtré après coup : la page remonte alors `limit`
+    // produits réellement nouveaux, au lieu d'un rail à moitié vide.
+    if (excludeProductIds !== undefined && excludeProductIds.length > 0) {
+      whereClause += `  AND p.id NOT IN (${excludeProductIds.map(() => '?').join(', ')})\n`
+      baseParams.push(...excludeProductIds)
     }
 
     const orderClause = hasLocation ? this.buildOrderClause(sortBy) : this.buildOrderClause(sortBy === 'distance' ? 'rating' : sortBy)

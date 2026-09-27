@@ -31,6 +31,17 @@ export const searchProductsQuerySchema = z.object({
     value => (typeof value === 'string' ? value.split(',').filter(Boolean) : value),
     z.array(z.string().uuid()).max(50),
   ).optional(),
+  /**
+   * Ce qu'il ne faut pas remonter.
+   *
+   * Les rails de l'accueil trient tous par distance : sans ça, « Validé eBio »
+   * et « En promotion » répétaient les produits déjà vus dans « Près de
+   * vous ». Chaque rail écarte ce que les précédents ont affiché.
+   */
+  excludeProductIds: z.preprocess(
+    value => (typeof value === 'string' ? value.split(',').filter(Boolean) : value),
+    z.array(z.string().uuid()).max(200),
+  ).optional(),
   sortBy: z.enum(['distance', 'rating', 'price']).default('distance'),
   page: z.coerce.number().default(1),
   limit: z.coerce.number().max(50).default(20),
