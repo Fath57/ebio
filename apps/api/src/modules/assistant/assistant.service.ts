@@ -14,6 +14,7 @@ import { amountsFromTools, forSpeech, groundingBreaches, takeSentences, unground
 import { assistantSystemPrompt } from './assistant.prompt'
 import { AssistantSession } from './entities/assistant-session.entity'
 import { AssistantTurn } from './entities/assistant-turn.entity'
+import { isProviderRefusal, PROVIDER_REFUSED_MESSAGE } from './provider-refusals'
 import { addToCartTool, loadState, removeFromCartTool, viewCartTool, writeCartLine } from './tools/cart.tools'
 import { estimateOrderTool } from './tools/estimate-order.tool'
 import { lastOrdersTool, ongoingOrdersTool, orderStatusTool } from './tools/orders.tools'
@@ -335,6 +336,8 @@ export class AssistantService {
     let buffer = ''
     let breached = false
     let failed = false
+    // Le fournisseur a refusé : ce n'est pas une coupure, c'est un compte à sec.
+    let refused = false
     let usage: { promptTokens?: number, completionTokens?: number } = {}
     let cartSignature = JSON.stringify(await this.currentCart(session.id))
 
@@ -387,7 +390,9 @@ export class AssistantService {
         // ended quietly and the partial text was stored as the answer: one
         // turn finished on "D'accord. J".
         if (event.type === 'error') {
-          this.logger.error(`Flux interrompu (session ${session.id}) — ${JSON.stringify((event as { error?: unknown }).error ?? event)}`)
+          const detail = (event as { error?: unknown }).error ?? event
+          this.logger.error(`Flux interrompu (session ${session.id}) — ${JSON.stringify(detail)}`)
+          refused = isProviderRefusal(detail)
           failed = true
           break
         }
@@ -408,14 +413,21 @@ export class AssistantService {
     }
     catch (error) {
       this.logger.error(`Tour diffusé échoué (session ${session.id}) — ${error}`)
-      yield { type: 'error', message: 'L\'assistant est momentanément indisponible.' }
+      yield {
+        type: 'error',
+        message: isProviderRefusal(error) ? PROVIDER_REFUSED_MESSAGE : 'L\'assistant est momentanément indisponible.',
+      }
       return
     }
 
     if (failed) {
       // Nothing is stored: half an answer is worth less than none, and the
-      // turn can simply be taken again.
-      yield { type: 'error', message: 'La réponse s\'est interrompue. Redites-moi ?' }
+      // turn can simply be taken again — sauf si le fournisseur nous a fermé
+      // la porte, auquel cas redemander ne donnera jamais rien.
+      yield {
+        type: 'error',
+        message: refused ? PROVIDER_REFUSED_MESSAGE : 'La réponse s\'est interrompue. Redites-moi ?',
+      }
       return
     }
 

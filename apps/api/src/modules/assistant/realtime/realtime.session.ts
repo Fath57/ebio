@@ -6,6 +6,7 @@ import { Logger } from '@nestjs/common'
 import WebSocket from 'ws'
 import { z } from 'zod'
 import { config } from '../../../config/env.config'
+import { isProviderRefusal, PROVIDER_REFUSED_MESSAGE } from '../provider-refusals'
 import { loadState } from '../tools/cart.tools'
 
 const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime'
@@ -286,10 +287,19 @@ export class RealtimeSession {
         void this.settle()
         break
 
-      case 'error':
+      case 'error': {
         this.logger.error(`Temps réel — ${JSON.stringify(event.error).slice(0, 300)}`)
+        // Un refus du fournisseur — plus de crédit, clé révoquée, quota — ne
+        // se répare pas en réessayant. Le dire franchement et raccrocher vaut
+        // mieux qu'un « réessayez » qui ne peut pas marcher.
+        if (isProviderRefusal(event.error)) {
+          this.emit({ type: 'error', message: PROVIDER_REFUSED_MESSAGE })
+          this.close()
+          break
+        }
         this.emit({ type: 'error', message: 'La conversation s\'est interrompue.' })
         break
+      }
 
       default:
         break
