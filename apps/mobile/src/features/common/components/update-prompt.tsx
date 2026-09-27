@@ -39,7 +39,9 @@ const CHECK_INTERVAL_MS = 5 * 60 * 1000
 export function UpdatePrompt() {
   // Inert in development and in any build without the module: the hook below
   // only ever runs when both are available, so its call stays unconditional.
-  if (!useUpdatesState || !Updates?.isEnabled) {
+  // `__DEV__` compte autant que le reste : en développement le module refuse
+  // la vérification, et son refus se lisait comme un téléchargement raté.
+  if (__DEV__ || !useUpdatesState || !Updates?.isEnabled) {
     return null
   }
   return <UpdateBanner />
@@ -64,7 +66,15 @@ function UpdateBanner() {
    * mid-download.
    */
   const [failed, setFailed] = useState(false)
-  const slide = useRef(new Animated.Value(-120)).current
+  /**
+   * De combien il faut remonter pour disparaître.
+   *
+   * La valeur était figée à 120, et le bandeau est plus haut que ça dès que
+   * l'encoche est prise en compte : une fois fermé, il en restait une bande
+   * en haut de l'écran, définitivement. Mesuré, donc, et rangé pour de bon.
+   */
+  const [height, setHeight] = useState(160)
+  const slide = useRef(new Animated.Value(-160)).current
   const visible = (isUpdatePending || ((failed || downloadError !== undefined) && !isUpdatePending)) && !dismissed
   // Seeded at mount: the module already checks once at startup, and a check
   // in flight must not be started a second time.
@@ -75,12 +85,12 @@ function UpdateBanner() {
 
   useEffect(() => {
     Animated.spring(slide, {
-      toValue: visible ? 0 : -120,
+      toValue: visible ? 0 : -height,
       useNativeDriver: true,
       damping: 18,
       stiffness: 140,
     }).start()
-  }, [visible, slide])
+  }, [visible, slide, height])
 
   /**
    * The module only looks for an update at cold start. The common case is the
@@ -100,17 +110,21 @@ function UpdateBanner() {
       checking.current = true
       void (async () => {
         try {
-          const result = await Updates!.checkForUpdateAsync()
-          if (result.isAvailable) {
+          // Une vérification qui n'aboutit pas ne dit rien : ni qu'une version
+          // attend, ni que le réseau est en cause. Elle reste silencieuse.
+          const result = await Updates!.checkForUpdateAsync().catch(() => null)
+          if (result?.isAvailable !== true) {
+            return
+          }
+          try {
             await Updates!.fetchUpdateAsync()
             setFailed(false)
           }
-        }
-        catch {
-          // Offline mid-download, no room left, a bundle that would not
-          // apply. Saying nothing left someone on an old version with no way
-          // to know one was waiting — the band below offers to try again.
-          setFailed(true)
+          catch {
+            // Là, le serveur a bien annoncé une version et c'est le
+            // téléchargement qui a échoué : ça, ça mérite de le dire.
+            setFailed(true)
+          }
         }
         finally {
           checking.current = false
@@ -132,11 +146,12 @@ function UpdateBanner() {
   const handleRetry = useCallback(() => {
     setFailed(false)
     void (async () => {
+      const result = await Updates!.checkForUpdateAsync().catch(() => null)
+      if (result?.isAvailable !== true) {
+        return
+      }
       try {
-        const result = await Updates!.checkForUpdateAsync()
-        if (result.isAvailable) {
-          await Updates!.fetchUpdateAsync()
-        }
+        await Updates!.fetchUpdateAsync()
       }
       catch {
         setFailed(true)
@@ -163,6 +178,10 @@ function UpdateBanner() {
   return (
     <Animated.View
       pointerEvents={visible ? 'auto' : 'none'}
+      onLayout={(event) => {
+        const measured = event.nativeEvent.layout.height
+        setHeight(previous => (Math.abs(previous - measured) < 1 ? previous : measured))
+      }}
       style={[
         styles.band,
         {
@@ -179,7 +198,7 @@ function UpdateBanner() {
         </Text>
         <Text style={[styles.subtitle, { color: semantic.textSecondary }]}>
           {stuck
-            ? 'Le téléchargement n\'a pas abouti. Vérifiez votre connexion.'
+            ? 'Le téléchargement n\'a pas abouti.'
             : 'Elle s\'appliquera au prochain lancement.'}
         </Text>
       </View>
