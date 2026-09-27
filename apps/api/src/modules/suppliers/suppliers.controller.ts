@@ -171,18 +171,6 @@ export class SuppliersController {
     return this.suppliersService.updateOpeningHours(supplier.id, body.openingHours)
   }
 
-  @Patch('me/settings/mode')
-  @Roles('SUPPLIER')
-  @UseGuards(RolesGuard, CaslGuard)
-  @CanUpdate('Supplier')
-  async updateMode(
-    @Session() session: LoggedInBetterAuthSession,
-    @TypedBody(z.object({ mode: z.enum(['CONTACT', 'ORDER']) }).meta({ title: 'UpdateMode' })) body: { mode: 'CONTACT' | 'ORDER' },
-  ) {
-    const supplier = await this.suppliersService.findByUserId(session.user.id)
-    return this.suppliersService.updateMode(supplier.id, body.mode)
-  }
-
   @Get('me/analytics')
   @Roles('SUPPLIER')
   @UseGuards(RolesGuard, CaslGuard)

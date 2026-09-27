@@ -1,5 +1,4 @@
 import type { DeliveryZoneItem } from '../components/delivery-zones'
-import type { SupplierMode } from '../components/mode-selector'
 import type { OpeningHoursFormData } from '../forms/opening-hours-form'
 import type { ProfileFormData } from '../forms/profile-form'
 import type { ShopInfoFormData } from '../forms/shop-info-form'
@@ -24,7 +23,6 @@ import { useTranslation } from 'react-i18next'
 import { useMediaUpload } from '@/features/media/hooks/use-media-upload'
 import { Can } from '@/lib/casl/can'
 import { DeliveryZones } from '../components/delivery-zones'
-import { ModeSelector } from '../components/mode-selector'
 import { SalesPointsManager } from '../components/sales-points-manager'
 import { OpeningHoursForm } from '../forms/opening-hours-form'
 import { ProfileForm } from '../forms/profile-form'
@@ -53,7 +51,6 @@ interface SupplierSettingsData {
   latitude: number | null
   longitude: number | null
   openingHours: Record<string, { open: string, close: string, closed?: boolean }> | null
-  mode: SupplierMode
   deliveryZones: DeliveryZoneItem[]
 }
 
@@ -234,23 +231,6 @@ export default function SettingsPage() {
     },
     onError: () => {
       toast.error(t('settings.toast.zoneError'))
-    },
-  })
-
-  const { mutate: updateMode, isPending: isUpdatingMode } = useMutation({
-    mutationFn: async (mode: SupplierMode) => {
-      const result = await client.patch({
-        url: '/api/suppliers/me/settings/mode',
-        body: { mode },
-      })
-      return result.data
-    },
-    onSuccess: () => {
-      invalidateSettings()
-      toast.success(t('settings.toast.modeUpdated'))
-    },
-    onError: () => {
-      toast.error(t('settings.toast.modeError'))
     },
   })
 
@@ -485,21 +465,6 @@ export default function SettingsPage() {
               </CardContent>
             </Card>
 
-            <Separator />
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('settings.mode.title')}</CardTitle>
-                <CardDescription>{t('settings.mode.description')}</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <ModeSelector
-                  currentMode={settings?.mode ?? 'CONTACT'}
-                  onModeChange={updateMode}
-                  isPending={isUpdatingMode}
-                />
-              </CardContent>
-            </Card>
           </Can>
         </TabsContent>
       </Tabs>

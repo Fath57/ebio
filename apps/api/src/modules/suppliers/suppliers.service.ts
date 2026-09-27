@@ -6,7 +6,7 @@ import { isOpenNow } from '../../common/opening-hours'
 import { User, UserRole } from '../auth/auth.entity'
 import { Media } from '../media/media.entity'
 import { DeliveryZone } from './entities/delivery-zone.entity'
-import { Supplier, SupplierMode, SupplierType } from './supplier.entity'
+import { Supplier, SupplierType } from './supplier.entity'
 
 /** Rayon appliqué quand la requête est géolocalisée sans rayon explicite. */
 const DEFAULT_RADIUS_KM = 50
@@ -30,7 +30,6 @@ export class SuppliersService {
       address: data.address,
       neighborhood: data.neighborhood,
       mobileMoneyNumber: data.mobileMoneyNumber,
-      mode: data.mode as SupplierMode,
       openingHours: data.openingHours,
       deliveryFee: data.deliveryFee ?? 0,
       freeDeliveryFrom: data.freeDeliveryFrom ?? undefined,
@@ -100,8 +99,6 @@ export class SuppliersService {
       supplier.neighborhood = data.neighborhood
     if (data.mobileMoneyNumber !== undefined)
       supplier.mobileMoneyNumber = data.mobileMoneyNumber
-    if (data.mode !== undefined)
-      supplier.mode = data.mode as SupplierMode
     if (data.deliveryFee !== undefined)
       supplier.deliveryFee = data.deliveryFee
     // Null is meaningful here — it clears the free-delivery threshold.
@@ -428,13 +425,6 @@ export class SuppliersService {
     )
     const distance = rows[0]?.distance
     return distance !== null && distance !== undefined ? Number(distance) : null
-  }
-
-  async updateMode(supplierId: string, mode: string) {
-    const supplier = await this.findById(supplierId)
-    supplier.mode = mode as SupplierMode
-    await this.em.flush()
-    return { mode: supplier.mode }
   }
 
   /** Days covered by each analytics period keyword. */

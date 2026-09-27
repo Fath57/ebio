@@ -3,7 +3,6 @@ import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import MapPinned from 'lucide-react-native/dist/esm/icons/map-pinned'
 import Megaphone from 'lucide-react-native/dist/esm/icons/megaphone'
 import Pencil from 'lucide-react-native/dist/esm/icons/pencil'
-import Store from 'lucide-react-native/dist/esm/icons/store'
 import TicketPercent from 'lucide-react-native/dist/esm/icons/ticket-percent'
 import {
   ScrollView,
@@ -24,7 +23,6 @@ interface SupplierSettingsScreenProps {
   onNavigateToPromoCodes: () => void
   onNavigateToBannerRequests: () => void
   onNavigateToAnnouncementRequest: () => void
-  onNavigateToMode: () => void
 }
 
 export function SupplierSettingsScreen({
@@ -35,7 +33,6 @@ export function SupplierSettingsScreen({
   onNavigateToPromoCodes,
   onNavigateToBannerRequests,
   onNavigateToAnnouncementRequest,
-  onNavigateToMode,
 }: SupplierSettingsScreenProps) {
   const { semantic } = useTheme()
 
@@ -125,18 +122,6 @@ export function SupplierSettingsScreen({
           <ChevronRight size={18} color={semantic.textTertiary} />
         </TouchableOpacity>
 
-        <View style={styles.menuDivider} />
-
-        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToMode} activeOpacity={0.6}>
-          <View style={[styles.menuIcon, { backgroundColor: colors.earth[50] }]}>
-            <Store size={18} color={colors.earth[600]} />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Mode de fonctionnement</Text>
-            <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Contact direct ou commande</Text>
-          </View>
-          <ChevronRight size={18} color={semantic.textTertiary} />
-        </TouchableOpacity>
       </View>
     </ScrollView>
   )

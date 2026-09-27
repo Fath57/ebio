@@ -34,7 +34,6 @@ import { EditProfileScreen } from '../features/profile/components/edit-profile-s
 import { BannerRequestForm } from '../features/supplier-dashboard/components/banner-request-form'
 import { BannerRequestsScreen } from '../features/supplier-dashboard/components/banner-requests-screen'
 import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
-import { ModeSelector } from '../features/supplier-dashboard/components/mode-selector'
 import { OpeningHoursEditor } from '../features/supplier-dashboard/components/opening-hours-editor'
 import { OrderDetailScreen } from '../features/supplier-dashboard/components/order-detail-screen'
 import { OrderManagement } from '../features/supplier-dashboard/components/order-management'
@@ -369,7 +368,6 @@ function SupplierSettingsWrapper({ navigation }: any) {
         onNavigateToPromoCodes={() => navigation.navigate('SupplierPromoCodes')}
         onNavigateToBannerRequests={() => navigation.navigate('SupplierBannerRequests')}
         onNavigateToAnnouncementRequest={() => navigation.navigate('SupplierAnnouncementRequestForm')}
-        onNavigateToMode={() => navigation.navigate('SupplierMode')}
       />
     </SafeScreen>
   )
@@ -462,14 +460,6 @@ function SupplierBannerRequestFormWrapper({ navigation }: any) {
   )
 }
 
-function SupplierModeWrapper({ navigation }: any) {
-  return (
-    <SafeScreen>
-      <ModeSelector onModeChanged={() => navigation.goBack()} onGoBack={() => navigation.goBack()} />
-    </SafeScreen>
-  )
-}
-
 function HomeStackScreen() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
@@ -487,7 +477,6 @@ function HomeStackScreen() {
       <HomeStack.Screen name="SupplierBannerRequests" component={SupplierBannerRequestsWrapper} />
       <HomeStack.Screen name="SupplierBannerRequestForm" component={SupplierBannerRequestFormWrapper} />
       <HomeStack.Screen name="SupplierAnnouncementRequestForm" component={SupplierAnnouncementRequestFormWrapper} />
-      <HomeStack.Screen name="SupplierMode" component={SupplierModeWrapper} />
     </HomeStack.Navigator>
   )
 }

@@ -71,7 +71,6 @@ export const registerSupplierSchema = z.object({
   /** Les mots de la boutique sur elle-même, affichés en tête de sa fiche. */
   description: z.string().max(600).optional(),
   mobileMoneyNumber: z.string().min(8).max(20),
-  mode: supplierModeEnum.default('ORDER'),
   deliveryFee: z.number().min(0).optional(),
   freeDeliveryFrom: z.number().min(0).nullable().optional(),
   openingHours: openingHoursSchema.optional(),
