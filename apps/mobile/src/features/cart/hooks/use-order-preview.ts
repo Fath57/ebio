@@ -45,6 +45,13 @@ export interface OrderPreview {
    * falls where it does.
    */
   deliveryRunCount: number
+  /**
+   * La boutique est fermée à cet instant — `null` si elle est ouverte.
+   *
+   * Lu avant le bouton de commande : commander chez une boutique fermée reste
+   * possible, mais plus sans le savoir.
+   */
+  closedShop: { shopName: string, opensAt: string | null } | null
   total: number
 }
 
@@ -117,7 +124,22 @@ function parsePreview(data: Record<string, unknown>): OrderPreview {
       : 'NO_POSITION',
     deliveryDistanceKm: typeof data.deliveryDistanceKm === 'number' ? data.deliveryDistanceKm : null,
     deliveryRunCount: Array.isArray(data.runs) ? data.runs.length : 1,
+    closedShop: parseClosedShop(data.closedShop),
     total: readNumber(data.total),
+  }
+}
+
+function parseClosedShop(raw: unknown): OrderPreview['closedShop'] {
+  if (!raw || typeof raw !== 'object') {
+    return null
+  }
+  const closed = raw as { shopName?: unknown, opensAt?: unknown }
+  if (typeof closed.shopName !== 'string') {
+    return null
+  }
+  return {
+    shopName: closed.shopName,
+    opensAt: typeof closed.opensAt === 'string' ? closed.opensAt : null,
   }
 }
 

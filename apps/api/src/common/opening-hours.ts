@@ -81,3 +81,64 @@ export function isOpenNow(
   const slots = Array.isArray(daySchedule) ? daySchedule : [daySchedule]
   return slots.some(slot => typeof slot === 'object' && slot !== null && isWithinSlot(slot, time))
 }
+
+const DAY_LABELS: Record<string, string> = {
+  sunday: 'dimanche',
+  monday: 'lundi',
+  tuesday: 'mardi',
+  wednesday: 'mercredi',
+  thursday: 'jeudi',
+  friday: 'vendredi',
+  saturday: 'samedi',
+}
+
+/**
+ * Quand le commerce rouvre, dit en français.
+ *
+ * « Fermée » sans suite laisse l'acheteur deviner s'il s'agit d'une heure ou
+ * d'une semaine. Rendre l'heure de réouverture, c'est la différence entre une
+ * commande passée en connaissance de cause et une commande abandonnée.
+ *
+ * Rend `null` quand aucun horaire n'est renseigné ou qu'aucune ouverture ne
+ * vient dans les sept jours : on ne promet pas une réouverture qu'on ne peut
+ * pas lire dans les horaires.
+ */
+export function nextOpening(
+  openingHours: OpeningHours,
+  now: Date = new Date(),
+  timeZone: string = DEFAULT_TIMEZONE,
+): string | null {
+  if (!openingHours)
+    return null
+
+  const { dayKey, time } = localDayAndTime(now, timeZone)
+  const todayIndex = DAY_KEYS.indexOf(dayKey as typeof DAY_KEYS[number])
+  if (todayIndex < 0)
+    return null
+
+  for (let ahead = 0; ahead < 7; ahead += 1) {
+    const key = DAY_KEYS[(todayIndex + ahead) % DAY_KEYS.length]
+    const daySchedule = openingHours[key]
+    if (!daySchedule)
+      continue
+
+    const slots = (Array.isArray(daySchedule) ? daySchedule : [daySchedule])
+      .filter((slot): slot is DaySlot => typeof slot === 'object' && slot !== null && slot.closed !== true)
+      .map(slot => slot.open)
+      .filter((open): open is string => typeof open === 'string')
+      .sort()
+
+    // Aujourd'hui, seules les ouvertures encore à venir comptent.
+    const opening = ahead === 0 ? slots.find(open => open > time) : slots[0]
+    if (!opening)
+      continue
+
+    if (ahead === 0)
+      return `aujourd'hui à ${opening}`
+    if (ahead === 1)
+      return `demain à ${opening}`
+    return `${DAY_LABELS[key] ?? key} à ${opening}`
+  }
+
+  return null
+}

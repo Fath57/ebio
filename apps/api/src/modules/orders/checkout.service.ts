@@ -1,7 +1,9 @@
+import type { OpeningHours } from '../../common/opening-hours'
 import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
 import type { CheckoutPreview, CheckoutPreviewResponse, CreateCheckout, CreateCheckoutResponse } from './contracts/checkout.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { isOpenNow, nextOpening } from '../../common/opening-hours'
 import { User } from '../auth/auth.entity'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
 import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from '../payments/entities/checkout.entity'
@@ -174,6 +176,33 @@ export class CheckoutService {
         : [],
       total,
       cashLimitExceededBy: data.pickupMode === 'DELIVERY' ? await this.cashOverflow(total) : null,
+      // Dit avant la caisse, jamais après : une boutique fermée traitera la
+      // commande à son ouverture, et c'est une chose qu'on accepte en le
+      // sachant, pas qu'on découvre en attendant.
+      closedShop: this.closedShop(baskets),
+    }
+  }
+
+  /**
+   * La boutique est-elle fermée à cet instant, et quand rouvre-t-elle ?
+   *
+   * L'app affichait « Fermé » sur la fiche et laissait pourtant commander sans
+   * un mot : la commande dormait jusqu'au matin pendant que l'acheteur
+   * l'attendait. Elle reste acceptée — une commande du soir est une vraie
+   * commande — mais elle est annoncée pour ce qu'elle est.
+   */
+  private closedShop(baskets: SupplierBasket[]): { shopName: string, opensAt: string | null } | null {
+    const supplier = baskets[0]?.supplier
+    if (!supplier) {
+      return null
+    }
+    const hours = supplier.openingHours as OpeningHours
+    if (isOpenNow(hours, new Date(), supplier.timezone)) {
+      return null
+    }
+    return {
+      shopName: supplier.shopName,
+      opensAt: nextOpening(hours, new Date(), supplier.timezone),
     }
   }
 

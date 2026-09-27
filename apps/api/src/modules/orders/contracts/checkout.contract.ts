@@ -75,6 +75,17 @@ export const checkoutPreviewResponseSchema = z.object({
    * what the courier fronts, so it covers the whole run and not each order.
    */
   cashLimitExceededBy: z.number().nullable(),
+  /**
+   * La boutique est fermée à cet instant — `null` si elle est ouverte.
+   *
+   * Lu par l'écran de caisse avant le bouton : la commande reste possible,
+   * mais on ne la passe plus sans le savoir.
+   */
+  closedShop: z.object({
+    shopName: z.string(),
+    /** « demain à 08:00 », ou `null` si les horaires ne le disent pas. */
+    opensAt: z.string().nullable(),
+  }).nullable(),
 }).meta({
   title: 'CheckoutPreviewResponse',
   description: 'Chiffrage d\'un panier multi-boutiques, avant paiement',

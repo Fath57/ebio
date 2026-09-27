@@ -3,6 +3,7 @@ import * as Haptics from 'expo-haptics'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
+import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinCheck from 'lucide-react-native/dist/esm/icons/map-pin-check'
 import Store from 'lucide-react-native/dist/esm/icons/store'
@@ -990,6 +991,19 @@ export function CheckoutFlow({
               FCFA
             </Text>
           </View>
+          {/* Lu avant d'appuyer, pas découvert après : la boutique est fermée,
+              la commande passera quand même, et on le dit. */}
+          {preview?.closedShop && (
+            <View style={[styles.closedNotice, { backgroundColor: colors.earth[50], borderColor: colors.earth[200] }]}>
+              <Clock size={16} color={colors.earth[600]} strokeWidth={2.2} />
+              <Text style={[styles.closedNoticeText, { color: colors.earth[800] }]}>
+                {preview.closedShop.opensAt
+                  ? `${preview.closedShop.shopName} est fermée. Votre commande sera traitée à l'ouverture, ${preview.closedShop.opensAt}.`
+                  : `${preview.closedShop.shopName} est fermée. Votre commande sera traitée à sa réouverture.`}
+              </Text>
+            </View>
+          )}
+
           {/* Full width, below the amount: the only action of the screen is
               not something to aim at with a thumb. */}
           <AnimatedTouchable
@@ -1109,6 +1123,21 @@ export function CheckoutFlow({
 }
 
 const styles = StyleSheet.create({
+  closedNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing[2],
+    borderWidth: 1,
+    borderRadius: radius.md,
+    padding: spacing[3],
+    marginBottom: spacing[3],
+  },
+  closedNoticeText: {
+    flex: 1,
+    fontFamily: fonts.sans,
+    fontSize: 13,
+    lineHeight: 19,
+  },
   container: { flex: 1 },
   scrollView: { flex: 1 },
   scrollContent: {
