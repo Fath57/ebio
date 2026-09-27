@@ -12,7 +12,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
-import { streamTurn, voiceUrl } from '../assistant'
+import { streamTurn, VOICE_UNAVAILABLE, voiceUrl } from '../assistant'
 import { useAssistantIdentity } from '../identity'
 import { useLiveVoice } from '../live-voice'
 import { AssistantCartPanel } from './assistant-cart-panel'
@@ -133,6 +133,15 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
     }
 
     const source = await voiceUrl(text)
+    // La voix est refusée en ce moment — pas l'assistante. On le dit une fois,
+    // on coupe le haut-parleur pour ne pas redemander à chaque tour, et la
+    // réponse reste lisible. Le bouton du haut la rallume quand elle revient.
+    if (source === VOICE_UNAVAILABLE) {
+      setVoiceOn(false)
+      setError('Ma voix est indisponible pour le moment. Écrivez-moi, je vous réponds.')
+      setSpeaking(false)
+      return
+    }
     // A newer turn started while this one was being fetched: it owns the voice
     // now, and this answer has nothing left to say.
     if (source === null || voiceTurn.current !== turn) {

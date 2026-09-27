@@ -18,6 +18,15 @@ const REFUSAL_CODES = new Set([
 export const PROVIDER_REFUSED_MESSAGE = 'Assita est indisponible pour le moment. Revenez un peu plus tard.'
 
 /**
+ * Le même refus, mais côté voix seulement.
+ *
+ * L'oreille et la voix passent par un fournisseur, l'écrit par un autre :
+ * quand la voix tombe, Assita répond toujours par écrit. Lui dire de revenir
+ * plus tard serait faux — il suffit d'écrire.
+ */
+export const VOICE_UNAVAILABLE_MESSAGE = 'Ma voix est indisponible pour le moment. Écrivez-moi, je vous réponds.'
+
+/**
  * Reconnaît un refus dans ce que le fournisseur renvoie, quelle que soit la
  * forme : `{ code }`, `{ type }`, ou l'erreur d'un SDK qui les enfouit.
  */

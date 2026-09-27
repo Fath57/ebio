@@ -6,7 +6,7 @@ import { Logger } from '@nestjs/common'
 import WebSocket from 'ws'
 import { z } from 'zod'
 import { config } from '../../../config/env.config'
-import { isProviderRefusal, PROVIDER_REFUSED_MESSAGE } from '../provider-refusals'
+import { isProviderRefusal, VOICE_UNAVAILABLE_MESSAGE } from '../provider-refusals'
 import { loadState } from '../tools/cart.tools'
 
 const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime'
@@ -293,7 +293,7 @@ export class RealtimeSession {
         // se répare pas en réessayant. Le dire franchement et raccrocher vaut
         // mieux qu'un « réessayez » qui ne peut pas marcher.
         if (isProviderRefusal(event.error)) {
-          this.emit({ type: 'error', message: PROVIDER_REFUSED_MESSAGE })
+          this.emit({ type: 'error', message: VOICE_UNAVAILABLE_MESSAGE })
           this.close()
           break
         }

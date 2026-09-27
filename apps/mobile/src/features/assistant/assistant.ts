@@ -187,6 +187,14 @@ export async function transcribe(uri: string): Promise<string> {
   return (data.text ?? '').trim()
 }
 
+export interface VoiceSource {
+  uri: string
+  headers: Record<string, string>
+}
+
+/** La voix est refusée par le fournisseur — l'écrit, lui, reste ouvert. */
+export const VOICE_UNAVAILABLE = 'voice-unavailable' as const
+
 /**
  * The answer, ready to be heard.
  *
@@ -198,14 +206,16 @@ export async function transcribe(uri: string): Promise<string> {
  * start sooner, but the sentences arrive within a tenth of a second of each
  * other — the split bought almost nothing and cost the voice its continuity.
  */
-export async function voiceUrl(text: string): Promise<{ uri: string, headers: Record<string, string> } | null> {
+export async function voiceUrl(text: string): Promise<VoiceSource | typeof VOICE_UNAVAILABLE | null> {
   const res = await apiFetch('/api/assistant/voice', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ texte: text }),
   })
   if (!res.ok) {
-    return null
+    // 503 : le fournisseur de la voix nous a fermé la porte. L'écrit, lui,
+    // passe par un autre — se taire laisserait croire que tout est cassé.
+    return res.status === 503 ? VOICE_UNAVAILABLE : null
   }
 
   const { id } = await res.json() as { id?: string }

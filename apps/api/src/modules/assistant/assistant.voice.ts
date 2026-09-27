@@ -1,6 +1,7 @@
 import { Buffer } from 'node:buffer'
 import { Injectable, Logger, ServiceUnavailableException } from '@nestjs/common'
 import { config } from '../../config/env.config'
+import { isProviderRefusal, VOICE_UNAVAILABLE_MESSAGE } from './provider-refusals'
 
 const OPENAI_AUDIO_URL = 'https://api.openai.com/v1/audio'
 
@@ -90,8 +91,13 @@ export class AssistantVoiceService {
     })
 
     if (!response.ok) {
-      this.logger.error(`Synthèse refusée (${response.status}) — ${await response.text()}`)
-      throw new ServiceUnavailableException('La voix est momentanément indisponible.')
+      const body = await response.text()
+      this.logger.error(`Synthèse refusée (${response.status}) — ${body}`)
+      // Un compte à sec n'est pas une panne passagère : l'acheteur doit savoir
+      // qu'il peut écrire plutôt que d'attendre que la voix revienne.
+      throw new ServiceUnavailableException(
+        isProviderRefusal(body) ? VOICE_UNAVAILABLE_MESSAGE : 'La voix est momentanément indisponible.',
+      )
     }
 
     if (!response.body) {
