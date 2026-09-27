@@ -174,21 +174,21 @@
     "production-client": {
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "internal",
+        "track": "alpha",
         "releaseStatus": "completed"
       }
     },
     "production-supplier": {
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "internal",
+        "track": "alpha",
         "releaseStatus": "completed"
       }
     },
     "production-courier": {
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
-        "track": "internal",
+        "track": "alpha",
         "releaseStatus": "completed"
       }
     },
