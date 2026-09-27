@@ -49,9 +49,11 @@ import { LocationPickerScreen } from '../features/map/components/location-picker
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { PushConsentSheet } from '../features/notifications/components/push-consent-sheet'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
+import { LiveOrderToast } from '../features/orders/components/live-order-toast'
 import { OrderConfirmation } from '../features/orders/components/order-confirmation'
 import { OrderList } from '../features/orders/components/order-list'
 import { OrderTracking } from '../features/orders/components/order-tracking'
+import { LiveOrderProvider, useLiveOrder } from '../features/orders/live-order-context'
 import { EditProfileScreen } from '../features/profile/components/edit-profile-screen'
 import { HelpCenterScreen } from '../features/profile/components/help-center-screen'
 import { LegalScreen } from '../features/profile/components/legal-screen'
@@ -974,7 +976,19 @@ const HIDE_TAB_BAR_ROUTES = new Set([
   'ChatDetail',
 ])
 
+/**
+ * La commande en cours, tenue au-dessus de la navigation pour que la
+ * notification et la pastille de l'onglet lisent le même sondage.
+ */
 export function AppNavigation() {
+  return (
+    <LiveOrderProvider>
+      <BuyerTabs />
+    </LiveOrderProvider>
+  )
+}
+
+function BuyerTabs() {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   useNotifications()
@@ -985,6 +999,18 @@ export function AppNavigation() {
   // supplier app only. It refreshes on every socket message, so it appears
   // the moment the message does.
   const { count: chatUnread } = useChatUnreadCount()
+  // Une commande qui avance : la notification le dit en arrivant, la pastille
+  // de l'onglet le rappelle ensuite sans rien occuper.
+  const { order: liveOrder } = useLiveOrder()
+  // Où l'acheteur se trouve, relevé au changement d'état : la notification est
+  // montée hors du navigateur, elle ne peut pas lire la route par un hook.
+  const [place, setPlace] = React.useState({ tab: '', screen: '' })
+  const handleStateChange = React.useCallback(() => {
+    const state = navigationRef.getRootState()
+    const tab = state?.routes?.[state.index ?? 0]?.name ?? ''
+    const screen = navigationRef.getCurrentRoute()?.name ?? ''
+    setPlace(prev => (prev.tab === tab && prev.screen === screen ? prev : { tab, screen }))
+  }, [])
 
   const baseTabBarStyle = {
     height: 64 + insets.bottom,
@@ -1005,6 +1031,11 @@ export function AppNavigation() {
   return (
     <NavigationContainer
       ref={navigationRef}
+      // Le premier relevé se fait à l'ouverture : `onStateChange` ne se
+      // déclenche qu'au changement, la barre resterait aveugle jusqu'au
+      // premier onglet touché.
+      onReady={handleStateChange}
+      onStateChange={handleStateChange}
       linking={{
         prefixes: ['ebio-mobile://', 'https://e-bio.org'],
         config: {
@@ -1080,6 +1111,20 @@ export function AppNavigation() {
         <Tab.Screen
           name="Commandes"
           component={OrdersStackScreen}
+          // Un point, pas un nombre : il ne compte rien, il dit « ça bouge ».
+          // C'est ce qui reste quand la barre s'efface devant le panier.
+          options={liveOrder
+            ? {
+                tabBarBadge: '',
+                tabBarBadgeStyle: {
+                  backgroundColor: colors.green[400],
+                  minWidth: 10,
+                  maxHeight: 10,
+                  borderRadius: 5,
+                  transform: [{ translateX: -2 }],
+                },
+              }
+            : {}}
           listeners={({ navigation }) => ({
             tabPress: () => popTabStackToTop(navigation, 'Commandes'),
           })}
@@ -1099,6 +1144,15 @@ export function AppNavigation() {
         * pas d'une liste qui ne se remplit jamais. Monté au-dessus du
         * navigateur, donc visible quel que soit l'onglet. */}
       <ConnectivityBanner />
+
+      {/* Là où la commande en est, dit en une ligne puis rangé. Muette sur
+        * l'onglet Commandes (l'écran le dit déjà) et sur les écrans sans barre
+        * d'onglets : une caisse ou une conversation n'est pas un endroit où
+        * l'on interrompt quelqu'un. */}
+      <LiveOrderToast
+        hidden={place.tab === 'Commandes' || HIDE_TAB_BAR_ROUTES.has(place.screen)}
+        onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', params: { orderId } })}
+      />
 
       <BuyerAnnouncement />
 
