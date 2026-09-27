@@ -6,8 +6,8 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { Banner, BannerTargetType } from './banner.entity'
 
-/** Nombre de bannières renvoyées à l'accueil — au-delà, plus personne ne fait défiler. */
-const PUBLIC_LIMIT = 5
+/** Nombre de bannières renvoyées à l'accueil. */
+const PUBLIC_LIMIT = 20
 
 @Injectable()
 export class BannersService {
