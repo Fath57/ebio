@@ -20,7 +20,7 @@ import { z } from 'zod'
 
 const MIN_OFFERS = 1
 const MAX_OFFERS = 6
-const MAX_PAID_SLOTS = 5
+const MAX_PAID_SLOTS = 20
 
 /** Mirrors the API contract; `z.coerce` absorbs the string inputs. */
 const bannerOffersSchema = z.object({

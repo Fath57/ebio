@@ -93,8 +93,13 @@ export const bannerOffersSchema = z.object({
     days: z.number().int().min(1).max(365),
     price: z.number().int().min(0).max(10_000_000),
   })).min(1).max(6),
-  /** How many of the carousel's slots may be sponsored at once. */
-  paidSlots: z.number().int().min(0).max(5),
+  /**
+   * How many of the carousel's slots may be sponsored at once.
+   *
+   * Plafonné au nombre de places du carrousel : au-delà, le réglage
+   * promettrait une visibilité qui n'existe pas.
+   */
+  paidSlots: z.number().int().min(0).max(20),
 }).meta({
   title: 'BannerOffers',
   description: 'Sponsored banner offers (duration / price) and paid slot count',
