@@ -26,6 +26,7 @@ import { appAlert } from '../../common/components/app-alert'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { reverseGeocode } from '../../map/utils/reverse-geocode'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 const DRAFT_KEY = 'supplier_registration_draft'
@@ -97,6 +98,14 @@ export function SupplierRegistration({
   const [identityDocMediaId, setIdentityDocMediaId] = useState<string | null>(null)
   const [businessProofMediaId, setBusinessProofMediaId] = useState<string | null>(null)
   const [errorModal, setErrorModal] = useState<{ visible: boolean, title: string, message: string }>({ visible: false, title: '', message: '' })
+  /**
+   * L'endroit détecté, dit avec des mots.
+   *
+   * « Position détectée (6.3703, 2.3912) » ne permet à personne de vérifier
+   * quoi que ce soit. Une rue et une ville, si. Les coordonnées restent en
+   * secours quand le géocodage ne répond pas.
+   */
+  const [placeLabel, setPlaceLabel] = useState<string | null>(null)
 
   function showError(title: string, message: string) {
     setErrorModal({ visible: true, title, message })
@@ -117,6 +126,24 @@ export function SupplierRegistration({
   useEffect(() => {
     saveDraft(draft)
   }, [draft])
+
+  const { latitude: draftLat, longitude: draftLng } = draft
+  useEffect(() => {
+    if (draftLat === null || draftLat === undefined || draftLng === null || draftLng === undefined) {
+      setPlaceLabel(null)
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const label = await reverseGeocode(draftLat, draftLng)
+      if (!cancelled) {
+        setPlaceLabel(label)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [draftLat, draftLng])
 
   const updateDraft = useCallback(
     (updates: Partial<RegistrationDraft>) => {
@@ -424,7 +451,7 @@ export function SupplierRegistration({
                   <MapPin size={16} color={semantic.textSecondary} />
                   <Text style={[styles.gpsButtonText, { color: semantic.textSecondary }]}>
                     {draft.latitude !== null
-                      ? `Position détectée (${draft.latitude.toFixed(4)}, ${draft.longitude?.toFixed(4)})`
+                      ? placeLabel ?? `Position détectée (${draft.latitude.toFixed(4)}, ${draft.longitude?.toFixed(4)})`
                       : 'Détecter ma position'}
                   </Text>
                 </>

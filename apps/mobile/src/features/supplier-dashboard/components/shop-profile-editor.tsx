@@ -23,6 +23,7 @@ import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
+import { reverseGeocode } from '../../map/utils/reverse-geocode'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
 /** Cotonou — where the map opens when the shop has no position yet. */
@@ -50,7 +51,33 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
   const [profilePhoto, setProfilePhoto] = useState<string | null>(null)
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
+  /**
+   * Le lieu dit avec des mots.
+   *
+   * Deux nombres à cinq décimales ne disent rien à personne : le commerçant
+   * qui vérifie son épingle veut lire un nom de rue et sa ville. Les
+   * coordonnées restent en secours quand le géocodage ne répond pas — mieux
+   * vaut un repère illisible que pas de repère du tout.
+   */
+  const [placeLabel, setPlaceLabel] = useState<string | null>(null)
   const [pickingOnMap, setPickingOnMap] = useState(false)
+
+  useEffect(() => {
+    if (latitude === null || longitude === null) {
+      setPlaceLabel(null)
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const label = await reverseGeocode(latitude, longitude)
+      if (!cancelled) {
+        setPlaceLabel(label)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [latitude, longitude])
 
   const { pickAndUpload: pickCover } = useMediaUpload({ context: 'SUPPLIER_COVER' })
   const { pickAndUpload: pickProfile } = useMediaUpload({ context: 'SUPPLIER_PROFILE' })
@@ -310,8 +337,8 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
                   <Check size={18} color={colors.green[600]} />
                   <View style={styles.locationStatusText}>
                     <Text style={[styles.locationText, { color: colors.green[600] }]}>Position enregistrée</Text>
-                    <Text style={[styles.locationCoords, { color: semantic.textTertiary }]}>
-                      {`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+                    <Text style={[styles.locationCoords, { color: semantic.textTertiary }]} numberOfLines={2}>
+                      {placeLabel ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
                     </Text>
                   </View>
                 </>

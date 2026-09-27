@@ -9,7 +9,7 @@ import MapIcon from 'lucide-react-native/dist/esm/icons/map'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { use, useCallback, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   ScrollView,
@@ -28,6 +28,7 @@ import { ConfirmModal } from '../../common/components/confirm-modal'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
+import { reverseGeocode } from '../../map/utils/reverse-geocode'
 import { WeekScheduleEditor } from './week-schedule-editor'
 
 /** Cotonou, quand ni le point ni le téléphone n'ont encore de position. */
@@ -265,11 +266,31 @@ function SalesPointForm({ point, onDone }: SalesPointFormProps) {
   const [phone, setPhone] = useState(point?.phone ?? '')
   const [latitude, setLatitude] = useState<number | null>(point?.latitude ?? null)
   const [longitude, setLongitude] = useState<number | null>(point?.longitude ?? null)
+  // Le même repère que sur la fiche boutique : une rue et une ville, pas deux
+  // nombres. Les coordonnées ne reviennent que si le géocodage se tait.
+  const [placeLabel, setPlaceLabel] = useState<string | null>(null)
   const [hasOwnHours, setHasOwnHours] = useState(!!point?.openingHours)
   const [hours, setHours] = useState<ApiWeekHours>(point?.openingHours ?? {})
   const [pickingOnMap, setPickingOnMap] = useState(false)
   const [locating, setLocating] = useState(false)
   const [saving, setSaving] = useState(false)
+
+  useEffect(() => {
+    if (latitude === null || longitude === null) {
+      setPlaceLabel(null)
+      return
+    }
+    let cancelled = false
+    void (async () => {
+      const label = await reverseGeocode(latitude, longitude)
+      if (!cancelled) {
+        setPlaceLabel(label)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [latitude, longitude])
 
   const hasLocation = latitude !== null && longitude !== null
 
@@ -391,8 +412,8 @@ function SalesPointForm({ point, onDone }: SalesPointFormProps) {
                   <Check size={18} color={colors.green[600]} />
                   <View>
                     <Text style={[styles.locationText, { color: colors.green[600] }]}>Position enregistrée</Text>
-                    <Text style={[styles.locationCoords, { color: semantic.textTertiary }]}>
-                      {`${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
+                    <Text style={[styles.locationCoords, { color: semantic.textTertiary }]} numberOfLines={2}>
+                      {placeLabel ?? `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`}
                     </Text>
                   </View>
                 </>
