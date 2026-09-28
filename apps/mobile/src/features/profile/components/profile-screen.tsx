@@ -5,6 +5,7 @@ import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleQuestionMark from 'lucide-react-native/dist/esm/icons/circle-question-mark'
 import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import FileText from 'lucide-react-native/dist/esm/icons/file-text'
+import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import Heart from 'lucide-react-native/dist/esm/icons/heart'
 import Hourglass from 'lucide-react-native/dist/esm/icons/hourglass'
 import KeyRound from 'lucide-react-native/dist/esm/icons/key-round'
@@ -68,6 +69,7 @@ interface ProfileScreenProps {
   onNavigateToOrders?: () => void
   onNavigateToWallet?: () => void
   onNavigateToFavorites?: () => void
+  onNavigateToReferral?: () => void
   onNavigateToNotifications?: () => void
   onNavigateToLogin?: () => void
   onNavigateToEditProfile?: () => void
@@ -78,7 +80,7 @@ interface ProfileScreenProps {
   refreshTrigger?: number
 }
 
-export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToFavorites, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToFavorites, onNavigateToReferral, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
   const tabBarHeight = useBottomTabBarHeight()
@@ -445,6 +447,19 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
                 label="Mon portefeuille"
                 sublabel="Recharger et payer sans frais"
                 onPress={() => onNavigateToWallet?.()}
+                semantic={semantic}
+                grouped
+              />
+
+              <View style={styles.menuDivider} />
+
+              <MenuItem
+                icon={Gift}
+                iconBg={colors.green[50]}
+                iconColor={colors.green[600]}
+                label="Parrainage"
+                sublabel="Gagnez à chaque personne que vous amenez"
+                onPress={() => onNavigateToReferral?.()}
                 semantic={semantic}
                 grouped
               />

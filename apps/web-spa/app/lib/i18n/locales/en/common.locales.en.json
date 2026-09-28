@@ -1328,6 +1328,18 @@
       "announcements": {
         "title": "Announcements on opening",
         "description": "The message shown when a buyer opens the app. A shop can request one, paid from its wallet like a banner; eBio can publish its own."
+      },
+      "referral": {
+        "title": "Referrals",
+        "description": "What a buyer-to-buyer referral pays. Both amounts are credited to the wallets on the referee's first delivered order — neither signing up nor paying triggers anything.",
+        "sponsorAmount": "Sponsor reward (FCFA)",
+        "refereeAmount": "Referee reward (FCFA)",
+        "minOrderAmount": "Minimum order (FCFA)",
+        "minOrderHint": "Below this amount the order pays nothing: the next one will.",
+        "active": "Referrals open",
+        "activeHint": "Pauses the programme without erasing existing links or codes.",
+        "saved": "Rewards saved",
+        "error": "Could not save the rewards. Check the values and try again."
       }
     },
     "site": {

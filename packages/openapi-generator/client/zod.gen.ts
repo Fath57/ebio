@@ -33,7 +33,19 @@ export const zBannerOffers = z.object({
     )
     .min(1)
     .max(6),
-  paidSlots: z.int().gte(0).lte(5),
+  paidSlots: z.int().gte(0).lte(20),
+});
+
+/**
+ * ReferralRewards
+ *
+ * Barème du parrainage
+ */
+export const zReferralRewards = z.object({
+  sponsorAmount: z.int().gte(0).lte(100000),
+  refereeAmount: z.int().gte(0).lte(100000),
+  minOrderAmount: z.int().gte(0).lte(1000000),
+  active: z.boolean(),
 });
 
 /**
@@ -163,13 +175,6 @@ export const zDeliveryZone = z.object({
     .min(3),
   deliveryFee: z.number().gte(0),
   estimatedMinutes: z.int().gte(0).lte(9007199254740991),
-});
-
-/**
- * UpdateMode
- */
-export const zUpdateMode = z.object({
-  mode: z.enum(["CONTACT", "ORDER"]),
 });
 
 /**
@@ -608,6 +613,19 @@ export const zValidatePromo = z.object({
       /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
     ),
   itemsTotal: z.number().gt(0),
+});
+
+/**
+ * ClaimReferral
+ *
+ * Rattache un parrain au compte courant
+ */
+export const zClaimReferral = z.object({
+  code: z
+    .string()
+    .min(4)
+    .max(16)
+    .regex(/^[A-Z0-9]+$/),
 });
 
 /**
@@ -2172,13 +2190,6 @@ export const zUpdateOpeningHours = z.object({
 export const zSupplierType = z.enum(["INPUTS", "TRANSFORMER"]);
 
 /**
- * SupplierMode
- *
- * How buyers interact with this supplier
- */
-export const zSupplierMode = z.enum(["CONTACT", "ORDER"]);
-
-/**
  * Timezone
  *
  * IANA timezone the opening hours are expressed in
@@ -2197,8 +2208,8 @@ export const zRegisterSupplier = z.object({
   longitude: z.optional(z.number().gte(-180).lte(180)),
   address: z.optional(z.string().min(2).max(255)),
   neighborhood: z.optional(z.string().min(2).max(100)),
+  description: z.optional(z.string().max(600)),
   mobileMoneyNumber: z.string().min(8).max(20),
-  mode: zSupplierMode,
   deliveryFee: z.optional(z.number().gte(0)),
   freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
   openingHours: z.optional(zOpeningHours),
@@ -2238,8 +2249,8 @@ export const zUpdateSupplier = z.object({
   longitude: z.optional(z.number().gte(-180).lte(180)),
   address: z.optional(z.string().min(2).max(255)),
   neighborhood: z.optional(z.string().min(2).max(100)),
+  description: z.optional(z.string().max(600)),
   mobileMoneyNumber: z.optional(z.string().min(8).max(20)),
-  mode: z.optional(zSupplierMode),
   deliveryFee: z.optional(z.number().gte(0)),
   freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
   openingHours: z.optional(zOpeningHours),
@@ -2874,6 +2885,17 @@ export const zSearchProductsQuery = z.object({
           ),
       )
       .max(50),
+  ),
+  excludeProductIds: z.optional(
+    z
+      .array(
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+      )
+      .max(200),
   ),
   sortBy: z.enum(["distance", "rating", "price"]),
   page: z.number().default(1),
@@ -4392,6 +4414,17 @@ export const zSearchControllerSearchProductsData = z.object({
         )
         .max(50),
     ),
+    excludeProductIds: z.optional(
+      z
+        .array(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        )
+        .max(200),
+    ),
     sortBy: z.enum(["distance", "rating", "price"]),
     page: z.number().default(1),
     limit: z.number().lte(50).default(20),
@@ -4428,6 +4461,39 @@ export const zSearchControllerGetCategoriesData = z.object({
  * Successful response
  */
 export const zSearchControllerGetCategoriesResponse = zCategoriesResponse;
+
+export const zFavoritesControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    latitude: z.string(),
+    longitude: z.string(),
+  }),
+});
+
+export const zFavoritesControllerPickKeptData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    productIds: z.string(),
+  }),
+});
+
+export const zFavoritesControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    productId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFavoritesControllerAddData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    productId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
 
 export const zAnnouncementsControllerCurrentData = z.object({
   body: z.optional(z.never()),
@@ -4628,7 +4694,7 @@ export const zAdminBannerOffersControllerUpdateData = z.object({
       )
       .min(1)
       .max(6),
-    paidSlots: z.int().gte(0).lte(5),
+    paidSlots: z.int().gte(0).lte(20),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -4672,6 +4738,23 @@ export const zAdminProductReviewTimingControllerUpdateData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminReferralRewardsControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminReferralRewardsControllerUpdateData = z.object({
+  body: z.object({
+    sponsorAmount: z.int().gte(0).lte(100000),
+    refereeAmount: z.int().gte(0).lte(100000),
+    minOrderAmount: z.int().gte(0).lte(1000000),
+    active: z.boolean(),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -4680,8 +4763,8 @@ export const zSuppliersControllerRegisterData = z.object({
     longitude: z.optional(z.number().gte(-180).lte(180)),
     address: z.optional(z.string().min(2).max(255)),
     neighborhood: z.optional(z.string().min(2).max(100)),
+    description: z.optional(z.string().max(600)),
     mobileMoneyNumber: z.string().min(8).max(20),
-    mode: z.enum(["CONTACT", "ORDER"]),
     deliveryFee: z.optional(z.number().gte(0)),
     freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
     openingHours: z.optional(
@@ -4753,8 +4836,8 @@ export const zSuppliersControllerUpdateMeData = z.object({
     longitude: z.optional(z.number().gte(-180).lte(180)),
     address: z.optional(z.string().min(2).max(255)),
     neighborhood: z.optional(z.string().min(2).max(100)),
+    description: z.optional(z.string().max(600)),
     mobileMoneyNumber: z.optional(z.string().min(8).max(20)),
-    mode: z.optional(z.enum(["CONTACT", "ORDER"])),
     deliveryFee: z.optional(z.number().gte(0)),
     freeDeliveryFrom: z.optional(z.union([z.number().gte(0), z.null()])),
     openingHours: z.optional(
@@ -4849,14 +4932,6 @@ export const zSuppliersControllerUpdateOpeningHoursData = z.object({
         closed: z.optional(z.boolean()),
       }),
     ),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zSuppliersControllerUpdateModeData = z.object({
-  body: z.object({
-    mode: z.enum(["CONTACT", "ORDER"]),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -7358,6 +7433,24 @@ export const zProductStudioControllerReviewData = z.object({
   body: z.object({
     url: z.url(),
     productName: z.optional(z.string().max(200)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zReferralsControllerMeData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zReferralsControllerClaimData = z.object({
+  body: z.object({
+    code: z
+      .string()
+      .min(4)
+      .max(16)
+      .regex(/^[A-Z0-9]+$/),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),

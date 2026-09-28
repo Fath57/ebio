@@ -89,6 +89,18 @@ export type BannerOffers = {
 };
 
 /**
+ * ReferralRewards
+ *
+ * Barème du parrainage
+ */
+export type ReferralRewards = {
+  sponsorAmount: number;
+  refereeAmount: number;
+  minOrderAmount: number;
+  active: boolean;
+};
+
+/**
  * AssistantSetting
  *
  * Ouvrir ou fermer l'assistant conversationnel, et régler son identité
@@ -215,8 +227,8 @@ export type RegisterSupplier = {
   longitude?: number;
   address?: string;
   neighborhood?: string;
+  description?: string;
   mobileMoneyNumber: string;
-  mode: SupplierMode;
   deliveryFee?: number;
   freeDeliveryFrom?: number | null;
   openingHours?: OpeningHours;
@@ -238,8 +250,8 @@ export type UpdateSupplier = {
   longitude?: number;
   address?: string;
   neighborhood?: string;
+  description?: string;
   mobileMoneyNumber?: string;
-  mode?: SupplierMode;
   deliveryFee?: number;
   freeDeliveryFrom?: number | null;
   openingHours?: OpeningHours;
@@ -270,13 +282,6 @@ export type DeliveryZone = {
  */
 export type UpdateOpeningHours = {
   openingHours: OpeningHours;
-};
-
-/**
- * UpdateMode
- */
-export type UpdateMode = {
-  mode: "CONTACT" | "ORDER";
 };
 
 /**
@@ -802,6 +807,15 @@ export type UpdatePromoCode = {
   maxUses?: number | null;
   maxUsesPerUser?: number;
   isActive?: boolean;
+};
+
+/**
+ * ClaimReferral
+ *
+ * Rattache un parrain au compte courant
+ */
+export type ClaimReferral = {
+  code: string;
 };
 
 /**
@@ -2346,20 +2360,6 @@ export const SupplierType = {
 export type SupplierType = (typeof SupplierType)[keyof typeof SupplierType];
 
 /**
- * SupplierMode
- *
- * How buyers interact with this supplier
- */
-export const SupplierMode = { CONTACT: "CONTACT", ORDER: "ORDER" } as const;
-
-/**
- * SupplierMode
- *
- * How buyers interact with this supplier
- */
-export type SupplierMode = (typeof SupplierMode)[keyof typeof SupplierMode];
-
-/**
  * Timezone
  *
  * IANA timezone the opening hours are expressed in
@@ -2707,6 +2707,7 @@ export type SearchProductsQuery = {
   supplierId?: string;
   newerThanDays?: number;
   productIds?: Array<string>;
+  excludeProductIds?: Array<string>;
   sortBy: "distance" | "rating" | "price";
   page: number;
   limit: number;
@@ -4550,6 +4551,7 @@ export type SearchControllerSearchProductsData = {
     supplierId?: string;
     newerThanDays?: number;
     productIds?: Array<string>;
+    excludeProductIds?: Array<string>;
     sortBy: "distance" | "rating" | "price";
     page: number;
     limit: number;
@@ -4604,6 +4606,59 @@ export type SearchControllerGetCategoriesResponses = {
 
 export type SearchControllerGetCategoriesResponse =
   SearchControllerGetCategoriesResponses[keyof SearchControllerGetCategoriesResponses];
+
+export type FavoritesControllerListData = {
+  body?: never;
+  path?: never;
+  query: {
+    latitude: string;
+    longitude: string;
+  };
+  url: "/api/favorites";
+};
+
+export type FavoritesControllerListResponses = {
+  200: unknown;
+};
+
+export type FavoritesControllerPickKeptData = {
+  body?: never;
+  path?: never;
+  query: {
+    productIds: string;
+  };
+  url: "/api/favorites/ids";
+};
+
+export type FavoritesControllerPickKeptResponses = {
+  200: unknown;
+};
+
+export type FavoritesControllerRemoveData = {
+  body?: never;
+  path: {
+    productId: string;
+  };
+  query?: never;
+  url: "/api/favorites/{productId}";
+};
+
+export type FavoritesControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type FavoritesControllerAddData = {
+  body?: never;
+  path: {
+    productId: string;
+  };
+  query?: never;
+  url: "/api/favorites/{productId}";
+};
+
+export type FavoritesControllerAddResponses = {
+  201: unknown;
+};
 
 export type AnnouncementsControllerCurrentData = {
   body?: never;
@@ -4997,6 +5052,38 @@ export type AdminProductReviewTimingControllerUpdateResponses = {
   200: unknown;
 };
 
+export type AdminReferralRewardsControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/referral-rewards";
+};
+
+export type AdminReferralRewardsControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminReferralRewardsControllerUpdateData = {
+  /**
+   * ReferralRewards
+   *
+   * Barème du parrainage
+   */
+  body: {
+    sponsorAmount: number;
+    refereeAmount: number;
+    minOrderAmount: number;
+    active: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/referral-rewards";
+};
+
+export type AdminReferralRewardsControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -5015,13 +5102,8 @@ export type SuppliersControllerRegisterData = {
     longitude?: number;
     address?: string;
     neighborhood?: string;
+    description?: string;
     mobileMoneyNumber: string;
-    /**
-     * SupplierMode
-     *
-     * How buyers interact with this supplier
-     */
-    mode: "CONTACT" | "ORDER";
     deliveryFee?: number;
     freeDeliveryFrom?: number | null;
     /**
@@ -5107,13 +5189,8 @@ export type SuppliersControllerUpdateMeData = {
     longitude?: number;
     address?: string;
     neighborhood?: string;
+    description?: string;
     mobileMoneyNumber?: string;
-    /**
-     * SupplierMode
-     *
-     * How buyers interact with this supplier
-     */
-    mode?: "CONTACT" | "ORDER";
     deliveryFee?: number;
     freeDeliveryFrom?: number | null;
     /**
@@ -5242,22 +5319,6 @@ export type SuppliersControllerUpdateOpeningHoursData = {
 };
 
 export type SuppliersControllerUpdateOpeningHoursResponses = {
-  200: unknown;
-};
-
-export type SuppliersControllerUpdateModeData = {
-  /**
-   * UpdateMode
-   */
-  body: {
-    mode: "CONTACT" | "ORDER";
-  };
-  path?: never;
-  query?: never;
-  url: "/api/suppliers/me/settings/mode";
-};
-
-export type SuppliersControllerUpdateModeResponses = {
   200: unknown;
 };
 
@@ -8850,6 +8911,35 @@ export type ProductStudioControllerReviewData = {
 };
 
 export type ProductStudioControllerReviewResponses = {
+  201: unknown;
+};
+
+export type ReferralsControllerMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/referrals/me";
+};
+
+export type ReferralsControllerMeResponses = {
+  200: unknown;
+};
+
+export type ReferralsControllerClaimData = {
+  /**
+   * ClaimReferral
+   *
+   * Rattache un parrain au compte courant
+   */
+  body: {
+    code: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/referrals/claim";
+};
+
+export type ReferralsControllerClaimResponses = {
   201: unknown;
 };
 

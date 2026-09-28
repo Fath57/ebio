@@ -1328,6 +1328,18 @@
       "announcements": {
         "title": "Annonces à l'ouverture",
         "description": "Le message qui s'affiche quand un acheteur ouvre l'application. Une boutique peut en demander une, payée depuis son portefeuille comme une bannière ; eBio peut en publier pour son compte."
+      },
+      "referral": {
+        "title": "Parrainage",
+        "description": "Ce que rapporte un parrainage entre acheteurs. Les deux montants sont versés sur les portefeuilles à la première commande livrée du filleul — ni l'inscription ni le paiement ne déclenchent quoi que ce soit.",
+        "sponsorAmount": "Récompense du parrain (FCFA)",
+        "refereeAmount": "Récompense du filleul (FCFA)",
+        "minOrderAmount": "Commande minimum (FCFA)",
+        "minOrderHint": "En dessous de ce montant, la commande ne déclenche pas de récompense : la suivante s'en chargera.",
+        "active": "Parrainage ouvert",
+        "activeHint": "Suspend le programme sans effacer les liens déjà noués ni les codes distribués.",
+        "saved": "Barème enregistré",
+        "error": "Impossible d'enregistrer le barème. Vérifiez les valeurs et réessayez."
       }
     },
     "site": {

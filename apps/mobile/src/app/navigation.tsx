@@ -61,6 +61,7 @@ import { ProfileScreen } from '../features/profile/components/profile-screen'
 import { RateOrderFlow } from '../features/ratings/components/rate-order-flow'
 import { RateProductsScreen } from '../features/ratings/components/rate-products-screen'
 import { ReviewsList } from '../features/ratings/components/reviews-list'
+import { ReferralScreen } from '../features/referrals/components/referral-screen'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
@@ -688,6 +689,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="Terms" component={TermsWrapper} />
       <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <ProfileStack.Screen name="Favorites" component={FavoritesWrapper} />
+      <ProfileStack.Screen name="Referral" component={ReferralWrapper} />
       {/* Ouvrir un favori doit rester dans l'onglet Profil : sans cet écran
         * ici, la navigation remonte jusqu'à l'onglet Accueil et y dépose
         * l'acheteur, qui l'y retrouve plus tard sans comprendre. */}
@@ -717,6 +719,7 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToOrders={() => navigation.navigate('Commandes', { screen: 'MyOrders' })}
         onNavigateToWallet={() => navigation.navigate('BuyerWallet')}
         onNavigateToFavorites={() => navigation.navigate('Favorites')}
+        onNavigateToReferral={() => navigation.navigate('Referral')}
         onNavigateToNotifications={() => navigation.navigate('Notifications')}
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
@@ -726,6 +729,14 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToSupplierRegistration={() => navigation.navigate('SupplierRegistration')}
         refreshTrigger={refreshTrigger}
       />
+    </SafeScreen>
+  )
+}
+
+function ReferralWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <ReferralScreen onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }

@@ -1,5 +1,6 @@
 import type { BannerOffers, DeliveryPricingConfig } from '@boilerstone/openapi-generator/client/types.gen'
 import type { CommissionCategoryRate } from '../forms/commission-form'
+import type { ReferralRewardsFormData } from '../forms/referral-rewards-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
   adminAssistantControllerGet,
@@ -14,6 +15,8 @@ import {
   adminDeliveryPricingControllerUpdate,
   adminProductReviewTimingControllerGet,
   adminProductReviewTimingControllerUpdate,
+  adminReferralRewardsControllerGet,
+  adminReferralRewardsControllerUpdate,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
@@ -36,6 +39,7 @@ import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
 import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
+import { ReferralRewardsForm } from '../forms/referral-rewards-form'
 
 interface AdminSettingsData {
   commissions: CommissionCategoryRate[]
@@ -55,6 +59,18 @@ function fetchDeliveryPricingQueryOptions() {
       if (response.error)
         throw new Error('Failed to fetch delivery pricing')
       return response.data as DeliveryPricingConfig
+    },
+  }
+}
+
+function fetchReferralRewardsQueryOptions() {
+  return {
+    queryKey: ['admin', 'referral-rewards'],
+    queryFn: async () => {
+      const response = await adminReferralRewardsControllerGet()
+      if (response.error)
+        throw new Error('Failed to fetch referral rewards')
+      return response.data as ReferralRewardsFormData
     },
   }
 }
@@ -131,12 +147,14 @@ export default function AdminSettingsPage() {
   const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
   const [bannerOffersFeedback, setBannerOffersFeedback] = useState<'saved' | 'error' | null>(null)
+  const [referralFeedback, setReferralFeedback] = useState<'saved' | 'error' | null>(null)
   const [assistantFeedback, setAssistantFeedback] = useState<'saved' | 'error' | null>(null)
   const [reviewFeedback, setReviewFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
   const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
   const { data: bannerOffers, isLoading: isBannerOffersLoading } = useQuery(fetchBannerOffersQueryOptions())
+  const { data: referralRewards, isLoading: isReferralLoading } = useQuery(fetchReferralRewardsQueryOptions())
   const { data: assistant, isLoading: isAssistantLoading } = useQuery(fetchAssistantQueryOptions())
   const { data: reviewTiming, isLoading: isReviewLoading } = useQuery(fetchProductReviewTimingQueryOptions())
 
@@ -226,6 +244,25 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setPricingFeedback('error')
+    },
+  })
+
+  const { mutate: updateReferralRewards, isPending: isReferralPending } = useMutation({
+    mutationFn: async (rewards: ReferralRewardsFormData) => {
+      const response = await adminReferralRewardsControllerUpdate({ body: rewards })
+      if (response.error)
+        throw new Error('Failed to update referral rewards')
+      return response.data as ReferralRewardsFormData
+    },
+    onMutate: () => {
+      setReferralFeedback(null)
+    },
+    onSuccess: (saved) => {
+      setReferralFeedback('saved')
+      queryClient.setQueryData(['admin', 'referral-rewards'], saved)
+    },
+    onError: () => {
+      setReferralFeedback('error')
     },
   })
 
@@ -502,6 +539,32 @@ export default function AdminSettingsPage() {
                 {bannerOffersFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.bannerOffers.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.referral.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.referral.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isReferralLoading || !referralRewards
+                  ? <Skeleton className="h-40 w-full" />
+                  : (
+                      <ReferralRewardsForm
+                        rewards={referralRewards}
+                        onSubmit={updateReferralRewards}
+                        isPending={isReferralPending}
+                      />
+                    )}
+                {referralFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.referral.saved')}</p>
+                )}
+                {referralFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.referral.error')}
                   </p>
                 )}
               </CardContent>

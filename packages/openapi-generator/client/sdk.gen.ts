@@ -158,6 +158,10 @@ import type {
   AdminPromotionsControllerListResponses,
   AdminPromotionsControllerRemoveData,
   AdminPromotionsControllerRemoveResponses,
+  AdminReferralRewardsControllerGetData,
+  AdminReferralRewardsControllerGetResponses,
+  AdminReferralRewardsControllerUpdateData,
+  AdminReferralRewardsControllerUpdateResponses,
   AdminUsersControllerBanData,
   AdminUsersControllerBanResponses,
   AdminUsersControllerGetByIdData,
@@ -366,6 +370,14 @@ import type {
   DeliveriesControllerTipResponses,
   DeliveryPricingControllerQuoteData,
   DeliveryPricingControllerQuoteResponses,
+  FavoritesControllerAddData,
+  FavoritesControllerAddResponses,
+  FavoritesControllerListData,
+  FavoritesControllerListResponses,
+  FavoritesControllerPickKeptData,
+  FavoritesControllerPickKeptResponses,
+  FavoritesControllerRemoveData,
+  FavoritesControllerRemoveResponses,
   GeocodingControllerAutocompleteData,
   GeocodingControllerAutocompleteResponses,
   GeocodingControllerResolvePlaceData,
@@ -596,6 +608,10 @@ import type {
   RatingsControllerReportReviewResponses,
   RecommendationsControllerListData,
   RecommendationsControllerListResponses,
+  ReferralsControllerClaimData,
+  ReferralsControllerClaimResponses,
+  ReferralsControllerMeData,
+  ReferralsControllerMeResponses,
   RolesControllerAssignRoleData,
   RolesControllerAssignRoleResponses,
   RolesControllerCreateData,
@@ -702,8 +718,6 @@ import type {
   SuppliersControllerRegisterResponses,
   SuppliersControllerUpdateMeData,
   SuppliersControllerUpdateMeResponses,
-  SuppliersControllerUpdateModeData,
-  SuppliersControllerUpdateModeResponses,
   SuppliersControllerUpdateOpeningHoursData,
   SuppliersControllerUpdateOpeningHoursResponses,
   SupplierWalletControllerAddNumberData,
@@ -1470,6 +1484,44 @@ export const searchControllerGetCategories = <
     ThrowOnError
   >({ url: "/api/search/categories", ...options });
 
+export const favoritesControllerList = <ThrowOnError extends boolean = false>(
+  options: Options<FavoritesControllerListData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    FavoritesControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/favorites", ...options });
+
+export const favoritesControllerPickKept = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FavoritesControllerPickKeptData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    FavoritesControllerPickKeptResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/favorites/ids", ...options });
+
+export const favoritesControllerRemove = <ThrowOnError extends boolean = false>(
+  options: Options<FavoritesControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    FavoritesControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/favorites/{productId}", ...options });
+
+export const favoritesControllerAdd = <ThrowOnError extends boolean = false>(
+  options: Options<FavoritesControllerAddData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FavoritesControllerAddResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/favorites/{productId}", ...options });
+
 export const announcementsControllerCurrent = <
   ThrowOnError extends boolean = false,
 >(
@@ -1816,6 +1868,35 @@ export const adminProductReviewTimingControllerUpdate = <
     },
   });
 
+export const adminReferralRewardsControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminReferralRewardsControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminReferralRewardsControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/referral-rewards", ...options });
+
+export const adminReferralRewardsControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminReferralRewardsControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminReferralRewardsControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/referral-rewards",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const suppliersControllerRegister = <
   ThrowOnError extends boolean = false,
 >(
@@ -1947,24 +2028,6 @@ export const suppliersControllerUpdateOpeningHours = <
     ThrowOnError
   >({
     url: "/api/suppliers/me/settings/opening-hours",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const suppliersControllerUpdateMode = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<SuppliersControllerUpdateModeData, ThrowOnError>,
-) =>
-  (options.client ?? client).patch<
-    SuppliersControllerUpdateModeResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/suppliers/me/settings/mode",
     ...options,
     headers: {
       "Content-Type": "application/json",
@@ -4574,6 +4637,31 @@ export const productStudioControllerReview = <
     ThrowOnError
   >({
     url: "/api/products/studio/photos/review",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const referralsControllerMe = <ThrowOnError extends boolean = false>(
+  options?: Options<ReferralsControllerMeData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    ReferralsControllerMeResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/referrals/me", ...options });
+
+export const referralsControllerClaim = <ThrowOnError extends boolean = false>(
+  options: Options<ReferralsControllerClaimData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    ReferralsControllerClaimResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/referrals/claim",
     ...options,
     headers: {
       "Content-Type": "application/json",

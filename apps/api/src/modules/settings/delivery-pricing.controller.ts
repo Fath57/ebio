@@ -1,3 +1,4 @@
+import type { ReferralRewards } from '../referrals/contracts/referral.contract'
 import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common'
@@ -6,6 +7,7 @@ import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { AuthGuard } from '../auth/auth.guard'
+import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
 import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSettingsService } from './platform-settings.service'
@@ -59,6 +61,33 @@ export class AdminBannerOffersController {
   async update(@TypedBody(bannerOffersSchema) body: BannerOffersInput) {
     await this.platformSettings.setBannerOffers(body)
     return this.platformSettings.getBannerOffers()
+  }
+}
+
+/**
+ * Le barème du parrainage, depuis le back-office.
+ *
+ * Deux montants et un plancher, qu'on doit pouvoir corriger sans déployer :
+ * une récompense trop généreuse se voit à la dépense, et il faut alors
+ * pouvoir la baisser — ou suspendre le programme — le jour même.
+ */
+@Controller('admin/referral-rewards')
+@UseGuards(AuthGuard, RolesGuard, CaslGuard)
+@Roles('ADMIN')
+export class AdminReferralRewardsController {
+  constructor(private readonly platformSettings: PlatformSettingsService) {}
+
+  @CanRead('Settings')
+  @Get()
+  async get() {
+    return this.platformSettings.getReferralRewards()
+  }
+
+  @CanManage('Settings')
+  @Put()
+  async update(@TypedBody(referralRewardsSchema) body: ReferralRewards) {
+    await this.platformSettings.setReferralRewards(body)
+    return this.platformSettings.getReferralRewards()
   }
 }
 
