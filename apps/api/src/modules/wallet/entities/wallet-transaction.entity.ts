@@ -29,6 +29,8 @@ export enum WalletTransactionType {
   BANNER_PAYMENT = 'BANNER_PAYMENT',
   /** Banner request rejected or cancelled: the slot price comes back. */
   BANNER_REFUND = 'BANNER_REFUND',
+  /** Parrainage : versé au parrain et au filleul à la première livraison. */
+  REFERRAL_REWARD = 'REFERRAL_REWARD',
   /** eBio books: commission on the items of a delivered order. */
   PLATFORM_COMMISSION = 'PLATFORM_COMMISSION',
   /** eBio books: its share of a delivery fee. */

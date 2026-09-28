@@ -32,6 +32,7 @@ import { Product } from '../products/entities/product.entity'
 import { PromotionsService } from '../products/promotions.service'
 import { PromoCode } from '../promo-codes/entities/promo-code.entity'
 import { PromoCodesService } from '../promo-codes/promo-codes.service'
+import { ReferralsService } from '../referrals/referrals.service'
 import { DeliveryPricingService } from '../settings/delivery-pricing.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
@@ -174,6 +175,7 @@ export class OrdersService {
     private readonly promotionsService: PromotionsService,
     private readonly orderEmails: OrderEmailsService,
     private readonly compensationService: CompensationService,
+    private readonly referralsService: ReferralsService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -695,6 +697,10 @@ export class OrdersService {
     if (becomesDelivered) {
       // Fire-and-forget: the e-mail must never delay or fail the transition.
       void this.sendInvoiceEmail(order.id)
+      // Première commande livrée d'un filleul : le parrainage se paie ici, et
+      // nulle part ailleurs. Le service avale ses propres erreurs — une
+      // récompense ratée ne doit pas retenir une commande livrée.
+      void this.referralsService.onOrderDelivered(order.id, order.buyer.id, order.totalAmount)
     }
   }
 

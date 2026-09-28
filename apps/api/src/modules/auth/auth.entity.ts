@@ -59,6 +59,16 @@ export class User {
   @Property({ fieldName: 'deviceId', nullable: true })
   deviceId?: string
 
+  /**
+   * Le code de parrainage du compte, tiré au sort au premier affichage.
+   *
+   * Nul tant que personne n'a ouvert l'écran : la plupart des comptes n'en
+   * auront jamais besoin, et un code non distribué ne sert qu'à occuper une
+   * valeur unique.
+   */
+  @Property({ fieldName: 'referral_code', length: 16, nullable: true, unique: true })
+  referralCode?: string
+
   @Property({ fieldName: 'lastLoginAt', nullable: true })
   lastLoginAt?: Date
 

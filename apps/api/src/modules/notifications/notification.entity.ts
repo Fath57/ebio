@@ -49,6 +49,8 @@ export enum NotificationType {
   COURIER_RATED = 'COURIER_RATED',
   /** A buyer tipped the courier; the wallet is already credited. */
   COURIER_TIP = 'COURIER_TIP',
+  /** Parrainage récompensé : les deux portefeuilles viennent d'être crédités. */
+  REFERRAL_REWARD = 'REFERRAL_REWARD',
   /** Sponsored banner request reviewed by eBio. */
   BANNER_APPROVED = 'BANNER_APPROVED',
   BANNER_REJECTED = 'BANNER_REJECTED',

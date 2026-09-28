@@ -1,10 +1,12 @@
 import type { DeliveryPricingConfig } from '../../common/delivery-fee'
 import type { AppVersions } from '../app-version/app-version.contract'
+import type { ReferralRewards } from '../referrals/contracts/referral.contract'
 import type { AssistantIdentity, BannerOffersInput } from './contracts/delivery-pricing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { DEFAULT_DELIVERY_PRICING } from '../../common/delivery-fee'
 import { appVersionsSchema } from '../app-version/app-version.contract'
+import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
 import { assistantIdentitySchema, bannerOffersSchema, deliveryPricingConfigSchema } from './contracts/delivery-pricing.contract'
 import { PlatformSetting } from './platform-setting.entity'
 
@@ -22,6 +24,21 @@ export const PRODUCT_REVIEW_MAX_INVITES_KEY = 'product_review_max_invites'
 export const ANNOUNCEMENT_INTERVAL_HOURS_KEY = 'announcement_interval_hours'
 export const ANNOUNCEMENT_OFFERS_KEY = 'announcement_offers'
 export const APP_VERSIONS_KEY = 'app_versions'
+export const REFERRAL_REWARDS_KEY = 'referral_rewards'
+
+/**
+ * Barème de départ du parrainage.
+ *
+ * Mille francs chacun à la première commande livrée, et un plancher de deux
+ * mille : sans lui, une commande à deux cents francs déclencherait deux mille
+ * francs de récompense.
+ */
+export const DEFAULT_REFERRAL_REWARDS: ReferralRewards = {
+  sponsorAmount: 1_000,
+  refereeAmount: 1_000,
+  minOrderAmount: 2_000,
+  active: true,
+}
 
 export const DEFAULT_BANNER_OFFERS: BannerOffersInput = {
   offers: [
@@ -213,6 +230,25 @@ export class PlatformSettingsService {
     catch {
       return DEFAULT_BANNER_OFFERS
     }
+  }
+
+  /** Ce que rapporte un parrainage, réglé au back-office. */
+  async getReferralRewards(): Promise<ReferralRewards> {
+    const raw = await this.get(REFERRAL_REWARDS_KEY)
+    if (raw === null) {
+      return DEFAULT_REFERRAL_REWARDS
+    }
+    try {
+      const parsed = referralRewardsSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_REFERRAL_REWARDS
+    }
+    catch {
+      return DEFAULT_REFERRAL_REWARDS
+    }
+  }
+
+  async setReferralRewards(rewards: ReferralRewards): Promise<void> {
+    await this.set(REFERRAL_REWARDS_KEY, JSON.stringify(rewards))
   }
 
   async setBannerOffers(config: BannerOffersInput): Promise<void> {
