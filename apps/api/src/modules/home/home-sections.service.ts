@@ -135,10 +135,10 @@ export class HomeSectionsService {
       { orderBy: { position: 'ASC' } },
     )
 
-    // Résolus dans l'ordre, et non en parallèle : un rail trié par distance
-    // doit savoir ce que ceux du dessus ont déjà montré. Sans ça, « Près de
-    // vous », « Validé eBio » et « En promotion » remontaient les mêmes
-    // produits — les plus proches sont proches pour tout le monde.
+    // Résolus dans l'ordre, et non en parallèle : chaque rail doit savoir ce
+    // que ceux du dessus ont déjà montré. Sans ça, « Près de vous »,
+    // « Découvrir plus loin » et « Validé eBio » remontaient la même
+    // marchandise — le catalogue proche est le même pour tout le monde.
     const alreadyShown = new Set<string>()
     const resolved: ResolvedHomeSection[] = []
 
@@ -177,12 +177,19 @@ export class HomeSectionsService {
     const handPicked = section.mode === HomeSectionMode.MANUAL
     const sortBy = criteria.sortBy ?? 'distance'
     /**
-     * Un rail choisi à la main reste choisi à la main, et un rail trié par
-     * note ou par prix a sa propre raison d'être : seul le tri par distance
-     * répète ce qui est déjà à l'écran, puisque tout le monde a les mêmes
-     * boutiques les plus proches.
+     * Tout rail construit sur des critères écarte ce qui est déjà à l'écran,
+     * quel que soit son tri.
+     *
+     * La règle ne visait d'abord que le tri par distance, et « Découvrir plus
+     * loin » — trié par note — réaffichait les vingt-sept produits de « Près
+     * de vous » : un rail nommé « plus loin » qui montre ce qui est à côté.
+     * Le tri ne dit rien de ce qui se répète ; seule compte la place déjà
+     * prise à l'écran.
+     *
+     * Un rail choisi à la main, lui, reste intact : ces produits-là ont été
+     * désignés un par un.
      */
-    const excludeProductIds = !handPicked && sortBy === 'distance' && alreadyShown.size > 0
+    const excludeProductIds = !handPicked && alreadyShown.size > 0
       ? [...alreadyShown]
       : undefined
 
