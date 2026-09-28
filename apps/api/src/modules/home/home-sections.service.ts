@@ -217,13 +217,13 @@ export class HomeSectionsService {
     const response = await this.search.searchProducts(query)
 
     if (!handPicked) {
-      // Tout écarter jusqu'au vide ferait disparaître le rail : dans une
-      // petite ville, les promotions sont justement les produits d'à côté.
-      // Mieux vaut répéter un produit que perdre « En promotion ».
-      if (response.results.length === 0 && excludeProductIds !== undefined) {
-        const fallback = await this.search.searchProducts({ ...query, excludeProductIds: undefined })
-        return fallback.results
-      }
+      // Rien de neuf à montrer : le rail disparaît, il ne se répète pas.
+      //
+      // Un filet avait d'abord été posé ici — reprendre la liste entière
+      // plutôt que perdre le rail. Il se déclenchait tout le temps : « Validé
+      // eBio » ne rendait que des produits déjà vus, et pour cause, tout le
+      // catalogue est validé. Un rail qui n'a rien à ajouter ne mérite pas la
+      // place qu'il prend, et `listForBuyer` écarte déjà les rails vides.
       return response.results
     }
 
