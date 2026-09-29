@@ -439,10 +439,25 @@ export class OrdersService {
     return { orders, total }
   }
 
+  /**
+   * A shop's orders — the ones it is meant to act on.
+   *
+   * An order awaiting an online payment is not one of them. It may never be
+   * paid, and the shop was seeing it anyway: a line appeared in the list, was
+   * counted, and sometimes prepared, for money that never arrived. Creation
+   * already says as much (« the shop does not see it »); the list simply
+   * never enforced it.
+   */
   async findBySupplier(supplierId: string, filters: OrderFilters = {}): Promise<{ orders: Order[], total: number }> {
-    const where: Record<string, unknown> = { supplier: { id: supplierId } }
-    if (filters.status) {
-      where.status = filters.status
+    // Asking for the awaiting-payment ones answers none, rather than silently
+    // returning everything else: from the shop's side they do not exist.
+    if (filters.status === OrderStatus.PENDING_PAYMENT) {
+      return { orders: [], total: 0 }
+    }
+
+    const where: Record<string, unknown> = {
+      supplier: { id: supplierId },
+      status: filters.status ?? { $ne: OrderStatus.PENDING_PAYMENT },
     }
 
     const limit = filters.limit ?? 20
