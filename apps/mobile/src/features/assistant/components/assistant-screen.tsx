@@ -133,9 +133,9 @@ export function AssistantScreen({ onGoBack, onOrder }: AssistantScreenProps) {
     }
 
     const source = await voiceUrl(text)
-    // La voix est refusée en ce moment — pas l'assistante. On le dit une fois,
-    // on coupe le haut-parleur pour ne pas redemander à chaque tour, et la
-    // réponse reste lisible. Le bouton du haut la rallume quand elle revient.
+    // The voice is refused right now — she is not. Say it once, mute the
+    // speaker so we stop asking every turn, and the answer stays readable.
+    // The button at the top turns it back on when the voice returns.
     if (source === VOICE_UNAVAILABLE) {
       setVoiceOn(false)
       setError('Ma voix est indisponible pour le moment. Écrivez-moi, je vous réponds.')

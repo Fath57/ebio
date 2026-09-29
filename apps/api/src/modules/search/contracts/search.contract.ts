@@ -32,11 +32,11 @@ export const searchProductsQuerySchema = z.object({
     z.array(z.string().uuid()).max(50),
   ).optional(),
   /**
-   * Ce qu'il ne faut pas remonter.
+   * What must not come back.
    *
-   * Les rails de l'accueil trient tous par distance : sans ça, « Validé eBio »
-   * et « En promotion » répétaient les produits déjà vus dans « Près de
-   * vous ». Chaque rail écarte ce que les précédents ont affiché.
+   * The home rails all sort by distance: without this, "Validé eBio" and "En
+   * promotion" repeated the products already seen in "Près de vous". Each
+   * rail drops what the ones before it displayed.
    */
   excludeProductIds: z.preprocess(
     value => (typeof value === 'string' ? value.split(',').filter(Boolean) : value),

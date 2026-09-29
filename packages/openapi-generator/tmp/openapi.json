@@ -3009,6 +3009,20 @@
             }
           },
           {
+            "name": "excludeProductIds",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "maxItems": 200,
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              }
+            }
+          },
+          {
             "name": "sortBy",
             "required": true,
             "in": "query",
@@ -3120,6 +3134,104 @@
                 }
               }
             }
+          }
+        }
+      }
+    },
+    "/api/favorites": {
+      "get": {
+        "operationId": "FavoritesController_list",
+        "tags": [
+          "Favorites"
+        ],
+        "parameters": [
+          {
+            "name": "latitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "longitude",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/favorites/ids": {
+      "get": {
+        "operationId": "FavoritesController_pickKept",
+        "tags": [
+          "Favorites"
+        ],
+        "parameters": [
+          {
+            "name": "productIds",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/favorites/{productId}": {
+      "post": {
+        "operationId": "FavoritesController_add",
+        "tags": [
+          "Favorites"
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "FavoritesController_remove",
+        "tags": [
+          "Favorites"
+        ],
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
           }
         }
       }
@@ -3910,7 +4022,7 @@
                   "paidSlots": {
                     "type": "integer",
                     "minimum": 0,
-                    "maximum": 5
+                    "maximum": 20
                   }
                 },
                 "required": [
@@ -4057,6 +4169,72 @@
         }
       }
     },
+    "/api/admin/referral-rewards": {
+      "get": {
+        "operationId": "AdminReferralRewardsController_get",
+        "tags": [
+          "AdminReferralRewards"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminReferralRewardsController_update",
+        "tags": [
+          "AdminReferralRewards"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Referral rewards and thresholds",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sponsorAmount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "refereeAmount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100000
+                  },
+                  "minOrderAmount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "sponsorAmount",
+                  "refereeAmount",
+                  "minOrderAmount",
+                  "active"
+                ],
+                "additionalProperties": false,
+                "title": "ReferralRewards",
+                "description": "Referral rewards and thresholds"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/register": {
       "post": {
         "operationId": "SuppliersController_register",
@@ -4106,20 +4284,14 @@
                     "minLength": 2,
                     "maxLength": 100
                   },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
                   "mobileMoneyNumber": {
                     "type": "string",
                     "minLength": 8,
                     "maxLength": 20
-                  },
-                  "mode": {
-                    "default": "ORDER",
-                    "type": "string",
-                    "enum": [
-                      "CONTACT",
-                      "ORDER"
-                    ],
-                    "title": "SupplierMode",
-                    "description": "How buyers interact with this supplier"
                   },
                   "deliveryFee": {
                     "type": "number",
@@ -4200,8 +4372,7 @@
                 "required": [
                   "shopName",
                   "type",
-                  "mobileMoneyNumber",
-                  "mode"
+                  "mobileMoneyNumber"
                 ],
                 "additionalProperties": false,
                 "title": "RegisterSupplier",
@@ -4368,20 +4539,14 @@
                     "minLength": 2,
                     "maxLength": 100
                   },
+                  "description": {
+                    "type": "string",
+                    "maxLength": 600
+                  },
                   "mobileMoneyNumber": {
                     "type": "string",
                     "minLength": 8,
                     "maxLength": 20
-                  },
-                  "mode": {
-                    "default": "ORDER",
-                    "type": "string",
-                    "enum": [
-                      "CONTACT",
-                      "ORDER"
-                    ],
-                    "title": "SupplierMode",
-                    "description": "How buyers interact with this supplier"
                   },
                   "deliveryFee": {
                     "type": "number",
@@ -4672,44 +4837,6 @@
                 ],
                 "additionalProperties": false,
                 "title": "UpdateOpeningHours"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/suppliers/me/settings/mode": {
-      "patch": {
-        "operationId": "SuppliersController_updateMode",
-        "tags": [
-          "Suppliers"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "mode": {
-                    "type": "string",
-                    "enum": [
-                      "CONTACT",
-                      "ORDER"
-                    ]
-                  }
-                },
-                "required": [
-                  "mode"
-                ],
-                "additionalProperties": false,
-                "title": "UpdateMode"
               }
             }
           }
@@ -12821,6 +12948,59 @@
         }
       }
     },
+    "/api/referrals/me": {
+      "get": {
+        "operationId": "ReferralsController_me",
+        "tags": [
+          "Referrals"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/referrals/claim": {
+      "post": {
+        "operationId": "ReferralsController_claim",
+        "tags": [
+          "Referrals"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Attaches a sponsor to the current account",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "minLength": 4,
+                    "maxLength": 16,
+                    "pattern": "^[A-Z0-9]+$"
+                  }
+                },
+                "required": [
+                  "code"
+                ],
+                "additionalProperties": false,
+                "title": "ClaimReferral",
+                "description": "Attaches a sponsor to the current account"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/home/sections": {
       "get": {
         "operationId": "HomeController_list",
@@ -17661,7 +17841,7 @@
           "paidSlots": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 5
+            "maximum": 20
           }
         },
         "required": [
@@ -17671,6 +17851,38 @@
         "additionalProperties": false,
         "title": "BannerOffers",
         "description": "Sponsored banner offers (duration / price) and paid slot count"
+      },
+      "ReferralRewards": {
+        "type": "object",
+        "properties": {
+          "sponsorAmount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "refereeAmount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100000
+          },
+          "minOrderAmount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "sponsorAmount",
+          "refereeAmount",
+          "minOrderAmount",
+          "active"
+        ],
+        "additionalProperties": false,
+        "title": "ReferralRewards",
+        "description": "Referral rewards and thresholds"
       },
       "AssistantSetting": {
         "type": "object",
@@ -18003,13 +18215,14 @@
             "minLength": 2,
             "maxLength": 100
           },
+          "description": {
+            "type": "string",
+            "maxLength": 600
+          },
           "mobileMoneyNumber": {
             "type": "string",
             "minLength": 8,
             "maxLength": 20
-          },
-          "mode": {
-            "$ref": "#/components/schemas/SupplierMode"
           },
           "deliveryFee": {
             "type": "number",
@@ -18051,8 +18264,7 @@
         "required": [
           "shopName",
           "type",
-          "mobileMoneyNumber",
-          "mode"
+          "mobileMoneyNumber"
         ],
         "additionalProperties": false,
         "title": "RegisterSupplier",
@@ -18089,13 +18301,14 @@
             "minLength": 2,
             "maxLength": 100
           },
+          "description": {
+            "type": "string",
+            "maxLength": 600
+          },
           "mobileMoneyNumber": {
             "type": "string",
             "minLength": 8,
             "maxLength": 20
-          },
-          "mode": {
-            "$ref": "#/components/schemas/SupplierMode"
           },
           "deliveryFee": {
             "type": "number",
@@ -18204,23 +18417,6 @@
         ],
         "additionalProperties": false,
         "title": "UpdateOpeningHours"
-      },
-      "UpdateMode": {
-        "type": "object",
-        "properties": {
-          "mode": {
-            "type": "string",
-            "enum": [
-              "CONTACT",
-              "ORDER"
-            ]
-          }
-        },
-        "required": [
-          "mode"
-        ],
-        "additionalProperties": false,
-        "title": "UpdateMode"
       },
       "CreatePayoutNumber": {
         "type": "object",
@@ -19687,6 +19883,23 @@
         "additionalProperties": false,
         "title": "UpdatePromoCode",
         "description": "Editable fields — the code itself is immutable once created"
+      },
+      "ClaimReferral": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 16,
+            "pattern": "^[A-Z0-9]+$"
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false,
+        "title": "ClaimReferral",
+        "description": "Attaches a sponsor to the current account"
       },
       "CheckoutPreview": {
         "type": "object",
@@ -23660,16 +23873,6 @@
         "title": "SupplierType",
         "description": "Type of supplier activity"
       },
-      "SupplierMode": {
-        "default": "ORDER",
-        "type": "string",
-        "enum": [
-          "CONTACT",
-          "ORDER"
-        ],
-        "title": "SupplierMode",
-        "description": "How buyers interact with this supplier"
-      },
       "Timezone": {
         "type": "string",
         "minLength": 1,
@@ -24071,6 +24274,15 @@
           },
           "productIds": {
             "maxItems": 50,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "excludeProductIds": {
+            "maxItems": 200,
             "type": "array",
             "items": {
               "type": "string",

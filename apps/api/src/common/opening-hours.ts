@@ -93,15 +93,14 @@ const DAY_LABELS: Record<string, string> = {
 }
 
 /**
- * Quand le commerce rouvre, dit en français.
+ * When the shop opens again, phrased for the buyer.
  *
- * « Fermée » sans suite laisse l'acheteur deviner s'il s'agit d'une heure ou
- * d'une semaine. Rendre l'heure de réouverture, c'est la différence entre une
- * commande passée en connaissance de cause et une commande abandonnée.
+ * "Closed" on its own leaves them guessing whether that means an hour or a
+ * week. Giving the reopening time is the difference between an order placed
+ * in full knowledge and an order abandoned.
  *
- * Rend `null` quand aucun horaire n'est renseigné ou qu'aucune ouverture ne
- * vient dans les sept jours : on ne promet pas une réouverture qu'on ne peut
- * pas lire dans les horaires.
+ * Returns `null` when no hours are recorded, or when no opening falls within
+ * seven days: we do not promise a reopening the schedule cannot back.
  */
 export function nextOpening(
   openingHours: OpeningHours,
@@ -128,7 +127,7 @@ export function nextOpening(
       .filter((open): open is string => typeof open === 'string')
       .sort()
 
-    // Aujourd'hui, seules les ouvertures encore à venir comptent.
+    // Today, only the openings still ahead count.
     const opening = ahead === 0 ? slots.find(open => open > time) : slots[0]
     if (!opening)
       continue

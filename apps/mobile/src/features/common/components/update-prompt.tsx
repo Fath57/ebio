@@ -39,8 +39,8 @@ const CHECK_INTERVAL_MS = 5 * 60 * 1000
 export function UpdatePrompt() {
   // Inert in development and in any build without the module: the hook below
   // only ever runs when both are available, so its call stays unconditional.
-  // `__DEV__` compte autant que le reste : en développement le module refuse
-  // la vérification, et son refus se lisait comme un téléchargement raté.
+  // `__DEV__` counts as much as the rest: in development the module refuses
+  // the check, and its refusal read as a failed download.
   if (__DEV__ || !useUpdatesState || !Updates?.isEnabled) {
     return null
   }
@@ -67,11 +67,11 @@ function UpdateBanner() {
    */
   const [failed, setFailed] = useState(false)
   /**
-   * De combien il faut remonter pour disparaître.
+   * How far up it must travel to disappear.
    *
-   * La valeur était figée à 120, et le bandeau est plus haut que ça dès que
-   * l'encoche est prise en compte : une fois fermé, il en restait une bande
-   * en haut de l'écran, définitivement. Mesuré, donc, et rangé pour de bon.
+   * The value was pinned at 120, and the band is taller than that as soon as
+   * the notch is counted: once dismissed, a strip of it stayed at the top of
+   * the screen for good. Measured, then, and properly put away.
    */
   const [height, setHeight] = useState(160)
   const slide = useRef(new Animated.Value(-160)).current
@@ -110,8 +110,9 @@ function UpdateBanner() {
       checking.current = true
       void (async () => {
         try {
-          // Une vérification qui n'aboutit pas ne dit rien : ni qu'une version
-          // attend, ni que le réseau est en cause. Elle reste silencieuse.
+          // A check that does not complete says nothing: neither that a
+          // version is waiting, nor that the network is to blame. It stays
+          // silent.
           const result = await Updates!.checkForUpdateAsync().catch(() => null)
           if (result?.isAvailable !== true) {
             return
@@ -121,8 +122,8 @@ function UpdateBanner() {
             setFailed(false)
           }
           catch {
-            // Là, le serveur a bien annoncé une version et c'est le
-            // téléchargement qui a échoué : ça, ça mérite de le dire.
+            // Here the server did announce a version and the download is
+            // what failed: that is worth saying.
             setFailed(true)
           }
         }

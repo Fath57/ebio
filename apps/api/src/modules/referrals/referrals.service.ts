@@ -25,12 +25,12 @@ export class ReferralsService {
   ) {}
 
   /**
-   * Le code du compte, créé au premier besoin.
+   * The account's code, created when first needed.
    *
-   * Tiré au sort plutôt que dérivé du nom : deux Fatou auraient le même, et un
-   * code qui contient le nom de quelqu'un se promène ensuite dans des groupes
-   * WhatsApp. Une collision se retente — à 32 caractères sur 6, elle est rare
-   * et la contrainte d'unicité la rattrape de toute façon.
+   * Drawn at random rather than derived from the name: two Fatous would get
+   * the same one, and a code carrying someone's name then travels around
+   * WhatsApp groups. A collision is simply retried — six characters out of
+   * an alphabet of 32 make it rare, and the unique constraint catches it.
    */
   async codeFor(userId: string): Promise<string> {
     const user = await this.em.findOneOrFail(User, { id: userId })
@@ -53,15 +53,15 @@ export class ReferralsService {
         return code
       }
       catch {
-        // Deux premiers affichages en même temps : l'un des deux perd la
-        // course sur la contrainte d'unicité, il retire un autre code.
+        // Two first views at once: one of them loses the race on the unique
+        // constraint and simply draws another code.
         this.em.clear()
       }
     }
     throw new BadRequestException('Impossible de créer votre code pour le moment')
   }
 
-  /** Le tableau de bord d'un acheteur : son code, ses filleuls, ses gains. */
+  /** A buyer's dashboard: their code, their referees, their earnings. */
   async summary(userId: string): Promise<ReferralSummary> {
     const code = await this.codeFor(userId)
     const rewards = await this.settings.getReferralRewards()
@@ -75,9 +75,9 @@ export class ReferralsService {
 
     return {
       code,
-      // Le site public, pas le back-office : c'est lui qui porte déjà les
-      // liens partagés vers une boutique ou un produit, et qui sait renvoyer
-      // vers l'app installée.
+      // The public site, not the back-office: it already carries the shared
+      // links to a shop or a product, and knows how to hand over to the
+      // installed app.
       link: `${config.clients.webSsr.url}/parrainage/${code}`,
       pending: given.filter(item => item.status === ReferralStatus.PENDING).length,
       rewarded: given.filter(item => item.status === ReferralStatus.REWARDED).length,
@@ -93,12 +93,12 @@ export class ReferralsService {
   }
 
   /**
-   * Rattache un parrain au compte courant.
+   * Attaches a sponsor to the current account.
    *
-   * Refusé après la première commande livrée : le parrainage paie une
-   * rencontre, pas un client qui commandait déjà. Refusé sur son propre code,
-   * et une seule fois par personne — la contrainte d'unicité sur le filleul
-   * le garantit même si deux requêtes arrivent ensemble.
+   * Refused after the first delivered order: a referral pays for an
+   * introduction, not for a customer who was already ordering. Refused on
+   * one's own code, and once per person — the unique constraint on the
+   * referee holds even when two requests arrive together.
    */
   async claim(userId: string, code: string): Promise<{ sponsorName: string }> {
     const rewards = await this.settings.getReferralRewards()
@@ -135,12 +135,12 @@ export class ReferralsService {
   }
 
   /**
-   * La première commande livrée d'un filleul paie les deux.
+   * A referee's first delivered order pays them both.
    *
-   * Appelé au passage à « livrée », et jamais en travers du chemin : une
-   * récompense qui échoue ne doit pas empêcher une commande d'être livrée.
-   * Le tout est idempotent — seule une ligne encore en attente est versée,
-   * et elle ne passe « récompensée » que si les deux crédits ont eu lieu.
+   * Called on the move to DELIVERED, and never in its way: a reward that
+   * fails must not stop an order from being delivered. The whole thing is
+   * idempotent — only a row still pending is ever paid, and it only turns
+   * REWARDED once both credits have gone through.
    */
   async onOrderDelivered(orderId: string, buyerId: string, orderTotal: number): Promise<void> {
     try {
@@ -162,9 +162,9 @@ export class ReferralsService {
         return
       }
 
-      // Le passage à REWARDED et les crédits forment un tout : un crédit qui
-      // échoue annule le reste et la ligne attend la livraison suivante. La
-      // mise à jour conditionnelle arbitre deux livraisons simultanées.
+      // The move to REWARDED and the credits are one unit: a failing credit
+      // rolls the rest back and the row waits for the next delivery. The
+      // conditional update arbitrates two simultaneous deliveries.
       const isPaid = await this.em.transactional(async (em) => {
         const claim = await em.execute<{ affectedRows?: number }>(
           `UPDATE referrals
@@ -180,8 +180,8 @@ export class ReferralsService {
         await this.pay(referral.sponsor, rewards.sponsorAmount, orderId, `Parrainage — ${referral.referee.name}`)
         await this.pay(referral.referee, rewards.refereeAmount, orderId, `Bienvenue — parrainé par ${referral.sponsor.name}`)
 
-        // eBio porte la dépense : c'est de l'acquisition, pas une remise de
-        // boutique. Elle atterrit donc sur le compte marketing.
+        // eBio carries the cost: this is acquisition, not a shop's discount,
+        // so it lands on the marketing account.
         await this.wallet.post(PlatformAccount.MARKETING, 'debit', {
           type: WalletTransactionType.PLATFORM_MARKETING,
           amount: rewards.sponsorAmount + rewards.refereeAmount,
@@ -225,7 +225,7 @@ export class ReferralsService {
     })
   }
 
-  /** En SQL brut : le module des commandes dépend déjà de celui-ci. */
+  /** Raw SQL: the orders module already depends on this one. */
   private async hasDeliveredOrder(userId: string): Promise<boolean> {
     const rows = await this.em.getConnection().execute(
       `SELECT 1 FROM orders WHERE buyer_id = ? AND status = 'DELIVERED' LIMIT 1`,

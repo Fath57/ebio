@@ -266,8 +266,8 @@ function SalesPointForm({ point, onDone }: SalesPointFormProps) {
   const [phone, setPhone] = useState(point?.phone ?? '')
   const [latitude, setLatitude] = useState<number | null>(point?.latitude ?? null)
   const [longitude, setLongitude] = useState<number | null>(point?.longitude ?? null)
-  // Le même repère que sur la fiche boutique : une rue et une ville, pas deux
-  // nombres. Les coordonnées ne reviennent que si le géocodage se tait.
+  // The same landmark as on the shop page: a street and a town, not two
+  // numbers. Coordinates only come back when the geocoder stays silent.
   const [placeLabel, setPlaceLabel] = useState<string | null>(null)
   const [hasOwnHours, setHasOwnHours] = useState(!!point?.openingHours)
   const [hours, setHours] = useState<ApiWeekHours>(point?.openingHours ?? {})

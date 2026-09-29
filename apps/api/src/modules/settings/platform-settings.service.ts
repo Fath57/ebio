@@ -27,11 +27,11 @@ export const APP_VERSIONS_KEY = 'app_versions'
 export const REFERRAL_REWARDS_KEY = 'referral_rewards'
 
 /**
- * Barème de départ du parrainage.
+ * Starting rates for referrals.
  *
- * Mille francs chacun à la première commande livrée, et un plancher de deux
- * mille : sans lui, une commande à deux cents francs déclencherait deux mille
- * francs de récompense.
+ * A thousand francs each on the first delivered order, and a floor of two
+ * thousand: without it a two-hundred-franc order would trigger two thousand
+ * francs of reward.
  */
 export const DEFAULT_REFERRAL_REWARDS: ReferralRewards = {
   sponsorAmount: 1_000,
@@ -232,7 +232,7 @@ export class PlatformSettingsService {
     }
   }
 
-  /** Ce que rapporte un parrainage, réglé au back-office. */
+  /** What a referral pays, set from the back-office. */
   async getReferralRewards(): Promise<ReferralRewards> {
     const raw = await this.get(REFERRAL_REWARDS_KEY)
     if (raw === null) {

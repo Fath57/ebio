@@ -60,11 +60,10 @@ export class User {
   deviceId?: string
 
   /**
-   * Le code de parrainage du compte, tiré au sort au premier affichage.
+   * The account's referral code, drawn at random the first time it is shown.
    *
-   * Nul tant que personne n'a ouvert l'écran : la plupart des comptes n'en
-   * auront jamais besoin, et un code non distribué ne sert qu'à occuper une
-   * valeur unique.
+   * Null until someone opens the screen: most accounts will never need one,
+   * and an undistributed code only occupies a unique value.
    */
   @Property({ fieldName: 'referral_code', length: 16, nullable: true, unique: true })
   referralCode?: string

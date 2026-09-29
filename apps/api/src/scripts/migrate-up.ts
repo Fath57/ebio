@@ -3,18 +3,18 @@ import { Logger } from '@nestjs/common'
 import { createMikroOrmOptions } from '../config/mikro-orm.config'
 
 /**
- * Applique une migration nommée, en production.
+ * Applies one named migration, in production.
  *
- * Le CLI `mikro-orm` ne découvre pas les entités dans l'image déployée — il
- * cherche des sources TypeScript qui n'y sont pas — et chaque migration se
- * terminait en bricolage. Ce script part de la configuration compilée, celle
- * que l'API utilise elle-même, et n'a donc rien à découvrir.
+ * The `mikro-orm` CLI discovers no entity in the deployed image — it looks
+ * for TypeScript sources that are not there — and every migration ended in
+ * fiddling on the server. This script starts from the compiled config, the
+ * one the API itself uses, so it has nothing to discover.
  *
- * Une migration à la fois, nommée : le registre de production est désaligné
- * de l'historique local, et un `migration:up` nu rejouerait des migrations
- * déjà appliquées à la main.
+ * One migration at a time, named: the production ledger is out of step with
+ * the local history, and a bare `migration:up` would replay migrations
+ * already applied by hand.
  *
- * Usage : node dist/scripts/migrate-up.js Migration20260928020000
+ * Usage: node dist/scripts/migrate-up.js Migration20260928020000
  */
 async function main(): Promise<void> {
   const logger = new Logger('migrate-up')

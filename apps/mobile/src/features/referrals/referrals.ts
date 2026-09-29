@@ -26,7 +26,7 @@ export async function fetchReferralSummary(): Promise<ReferralSummary | null> {
   }
 }
 
-/** Rend le message du serveur : c'est lui qui sait pourquoi il refuse. */
+/** Returns the server's message: it is the one that knows why it refused. */
 export async function claimReferralCode(code: string): Promise<{ ok: true, sponsorName: string } | { ok: false, message: string }> {
   try {
     const res = await apiFetch('/api/referrals/claim', {

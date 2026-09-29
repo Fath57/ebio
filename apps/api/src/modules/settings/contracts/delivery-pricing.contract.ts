@@ -96,8 +96,8 @@ export const bannerOffersSchema = z.object({
   /**
    * How many of the carousel's slots may be sponsored at once.
    *
-   * Plafonné au nombre de places du carrousel : au-delà, le réglage
-   * promettrait une visibilité qui n'existe pas.
+   * Capped at the carousel's own size: beyond it, the setting would promise
+   * visibility that does not exist.
    */
   paidSlots: z.number().int().min(0).max(20),
 }).meta({

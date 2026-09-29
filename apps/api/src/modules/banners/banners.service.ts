@@ -6,7 +6,7 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { Banner, BannerTargetType } from './banner.entity'
 
-/** Nombre de bannières renvoyées à l'accueil. */
+/** How many banners the home screen is given. */
 const PUBLIC_LIMIT = 20
 
 @Injectable()

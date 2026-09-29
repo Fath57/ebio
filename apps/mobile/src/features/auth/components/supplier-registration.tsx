@@ -99,11 +99,11 @@ export function SupplierRegistration({
   const [businessProofMediaId, setBusinessProofMediaId] = useState<string | null>(null)
   const [errorModal, setErrorModal] = useState<{ visible: boolean, title: string, message: string }>({ visible: false, title: '', message: '' })
   /**
-   * L'endroit détecté, dit avec des mots.
+   * The detected place, in words.
    *
-   * « Position détectée (6.3703, 2.3912) » ne permet à personne de vérifier
-   * quoi que ce soit. Une rue et une ville, si. Les coordonnées restent en
-   * secours quand le géocodage ne répond pas.
+   * "Position détectée (6.3703, 2.3912)" lets nobody check anything. A
+   * street and a town do. The coordinates remain as a fallback when the
+   * geocoder does not answer.
    */
   const [placeLabel, setPlaceLabel] = useState<string | null>(null)
 

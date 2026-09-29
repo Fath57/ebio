@@ -3,22 +3,22 @@ import { Entity, Enum, Index, ManyToOne, OptionalProps, PrimaryKey, Property, Un
 import { User } from '../auth/auth.entity'
 
 export enum ReferralStatus {
-  /** Le lien est noué, la récompense attend la première commande livrée. */
+  /** The link is made; the reward waits for the first delivered order. */
   PENDING = 'PENDING',
-  /** Les deux portefeuilles ont été crédités. */
+  /** Both wallets have been credited. */
   REWARDED = 'REWARDED',
 }
 
 /**
- * Un parrainage : qui a amené qui, et ce que ça leur a rapporté.
+ * A referral: who brought whom, and what it earned them.
  *
- * Le filleul est unique — on ne peut être parrainé qu'une fois, et seulement
- * avant sa première commande livrée. Sans cette règle, un client de longue
- * date pourrait se faire « parrainer » le jour où il apprend que ça rapporte.
+ * The referee is unique — one can only be referred once, and only before
+ * their first delivered order. Without that rule a long-standing customer
+ * could get themselves "referred" the day they learn it pays.
  *
- * La récompense n'est versée qu'à la livraison : ni l'inscription ni le
- * paiement ne prouvent qu'il y a quelqu'un au bout. C'est la seule barrière
- * sérieuse contre les faux comptes, et elle ne coûte rien à tenir.
+ * The reward is paid on delivery and nowhere else: neither signing up nor
+ * paying proves there is someone at the other end. That is the only serious
+ * barrier against fake accounts, and it costs nothing to hold.
  */
 @Entity({ tableName: 'referrals' })
 @Unique({ properties: ['referee'] })
@@ -28,16 +28,16 @@ export class Referral {
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
 
-  /** Celui qui a donné son code. */
+  /** The one who gave out their code. */
   @Index()
   @ManyToOne(() => User, { fieldName: 'sponsor_id' })
   sponsor!: Rel<User>
 
-  /** Celui qui l'a saisi. Une seule fois dans sa vie. */
+  /** The one who entered it. Once in their life. */
   @ManyToOne(() => User, { fieldName: 'referee_id' })
   referee!: Rel<User>
 
-  /** Le code tel qu'il a été saisi, gardé même si le parrain le change. */
+  /** The code as entered, kept even if the sponsor changes theirs. */
   @Property({ length: 16 })
   code!: string
 
@@ -45,10 +45,10 @@ export class Referral {
   status: ReferralStatus = ReferralStatus.PENDING
 
   /**
-   * Montants figés au moment du versement.
+   * Amounts frozen at payout time.
    *
-   * Le barème se règle au back-office : le relire plus tard donnerait un
-   * historique qui change tout seul. Ce qui a été versé reste écrit ici.
+   * The rates are set from the back-office: reading them again later would
+   * give a history that rewrites itself. What was paid stays written here.
    */
   @Property({ fieldName: 'sponsor_amount', type: 'int', default: 0 })
   sponsorAmount: number = 0
@@ -56,7 +56,7 @@ export class Referral {
   @Property({ fieldName: 'referee_amount', type: 'int', default: 0 })
   refereeAmount: number = 0
 
-  /** La commande livrée qui a déclenché le versement. */
+  /** The delivered order that triggered the payout. */
   @Property({ fieldName: 'order_id', type: 'uuid', nullable: true })
   orderId?: string | null
 

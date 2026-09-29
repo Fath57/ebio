@@ -720,6 +720,10 @@ export class DeliveriesService {
 
   async pickup(deliveryId: string, userId: string, occurredAt?: string): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
+    // Parcel already marked collected: a resend or a double tap, nothing to do.
+    if (delivery.status === DeliveryStatus.PICKED_UP) {
+      return delivery
+    }
     this.assertStatus(delivery, DeliveryStatus.ACCEPTED)
     if (delivery.order.status === OrderStatus.PREPARING || delivery.order.status === OrderStatus.ACCEPTED) {
       throw new ConflictException('La commande n\'est pas encore prête : la boutique doit d\'abord la marquer prête')
@@ -1093,6 +1097,14 @@ export class DeliveriesService {
     if (run.courier?.id !== profile.id) {
       throw new ForbiddenException('Cette tournée ne vous appartient pas')
     }
+    if (run.status === DeliveryRunStatus.DELIVERED) {
+      // Run already handed over: confirm it, code checked, rather than let
+      // the courier believe shops are still waiting to be collected.
+      if (data.proofType === 'CODE' && (!run.confirmationCode || run.confirmationCode !== data.code)) {
+        throw new UnprocessableEntityException('Code de confirmation invalide')
+      }
+      return run
+    }
     if (run.status !== DeliveryRunStatus.DELIVERING) {
       throw new BadRequestException('Toutes les boutiques doivent être collectées avant la remise')
     }
@@ -1237,6 +1249,11 @@ export class DeliveriesService {
       // belongs to the run, not to one of its deliveries.
       throw new ConflictException('Cette course fait partie d\'une tournée : elle démarre quand toutes les boutiques sont collectées')
     }
+    // Same reason as the handover: a resend must not look like an error when
+    // the wanted state is already reached.
+    if (delivery.status === DeliveryStatus.IN_TRANSIT) {
+      return delivery
+    }
     this.assertStatus(delivery, DeliveryStatus.PICKED_UP)
 
     const when = await this.clampOccurredAt(delivery, occurredAt)
@@ -1260,6 +1277,16 @@ export class DeliveriesService {
       // orders of a unified cart carry none, the fee sits on the run. The
       // handover happens as a whole, with a single code.
       throw new ConflictException('Cette course fait partie d\'une tournée : remettez la tournée entière')
+    }
+    // Already delivered: the courier tapped twice, or the offline queue is
+    // replaying what the network swallowed — the answer was lost, not the
+    // request. Confirming beats worrying someone who did their job. The code
+    // is still checked: a completed handover does not excuse a wrong one.
+    if (delivery.status === DeliveryStatus.DELIVERED) {
+      if (data.proofType === 'CODE' && delivery.confirmationCode !== data.code) {
+        throw new UnprocessableEntityException('Code de confirmation invalide')
+      }
+      return delivery
     }
     this.assertStatus(delivery, DeliveryStatus.IN_TRANSIT)
 
@@ -1623,9 +1650,23 @@ export class DeliveriesService {
     return delivery
   }
 
+  /** What the courier reads when the step does not match. */
+  private static readonly STEP_LABELS: Record<string, string> = {
+    AWAITING_COURIER: 'en attente d\'un livreur',
+    ACCEPTED: 'acceptée, colis pas encore récupéré',
+    PICKED_UP: 'colis récupéré',
+    IN_TRANSIT: 'en route',
+    DELIVERED: 'déjà remise',
+    FAILED: 'échouée',
+    CANCELLED: 'annulée',
+  }
+
   private assertStatus(delivery: Delivery, expected: DeliveryStatus): void {
     if (delivery.status !== expected) {
-      throw new BadRequestException(`Cannot transition from ${delivery.status} (expected ${expected})`)
+      // "Cannot transition from DELIVERED (expected IN_TRANSIT)" means
+      // nothing to someone holding a parcel on a doorstep.
+      const now = DeliveriesService.STEP_LABELS[delivery.status] ?? delivery.status
+      throw new BadRequestException(`Cette course est ${now} : rafraîchissez la liste pour voir où elle en est.`)
     }
   }
 

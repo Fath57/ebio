@@ -93,8 +93,8 @@ export class AssistantVoiceService {
     if (!response.ok) {
       const body = await response.text()
       this.logger.error(`Synthèse refusée (${response.status}) — ${body}`)
-      // Un compte à sec n'est pas une panne passagère : l'acheteur doit savoir
-      // qu'il peut écrire plutôt que d'attendre que la voix revienne.
+      // An empty account is not a passing glitch: the buyer has to know they
+      // can write instead of waiting for the voice to come back.
       throw new ServiceUnavailableException(
         isProviderRefusal(body) ? VOICE_UNAVAILABLE_MESSAGE : 'La voix est momentanément indisponible.',
       )

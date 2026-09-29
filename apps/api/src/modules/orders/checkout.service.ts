@@ -176,20 +176,20 @@ export class CheckoutService {
         : [],
       total,
       cashLimitExceededBy: data.pickupMode === 'DELIVERY' ? await this.cashOverflow(total) : null,
-      // Dit avant la caisse, jamais après : une boutique fermée traitera la
-      // commande à son ouverture, et c'est une chose qu'on accepte en le
-      // sachant, pas qu'on découvre en attendant.
+      // Said before the checkout, never after: a closed shop will handle the
+      // order when it opens, and that is something one accepts knowingly,
+      // not something one discovers while waiting.
       closedShop: this.closedShop(baskets),
     }
   }
 
   /**
-   * La boutique est-elle fermée à cet instant, et quand rouvre-t-elle ?
+   * Is the shop closed right now, and when does it open again?
    *
-   * L'app affichait « Fermé » sur la fiche et laissait pourtant commander sans
-   * un mot : la commande dormait jusqu'au matin pendant que l'acheteur
-   * l'attendait. Elle reste acceptée — une commande du soir est une vraie
-   * commande — mais elle est annoncée pour ce qu'elle est.
+   * The app showed "Fermé" on the shop page and still let the order through
+   * without a word: it slept until morning while the buyer waited for it. It
+   * is still accepted — an evening order is a real order — but it is now
+   * announced for what it is.
    */
   private closedShop(baskets: SupplierBasket[]): { shopName: string, opensAt: string | null } | null {
     const supplier = baskets[0]?.supplier

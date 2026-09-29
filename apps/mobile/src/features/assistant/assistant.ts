@@ -192,7 +192,7 @@ export interface VoiceSource {
   headers: Record<string, string>
 }
 
-/** La voix est refusée par le fournisseur — l'écrit, lui, reste ouvert. */
+/** The provider refused the voice — writing stays open. */
 export const VOICE_UNAVAILABLE = 'voice-unavailable' as const
 
 /**
@@ -213,8 +213,8 @@ export async function voiceUrl(text: string): Promise<VoiceSource | typeof VOICE
     body: JSON.stringify({ texte: text }),
   })
   if (!res.ok) {
-    // 503 : le fournisseur de la voix nous a fermé la porte. L'écrit, lui,
-    // passe par un autre — se taire laisserait croire que tout est cassé.
+    // 503: the voice provider shut the door on us. Writing goes through
+    // another one — staying silent would suggest everything is broken.
     return res.status === 503 ? VOICE_UNAVAILABLE : null
   }
 

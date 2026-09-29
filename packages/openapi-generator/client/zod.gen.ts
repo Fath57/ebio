@@ -39,7 +39,7 @@ export const zBannerOffers = z.object({
 /**
  * ReferralRewards
  *
- * Barème du parrainage
+ * Referral rewards and thresholds
  */
 export const zReferralRewards = z.object({
   sponsorAmount: z.int().gte(0).lte(100000),
@@ -618,7 +618,7 @@ export const zValidatePromo = z.object({
 /**
  * ClaimReferral
  *
- * Rattache un parrain au compte courant
+ * Attaches a sponsor to the current account
  */
 export const zClaimReferral = z.object({
   code: z

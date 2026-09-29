@@ -65,11 +65,11 @@ export class AdminBannerOffersController {
 }
 
 /**
- * Le barème du parrainage, depuis le back-office.
+ * Referral rates, from the back-office.
  *
- * Deux montants et un plancher, qu'on doit pouvoir corriger sans déployer :
- * une récompense trop généreuse se voit à la dépense, et il faut alors
- * pouvoir la baisser — ou suspendre le programme — le jour même.
+ * Two amounts and a floor, which must be fixable without deploying: a reward
+ * set too generously shows up in the spending, and it has to be possible to
+ * lower it — or pause the programme — the same day.
  */
 @Controller('admin/referral-rewards')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)

@@ -692,9 +692,9 @@ export class OrdersService {
     if (becomesDelivered) {
       // Fire-and-forget: the e-mail must never delay or fail the transition.
       void this.sendInvoiceEmail(order.id)
-      // Première commande livrée d'un filleul : le parrainage se paie ici, et
-      // nulle part ailleurs. Le service avale ses propres erreurs — une
-      // récompense ratée ne doit pas retenir une commande livrée.
+      // A referee's first delivered order: the referral is paid here and
+      // nowhere else. The service swallows its own errors — a missed reward
+      // must not hold back a delivered order.
       void this.referralsService.onOrderDelivered(order.id, order.buyer.id, order.totalAmount)
     }
   }

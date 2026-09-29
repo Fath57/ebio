@@ -26,11 +26,11 @@ function money(value: number): string {
 }
 
 /**
- * Le parrainage, vu de l'acheteur.
+ * Referrals, from the buyer's side.
  *
- * Son code, ce qu'il rapporte, et où il en est. La règle est dite en toutes
- * lettres — « quand il reçoit sa première commande » — parce qu'un parrain qui
- * attend un versement le jour de l'inscription de son filleul se croit volé.
+ * Their code, what it pays, and where they stand. The rule is spelled out —
+ * "when they receive their first order" — because a sponsor expecting a
+ * payout the day their referee signs up feels cheated.
  */
 export function ReferralScreen({ onGoBack }: { onGoBack: () => void }) {
   const { semantic } = useTheme()
@@ -59,7 +59,7 @@ export function ReferralScreen({ onGoBack }: { onGoBack: () => void }) {
       })
     }
     catch {
-      // Partage annulé : rien à dire.
+      // Share cancelled: nothing to say.
     }
   }, [summary])
 

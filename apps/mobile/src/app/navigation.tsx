@@ -988,8 +988,8 @@ const HIDE_TAB_BAR_ROUTES = new Set([
 ])
 
 /**
- * La commande en cours, tenue au-dessus de la navigation pour que la
- * notification et la pastille de l'onglet lisent le même sondage.
+ * The order in progress, held above the navigation so the notice and the
+ * tab's dot read the same poll.
  */
 export function AppNavigation() {
   return (
@@ -1010,11 +1010,11 @@ function BuyerTabs() {
   // supplier app only. It refreshes on every socket message, so it appears
   // the moment the message does.
   const { count: chatUnread } = useChatUnreadCount()
-  // Une commande qui avance : la notification le dit en arrivant, la pastille
-  // de l'onglet le rappelle ensuite sans rien occuper.
+  // An order that is moving: the notice says it on arrival, the tab's dot
+  // reminds afterwards without taking any room.
   const { order: liveOrder } = useLiveOrder()
-  // Où l'acheteur se trouve, relevé au changement d'état : la notification est
-  // montée hors du navigateur, elle ne peut pas lire la route par un hook.
+  // Where the buyer is, read on every state change: the notice is mounted
+  // outside the navigator, so it cannot read the route through a hook.
   const [place, setPlace] = React.useState({ tab: '', screen: '' })
   const handleStateChange = React.useCallback(() => {
     const state = navigationRef.getRootState()
@@ -1042,9 +1042,8 @@ function BuyerTabs() {
   return (
     <NavigationContainer
       ref={navigationRef}
-      // Le premier relevé se fait à l'ouverture : `onStateChange` ne se
-      // déclenche qu'au changement, la barre resterait aveugle jusqu'au
-      // premier onglet touché.
+      // The first reading happens on open: `onStateChange` only fires on a
+      // change, so the notice would stay blind until the first tab tap.
       onReady={handleStateChange}
       onStateChange={handleStateChange}
       linking={{
@@ -1122,8 +1121,8 @@ function BuyerTabs() {
         <Tab.Screen
           name="Commandes"
           component={OrdersStackScreen}
-          // Un point, pas un nombre : il ne compte rien, il dit « ça bouge ».
-          // C'est ce qui reste quand la barre s'efface devant le panier.
+          // A dot, not a number: it counts nothing, it says something is
+          // moving. It is what remains once the notice has gone.
           options={liveOrder
             ? {
                 tabBarBadge: '',
@@ -1156,10 +1155,10 @@ function BuyerTabs() {
         * navigateur, donc visible quel que soit l'onglet. */}
       <ConnectivityBanner />
 
-      {/* Là où la commande en est, dit en une ligne puis rangé. Muette sur
-        * l'onglet Commandes (l'écran le dit déjà) et sur les écrans sans barre
-        * d'onglets : une caisse ou une conversation n'est pas un endroit où
-        * l'on interrompt quelqu'un. */}
+      {/* Where the order has got to, said in one line and put away. Silent
+        * on the orders tab (the screen says it already) and on the screens
+        * without a tab bar: a checkout or a conversation is no place to
+        * interrupt someone. */}
       <LiveOrderToast
         hidden={place.tab === 'Commandes' || HIDE_TAB_BAR_ROUTES.has(place.screen)}
         onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', params: { orderId } })}

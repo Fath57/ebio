@@ -1,11 +1,11 @@
 import { Migration } from '@mikro-orm/migrations'
 
 /**
- * Le parrainage : qui a amené qui, et ce que ça leur a rapporté.
+ * Referrals: who brought whom, and what it earned them.
  *
- * Le filleul est unique — on ne se fait parrainer qu'une fois. Le code du
- * parrain vit sur le compte, nul tant que personne ne l'a demandé : la
- * plupart des comptes n'en auront jamais besoin.
+ * The referee is unique — one is referred only once. The sponsor's code
+ * lives on the account, null until someone asks for it: most accounts will
+ * never need one.
  */
 export class Migration20260928020000 extends Migration {
   override async up(): Promise<void> {
@@ -33,14 +33,14 @@ export class Migration20260928020000 extends Migration {
     this.addSql(`ALTER TABLE "referrals" ADD CONSTRAINT "referrals_referee_id_foreign"
       FOREIGN KEY ("referee_id") REFERENCES "users" ("id") ON DELETE CASCADE;`)
 
-    // Un filleul, un parrain, pour de bon : la contrainte tranche même si deux
-    // requêtes arrivent en même temps.
+    // One referee, one sponsor, for good: the constraint decides even when
+    // two requests arrive at once.
     this.addSql(`CREATE UNIQUE INDEX IF NOT EXISTS "referrals_referee_unique" ON "referrals" ("referee_id");`)
     this.addSql(`CREATE INDEX IF NOT EXISTS "referrals_sponsor_idx" ON "referrals" ("sponsor_id");`)
     this.addSql(`ALTER TABLE "referrals" DROP CONSTRAINT IF EXISTS "referrals_status_check";`)
     this.addSql(`ALTER TABLE "referrals" ADD CONSTRAINT "referrals_status_check"
       CHECK ("status" IN ('PENDING', 'REWARDED'));`)
-    // On ne se parraine pas soi-même, et la base le sait aussi.
+    // Nobody refers themselves, and the database knows it too.
     this.addSql(`ALTER TABLE "referrals" DROP CONSTRAINT IF EXISTS "referrals_not_self";`)
     this.addSql(`ALTER TABLE "referrals" ADD CONSTRAINT "referrals_not_self"
       CHECK ("sponsor_id" <> "referee_id");`)

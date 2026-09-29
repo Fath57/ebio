@@ -52,12 +52,12 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
   const [latitude, setLatitude] = useState<number | null>(null)
   const [longitude, setLongitude] = useState<number | null>(null)
   /**
-   * Le lieu dit avec des mots.
+   * The place, in words.
    *
-   * Deux nombres à cinq décimales ne disent rien à personne : le commerçant
-   * qui vérifie son épingle veut lire un nom de rue et sa ville. Les
-   * coordonnées restent en secours quand le géocodage ne répond pas — mieux
-   * vaut un repère illisible que pas de repère du tout.
+   * Two numbers to five decimals say nothing to anyone: a shopkeeper
+   * checking their pin wants to read a street and a town. The coordinates
+   * remain as a fallback when the geocoder does not answer — an unreadable
+   * landmark beats no landmark at all.
    */
   const [placeLabel, setPlaceLabel] = useState<string | null>(null)
   const [pickingOnMap, setPickingOnMap] = useState(false)

@@ -46,10 +46,10 @@ export interface OrderPreview {
    */
   deliveryRunCount: number
   /**
-   * La boutique est fermée à cet instant — `null` si elle est ouverte.
+   * The shop is closed right now — `null` when it is open.
    *
-   * Lu avant le bouton de commande : commander chez une boutique fermée reste
-   * possible, mais plus sans le savoir.
+   * Read above the order button: ordering from a closed shop is still
+   * possible, but no longer unknowingly.
    */
   closedShop: { shopName: string, opensAt: string | null } | null
   total: number

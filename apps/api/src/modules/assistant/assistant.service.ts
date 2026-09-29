@@ -336,7 +336,7 @@ export class AssistantService {
     let buffer = ''
     let breached = false
     let failed = false
-    // Le fournisseur a refusé : ce n'est pas une coupure, c'est un compte à sec.
+    // The provider refused: not a dropped line, an empty account.
     let refused = false
     let usage: { promptTokens?: number, completionTokens?: number } = {}
     let cartSignature = JSON.stringify(await this.currentCart(session.id))
@@ -422,8 +422,8 @@ export class AssistantService {
 
     if (failed) {
       // Nothing is stored: half an answer is worth less than none, and the
-      // turn can simply be taken again — sauf si le fournisseur nous a fermé
-      // la porte, auquel cas redemander ne donnera jamais rien.
+      // turn can simply be taken again — unless the provider shut the door
+      // on us, in which case asking again will never give anything.
       yield {
         type: 'error',
         message: refused ? PROVIDER_REFUSED_MESSAGE : 'La réponse s\'est interrompue. Redites-moi ?',

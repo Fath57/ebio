@@ -7,11 +7,11 @@ import { claimReferralSchema } from './contracts/referral.contract'
 import { ReferralsService } from './referrals.service'
 
 /**
- * Le parrainage, côté acheteur.
+ * Referrals, from the buyer's side.
  *
- * Toujours connecté : un code appartient à quelqu'un, et une récompense se
- * verse sur un portefeuille. Le code du porteur est créé au premier affichage
- * — personne n'a besoin d'un code tant qu'il ne le regarde pas.
+ * Signed in, always: a code belongs to someone, and a reward is paid into a
+ * wallet. The holder's code is created the first time they look at it —
+ * nobody needs a code until they read it.
  */
 @Controller('referrals')
 @UseGuards(AuthGuard)

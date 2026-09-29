@@ -76,14 +76,14 @@ export const checkoutPreviewResponseSchema = z.object({
    */
   cashLimitExceededBy: z.number().nullable(),
   /**
-   * La boutique est fermée à cet instant — `null` si elle est ouverte.
+   * The shop is closed right now — `null` when it is open.
    *
-   * Lu par l'écran de caisse avant le bouton : la commande reste possible,
-   * mais on ne la passe plus sans le savoir.
+   * Read by the checkout screen above the button: the order is still
+   * possible, but it is no longer placed unknowingly.
    */
   closedShop: z.object({
     shopName: z.string(),
-    /** « demain à 08:00 », ou `null` si les horaires ne le disent pas. */
+    /** "demain à 08:00", or `null` when the schedule cannot say. */
     opensAt: z.string().nullable(),
   }).nullable(),
 }).meta({

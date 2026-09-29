@@ -289,9 +289,9 @@ export class RealtimeSession {
 
       case 'error': {
         this.logger.error(`Temps réel — ${JSON.stringify(event.error).slice(0, 300)}`)
-        // Un refus du fournisseur — plus de crédit, clé révoquée, quota — ne
-        // se répare pas en réessayant. Le dire franchement et raccrocher vaut
-        // mieux qu'un « réessayez » qui ne peut pas marcher.
+        // A provider refusal — no credit left, revoked key, quota — is not
+        // fixed by trying again. Saying so plainly and hanging up beats a
+        // "try again" that cannot work.
         if (isProviderRefusal(event.error)) {
           this.emit({ type: 'error', message: VOICE_UNAVAILABLE_MESSAGE })
           this.close()

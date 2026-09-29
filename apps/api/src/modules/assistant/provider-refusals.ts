@@ -1,10 +1,10 @@
 /**
- * Les refus du fournisseur qui ne se retentent pas.
+ * Provider refusals that retrying cannot fix.
  *
- * Le compte à sec ou la clé refusée arrivent par le même canal qu'une coupure
- * réseau, et l'acheteur lisait « la réponse s'est interrompue » — donc il
- * redemandait, et ça recommençait. Ces codes-là méritent leur propre phrase :
- * il n'y a rien à réessayer, c'est à nous de recharger le compte.
+ * An empty account or a revoked key arrive through the same channel as a
+ * dropped connection, and the buyer read "the answer was interrupted" — so
+ * they asked again, and it started over. These codes deserve their own
+ * sentence: there is nothing to retry, it is on us to top the account up.
  */
 const REFUSAL_CODES = new Set([
   'insufficient_quota',
@@ -14,21 +14,21 @@ const REFUSAL_CODES = new Set([
   'account_deactivated',
 ])
 
-/** Ce qu'on dit à l'acheteur quand le fournisseur nous ferme la porte. */
+/** What the buyer is told when the provider shuts the door on us. */
 export const PROVIDER_REFUSED_MESSAGE = 'Assita est indisponible pour le moment. Revenez un peu plus tard.'
 
 /**
- * Le même refus, mais côté voix seulement.
+ * The same refusal, but on the voice side only.
  *
- * L'oreille et la voix passent par un fournisseur, l'écrit par un autre :
- * quand la voix tombe, Assita répond toujours par écrit. Lui dire de revenir
- * plus tard serait faux — il suffit d'écrire.
+ * Ear and voice go through one provider, writing through another: when the
+ * voice falls over, she still answers in writing. Telling the buyer to come
+ * back later would be false — they only have to type.
  */
 export const VOICE_UNAVAILABLE_MESSAGE = 'Ma voix est indisponible pour le moment. Écrivez-moi, je vous réponds.'
 
 /**
- * Reconnaît un refus dans ce que le fournisseur renvoie, quelle que soit la
- * forme : `{ code }`, `{ type }`, ou l'erreur d'un SDK qui les enfouit.
+ * Recognises a refusal in whatever the provider returns, in any shape:
+ * `{ code }`, `{ type }`, or an SDK error burying either of them.
  */
 export function isProviderRefusal(error: unknown): boolean {
   if (error === null || typeof error !== 'object') {
@@ -41,6 +41,6 @@ export function isProviderRefusal(error: unknown): boolean {
   if (typeof shape.type === 'string' && REFUSAL_CODES.has(shape.type)) {
     return true
   }
-  // Les SDK emballent souvent la réponse du fournisseur dans `error.error`.
+  // SDKs often wrap the provider's response inside `error.error`.
   return shape.error !== undefined && shape.error !== error && isProviderRefusal(shape.error)
 }

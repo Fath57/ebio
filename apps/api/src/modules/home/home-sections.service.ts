@@ -135,10 +135,10 @@ export class HomeSectionsService {
       { orderBy: { position: 'ASC' } },
     )
 
-    // Résolus dans l'ordre, et non en parallèle : chaque rail doit savoir ce
-    // que ceux du dessus ont déjà montré. Sans ça, « Près de vous »,
-    // « Découvrir plus loin » et « Validé eBio » remontaient la même
-    // marchandise — le catalogue proche est le même pour tout le monde.
+    // Resolved in order rather than in parallel: every rail has to know what
+    // the ones above already showed. Without it "Près de vous", "Découvrir
+    // plus loin" and "Validé eBio" returned the same goods — the nearby
+    // catalogue is the same for everyone.
     const alreadyShown = new Set<string>()
     const resolved: ResolvedHomeSection[] = []
 
@@ -177,17 +177,17 @@ export class HomeSectionsService {
     const handPicked = section.mode === HomeSectionMode.MANUAL
     const sortBy = criteria.sortBy ?? 'distance'
     /**
-     * Tout rail construit sur des critères écarte ce qui est déjà à l'écran,
-     * quel que soit son tri.
+     * Every criteria-built rail drops what is already on screen, whatever it
+     * sorts by.
      *
-     * La règle ne visait d'abord que le tri par distance, et « Découvrir plus
-     * loin » — trié par note — réaffichait les vingt-sept produits de « Près
-     * de vous » : un rail nommé « plus loin » qui montre ce qui est à côté.
-     * Le tri ne dit rien de ce qui se répète ; seule compte la place déjà
-     * prise à l'écran.
+     * The rule first covered distance-sorted rails only, and "Découvrir plus
+     * loin" — sorted by rating — kept showing the twenty-seven products of
+     * "Près de vous": a rail promising elsewhere and showing next door. The
+     * sort says nothing about what repeats; only the room already taken on
+     * screen does.
      *
-     * Un rail choisi à la main, lui, reste intact : ces produits-là ont été
-     * désignés un par un.
+     * A hand-picked rail stays untouched: those products were named one by
+     * one.
      */
     const excludeProductIds = !handPicked && alreadyShown.size > 0
       ? [...alreadyShown]
@@ -217,13 +217,13 @@ export class HomeSectionsService {
     const response = await this.search.searchProducts(query)
 
     if (!handPicked) {
-      // Rien de neuf à montrer : le rail disparaît, il ne se répète pas.
+      // Nothing new to show: the rail disappears rather than repeating.
       //
-      // Un filet avait d'abord été posé ici — reprendre la liste entière
-      // plutôt que perdre le rail. Il se déclenchait tout le temps : « Validé
-      // eBio » ne rendait que des produits déjà vus, et pour cause, tout le
-      // catalogue est validé. Un rail qui n'a rien à ajouter ne mérite pas la
-      // place qu'il prend, et `listForBuyer` écarte déjà les rails vides.
+      // A safety net was first placed here — take the whole list back rather
+      // than lose the rail. It fired every single time: "Validé eBio"
+      // returned only products already seen, and for good reason, the whole
+      // catalogue is validated. A rail with nothing to add does not deserve
+      // the room it takes, and `listForBuyer` already drops empty ones.
       return response.results
     }
 

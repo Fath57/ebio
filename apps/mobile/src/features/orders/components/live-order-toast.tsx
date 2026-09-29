@@ -8,42 +8,42 @@ import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { liveOrderLabel, useLiveOrder } from '../live-order-context'
 
-/** Le temps de lire une ligne, pas celui de s'en agacer. */
+/** Long enough to read one line, short enough not to annoy. */
 const VISIBLE_MS = 5000
 
 interface LiveOrderToastProps {
   onOpen: (orderId: string) => void
   /**
-   * Vrai là où la notification ferait doublon ou du bruit : sur l'onglet
-   * Commandes, qui le dit déjà, et sur les écrans sans barre d'onglets
-   * (caisse, conversation, connexion, assistant).
+   * True where the notice would duplicate or intrude: on the orders tab,
+   * which already says it, and on the screens that hide the tab bar
+   * (checkout, conversation, sign-in, assistant).
    */
   hidden: boolean
 }
 
 /**
- * Où en est la commande, dit une fois puis rangé.
+ * Where the order has got to, said once and then put away.
  *
- * Une barre permanente aurait occupé le bas de l'écran pendant toute une
- * livraison et se serait battue avec le panier flottant. Ceci se comporte
- * comme une notification : ça descend du haut à l'ouverture de l'app et à
- * chaque changement d'état, ça se lit en une ligne, et ça repart seul au bout
- * de cinq secondes. Ce qui reste ensuite, c'est le point sur l'onglet
- * Commandes — l'information est là sans rien réclamer.
+ * A permanent bar would have held the bottom of the screen for a whole
+ * delivery and fought the floating basket. This behaves like a notification:
+ * it comes down from the top when the app opens and on every change of
+ * state, it reads in one line, and it leaves on its own after five seconds.
+ * What remains afterwards is the dot on the orders tab — the information is
+ * there without demanding anything.
  */
 export function LiveOrderToast({ onOpen, hidden }: LiveOrderToastProps) {
   const { order } = useLiveOrder()
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   const [visible, setVisible] = useState(false)
-  // Ce qui a déjà été annoncé : sans ça le sondage rejouerait la même phrase
-  // toutes les quarante-cinq secondes.
+  // What has already been announced: without this the poll would replay the
+  // same sentence every forty-five seconds.
   const announced = useRef<string | null>(null)
 
   const signature = order ? `${order.id}:${order.status}:${order.deliveryStatus}` : null
 
-  // Revenir dans l'app, c'est le moment où la nouvelle a le plus de valeur :
-  // on autorise une nouvelle annonce, même si l'état n'a pas changé.
+  // Coming back to the app is when the news is worth most: a fresh
+  // announcement is allowed even when the state has not changed.
   useEffect(() => {
     const watch = AppState.addEventListener('change', (state) => {
       if (state === 'active') {
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: spacing[4],
     right: spacing[4],
-    // Sous le bandeau réseau (999) : une coupure de connexion passe avant.
+    // Below the connectivity banner (999): a dropped line comes first.
     zIndex: 900,
   },
   card: {

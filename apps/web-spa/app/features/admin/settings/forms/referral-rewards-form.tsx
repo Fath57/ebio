@@ -17,7 +17,7 @@ import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
 
-/** Reflète le contrat de l'API ; `z.coerce` absorbe les saisies en texte. */
+/** Mirrors the API contract; `z.coerce` absorbs the string inputs. */
 const referralRewardsSchema = z.object({
   sponsorAmount: z.coerce.number().int().min(0).max(100000),
   refereeAmount: z.coerce.number().int().min(0).max(100000),
@@ -34,11 +34,11 @@ interface ReferralRewardsFormProps {
 }
 
 /**
- * Ce que rapporte un parrainage, et à partir de quel panier.
+ * What a referral pays, and from what basket size.
  *
- * Les deux montants sont versés à la première commande livrée du filleul. Le
- * plancher évite qu'un achat à deux cents francs déclenche deux récompenses.
- * L'interrupteur suspend le programme sans effacer les liens déjà noués.
+ * Both amounts are credited on the referee's first delivered order. The
+ * floor stops a two-hundred-franc purchase from triggering two rewards. The
+ * switch pauses the programme without erasing the links already made.
  */
 export function ReferralRewardsForm({ rewards, onSubmit, isPending }: ReferralRewardsFormProps) {
   const { t } = useTranslation()
@@ -47,7 +47,7 @@ export function ReferralRewardsForm({ rewards, onSubmit, isPending }: ReferralRe
     defaultValues: rewards,
   })
 
-  // Garde les champs en phase quand la requête des réglages se rafraîchit.
+  // Keeps the fields in step when the settings query refetches.
   useEffect(() => {
     form.reset(rewards)
   }, [rewards, form])

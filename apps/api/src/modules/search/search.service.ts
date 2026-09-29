@@ -314,8 +314,8 @@ export class SearchService {
       baseParams.push(...productIds)
     }
 
-    // Écarté plutôt que filtré après coup : la page remonte alors `limit`
-    // produits réellement nouveaux, au lieu d'un rail à moitié vide.
+    // Dropped in SQL rather than filtered afterwards: the page then returns
+    // `limit` genuinely new products instead of a half-empty rail.
     if (excludeProductIds !== undefined && excludeProductIds.length > 0) {
       whereClause += `  AND p.id NOT IN (${excludeProductIds.map(() => '?').join(', ')})\n`
       baseParams.push(...excludeProductIds)

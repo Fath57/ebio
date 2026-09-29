@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-/** Sans I, O, 0 ni 1 : un code se lit à voix haute et se recopie à la main. */
+/** No I, O, 0 or 1: a code is read aloud and copied by hand. */
 export const REFERRAL_CODE_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
 export const REFERRAL_CODE_LENGTH = 6
 
@@ -14,48 +14,48 @@ export const referralCodeSchema = z
 
 export const claimReferralSchema = z.object({
   code: referralCodeSchema,
-}).meta({ title: 'ClaimReferral', description: 'Rattache un parrain au compte courant' })
+}).meta({ title: 'ClaimReferral', description: 'Attaches a sponsor to the current account' })
 
 export const referralSummarySchema = z.object({
-  /** Le code du porteur du compte, créé au premier affichage. */
+  /** The account holder's code, created the first time they look. */
   code: z.string(),
-  /** Lien prêt à partager, le code déjà dedans. */
+  /** A link ready to share, the code already in it. */
   link: z.string(),
-  /** Filleuls dont la première commande n'est pas encore livrée. */
+  /** Referees whose first order has not been delivered yet. */
   pending: z.number().int(),
-  /** Filleuls dont la récompense a été versée. */
+  /** Referees whose reward has been paid. */
   rewarded: z.number().int(),
-  /** Total déjà gagné, en FCFA. */
+  /** Total earned so far, in FCFA. */
   earned: z.number().int(),
-  /** Ce que rapporterait le prochain filleul, au barème du jour. */
+  /** What the next referee would earn, at today's rates. */
   sponsorReward: z.number().int(),
   refereeReward: z.number().int(),
-  /** Montant minimum de la commande qui déclenche la récompense. */
+  /** Smallest order that triggers the reward. */
   minOrderAmount: z.number().int(),
-  /** Faux quand le parrainage est suspendu au back-office. */
+  /** False when referrals are paused from the back-office. */
   active: z.boolean(),
-  /** Le parrain de ce compte, s'il en a un. */
+  /** This account's sponsor, if it has one. */
   sponsoredBy: z.object({
     name: z.string(),
     status: z.enum(['PENDING', 'REWARDED']),
   }).nullable(),
-}).meta({ title: 'ReferralSummary', description: 'Tableau de bord du parrainage' })
+}).meta({ title: 'ReferralSummary', description: 'Referral dashboard' })
 
 export const referralRewardsSchema = z.object({
-  /** Versé au parrain à la première commande livrée de son filleul. */
+  /** Paid to the sponsor on their referee's first delivered order. */
   sponsorAmount: z.number().int().min(0).max(100_000),
-  /** Versé au filleul au même moment. */
+  /** Paid to the referee at the same moment. */
   refereeAmount: z.number().int().min(0).max(100_000),
   /**
-   * Plancher de la commande qui déclenche le versement.
+   * Floor under which an order pays nothing.
    *
-   * Sans lui, une commande à deux cents francs suffirait à déclencher deux
-   * récompenses : le parrainage coûterait plus cher que ce qu'il rapporte.
+   * Without it a two-hundred-franc order would be enough to trigger two
+   * rewards: referrals would cost more than they bring in.
    */
   minOrderAmount: z.number().int().min(0).max(1_000_000),
-  /** Suspend le programme sans effacer les liens déjà noués. */
+  /** Pauses the programme without erasing the links already made. */
   active: z.boolean(),
-}).meta({ title: 'ReferralRewards', description: 'Barème du parrainage' })
+}).meta({ title: 'ReferralRewards', description: 'Referral rewards and thresholds' })
 
 export type ClaimReferral = z.infer<typeof claimReferralSchema>
 export type ReferralSummary = z.infer<typeof referralSummarySchema>

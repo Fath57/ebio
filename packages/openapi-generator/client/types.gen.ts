@@ -91,7 +91,7 @@ export type BannerOffers = {
 /**
  * ReferralRewards
  *
- * Barème du parrainage
+ * Referral rewards and thresholds
  */
 export type ReferralRewards = {
   sponsorAmount: number;
@@ -812,7 +812,7 @@ export type UpdatePromoCode = {
 /**
  * ClaimReferral
  *
- * Rattache un parrain au compte courant
+ * Attaches a sponsor to the current account
  */
 export type ClaimReferral = {
   code: string;
@@ -5067,7 +5067,7 @@ export type AdminReferralRewardsControllerUpdateData = {
   /**
    * ReferralRewards
    *
-   * Barème du parrainage
+   * Referral rewards and thresholds
    */
   body: {
     sponsorAmount: number;
@@ -8929,7 +8929,7 @@ export type ReferralsControllerClaimData = {
   /**
    * ClaimReferral
    *
-   * Rattache un parrain au compte courant
+   * Attaches a sponsor to the current account
    */
   body: {
     code: string;
