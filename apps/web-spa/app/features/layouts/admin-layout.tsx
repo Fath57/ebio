@@ -11,10 +11,16 @@ interface RoutePermission {
 
 /**
  * Permission required to open each admin area. The longest matching prefix
- * wins; `/admin` alone (dashboard) is open to every staff member.
+ * wins; `/admin` alone (dashboard) and `/admin/support` are open to every
+ * staff member. Keep in step with the navigation in `app-layout.tsx`.
  */
 const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: '/admin/commandes', action: 'read', subject: 'Order' },
+  { prefix: '/admin/paniers', action: 'read', subject: 'Settings' },
+  { prefix: '/admin/entonnoir', action: 'read', subject: 'Order' },
+  { prefix: '/admin/campagnes', action: 'read', subject: 'Settings' },
+  { prefix: '/admin/produits', action: 'read', subject: 'Product' },
+  { prefix: '/admin/avis-signales', action: 'manage', subject: 'ContentReport' },
   { prefix: '/admin/livraisons', action: 'read', subject: 'Delivery' },
   { prefix: '/admin/transactions', action: 'read', subject: 'Payment' },
   { prefix: '/admin/commissions', action: 'read', subject: 'Payment' },

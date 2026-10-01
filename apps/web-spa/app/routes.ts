@@ -20,23 +20,27 @@ export default [
 
   // App routes (protected via app-layout)
   layout('features/layouts/app-layout.tsx', [
-    // Supplier — Catalogue
-    route('catalogue', 'features/catalog/pages/catalog-page.tsx'),
-    route('catalogue/nouveau', 'features/catalog/pages/product-create-page.tsx'),
-    route('catalogue/:productId', 'features/catalog/pages/product-detail-page.tsx'),
-    route('catalogue/:productId/modifier', 'features/catalog/pages/product-edit-page.tsx'),
+    layout('features/layouts/supplier-layout.tsx', [
+      // Supplier — Catalogue
+      route('catalogue', 'features/catalog/pages/catalog-page.tsx'),
+      route('catalogue/nouveau', 'features/catalog/pages/product-create-page.tsx'),
+      route('catalogue/:productId', 'features/catalog/pages/product-detail-page.tsx'),
+      route('catalogue/:productId/modifier', 'features/catalog/pages/product-edit-page.tsx'),
 
-    // Supplier — Commandes
-    route('commandes', 'features/orders/pages/orders-page.tsx'),
-    route('commandes/:orderId', 'features/orders/pages/order-detail-page.tsx'),
+      // Supplier — Commandes
+      route('commandes', 'features/orders/pages/orders-page.tsx'),
+      route('commandes/:orderId', 'features/orders/pages/order-detail-page.tsx'),
 
-    // Supplier — Analytics, Notifications & Settings
-    route('analytics', 'features/analytics/pages/analytics-page.tsx'),
-    route('portefeuille', 'features/wallet/pages/wallet-page.tsx'),
-    route('codes-promo', 'features/promo-codes/pages/supplier-promo-codes-page.tsx'),
-    route('notifications', 'features/notifications/pages/notifications-page.tsx'),
+      // Supplier — Analytics, Notifications & Settings
+      route('analytics', 'features/analytics/pages/analytics-page.tsx'),
+      route('portefeuille', 'features/wallet/pages/wallet-page.tsx'),
+      route('codes-promo', 'features/promo-codes/pages/supplier-promo-codes-page.tsx'),
+      route('notifications', 'features/notifications/pages/notifications-page.tsx'),
+      route('parametres', 'features/settings/pages/settings-page.tsx'),
+    ]),
+
+    // Every signed-in staff or shop account
     route('profil', 'features/settings/pages/profile-page.tsx'),
-    route('parametres', 'features/settings/pages/settings-page.tsx'),
 
     // Admin routes nested in admin layout
     layout('features/layouts/admin-layout.tsx', [

@@ -24,7 +24,8 @@ export default function HomeRedirect() {
         setTarget('/catalogue')
         break
       default:
-        setTarget('/catalogue')
+        // Buyers and couriers use the mobile apps.
+        setTarget('/unauthorized')
         break
     }
   }, [session, isPending])
