@@ -1,4 +1,3 @@
-import type { JwtPayload } from '../../../common/guards/jwt-auth.guard'
 import type { RealtimeInbound } from './realtime.contract'
 import { Buffer } from 'node:buffer'
 import { EnsureRequestContext } from '@mikro-orm/core'
@@ -12,8 +11,8 @@ import {
   SubscribeMessage,
   WebSocketGateway,
 } from '@nestjs/websockets'
-import * as jwt from 'jsonwebtoken'
 import { Socket } from 'socket.io'
+import { verifyAccountToken } from '../../../common/guards/jwt-auth.guard'
 import { config } from '../../../config/env.config'
 import { PlatformSettingsService } from '../../settings/platform-settings.service'
 import { ASSISTANT_SPOKEN_ADDENDUM, assistantSystemPrompt } from '../assistant.prompt'
@@ -71,7 +70,7 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
         return
       }
 
-      const payload = jwt.verify(token, config.jwt.secret) as JwtPayload
+      const payload = await verifyAccountToken(this.em.fork(), token)
       client.data.userId = payload.sub
 
       // Checked here rather than at boot, like every other turn: closing her

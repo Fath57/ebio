@@ -1,4 +1,3 @@
-import type { JwtPayload } from '../../common/guards/jwt-auth.guard'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Logger } from '@nestjs/common'
 import {
@@ -10,9 +9,8 @@ import {
   WebSocketGateway,
   WebSocketServer,
 } from '@nestjs/websockets'
-import * as jwt from 'jsonwebtoken'
 import { Server, Socket } from 'socket.io'
-import { config } from '../../config/env.config'
+import { verifyAccountToken } from '../../common/guards/jwt-auth.guard'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { ChatService } from './chat.service'
@@ -57,7 +55,7 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
         return
       }
 
-      const payload = jwt.verify(token, config.jwt.secret) as JwtPayload
+      const payload = await verifyAccountToken(this.em.fork(), token)
 
       client.data.userId = payload.sub
       client.data.role = payload.role
