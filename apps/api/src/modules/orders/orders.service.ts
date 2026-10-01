@@ -508,11 +508,6 @@ export class OrdersService {
 
     order.status = OrderStatus.CANCELLED
 
-    const payment = await this.em.findOne(Payment, { order: { id: orderId } })
-    if (payment && payment.status === PaymentStatus.CAPTURED && order.paymentMethod !== PaymentMethod.WALLET) {
-      payment.status = PaymentStatus.REFUNDED
-    }
-
     await this.em.flush()
     await this.onOrderCancelled(order)
 
@@ -939,11 +934,6 @@ export class OrdersService {
       order.status = OrderStatus.CANCELLED
       await this.onOrderCancelled(order)
 
-      const payment = await this.em.findOne(Payment, { order: { id: order.id } })
-      if (payment && payment.status === PaymentStatus.CAPTURED && order.paymentMethod !== PaymentMethod.WALLET) {
-        payment.status = PaymentStatus.REFUNDED
-      }
-
       await this.notificationsService.send({
         user: order.buyer,
         type: NotificationType.ORDER_CANCELLED,
@@ -1217,40 +1207,13 @@ export class OrdersService {
 
   /**
    * Whatever cancels an order (supplier reject, admin, auto-cancel), the
-   * promo use returns to the pool and a wallet payment goes back to the
-   * buyer — money held in escrow must never die with the order.
+   * promo use returns to the pool and what the buyer paid comes back on their
+   * eBio wallet — never through the aggregator, whichever one took the money.
+   * A unified-cart order also adjusts the fee of the shortened run.
    */
   private async onOrderCancelled(order: Order): Promise<void> {
     await this.promoCodesService.release(order.id)
-
-    // Order from a unified cart: the money cannot be taken back at the
-    // provider — one payment covers N orders and Mobile Money cannot return a
-    // share of it. Compensation goes through the eBio wallet, and it also
-    // adjusts the fee of the shortened run.
-    if (order.checkout) {
-      await this.compensationService.compensateOrder(order.id, 'commande annulée')
-      return
-    }
-
-    if (order.paymentMethod === PaymentMethod.WALLET) {
-      const payment = await this.em.findOne(Payment, {
-        order: { id: order.id },
-        status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
-      })
-      if (payment) {
-        const wallet = await this.walletService.getOrCreate({ userId: order.buyer.id })
-        await this.walletService.credit(wallet.id, {
-          type: WalletTransactionType.REFUND,
-          amount: payment.amount,
-          description: `Remboursement — commande ${order.orderNumber} annulée`,
-          orderId: order.id,
-          paymentId: payment.id,
-        })
-        payment.status = PaymentStatus.REFUNDED
-        payment.refundedAt = new Date()
-        await this.em.flush()
-      }
-    }
+    await this.compensationService.compensateOrder(order.id, 'commande annulée')
   }
 
   /** The rate button disappears once the order carries a review. */

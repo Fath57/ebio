@@ -83,12 +83,19 @@ export class CompensationService {
       return { amount: 0, deliveryRefund: 0, alreadyDone: false, checkoutStatus: status }
     }
 
-    const amount = Math.round(order.totalAmount)
-    const wallet = await this.walletService.getOrCreate({ userId: order.buyer.id })
+    // Never paid (Mobile Money abandoned before confirmation): crediting the
+    // total would hand out money that never came in.
     const payment = await this.em.findOne(Payment, {
       order: { id: order.id },
       status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
     })
+    if (!payment) {
+      const status = checkout ? await this.refreshCheckoutStatus(checkout) : null
+      return { amount: 0, deliveryRefund: 0, alreadyDone: false, checkoutStatus: status }
+    }
+
+    const amount = Math.round(order.totalAmount)
+    const wallet = await this.walletService.getOrCreate({ userId: order.buyer.id })
 
     if (amount > 0) {
       await this.walletService.credit(wallet.id, {
@@ -96,13 +103,11 @@ export class CompensationService {
         amount,
         description: `Remboursement — commande ${order.orderNumber} : ${reason}`,
         orderId: order.id,
-        paymentId: payment?.id,
+        paymentId: payment.id,
       })
     }
-    if (payment) {
-      payment.status = PaymentStatus.REFUNDED
-      payment.refundedAt = new Date()
-    }
+    payment.status = PaymentStatus.REFUNDED
+    payment.refundedAt = new Date()
     await this.em.flush()
 
     // The shop leaves the run: the ride gets shorter, so does the fee. What

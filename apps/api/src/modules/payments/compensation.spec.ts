@@ -41,13 +41,17 @@ function buildOrder(extra: Record<string, unknown> = {}) {
   }
 }
 
+function buildPayment() {
+  return { id: 'payment-1', status: 'ESCROW' }
+}
+
 describe('compensationService', () => {
   it('crédite le portefeuille du montant exact de la commande', async () => {
     const { service, em, wallet } = buildService()
     em.findOne
       .mockResolvedValueOnce(buildOrder())
       .mockResolvedValueOnce({ id: 'checkout-1', status: CheckoutStatus.PAID, deliveryFee: 800, totalAmount: 6000 })
-      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(buildPayment())
 
     const result = await service.compensateOrder('order-1', 'rupture de stock')
 
@@ -86,6 +90,31 @@ describe('compensationService', () => {
     expect(wallet.credit).not.toHaveBeenCalled()
   })
 
+  it('ne rend rien sur une commande jamais payée', async () => {
+    const { service, em, wallet } = buildService()
+    em.findOne
+      .mockResolvedValueOnce(buildOrder({ paymentMethod: 'FEDAPAY' }))
+      .mockResolvedValueOnce({ id: 'checkout-1', status: CheckoutStatus.PENDING })
+      .mockResolvedValueOnce(null)
+
+    const result = await service.compensateOrder('order-1', 'commande annulée')
+
+    expect(result.amount).toBe(0)
+    expect(wallet.credit).not.toHaveBeenCalled()
+  })
+
+  it('passe le paiement en remboursé une fois le portefeuille crédité', async () => {
+    const { service, em } = buildService()
+    const payment = buildPayment()
+    em.findOne
+      .mockResolvedValueOnce(buildOrder({ checkout: null }))
+      .mockResolvedValueOnce(payment)
+
+    await service.compensateOrder('order-1', 'commande annulée')
+
+    expect(payment.status).toBe('REFUNDED')
+  })
+
   it('rend aussi l\'écart de frais quand la tournée raccourcit', async () => {
     const { service, em, wallet, runHooks } = buildService()
     runHooks.removeSupplierFromRun.mockResolvedValue({ runId: 'run-1', refund: 300, remainingShops: 1 })
@@ -93,7 +122,7 @@ describe('compensationService', () => {
     em.findOne
       .mockResolvedValueOnce(buildOrder())
       .mockResolvedValueOnce(checkout)
-      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(buildPayment())
 
     const result = await service.compensateOrder('order-1', 'rupture de stock')
 
@@ -118,7 +147,7 @@ describe('compensationService', () => {
     em.findOne
       .mockResolvedValueOnce(buildOrder())
       .mockResolvedValueOnce({ id: 'checkout-1', status: CheckoutStatus.PAID, deliveryFee: 800, totalAmount: 6000 })
-      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(buildPayment())
 
     const result = await service.compensateOrder('order-1', 'rupture de stock')
 
@@ -138,7 +167,7 @@ describe('compensationService', () => {
     em.findOne
       .mockResolvedValueOnce(buildOrder())
       .mockResolvedValueOnce(checkout)
-      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(buildPayment())
 
     const result = await service.compensateOrder('order-1', 'tout est tombé')
 
@@ -151,7 +180,7 @@ describe('compensationService', () => {
     em.findOne
       .mockResolvedValueOnce(buildOrder())
       .mockResolvedValueOnce(checkout)
-      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(buildPayment())
 
     const result = await service.compensateOrder('order-1', 'une seule est tombée')
 
