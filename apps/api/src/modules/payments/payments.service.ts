@@ -644,45 +644,6 @@ export class PaymentsService {
     return payment
   }
 
-  /**
-   * Refunds a captured/escrow payment via the gateway.
-   */
-  async refund(paymentId: string): Promise<Payment> {
-    const payment = await this.em.findOneOrFail(Payment, { id: paymentId }, {
-      populate: ['order', 'order.buyer'],
-    })
-
-    if (payment.status !== PaymentStatus.CAPTURED && payment.status !== PaymentStatus.ESCROW) {
-      throw new BadRequestException(`Cannot refund payment in status ${payment.status}`)
-    }
-
-    if (payment.providerTransactionId) {
-      const gateway = this.gatewayFactory.createGateway(payment.provider)
-      const result = await gateway.processRefund(payment.providerTransactionId, payment.amount)
-
-      if (!result.success) {
-        this.logger.error(`Refund failed for payment ${payment.id}`)
-        throw new BadRequestException('Refund failed at payment provider')
-      }
-    }
-
-    payment.status = PaymentStatus.REFUNDED
-    payment.refundedAt = new Date()
-
-    await this.em.flush()
-
-    await this.notificationsService.send({
-      user: payment.order.buyer,
-      type: NotificationType.PAYMENT_RECEIVED,
-      title: 'Remboursement effectué',
-      body: `${payment.amount} FCFA vous ont été remboursés`,
-      data: { orderId: payment.order.id, paymentId: payment.id },
-      channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
-    })
-
-    return payment
-  }
-
   async findByOrderId(orderId: string): Promise<Payment | null> {
     return this.em.findOne(Payment, { order: { id: orderId } })
   }
