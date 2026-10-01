@@ -116,3 +116,50 @@ describe('recharge réglée par le webhook FedaPay', () => {
     expect(gateway.checkStatus).not.toHaveBeenCalled()
   })
 })
+
+describe('règlement d\'une recharge', () => {
+  function buildSettleService(affectedRows: number) {
+    const topup = { id: 'topup-1', amount: '1000', wallet: { id: 'wallet-1' } }
+    const em = {
+      findOne: vi.fn().mockResolvedValue(topup),
+      execute: vi.fn().mockResolvedValue({ affectedRows }),
+      transactional: vi.fn(),
+    }
+    em.transactional.mockImplementation(async (work: (txEm: typeof em) => Promise<unknown>) => work(em))
+    const wallet = { credit: vi.fn().mockResolvedValue(1000) }
+    const service = new TopupService(em as never, wallet as never, {} as never)
+    return { service, em, wallet }
+  }
+
+  it('marque la recharge réglée et crédite dans une même transaction', async () => {
+    const { service, em, wallet } = buildSettleService(1)
+
+    await expect(service.settleFromProvider('42', 'completed')).resolves.toBe(true)
+
+    expect(em.transactional).toHaveBeenCalledOnce()
+    expect(wallet.credit).toHaveBeenCalledWith('wallet-1', expect.objectContaining({ amount: 1000 }))
+  })
+
+  it('laisse remonter un crédit qui échoue, pour que la recharge reste en attente', async () => {
+    const { service, wallet } = buildSettleService(1)
+    wallet.credit.mockRejectedValueOnce(new Error('portefeuille indisponible'))
+
+    await expect(service.settleFromProvider('42', 'completed')).rejects.toThrow('portefeuille indisponible')
+  })
+
+  it('ne crédite pas une recharge déjà réglée', async () => {
+    const { service, wallet } = buildSettleService(0)
+
+    await expect(service.settleFromProvider('42', 'completed')).resolves.toBe(true)
+
+    expect(wallet.credit).not.toHaveBeenCalled()
+  })
+
+  it('ne crédite pas une recharge en échec', async () => {
+    const { service, wallet } = buildSettleService(1)
+
+    await service.settleFromProvider('42', 'failed')
+
+    expect(wallet.credit).not.toHaveBeenCalled()
+  })
+})

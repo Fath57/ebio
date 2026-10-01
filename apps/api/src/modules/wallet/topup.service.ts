@@ -229,8 +229,10 @@ export class TopupService {
   }
 
   /**
-   * Applies a status already confirmed with the provider. Idempotent: the PENDING → COMPLETED conditional update is the
-   * arbiter, a replayed webhook credits nothing twice.
+   * Applies a status already confirmed with the provider. The PENDING →
+   * COMPLETED conditional update and the credit commit together: a replayed
+   * webhook credits nothing twice, and a credit that fails leaves the topup
+   * pending for the next webhook or verification to settle.
    */
   async settleFromProvider(fedapayTransactionId: string, status: 'completed' | 'failed'): Promise<boolean> {
     const topup = await this.em.findOne(WalletTopup, { fedapayTransactionId })
@@ -239,21 +241,24 @@ export class TopupService {
     }
 
     const target = status === 'completed' ? TopupStatus.COMPLETED : TopupStatus.FAILED
-    const result = await this.em.getConnection().execute<{ affectedRows?: number }>(
-      `UPDATE wallet_topups SET status = ?, "updatedAt" = NOW() WHERE id = ? AND status = 'PENDING'`,
-      [target, topup.id],
-      'run',
-    )
-    if ((result.affectedRows ?? 0) === 0) {
-      return true
-    }
-
-    if (target === TopupStatus.COMPLETED) {
+    const isCredited = await this.em.transactional(async (em) => {
+      const result = await em.execute<{ affectedRows?: number }>(
+        `UPDATE wallet_topups SET status = ?, "updatedAt" = NOW() WHERE id = ? AND status = 'PENDING'`,
+        [target, topup.id],
+        'run',
+      )
+      if ((result.affectedRows ?? 0) === 0 || target !== TopupStatus.COMPLETED) {
+        return false
+      }
       await this.walletService.credit(topup.wallet.id, {
         type: WalletTransactionType.TOPUP,
         amount: Number(topup.amount),
         description: 'Recharge du portefeuille',
       })
+      return true
+    })
+
+    if (isCredited) {
       this.logger.log(`Topup ${topup.id} credited (${topup.amount} FCFA)`)
     }
     return true

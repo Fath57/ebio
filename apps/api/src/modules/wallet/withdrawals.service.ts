@@ -34,6 +34,14 @@ interface Payee {
   ownerType: PayoutOwnerType
 }
 
+/** What a status transition records alongside the new status. */
+interface ReserveExtra {
+  owner?: PayoutOwner
+  processedBy?: string
+  rejectionReason?: string
+  providerReference?: string | null
+}
+
 @Injectable()
 export class WithdrawalsService {
   private readonly logger = new Logger(WithdrawalsService.name)
@@ -168,10 +176,9 @@ export class WithdrawalsService {
   }
 
   async cancelWithdrawal(owner: PayoutOwner, withdrawalId: string) {
-    const reserved = await this.reserve(withdrawalId, WithdrawalStatus.PENDING, WithdrawalStatus.CANCELLED, {
+    const reserved = await this.reserveAndRefund(withdrawalId, WithdrawalStatus.PENDING, WithdrawalStatus.CANCELLED, {
       owner,
-    })
-    await this.refund(reserved, 'Annulation de la demande de reversement')
+    }, 'Annulation de la demande de reversement')
     return this.mapWithdrawal(reserved)
   }
 
@@ -235,10 +242,7 @@ export class WithdrawalsService {
       const raw = error as { message?: unknown, errorMessage?: unknown } | null
       const detail = String(raw?.message ?? raw?.errorMessage ?? error)
       this.logger.error(`Reversement refusé par le prestataire pour ${withdrawal.id} : ${detail}`)
-      withdrawal.status = WithdrawalStatus.FAILED
-      withdrawal.processedAt = new Date()
-      await this.em.flush()
-      await this.refund(withdrawal, 'Échec du versement — solde rétabli')
+      await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, {}, 'Échec du versement — solde rétabli')
       throw new BadRequestException('Le versement a échoué ; le solde du bénéficiaire est rétabli')
     }
 
@@ -246,11 +250,10 @@ export class WithdrawalsService {
   }
 
   async reject(withdrawalId: string, adminId: string, reason: string) {
-    const withdrawal = await this.reserve(withdrawalId, WithdrawalStatus.PENDING, WithdrawalStatus.REJECTED, {
+    const withdrawal = await this.reserveAndRefund(withdrawalId, WithdrawalStatus.PENDING, WithdrawalStatus.REJECTED, {
       processedBy: adminId,
       rejectionReason: reason,
-    })
-    await this.refund(withdrawal, `Demande refusée : ${reason}`)
+    }, `Demande refusée : ${reason}`)
     await this.notifyOwner(withdrawal, 'Reversement refusé', `Votre demande de reversement a été refusée : ${reason}. Votre solde est rétabli.`)
     return this.mapWithdrawal(withdrawal)
   }
@@ -363,22 +366,24 @@ export class WithdrawalsService {
     }
 
     // Same reservation discipline: webhook and poller may race.
-    const target = check.status === 'sent' ? WithdrawalStatus.PAID : WithdrawalStatus.FAILED
+    const extra = { providerReference: check.reference }
     try {
-      await this.reserve(withdrawal.id, WithdrawalStatus.PROCESSING, target, {
-        providerReference: check.reference,
-      })
+      if (check.status === 'sent') {
+        await this.reserve(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.PAID, extra)
+      }
+      else {
+        await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, extra, 'Échec du versement — solde rétabli')
+      }
     }
     catch {
       return
     }
 
-    if (target === WithdrawalStatus.PAID) {
+    if (check.status === 'sent') {
       await this.notifyOwner(withdrawal, 'Reversement effectué', `${Number(withdrawal.amount)} FCFA ont été envoyés au ${withdrawal.payoutNumber.phoneNumber}.`)
     }
     else {
       this.logger.error(`Payout ${fedapayPayoutId} failed: ${check.errorMessage}`)
-      await this.refund(withdrawal, 'Échec du versement — solde rétabli')
       await this.notifyOwner(withdrawal, 'Reversement échoué', 'Le versement a échoué. Votre solde est rétabli, vous pouvez refaire une demande.')
     }
   }
@@ -413,7 +418,7 @@ export class WithdrawalsService {
     withdrawalId: string,
     from: WithdrawalStatus,
     to: WithdrawalStatus,
-    extra: { owner?: PayoutOwner, processedBy?: string, rejectionReason?: string, providerReference?: string | null } = {},
+    extra: ReserveExtra = {},
   ): Promise<WithdrawalRequest> {
     const conditions = ['id = ?', 'status = ?']
     const params: unknown[] = [withdrawalId, from]
@@ -427,7 +432,8 @@ export class WithdrawalsService {
     }
 
     // 'run' mode: pg's execute() otherwise returns rows, not affectedRows.
-    const result = await this.em.getConnection().execute<{ affectedRows?: number }>(
+    // `em.execute` joins the caller's transaction, if any.
+    const result = await this.em.execute<{ affectedRows?: number }>(
       `UPDATE withdrawal_requests
        SET status = ?, processed_at = NOW(),
            processed_by = COALESCE(?, processed_by),
@@ -444,6 +450,25 @@ export class WithdrawalsService {
     this.em.clear()
     return this.em.findOneOrFail(WithdrawalRequest, { id: withdrawalId }, {
       populate: ['payoutNumber', 'supplier', 'courier', 'wallet'],
+    })
+  }
+
+  /**
+   * A closing transition that gives the money back: the status and the
+   * credit commit together, or neither does. Otherwise a failed credit
+   * leaves a closed request whose amount never returned to the wallet.
+   */
+  private async reserveAndRefund(
+    withdrawalId: string,
+    from: WithdrawalStatus,
+    to: WithdrawalStatus,
+    extra: ReserveExtra,
+    description: string,
+  ): Promise<WithdrawalRequest> {
+    return this.em.transactional(async () => {
+      const withdrawal = await this.reserve(withdrawalId, from, to, extra)
+      await this.refund(withdrawal, description)
+      return withdrawal
     })
   }
 
