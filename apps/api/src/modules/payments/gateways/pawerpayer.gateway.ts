@@ -116,19 +116,18 @@ export class PawerPayerGateway implements PaymentGatewayInterface {
     }
   }
 
+  /**
+   * The body is unsigned, so it only says which transaction to look at: its
+   * status is read back from PawerPayer rather than taken from the request.
+   */
   async handleWebhook(payload: unknown, _signature?: string): Promise<WebhookResult> {
-    const event = payload as {
-      transaction_id: string
-      status: string
-      paid_at?: string
-    }
-
-    const mappedStatus = PAWERPAYER_STATUS_MAP[event.status] ?? 'pending'
+    const event = payload as { transaction_id: string }
+    const check = await this.checkStatus(event.transaction_id)
 
     return {
       providerTransactionId: event.transaction_id,
-      status: mappedStatus,
-      paidAt: event.paid_at ? new Date(event.paid_at) : undefined,
+      status: check.status,
+      paidAt: check.paidAt,
     }
   }
 }

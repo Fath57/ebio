@@ -193,7 +193,11 @@ export const configValidationSchema = z.object({
   FCM_PRIVATE_KEY: z.string().optional(),
 
   // JWT
-  JWT_SECRET: z.string().default('dev-jwt-secret'),
+  // Signs the chat, OTP and assistant tokens: a known default would let anyone
+  // forge them, so production must bring its own.
+  JWT_SECRET: nodeEnv === 'production'
+    ? z.string().min(32)
+    : z.string().default('dev-jwt-secret'),
   JWT_REFRESH_SECRET: z.string().default('dev-jwt-refresh-secret'),
   JWT_ACCESS_EXPIRY: z.string().default('15m'),
   JWT_REFRESH_EXPIRY: z.string().default('7d'),

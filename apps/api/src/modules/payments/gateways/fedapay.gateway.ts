@@ -92,17 +92,20 @@ export class FedaPayGateway implements PaymentGatewayInterface, PayoutGatewayInt
     }
   }
 
+  /**
+   * The body is unsigned, so it only says which transaction to look at: its
+   * status is read back from FedaPay. Trusting `entity.status` would let any
+   * POST with a guessed id mark a payment as paid.
+   */
   async handleWebhook(payload: unknown, _signature?: string): Promise<WebhookResult> {
-    const event = payload as { entity: { id: number, status: string } }
-
+    const event = payload as { entity: { id: number } }
     const transactionId = String(event.entity.id)
-    const rawStatus = event.entity.status
-    const mappedStatus = FEDAPAY_STATUS_MAP[rawStatus] ?? 'pending'
+    const check = await this.checkStatus(transactionId)
 
     return {
       providerTransactionId: transactionId,
-      status: mappedStatus,
-      paidAt: mappedStatus === 'completed' ? new Date() : undefined,
+      status: check.status,
+      paidAt: check.paidAt,
     }
   }
 

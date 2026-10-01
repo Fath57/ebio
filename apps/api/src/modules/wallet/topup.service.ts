@@ -201,8 +201,35 @@ export class TopupService {
   }
 
   /**
-   * Called by the FedaPay webhook when the transaction is not an order
-   * payment. Idempotent: the PENDING → COMPLETED conditional update is the
+   * FedaPay's webhook is unsigned, so it only names a transaction: the topup
+   * is settled on what FedaPay answers when asked, with the same amount check
+   * as `verify`. False when the transaction is not a topup.
+   */
+  async settleFromWebhook(fedapayTransactionId: string): Promise<boolean> {
+    const topup = await this.em.findOne(WalletTopup, { fedapayTransactionId })
+    if (!topup) {
+      return false
+    }
+    if (topup.status !== TopupStatus.PENDING) {
+      return true
+    }
+
+    const check = await this.gatewayFactory.createGateway(PaymentProvider.FEDAPAY).checkStatus(fedapayTransactionId)
+    if (check.status === 'completed') {
+      if (check.amount !== undefined && check.amount !== Math.round(Number(topup.amount))) {
+        this.logger.warn(`Topup ${topup.id}: paid ${check.amount}, expected ${topup.amount}`)
+        return true
+      }
+      await this.settleFromProvider(fedapayTransactionId, 'completed')
+    }
+    else if (check.status === 'failed' || check.status === 'refunded') {
+      await this.settleFromProvider(fedapayTransactionId, 'failed')
+    }
+    return true
+  }
+
+  /**
+   * Applies a status already confirmed with the provider. Idempotent: the PENDING → COMPLETED conditional update is the
    * arbiter, a replayed webhook credits nothing twice.
    */
   async settleFromProvider(fedapayTransactionId: string, status: 'completed' | 'failed'): Promise<boolean> {

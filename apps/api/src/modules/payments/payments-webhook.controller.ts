@@ -32,15 +32,8 @@ export class PaymentsWebhookController {
     }
 
     // A transaction may be a wallet topup rather than an order payment.
-    if (entityId) {
-      const status = (event as { entity?: { status?: string } }).entity?.status
-      const settled = await this.topupService.settleFromProvider(
-        entityId,
-        status === 'approved' || status === 'transferred' ? 'completed' : 'failed',
-      )
-      if (settled) {
-        return { received: true }
-      }
+    if (entityId && await this.topupService.settleFromWebhook(entityId)) {
+      return { received: true }
     }
 
     await this.paymentsService.handleWebhookCallback(
@@ -52,7 +45,8 @@ export class PaymentsWebhookController {
 
   /**
    * INTRAM signs what it sends, so this route proves the delivery before
-   * acting on it — unlike the FedaPay one above, which still trusts its body.
+   * acting on it — unlike the FedaPay one above, which can only re-read
+   * the transaction it names.
    *
    * The raw bytes are required: the signature covers `timestamp.body` exactly
    * as sent, and re-serialising the parsed JSON breaks it. INTRAM retries a

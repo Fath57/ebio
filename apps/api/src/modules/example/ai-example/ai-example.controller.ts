@@ -14,6 +14,8 @@ import type {
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
 import { Logger, MessageEvent, Sse, UseGuards } from '@nestjs/common'
 import { Observable } from 'rxjs'
+import { Roles } from '../../../common/decorators/roles.decorator'
+import { RolesGuard } from '../../../common/guards/roles.guard'
 import { AiService } from '../../ai/ai.service'
 import { LangfuseService } from '../../ai/langfuse.service'
 import { AuthGuard } from '../../auth/auth.guard'
@@ -31,7 +33,9 @@ import {
 } from './ai-example.contract'
 import { getCryptoPriceTool } from './tools/coingecko.tools'
 
-@UseGuards(AuthGuard)
+// Each call is billed by the LLM provider: kept to the staff.
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('ADMIN')
 @TypedController('ai')
 export class AiExampleController {
   private readonly logger = new Logger(AiExampleController.name)

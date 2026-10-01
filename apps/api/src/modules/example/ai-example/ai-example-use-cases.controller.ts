@@ -8,9 +8,12 @@ import type {
   UseCase4ChatSessionRequest,
 } from './ai-example.contract'
 import { TypedBody, TypedController, TypedRoute } from '@lonestone/nzoth/server'
-import { Logger } from '@nestjs/common'
+import { Logger, UseGuards } from '@nestjs/common'
+import { Roles } from '../../../common/decorators/roles.decorator'
+import { RolesGuard } from '../../../common/guards/roles.guard'
 import { AiService } from '../../ai/ai.service'
 import { LangfuseService } from '../../ai/langfuse.service'
+import { AuthGuard } from '../../auth/auth.guard'
 import {
   generateTextResponseSchema,
   useCase1SingleGenerationRequestSchema,
@@ -22,9 +25,11 @@ import {
 } from './ai-example.contract'
 
 /**
- * Trace use-case examples — no auth required.
+ * Trace use-case examples. Each call is billed by the LLM provider: kept to the staff.
  * See docs: Organizing Traces (4_ai.mdx).
  */
+@UseGuards(AuthGuard, RolesGuard)
+@Roles('ADMIN')
 @TypedController('ai/examples')
 export class AiExampleUseCasesController {
   private readonly logger = new Logger(AiExampleUseCasesController.name)

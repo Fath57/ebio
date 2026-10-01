@@ -59,3 +59,60 @@ describe('vérification d\'une recharge', () => {
       .toEqual({ status: TopupStatus.COMPLETED, balance: 2500 })
   })
 })
+
+describe('recharge réglée par le webhook FedaPay', () => {
+  function buildWebhookService(topupStatus: TopupStatus, check: { status: string, amount?: number }) {
+    const topup = { id: 'topup-1', status: topupStatus, amount: '1000', fedapayTransactionId: '42' }
+    const em = { findOne: vi.fn().mockResolvedValue(topup) }
+    const gateway = { checkStatus: vi.fn().mockResolvedValue(check) }
+    const service = new TopupService(
+      em as never,
+      {} as never,
+      { createGateway: () => gateway } as never,
+    )
+    const settle = vi.spyOn(service, 'settleFromProvider').mockResolvedValue(true)
+    return { service, em, gateway, settle }
+  }
+
+  it('crédite sur la parole de FedaPay, pas sur celle du corps reçu', async () => {
+    const { service, gateway, settle } = buildWebhookService(TopupStatus.PENDING, { status: 'completed', amount: 1000 })
+
+    await expect(service.settleFromWebhook('42')).resolves.toBe(true)
+
+    expect(gateway.checkStatus).toHaveBeenCalledWith('42')
+    expect(settle).toHaveBeenCalledWith('42', 'completed')
+  })
+
+  it('ne crédite rien tant que FedaPay ne confirme pas', async () => {
+    const { service, settle } = buildWebhookService(TopupStatus.PENDING, { status: 'pending' })
+
+    await expect(service.settleFromWebhook('42')).resolves.toBe(true)
+
+    expect(settle).not.toHaveBeenCalled()
+  })
+
+  it('refuse un montant payé différent de la recharge', async () => {
+    const { service, settle } = buildWebhookService(TopupStatus.PENDING, { status: 'completed', amount: 100 })
+
+    await expect(service.settleFromWebhook('42')).resolves.toBe(true)
+
+    expect(settle).not.toHaveBeenCalled()
+  })
+
+  it('n\'interroge pas FedaPay pour une recharge déjà réglée', async () => {
+    const { service, gateway } = buildWebhookService(TopupStatus.COMPLETED, { status: 'completed', amount: 1000 })
+
+    await expect(service.settleFromWebhook('42')).resolves.toBe(true)
+
+    expect(gateway.checkStatus).not.toHaveBeenCalled()
+  })
+
+  it('laisse la main aux paiements de commande quand ce n\'est pas une recharge', async () => {
+    const { service, em, gateway } = buildWebhookService(TopupStatus.PENDING, { status: 'completed' })
+    em.findOne.mockResolvedValue(null)
+
+    await expect(service.settleFromWebhook('42')).resolves.toBe(false)
+
+    expect(gateway.checkStatus).not.toHaveBeenCalled()
+  })
+})
