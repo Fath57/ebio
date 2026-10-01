@@ -4,6 +4,8 @@ import { TypedBody } from '@lonestone/nzoth/server'
 import { BadRequestException, Controller, Get, Post, Req, UnauthorizedException, UseGuards } from '@nestjs/common'
 import * as jwt from 'jsonwebtoken'
 import { z } from 'zod'
+import { RateLimit } from '../../common/decorators/rate-limit.decorator'
+import { RateLimitGuard } from '../../common/guards/rate-limit.guard'
 import { OtpService } from '../../common/otp.service'
 import { config } from '../../config/env.config'
 import { AuthGuard } from './auth.guard'
@@ -95,6 +97,8 @@ export class OtpAuthController {
   // ─── Phone + password login (no OTP) ─────────────────────────────────────────
 
   @Post('login')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(20)
   async loginWithPhone(
     @TypedBody(z.object({
       phone: z.string(),
@@ -114,6 +118,8 @@ export class OtpAuthController {
   // ─── Phone OTP Request ──────────────────────────────────────────────────────
 
   @Post('request')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10)
   async requestOtp(
     @TypedBody(otpRequestSchema) body: z.infer<typeof otpRequestSchema>,
   ) {
@@ -127,6 +133,8 @@ export class OtpAuthController {
   // ─── Phone OTP Verify (login existing user) ────────────────────────────────
 
   @Post('verify')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(30)
   async verifyOtp(
     @TypedBody(otpVerifySchema) body: z.infer<typeof otpVerifySchema>,
   ) {
@@ -150,6 +158,8 @@ export class OtpAuthController {
   // ─── Phone OTP Register (new user, after verify returned registrationToken) ─
 
   @Post('register')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10)
   async registerWithToken(
     @TypedBody(registerWithTokenSchema) body: z.infer<typeof registerWithTokenSchema>,
   ) {
@@ -169,6 +179,8 @@ export class OtpAuthController {
   // ─── Email OTP (for email registration) ─────────────────────────────────────
 
   @Post('email/request')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10)
   async requestEmailOtp(
     @TypedBody(emailOtpRequestSchema) body: z.infer<typeof emailOtpRequestSchema>,
   ) {
@@ -185,6 +197,8 @@ export class OtpAuthController {
   }
 
   @Post('email/register')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10)
   async registerWithEmail(
     @TypedBody(emailOtpVerifySchema) body: z.infer<typeof emailOtpVerifySchema>,
   ) {
@@ -204,6 +218,8 @@ export class OtpAuthController {
   // ─── Password Reset via OTP ─────────────────────────────────────────────────
 
   @Post('password-reset/request')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10)
   async requestPasswordReset(
     @TypedBody(passwordResetRequestSchema) body: z.infer<typeof passwordResetRequestSchema>,
   ) {
@@ -228,6 +244,8 @@ export class OtpAuthController {
   }
 
   @Post('password-reset/verify')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(30)
   async verifyPasswordReset(
     @TypedBody(passwordResetVerifySchema) body: z.infer<typeof passwordResetVerifySchema>,
   ) {
@@ -255,6 +273,8 @@ export class OtpAuthController {
   }
 
   @Post('password-reset/reset')
+  @UseGuards(RateLimitGuard)
+  @RateLimit(10)
   async resetPassword(
     @TypedBody(passwordResetSchema) body: z.infer<typeof passwordResetSchema>,
   ) {

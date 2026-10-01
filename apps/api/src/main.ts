@@ -1,3 +1,4 @@
+import type { NestExpressApplication } from '@nestjs/platform-express'
 import { join } from 'node:path'
 import { createOpenApiDocument, ZodSerializationExceptionFilter, ZodValidationExceptionFilter } from '@lonestone/nzoth/server'
 import { NestFactory } from '@nestjs/core'
@@ -15,9 +16,13 @@ async function bootstrap() {
   // Initialize telemetry
   initialiazeTelemetry()
 
-  const app = await NestFactory.create(AppModule, {
+  const app = await NestFactory.create<NestExpressApplication>(AppModule, {
     bodyParser: false,
   })
+
+  // Behind Dokku's nginx: without this, every request carries the proxy's
+  // address, and per-IP limits would lump all users together.
+  app.set('trust proxy', 1)
 
   // Use Pino logger
   app.useLogger(app.get(Logger))
