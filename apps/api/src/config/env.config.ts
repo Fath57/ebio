@@ -159,7 +159,7 @@ export const configValidationSchema = z.object({
   ASSISTANT_TTS_MODEL: z.string().default('gpt-4o-mini-tts'),
   ASSISTANT_TTS_VOICE: z.string().default('shimmer'),
 
-  CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('fedapay'),
+  CHECKOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
   /**
    * Where a provider sends the browser once a payment ends. It must be a
    * public HTTPS address: a gateway will not redirect to `localhost`, which
@@ -172,7 +172,7 @@ export const configValidationSchema = z.object({
    * paying people can be moved to a new provider one at a time, which is the
    * only safe way to change either.
    */
-  PAYOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('fedapay'),
+  PAYOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
 
   /**
    * SMS — Wirepick.

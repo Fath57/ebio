@@ -508,7 +508,7 @@
       "deliveryAddress": "Delivery address",
       "deliverySlot": "Delivery slot",
       "paymentMethod": "Payment method",
-      "fedapay": "FedaPay",
+      "fedapay": "Online payment",
       "cashOnDelivery": "Cash on delivery",
       "financialSummary": "Financial summary",
       "subtotal": "Subtotal",
@@ -928,7 +928,7 @@
       },
       "paymentMethods": {
         "CASH_ON_DELIVERY": "Cash",
-        "FEDAPAY": "FedaPay",
+        "FEDAPAY": "Online payment",
         "WALLET": "Wallet"
       },
       "detail": {
@@ -1798,7 +1798,7 @@
       "numbersHint": "Check the Mobile Money number really belongs to the account holder (shop or courier) before validating. A validated number can receive payouts.",
       "numbersEmpty": "No number awaiting validation",
       "requestsTitle": "Payout requests",
-      "requestsHint": "Approving fires the Mobile Money transfer through FedaPay at once. The amount is already reserved on the beneficiary wallet.",
+      "requestsHint": "Approving fires the Mobile Money transfer through our payment provider at once. The amount is already reserved on the beneficiary wallet.",
       "requestsEmpty": "No payout request",
       "validate": "Validate",
       "reject": "Reject",
@@ -1822,13 +1822,13 @@
         "amount": "Amount",
         "status": "Status",
         "user": "User",
-        "reference": "FedaPay ref.",
+        "reference": "Provider ref.",
         "beneficiary": "Beneficiary",
         "balance": "Balance",
         "updatedAt": "Updated"
       },
       "topupsTitle": "Wallet topups",
-      "topupsHint": "Buyer topups through FedaPay. A pending topup has not been confirmed by FedaPay yet; a failed one credited nothing.",
+      "topupsHint": "Buyer topups by online payment. A pending topup has not been confirmed by the provider yet; a failed one credited nothing.",
       "topupsEmpty": "No topup yet",
       "topupStatus": {
         "PENDING": "Pending",

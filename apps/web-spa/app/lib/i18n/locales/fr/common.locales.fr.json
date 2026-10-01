@@ -508,7 +508,7 @@
       "deliveryAddress": "Adresse de livraison",
       "deliverySlot": "Créneau de livraison",
       "paymentMethod": "Méthode de paiement",
-      "fedapay": "FedaPay",
+      "fedapay": "Paiement en ligne",
       "cashOnDelivery": "Paiement à la livraison",
       "financialSummary": "Résumé financier",
       "subtotal": "Sous-total",
@@ -928,7 +928,7 @@
       },
       "paymentMethods": {
         "CASH_ON_DELIVERY": "Espèces",
-        "FEDAPAY": "FedaPay",
+        "FEDAPAY": "Paiement en ligne",
         "WALLET": "Portefeuille"
       },
       "detail": {
@@ -1798,7 +1798,7 @@
       "numbersHint": "Vérifiez que le numéro Mobile Money appartient bien au titulaire du compte (boutique ou livreur) avant de valider. Un numéro validé peut recevoir des reversements.",
       "numbersEmpty": "Aucun numéro en attente de validation",
       "requestsTitle": "Demandes de reversement",
-      "requestsHint": "Approuver déclenche immédiatement le versement Mobile Money via FedaPay. Le montant a déjà été réservé sur le portefeuille du bénéficiaire.",
+      "requestsHint": "Approuver déclenche immédiatement le versement Mobile Money via notre prestataire de paiement. Le montant a déjà été réservé sur le portefeuille du bénéficiaire.",
       "requestsEmpty": "Aucune demande de reversement",
       "validate": "Valider",
       "reject": "Refuser",
@@ -1822,13 +1822,13 @@
         "amount": "Montant",
         "status": "Statut",
         "user": "Utilisateur",
-        "reference": "Réf. FedaPay",
+        "reference": "Réf. prestataire",
         "beneficiary": "Bénéficiaire",
         "balance": "Solde",
         "updatedAt": "Mis à jour"
       },
       "topupsTitle": "Recharges des portefeuilles",
-      "topupsHint": "Les recharges des acheteurs via FedaPay. Une recharge en attente n’a pas encore été confirmée par FedaPay ; une recharge échouée n’a rien crédité.",
+      "topupsHint": "Les recharges des acheteurs par paiement en ligne. Une recharge en attente n’a pas encore été confirmée par le prestataire ; une recharge échouée n’a rien crédité.",
       "topupsEmpty": "Aucune recharge pour le moment",
       "topupStatus": {
         "PENDING": "En attente",

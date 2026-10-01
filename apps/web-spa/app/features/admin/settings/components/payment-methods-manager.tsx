@@ -43,7 +43,7 @@ const EMPTY_FORM: PaymentMethodFormData = {
   name: '',
   code: '',
   type: 'mobile',
-  provider: 'fedapay',
+  provider: 'intram',
   countryCode: 'BJ',
   commission: 0,
   priority: 0,
@@ -256,7 +256,8 @@ export function PaymentMethodsManager() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="fedapay">FedaPay</SelectItem>
+                  {/* No longer offered: only shown on a method still set to it. */}
+                  {form.provider === 'fedapay' && <SelectItem value="fedapay">FedaPay</SelectItem>}
                   <SelectItem value="stripe">Stripe</SelectItem>
                   <SelectItem value="pawerpayer">PawaPay</SelectItem>
                   <SelectItem value="intram">INTRAM</SelectItem>
@@ -302,7 +303,7 @@ export function PaymentMethodsManager() {
               ['useFedapayCheckout', 'useFedapayCheckoutHint'],
               ['supportsPayout', 'supportsPayoutHint'],
               ['supportsRefund', 'supportsRefundHint'],
-            ] as const).map(([key, hintKey]) => (
+            ] as const).filter(([key]) => key !== 'useFedapayCheckout' || form.provider === 'fedapay').map(([key, hintKey]) => (
               <div key={key} className="flex items-center justify-between gap-4">
                 <div>
                   <Label>{t(`admin.settings.paymentMethods.fields.${key}`)}</Label>
