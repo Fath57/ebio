@@ -4,15 +4,19 @@ import { AppScreens } from '@/components/app-screens'
 import { ComingSoonModal } from '@/components/coming-soon-modal'
 import { SITE_URL } from '@/components/constants'
 import { ContactSection } from '@/components/contact-section'
+import { CourierSection } from '@/components/courier-section'
+import { FeaturedProducts } from '@/components/featured-products'
 import { IllustrationSlot } from '@/components/illustration-slot'
 import { ILLUSTRATIONS } from '@/components/illustrations'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { StoreBadges } from '@/components/store-badges'
+import { fetchFeaturedProducts } from '@/content/featured-products.server'
 import { fetchLandingContent, sendContactMessage } from '@/content/landing-content.server'
 
 export async function loader() {
-  return { content: await fetchLandingContent() }
+  const [content, products] = await Promise.all([fetchLandingContent(), fetchFeaturedProducts()])
+  return { content, products }
 }
 
 export async function action({ request }: Route.ActionArgs) {
@@ -61,7 +65,7 @@ const TRUST_ICONS = [
 const STEP_ILLUSTRATIONS = [ILLUSTRATIONS.step1, ILLUSTRATIONS.step2, ILLUSTRATIONS.step3]
 
 export default function Home({ loaderData }: Route.ComponentProps) {
-  const { content } = loaderData
+  const { content, products } = loaderData
   const [isComingSoonOpen, setIsComingSoonOpen] = useState(false)
 
   function openComingSoon(): void {
@@ -82,7 +86,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 md:grid-cols-[1.05fr_1fr] md:py-24">
             <div>
               <p className="eyebrow text-earth-600">{content.hero.eyebrow}</p>
-              <h1 className="mt-5 text-4xl font-extrabold leading-[1.08] tracking-tight text-ink md:text-[3.4rem]">
+              <h1 className="mt-5 font-display text-[2.6rem] leading-[1.05] text-ink md:text-[3.9rem]">
                 {highlightIndex >= 0
                   ? (
                       <>
@@ -115,6 +119,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             ))}
           </div>
         </section>
+
+        <FeaturedProducts products={products} />
 
         {/* How it works: a real sequence, so the numbers mean something */}
         <section id="comment-ca-marche" className="scroll-mt-20">
@@ -177,6 +183,8 @@ export default function Home({ loaderData }: Route.ComponentProps) {
             <IllustrationSlot spec={ILLUSTRATIONS.supplier} />
           </div>
         </section>
+
+        <CourierSection content={content.courier} onCta={openComingSoon} />
 
         {/* FAQ */}
         <section id="faq" className="scroll-mt-20">

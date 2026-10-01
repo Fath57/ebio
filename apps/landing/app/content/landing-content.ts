@@ -51,6 +51,9 @@ export interface LandingSupplier {
   ctaLabel: string
 }
 
+/** Same shape as the supplier band: a pitch, its points and one call to action. */
+export type LandingCourier = LandingSupplier
+
 export interface LandingFooter {
   tagline: string
   contactEmail: string
@@ -75,6 +78,7 @@ export interface LandingContent {
   steps: { eyebrow: string, title: string, steps: LandingStep[] }
   screens: LandingScreens
   supplier: LandingSupplier
+  courier: LandingCourier
   footer: LandingFooter
   faq: LandingFaqItem[]
   partners: LandingPartner[]
@@ -158,9 +162,20 @@ export const DEFAULT_CONTENT: LandingContent = {
       'Votre fiche boutique, votre position sur la carte et vos horaires',
       'Votre catalogue et vos stocks, gérés depuis le téléphone',
       'Les commandes et les discussions acheteurs au même endroit',
-      'Vos frais de livraison, fixés par vous, reversés en intégralité',
+      'La livraison assurée par les livreurs eBio, sans rien organiser',
     ],
     ctaLabel: 'Créer ma boutique',
+  },
+  courier: {
+    eyebrow: 'Livreurs',
+    title: 'Livrez avec eBio, à votre rythme',
+    body: 'À moto, à vélo ou en voiture : les courses de votre zone arrivent sur l’application eBio Livreur. Vous acceptez celles qui vous arrangent, vous livrez, vous êtes payé.',
+    points: [
+      'Votre profil est vérifié par l’équipe eBio avant votre première course',
+      'Vous voyez la course, l’adresse et votre gain avant d’accepter',
+      'Vos gains s’accumulent dans votre portefeuille, reversés sur votre Mobile Money',
+    ],
+    ctaLabel: 'Devenir livreur',
   },
   footer: {
     tagline: 'Des produits locaux et bio, près de chez vous. La carte des producteurs et transformateurs du Bénin.',
@@ -182,7 +197,7 @@ export const DEFAULT_CONTENT: LandingContent = {
     },
     {
       question: 'Combien ça coûte pour un fournisseur ?',
-      answer: 'L’inscription est gratuite et vous pouvez vendre dès la validation de votre boutique, sans limite de catalogue. eBio prélève une petite commission sur les produits vendus, jamais sur vos frais de livraison.',
+      answer: 'L’inscription est gratuite et vous pouvez vendre dès la validation de votre boutique, sans limite de catalogue. eBio prélève une petite commission sur les produits vendus, et la livraison est assurée par les livreurs eBio.',
     },
   ],
   partners: [],
@@ -207,6 +222,8 @@ export function mergeContent(remote: unknown): LandingContent {
     steps: pick(data.steps, DEFAULT_CONTENT.steps),
     screens: Array.isArray(screens.screens) && screens.screens.length > 0 ? screens : DEFAULT_CONTENT.screens,
     supplier: pick(data.supplier, DEFAULT_CONTENT.supplier),
+    // Not editable from the backoffice yet: the default is all there is.
+    courier: pick(data.courier, DEFAULT_CONTENT.courier),
     footer: pick(data.footer, DEFAULT_CONTENT.footer),
     faq: Array.isArray(data.faq) && data.faq.length > 0
       ? (data.faq as LandingFaqItem[])

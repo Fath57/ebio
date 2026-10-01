@@ -16,6 +16,7 @@ export function SiteFooter({ footer, onDownloadClick }: SiteFooterProps) {
         <nav aria-label="Liens du pied de page" className="grid grid-cols-2 gap-x-16 gap-y-3 text-sm">
           <button type="button" onClick={onDownloadClick} className="text-left text-green-100 transition-colors hover:text-white">Télécharger l’app</button>
           <a href="/#fournisseurs" className="text-green-100 transition-colors hover:text-white">Vendre sur eBio</a>
+          <a href="/#livreurs" className="text-green-100 transition-colors hover:text-white">Devenir livreur</a>
           <a href="/#comment-ca-marche" className="text-green-100 transition-colors hover:text-white">Comment ça marche</a>
           <a href="/#faq" className="text-green-100 transition-colors hover:text-white">FAQ</a>
           <a href="/#contact" className="text-green-100 transition-colors hover:text-white">Contact</a>

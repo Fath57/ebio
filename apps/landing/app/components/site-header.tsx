@@ -1,6 +1,7 @@
 const NAV_LINKS = [
   { href: '/#comment-ca-marche', label: 'Comment ça marche' },
   { href: '/#fournisseurs', label: 'Fournisseurs' },
+  { href: '/#livreurs', label: 'Livreurs' },
   { href: '/#faq', label: 'FAQ' },
   { href: '/#contact', label: 'Contact' },
 ]

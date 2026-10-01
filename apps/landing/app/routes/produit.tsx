@@ -1,6 +1,7 @@
 import type { Route } from './+types/produit'
 import process from 'node:process'
 import { SITE_URL } from '@/components/constants'
+import { formatPrice } from '@/components/format'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
 import { StoreBadges } from '@/components/store-badges'
@@ -53,11 +54,6 @@ const LABEL_NAMES: Record<string, string> = {
   'gluten-free': 'Sans gluten',
   'lactose-free': 'Sans lactose',
   'sugar-free': 'Sans sucre ajouté',
-}
-
-/** Same grouping as the app: a thousands space, never a comma. */
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
 }
 
 /**
