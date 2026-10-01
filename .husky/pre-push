@@ -20,4 +20,4 @@ pnpm typecheck || exit 1
 echo "🧪 Running tests..."
 pnpm test || exit 1
 
-echo "✅ All pre-commit checks passed!"
+echo "✅ All pre-push checks passed!"

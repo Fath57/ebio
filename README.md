@@ -49,8 +49,9 @@ Ce projet utilise une architecture **monorepo**. Les avantages :
 ebio/
 ├── apps/
 │   ├── api/                  # Backend NestJS (REST API, port 3000)
-│   ├── web-spa/              # Frontend React SPA fournisseur/admin (port 5173)
-│   ├── mobile/               # App React Native/Expo pour acheteurs
+│   ├── web-spa/              # Frontend React SPA fournisseur/admin (port 5174)
+│   ├── landing/              # Site vitrine React Router SSR (port 5175)
+│   ├── mobile/               # Apps React Native/Expo acheteur, fournisseur, livreur
 │   └── documentation/        # Documentation Astro (Starlight)
 ├── packages/
 │   ├── ui/                   # Composants réutilisables (shadcn/ui)
@@ -116,7 +117,8 @@ pnpm dev
 L'application sera accessible sur :
 - **API** : http://localhost:3000
 - **Documentation API (Scalar)** : http://localhost:3000/api/docs
-- **Web SPA** : http://localhost:5173
+- **Web SPA** : http://localhost:5174
+- **Landing** : http://localhost:5175
 - **MailDev** : http://localhost:1080
 
 ---
@@ -296,7 +298,8 @@ pnpm docs-only   # Lancer le serveur de documentation Astro
 |-----|-----------|-------|--------|
 | **api** | NestJS | Backend REST API | [apps/api/README.md](apps/api/README.md) |
 | **web-spa** | React + Vite | Dashboard fournisseur/admin | [apps/web-spa/README.md](apps/web-spa/README.md) |
-| **mobile** | React Native / Expo | App acheteur | `apps/mobile/` |
+| **landing** | React Router (SSR) | Site vitrine | `apps/landing/` |
+| **mobile** | React Native / Expo | Apps acheteur, fournisseur et livreur (une base, choisie par `APP_VARIANT`) — hors workspace pnpm, géré avec npm | `apps/mobile/` |
 
 ### Packages partagés
 
@@ -559,10 +562,11 @@ git push dokku-api <votre-branche>:main    # API
 git push dokku-web <votre-branche>:main    # Web SPA
 ```
 
-> **Important** : Si vous modifiez les entités MikroORM, synchronisez le schéma après le déploiement :
+> **Important** : le CLI `mikro-orm` ne trouve pas les entités dans l'image déployée. Après une modification d'entités, appliquez la nouvelle migration par son nom :
 > ```bash
-> ssh <votre-serveur> "dokku run ebio-api npx mikro-orm schema:update --run"
+> ssh <votre-serveur> "dokku run ebio-api node dist/scripts/migrate-up.js Migration20260928020000"
 > ```
+> Une migration à la fois : le registre de production n'est pas aligné sur l'historique local, un `migration:up` sans nom rejouerait des migrations déjà passées.
 
 ### Commandes Dokku utiles
 
