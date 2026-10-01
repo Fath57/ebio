@@ -139,7 +139,8 @@ export class ReferralsService {
    *
    * Appelé au passage à « livrée », et jamais en travers du chemin : une
    * récompense qui échoue ne doit pas empêcher une commande d'être livrée.
-   * Le tout est idempotent — seule une ligne encore en attente est versée.
+   * Le tout est idempotent — seule une ligne encore en attente est versée,
+   * et elle ne passe « récompensée » que si les deux crédits ont eu lieu.
    */
   async onOrderDelivered(orderId: string, buyerId: string, orderTotal: number): Promise<void> {
     try {
@@ -161,24 +162,37 @@ export class ReferralsService {
         return
       }
 
-      referral.status = ReferralStatus.REWARDED
-      referral.sponsorAmount = rewards.sponsorAmount
-      referral.refereeAmount = rewards.refereeAmount
-      referral.orderId = orderId
-      referral.rewardedAt = new Date()
-      await this.em.flush()
+      // Le passage à REWARDED et les crédits forment un tout : un crédit qui
+      // échoue annule le reste et la ligne attend la livraison suivante. La
+      // mise à jour conditionnelle arbitre deux livraisons simultanées.
+      const isPaid = await this.em.transactional(async (em) => {
+        const claim = await em.execute<{ affectedRows?: number }>(
+          `UPDATE referrals
+           SET status = ?, sponsor_amount = ?, referee_amount = ?, order_id = ?, rewarded_at = NOW()
+           WHERE id = ? AND status = ?`,
+          [ReferralStatus.REWARDED, rewards.sponsorAmount, rewards.refereeAmount, orderId, referral.id, ReferralStatus.PENDING],
+          'run',
+        )
+        if ((claim.affectedRows ?? 0) === 0) {
+          return false
+        }
 
-      await this.pay(referral.sponsor, rewards.sponsorAmount, orderId, `Parrainage — ${referral.referee.name}`)
-      await this.pay(referral.referee, rewards.refereeAmount, orderId, `Bienvenue — parrainé par ${referral.sponsor.name}`)
+        await this.pay(referral.sponsor, rewards.sponsorAmount, orderId, `Parrainage — ${referral.referee.name}`)
+        await this.pay(referral.referee, rewards.refereeAmount, orderId, `Bienvenue — parrainé par ${referral.sponsor.name}`)
 
-      // eBio porte la dépense : c'est de l'acquisition, pas une remise de
-      // boutique. Elle atterrit donc sur le compte marketing.
-      await this.wallet.post(PlatformAccount.MARKETING, 'debit', {
-        type: WalletTransactionType.PLATFORM_MARKETING,
-        amount: rewards.sponsorAmount + rewards.refereeAmount,
-        description: `Parrainage — ${referral.sponsor.name} et ${referral.referee.name}`,
-        orderId,
+        // eBio porte la dépense : c'est de l'acquisition, pas une remise de
+        // boutique. Elle atterrit donc sur le compte marketing.
+        await this.wallet.post(PlatformAccount.MARKETING, 'debit', {
+          type: WalletTransactionType.PLATFORM_MARKETING,
+          amount: rewards.sponsorAmount + rewards.refereeAmount,
+          description: `Parrainage — ${referral.sponsor.name} et ${referral.referee.name}`,
+          orderId,
+        })
+        return true
       })
+      if (!isPaid) {
+        return
+      }
 
       await this.tell(referral.sponsor, 'Parrainage récompensé', `${referral.referee.name} a reçu sa première commande. ${rewards.sponsorAmount} FCFA ont été versés sur votre portefeuille.`)
       await this.tell(referral.referee, 'Bienvenue sur eBio', `${rewards.refereeAmount} FCFA ont été versés sur votre portefeuille, grâce à ${referral.sponsor.name}.`)
