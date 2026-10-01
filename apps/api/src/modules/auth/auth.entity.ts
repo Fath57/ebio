@@ -214,7 +214,7 @@ export class Account {
 
 @Entity({ tableName: 'verification' })
 export class Verification {
-  [OptionalProps]?: 'id' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'attempts' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -227,6 +227,10 @@ export class Verification {
 
   @Property({ fieldName: 'expiresAt' })
   expiresAt!: Date
+
+  /** Guesses spent on a one-time code; it dies at the fifth. */
+  @Property({ default: 0 })
+  attempts: number = 0
 
   @Property({ fieldName: 'createdAt' })
   createdAt: Date = new Date()

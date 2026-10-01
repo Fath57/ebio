@@ -1,4 +1,5 @@
-import { randomInt } from 'node:crypto'
+import { Buffer } from 'node:buffer'
+import { randomInt, timingSafeEqual } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
 import { Verification } from '../modules/auth/auth.entity'
@@ -7,6 +8,13 @@ import { SmsService } from './sms.service'
 
 const OTP_TTL_MINUTES = 5
 const OTP_COOLDOWN_SECONDS = 60
+const MAX_CODE_ATTEMPTS = 5
+
+function isSameCode(expected: string, actual: string): boolean {
+  const expectedBytes = Buffer.from(expected)
+  const actualBytes = Buffer.from(actual)
+  return expectedBytes.length === actualBytes.length && timingSafeEqual(expectedBytes, actualBytes)
+}
 
 @Injectable()
 export class OtpService {
@@ -53,18 +61,11 @@ export class OtpService {
   async verifyOtp(phone: string, code: string): Promise<boolean> {
     const fork = this.em.fork()
 
-    const verification = await fork.findOne(Verification, {
-      identifier: `otp:${phone}`,
-      value: code,
-      expiresAt: { $gte: new Date() },
-    })
-
-    if (!verification)
+    const verificationId = await this.spendGuess(fork, `otp:${phone}`, code)
+    if (!verificationId)
       return false
 
-    // Consume the OTP
-    await fork.nativeDelete(Verification, { id: verification.id })
-
+    await fork.nativeDelete(Verification, { id: verificationId })
     return true
   }
 
@@ -146,32 +147,22 @@ export class OtpService {
 
   async verifyEmailChangeOtp(email: string, code: string): Promise<boolean> {
     const fork = this.em.fork()
-    const verification = await fork.findOne(Verification, {
-      identifier: `email-change:${email}`,
-      value: code,
-      expiresAt: { $gte: new Date() },
-    })
-    if (!verification) {
+    const verificationId = await this.spendGuess(fork, `email-change:${email}`, code)
+    if (!verificationId) {
       return false
     }
-    await fork.nativeDelete(Verification, { id: verification.id })
+    await fork.nativeDelete(Verification, { id: verificationId })
     return true
   }
 
   async verifyEmailOtp(email: string, code: string): Promise<boolean> {
     const fork = this.em.fork()
 
-    const verification = await fork.findOne(Verification, {
-      identifier: `otp:${email}`,
-      value: code,
-      expiresAt: { $gte: new Date() },
-    })
-
-    if (!verification)
+    const verificationId = await this.spendGuess(fork, `otp:${email}`, code)
+    if (!verificationId)
       return false
 
-    await fork.nativeDelete(Verification, { id: verification.id })
-
+    await fork.nativeDelete(Verification, { id: verificationId })
     return true
   }
 
@@ -221,21 +212,31 @@ export class OtpService {
   async verifyPasswordResetOtp(identifier: string, code: string): Promise<boolean> {
     const fork = this.em.fork()
 
-    const verification = await fork.findOne(Verification, {
-      identifier: `reset:${identifier}`,
-      value: code,
-      expiresAt: { $gte: new Date() },
-    })
-
-    if (!verification)
+    const verificationId = await this.spendGuess(fork, `reset:${identifier}`, code)
+    if (!verificationId)
       return false
 
-    // Mark as verified but don't delete — we'll delete after password is actually reset
-    // Store a verified marker
-    verification.identifier = `reset-verified:${identifier}`
-    await fork.flush()
-
+    // Kept as a marker, consumed once the password is actually reset.
+    await fork.nativeUpdate(Verification, { id: verificationId }, { identifier: `reset-verified:${identifier}` })
     return true
+  }
+
+  /**
+   * Spends one guess on the live code for `identifier`, then compares.
+   *
+   * The guess is counted before the comparison, in a single UPDATE: parallel
+   * requests queue on the row and share five guesses in all, not five each.
+   * Six digits open to unlimited guesses for five minutes can be enumerated.
+   * Returns the matching row's id, or null.
+   */
+  private async spendGuess(fork: EntityManager, identifier: string, code: string): Promise<string | null> {
+    const rows = await fork.execute<Array<{ id: string, value: string }>>(
+      `UPDATE verification SET attempts = attempts + 1, "updatedAt" = NOW()
+       WHERE identifier = ? AND "expiresAt" >= NOW() AND attempts < ?
+       RETURNING id, value`,
+      [identifier, MAX_CODE_ATTEMPTS],
+    )
+    return rows.find(row => isSameCode(row.value, code))?.id ?? null
   }
 
   // ─── Registration token (issued after OTP verify for new users) ────────────
