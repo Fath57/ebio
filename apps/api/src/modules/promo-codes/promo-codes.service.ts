@@ -178,31 +178,39 @@ export class PromoCodesService {
   }
 
   /**
-   * Reserves one use for an order being created. The conditional UPDATE on
-   * the counter is the arbiter under concurrency: two last-slot buyers can
-   * both pass check(), only one increment succeeds. It joins the checkout's
-   * transaction, so a rolled-back checkout gives the use back.
+   * Reserves one use for an order being created. check() answered on what it
+   * saw; two orders racing on the last slot — or the same buyer twice at once
+   * — can both pass it. The row lock settles it: redemptions of one code run
+   * one after the other, and each counts the uses already committed. It joins
+   * the checkout's transaction, so a rolled-back checkout gives the use back.
    */
   async redeem(promo: PromoCode, orderId: string, userId: string, discount: number): Promise<void> {
-    const result = await this.em.execute<{ affectedRows?: number }>(
-      `UPDATE promo_codes
-       SET use_count = use_count + 1, "updatedAt" = NOW()
-       WHERE id = ? AND is_active = true
-         AND (max_uses IS NULL OR use_count < max_uses)`,
-      [promo.id],
-      'run',
-    )
-    if ((result.affectedRows ?? 0) === 0) {
-      throw new BadRequestException('Ce code a atteint son nombre maximum d’utilisations')
-    }
+    await this.em.transactional(async (em) => {
+      const [row] = await em.execute<{ is_active: boolean, max_uses: number | null, use_count: number, max_uses_per_user: number }[]>(
+        `SELECT is_active, max_uses, use_count, max_uses_per_user FROM promo_codes WHERE id = ? FOR UPDATE`,
+        [promo.id],
+      )
+      if (!row?.is_active || (row.max_uses !== null && row.use_count >= row.max_uses)) {
+        throw new BadRequestException('Ce code a atteint son nombre maximum d’utilisations')
+      }
+      const userUses = await em.count(PromoRedemption, { promoCode: { id: promo.id }, user: { id: userId } })
+      if (userUses >= row.max_uses_per_user) {
+        throw new BadRequestException('Vous avez déjà utilisé ce code')
+      }
 
-    this.em.create(PromoRedemption, {
-      promoCode: promo,
-      user: this.em.getReference(User, userId),
-      order: this.em.getReference(Order, orderId),
-      amountDiscounted: discount,
+      await em.execute(
+        `UPDATE promo_codes SET use_count = use_count + 1, "updatedAt" = NOW() WHERE id = ?`,
+        [promo.id],
+        'run',
+      )
+      em.create(PromoRedemption, {
+        promoCode: em.getReference(PromoCode, promo.id),
+        user: em.getReference(User, userId),
+        order: em.getReference(Order, orderId),
+        amountDiscounted: discount,
+      })
+      await em.flush()
     })
-    await this.em.flush()
   }
 
   /** Cancelled order (including never-paid ones): the use goes back to the pool. */
