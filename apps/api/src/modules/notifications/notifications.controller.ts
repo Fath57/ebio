@@ -1,11 +1,14 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
+import type { RegisterDeviceToken, UnregisterDeviceToken } from './contracts/device-token.contract'
 import type { NotificationAudience } from './notifications.service'
+import { TypedBody } from '@lonestone/nzoth/server'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { Body, Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { config } from '../../config/env.config'
 import { Session } from '../auth/auth.decorator'
 import { User } from '../auth/auth.entity'
 import { AuthGuard } from '../auth/auth.guard'
+import { registerDeviceTokenSchema, unregisterDeviceTokenSchema } from './contracts/device-token.contract'
 import { DeviceToken } from './device-token.entity'
 import { NotificationChannel, NotificationType } from './notification.entity'
 import { NOTIFICATION_AUDIENCES, NotificationsService } from './notifications.service'
@@ -27,7 +30,7 @@ export class NotificationsController {
   @Post('register-token')
   async registerToken(
     @Session() session: LoggedInBetterAuthSession,
-    @Body() body: { token: string, platform: string, app?: string },
+    @TypedBody(registerDeviceTokenSchema) body: RegisterDeviceToken,
   ) {
     const user = this.em.getReference(User, session.user.id)
     const app = body.app && DEVICE_APPS.has(body.app) ? body.app : undefined
@@ -55,7 +58,7 @@ export class NotificationsController {
   @Delete('unregister-token')
   async unregisterToken(
     @Session() session: LoggedInBetterAuthSession,
-    @Body() body: { token: string },
+    @TypedBody(unregisterDeviceTokenSchema) body: UnregisterDeviceToken,
   ) {
     const existing = await this.em.findOne(DeviceToken, {
       token: body.token,
