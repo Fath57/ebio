@@ -120,7 +120,9 @@ export class WalletService {
 
     return this.em.transactional(async (em) => {
       // Row lock: concurrent movements on the same wallet serialize here.
-      const [row] = await em.getConnection().execute(
+      // `em.execute` runs inside the transaction; the bare connection would
+      // not, and the lock would be released before the balance is written.
+      const [row] = await em.execute(
         `SELECT balance FROM wallets WHERE id = ? FOR UPDATE`,
         [walletId],
       )
@@ -135,7 +137,7 @@ export class WalletService {
         throw new BadRequestException('Solde insuffisant')
       }
 
-      await em.getConnection().execute(
+      await em.execute(
         `UPDATE wallets SET balance = ?, "updatedAt" = NOW() WHERE id = ?`,
         [next.toFixed(2), walletId],
       )

@@ -180,10 +180,11 @@ export class PromoCodesService {
   /**
    * Reserves one use for an order being created. The conditional UPDATE on
    * the counter is the arbiter under concurrency: two last-slot buyers can
-   * both pass check(), only one increment succeeds.
+   * both pass check(), only one increment succeeds. It joins the checkout's
+   * transaction, so a rolled-back checkout gives the use back.
    */
   async redeem(promo: PromoCode, orderId: string, userId: string, discount: number): Promise<void> {
-    const result = await this.em.getConnection().execute<{ affectedRows?: number }>(
+    const result = await this.em.execute<{ affectedRows?: number }>(
       `UPDATE promo_codes
        SET use_count = use_count + 1, "updatedAt" = NOW()
        WHERE id = ? AND is_active = true
@@ -210,7 +211,7 @@ export class PromoCodesService {
     if (!redemption) {
       return
     }
-    await this.em.getConnection().execute(
+    await this.em.execute(
       `UPDATE promo_codes SET use_count = GREATEST(use_count - 1, 0), "updatedAt" = NOW() WHERE id = ?`,
       [redemption.promoCode.id],
       'run',
