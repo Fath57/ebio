@@ -7,6 +7,7 @@ import { apiReference } from '@scalar/nestjs-api-reference'
 import * as express from 'express'
 import { Logger, LoggerErrorInterceptor } from 'nestjs-pino'
 import { AppModule } from './app.module'
+import { checkCorsOrigin } from './common/cors-origin'
 import { config } from './config/env.config'
 import { initialiazeTelemetry } from './instrument'
 
@@ -59,17 +60,8 @@ async function bootstrap() {
   // Serve static files (logo for email templates, etc.)
   app.use('/static', express.static(join(__dirname, '..', 'public')))
 
-  const LAN_IP_PATTERN = /^https?:\/\/(?:10\.\d+\.\d+\.\d+|192\.168\.\d+\.\d+|172\.(?:1[6-9]|2\d|3[01])\.\d+\.\d+)(?::\d+)?$/
   app.enableCors({
-    origin: (origin: string | undefined, cb: (err: Error | null, allow?: boolean) => void) => {
-      if (!origin)
-        return cb(null, true)
-      if (config.betterAuth.trustedOrigins.includes(origin))
-        return cb(null, true)
-      if (config.env !== 'production' && LAN_IP_PATTERN.test(origin))
-        return cb(null, true)
-      return cb(new Error(`Origin ${origin} not allowed`), false)
-    },
+    origin: checkCorsOrigin,
     credentials: true,
   })
 

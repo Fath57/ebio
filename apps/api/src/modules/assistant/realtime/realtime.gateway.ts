@@ -12,6 +12,7 @@ import {
   WebSocketGateway,
 } from '@nestjs/websockets'
 import { Socket } from 'socket.io'
+import { checkCorsOrigin } from '../../../common/cors-origin'
 import { verifyAccountToken } from '../../../common/guards/jwt-auth.guard'
 import { config } from '../../../config/env.config'
 import { PlatformSettingsService } from '../../settings/platform-settings.service'
@@ -46,7 +47,7 @@ interface VoiceSocket extends Socket {
  */
 @WebSocketGateway({
   namespace: '/ws/assistant',
-  cors: { origin: '*', credentials: true },
+  cors: { origin: checkCorsOrigin, credentials: true },
   // Audio travels as base64 frames, several per second: the default cap is
   // written for chat messages.
   maxHttpBufferSize: 5e6,

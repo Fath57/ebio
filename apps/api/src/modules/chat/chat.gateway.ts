@@ -10,6 +10,7 @@ import {
   WebSocketServer,
 } from '@nestjs/websockets'
 import { Server, Socket } from 'socket.io'
+import { checkCorsOrigin } from '../../common/cors-origin'
 import { verifyAccountToken } from '../../common/guards/jwt-auth.guard'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -28,7 +29,7 @@ interface AuthenticatedSocket extends Socket {
 @WebSocketGateway({
   namespace: '/ws/chat',
   cors: {
-    origin: '*',
+    origin: checkCorsOrigin,
     credentials: true,
   },
 })
