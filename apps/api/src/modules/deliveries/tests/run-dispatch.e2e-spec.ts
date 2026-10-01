@@ -109,6 +109,15 @@ async function seed(em: EntityManager, options: { shops?: 1 | 2 } = {}): Promise
       [`EB-TEST-00${index + 1}`, buyer.id, shopId, checkout.id, ACHETEUR.latitude, ACHETEUR.longitude],
     ) as Array<{ id: string }>
 
+    // What payFromWallet leaves behind: the cart is paid, each order holds
+    // its share in escrow.
+    await db.execute(
+      `INSERT INTO payments (order_id, checkout_id, amount, provider, payment_method, status,
+                             paid_at, "createdAt", "updatedAt")
+       VALUES (?, ?, 2600, 'fedapay', 'WALLET', 'ESCROW', NOW(), NOW(), NOW())`,
+      [order.id, checkout.id],
+    )
+
     const [delivery] = await db.execute(
       `INSERT INTO deliveries (order_id, delivery_run_id, pickup_address, dropoff_address,
                                pickup_location, pickup_latitude, pickup_longitude,
