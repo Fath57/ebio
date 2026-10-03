@@ -128,8 +128,8 @@
         "EXPO_PUBLIC_WS_URL": "wss://api.e-bio.org",
         "EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY": "pk_sandbox_ezRCQ6w2dT3RPlQ-C4_GOQn6",
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
-        "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "27f8d05eec5794db074121f52cb38073f9cf4fd1d48fa41de386a2dbf6d4e68f",
-        "EXPO_PUBLIC_INTRAM_SANDBOX": "true",
+        "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "12393976eaefc9f9f8e21e75fa87cc6e",
+        "EXPO_PUBLIC_INTRAM_SANDBOX": "false",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
       }
     },
@@ -146,8 +146,8 @@
         "EXPO_PUBLIC_WS_URL": "wss://api.e-bio.org",
         "EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY": "pk_sandbox_ezRCQ6w2dT3RPlQ-C4_GOQn6",
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
-        "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "27f8d05eec5794db074121f52cb38073f9cf4fd1d48fa41de386a2dbf6d4e68f",
-        "EXPO_PUBLIC_INTRAM_SANDBOX": "true",
+        "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "12393976eaefc9f9f8e21e75fa87cc6e",
+        "EXPO_PUBLIC_INTRAM_SANDBOX": "false",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
       }
     },
@@ -164,8 +164,8 @@
         "EXPO_PUBLIC_WS_URL": "wss://api.e-bio.org",
         "EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY": "pk_sandbox_ezRCQ6w2dT3RPlQ-C4_GOQn6",
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
-        "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "27f8d05eec5794db074121f52cb38073f9cf4fd1d48fa41de386a2dbf6d4e68f",
-        "EXPO_PUBLIC_INTRAM_SANDBOX": "true",
+        "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "12393976eaefc9f9f8e21e75fa87cc6e",
+        "EXPO_PUBLIC_INTRAM_SANDBOX": "false",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
       }
     }
@@ -211,6 +211,20 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "alpha",
         "releaseStatus": "draft"
+      }
+    },
+    "store-client": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "production",
+        "releaseStatus": "completed"
+      }
+    },
+    "store-supplier": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "production",
+        "releaseStatus": "completed"
       }
     }
   }
