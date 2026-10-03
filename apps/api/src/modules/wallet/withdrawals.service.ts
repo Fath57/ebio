@@ -3,10 +3,13 @@ import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { config } from '../../config/env.config'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
+import { ProviderTransactionKind } from '../provider-transactions/provider-transaction.entity'
+import { ProviderTransactionsService } from '../provider-transactions/provider-transactions.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { PayoutNumber, PayoutNumberStatus } from './entities/payout-number.entity'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
@@ -51,6 +54,7 @@ export class WithdrawalsService {
     private readonly walletService: WalletService,
     private readonly notificationsService: NotificationsService,
     private readonly gatewayFactory: PaymentGatewayFactory,
+    private readonly journal: ProviderTransactionsService,
   ) {}
 
   /**
@@ -219,6 +223,15 @@ export class WithdrawalsService {
     const payee = await this.resolvePayee(withdrawal)
     const number = withdrawal.payoutNumber
 
+    // Written before the money leaves: a payout the provider refuses keeps
+    // its line too.
+    const operation = await this.journal.open({
+      provider: config.payments.payoutProvider,
+      kind: ProviderTransactionKind.PAYOUT,
+      subjectId: withdrawal.id,
+      amount: Number(withdrawal.amount),
+    })
+
     try {
       const [firstname, ...rest] = (number.holderName || payee.displayName).split(' ')
       const result = await this.payoutGateway().createPayout({
@@ -233,6 +246,7 @@ export class WithdrawalsService {
       withdrawal.fedapayPayoutId = result.payoutId
       withdrawal.providerReference = result.reference
       await this.em.flush()
+      await this.journal.attachReference(operation, result.payoutId)
     }
     catch (error) {
       // The payout never left: fail the request and give the money back.
@@ -242,6 +256,7 @@ export class WithdrawalsService {
       const raw = error as { message?: unknown, errorMessage?: unknown } | null
       const detail = String(raw?.message ?? raw?.errorMessage ?? error)
       this.logger.error(`Reversement refusé par le prestataire pour ${withdrawal.id} : ${detail}`)
+      await this.journal.markFailed(operation, detail)
       await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, {}, 'Échec du versement — solde rétabli')
       throw new BadRequestException('Le versement a échoué ; le solde du bénéficiaire est rétabli')
     }
@@ -361,6 +376,10 @@ export class WithdrawalsService {
     }
 
     const check = await this.payoutGateway().checkPayoutStatus(fedapayPayoutId)
+    await this.journal.recordOutcome(
+      fedapayPayoutId,
+      check.status === 'sent' ? 'completed' : check.status === 'pending' ? 'pending' : 'failed',
+    )
     if (check.status === 'pending') {
       return
     }

@@ -1,5 +1,7 @@
+import type { SettlementStatus } from '../../payments/utils/await-settlement'
 import type { CourierPayoutNumber, CourierTopup, CourierWalletTransaction, CourierWalletTransactionType, CourierWithdrawal } from '../hooks/use-courier-wallet'
 import type { CourierDispatchBlock } from '../types'
+import { useFocusEffect } from '@react-navigation/native'
 import ArrowDownToLine from 'lucide-react-native/dist/esm/icons/arrow-down-to-line'
 import ArrowUpFromLine from 'lucide-react-native/dist/esm/icons/arrow-up-from-line'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
@@ -11,7 +13,7 @@ import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw'
 import SlidersHorizontal from 'lucide-react-native/dist/esm/icons/sliders-horizontal'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -24,11 +26,11 @@ import {
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
-import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { announceTopupOutcome, awaitSettlement } from '../../payments/utils/await-settlement'
 import { buildTopupCheckoutHtml } from '../../wallet/utils/topup-checkout'
 import { useCourierWallet } from '../hooks/use-courier-wallet'
 import { AddNumberSheet, MIN_WITHDRAWAL, TopupSheet, WithdrawSheet } from './courier-wallet-sheets'
@@ -65,7 +67,7 @@ const WITHDRAWAL_STATUS_COLORS: Record<CourierWithdrawal['status'], string> = {
 
 const TOPUP_STATUS_LABELS: Record<CourierTopup['status'], string> = {
   PENDING: 'En attente',
-  COMPLETED: 'Créditée',
+  COMPLETED: 'Réussie',
   FAILED: 'Échouée',
 }
 
@@ -202,7 +204,7 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
     requestWithdrawal,
     cancelWithdrawal,
     startTopup,
-    verifyTopup,
+    checkTopup,
   } = useCourierWallet()
 
   const [isAddingNumber, setIsAddingNumber] = useState(false)
@@ -216,6 +218,22 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   /** Reference held by the server, the only one we confirm with. */
   const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
+  /** Waiting for the operator's verdict after the payment page closed. */
+  const [isConfirming, setIsConfirming] = useState(false)
+  // What the payment screen's own polling last saw: when it already announced
+  // a failure and closed, the close must not announce it a second time.
+  const lastPolledRef = useRef<SettlementStatus>('pending')
+
+  // Back on the screen: a top-up or a withdrawal may have been settled by the
+  // server in the meantime. The first focus is the mount, already loading.
+  const isFirstFocusRef = useRef(true)
+  useFocusEffect(useCallback(() => {
+    if (isFirstFocusRef.current) {
+      isFirstFocusRef.current = false
+      return
+    }
+    void reload()
+  }, [reload]))
 
   const debt = balance < 0 ? -balance : 0
   // Amount that brings the debt back under the platform limit (balance + limit, as a positive figure).
@@ -290,6 +308,7 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
       return false
     }
     setIsToppingUp(false)
+    lastPolledRef.current = 'pending'
     setPendingTopupId(result.topupId)
     setPaymentUrl(result.paymentUrl)
     setProviderTransactionId(result.providerTransactionId)
@@ -306,52 +325,72 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
     return true
   }, [startTopup, fedapayPublicKey, session])
 
-  // Leaving the payment page: the webhook has (or will shortly have) credited
-  // the wallet — reload either way.
-  const closeCheckout = useCallback(() => {
+  const resetCheckout = useCallback(() => {
     setCheckoutHtml(null)
     setPaymentUrl(null)
     setProviderTransactionId(null)
     setPendingTopupId(null)
-    reload()
+  }, [])
+
+  // Whatever the outcome, the balance and the lists are read again, and the
+  // dispatch block (debt) may have lifted.
+  const reloadAll = useCallback(() => {
+    void reload()
     onRefreshed?.()
   }, [reload, onRefreshed])
 
+  /**
+   * The courier left the payment page without it reporting an end. One
+   * silent check: done or failed is said, pending shows in the list until
+   * the server settles it.
+   */
+  const cancelCheckout = useCallback(async () => {
+    const topupId = pendingTopupId
+    const reference = providerTransactionId
+    const alreadyAnnounced = lastPolledRef.current === 'failed'
+    resetCheckout()
+    if (topupId && reference && !alreadyAnnounced) {
+      try {
+        announceTopupOutcome(await checkTopup(topupId, reference), false)
+      }
+      catch {
+        // Offline: the list and the server's reconciliation take over.
+      }
+    }
+    reloadAll()
+  }, [pendingTopupId, providerTransactionId, resetCheckout, checkTopup, reloadAll])
+
   /** Silent check: the verify endpoint only succeeds once the money landed. */
-  const pollTopupStatus = useCallback(async (): Promise<'settled' | 'pending' | 'failed'> => {
+  const pollTopupStatus = useCallback(async (): Promise<SettlementStatus> => {
     if (!pendingTopupId || !providerTransactionId) {
       return 'pending'
     }
-    // Called directly rather than through the hook: a refusal carries the
-    // code that tells a failed payment from one still in flight, and the
-    // hook's result keeps only the message.
-    const res = await apiFetch(`/api/couriers/me/wallet/topups/${pendingTopupId}/verify`, {
-      method: 'POST',
-      body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
-    })
-    if (res.ok) {
-      return 'settled'
-    }
-    const body = await res.json().catch(() => null) as { code?: string } | null
-    return body?.code === 'payment_failed' ? 'failed' : 'pending'
-  }, [pendingTopupId, providerTransactionId])
+    const status = await checkTopup(pendingTopupId, providerTransactionId)
+    lastPolledRef.current = status
+    return status
+  }, [pendingTopupId, providerTransactionId, checkTopup])
 
+  /**
+   * The payment page came back. That says nothing yet — INTRAM returns to
+   * the same page on success and on failure — so the server is asked again
+   * for a while; it re-checks status and amount before crediting anything.
+   */
   const confirmTopup = useCallback(async (reference: string) => {
-    if (!pendingTopupId) {
-      closeCheckout()
+    const topupId = pendingTopupId
+    resetCheckout()
+    if (!topupId) {
+      reloadAll()
       return
     }
-    const result = await verifyTopup(pendingTopupId, reference)
-    if (result.ok) {
-      appAlert('Recharge confirmée', 'Votre portefeuille a été crédité.')
+    setIsConfirming(true)
+    try {
+      announceTopupOutcome(await awaitSettlement(() => checkTopup(topupId, reference)), true)
     }
-    else {
-      appAlert('Vérification échouée', result.message === 'Une erreur est survenue'
-        ? 'La recharge sera vérifiée automatiquement.'
-        : result.message)
+    finally {
+      setIsConfirming(false)
+      reloadAll()
     }
-    closeCheckout()
-  }, [pendingTopupId, verifyTopup, closeCheckout])
+  }, [pendingTopupId, resetCheckout, checkTopup, reloadAll])
 
   if (isLoading) {
     return (
@@ -369,7 +408,9 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
         transactionId={providerTransactionId}
         title="Recharge du portefeuille"
         onSettled={confirmTopup}
-        onCancel={closeCheckout}
+        onCancel={() => {
+          void cancelCheckout()
+        }}
         pollStatus={pollTopupStatus}
       />
     )
@@ -407,6 +448,14 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
         )}
         ListHeaderComponent={(
           <>
+            {isConfirming && (
+              <View style={[styles.confirmingBanner, { backgroundColor: semantic.bgCard }]}>
+                <ActivityIndicator size="small" color={colors.green[400]} />
+                <Text style={[styles.confirmingText, { color: semantic.textSecondary }]}>
+                  Confirmation du paiement en cours…
+                </Text>
+              </View>
+            )}
             {/* Balance */}
             <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
               <Text style={[styles.balanceLabel, { color: semantic.textSecondary }]}>Solde disponible</Text>
@@ -613,6 +662,16 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
 }
 
 const styles = StyleSheet.create({
+  confirmingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginHorizontal: spacing[4],
+    marginTop: spacing[2],
+    padding: spacing[3],
+    borderRadius: radius.lg,
+  },
+  confirmingText: { ...typography.bodyS },
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: { paddingBottom: spacing[12] },

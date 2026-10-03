@@ -1,6 +1,8 @@
+import type { SettlementStatus } from '../../payments/utils/await-settlement'
 import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
+import { readVerifyOutcome } from '../../payments/utils/await-settlement'
 
 const BASE = '/api/couriers/me/wallet'
 
@@ -214,18 +216,18 @@ export function useCourierWallet() {
     }
   }, [])
 
-  /** Server-side verification with FedaPay after the widget reports success. */
-  const verifyTopup = useCallback(async (topupId: string, fedapayTransactionId: string): Promise<MutationResult> => {
+  /**
+   * One server-side check of a top-up with the provider: credited, failed,
+   * or still in flight. No reload here — the caller may ask several times
+   * in a row before the operator answers, and reloads once it is over.
+   */
+  const checkTopup = useCallback(async (topupId: string, fedapayTransactionId: string): Promise<SettlementStatus> => {
     const res = await apiFetch(`${BASE}/topups/${topupId}/verify`, {
       method: 'POST',
       body: JSON.stringify({ fedapayTransactionId }),
     })
-    const result = await toResult(res)
-    if (result.ok) {
-      await load()
-    }
-    return result
-  }, [load])
+    return readVerifyOutcome(res)
+  }, [])
 
   return {
     balance,
@@ -244,6 +246,6 @@ export function useCourierWallet() {
     requestWithdrawal,
     cancelWithdrawal,
     startTopup,
-    verifyTopup,
+    checkTopup,
   }
 }

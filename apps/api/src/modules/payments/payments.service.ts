@@ -1,4 +1,6 @@
 import type { InitiateCartPayment, InitiateCheckoutInput, InitiatePayment, VerifyCartPayment, VerifyCheckoutInput } from './contracts/payment.contract'
+import type { CheckStatusResult } from './gateways/payment-gateway.interface'
+import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
@@ -6,12 +8,15 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
+import { Cron } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
 import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, PaymentMethod as OrderPaymentMethod, OrderStatus } from '../orders/entities/order.entity'
 import { OrderEmailsService } from '../orders/order-emails.service'
+import { ProviderTransactionKind, ProviderTransactionStatus } from '../provider-transactions/provider-transaction.entity'
+import { ProviderTransactionsService } from '../provider-transactions/provider-transactions.service'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
@@ -33,6 +38,7 @@ export class PaymentsService {
     private readonly gatewayFactory: PaymentGatewayFactory,
     private readonly walletService: WalletService,
     private readonly orderEmails: OrderEmailsService,
+    private readonly journal: ProviderTransactionsService,
   ) {}
 
   /**
@@ -318,17 +324,40 @@ export class PaymentsService {
       }
     }
 
-    const opened = await gateway.initiatePayment({
+    // One journal line per attempt, written before the provider is called:
+    // a retry no longer erases the attempt before it, and a refused opening
+    // is written down too.
+    const operation = await this.journal.open({
+      provider: this.checkoutProvider(),
+      kind: ProviderTransactionKind.CART_PAYMENT,
+      subjectId: checkout.id,
       amount: checkout.totalAmount,
-      currency: 'XOF',
-      orderId: checkout.id,
-      paymentMethod: '',
-      callbackUrl: config.payments.returnUrl,
     })
+    let opened
+    try {
+      opened = await gateway.initiatePayment({
+        amount: checkout.totalAmount,
+        currency: 'XOF',
+        orderId: checkout.id,
+        paymentMethod: '',
+        callbackUrl: config.payments.returnUrl,
+      })
+    }
+    catch (error) {
+      const reason = String((error as Error)?.message ?? error)
+      this.logger.error(`Ouverture du paiement refusée pour le panier ${checkout.id} : ${reason}`)
+      await this.journal.markFailed(operation, reason)
+      throw new BadRequestException('Le paiement n\'a pas pu être ouvert. Réessayez dans un instant.')
+    }
+    if (!opened.providerTransactionId) {
+      await this.journal.markFailed(operation, 'Aucune référence de transaction rendue')
+      throw new BadRequestException('Le paiement n\'a pas pu être ouvert. Réessayez dans un instant.')
+    }
 
     checkout.providerTransactionId = opened.providerTransactionId
 
     await this.em.flush()
+    await this.journal.attachReference(operation, opened.providerTransactionId)
 
     return {
       checkoutId: checkout.id,
@@ -378,16 +407,46 @@ export class PaymentsService {
     )
     const gateway = this.gatewayFactory.createGateway(provider)
     const checkResult = await gateway.checkStatus(data.fedapayTransactionId)
+    await this.journal.recordOutcome(data.fedapayTransactionId, toOutcome(checkResult.status))
     if (checkResult.status !== 'completed') {
       // Same two shapes as a wallet topup: the app has to tell a payment that
       // failed from one still in flight, or it waits on a dead page.
       throw new BadRequestException({
-        code: checkResult.status === 'failed' ? 'payment_failed' : 'payment_pending',
+        code: checkResult.status === 'failed' || checkResult.status === 'refunded' ? 'payment_failed' : 'payment_pending',
         message: `Paiement non confirmé. Statut : ${checkResult.status}`,
       })
     }
 
-    checkout.providerTransactionId = data.fedapayTransactionId
+    const payments = await this.confirmCheckout(checkout, orders, data.fedapayTransactionId, provider, checkResult)
+    return {
+      checkoutId: checkout.id,
+      amount: checkout.totalAmount,
+      status: 'completed' as const,
+      paymentIds: payments.map(payment => payment.id),
+    }
+  }
+
+  /**
+   * A cart the provider confirmed as paid: one payment per order, the orders
+   * shown to their shops, the buyer told. Shared by the app's verification and
+   * the reconciliation, so both settle a cart the same way.
+   *
+   * The amount is checked against the cart's: a mismatch is never confirmed,
+   * it is left for a person to look at.
+   */
+  private async confirmCheckout(
+    checkout: Checkout,
+    orders: Order[],
+    reference: string,
+    provider: PaymentProvider,
+    checkResult: CheckStatusResult,
+  ): Promise<Payment[]> {
+    if (checkResult.amount !== undefined && checkResult.amount !== Math.round(checkout.totalAmount)) {
+      this.logger.error(`Panier ${checkout.id} : ${checkResult.amount} payés, ${checkout.totalAmount} attendus — à régler à la main`)
+      throw new BadRequestException('Le montant payé ne correspond pas au panier')
+    }
+
+    checkout.providerTransactionId = reference
     checkout.status = CheckoutStatus.PAID
 
     const payments = splitCheckoutAmount(checkout.totalAmount, orders).map(({ order, amount }) =>
@@ -397,7 +456,7 @@ export class PaymentsService {
         amount,
         provider,
         paymentMethod: `${provider}_checkout`,
-        providerTransactionId: data.fedapayTransactionId,
+        providerTransactionId: reference,
         providerReference: checkResult.reference,
         providerPaymentMethodId: checkResult.providerPaymentMethodId,
         status: PaymentStatus.CAPTURED,
@@ -427,11 +486,69 @@ export class PaymentsService {
       void this.orderEmails.sendOrderPlaced(order.id)
     }
 
-    return {
-      checkoutId: checkout.id,
-      amount: checkout.totalAmount,
-      status: 'completed' as const,
-      paymentIds: payments.map(payment => payment.id),
+    return payments
+  }
+
+  /**
+   * Re-reads every cart payment still open at the provider.
+   *
+   * Same reason as the topups: the buyer is sent back before the operator has
+   * answered, and the app stops asking when its screen closes. A cart paid
+   * late is confirmed here; one that failed or was abandoned is only written
+   * down — its orders are cancelled after 24 h by the orders module.
+   */
+  @Cron('1-59/2 * * * *')
+  @EnsureRequestContext()
+  async reconcilePendingCarts(): Promise<void> {
+    await this.journalUnrecordedCarts()
+
+    const operations = await this.journal.findToReconcile(ProviderTransactionKind.CART_PAYMENT)
+    for (const operation of operations) {
+      try {
+        const provider = operation.provider as PaymentProvider
+        const check = await this.gatewayFactory.createGateway(provider).checkStatus(operation.reference!)
+        const status = await this.journal.recordOutcome(operation.reference!, toOutcome(check.status))
+        if (status !== ProviderTransactionStatus.COMPLETED) {
+          continue
+        }
+        const checkout = await this.em.findOne(Checkout, { id: operation.subjectId }, { populate: ['buyer'] })
+        if (!checkout) {
+          continue
+        }
+        if (checkout.status !== CheckoutStatus.PENDING) {
+          // Paid through another attempt already: this one took money twice.
+          if (checkout.providerTransactionId !== operation.reference) {
+            this.logger.error(`Panier ${checkout.id} payé deux fois (${operation.reference} en plus de ${checkout.providerTransactionId}) — remboursement à faire`)
+          }
+          continue
+        }
+        const orders = await this.em.find(Order, { checkout: { id: checkout.id } }, { populate: ['buyer'] })
+        await this.confirmCheckout(checkout, orders, operation.reference!, provider, check)
+        this.logger.log(`Panier ${checkout.id} confirmé par le rapprochement`)
+      }
+      catch (error) {
+        this.logger.warn(`Rapprochement du panier ${operation.subjectId} impossible : ${String((error as Error)?.message ?? error)}`)
+      }
+    }
+  }
+
+  /** Carts opened before the journal existed get their line. */
+  private async journalUnrecordedCarts(): Promise<void> {
+    const rows = await this.em.getConnection().execute<Array<{ id: string, reference: string, amount: number, created: Date }>>(
+      `SELECT c.id, c.provider_transaction_id AS reference, c.total_amount AS amount, c."createdAt" AS created
+       FROM checkouts c
+       WHERE c.status = 'PENDING' AND c.provider_transaction_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM provider_transactions p WHERE p.reference = c.provider_transaction_id)`,
+    )
+    for (const row of rows) {
+      const operation = await this.journal.open({
+        provider: providerForTransaction(row.reference, null),
+        kind: ProviderTransactionKind.CART_PAYMENT,
+        subjectId: row.id,
+        amount: Number(row.amount),
+      })
+      operation.createdAt = new Date(row.created)
+      await this.journal.attachReference(operation, row.reference)
     }
   }
 
@@ -675,4 +792,12 @@ export function splitCheckoutAmount<T extends { totalAmount: number }>(
     allocated += amount
     return { order, amount }
   })
+}
+
+/** The gateways' vocabulary, folded into the journal's three outcomes. */
+function toOutcome(status: string): 'completed' | 'failed' | 'pending' {
+  if (status === 'completed') {
+    return 'completed'
+  }
+  return status === 'failed' || status === 'refunded' ? 'failed' : 'pending'
 }

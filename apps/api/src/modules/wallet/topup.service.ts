@@ -1,11 +1,15 @@
+import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { Cron } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
 import { User } from '../auth/auth.entity'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { PaymentProvider } from '../payments/payment.entity'
 import { providerForTransaction } from '../payments/provider-for-transaction'
+import { ProviderTransactionKind, ProviderTransactionStatus } from '../provider-transactions/provider-transaction.entity'
+import { ProviderTransactionsService } from '../provider-transactions/provider-transactions.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { TopupStatus, WalletTopup } from './entities/wallet-topup.entity'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
@@ -22,6 +26,7 @@ export class TopupService {
     private readonly em: EntityManager,
     private readonly walletService: WalletService,
     private readonly gatewayFactory: PaymentGatewayFactory,
+    private readonly journal: ProviderTransactionsService,
   ) {}
 
   /**
@@ -73,19 +78,38 @@ export class TopupService {
 
     // The payment is opened here rather than by the phone: the provider's
     // page comes back at once, and the reference it is tied to is ours before
-    // the user sees anything to pay with.
-    const opened = await gateway.initiatePayment({
+    // the user sees anything to pay with. The journal line comes first, so an
+    // opening the provider refuses is written down too.
+    const operation = await this.journal.open({
+      provider: config.payments.checkoutProvider,
+      kind: ProviderTransactionKind.TOPUP,
+      subjectId: topup.id,
       amount,
-      currency: 'XOF',
-      orderId: topup.id,
-      paymentMethod: '',
-      callbackUrl: config.payments.returnUrl,
     })
-
-    if (opened.providerTransactionId) {
-      topup.fedapayTransactionId = opened.providerTransactionId
-      await this.em.flush()
+    let opened
+    try {
+      opened = await gateway.initiatePayment({
+        amount,
+        currency: 'XOF',
+        orderId: topup.id,
+        paymentMethod: '',
+        callbackUrl: config.payments.returnUrl,
+      })
     }
+    catch (error) {
+      await this.failOpening(topup, operation, String((error as Error)?.message ?? error))
+      throw new BadRequestException('Le paiement n\'a pas pu être ouvert. Réessayez dans un instant.')
+    }
+    if (!opened.providerTransactionId) {
+      // A topup without a provider reference can never be settled: it would
+      // stay « en attente » for good.
+      await this.failOpening(topup, operation, 'Aucune référence de transaction rendue')
+      throw new BadRequestException('Le paiement n\'a pas pu être ouvert. Réessayez dans un instant.')
+    }
+
+    topup.fedapayTransactionId = opened.providerTransactionId
+    await this.em.flush()
+    await this.journal.attachReference(operation, opened.providerTransactionId)
 
     return {
       topupId: topup.id,
@@ -120,6 +144,7 @@ export class TopupService {
       catch {
         throw new BadRequestException('Transaction introuvable chez le prestataire')
       }
+      await this.journal.recordOutcome(fedapayTransactionId, toOutcome(check.status))
       if (check.status === 'completed') {
         if (check.amount !== undefined && check.amount !== Math.round(Number(topup.amount))) {
           this.logger.warn(`Topup ${topupId}: paid ${check.amount}, expected ${topup.amount}`)
@@ -241,9 +266,13 @@ export class TopupService {
     }
 
     const target = status === 'completed' ? TopupStatus.COMPLETED : TopupStatus.FAILED
+    // A confirmed payment also lifts a topup we had given up on: the page was
+    // abandoned, then paid late, and the money is there. A failure only ever
+    // closes a pending one. COMPLETED is never touched, so nothing is credited twice.
+    const fromStatuses = status === 'completed' ? `('PENDING', 'FAILED')` : `('PENDING')`
     const isCredited = await this.em.transactional(async (em) => {
       const result = await em.execute<{ affectedRows?: number }>(
-        `UPDATE wallet_topups SET status = ?, "updatedAt" = NOW() WHERE id = ? AND status = 'PENDING'`,
+        `UPDATE wallet_topups SET status = ?, "updatedAt" = NOW() WHERE id = ? AND status IN ${fromStatuses}`,
         [target, topup.id],
         'run',
       )
@@ -264,6 +293,78 @@ export class TopupService {
     return true
   }
 
+  /**
+   * Re-reads every topup still open at the provider and settles it.
+   *
+   * The app only verifies while its payment screen is open, and the provider
+   * sends the buyer back to the same page whether the payment went through or
+   * not — usually before the operator has answered. Without this, a topup
+   * that failed (or succeeded) a few seconds later stayed « en attente » for
+   * good. The webhook would do the same job; it is not relied on.
+   */
+  @Cron('*/2 * * * *')
+  @EnsureRequestContext()
+  async reconcilePending(): Promise<void> {
+    await this.journalUnrecordedTopups()
+
+    const operations = await this.journal.findToReconcile(ProviderTransactionKind.TOPUP)
+    for (const operation of operations) {
+      try {
+        await this.reconcileOne(operation.reference!, operation.provider)
+      }
+      catch (error) {
+        this.logger.warn(`Rapprochement de la recharge ${operation.subjectId} impossible : ${String((error as Error)?.message ?? error)}`)
+      }
+    }
+  }
+
+  private async reconcileOne(reference: string, provider: string): Promise<void> {
+    const check = await this.gatewayFactory.createGateway(provider as PaymentProvider).checkStatus(reference)
+    const journalStatus = await this.journal.recordOutcome(reference, toOutcome(check.status))
+
+    if (check.status === 'completed') {
+      const topup = await this.em.findOne(WalletTopup, { fedapayTransactionId: reference })
+      if (topup && check.amount !== undefined && check.amount !== Math.round(Number(topup.amount))) {
+        this.logger.error(`Recharge ${topup.id} : ${check.amount} payés, ${topup.amount} attendus — à régler à la main`)
+        return
+      }
+      await this.settleFromProvider(reference, 'completed')
+    }
+    else if (check.status === 'failed' || check.status === 'refunded' || journalStatus === ProviderTransactionStatus.ABANDONED) {
+      await this.settleFromProvider(reference, 'failed')
+    }
+  }
+
+  /**
+   * Topups opened before the journal existed get their line, so the
+   * reconciliation sees them too.
+   */
+  private async journalUnrecordedTopups(): Promise<void> {
+    const rows = await this.em.getConnection().execute<Array<{ id: string, reference: string, amount: string, created: Date }>>(
+      `SELECT t.id, t.fedapay_transaction_id AS reference, t.amount, t."createdAt" AS created
+       FROM wallet_topups t
+       WHERE t.status = 'PENDING' AND t.fedapay_transaction_id IS NOT NULL
+         AND NOT EXISTS (SELECT 1 FROM provider_transactions p WHERE p.reference = t.fedapay_transaction_id)`,
+    )
+    for (const row of rows) {
+      const operation = await this.journal.open({
+        provider: providerForTransaction(row.reference, null),
+        kind: ProviderTransactionKind.TOPUP,
+        subjectId: row.id,
+        amount: Number(row.amount),
+      })
+      operation.createdAt = new Date(row.created)
+      await this.journal.attachReference(operation, row.reference)
+    }
+  }
+
+  private async failOpening(topup: WalletTopup, operation: Parameters<ProviderTransactionsService['markFailed']>[0], reason: string): Promise<void> {
+    this.logger.error(`Ouverture du paiement refusée pour la recharge ${topup.id} : ${reason}`)
+    topup.status = TopupStatus.FAILED
+    await this.em.flush()
+    await this.journal.markFailed(operation, reason)
+  }
+
   private async resolveOwner(userId: string, target: TopupTarget): Promise<{ userId?: string, courierId?: string, supplierId?: string }> {
     if (target === 'personal') {
       return { userId }
@@ -281,4 +382,12 @@ export class TopupService {
     }
     return { courierId: profile.id }
   }
+}
+
+/** The gateways' vocabulary, folded into the journal's three outcomes. */
+function toOutcome(status: string): 'completed' | 'failed' | 'pending' {
+  if (status === 'completed') {
+    return 'completed'
+  }
+  return status === 'failed' || status === 'refunded' ? 'failed' : 'pending'
 }

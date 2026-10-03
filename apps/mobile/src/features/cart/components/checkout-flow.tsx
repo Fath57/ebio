@@ -1,3 +1,4 @@
+import type { SettlementStatus } from '../../payments/utils/await-settlement'
 import type { OrderPreview, OrderPreviewLine, PreviewDeliveryReason } from '../hooks/use-order-preview'
 import * as Haptics from 'expo-haptics'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
@@ -36,6 +37,7 @@ import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-settlement'
 import { buildCheckoutHtml, paymentPublicKey } from '../../payments/utils/checkout-widget'
 import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
@@ -309,6 +311,11 @@ export function CheckoutFlow({
   const [checkingPromo, setCheckingPromo] = useState(false)
   /** The checkout being paid: one for the whole cart. */
   const [pendingCheckoutId, setPendingCheckoutId] = useState<string | null>(null)
+  /** Waiting for the operator's verdict after the payment page closed. */
+  const [isConfirmingPayment, setIsConfirmingPayment] = useState(false)
+  // What the payment screen's own polling last saw: when it already announced
+  // a failure and closed, the close must not announce it a second time.
+  const lastPolledRef = useRef<SettlementStatus>('pending')
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null)
   const [orderNumber, setOrderNumber] = useState<string | null>(null)
   // Amount as the server settled it, delivery fee included. The payment widget
@@ -638,6 +645,7 @@ export function CheckoutFlow({
       // one per order. What we keep here is the checkout, plus the page the
       // provider opened for it and the reference it gave the server.
       const payment = await paymentRes.json() as { paymentUrl?: string | null, providerTransactionId?: string | null }
+      lastPolledRef.current = 'pending'
       setPendingCheckoutId(checkout?.checkoutId ?? null)
       setHostedPaymentUrl(payment.paymentUrl ?? null)
       setProviderTransactionId(payment.providerTransactionId ?? null)
@@ -658,46 +666,97 @@ export function CheckoutFlow({
    * the buyer used could claim any transaction was paid, and this is where
    * that claim would have been believed.
    */
+  /** One verify call: the server re-reads the provider before answering. */
+  const verifyCart = useCallback(async (checkoutId: string, reference: string): Promise<SettlementStatus> => {
+    const res = await apiFetch('/api/payments/cart/verify', {
+      method: 'POST',
+      body: JSON.stringify({ checkoutId, fedapayTransactionId: reference }),
+    })
+    return readVerifyOutcome(res)
+  }, [])
+
   /** Silent check: the verify endpoint only succeeds once the money landed. */
-  const pollCartStatus = useCallback(async (): Promise<'settled' | 'pending' | 'failed'> => {
+  const pollCartStatus = useCallback(async (): Promise<SettlementStatus> => {
     if (!pendingCheckoutId || !providerTransactionId) {
       return 'pending'
     }
-    const res = await apiFetch('/api/payments/cart/verify', {
-      method: 'POST',
-      body: JSON.stringify({ checkoutId: pendingCheckoutId, fedapayTransactionId: providerTransactionId }),
-    })
-    if (res.ok) {
-      return 'settled'
-    }
-    const body = await res.json().catch(() => null) as { code?: string } | null
-    return body?.code === 'payment_failed' ? 'failed' : 'pending'
-  }, [pendingCheckoutId, providerTransactionId])
+    const status = await verifyCart(pendingCheckoutId, providerTransactionId)
+    lastPolledRef.current = status
+    return status
+  }, [pendingCheckoutId, providerTransactionId, verifyCart])
 
+  /**
+   * The payment page came back. That says nothing yet — INTRAM returns to
+   * the same page on success and on failure — so the server is asked again
+   * for a while before concluding.
+   */
   const confirmCartPayment = useCallback(async (reference: string) => {
-    if (!pendingCheckoutId) {
+    const checkoutId = pendingCheckoutId
+    if (!checkoutId) {
       return
     }
-    try {
-      const res = await apiFetch('/api/payments/cart/verify', {
-        method: 'POST',
-        body: JSON.stringify({ checkoutId: pendingCheckoutId, fedapayTransactionId: reference }),
-      })
-      if (!res.ok) {
-        const error = await res.json().catch(() => null) as { message?: string } | null
-        appAlert('Paiement non confirmé', error?.message ?? 'Le paiement n\'a pas abouti.')
-        setCurrentStep('SUMMARY')
-        return
-      }
+    setIsConfirmingPayment(true)
+    const status = await awaitSettlement(() => verifyCart(checkoutId, reference))
+    setIsConfirmingPayment(false)
+    if (status === 'settled') {
       if (orderNumber && pendingOrderId) {
         onComplete(orderNumber, pendingOrderId)
       }
+      return
+    }
+    if (status === 'failed') {
+      appAlert('Paiement échoué', 'Le paiement n\'a pas abouti. Aucun montant n\'a été débité.')
+      setCurrentStep('SUMMARY')
+      return
+    }
+    // Still in flight: paying again could charge twice. The orders exist and
+    // turn into real ones as soon as the server confirms the payment.
+    appAlert(
+      'Paiement en cours de confirmation',
+      'Ne payez pas une seconde fois : vos commandes apparaîtront dans « Commandes » dès que le paiement sera confirmé.',
+    )
+    onCancel()
+  }, [pendingCheckoutId, pendingOrderId, orderNumber, onComplete, onCancel, verifyCart])
+
+  /**
+   * The buyer left the payment page without it reporting an end. One silent
+   * check: a payment that went through still completes the order, a failed
+   * one is said; otherwise back to the summary as before.
+   */
+  const cancelCartPayment = useCallback(async () => {
+    const checkoutId = pendingCheckoutId
+    const reference = providerTransactionId
+    const alreadyAnnounced = lastPolledRef.current === 'failed'
+    setCurrentStep('SUMMARY')
+    if (!checkoutId || !reference || alreadyAnnounced) {
+      return
+    }
+    try {
+      const status = await verifyCart(checkoutId, reference)
+      if (status === 'settled' && orderNumber && pendingOrderId) {
+        onComplete(orderNumber, pendingOrderId)
+      }
+      else if (status === 'failed') {
+        appAlert('Paiement échoué', 'Le paiement n\'a pas abouti. Aucun montant n\'a été débité.')
+      }
     }
     catch {
-      appAlert('Erreur', 'La confirmation du paiement a échoué.')
-      setCurrentStep('SUMMARY')
+      // Offline: the server's reconciliation takes over.
     }
-  }, [pendingCheckoutId, pendingOrderId, orderNumber, onComplete])
+  }, [pendingCheckoutId, providerTransactionId, pendingOrderId, orderNumber, onComplete, verifyCart])
+
+  if (isConfirmingPayment) {
+    return (
+      <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
+        <View style={styles.fallbackContainer}>
+          <ActivityIndicator size="large" color={colors.green[400]} />
+          <Text style={[styles.fallbackText, { color: semantic.textSecondary }]}>
+            Confirmation du paiement en cours…
+          </Text>
+        </View>
+      </View>
+    )
+  }
 
   // ─── STEP: SUMMARY ─────────────────────────────────────────────────────────
 
@@ -1102,7 +1161,9 @@ export function CheckoutFlow({
             })}
         transactionId={providerTransactionId}
         onSettled={confirmCartPayment}
-        onCancel={() => setCurrentStep('SUMMARY')}
+        onCancel={() => {
+          void cancelCartPayment()
+        }}
         pollStatus={pollCartStatus}
       />
     )

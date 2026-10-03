@@ -1,6 +1,8 @@
+import type { SettlementStatus } from '../../payments/utils/await-settlement'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -22,6 +24,7 @@ import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { announceTopupOutcome, awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-settlement'
 import { buildTopupCheckoutHtml, TOPUP_PRESETS } from '../utils/topup-checkout'
 
 interface Movement {
@@ -50,7 +53,7 @@ interface Topup {
 
 const TOPUP_STATUS_LABELS: Record<Topup['status'], string> = {
   PENDING: 'En attente',
-  COMPLETED: 'Créditée',
+  COMPLETED: 'Réussie',
   FAILED: 'Échouée',
 }
 
@@ -58,6 +61,15 @@ const TOPUP_STATUS_COLORS: Record<Topup['status'], string> = {
   PENDING: colors.earth[600],
   COMPLETED: colors.green[600],
   FAILED: colors.coral[600],
+}
+
+/** One verify call: the server re-reads the provider before answering. */
+async function verifyTopup(topupId: string, reference: string): Promise<SettlementStatus> {
+  const res = await apiFetch(`/api/wallet/me/topups/${topupId}/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ fedapayTransactionId: reference }),
+  })
+  return readVerifyOutcome(res)
 }
 
 function formatAmount(value: number): string {
@@ -136,6 +148,11 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
   /** Reference held by the server, the only one we confirm with. */
   const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
+  /** Waiting for the operator's verdict after the payment page closed. */
+  const [isConfirming, setIsConfirming] = useState(false)
+  // What the payment screen's own polling last saw: when it already announced
+  // a failure and closed, the close must not announce it a second time.
+  const lastPolledRef = useRef<SettlementStatus>('pending')
 
   // The ledger scrolls page by page; the first page also brings the balance
   // and the latest topups, so a refresh keeps the header in step with it.
@@ -192,6 +209,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
       }
       setIsToppingUp(false)
       setTopupAmount('')
+      lastPolledRef.current = 'pending'
       setPendingTopupId(data.topupId)
       setPaymentUrl(data.paymentUrl ?? null)
       setProviderTransactionId(data.providerTransactionId ?? null)
@@ -211,13 +229,44 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
     }
   }, [topupAmount, fedapayPublicKey, session])
 
-  const closeCheckout = useCallback(() => {
+  // Back on the screen (from another tab, or after a while away): the
+  // server's reconciliation may have settled a topup since the last load.
+  const isFirstFocusRef = useRef(true)
+  useFocusEffect(useCallback(() => {
+    if (isFirstFocusRef.current) {
+      isFirstFocusRef.current = false
+      return
+    }
+    void refresh()
+  }, [refresh]))
+
+  const resetCheckout = useCallback(() => {
     setCheckoutHtml(null)
     setPaymentUrl(null)
     setProviderTransactionId(null)
     setPendingTopupId(null)
-    refresh()
-  }, [refresh])
+  }, [])
+
+  /**
+   * The payer left the payment page without it reporting an end. One silent
+   * check: if the payment turned out done or failed, say so; otherwise the
+   * list shows « En attente » until the server settles it.
+   */
+  const cancelCheckout = useCallback(async () => {
+    const topupId = pendingTopupId
+    const reference = providerTransactionId
+    const alreadyAnnounced = lastPolledRef.current === 'failed'
+    resetCheckout()
+    if (topupId && reference && !alreadyAnnounced) {
+      try {
+        announceTopupOutcome(await verifyTopup(topupId, reference), false)
+      }
+      catch {
+        // Offline: the list and the server's reconciliation take over.
+      }
+    }
+    void refresh()
+  }, [pendingTopupId, providerTransactionId, resetCheckout, refresh])
 
   /**
    * Silent check, handed to the payment screen. Asking the verify endpoint
@@ -228,38 +277,31 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
     if (!pendingTopupId || !providerTransactionId) {
       return 'pending'
     }
-    const res = await apiFetch(`/api/wallet/me/topups/${pendingTopupId}/verify`, {
-      method: 'POST',
-      body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
-    })
-    if (res.ok) {
-      return 'settled'
-    }
-    // A refusal says which of the two it is; without the code we would keep
-    // waiting on a payment that has already failed.
-    const body = await res.json().catch(() => null) as { code?: string } | null
-    return body?.code === 'payment_failed' ? 'failed' : 'pending'
+    const status = await verifyTopup(pendingTopupId, providerTransactionId)
+    lastPolledRef.current = status
+    return status
   }, [pendingTopupId, providerTransactionId])
 
+  /**
+   * The payment page came back. That says nothing yet — INTRAM returns to
+   * the same page on success and on failure — so the server is asked again
+   * for a while; it re-checks status and amount before crediting anything.
+   */
   const confirmTopup = useCallback(async (reference: string) => {
-    if (!pendingTopupId) {
+    const topupId = pendingTopupId
+    if (!topupId) {
       return
     }
-    // The server re-checks status AND amount with the provider before
-    // crediting — the page's word alone is worthless.
-    const res = await apiFetch(`/api/wallet/me/topups/${pendingTopupId}/verify`, {
-      method: 'POST',
-      body: JSON.stringify({ fedapayTransactionId: reference }),
-    })
-    if (res.ok) {
-      appAlert('Recharge confirmée', 'Votre portefeuille a été crédité.')
+    resetCheckout()
+    setIsConfirming(true)
+    try {
+      announceTopupOutcome(await awaitSettlement(() => verifyTopup(topupId, reference)), true)
     }
-    else {
-      const body = await res.json().catch(() => null) as { message?: string } | null
-      appAlert('Vérification échouée', body?.message ?? 'La recharge sera vérifiée automatiquement.')
+    finally {
+      setIsConfirming(false)
+      void refresh()
     }
-    closeCheckout()
-  }, [pendingTopupId, closeCheckout])
+  }, [pendingTopupId, resetCheckout, refresh])
 
   if (isLoading) {
     return (
@@ -277,7 +319,9 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
         transactionId={providerTransactionId}
         title="Recharge du portefeuille"
         onSettled={confirmTopup}
-        onCancel={closeCheckout}
+        onCancel={() => {
+          void cancelCheckout()
+        }}
         pollStatus={pollTopupStatus}
       />
     )
@@ -307,6 +351,14 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
         )}
         ListHeaderComponent={(
           <>
+            {isConfirming && (
+              <View style={[styles.confirmingBanner, { backgroundColor: semantic.bgCard }]}>
+                <ActivityIndicator size="small" color={colors.green[400]} />
+                <Text style={[styles.confirmingText, { color: semantic.textSecondary }]}>
+                  Confirmation du paiement en cours…
+                </Text>
+              </View>
+            )}
             <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
               <Text style={[styles.balanceLabel, { color: semantic.textSecondary }]}>Solde disponible</Text>
               <Text style={[styles.balanceValue, { color: semantic.textPrimary }]}>
@@ -421,6 +473,16 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   content: {},
 
+  confirmingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginHorizontal: spacing[4],
+    marginTop: spacing[2],
+    padding: spacing[3],
+    borderRadius: radius.lg,
+  },
+  confirmingText: { ...typography.bodyS },
   balanceCard: {
     marginHorizontal: spacing[4],
     marginTop: spacing[2],

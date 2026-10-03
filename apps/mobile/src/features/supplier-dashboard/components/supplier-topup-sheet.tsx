@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useState } from 'react'
+import type { SettlementStatus } from '../../payments/utils/await-settlement'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Modal,
@@ -15,8 +16,25 @@ import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
+import { announceTopupOutcome, awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-settlement'
 import { buildTopupCheckoutHtml, TOPUP_PRESETS } from '../../wallet/utils/topup-checkout'
 import { readApiError } from '../utils/read-api-error'
+
+/**
+ * One verify call. The new balance rides on the 200 so the caller can show
+ * it; a 400 says whether the payment failed or is still in flight.
+ */
+async function verifySupplierTopup(topupId: string, reference: string): Promise<{ status: SettlementStatus, balance: number | null }> {
+  const res = await apiFetch(`/api/suppliers/me/wallet/topups/${topupId}/verify`, {
+    method: 'POST',
+    body: JSON.stringify({ fedapayTransactionId: reference }),
+  })
+  if (res.ok) {
+    const data = await res.json() as { balance?: number }
+    return { status: 'settled', balance: typeof data.balance === 'number' ? data.balance : null }
+  }
+  return { status: await readVerifyOutcome(res), balance: null }
+}
 
 export const MIN_TOPUP = 100
 const MAX_TOPUP = 1_000_000
@@ -53,6 +71,11 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
   /** Reference held by the server, the only one we confirm with. */
   const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
+  /** Waiting for the operator's verdict after the payment page closed. */
+  const [isConfirming, setIsConfirming] = useState(false)
+  // What the payment screen's own polling last saw: when it already announced
+  // a failure and closed, the close must not announce it a second time.
+  const lastPolledRef = useRef<SettlementStatus>('pending')
 
   // Pre-fill the suggested amount each time the sheet opens.
   useEffect(() => {
@@ -88,6 +111,7 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
         paymentUrl?: string | null
         providerTransactionId?: string | null
       }
+      lastPolledRef.current = 'pending'
       setPendingTopupId(data.topupId)
       setPaymentUrl(data.paymentUrl ?? null)
       setProviderTransactionId(data.providerTransactionId ?? null)
@@ -110,53 +134,80 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
     }
   }, [fedapayPublicKey, value, session])
 
-  const closeCheckout = useCallback(() => {
+  const resetCheckout = useCallback(() => {
     setCheckoutHtml(null)
     setPaymentUrl(null)
     setProviderTransactionId(null)
     setPendingTopupId(null)
+  }, [])
+
+  /**
+   * The payer left the payment page without it reporting an end. One silent
+   * check: a payment that went through is still credited and announced, a
+   * failed one is said; a pending one shows as such in the list until the
+   * server settles it.
+   */
+  const cancelCheckout = useCallback(async () => {
+    const topupId = pendingTopupId
+    const reference = providerTransactionId
+    const alreadyAnnounced = lastPolledRef.current === 'failed'
+    resetCheckout()
     onClose()
-  }, [onClose])
-
-  /** Silent check: the verify endpoint only succeeds once the money landed. */
-  const pollTopupStatus = useCallback(async (): Promise<'settled' | 'pending' | 'failed'> => {
-    if (!pendingTopupId || !providerTransactionId) {
-      return 'pending'
-    }
-    const res = await apiFetch(`/api/suppliers/me/wallet/topups/${pendingTopupId}/verify`, {
-      method: 'POST',
-      body: JSON.stringify({ fedapayTransactionId: providerTransactionId }),
-    })
-    if (res.ok) {
-      return 'settled'
-    }
-    const body = await res.json().catch(() => null) as { code?: string } | null
-    return body?.code === 'payment_failed' ? 'failed' : 'pending'
-  }, [pendingTopupId, providerTransactionId])
-
-  const confirmTopup = useCallback(async (reference: string) => {
-    if (!pendingTopupId) {
-      closeCheckout()
+    if (!topupId || !reference || alreadyAnnounced) {
       return
     }
     try {
-      const res = await apiFetch(`/api/suppliers/me/wallet/topups/${pendingTopupId}/verify`, {
-        method: 'POST',
-        body: JSON.stringify({ fedapayTransactionId: reference }),
-      })
-      if (res.ok) {
-        const data = await res.json() as { status: string, balance: number }
-        closeCheckout()
-        onVerified(data.balance)
-        return
+      const outcome = await verifySupplierTopup(topupId, reference)
+      if (outcome.status === 'settled') {
+        onVerified(outcome.balance ?? 0)
       }
-      appAlert('Vérification échouée', await readApiError(res))
+      else {
+        announceTopupOutcome(outcome.status, false)
+      }
     }
     catch {
-      appAlert('Vérification échouée', 'La recharge sera vérifiée automatiquement.')
+      // Offline: the list and the server's reconciliation take over.
     }
-    closeCheckout()
-  }, [pendingTopupId, closeCheckout, onVerified])
+  }, [pendingTopupId, providerTransactionId, resetCheckout, onClose, onVerified])
+
+  /** Silent check: the verify endpoint only succeeds once the money landed. */
+  const pollTopupStatus = useCallback(async (): Promise<SettlementStatus> => {
+    if (!pendingTopupId || !providerTransactionId) {
+      return 'pending'
+    }
+    const { status } = await verifySupplierTopup(pendingTopupId, providerTransactionId)
+    lastPolledRef.current = status
+    return status
+  }, [pendingTopupId, providerTransactionId])
+
+  /**
+   * The payment page came back. That says nothing yet — INTRAM returns to
+   * the same page on success and on failure — so the server is asked again
+   * for a while; it re-checks status and amount before crediting anything.
+   */
+  const confirmTopup = useCallback(async (reference: string) => {
+    const topupId = pendingTopupId
+    resetCheckout()
+    if (!topupId) {
+      onClose()
+      return
+    }
+    setIsConfirming(true)
+    let balance: number | null = null
+    const status = await awaitSettlement(async () => {
+      const outcome = await verifySupplierTopup(topupId, reference)
+      balance = outcome.balance
+      return outcome.status
+    })
+    setIsConfirming(false)
+    onClose()
+    if (status === 'settled') {
+      onVerified(balance ?? 0)
+    }
+    else {
+      announceTopupOutcome(status, true)
+    }
+  }, [pendingTopupId, resetCheckout, onClose, onVerified])
 
   return (
     <>
@@ -223,16 +274,45 @@ export function SupplierTopupSheet({ visible, onClose, suggestedAmount = 0, hint
         </KeyboardAwareView>
       </Modal>
 
-      <Modal visible={checkoutHtml !== null || paymentUrl !== null} animationType="slide" onRequestClose={closeCheckout}>
+      <Modal
+        visible={checkoutHtml !== null || paymentUrl !== null}
+        animationType="slide"
+        onRequestClose={() => {
+          void cancelCheckout()
+        }}
+      >
         <PaymentWebView
           url={paymentUrl}
           html={checkoutHtml}
           transactionId={providerTransactionId}
           title="Recharge du portefeuille"
           onSettled={confirmTopup}
-          onCancel={closeCheckout}
+          onCancel={() => {
+            void cancelCheckout()
+          }}
           pollStatus={pollTopupStatus}
         />
+      </Modal>
+
+      {/* Not a wall: closing it leaves the check running, its verdict still
+        * shows up, and the list says « En attente » meanwhile. */}
+      <Modal visible={isConfirming} transparent animationType="fade" onRequestClose={() => setIsConfirming(false)}>
+        <View style={styles.confirmingOverlay}>
+          <View style={[styles.confirmingCard, { backgroundColor: semantic.bgCard }]}>
+            <ActivityIndicator size="small" color={colors.green[400]} />
+            <Text style={[styles.confirmingText, { color: semantic.textPrimary }]}>
+              Confirmation du paiement en cours…
+            </Text>
+            <TouchableOpacity
+              style={styles.cancel}
+              onPress={() => setIsConfirming(false)}
+              accessibilityRole="button"
+              accessibilityLabel="Masquer"
+            >
+              <Text style={[styles.cancelText, { color: semantic.textSecondary }]}>Masquer</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
       </Modal>
     </>
   )
@@ -296,4 +376,19 @@ const styles = StyleSheet.create({
   confirmText: { ...typography.h3, color: colors.neutral[0] },
   buttonDisabled: { opacity: 0.5 },
   checkout: { flex: 1 },
+  confirmingOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: spacing[6],
+  },
+  confirmingCard: {
+    width: '100%',
+    borderRadius: radius.lg,
+    padding: spacing[5],
+    alignItems: 'center',
+    gap: spacing[3],
+  },
+  confirmingText: { ...typography.bodyS, textAlign: 'center' },
 })

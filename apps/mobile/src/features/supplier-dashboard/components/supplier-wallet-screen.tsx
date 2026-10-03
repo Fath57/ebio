@@ -1,8 +1,9 @@
+import { useFocusEffect } from '@react-navigation/native'
 import ArrowDownToLine from 'lucide-react-native/dist/esm/icons/arrow-down-to-line'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -51,6 +52,25 @@ interface PayoutNumber {
   holderName: string
   status: 'PENDING' | 'VALIDATED' | 'REJECTED'
   rejectionReason: string | null
+}
+
+interface Topup {
+  id: string
+  amount: number
+  status: 'PENDING' | 'COMPLETED' | 'FAILED'
+  createdAt: string
+}
+
+const TOPUP_STATUS_LABELS: Record<Topup['status'], string> = {
+  PENDING: 'En attente',
+  COMPLETED: 'Réussie',
+  FAILED: 'Échouée',
+}
+
+const TOPUP_STATUS_COLORS: Record<Topup['status'], string> = {
+  PENDING: colors.earth[600],
+  COMPLETED: colors.green[600],
+  FAILED: colors.coral[600],
 }
 
 interface Withdrawal {
@@ -147,6 +167,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
   const [balance, setBalance] = useState(0)
   const [numbers, setNumbers] = useState<PayoutNumber[]>([])
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
+  const [topups, setTopups] = useState<Topup[]>([])
 
   // add-number modal
   const [isAddingNumber, setIsAddingNumber] = useState(false)
@@ -178,11 +199,12 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
     const data = await walletRes.json() as WalletData
     if (page === 1) {
       setBalance(data.balance)
-      const [numbersRes, withdrawalsRes] = await Promise.all([
+      const [numbersRes, withdrawalsRes, topupsRes] = await Promise.all([
         apiFetch('/api/suppliers/me/wallet/payout-numbers'),
-        // The latest requests only: a pending one is always among them, and
-        // the ledger records every amount actually paid out.
+        // The latest requests and topups only: a pending one is always among
+        // them, and the ledger records every amount that actually moved.
         apiFetch('/api/suppliers/me/wallet/withdrawals'),
+        apiFetch(`/api/suppliers/me/wallet/topups?page=1&limit=${PAGE_SIZE}`),
       ])
       if (numbersRes.ok) {
         const numbersData = await numbersRes.json() as { items: PayoutNumber[] }
@@ -192,12 +214,27 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
         const withdrawalsData = await withdrawalsRes.json() as { items: Withdrawal[] }
         setWithdrawals(withdrawalsData.items)
       }
+      if (topupsRes.ok) {
+        const topupsData = await topupsRes.json() as { items: Topup[] }
+        setTopups(topupsData.items)
+      }
     }
     return {
       items: data.transactions.items,
       hasMore: hasMoreAfter(page, PAGE_SIZE, data.transactions.total),
     }
   })
+
+  // Back on the screen: a withdrawal or a topup may have been settled by the
+  // server in the meantime. The first focus is the mount, already loading.
+  const isFirstFocusRef = useRef(true)
+  useFocusEffect(useCallback(() => {
+    if (isFirstFocusRef.current) {
+      isFirstFocusRef.current = false
+      return
+    }
+    void load()
+  }, [load]))
 
   async function readError(res: Response): Promise<string> {
     const body = await res.json().catch(() => null) as { message?: string, aggregateErrors?: Array<{ message?: string }> } | null
@@ -438,6 +475,30 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
               </>
             )}
 
+            {/* Topups: a failed or pending one shows here, not in the ledger */}
+            {topups.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
+                  MES RECHARGES
+                </Text>
+                {topups.map(topup => (
+                  <View key={topup.id} style={[styles.numberCard, { backgroundColor: semantic.bgCard }]}>
+                    <View style={{ flex: 1 }}>
+                      <Text style={[styles.numberPhone, { color: semantic.textPrimary }]}>
+                        {formatAmount(topup.amount)}
+                      </Text>
+                      <Text style={[styles.numberMeta, { color: semantic.textTertiary }]}>
+                        {new Date(topup.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                      </Text>
+                    </View>
+                    <Text style={[styles.numberStatus, { color: TOPUP_STATUS_COLORS[topup.status] }]}>
+                      {TOPUP_STATUS_LABELS[topup.status]}
+                    </Text>
+                  </View>
+                ))}
+              </>
+            )}
+
             {/* Ledger */}
             <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
               HISTORIQUE
@@ -543,7 +604,10 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
 
       <SupplierTopupSheet
         visible={isToppingUp}
-        onClose={() => setIsToppingUp(false)}
+        onClose={() => {
+          setIsToppingUp(false)
+          void load()
+        }}
         onVerified={() => {
           appAlert('Recharge confirmée', 'Votre portefeuille boutique a été crédité.')
           load()

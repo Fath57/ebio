@@ -2,6 +2,7 @@ import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
+import { ProviderTransactionsModule } from '../provider-transactions/provider-transactions.module'
 import { SuppliersModule } from '../suppliers/suppliers.module'
 import { CourierWalletController } from './courier-wallet.controller'
 import { PayoutNumber } from './entities/payout-number.entity'
@@ -22,6 +23,7 @@ import { WithdrawalsService } from './withdrawals.service'
     MikroOrmModule.forFeature([Wallet, WalletTransaction, WalletTopup, PayoutNumber, WithdrawalRequest]),
     NotificationsModule,
     SuppliersModule,
+    ProviderTransactionsModule,
   ],
   controllers: [WalletController, SupplierWalletController, CourierWalletController, WalletAdminController],
   /**

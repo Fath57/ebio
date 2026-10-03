@@ -24,7 +24,7 @@ function buildService(options: { isReserved?: boolean } = {}) {
   em.transactional.mockImplementation(async (work: () => Promise<unknown>) => work())
   const wallet = { credit: vi.fn().mockResolvedValue(5000) }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
-  const service = new WithdrawalsService(em as never, wallet as never, notifications as never, {} as never)
+  const service = new WithdrawalsService(em as never, wallet as never, notifications as never, {} as never, {} as never)
   return { service, em, wallet }
 }
 

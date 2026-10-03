@@ -30,6 +30,7 @@ function buildService(topupStatus: TopupStatus, providerStatus: string) {
     em as never,
     { getOrCreate: vi.fn() } as never,
     { createGateway: () => gateway } as never,
+    { recordOutcome: vi.fn().mockResolvedValue(null), open: vi.fn(), attachReference: vi.fn(), markFailed: vi.fn() } as never,
   )
   // settleFromProvider does the crediting; the contract under test is what
   // verify() answers once it has run.
@@ -69,6 +70,7 @@ describe('recharge réglée par le webhook FedaPay', () => {
       em as never,
       {} as never,
       { createGateway: () => gateway } as never,
+      { recordOutcome: vi.fn().mockResolvedValue(null), open: vi.fn(), attachReference: vi.fn(), markFailed: vi.fn() } as never,
     )
     const settle = vi.spyOn(service, 'settleFromProvider').mockResolvedValue(true)
     return { service, em, gateway, settle }
@@ -127,7 +129,7 @@ describe('règlement d\'une recharge', () => {
     }
     em.transactional.mockImplementation(async (work: (txEm: typeof em) => Promise<unknown>) => work(em))
     const wallet = { credit: vi.fn().mockResolvedValue(1000) }
-    const service = new TopupService(em as never, wallet as never, {} as never)
+    const service = new TopupService(em as never, wallet as never, {} as never, {} as never)
     return { service, em, wallet }
   }
 
@@ -161,5 +163,80 @@ describe('règlement d\'une recharge', () => {
     await service.settleFromProvider('42', 'failed')
 
     expect(wallet.credit).not.toHaveBeenCalled()
+  })
+})
+
+describe('règlement d\'une recharge abandonnée puis payée', () => {
+  it('accepte de créditer une recharge marquée en échec si le prestataire confirme le paiement', async () => {
+    const topup = { id: 'topup-1', amount: '1000', wallet: { id: 'wallet-1' } }
+    const em = {
+      findOne: vi.fn().mockResolvedValue(topup),
+      execute: vi.fn().mockResolvedValue({ affectedRows: 1 }),
+      transactional: vi.fn(),
+    }
+    em.transactional.mockImplementation(async (work: (txEm: typeof em) => Promise<unknown>) => work(em))
+    const service = new TopupService(em as never, { credit: vi.fn() } as never, {} as never, {} as never)
+
+    await service.settleFromProvider('42', 'completed')
+    expect(em.execute.mock.calls[0][0]).toContain(`status IN ('PENDING', 'FAILED')`)
+
+    em.execute.mockClear()
+    await service.settleFromProvider('42', 'failed')
+    expect(em.execute.mock.calls[0][0]).toContain(`status IN ('PENDING')`)
+  })
+})
+
+describe('ouverture d\'une recharge', () => {
+  function buildInitiateService(initiatePayment: ReturnType<typeof vi.fn>) {
+    const topup = { id: 'topup-1', status: TopupStatus.PENDING, fedapayTransactionId: null as string | null }
+    const em = {
+      create: vi.fn().mockReturnValue(topup),
+      findOneOrFail: vi.fn().mockResolvedValue({ id: 'user-1' }),
+      flush: vi.fn(),
+    }
+    const operation = { id: 'op-1' }
+    const journal = {
+      open: vi.fn().mockResolvedValue(operation),
+      attachReference: vi.fn(),
+      markFailed: vi.fn(),
+    }
+    const gateway = { hostsPaymentPage: () => true, initiatePayment }
+    const service = new TopupService(
+      em as never,
+      { getOrCreate: vi.fn().mockResolvedValue({ id: 'wallet-1' }) } as never,
+      { createGateway: () => gateway } as never,
+      journal as never,
+    )
+    return { service, topup, journal, operation }
+  }
+
+  it('écrit l\'opération au journal avec la référence du prestataire', async () => {
+    const { service, topup, journal, operation } = buildInitiateService(
+      vi.fn().mockResolvedValue({ providerTransactionId: 'ABC123', redirectUrl: 'https://gateway/ABC123' }),
+    )
+
+    await service.initiate('user-1', 1000)
+
+    expect(journal.open).toHaveBeenCalledWith(expect.objectContaining({ subjectId: 'topup-1', amount: 1000 }))
+    expect(journal.attachReference).toHaveBeenCalledWith(operation, 'ABC123')
+    expect(topup.fedapayTransactionId).toBe('ABC123')
+  })
+
+  it('marque la recharge et l\'opération en échec quand le prestataire refuse l\'ouverture', async () => {
+    const { service, topup, journal } = buildInitiateService(vi.fn().mockRejectedValue(new Error('504')))
+
+    await expect(service.initiate('user-1', 1000)).rejects.toBeInstanceOf(BadRequestException)
+
+    expect(topup.status).toBe(TopupStatus.FAILED)
+    expect(journal.markFailed).toHaveBeenCalled()
+  })
+
+  it('ne laisse pas en attente une recharge sans référence', async () => {
+    const { service, topup, journal } = buildInitiateService(vi.fn().mockResolvedValue({ providerTransactionId: undefined }))
+
+    await expect(service.initiate('user-1', 1000)).rejects.toBeInstanceOf(BadRequestException)
+
+    expect(topup.status).toBe(TopupStatus.FAILED)
+    expect(journal.markFailed).toHaveBeenCalled()
   })
 })

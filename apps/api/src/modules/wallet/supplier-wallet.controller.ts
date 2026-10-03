@@ -28,6 +28,18 @@ export class SupplierWalletController {
     return this.topupService.initiate(session.user.id, body.amount, 'supplier')
   }
 
+  /** Topups of this user restricted to the shop wallet — pending and failed ones included. */
+  @Get('topups')
+  async listTopups(
+    @Session() session: LoggedInBetterAuthSession,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    const supplier = await this.suppliersService.findByUserId(session.user.id)
+    const wallet = await this.walletService.getOrCreate({ supplierId: supplier.id })
+    return this.topupService.listForUser(session.user.id, Number(page), Number(limit), wallet.id)
+  }
+
   @Post('topups/:id/verify')
   async verifyTopup(
     @Session() session: LoggedInBetterAuthSession,
