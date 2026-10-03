@@ -7,6 +7,7 @@ import { config } from '../../config/env.config'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
+import { isUncertainProviderError } from '../payments/gateways/intram-client'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { ProviderTransactionKind } from '../provider-transactions/provider-transaction.entity'
 import { ProviderTransactionsService } from '../provider-transactions/provider-transactions.service'
@@ -21,6 +22,10 @@ export const WITHDRAWAL_MIN_AMOUNT = 1000
 
 /** A payout silent for this long is re-checked against FedaPay directly. */
 const STALE_PROCESSING_MS = 10 * 60 * 1000
+/** A payout INTRAM never answered is sent again (same idempotency key) after this. */
+const UNCONFIRMED_RETRY_AFTER_MS = 5 * 60 * 1000
+/** Past this, retrying stops and a person has to look: never an automatic refund. */
+const UNCONFIRMED_GIVE_UP_MS = 24 * 60 * 60 * 1000
 
 /** Who owns the payout numbers and withdrawals: a shop or a courier, never both. */
 export interface PayoutOwner {
@@ -220,9 +225,6 @@ export class WithdrawalsService {
       processedBy: adminId,
     })
 
-    const payee = await this.resolvePayee(withdrawal)
-    const number = withdrawal.payoutNumber
-
     // Written before the money leaves: a payout the provider refuses keeps
     // its line too.
     const operation = await this.journal.open({
@@ -232,35 +234,10 @@ export class WithdrawalsService {
       amount: Number(withdrawal.amount),
     })
 
-    try {
-      const [firstname, ...rest] = (number.holderName || payee.displayName).split(' ')
-      const result = await this.payoutGateway().createPayout({
-        amount: Math.round(Number(withdrawal.amount)),
-        phoneNumber: number.phoneNumber,
-        mode: number.operator,
-        firstname,
-        lastname: rest.join(' ') || firstname,
-        email: payee.user.email ?? undefined,
-        withdrawalId: withdrawal.id,
-      })
-      withdrawal.fedapayPayoutId = result.payoutId
-      withdrawal.providerReference = result.reference
-      await this.em.flush()
-      await this.journal.attachReference(operation, result.payoutId)
-    }
-    catch (error) {
-      // The payout never left: fail the request and give the money back.
-      // Never JSON.stringify here: provider errors carry circular refs. The
-      // FedaPay SDK throws plain objects whose useful part sits in .message
-      // or .errorMessage; INTRAM throws a plain Error.
-      const raw = error as { message?: unknown, errorMessage?: unknown } | null
-      const detail = String(raw?.message ?? raw?.errorMessage ?? error)
-      this.logger.error(`Reversement refusé par le prestataire pour ${withdrawal.id} : ${detail}`)
-      await this.journal.markFailed(operation, detail)
-      await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, {}, 'Échec du versement — solde rétabli')
+    const outcome = await this.sendPayout(withdrawal, operation)
+    if (outcome === 'refused') {
       throw new BadRequestException('Le versement a échoué ; le solde du bénéficiaire est rétabli')
     }
-
     return this.mapWithdrawal(withdrawal)
   }
 
@@ -427,7 +404,95 @@ export class WithdrawalsService {
     }
   }
 
+  /**
+   * Sends again the payouts INTRAM never answered.
+   *
+   * Safe because the idempotency key is the withdrawal's own id: if the first
+   * call did reach INTRAM, the same operation comes back and nothing is paid
+   * twice; if it did not, the payout is created now.
+   */
+  @Cron(CronExpression.EVERY_10_MINUTES)
+  @EnsureRequestContext()
+  async retryUnconfirmedPayouts(): Promise<void> {
+    const now = Date.now()
+    const unconfirmed = await this.em.find(WithdrawalRequest, {
+      status: WithdrawalStatus.PROCESSING,
+      fedapayPayoutId: null,
+      processedAt: { $lt: new Date(now - UNCONFIRMED_RETRY_AFTER_MS) },
+    }, { populate: ['payoutNumber', 'supplier', 'supplier.user', 'courier', 'courier.user'] })
+
+    for (const withdrawal of unconfirmed) {
+      if (withdrawal.processedAt && now - withdrawal.processedAt.getTime() > UNCONFIRMED_GIVE_UP_MS) {
+        this.logger.error(`Reversement ${withdrawal.id} sans réponse du prestataire depuis plus de 24 h — à vérifier à la main, solde non rétabli`)
+        continue
+      }
+      try {
+        const operation = await this.journal.findLatest(ProviderTransactionKind.PAYOUT, withdrawal.id)
+          ?? await this.journal.open({
+            provider: config.payments.payoutProvider,
+            kind: ProviderTransactionKind.PAYOUT,
+            subjectId: withdrawal.id,
+            amount: Number(withdrawal.amount),
+          })
+        await this.sendPayout(withdrawal, operation)
+      }
+      catch (error) {
+        this.logger.error(`Nouvel envoi du reversement ${withdrawal.id} impossible`, error)
+      }
+    }
+  }
+
   // ---------- Internals ----------
+
+  /**
+   * One attempt at sending a withdrawal's money.
+   *
+   * - `sent`: the provider took it; the poller follows it to the end.
+   * - `unconfirmed`: no verdict (timeout, 5xx). It may have been taken all
+   *   the same, so the withdrawal stays in progress and its balance is NOT
+   *   given back — `retryUnconfirmedPayouts` asks again with the same key.
+   * - `refused`: a clear refusal; the withdrawal fails and the balance comes back.
+   */
+  private async sendPayout(
+    withdrawal: WithdrawalRequest,
+    operation: Parameters<ProviderTransactionsService['attachReference']>[0],
+  ): Promise<'sent' | 'unconfirmed' | 'refused'> {
+    const payee = await this.resolvePayee(withdrawal)
+    const number = withdrawal.payoutNumber
+    try {
+      const [firstname, ...rest] = (number.holderName || payee.displayName).split(' ')
+      const result = await this.payoutGateway().createPayout({
+        amount: Math.round(Number(withdrawal.amount)),
+        phoneNumber: number.phoneNumber,
+        mode: number.operator,
+        firstname,
+        lastname: rest.join(' ') || firstname,
+        email: payee.user.email ?? undefined,
+        withdrawalId: withdrawal.id,
+      })
+      withdrawal.fedapayPayoutId = result.payoutId
+      withdrawal.providerReference = result.reference
+      await this.em.flush()
+      await this.journal.attachReference(operation, result.payoutId)
+      return 'sent'
+    }
+    catch (error) {
+      // Never JSON.stringify here: provider errors carry circular refs. The
+      // FedaPay SDK throws plain objects whose useful part sits in .message
+      // or .errorMessage; INTRAM throws an IntramRequestError.
+      const raw = error as { message?: unknown, errorMessage?: unknown } | null
+      const detail = String(raw?.message ?? raw?.errorMessage ?? error)
+      if (isUncertainProviderError(error)) {
+        this.logger.warn(`Reversement ${withdrawal.id} sans réponse du prestataire (${detail}) : laissé en cours, renvoyé plus tard`)
+        await this.journal.noteUncertain(operation, detail)
+        return 'unconfirmed'
+      }
+      this.logger.error(`Reversement refusé par le prestataire pour ${withdrawal.id} : ${detail}`)
+      await this.journal.markFailed(operation, detail)
+      await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, {}, 'Échec du versement — solde rétabli')
+      return 'refused'
+    }
+  }
 
   /**
    * Conditional UPDATE as the arbiter: exactly one caller wins the

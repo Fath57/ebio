@@ -440,7 +440,10 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
     const operation = await this.client.get<IntramOperation & { error_message?: string }>(`/operations/${payoutId}`)
     const raw = operation.result?.status ?? operation.status
 
-    const status = raw === 'completed'
+    // `result.status` says what the worker concluded (`completed` / `failed`);
+    // the operation's own status (`queued`, `processing`, `succeeded`,
+    // `failed`) is the fallback when no result was written.
+    const status = raw === 'completed' || raw === 'succeeded'
       ? 'sent' as const
       : raw === 'failed' ? 'failed' as const : 'pending' as const
 

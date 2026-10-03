@@ -95,6 +95,29 @@ export function verifyWebhookSignature(params: {
   return given.length === wanted.length && timingSafeEqual(given, wanted)
 }
 
+/** Longest wait for an INTRAM answer: a hung request must not hold a caller for minutes. */
+const REQUEST_TIMEOUT_MS = 30_000
+
+/**
+ * An INTRAM call that did not succeed, and whether its outcome is known.
+ *
+ * `uncertain` is true when INTRAM never gave a verdict — no answer in time, a
+ * dropped connection, a 5xx or a gateway page. The operation may then exist on
+ * their side all the same: a payout must not be refunded on that basis, or the
+ * money would leave twice. A 4xx with a code is a refusal: nothing was done.
+ */
+export class IntramRequestError extends Error {
+  constructor(message: string, readonly code: string, readonly uncertain: boolean) {
+    super(message)
+    this.name = 'IntramRequestError'
+  }
+}
+
+/** True when the provider call failed without saying whether it was carried out. */
+export function isUncertainProviderError(error: unknown): boolean {
+  return error instanceof IntramRequestError && error.uncertain
+}
+
 /**
  * Signed HTTP client for the INTRAM Merchant API.
  *
@@ -156,8 +179,22 @@ export class IntramClient {
       headers['Idempotency-Key'] = idempotencyKey ?? randomUUID()
     }
 
-    const response = await fetch(url, { method, headers, body: rawBody === '' ? undefined : rawBody })
-    const text = await response.text()
+    let response: Response
+    let text: string
+    try {
+      response = await fetch(url, {
+        method,
+        headers,
+        body: rawBody === '' ? undefined : rawBody,
+        signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+      })
+      text = await response.text()
+    }
+    catch (error) {
+      const reason = error instanceof Error && error.name === 'TimeoutError' ? 'timeout' : 'network_error'
+      this.logger.error(`INTRAM ${method} ${endpoint} → ${reason}: ${String((error as Error)?.message ?? error)}`)
+      throw new IntramRequestError(`INTRAM ${endpoint}: ${reason}`, reason, true)
+    }
 
     let envelope: IntramEnvelope<T> | null = null
     try {
@@ -167,13 +204,17 @@ export class IntramClient {
       // A gateway error page rather than the API: keep the body in the log,
       // it is the only thing that says which hop failed.
       this.logger.error(`INTRAM ${method} ${endpoint} → ${response.status}, réponse illisible: ${text.slice(0, 500)}`)
-      throw new Error(`INTRAM ${endpoint}: réponse illisible (${response.status})`)
+      throw new IntramRequestError(
+        `INTRAM ${endpoint}: réponse illisible (${response.status})`,
+        String(response.status),
+        response.status >= 500,
+      )
     }
 
     if (!response.ok || envelope.error) {
       const code = envelope.code ?? String(response.status)
       this.logger.error(`INTRAM ${method} ${endpoint} → ${code}: ${envelope.message ?? text.slice(0, 300)}`)
-      throw new Error(`INTRAM ${endpoint}: ${code}`)
+      throw new IntramRequestError(`INTRAM ${endpoint}: ${code}`, code, response.status >= 500)
     }
 
     return envelope.data

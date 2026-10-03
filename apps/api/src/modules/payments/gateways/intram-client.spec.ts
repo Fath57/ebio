@@ -1,5 +1,5 @@
 import { createHmac } from 'node:crypto'
-import { buildSigningString, signRequest, sortedQueryString, verifyWebhookSignature } from './intram-client'
+import { buildSigningString, IntramClient, IntramRequestError, isUncertainProviderError, signRequest, sortedQueryString, verifyWebhookSignature } from './intram-client'
 
 const SECRET = 'sk_sandbox_test'
 
@@ -74,5 +74,43 @@ describe('vérification des webhooks INTRAM', () => {
   it('refuse une signature signée avec un autre secret', () => {
     const other = `sha256=${createHmac('sha256', 'sk_autre').update(`${timestamp}.${rawBody}`).digest('hex')}`
     expect(verifyWebhookSignature({ rawBody, signature: other, timestamp, secret: SECRET, now })).toBe(false)
+  })
+})
+
+describe('intramClient — réponse absente ou refus', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals()
+  })
+
+  it('signale comme incertain un appel resté sans réponse', async () => {
+    const timeout = Object.assign(new Error('The operation was aborted due to timeout'), { name: 'TimeoutError' })
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timeout))
+
+    const error = await new IntramClient('pk', 'sk', 'https://intram.test').post('/payouts', {}, 'po-1').catch((e: unknown) => e)
+
+    expect(error).toBeInstanceOf(IntramRequestError)
+    expect(isUncertainProviderError(error)).toBe(true)
+    expect((error as IntramRequestError).code).toBe('timeout')
+  })
+
+  it('signale comme incertaine une page d\'erreur de la passerelle (504)', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false, status: 504, text: async () => '<html>Gateway Timeout</html>' }))
+
+    const error = await new IntramClient('pk', 'sk', 'https://intram.test').post('/payouts', {}, 'po-1').catch((e: unknown) => e)
+
+    expect(isUncertainProviderError(error)).toBe(true)
+  })
+
+  it('tient un refus explicite pour certain', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
+      ok: false,
+      status: 400,
+      text: async () => JSON.stringify({ error: true, code: 'validation_error', message: 'Invalid payout request' }),
+    }))
+
+    const error = await new IntramClient('pk', 'sk', 'https://intram.test').post('/payouts', {}, 'po-1').catch((e: unknown) => e)
+
+    expect(isUncertainProviderError(error)).toBe(false)
+    expect((error as IntramRequestError).code).toBe('validation_error')
   })
 })

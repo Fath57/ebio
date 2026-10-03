@@ -88,6 +88,18 @@ export class ProviderTransactionsService {
     return transaction.status
   }
 
+  /** The latest line of a business object (a retried payout reuses it). */
+  async findLatest(kind: ProviderTransactionKind, subjectId: string): Promise<ProviderTransaction | null> {
+    return this.em.findOne(ProviderTransaction, { kind, subjectId }, { orderBy: { createdAt: 'DESC' } })
+  }
+
+  /** Notes why an operation is still open, without closing it. */
+  async noteUncertain(transaction: ProviderTransaction, reason: string): Promise<void> {
+    transaction.failureReason = reason.slice(0, 1000)
+    transaction.lastCheckedAt = new Date()
+    await this.em.flush()
+  }
+
   /**
    * What the reconciliation should ask the provider about: everything still
    * open, and what was abandoned recently enough to be paid late.
