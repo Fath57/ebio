@@ -44,6 +44,7 @@ import { OrderItem } from './entities/order-item.entity'
 import { Order, OrderStatus, PaymentMethod, PickupMode } from './entities/order.entity'
 import { OrderEmailsService } from './order-emails.service'
 import { buildInvoiceItems, formatFcfa, formatInvoiceDate, PAYMENT_LABELS } from './order-format'
+import { returnStock } from './order-stock'
 
 interface OrderFilters {
   /** One status or several: a tab of the app can group a few of them. */
@@ -603,6 +604,12 @@ export class OrdersService {
   private async applyStatus(order: Order, newStatus: OrderStatus, options: { silent?: boolean } = {}): Promise<void> {
     // The invoice goes out once: only when this call is the actual move to DELIVERED.
     const becomesDelivered = newStatus === OrderStatus.DELIVERED && order.status !== OrderStatus.DELIVERED
+    // Acceptance took the stock; an accepted order cancelled afterwards gives
+    // it back, once, in the same flush as the status. One never accepted took
+    // nothing (`acceptedAt` is only set where the decrement happens).
+    if (newStatus === OrderStatus.CANCELLED && order.status !== OrderStatus.CANCELLED && order.acceptedAt) {
+      returnStock(order.items.getItems())
+    }
     order.status = newStatus
 
     if (newStatus === OrderStatus.DELIVERED) {
