@@ -1,13 +1,13 @@
 import type { DeliveryPricingConfig } from '../../common/delivery-fee'
 import type { AppVersions } from '../app-version/app-version.contract'
 import type { ReferralRewards } from '../referrals/contracts/referral.contract'
-import type { AssistantIdentity, BannerOffersInput } from './contracts/delivery-pricing.contract'
+import type { AssistantIdentity, BannerOffersInput, EscrowReleaseInput } from './contracts/delivery-pricing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { DEFAULT_DELIVERY_PRICING } from '../../common/delivery-fee'
 import { appVersionsSchema } from '../app-version/app-version.contract'
 import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
-import { assistantIdentitySchema, bannerOffersSchema, deliveryPricingConfigSchema } from './contracts/delivery-pricing.contract'
+import { assistantIdentitySchema, bannerOffersSchema, deliveryPricingConfigSchema, escrowReleaseSchema } from './contracts/delivery-pricing.contract'
 import { PlatformSetting } from './platform-setting.entity'
 
 export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
@@ -25,6 +25,16 @@ export const ANNOUNCEMENT_INTERVAL_HOURS_KEY = 'announcement_interval_hours'
 export const ANNOUNCEMENT_OFFERS_KEY = 'announcement_offers'
 export const APP_VERSIONS_KEY = 'app_versions'
 export const REFERRAL_REWARDS_KEY = 'referral_rewards'
+export const ESCROW_RELEASE_KEY = 'escrow_release'
+
+/**
+ * Two days once both sides confirmed delivery — time for a late complaint —
+ * and a week at most, so a forgotten confirmation never holds a shop's money.
+ */
+export const DEFAULT_ESCROW_RELEASE: EscrowReleaseInput = {
+  heuresApresConfirmation: 48,
+  joursMaximum: 7,
+}
 
 /**
  * Starting rates for referrals.
@@ -249,6 +259,24 @@ export class PlatformSettingsService {
 
   async setReferralRewards(rewards: ReferralRewards): Promise<void> {
     await this.set(REFERRAL_REWARDS_KEY, JSON.stringify(rewards))
+  }
+
+  async getEscrowRelease(): Promise<EscrowReleaseInput> {
+    const raw = await this.get(ESCROW_RELEASE_KEY)
+    if (raw === null) {
+      return DEFAULT_ESCROW_RELEASE
+    }
+    try {
+      const parsed = escrowReleaseSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : DEFAULT_ESCROW_RELEASE
+    }
+    catch {
+      return DEFAULT_ESCROW_RELEASE
+    }
+  }
+
+  async setEscrowRelease(config: EscrowReleaseInput): Promise<void> {
+    await this.set(ESCROW_RELEASE_KEY, JSON.stringify(escrowReleaseSchema.parse(config)))
   }
 
   async setBannerOffers(config: BannerOffersInput): Promise<void> {

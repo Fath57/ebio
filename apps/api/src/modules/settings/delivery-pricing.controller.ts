@@ -1,5 +1,5 @@
 import type { ReferralRewards } from '../referrals/contracts/referral.contract'
-import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
+import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, EscrowReleaseInput, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
@@ -8,7 +8,7 @@ import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { AuthGuard } from '../auth/auth.guard'
 import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
-import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
+import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, escrowReleaseSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSettingsService } from './platform-settings.service'
 
@@ -178,5 +178,29 @@ export class AdminProductReviewTimingController {
       delaiHeures: await this.platformSettings.getProductReviewDelayHours(),
       relancesMaximum: await this.platformSettings.getProductReviewMaxInvites(),
     }
+  }
+}
+
+/**
+ * How long a shop waits for the money of an order paid online. Read by the
+ * escrow release and shown to the shop in its wallet.
+ */
+@Controller('admin/escrow-release')
+@UseGuards(AuthGuard, RolesGuard, CaslGuard)
+@Roles('ADMIN')
+export class AdminEscrowReleaseController {
+  constructor(private readonly platformSettings: PlatformSettingsService) {}
+
+  @CanRead('Settings')
+  @Get()
+  async get() {
+    return this.platformSettings.getEscrowRelease()
+  }
+
+  @CanManage('Settings')
+  @Put()
+  async update(@TypedBody(escrowReleaseSchema) body: EscrowReleaseInput) {
+    await this.platformSettings.setEscrowRelease(body)
+    return this.platformSettings.getEscrowRelease()
   }
 }

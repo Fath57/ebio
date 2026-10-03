@@ -5,13 +5,12 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Payment, PaymentStatus } from './payment.entity'
 import { PaymentsService } from './payments.service'
 
-const FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000
-const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
-const SIX_DAYS_MS = 6 * 24 * 60 * 60 * 1000
-const SEVEN_DAYS_MS = 7 * 24 * 60 * 60 * 1000
+const HOUR_MS = 60 * 60 * 1000
+const DAY_MS = 24 * HOUR_MS
 
 @Injectable()
 export class EscrowSchedulerService {
@@ -21,18 +20,22 @@ export class EscrowSchedulerService {
     private readonly em: EntityManager,
     private readonly paymentsService: PaymentsService,
     private readonly notificationsService: NotificationsService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
   @EnsureRequestContext()
   async processEscrowReleases(): Promise<void> {
-    await this.releaseBothConfirmedOrders()
-    await this.autoReleaseExpiredOrders()
-    await this.sendReminders()
+    // Read on every run: a delay changed in the back-office applies from the
+    // next hour, to orders already delivered as well.
+    const { heuresApresConfirmation, joursMaximum } = await this.platformSettings.getEscrowRelease()
+    await this.releaseBothConfirmedOrders(heuresApresConfirmation * HOUR_MS)
+    await this.autoReleaseExpiredOrders(joursMaximum * DAY_MS)
+    await this.sendReminders(joursMaximum)
   }
 
-  private async releaseBothConfirmedOrders(): Promise<void> {
-    const cutoff = new Date(Date.now() - FORTY_EIGHT_HOURS_MS)
+  private async releaseBothConfirmedOrders(delayMs: number): Promise<void> {
+    const cutoff = new Date(Date.now() - delayMs)
 
     const payments = await this.em.find(Payment, {
       status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
@@ -56,8 +59,8 @@ export class EscrowSchedulerService {
     }
   }
 
-  private async autoReleaseExpiredOrders(): Promise<void> {
-    const cutoff = new Date(Date.now() - SEVEN_DAYS_MS)
+  private async autoReleaseExpiredOrders(delayMs: number): Promise<void> {
+    const cutoff = new Date(Date.now() - delayMs)
 
     const payments = await this.em.find(Payment, {
       status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
@@ -79,12 +82,19 @@ export class EscrowSchedulerService {
     }
   }
 
-  private async sendReminders(): Promise<void> {
-    await this.sendReminderAtDay(THREE_DAYS_MS, 3)
-    await this.sendReminderAtDay(SIX_DAYS_MS, 6)
+  /**
+   * Two reminders to confirm, four days and one day before the automatic
+   * release — the same moments as before with the default week, and still
+   * meaningful when the week is shortened.
+   */
+  private async sendReminders(maxDays: number): Promise<void> {
+    const days = [...new Set([maxDays - 4, maxDays - 1])].filter(day => day >= 1)
+    for (const day of days) {
+      await this.sendReminderAtDay(day * DAY_MS, day, maxDays)
+    }
   }
 
-  private async sendReminderAtDay(millisSinceDelivery: number, dayNumber: number): Promise<void> {
+  private async sendReminderAtDay(millisSinceDelivery: number, dayNumber: number, maxDays: number): Promise<void> {
     const windowStart = new Date(Date.now() - millisSinceDelivery - 60 * 60 * 1000)
     const windowEnd = new Date(Date.now() - millisSinceDelivery)
 
@@ -104,7 +114,7 @@ export class EscrowSchedulerService {
           user: order.buyer,
           type: NotificationType.ESCROW_REMINDER,
           title: 'Confirmez votre livraison',
-          body: `Veuillez confirmer la réception de la commande ${order.orderNumber}. Sans confirmation, les fonds seront libérés automatiquement dans ${7 - dayNumber} jours.`,
+          body: `Veuillez confirmer la réception de la commande ${order.orderNumber}. Sans confirmation, les fonds seront libérés automatiquement dans ${maxDays - dayNumber} jour${maxDays - dayNumber > 1 ? 's' : ''}.`,
           data: { orderId: order.id, dayNumber },
           channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
         })

@@ -26,6 +26,7 @@ import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
 import { Payment, PaymentProvider, PaymentStatus } from './payment.entity'
 import { providerForTransaction } from './provider-for-transaction'
+import { supplierShare } from './supplier-share'
 
 @Injectable()
 export class PaymentsService {
@@ -688,11 +689,15 @@ export class PaymentsService {
       status: DeliveryStatus.DELIVERED,
       courier: { $ne: null },
     })
-    const courierDeliveryFee = courierDelivery ? payment.order.deliveryFee : 0
-    const supplierAmount = Math.max(
-      0,
-      Math.round((payment.amount - payment.order.commissionAmount - courierDeliveryFee) * 100) / 100,
-    )
+    const share = supplierShare({
+      paymentAmount: payment.amount,
+      commissionAmount: payment.order.commissionAmount,
+      deliveryFee: payment.order.deliveryFee,
+      deliveredByCourier: courierDelivery !== null,
+      discountFundedBy: payment.order.discountFundedBy,
+      discountAmount: payment.order.discountAmount,
+      platformPromoCompensation: payment.order.platformPromoCompensation,
+    })
 
     // The money already sits on the platform account: releasing the escrow is
     // an internal credit to the shop wallet. The supplier withdraws it later
@@ -700,7 +705,7 @@ export class PaymentsService {
     const wallet = await this.walletService.getOrCreate({ supplierId: payment.order.supplier.id })
     await this.walletService.credit(wallet.id, {
       type: WalletTransactionType.SALE_CREDIT,
-      amount: supplierAmount,
+      amount: share.sale,
       description: `Vente ${payment.order.orderNumber}`,
       orderId: payment.order.id,
       paymentId: payment.id,
@@ -753,8 +758,8 @@ export class PaymentsService {
       user: payment.order.supplier.user,
       type: NotificationType.PAYMENT_RELEASED,
       title: 'Paiement libéré',
-      body: `${supplierAmount} FCFA ont été crédités sur votre portefeuille boutique`,
-      data: { orderId: payment.order.id, paymentId: payment.id, amount: supplierAmount },
+      body: `${share.sale} FCFA ont été crédités sur votre portefeuille boutique`,
+      data: { orderId: payment.order.id, paymentId: payment.id, amount: share.sale },
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })
 

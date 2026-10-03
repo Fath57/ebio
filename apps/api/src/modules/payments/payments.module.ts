@@ -5,6 +5,7 @@ import { NotificationsModule } from '../notifications/notifications.module'
 import { Order } from '../orders/entities/order.entity'
 import { OrderEmailsModule } from '../orders/order-emails.module'
 import { ProviderTransactionsModule } from '../provider-transactions/provider-transactions.module'
+import { PlatformSettingsModule } from '../settings/platform-settings.module'
 import { WalletModule } from '../wallet/wallet.module'
 import { CheckoutsController } from './checkouts.controller'
 import { CommissionService } from './commission.service'
@@ -28,6 +29,7 @@ import { ReceiptService } from './receipt.service'
     NotificationsModule,
     WalletModule,
     ProviderTransactionsModule,
+    PlatformSettingsModule,
     forwardRef(() => DeliveriesModule),
   ],
   controllers: [

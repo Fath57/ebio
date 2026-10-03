@@ -177,3 +177,21 @@ export const productReviewTimingSchema = z.object({
 })
 
 export type ProductReviewTimingInput = z.infer<typeof productReviewTimingSchema>
+
+/**
+ * When a shop is paid for an order settled online: so long after delivery
+ * once both sides confirmed it, and at the latest so many days after delivery
+ * whatever happens.
+ */
+export const escrowReleaseSchema = z.object({
+  heuresApresConfirmation: z.coerce.number().int().min(0).max(720),
+  joursMaximum: z.coerce.number().int().min(1).max(60),
+}).refine(
+  value => value.heuresApresConfirmation <= value.joursMaximum * 24,
+  { message: 'Le délai après confirmation ne peut pas dépasser le délai maximum', path: ['heuresApresConfirmation'] },
+).meta({
+  title: 'EscrowRelease',
+  description: 'Délais de versement des ventes payées en ligne au portefeuille de la boutique',
+})
+
+export type EscrowReleaseInput = z.infer<typeof escrowReleaseSchema>

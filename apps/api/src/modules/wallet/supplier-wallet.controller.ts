@@ -7,6 +7,7 @@ import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { SuppliersService } from '../suppliers/suppliers.service'
 import { createPayoutNumberSchema, createWithdrawalSchema, topupSchema, verifyTopupSchema } from './contracts/wallet.contract'
+import { PendingEarningsService } from './pending-earnings.service'
 import { TopupService } from './topup.service'
 import { WalletService } from './wallet.service'
 import { WithdrawalsService } from './withdrawals.service'
@@ -20,6 +21,7 @@ export class SupplierWalletController {
     private readonly withdrawalsService: WithdrawalsService,
     private readonly suppliersService: SuppliersService,
     private readonly topupService: TopupService,
+    private readonly pendingEarnings: PendingEarningsService,
   ) {}
 
   /** FedaPay top-up of the shop wallet (to pay a banner, or clear a cash debt). */
@@ -61,6 +63,8 @@ export class SupplierWalletController {
     return {
       id: wallet.id,
       balance: Number(wallet.balance),
+      // Paid online, not yet released: the shop sees it is coming.
+      pending: await this.pendingEarnings.forSupplier(supplier.id),
       transactions,
     }
   }

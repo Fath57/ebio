@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { ProviderTransactionsModule } from '../provider-transactions/provider-transactions.module'
+import { PlatformSettingsModule } from '../settings/platform-settings.module'
 import { SuppliersModule } from '../suppliers/suppliers.module'
 import { CourierWalletController } from './courier-wallet.controller'
 import { PayoutNumber } from './entities/payout-number.entity'
@@ -10,6 +11,7 @@ import { WalletTopup } from './entities/wallet-topup.entity'
 import { WalletTransaction } from './entities/wallet-transaction.entity'
 import { Wallet } from './entities/wallet.entity'
 import { WithdrawalRequest } from './entities/withdrawal-request.entity'
+import { PendingEarningsService } from './pending-earnings.service'
 import { PlatformAccountsService } from './platform-accounts.service'
 import { SupplierWalletController } from './supplier-wallet.controller'
 import { TopupService } from './topup.service'
@@ -24,6 +26,7 @@ import { WithdrawalsService } from './withdrawals.service'
     NotificationsModule,
     SuppliersModule,
     ProviderTransactionsModule,
+    PlatformSettingsModule,
   ],
   controllers: [WalletController, SupplierWalletController, CourierWalletController, WalletAdminController],
   /**
@@ -32,7 +35,7 @@ import { WithdrawalsService } from './withdrawals.service'
    * instance of a stateless factory costs nothing — far less than a circular
    * import held together by `forwardRef`.
    */
-  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PaymentGatewayFactory],
+  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PendingEarningsService, PaymentGatewayFactory],
   exports: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService],
 })
 export class WalletModule {}

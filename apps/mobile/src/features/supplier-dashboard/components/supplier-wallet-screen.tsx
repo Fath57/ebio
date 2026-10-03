@@ -36,9 +36,22 @@ interface Movement {
   createdAt: string
 }
 
+/** Paid online, not yet released to the wallet (see the escrow release). */
+interface PendingEarnings {
+  amount: number
+  deliveredAmount: number
+  deliveredCount: number
+  inProgressAmount: number
+  inProgressCount: number
+  nextReleaseAt: string | null
+  delays: { heuresApresConfirmation: number, joursMaximum: number }
+}
+
 interface WalletData {
   id: string
   balance: number
+  /** Absent from APIs older than this screen. */
+  pending?: PendingEarnings
   transactions: {
     items: Movement[]
     total: number
@@ -106,6 +119,22 @@ const WITHDRAWAL_STATUS_COLORS: Record<Withdrawal['status'], string> = {
   CANCELLED: colors.neutral[400],
 }
 
+/** « 48 h », or « 2 jours » when it is a whole number of days. */
+function formatDelayHours(hours: number): string {
+  if (hours >= 24 && hours % 24 === 0) {
+    const days = hours / 24
+    return `${days} jour${days > 1 ? 's' : ''}`
+  }
+  return `${hours} h`
+}
+
+/** « dimanche 5 octobre vers 12 h » — the release runs hourly, hence « vers ». */
+function formatReleaseMoment(iso: string): string {
+  const date = new Date(iso)
+  const day = date.toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long' })
+  return `${day} vers ${date.getHours()} h`
+}
+
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
 }
@@ -165,6 +194,7 @@ interface SupplierWalletScreenProps {
 export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
   const { semantic } = useTheme()
   const [balance, setBalance] = useState(0)
+  const [pending, setPending] = useState<PendingEarnings | null>(null)
   const [numbers, setNumbers] = useState<PayoutNumber[]>([])
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [topups, setTopups] = useState<Topup[]>([])
@@ -199,6 +229,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
     const data = await walletRes.json() as WalletData
     if (page === 1) {
       setBalance(data.balance)
+      setPending(data.pending ?? null)
       const [numbersRes, withdrawalsRes, topupsRes] = await Promise.all([
         apiFetch('/api/suppliers/me/wallet/payout-numbers'),
         // The latest requests and topups only: a pending one is always among
@@ -356,6 +387,46 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
                 <Text style={[styles.balanceHint, { color: semantic.textSecondary }]}>
                   Solde négatif : commissions sur ventes en espèces, absorbées par vos prochaines ventes en ligne.
                 </Text>
+              )}
+              {/* Money already paid by buyers but not released yet: without it a
+                  delivered sale looked lost while the balance stayed still. */}
+              {pending && pending.amount > 0 && (
+                <View
+                  style={[styles.pendingBox, { backgroundColor: colors.earth[50] }]}
+                  accessible
+                  accessibilityLabel={`En attente de crédit : ${formatAmount(pending.amount)}`}
+                >
+                  <View style={styles.pendingHeader}>
+                    <Text style={[styles.pendingLabel, { color: colors.earth[800] }]}>En attente de crédit</Text>
+                    <Text style={[styles.pendingValue, { color: colors.earth[800] }]}>{formatAmount(pending.amount)}</Text>
+                  </View>
+                  {pending.deliveredCount > 0 && (
+                    <Text style={[styles.pendingLine, { color: colors.earth[600] }]}>
+                      {formatAmount(pending.deliveredAmount)}
+                      {' '}
+                      livré
+                      {pending.deliveredCount > 1 ? 's' : ''}
+                      {pending.nextReleaseAt ? ` — prochain versement ${formatReleaseMoment(pending.nextReleaseAt)}` : ''}
+                    </Text>
+                  )}
+                  {pending.inProgressCount > 0 && (
+                    <Text style={[styles.pendingLine, { color: colors.earth[600] }]}>
+                      {formatAmount(pending.inProgressAmount)}
+                      {' '}
+                      sur
+                      {' '}
+                      {pending.inProgressCount}
+                      {' '}
+                      commande
+                      {pending.inProgressCount > 1 ? 's' : ''}
+                      {' '}
+                      en cours
+                    </Text>
+                  )}
+                  <Text style={[styles.pendingHint, { color: colors.earth[600] }]}>
+                    {`Les ventes payées en ligne arrivent ${formatDelayHours(pending.delays.heuresApresConfirmation)} après que vous et le client avez confirmé la livraison, et au plus tard ${pending.delays.joursMaximum} jour${pending.delays.joursMaximum > 1 ? 's' : ''} après la livraison.`}
+                  </Text>
+                </View>
               )}
               <View style={styles.actionRow}>
                 <TouchableOpacity
@@ -632,6 +703,12 @@ const styles = StyleSheet.create({
   balanceLabel: { ...typography.bodyS },
   balanceValue: { ...typography.display, fontFamily: fonts.sansBd, fontSize: 30, lineHeight: 36 },
   balanceHint: { ...typography.caption },
+  pendingBox: { borderRadius: radius.md, padding: spacing[3], gap: spacing[1], marginTop: spacing[1] },
+  pendingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: spacing[2] },
+  pendingLabel: { ...typography.bodyS, fontFamily: fonts.sansSb },
+  pendingValue: { ...typography.bodyS, fontFamily: fonts.mono },
+  pendingLine: { ...typography.caption },
+  pendingHint: { ...typography.caption, marginTop: spacing[1] },
   actionRow: { flexDirection: 'row', gap: spacing[2], marginTop: spacing[2] },
   topupButton: {
     flex: 1,
