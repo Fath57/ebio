@@ -160,9 +160,15 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         </TouchableOpacity>
       )}
 
-      {/* KPI cards */}
+      {/* KPI cards: each one opens the screen where its figure can be acted on. */}
       <View style={styles.kpiRow}>
-        <View style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}>
+        <TouchableOpacity
+          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
+          onPress={onNavigateToWallet}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Revenus : ouvrir le portefeuille"
+        >
           <TrendingUp size={20} color={colors.green[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
             {((data?.revenue ?? 0) / 1000).toFixed(0)}
@@ -171,9 +177,15 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             Revenus (FCFA)
           </Text>
-        </View>
+        </TouchableOpacity>
 
-        <View style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}>
+        <TouchableOpacity
+          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
+          onPress={onNavigateToOrders}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Commandes en attente : ouvrir les commandes"
+        >
           <ShoppingCart size={20} color={colors.blue[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
             {data?.pendingOrders ?? 0}
@@ -181,12 +193,14 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             En attente
           </Text>
-        </View>
+        </TouchableOpacity>
 
         <TouchableOpacity
           style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
           onPress={onNavigateToProducts}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Stock critique : ouvrir les produits"
         >
           <Package size={20} color={colors.earth[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
@@ -204,6 +218,8 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
           onPress={onNavigateToReviews}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Note moyenne : ouvrir les avis"
         >
           <Star size={20} color={colors.earth[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
@@ -218,6 +234,8 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
           onPress={onNavigateToMessages}
           activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Messages : ouvrir les discussions"
         >
           <MessageCircle size={20} color={colors.blue[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
