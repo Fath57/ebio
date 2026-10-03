@@ -120,6 +120,11 @@ function SearchStackScreen() {
         * onglet y avait mis. */}
       <SearchStack.Screen name="Notifications" component={NotificationsWrapper} />
       <SearchStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
+      {/* Writing to a shop needs an account: a visitor signs in here and
+        * comes straight back to the shop rather than to another tab. */}
+      <SearchStack.Screen name="Login" component={LoginWrapper} />
+      <SearchStack.Screen name="Register" component={RegisterWrapper} />
+      <SearchStack.Screen name="ForgotPassword" component={ForgotPasswordWrapper} />
     </SearchStack.Navigator>
   )
 }
@@ -254,26 +259,34 @@ async function openChatWithSupplier(navigation: any, supplierId: string, peerNam
       method: 'POST',
       body: JSON.stringify({ supplierId, ...(orderId ? { orderId } : {}) }),
     })
-    if (res.ok) {
-      const conv = await res.json()
-      navigation.navigate('Chat', {
-        screen: 'ChatDetail',
-        // Puts the conversation list underneath: without it the Chat stack is
-        // created with ChatDetail as its only route, so the back button has
-        // nothing to pop and the list becomes unreachable.
-        initial: false,
-        params: {
-          conversationId: conv.id,
-          peerName: peerName ?? conv.supplierShopName,
-          isSupplier: false,
-          orderId: conv.orderId ?? orderId ?? null,
-          kind: 'SUPPLIER',
-        },
-      })
+    if (!res.ok) {
+      // A silent failure read as a dead button: say what happened instead.
+      appAlert(
+        'Discussion indisponible',
+        res.status === 401
+          ? 'Votre session a expiré. Reconnectez-vous pour écrire à la boutique.'
+          : 'Impossible d’ouvrir la discussion pour le moment. Réessayez.',
+      )
+      return
     }
+    const conv = await res.json()
+    navigation.navigate('Chat', {
+      screen: 'ChatDetail',
+      // Puts the conversation list underneath: without it the Chat stack is
+      // created with ChatDetail as its only route, so the back button has
+      // nothing to pop and the list becomes unreachable.
+      initial: false,
+      params: {
+        conversationId: conv.id,
+        peerName: peerName ?? conv.supplierShopName,
+        isSupplier: false,
+        orderId: conv.orderId ?? orderId ?? null,
+        kind: 'SUPPLIER',
+      },
+    })
   }
   catch {
-    // ignore
+    appAlert('Discussion indisponible', 'Vérifiez votre connexion et réessayez.')
   }
 }
 
@@ -321,11 +334,19 @@ async function openChatWithCourier(navigation: any, deliveryId: string, peerName
 
 function SupplierProfileWrapper({ route, navigation }: any) {
   const { supplierId } = route.params
+  const { data: session } = useSession()
   return (
     <View style={{ flex: 1 }}>
       <SupplierProfileScreen
         supplierId={supplierId}
-        onNavigateToChat={id => openChatWithSupplier(navigation, id)}
+        onNavigateToChat={(id) => {
+          // A visitor has no thread to open: sign in first, then back here.
+          if (!session?.user) {
+            navigation.navigate('Login')
+            return
+          }
+          openChatWithSupplier(navigation, id)
+        }}
         onNavigateToProduct={(productId, product, supplierInfo) => {
           navigation.navigate('ProductDetail', { product, supplier: supplierInfo })
         }}
@@ -477,7 +498,7 @@ function ChatStackScreen() {
                 kind={params.kind ?? 'SUPPLIER'}
                 onGoBack={() => navigation.goBack()}
                 onOpenOrder={(oid) => {
-                  navigation.navigate('Commandes', { screen: 'OrderTracking', params: { orderId: oid } })
+                  navigation.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId: oid } })
                 }}
               />
             </SafeScreen>
@@ -656,6 +677,7 @@ function OrderSuccessWrapper({ route, navigation }: any) {
           navigation.popToTop()
           navigation.navigate('Commandes', {
             screen: 'OrderTracking',
+            initial: false,
             params: { orderId },
           })
         }}
@@ -1161,7 +1183,7 @@ function BuyerTabs() {
         * interrupt someone. */}
       <LiveOrderToast
         hidden={place.tab === 'Commandes' || HIDE_TAB_BAR_ROUTES.has(place.screen)}
-        onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', params: { orderId } })}
+        onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
       />
 
       <BuyerAnnouncement />
@@ -1191,10 +1213,10 @@ function BuyerAnnouncement() {
     }
 
     if (item.targetType === 'SUPPLIER') {
-      navigationRef.navigate('Accueil', { screen: 'SupplierProfile', params: { supplierId: item.targetId } })
+      navigationRef.navigate('Accueil', { screen: 'SupplierProfile', initial: false, params: { supplierId: item.targetId } })
     }
     else if (item.targetType === 'PRODUCT') {
-      navigationRef.navigate('Accueil', { screen: 'ProductDetail', params: { productId: item.targetId } })
+      navigationRef.navigate('Accueil', { screen: 'ProductDetail', initial: false, params: { productId: item.targetId } })
     }
     else if (item.targetType === 'URL') {
       void Linking.openURL(item.targetId)

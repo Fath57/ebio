@@ -6,7 +6,6 @@ import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Navigation from 'lucide-react-native/dist/esm/icons/navigation'
-import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import ShareIcon from 'lucide-react-native/dist/esm/icons/share-2'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Star from 'lucide-react-native/dist/esm/icons/star'
@@ -38,7 +37,6 @@ import { ProductCard } from '../../catalog/components/product-card'
 import { Badge } from '../../common/components/badge'
 import { HeaderIcon, ScrollFadeHeader, useHeaderTint } from '../../common/components/scroll-fade-header'
 import { useLocation } from '../../common/location-context'
-import { ContactActionSheet } from './contact-action-sheet'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const COVER_HEIGHT = 260
@@ -324,7 +322,6 @@ export function SupplierProfileScreen({
   const { latitude: buyerLat, longitude: buyerLng } = useLocation()
   const [supplier, setSupplier] = useState<SupplierProfile | null>(null)
   const [isLoading, setIsLoading] = useState(true)
-  const [isContactSheetVisible, setIsContactSheetVisible] = useState(false)
   const [isHoursExpanded, setIsHoursExpanded] = useState(false)
   const [salesPoints, setSalesPoints] = useState<SalesPointItem[]>([])
   const [showAllProducts, setShowAllProducts] = useState(false)
@@ -449,12 +446,6 @@ export function SupplierProfileScreen({
     }
     onNavigateToProduct(productId, product, supplierInfo)
   }, [onNavigateToProduct, supplier])
-
-  const handleCall = useCallback(() => {
-    if (supplier?.phoneNumber) {
-      Linking.openURL(`tel:${supplier.phoneNumber}`)
-    }
-  }, [supplier?.phoneNumber])
 
   const openDirections = useCallback((latitude: number, longitude: number, label?: string) => {
     const query = label ? `${latitude},${longitude}(${encodeURIComponent(label)})` : `${latitude},${longitude}`
@@ -690,14 +681,8 @@ export function SupplierProfileScreen({
         {/* ================================================================= */}
         <FadeInView delay={200}>
           <View style={styles.quickActionsRow}>
-            {supplier.phoneNumber && (
-              <QuickAction
-                icon={Phone}
-                label="Appeler"
-                onPress={handleCall}
-                semantic={semantic}
-              />
-            )}
+            {/* No call button: the conversation stays in the app, where it is
+                kept and where the shop answers. */}
             <QuickAction
               icon={MessageCircle}
               label="Message"
@@ -911,15 +896,6 @@ export function SupplierProfileScreen({
               )}
         </View>
       </Animated.ScrollView>
-
-      {/* Contact Action Sheet */}
-      <ContactActionSheet
-        isVisible={isContactSheetVisible}
-        onClose={() => setIsContactSheetVisible(false)}
-        onOpenChat={handleOpenChat}
-        phoneNumber={supplier.phoneNumber}
-        whatsappNumber={supplier.whatsappNumber}
-      />
     </View>
   )
 }

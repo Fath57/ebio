@@ -249,6 +249,7 @@ export function handleNotificationTap(data: Record<string, unknown>) {
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'OrderTracking',
+          initial: false,
           params: { orderId: data.orderId },
         })
       }
@@ -259,6 +260,7 @@ export function handleNotificationTap(data: Record<string, unknown>) {
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'RateProducts',
+          initial: false,
           params: { orderId: data.orderId },
         })
       }
@@ -313,13 +315,13 @@ function openCampaignTarget(data: Record<string, unknown>) {
   switch (data.targetType) {
     case 'PRODUCT':
       if (targetId) {
-        navigationRef.navigate('Accueil', { screen: 'ProductDetail', params: { productId: targetId } })
+        navigationRef.navigate('Accueil', { screen: 'ProductDetail', initial: false, params: { productId: targetId } })
         return
       }
       break
     case 'SUPPLIER':
       if (targetId) {
-        navigationRef.navigate('Accueil', { screen: 'SupplierProfile', params: { supplierId: targetId } })
+        navigationRef.navigate('Accueil', { screen: 'SupplierProfile', initial: false, params: { supplierId: targetId } })
         return
       }
       break
@@ -352,6 +354,7 @@ function handleCourierTap(type: string, data: Record<string, unknown>) {
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'RateProducts',
+          initial: false,
           params: { orderId: data.orderId },
         })
       }
@@ -361,6 +364,7 @@ function handleCourierTap(type: string, data: Record<string, unknown>) {
       if (data.conversationId) {
         navigationRef.navigate('Courses', {
           screen: 'CourierChat',
+          initial: false,
           params: {
             conversationId: data.conversationId,
             peerName: (data.peerName as string) ?? 'Client',
@@ -407,6 +411,7 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'SupplierOrderDetail',
+          initial: false,
           params: { orderId: data.orderId },
         })
       }
@@ -420,6 +425,7 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
       if (data.orderId) {
         navigationRef.navigate('Commandes', {
           screen: 'RateProducts',
+          initial: false,
           params: { orderId: data.orderId },
         })
       }
@@ -445,17 +451,17 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
     case 'PAYMENT_RECEIVED':
     case 'PAYMENT_RELEASED':
     case 'ESCROW_REMINDER':
-      navigationRef.navigate('Accueil', { screen: 'SupplierWallet' })
+      navigationRef.navigate('Accueil', { screen: 'SupplierWallet', initial: false })
       break
     case 'NEW_REVIEW':
-      navigationRef.navigate('Accueil', { screen: 'SupplierReviews' })
+      navigationRef.navigate('Accueil', { screen: 'SupplierReviews', initial: false })
       break
     case 'STOCK_ALERT':
-      navigationRef.navigate('Accueil', { screen: 'SupplierProducts' })
+      navigationRef.navigate('Accueil', { screen: 'SupplierProducts', initial: false })
       break
     case 'BANNER_APPROVED':
     case 'BANNER_REJECTED':
-      navigationRef.navigate('Accueil', { screen: 'SupplierBannerRequests' })
+      navigationRef.navigate('Accueil', { screen: 'SupplierBannerRequests', initial: false })
       break
     case 'SUPPLIER_VALIDATED':
     case 'SUPPLIER_REJECTED':

@@ -247,7 +247,7 @@ function DashboardWrapper({ navigation }: any) {
         onNavigateToReviews={() => navigation.navigate('SupplierReviews')}
         onNavigateToWallet={() => navigation.navigate('SupplierWallet')}
         onNavigateToMessages={() => navigation.navigate('Chat')}
-        onNavigateToNotifications={() => navigation.navigate('Profil', { screen: 'SupplierNotifications' })}
+        onNavigateToNotifications={() => navigation.navigate('Profil', { screen: 'SupplierNotifications', initial: false })}
       />
     </SafeScreen>
   )
@@ -548,7 +548,7 @@ function ChatStackScreen() {
               kind={route.params.kind ?? 'SUPPLIER'}
               onGoBack={() => navigation.goBack()}
               onOpenOrder={(oid) => {
-                navigation.navigate('Commandes', { screen: 'SupplierOrderDetail', params: { orderId: oid } })
+                navigation.navigate('Commandes', { screen: 'SupplierOrderDetail', initial: false, params: { orderId: oid } })
               }}
             />
           </SafeScreen>
