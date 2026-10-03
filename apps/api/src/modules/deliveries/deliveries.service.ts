@@ -1,3 +1,4 @@
+import type { PageWindow } from '../../common/page-window'
 import type {
   CompleteDelivery,
   FailDelivery,
@@ -1473,7 +1474,8 @@ export class DeliveriesService {
     return delivery
   }
 
-  async getMine(userId: string, filter?: 'active' | 'done'): Promise<Delivery[]> {
+  /** A courier's deliveries, newest first; a window pages the history. */
+  async getMine(userId: string, filter?: 'active' | 'done', window?: PageWindow | null): Promise<Delivery[]> {
     const profile = await this.getMyProfile(userId)
     const statuses = filter === 'active'
       ? ACTIVE_STATUSES
@@ -1486,7 +1488,10 @@ export class DeliveriesService {
       ...(statuses ? { status: { $in: statuses } } : {}),
     }, {
       populate: ['order', 'order.buyer', 'order.supplier', 'order.items', 'courier'],
-      orderBy: { updatedAt: 'DESC' },
+      // The id breaks ties between rows updated in the same instant, so a
+      // page boundary never repeats or skips one.
+      orderBy: { updatedAt: 'DESC', id: 'DESC' },
+      ...(window ?? {}),
     })
   }
 

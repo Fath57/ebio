@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import * as React from 'react'
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo, useRef } from 'react'
 import {
   FlatList,
   Image,
@@ -19,7 +19,9 @@ import { useTheme } from '../../../theme/theme-context'
 import { chatFetch } from '../../../utils/api-client'
 import { SUPPORT_LOGO } from '../../../utils/app-variant'
 import { websocketClient } from '../../../utils/websocket-client'
+import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { hasMoreFromLength, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 
 interface Conversation {
   id: string
@@ -86,77 +88,98 @@ function formatPreview(last: { content?: string | null, type?: string } | null):
   return last.content ?? null
 }
 
+/** Turns the API rows into list rows, as seen by the current user. */
+function mapConversations(raw: Array<Record<string, unknown>>, currentUserId: string): Conversation[] {
+  return raw.map((c) => {
+    const isBuyer = currentUserId === (c.buyerId as string)
+    const last = c.lastMessage as { content?: string | null, type?: string, senderId?: string } | null
+    const preview = formatPreview(last)
+    const isOwnLast = last?.senderId != null && last.senderId === currentUserId
+    const kind: ConversationKind = c.kind === 'COURIER'
+      ? 'COURIER'
+      : c.kind === 'SUPPORT' ? 'SUPPORT' : 'SUPPLIER'
+    // Server-computed peer fields take precedence; the buyer/supplier
+    // heuristics remain as a fallback for older payloads.
+    const peerName = typeof c.peerName === 'string' ? c.peerName : null
+    const peerImage = typeof c.peerImage === 'string' ? c.peerImage : null
+    const fallbackName = (isBuyer ? c.supplierShopName : c.buyerName) as string | null
+    const fallbackImage = (isBuyer ? c.supplierProfilePhoto : c.buyerImage) as string | null
+    let peerRole: Conversation['peerRole'] = null
+    if (kind === 'COURIER') {
+      peerRole = isBuyer ? 'Livreur' : 'Client'
+    }
+    // Support is a team, so the buyer always sees the same name rather
+    // than whoever happens to be on duty.
+    if (kind === 'SUPPORT') {
+      peerRole = isBuyer ? 'Assistance eBio' : 'Client'
+    }
+    return {
+      id: c.id as string,
+      participantName: kind === 'SUPPORT' && isBuyer
+        ? 'Support eBio'
+        : peerName ?? fallbackName ?? '',
+      participantAvatar: peerImage ?? fallbackImage ?? null,
+      lastMessage: preview != null && isOwnLast ? `Vous : ${preview}` : preview,
+      lastMessageAt: (c.lastMessageAt as string) ?? null,
+      unreadCount: (c.unreadCount as number) ?? 0,
+      isSupplier: !isBuyer,
+      orderId: (c.orderId as string) ?? null,
+      kind,
+      orderNumber: typeof c.orderNumber === 'string' ? c.orderNumber : null,
+      peerRole,
+    }
+  })
+}
+
+/** Most recent message first; threads without any message go last. */
+function byLastMessage(a: Conversation, b: Conversation): number {
+  if (!a.lastMessageAt)
+    return 1
+  if (!b.lastMessageAt)
+    return -1
+  return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
+}
+
+async function fetchConversationsPage(page: number, currentUserId: string) {
+  const res = await chatFetch(`/api/chat/conversations?page=${page}&limit=${PAGE_SIZE}`)
+  if (!res.ok) {
+    throw new Error('Conversations indisponibles')
+  }
+  const raw = await res.json() as Array<Record<string, unknown>>
+  return { items: mapConversations(raw, currentUserId), hasMore: hasMoreFromLength(raw.length, PAGE_SIZE) }
+}
+
 export function ConversationList({ currentUserId, onOpenConversation, onOpenSupport }: ConversationListProps) {
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
-  const [conversations, setConversations] = useState<Conversation[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
+  const {
+    items: conversations,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    refresh,
+    loadMore,
+    setItems,
+  } = usePaginatedList(page => fetchConversationsPage(page, currentUserId), currentUserId)
 
-  const fetchConversations = useCallback(async () => {
+  /**
+   * A live update only re-reads the first page and merges it: the threads
+   * that moved come back on top, the pages already scrolled through stay.
+   */
+  const syncFirstPage = useCallback(async () => {
     try {
-      const res = await chatFetch('/api/chat/conversations')
-      if (res.ok) {
-        const raw = await res.json() as Array<Record<string, unknown>>
-        const mapped: Conversation[] = raw.map((c) => {
-          const isBuyer = currentUserId === (c.buyerId as string)
-          const last = c.lastMessage as { content?: string | null, type?: string, senderId?: string } | null
-          const preview = formatPreview(last)
-          const isOwnLast = last?.senderId != null && last.senderId === currentUserId
-          const kind: ConversationKind = c.kind === 'COURIER'
-            ? 'COURIER'
-            : c.kind === 'SUPPORT' ? 'SUPPORT' : 'SUPPLIER'
-          // Server-computed peer fields take precedence; the buyer/supplier
-          // heuristics remain as a fallback for older payloads.
-          const peerName = typeof c.peerName === 'string' ? c.peerName : null
-          const peerImage = typeof c.peerImage === 'string' ? c.peerImage : null
-          const fallbackName = (isBuyer ? c.supplierShopName : c.buyerName) as string | null
-          const fallbackImage = (isBuyer ? c.supplierProfilePhoto : c.buyerImage) as string | null
-          let peerRole: Conversation['peerRole'] = null
-          if (kind === 'COURIER') {
-            peerRole = isBuyer ? 'Livreur' : 'Client'
-          }
-          // Support is a team, so the buyer always sees the same name rather
-          // than whoever happens to be on duty.
-          if (kind === 'SUPPORT') {
-            peerRole = isBuyer ? 'Assistance eBio' : 'Client'
-          }
-          return {
-            id: c.id as string,
-            participantName: kind === 'SUPPORT' && isBuyer
-              ? 'Support eBio'
-              : peerName ?? fallbackName ?? '',
-            participantAvatar: peerImage ?? fallbackImage ?? null,
-            lastMessage: preview != null && isOwnLast ? `Vous : ${preview}` : preview,
-            lastMessageAt: (c.lastMessageAt as string) ?? null,
-            unreadCount: (c.unreadCount as number) ?? 0,
-            isSupplier: !isBuyer,
-            orderId: (c.orderId as string) ?? null,
-            kind,
-            orderNumber: typeof c.orderNumber === 'string' ? c.orderNumber : null,
-            peerRole,
-          }
-        })
-        const sorted = mapped.sort((a, b) => {
-          if (!a.lastMessageAt)
-            return 1
-          if (!b.lastMessageAt)
-            return -1
-          return new Date(b.lastMessageAt).getTime() - new Date(a.lastMessageAt).getTime()
-        })
-        setConversations(sorted)
-      }
+      const first = await fetchConversationsPage(1, currentUserId)
+      setItems((current) => {
+        const fresh = new Set(first.items.map(c => c.id))
+        return [...first.items, ...current.filter(c => !fresh.has(c.id))].sort(byLastMessage)
+      })
     }
     catch {
-      // Silently fail
+      // Offline: keep the list as it is.
     }
-    finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }, [currentUserId])
+  }, [currentUserId, setItems])
 
   /**
    * Refresh on focus, then stay live: the socket is opened for the list too,
@@ -164,19 +187,21 @@ export function ConversationList({ currentUserId, onOpenConversation, onOpenSupp
    * back-office — refreshes the previews and the unread counters at once.
    * Without it the list only ever caught up when it regained focus.
    */
+  const isFirstFocus = useRef(true)
   useFocusEffect(useCallback(() => {
-    void fetchConversations()
+    // The first focus is the mount, whose first page is already loading.
+    if (isFirstFocus.current) {
+      isFirstFocus.current = false
+    }
+    else {
+      void syncFirstPage()
+    }
     websocketClient.ensureConnected()
     const unsubscribe = websocketClient.addMessageListener(() => {
-      void fetchConversations()
+      void syncFirstPage()
     })
     return unsubscribe
-  }, [fetchConversations]))
-
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true)
-    fetchConversations()
-  }, [fetchConversations])
+  }, [syncFirstPage]))
 
   const renderItem = useCallback(
     ({ item }: { item: Conversation }) => (
@@ -301,7 +326,10 @@ export function ConversationList({ currentUserId, onOpenConversation, onOpenSupp
           conversations.length === 0 && styles.listContentEmpty,
         ]}
         refreshing={isRefreshing}
-        onRefresh={handleRefresh}
+        onRefresh={refresh}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
         ListEmptyComponent={(
           <View style={styles.emptyContainer}>
             <Text style={[styles.emptyText, { color: semantic.textTertiary }]}>

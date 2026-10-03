@@ -24,8 +24,11 @@ import { useTheme } from '../../../theme/theme-context'
 import { StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
 import { NOTIFICATION_AUDIENCE } from '../../../utils/app-variant'
+import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { hasMoreFromLength, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { handleNotificationTap } from '../hooks/use-notifications'
+import { useNotificationsUnreadCount } from '../hooks/use-notifications-unread-count'
 
 interface NotificationItem {
   id: string
@@ -85,44 +88,39 @@ function formatRelativeTime(dateStr: string): string {
   return date.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+/** One page of the notifications meant for this app, newest first. */
+async function fetchNotificationsPage(page: number) {
+  const res = await apiFetch(`/api/notifications?audience=${NOTIFICATION_AUDIENCE}&page=${page}&limit=${PAGE_SIZE}`)
+  if (!res.ok) {
+    throw new Error('Notifications indisponibles')
+  }
+  const items = await res.json() as NotificationItem[]
+  return { items, hasMore: hasMoreFromLength(items.length, PAGE_SIZE) }
+}
+
 export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
-  const [notifications, setNotifications] = React.useState<NotificationItem[]>([])
-  const [loading, setLoading] = React.useState(true)
-  const [refreshing, setRefreshing] = React.useState(false)
-
-  const fetchNotifications = React.useCallback(async () => {
-    try {
-      const res = await apiFetch(`/api/notifications?audience=${NOTIFICATION_AUDIENCE}`)
-      if (res.ok) {
-        const data = await res.json()
-        setNotifications(data)
-      }
-    }
-    catch { /* ignore */ }
-    finally {
-      setLoading(false)
-      setRefreshing(false)
-    }
-  }, [])
-
-  React.useEffect(() => {
-    fetchNotifications()
-  }, [fetchNotifications])
-
-  const onRefresh = () => {
-    setRefreshing(true)
-    fetchNotifications()
-  }
+  const {
+    items: notifications,
+    isLoading: loading,
+    isRefreshing: refreshing,
+    isLoadingMore,
+    refresh: onRefresh,
+    loadMore,
+    setItems: setNotifications,
+  } = usePaginatedList(fetchNotificationsPage)
+  // The server's count: the rows loaded so far are only the latest pages.
+  const { count: unreadCount, refetch: refetchUnreadCount } = useNotificationsUnreadCount()
 
   const markAsRead = async (id: string) => {
     await apiFetch(`/api/notifications/${id}/read`, { method: 'PATCH' })
     setNotifications(prev =>
       prev.map(n => n.id === id ? { ...n, readAt: new Date().toISOString() } : n),
     )
+    refetchUnreadCount()
   }
 
   const markAllAsRead = async () => {
@@ -130,9 +128,8 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
     setNotifications(prev =>
       prev.map(n => ({ ...n, readAt: n.readAt ?? new Date().toISOString() })),
     )
+    refetchUnreadCount()
   }
-
-  const unreadCount = notifications.filter(n => !n.readAt).length
 
   if (loading) {
     return (
@@ -217,6 +214,9 @@ export function NotificationsScreen({ onGoBack }: NotificationsScreenProps) {
               refreshControl={
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.green[400]} />
               }
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
             />
           )}
     </View>

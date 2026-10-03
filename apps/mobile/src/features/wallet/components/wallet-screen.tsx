@@ -1,11 +1,11 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
+  FlatList,
   Modal,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
@@ -18,21 +18,26 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { buildTopupCheckoutHtml, TOPUP_PRESETS } from '../utils/topup-checkout'
+
+interface Movement {
+  id: string
+  type: string
+  amount: number
+  description: string
+  createdAt: string
+}
 
 interface WalletData {
   id: string
   balance: number
   transactions: {
-    items: Array<{
-      id: string
-      type: string
-      amount: number
-      description: string
-      createdAt: string
-    }>
+    items: Movement[]
+    total: number
   }
 }
 
@@ -59,6 +64,54 @@ function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
 }
 
+interface MovementRowProps {
+  movement: Movement
+  isFirst: boolean
+  isLast: boolean
+}
+
+/**
+ * One line of the ledger. The rows are list items now, so the card they sit
+ * in is drawn by the rows themselves: rounded on the first and the last one.
+ */
+function MovementRow({ movement, isFirst, isLast }: MovementRowProps) {
+  const { semantic } = useTheme()
+  return (
+    <View
+      style={[
+        styles.ledgerItem,
+        { backgroundColor: semantic.bgCard },
+        isFirst && styles.ledgerItemFirst,
+        isLast && styles.ledgerItemLast,
+      ]}
+    >
+      <View
+        style={[
+          styles.ledgerRow,
+          !isFirst && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
+        ]}
+      >
+        <View style={{ flex: 1 }}>
+          <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]} numberOfLines={1}>
+            {movement.description}
+          </Text>
+          <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
+            {new Date(movement.createdAt).toLocaleDateString('fr-FR')}
+          </Text>
+        </View>
+        <Text style={[
+          styles.ledgerAmount,
+          { color: movement.amount > 0 ? colors.green[600] : semantic.textPrimary },
+        ]}
+        >
+          {movement.amount > 0 ? '+' : ''}
+          {movement.amount.toLocaleString('fr-FR')}
+        </Text>
+      </View>
+    </View>
+  )
+}
+
 interface WalletScreenProps {
   onGoBack: () => void
 }
@@ -68,10 +121,8 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
-  const [wallet, setWallet] = useState<WalletData | null>(null)
+  const [balance, setBalance] = useState(0)
   const [topups, setTopups] = useState<Topup[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [isToppingUp, setIsToppingUp] = useState(false)
   const [topupAmount, setTopupAmount] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -86,32 +137,35 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
   const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
 
-  const load = useCallback(async () => {
-    try {
-      const [walletRes, topupsRes] = await Promise.all([
-        apiFetch('/api/wallet/me'),
-        apiFetch('/api/wallet/me/topups'),
-      ])
-      if (walletRes.ok) {
-        setWallet(await walletRes.json())
-      }
+  // The ledger scrolls page by page; the first page also brings the balance
+  // and the latest topups, so a refresh keeps the header in step with it.
+  const {
+    items: movements,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    refresh,
+    loadMore,
+  } = usePaginatedList<Movement>(async (page) => {
+    const walletRes = await apiFetch(`/api/wallet/me?page=${page}&limit=${PAGE_SIZE}`)
+    if (!walletRes.ok) {
+      throw new Error('Portefeuille indisponible')
+    }
+    const data = await walletRes.json() as WalletData
+    if (page === 1) {
+      setBalance(data.balance)
+      // The latest topups only: the ledger already records every credited one.
+      const topupsRes = await apiFetch('/api/wallet/me/topups')
       if (topupsRes.ok) {
-        const data = await topupsRes.json() as { items: Topup[] }
-        setTopups(data.items)
+        const topupData = await topupsRes.json() as { items: Topup[] }
+        setTopups(topupData.items)
       }
     }
-    catch {
-      // pull-to-refresh retries
+    return {
+      items: data.transactions.items,
+      hasMore: hasMoreAfter(page, PAGE_SIZE, data.transactions.total),
     }
-    finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
+  })
 
   const startTopup = useCallback(async () => {
     const amount = Number(topupAmount)
@@ -162,9 +216,8 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
     setPaymentUrl(null)
     setProviderTransactionId(null)
     setPendingTopupId(null)
-    setIsLoading(true)
-    load()
-  }, [load])
+    refresh()
+  }, [refresh])
 
   /**
    * Silent check, handed to the payment screen. Asking the verify endpoint
@@ -233,107 +286,79 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Mon portefeuille" onBack={onGoBack} />
-      <ScrollView
+      <FlatList
+        data={movements}
+        keyExtractor={movement => movement.id}
+        renderItem={({ item, index }) => (
+          <MovementRow movement={item} isFirst={index === 0} isLast={index === movements.length - 1} />
+        )}
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
-        refreshControl={(
-          <RefreshControl
-            refreshing={isRefreshing}
-            onRefresh={() => {
-              setIsRefreshing(true)
-              load()
-            }}
-          />
+        refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} />}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
+        ListEmptyComponent={(
+          <View style={[styles.emptyCard, { backgroundColor: semantic.bgCard }]}>
+            <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
+              Aucun mouvement. Rechargez votre portefeuille pour commencer.
+            </Text>
+          </View>
         )}
-      >
-        <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
-          <Text style={[styles.balanceLabel, { color: semantic.textSecondary }]}>Solde disponible</Text>
-          <Text style={[styles.balanceValue, { color: semantic.textPrimary }]}>
-            {formatAmount(wallet?.balance ?? 0)}
-          </Text>
-          <TouchableOpacity
-            style={[styles.topupButton, !fedapayPublicKey && styles.buttonDisabled]}
-            disabled={!fedapayPublicKey}
-            onPress={() => setIsToppingUp(true)}
-            activeOpacity={0.8}
-          >
-            <Plus size={16} color={colors.neutral[0]} strokeWidth={2.5} />
-            <Text style={styles.topupButtonText}>Recharger</Text>
-          </TouchableOpacity>
-          <Text style={[styles.balanceHint, { color: semantic.textTertiary }]}>
-            Rechargez par Mobile Money et payez vos commandes en un geste, sans frais.
-          </Text>
-        </View>
-
-        {topups.length > 0 && (
+        ListHeaderComponent={(
           <>
-            <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>MES RECHARGES</Text>
-            <View style={[styles.ledgerCard, { backgroundColor: semantic.bgCard }]}>
-              {topups.map((topup, index) => (
-                <View
-                  key={topup.id}
-                  style={[
-                    styles.ledgerRow,
-                    index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
-                  ]}
-                >
-                  <View style={{ flex: 1 }}>
-                    <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]}>
-                      {formatAmount(topup.amount)}
-                    </Text>
-                    <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
-                      {new Date(topup.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
-                    </Text>
-                  </View>
-                  <Text style={[styles.topupStatus, { color: TOPUP_STATUS_COLORS[topup.status] }]}>
-                    {TOPUP_STATUS_LABELS[topup.status]}
-                  </Text>
-                </View>
-              ))}
+            <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
+              <Text style={[styles.balanceLabel, { color: semantic.textSecondary }]}>Solde disponible</Text>
+              <Text style={[styles.balanceValue, { color: semantic.textPrimary }]}>
+                {formatAmount(balance)}
+              </Text>
+              <TouchableOpacity
+                style={[styles.topupButton, !fedapayPublicKey && styles.buttonDisabled]}
+                disabled={!fedapayPublicKey}
+                onPress={() => setIsToppingUp(true)}
+                activeOpacity={0.8}
+              >
+                <Plus size={16} color={colors.neutral[0]} strokeWidth={2.5} />
+                <Text style={styles.topupButtonText}>Recharger</Text>
+              </TouchableOpacity>
+              <Text style={[styles.balanceHint, { color: semantic.textTertiary }]}>
+                Rechargez par Mobile Money et payez vos commandes en un geste, sans frais.
+              </Text>
             </View>
-          </>
-        )}
 
-        <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>HISTORIQUE</Text>
-        {(wallet?.transactions.items.length ?? 0) === 0
-          ? (
-              <View style={[styles.emptyCard, { backgroundColor: semantic.bgCard }]}>
-                <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
-                  Aucun mouvement. Rechargez votre portefeuille pour commencer.
-                </Text>
-              </View>
-            )
-          : (
-              <View style={[styles.ledgerCard, { backgroundColor: semantic.bgCard }]}>
-                {wallet?.transactions.items.map((movement, index) => (
-                  <View
-                    key={movement.id}
-                    style={[
-                      styles.ledgerRow,
-                      index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]} numberOfLines={1}>
-                        {movement.description}
-                      </Text>
-                      <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
-                        {new Date(movement.createdAt).toLocaleDateString('fr-FR')}
+            {topups.length > 0 && (
+              <>
+                <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>MES RECHARGES</Text>
+                <View style={[styles.ledgerCard, { backgroundColor: semantic.bgCard }]}>
+                  {topups.map((topup, index) => (
+                    <View
+                      key={topup.id}
+                      style={[
+                        styles.ledgerRow,
+                        index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
+                      ]}
+                    >
+                      <View style={{ flex: 1 }}>
+                        <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]}>
+                          {formatAmount(topup.amount)}
+                        </Text>
+                        <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
+                          {new Date(topup.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                        </Text>
+                      </View>
+                      <Text style={[styles.topupStatus, { color: TOPUP_STATUS_COLORS[topup.status] }]}>
+                        {TOPUP_STATUS_LABELS[topup.status]}
                       </Text>
                     </View>
-                    <Text style={[
-                      styles.ledgerAmount,
-                      { color: movement.amount > 0 ? colors.green[600] : semantic.textPrimary },
-                    ]}
-                    >
-                      {movement.amount > 0 ? '+' : ''}
-                      {movement.amount.toLocaleString('fr-FR')}
-                    </Text>
-                  </View>
-                ))}
-              </View>
+                  ))}
+                </View>
+              </>
             )}
-      </ScrollView>
+
+            <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>HISTORIQUE</Text>
+          </>
+        )}
+      />
 
       {/* Topup modal */}
       <Modal visible={isToppingUp} transparent animationType="slide" onRequestClose={() => setIsToppingUp(false)}>
@@ -435,6 +460,18 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[4],
     borderRadius: radius.lg,
     paddingHorizontal: spacing[4],
+  },
+  ledgerItem: {
+    marginHorizontal: spacing[4],
+    paddingHorizontal: spacing[4],
+  },
+  ledgerItemFirst: {
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+  },
+  ledgerItemLast: {
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
   },
   ledgerRow: {
     flexDirection: 'row',

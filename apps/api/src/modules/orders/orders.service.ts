@@ -46,7 +46,8 @@ import { OrderEmailsService } from './order-emails.service'
 import { buildInvoiceItems, formatFcfa, formatInvoiceDate, PAYMENT_LABELS } from './order-format'
 
 interface OrderFilters {
-  status?: OrderStatus
+  /** One status or several: a tab of the app can group a few of them. */
+  statuses?: OrderStatus[]
   page?: number
   limit?: number
 }
@@ -422,8 +423,8 @@ export class OrdersService {
 
   async findByBuyer(buyerId: string, filters: OrderFilters = {}): Promise<{ orders: Order[], total: number }> {
     const where: Record<string, unknown> = { buyer: { id: buyerId } }
-    if (filters.status) {
-      where.status = filters.status
+    if (filters.statuses?.length) {
+      where.status = { $in: filters.statuses }
     }
 
     const limit = filters.limit ?? 20
@@ -451,13 +452,14 @@ export class OrdersService {
   async findBySupplier(supplierId: string, filters: OrderFilters = {}): Promise<{ orders: Order[], total: number }> {
     // Asking for the awaiting-payment ones answers none, rather than silently
     // returning everything else: from the shop's side they do not exist.
-    if (filters.status === OrderStatus.PENDING_PAYMENT) {
+    const statuses = filters.statuses?.filter(status => status !== OrderStatus.PENDING_PAYMENT)
+    if (filters.statuses?.length && !statuses?.length) {
       return { orders: [], total: 0 }
     }
 
     const where: Record<string, unknown> = {
       supplier: { id: supplierId },
-      status: filters.status ?? { $ne: OrderStatus.PENDING_PAYMENT },
+      status: statuses?.length ? { $in: statuses } : { $ne: OrderStatus.PENDING_PAYMENT },
     }
 
     const limit = filters.limit ?? 20

@@ -1,4 +1,4 @@
-import type { CourierPayoutNumber, CourierTopup, CourierWalletTransactionType, CourierWithdrawal } from '../hooks/use-courier-wallet'
+import type { CourierPayoutNumber, CourierTopup, CourierWalletTransaction, CourierWalletTransactionType, CourierWithdrawal } from '../hooks/use-courier-wallet'
 import type { CourierDispatchBlock } from '../types'
 import ArrowDownToLine from 'lucide-react-native/dist/esm/icons/arrow-down-to-line'
 import ArrowUpFromLine from 'lucide-react-native/dist/esm/icons/arrow-up-from-line'
@@ -14,8 +14,8 @@ import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
+  FlatList,
   RefreshControl,
-  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -26,6 +26,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { buildTopupCheckoutHtml } from '../../wallet/utils/topup-checkout'
@@ -114,6 +115,61 @@ function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
+interface MovementRowProps {
+  movement: CourierWalletTransaction
+  isFirst: boolean
+  isLast: boolean
+}
+
+/**
+ * One line of the ledger. The rows are list items, so they draw the card
+ * themselves: rounded on the first and the last one.
+ */
+function MovementRow({ movement, isFirst, isLast }: MovementRowProps) {
+  const { semantic } = useTheme()
+  const style = MOVEMENT_STYLES[movement.type] ?? FALLBACK_MOVEMENT
+  const MovementIcon = style.Icon
+  return (
+    <View
+      style={[
+        styles.ledgerItem,
+        { backgroundColor: semantic.bgCard },
+        isFirst && styles.ledgerItemFirst,
+        isLast && styles.ledgerItemLast,
+      ]}
+    >
+      <View
+        style={[
+          styles.ledgerRow,
+          !isFirst && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
+        ]}
+      >
+        <View style={[styles.rowIcon, { backgroundColor: style.background }]}>
+          <MovementIcon size={16} color={style.color} strokeWidth={2} />
+        </View>
+        <View style={styles.rowBody}>
+          <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]} numberOfLines={1}>
+            {movement.description || style.label}
+          </Text>
+          <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
+            {style.label}
+            {' · '}
+            {formatDate(movement.createdAt)}
+          </Text>
+        </View>
+        <Text style={[
+          styles.ledgerAmount,
+          { color: movement.amount > 0 ? colors.green[600] : movement.amount < 0 ? colors.coral[600] : semantic.textPrimary },
+        ]}
+        >
+          {movement.amount > 0 ? '+' : ''}
+          {movement.amount.toLocaleString('fr-FR')}
+        </Text>
+      </View>
+    </View>
+  )
+}
+
 interface CourierWalletScreenProps {
   /** Set while the platform withholds runs because of the wallet debt. */
   dispatchBlock?: CourierDispatchBlock | null
@@ -130,13 +186,16 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   const { data: session } = useSession()
   const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
   const {
-    wallet,
+    balance,
+    movements,
     numbers,
     withdrawals,
     topups,
     isLoading,
     isRefreshing,
+    isLoadingMore,
     refresh,
+    loadMore,
     reload,
     addPayoutNumber,
     deletePayoutNumber,
@@ -158,7 +217,6 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   const [providerTransactionId, setProviderTransactionId] = useState<string | null>(null)
   const [pendingTopupId, setPendingTopupId] = useState<string | null>(null)
 
-  const balance = wallet?.balance ?? 0
   const debt = balance < 0 ? -balance : 0
   // Amount that brings the debt back under the platform limit (balance + limit, as a positive figure).
   const topupToResume = dispatchBlock ? Math.max(0, -(dispatchBlock.balance + dispatchBlock.limit)) : 0
@@ -170,7 +228,6 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   const validatedNumbers = numbers.filter(number => number.status === 'VALIDATED')
   const hasActiveWithdrawal = withdrawals.some(w => w.status === 'PENDING' || w.status === 'PROCESSING')
   const canWithdraw = balance >= MIN_WITHDRAWAL && validatedNumbers.length > 0 && !hasActiveWithdrawal
-  const movements = wallet?.transactions.items ?? []
 
   const handleAddNumber = useCallback(async (phoneNumber: string, holderName: string) => {
     const result = await addPayoutNumber(phoneNumber, holderName)
@@ -329,238 +386,209 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Portefeuille" />
-      <ScrollView
+      <FlatList
+        data={movements}
+        keyExtractor={movement => movement.id}
+        renderItem={({ item, index }) => (
+          <MovementRow movement={item} isFirst={index === 0} isLast={index === movements.length - 1} />
+        )}
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.green[400]} />}
-      >
-        {/* Balance */}
-        <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
-          <Text style={[styles.balanceLabel, { color: semantic.textSecondary }]}>Solde disponible</Text>
-          <Text style={[styles.balanceValue, { color: balance < 0 ? colors.coral[600] : semantic.textPrimary }]}>
-            {formatAmount(balance)}
-          </Text>
-          {balance < 0
-            ? (
-                <View style={[styles.negativeBanner, { backgroundColor: colors.coral[50] }]}>
-                  <TriangleAlert size={18} color={colors.coral[600]} strokeWidth={2} />
-                  <Text style={[styles.negativeText, { color: colors.coral[800] }]}>
-                    {dispatchBlock
-                      ? `Courses suspendues au-delà de ${formatAmount(dispatchBlock.limit)} de dette. Rechargez au moins ${formatAmount(topupToResume)} pour reprendre.`
-                      : 'Solde négatif : rechargez votre portefeuille pour régler la commission eBio des courses payées en espèces.'}
-                  </Text>
-                </View>
-              )
-            : null}
-
-          <View style={styles.actionRow}>
-            <TouchableOpacity
-              style={[styles.primaryButton, !fedapayPublicKey && styles.buttonDisabled]}
-              disabled={!fedapayPublicKey}
-              onPress={() => setIsToppingUp(true)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Recharger le portefeuille"
-            >
-              <Plus size={16} color={colors.neutral[0]} strokeWidth={2.5} />
-              <Text style={styles.primaryButtonText}>Recharger</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[styles.secondaryButton, { borderColor: colors.green[400] }, !canWithdraw && styles.buttonDisabled]}
-              disabled={!canWithdraw}
-              onPress={() => setIsWithdrawing(true)}
-              activeOpacity={0.8}
-              accessibilityRole="button"
-              accessibilityLabel="Demander un reversement"
-            >
-              <ArrowUpFromLine size={16} color={colors.green[600]} strokeWidth={2} />
-              <Text style={[styles.secondaryButtonText, { color: colors.green[600] }]}>Reversement</Text>
-            </TouchableOpacity>
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
+        ListEmptyComponent={(
+          <View style={[styles.emptyCard, { backgroundColor: semantic.bgCard }]}>
+            <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
+              Aucun mouvement pour le moment. Vos gains de course apparaîtront ici.
+            </Text>
           </View>
-          <Text style={[styles.balanceHint, { color: semantic.textTertiary }]}>{withdrawHint}</Text>
-        </View>
-
-        {/* Payout numbers */}
-        <View style={styles.sectionHeader}>
-          <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>MES NUMÉROS DE REVERSEMENT</Text>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setIsAddingNumber(true)}
-            activeOpacity={0.7}
-            accessibilityRole="button"
-            accessibilityLabel="Ajouter un numéro Mobile Money"
-          >
-            <Plus size={16} color={colors.green[600]} strokeWidth={2.5} />
-            <Text style={styles.addButtonText}>Ajouter</Text>
-          </TouchableOpacity>
-        </View>
-        {numbers.length === 0
-          ? (
-              <View style={[styles.emptyCard, { backgroundColor: semantic.bgCard }]}>
-                <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
-                  Aucun numéro. Ajoutez votre numéro Mobile Money pour recevoir vos gains.
-                </Text>
-              </View>
-            )
-          : numbers.map(number => (
-              <View key={number.id} style={[styles.rowCard, { backgroundColor: semantic.bgCard }]}>
-                <View style={[styles.rowIcon, { backgroundColor: colors.green[50] }]}>
-                  <Phone size={16} color={colors.green[600]} />
-                </View>
-                <View style={styles.rowBody}>
-                  <Text style={[styles.rowTitle, { color: semantic.textPrimary }]}>{number.phoneNumber}</Text>
-                  <Text style={[styles.rowMeta, { color: semantic.textTertiary }]}>
-                    {number.operatorLabel}
-                    {' · '}
-                    {number.holderName}
-                  </Text>
-                  {number.rejectionReason
-                    ? <Text style={[styles.rowMeta, { color: colors.coral[600] }]}>{number.rejectionReason}</Text>
-                    : null}
-                </View>
-                <Text style={[styles.rowStatus, { color: NUMBER_STATUS_COLORS[number.status] }]}>
-                  {NUMBER_STATUS_LABELS[number.status]}
-                </Text>
-                <TouchableOpacity
-                  style={styles.rowAction}
-                  onPress={() => handleDeleteNumber(number)}
-                  accessibilityRole="button"
-                  accessibilityLabel={`Supprimer le numéro ${number.phoneNumber}`}
-                >
-                  <Trash2 size={16} color={colors.coral[400]} />
-                </TouchableOpacity>
-              </View>
-            ))}
-
-        {/* Withdrawals */}
-        {withdrawals.length > 0
-          ? (
-              <>
-                <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
-                  MES REVERSEMENTS
-                </Text>
-                {withdrawals.map(withdrawal => (
-                  <View key={withdrawal.id} style={[styles.rowCard, { backgroundColor: semantic.bgCard }]}>
-                    <View style={styles.rowBody}>
-                      <Text style={[styles.rowTitle, { color: semantic.textPrimary }]}>
-                        {formatAmount(withdrawal.amount)}
-                      </Text>
-                      <Text style={[styles.rowMeta, { color: semantic.textTertiary }]}>
-                        {formatDate(withdrawal.createdAt)}
-                        {' · '}
-                        {withdrawal.phoneNumber}
-                      </Text>
-                      {withdrawal.rejectionReason
-                        ? <Text style={[styles.rowMeta, { color: colors.coral[600] }]}>{withdrawal.rejectionReason}</Text>
-                        : null}
-                    </View>
-                    <Text style={[styles.rowStatus, { color: WITHDRAWAL_STATUS_COLORS[withdrawal.status] }]}>
-                      {WITHDRAWAL_STATUS_LABELS[withdrawal.status]}
-                    </Text>
-                    {withdrawal.status === 'PENDING'
-                      ? (
-                          <TouchableOpacity
-                            style={styles.rowAction}
-                            onPress={() => handleCancelWithdrawal(withdrawal)}
-                            accessibilityRole="button"
-                            accessibilityLabel={`Annuler le reversement de ${formatAmount(withdrawal.amount)}`}
-                          >
-                            <Text style={[styles.cancelLink, { color: colors.coral[600] }]}>Annuler</Text>
-                          </TouchableOpacity>
-                        )
-                      : null}
-                  </View>
-                ))}
-              </>
-            )
-          : null}
-
-        {/* Top-ups */}
-        {topups.length > 0
-          ? (
-              <>
-                <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
-                  MES RECHARGES
-                </Text>
-                <View style={[styles.ledgerCard, { backgroundColor: semantic.bgCard }]}>
-                  {topups.map((topup, index) => (
-                    <View
-                      key={topup.id}
-                      style={[
-                        styles.ledgerRow,
-                        index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
-                      ]}
-                    >
-                      <View style={styles.rowBody}>
-                        <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]}>
-                          {formatAmount(topup.amount)}
-                        </Text>
-                        <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
-                          {new Date(topup.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
-                        </Text>
-                      </View>
-                      <Text style={[styles.rowStatus, { color: TOPUP_STATUS_COLORS[topup.status] }]}>
-                        {TOPUP_STATUS_LABELS[topup.status]}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
-              </>
-            )
-          : null}
-
-        {/* Ledger */}
-        <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
-          MOUVEMENTS
-        </Text>
-        {movements.length === 0
-          ? (
-              <View style={[styles.emptyCard, { backgroundColor: semantic.bgCard }]}>
-                <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
-                  Aucun mouvement pour le moment. Vos gains de course apparaîtront ici.
-                </Text>
-              </View>
-            )
-          : (
-              <View style={[styles.ledgerCard, { backgroundColor: semantic.bgCard }]}>
-                {movements.map((movement, index) => {
-                  const style = MOVEMENT_STYLES[movement.type] ?? FALLBACK_MOVEMENT
-                  const MovementIcon = style.Icon
-                  return (
-                    <View
-                      key={movement.id}
-                      style={[
-                        styles.ledgerRow,
-                        index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
-                      ]}
-                    >
-                      <View style={[styles.rowIcon, { backgroundColor: style.background }]}>
-                        <MovementIcon size={16} color={style.color} strokeWidth={2} />
-                      </View>
-                      <View style={styles.rowBody}>
-                        <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]} numberOfLines={1}>
-                          {movement.description || style.label}
-                        </Text>
-                        <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
-                          {style.label}
-                          {' · '}
-                          {formatDate(movement.createdAt)}
-                        </Text>
-                      </View>
-                      <Text style={[
-                        styles.ledgerAmount,
-                        { color: movement.amount > 0 ? colors.green[600] : movement.amount < 0 ? colors.coral[600] : semantic.textPrimary },
-                      ]}
-                      >
-                        {movement.amount > 0 ? '+' : ''}
-                        {movement.amount.toLocaleString('fr-FR')}
+        )}
+        ListHeaderComponent={(
+          <>
+            {/* Balance */}
+            <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
+              <Text style={[styles.balanceLabel, { color: semantic.textSecondary }]}>Solde disponible</Text>
+              <Text style={[styles.balanceValue, { color: balance < 0 ? colors.coral[600] : semantic.textPrimary }]}>
+                {formatAmount(balance)}
+              </Text>
+              {balance < 0
+                ? (
+                    <View style={[styles.negativeBanner, { backgroundColor: colors.coral[50] }]}>
+                      <TriangleAlert size={18} color={colors.coral[600]} strokeWidth={2} />
+                      <Text style={[styles.negativeText, { color: colors.coral[800] }]}>
+                        {dispatchBlock
+                          ? `Courses suspendues au-delà de ${formatAmount(dispatchBlock.limit)} de dette. Rechargez au moins ${formatAmount(topupToResume)} pour reprendre.`
+                          : 'Solde négatif : rechargez votre portefeuille pour régler la commission eBio des courses payées en espèces.'}
                       </Text>
                     </View>
                   )
-                })}
+                : null}
+
+              <View style={styles.actionRow}>
+                <TouchableOpacity
+                  style={[styles.primaryButton, !fedapayPublicKey && styles.buttonDisabled]}
+                  disabled={!fedapayPublicKey}
+                  onPress={() => setIsToppingUp(true)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Recharger le portefeuille"
+                >
+                  <Plus size={16} color={colors.neutral[0]} strokeWidth={2.5} />
+                  <Text style={styles.primaryButtonText}>Recharger</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.secondaryButton, { borderColor: colors.green[400] }, !canWithdraw && styles.buttonDisabled]}
+                  disabled={!canWithdraw}
+                  onPress={() => setIsWithdrawing(true)}
+                  activeOpacity={0.8}
+                  accessibilityRole="button"
+                  accessibilityLabel="Demander un reversement"
+                >
+                  <ArrowUpFromLine size={16} color={colors.green[600]} strokeWidth={2} />
+                  <Text style={[styles.secondaryButtonText, { color: colors.green[600] }]}>Reversement</Text>
+                </TouchableOpacity>
               </View>
-            )}
-      </ScrollView>
+              <Text style={[styles.balanceHint, { color: semantic.textTertiary }]}>{withdrawHint}</Text>
+            </View>
+
+            {/* Payout numbers */}
+            <View style={styles.sectionHeader}>
+              <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>MES NUMÉROS DE REVERSEMENT</Text>
+              <TouchableOpacity
+                style={styles.addButton}
+                onPress={() => setIsAddingNumber(true)}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel="Ajouter un numéro Mobile Money"
+              >
+                <Plus size={16} color={colors.green[600]} strokeWidth={2.5} />
+                <Text style={styles.addButtonText}>Ajouter</Text>
+              </TouchableOpacity>
+            </View>
+            {numbers.length === 0
+              ? (
+                  <View style={[styles.emptyCard, { backgroundColor: semantic.bgCard }]}>
+                    <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
+                      Aucun numéro. Ajoutez votre numéro Mobile Money pour recevoir vos gains.
+                    </Text>
+                  </View>
+                )
+              : numbers.map(number => (
+                  <View key={number.id} style={[styles.rowCard, { backgroundColor: semantic.bgCard }]}>
+                    <View style={[styles.rowIcon, { backgroundColor: colors.green[50] }]}>
+                      <Phone size={16} color={colors.green[600]} />
+                    </View>
+                    <View style={styles.rowBody}>
+                      <Text style={[styles.rowTitle, { color: semantic.textPrimary }]}>{number.phoneNumber}</Text>
+                      <Text style={[styles.rowMeta, { color: semantic.textTertiary }]}>
+                        {number.operatorLabel}
+                        {' · '}
+                        {number.holderName}
+                      </Text>
+                      {number.rejectionReason
+                        ? <Text style={[styles.rowMeta, { color: colors.coral[600] }]}>{number.rejectionReason}</Text>
+                        : null}
+                    </View>
+                    <Text style={[styles.rowStatus, { color: NUMBER_STATUS_COLORS[number.status] }]}>
+                      {NUMBER_STATUS_LABELS[number.status]}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.rowAction}
+                      onPress={() => handleDeleteNumber(number)}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Supprimer le numéro ${number.phoneNumber}`}
+                    >
+                      <Trash2 size={16} color={colors.coral[400]} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+
+            {/* Withdrawals */}
+            {withdrawals.length > 0
+              ? (
+                  <>
+                    <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
+                      MES REVERSEMENTS
+                    </Text>
+                    {withdrawals.map(withdrawal => (
+                      <View key={withdrawal.id} style={[styles.rowCard, { backgroundColor: semantic.bgCard }]}>
+                        <View style={styles.rowBody}>
+                          <Text style={[styles.rowTitle, { color: semantic.textPrimary }]}>
+                            {formatAmount(withdrawal.amount)}
+                          </Text>
+                          <Text style={[styles.rowMeta, { color: semantic.textTertiary }]}>
+                            {formatDate(withdrawal.createdAt)}
+                            {' · '}
+                            {withdrawal.phoneNumber}
+                          </Text>
+                          {withdrawal.rejectionReason
+                            ? <Text style={[styles.rowMeta, { color: colors.coral[600] }]}>{withdrawal.rejectionReason}</Text>
+                            : null}
+                        </View>
+                        <Text style={[styles.rowStatus, { color: WITHDRAWAL_STATUS_COLORS[withdrawal.status] }]}>
+                          {WITHDRAWAL_STATUS_LABELS[withdrawal.status]}
+                        </Text>
+                        {withdrawal.status === 'PENDING'
+                          ? (
+                              <TouchableOpacity
+                                style={styles.rowAction}
+                                onPress={() => handleCancelWithdrawal(withdrawal)}
+                                accessibilityRole="button"
+                                accessibilityLabel={`Annuler le reversement de ${formatAmount(withdrawal.amount)}`}
+                              >
+                                <Text style={[styles.cancelLink, { color: colors.coral[600] }]}>Annuler</Text>
+                              </TouchableOpacity>
+                            )
+                          : null}
+                      </View>
+                    ))}
+                  </>
+                )
+              : null}
+
+            {/* Top-ups */}
+            {topups.length > 0
+              ? (
+                  <>
+                    <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
+                      MES RECHARGES
+                    </Text>
+                    <View style={[styles.ledgerCard, { backgroundColor: semantic.bgCard }]}>
+                      {topups.map((topup, index) => (
+                        <View
+                          key={topup.id}
+                          style={[
+                            styles.ledgerRow,
+                            index > 0 && { borderTopWidth: 1, borderTopColor: semantic.borderLight },
+                          ]}
+                        >
+                          <View style={styles.rowBody}>
+                            <Text style={[styles.ledgerLabel, { color: semantic.textPrimary }]}>
+                              {formatAmount(topup.amount)}
+                            </Text>
+                            <Text style={[styles.ledgerDate, { color: semantic.textTertiary }]}>
+                              {new Date(topup.createdAt).toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' })}
+                            </Text>
+                          </View>
+                          <Text style={[styles.rowStatus, { color: TOPUP_STATUS_COLORS[topup.status] }]}>
+                            {TOPUP_STATUS_LABELS[topup.status]}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                )
+              : null}
+
+            {/* Ledger */}
+            <Text style={[styles.sectionTitle, styles.sectionSpacing, { color: semantic.textTertiary }]}>
+              MOUVEMENTS
+            </Text>
+          </>
+        )}
+      />
 
       <AddNumberSheet
         visible={isAddingNumber}
@@ -685,6 +713,18 @@ const styles = StyleSheet.create({
     marginHorizontal: spacing[4],
     borderRadius: radius.lg,
     paddingHorizontal: spacing[4],
+  },
+  ledgerItem: {
+    marginHorizontal: spacing[4],
+    paddingHorizontal: spacing[4],
+  },
+  ledgerItemFirst: {
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+  },
+  ledgerItemLast: {
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
   },
   ledgerRow: {
     flexDirection: 'row',

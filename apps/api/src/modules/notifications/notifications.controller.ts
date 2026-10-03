@@ -4,6 +4,7 @@ import type { NotificationAudience } from './notifications.service'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@nestjs/common'
+import { readPageWindow } from '../../common/page-window'
 import { config } from '../../config/env.config'
 import { Session } from '../auth/auth.decorator'
 import { User } from '../auth/auth.entity'
@@ -93,8 +94,10 @@ export class NotificationsController {
   async getAll(
     @Session() session: LoggedInBetterAuthSession,
     @Query('audience') audience?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
-    const notifications = await this.notificationsService.getAll(session.user.id, parseAudience(audience))
+    const notifications = await this.notificationsService.getAll(session.user.id, parseAudience(audience), readPageWindow(page, limit))
     return notifications.map(n => ({
       id: n.id,
       type: n.type,

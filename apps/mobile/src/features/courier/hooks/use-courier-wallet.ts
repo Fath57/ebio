@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
+import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 
 const BASE = '/api/couriers/me/wallet'
 
@@ -88,28 +89,40 @@ async function toResult(res: Response): Promise<MutationResult> {
 
 /**
  * Courier wallet: balance and ledger, Mobile Money payout numbers,
- * withdrawal requests and FedaPay top-ups. Loads everything in parallel;
- * each mutation reloads the whole set on success.
+ * withdrawal requests and FedaPay top-ups.
+ *
+ * The ledger scrolls page by page. Its first page also reloads the balance,
+ * the numbers and the latest withdrawals and top-ups, so every mutation
+ * refreshes the whole screen with a single call to `reload`.
  */
 export function useCourierWallet() {
-  const [wallet, setWallet] = useState<CourierWallet | null>(null)
+  const [balance, setBalance] = useState(0)
   const [numbers, setNumbers] = useState<CourierPayoutNumber[]>([])
   const [withdrawals, setWithdrawals] = useState<CourierWithdrawal[]>([])
   const [topups, setTopups] = useState<CourierTopup[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
 
-  const load = useCallback(async () => {
-    try {
-      const [walletRes, numbersRes, withdrawalsRes, topupsRes] = await Promise.all([
-        apiFetch(`${BASE}?page=1&limit=20`),
+  const {
+    items: movements,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    refresh,
+    loadMore,
+  } = usePaginatedList<CourierWalletTransaction>(async (page) => {
+    const walletRes = await apiFetch(`${BASE}?page=${page}&limit=${PAGE_SIZE}`)
+    if (!walletRes.ok) {
+      throw new Error('Portefeuille indisponible')
+    }
+    const wallet = await walletRes.json() as CourierWallet
+    if (page === 1) {
+      setBalance(wallet.balance)
+      // The latest requests and top-ups only: a pending one is always among
+      // them, and the ledger records every amount that actually moved.
+      const [numbersRes, withdrawalsRes, topupsRes] = await Promise.all([
         apiFetch(`${BASE}/payout-numbers`),
         apiFetch(`${BASE}/withdrawals`),
         apiFetch(`${BASE}/topups`),
       ])
-      if (walletRes.ok) {
-        setWallet(await walletRes.json() as CourierWallet)
-      }
       if (numbersRes.ok) {
         const data = await numbersRes.json() as { items: CourierPayoutNumber[] }
         setNumbers(data.items)
@@ -123,23 +136,12 @@ export function useCourierWallet() {
         setTopups(data.items)
       }
     }
-    catch {
-      // Network failure: pull-to-refresh retries.
+    return {
+      items: wallet.transactions.items,
+      hasMore: hasMoreAfter(page, PAGE_SIZE, wallet.transactions.total),
     }
-    finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    load()
-  }, [load])
-
-  const refresh = useCallback(() => {
-    setIsRefreshing(true)
-    return load()
-  }, [load])
+  })
+  const load = refresh
 
   const addPayoutNumber = useCallback(async (phoneNumber: string, holderName: string): Promise<MutationResult> => {
     const res = await apiFetch(`${BASE}/payout-numbers`, {
@@ -226,13 +228,16 @@ export function useCourierWallet() {
   }, [load])
 
   return {
-    wallet,
+    balance,
+    movements,
     numbers,
     withdrawals,
     topups,
     isLoading,
     isRefreshing,
+    isLoadingMore,
     refresh,
+    loadMore,
     reload: load,
     addPayoutNumber,
     deletePayoutNumber,

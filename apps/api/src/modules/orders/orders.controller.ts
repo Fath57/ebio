@@ -35,6 +35,19 @@ import { OrderStatus } from './entities/order.entity'
 import { OrderMapper } from './orders.mapper'
 import { OrdersService } from './orders.service'
 
+/**
+ * `status=PLACED` or `status=ACCEPTED,PREPARING`: unknown values are ignored
+ * rather than turned into a filter that matches nothing.
+ */
+function parseStatuses(raw?: string): OrderStatus[] | undefined {
+  if (!raw) {
+    return undefined
+  }
+  const known = new Set<string>(Object.values(OrderStatus))
+  const statuses = raw.split(',').map(value => value.trim()).filter(value => known.has(value)) as OrderStatus[]
+  return statuses.length > 0 ? statuses : undefined
+}
+
 @Controller('orders')
 @UseGuards(AuthGuard, ActiveSupplierGuard)
 export class OrdersController {
@@ -196,7 +209,7 @@ export class OrdersController {
     @Query('view') view?: string,
   ) {
     const filters = {
-      status: status as OrderStatus | undefined,
+      statuses: parseStatuses(status),
       page: page ? Number(page) : undefined,
       limit: limit ? Number(limit) : undefined,
     }

@@ -2,15 +2,27 @@ import type { Delivery } from '../types'
 import { useFocusEffect } from '@react-navigation/native'
 import CheckCircle from 'lucide-react-native/dist/esm/icons/circle-check'
 import XCircle from 'lucide-react-native/dist/esm/icons/circle-x'
-import { useCallback, useState } from 'react'
+import { useCallback, useRef } from 'react'
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
+import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { StarRating } from '../../common/components/star-rating'
+import { hasMoreFromLength, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 
 interface HistoryScreenProps {
   onOpenDetail: (delivery: Delivery) => void
+}
+
+/** One page of finished deliveries, newest first. */
+async function fetchHistoryPage(page: number) {
+  const res = await apiFetch(`/api/deliveries/mine?status=done&page=${page}&limit=${PAGE_SIZE}`)
+  if (!res.ok) {
+    throw new Error('Historique indisponible')
+  }
+  const items = await res.json() as Delivery[]
+  return { items, hasMore: hasMoreFromLength(items.length, PAGE_SIZE) }
 }
 
 function formatDate(iso: string | null): string {
@@ -23,32 +35,19 @@ function formatDate(iso: string | null): string {
 /** Finished deliveries (delivered and failed) — FR-019. */
 export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
   const { semantic } = useTheme()
-  const [deliveries, setDeliveries] = useState<Delivery[]>([])
-  const [refreshing, setRefreshing] = useState(false)
+  // A failed page keeps the rows already shown (offline).
+  const { items: deliveries, isLoading, isRefreshing, isLoadingMore, refresh, loadMore } = usePaginatedList(fetchHistoryPage)
 
-  const load = useCallback(async () => {
-    try {
-      const res = await apiFetch('/api/deliveries/mine?status=done')
-      if (res.ok) {
-        setDeliveries(await res.json() as Delivery[])
-      }
-    }
-    catch {
-      // Offline: keep the last list.
-    }
-  }, [])
-
-  // Au focus : une course terminée depuis l'écran de livraison n'apparaissait
-  // pas dans l'historique au retour.
+  // On focus: a delivery finished from the delivery screen did not show up in
+  // the history on return. The first focus is the mount, already loading.
+  const isFirstFocus = useRef(true)
   useFocusEffect(useCallback(() => {
-    load()
-  }, [load]))
-
-  const refresh = useCallback(async () => {
-    setRefreshing(true)
-    await load()
-    setRefreshing(false)
-  }, [load])
+    if (isFirstFocus.current) {
+      isFirstFocus.current = false
+      return
+    }
+    refresh()
+  }, [refresh]))
 
   function renderItem({ item }: { item: Delivery }) {
     const delivered = item.status === 'DELIVERED'
@@ -94,15 +93,20 @@ export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
       data={deliveries}
       keyExtractor={item => item.id}
       renderItem={renderItem}
-      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} tintColor={colors.green[400]} />}
-      ListEmptyComponent={(
-        <View style={styles.empty}>
-          <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>Aucune livraison terminée</Text>
-          <Text style={[styles.emptyBody, { color: semantic.textSecondary }]}>
-            Vos livraisons livrées ou en échec apparaîtront ici.
-          </Text>
-        </View>
-      )}
+      refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={refresh} tintColor={colors.green[400]} />}
+      onEndReached={loadMore}
+      onEndReachedThreshold={0.5}
+      ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
+      ListEmptyComponent={isLoading
+        ? null
+        : (
+            <View style={styles.empty}>
+              <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>Aucune livraison terminée</Text>
+              <Text style={[styles.emptyBody, { color: semantic.textSecondary }]}>
+                Vos livraisons livrées ou en échec apparaîtront ici.
+              </Text>
+            </View>
+          )}
     />
   )
 }

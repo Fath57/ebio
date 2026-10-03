@@ -9,7 +9,7 @@ import RotateCcw from 'lucide-react-native/dist/esm/icons/rotate-ccw'
 import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   FlatList,
   Image,
@@ -23,8 +23,10 @@ import { useTheme } from '../../../theme/theme-context'
 import { ScalePressable, StaggerItem } from '../../../utils/animations'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
+import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { ProductCardSkeletonList } from '../../common/components/skeleton'
+import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { useReorder } from '../hooks/use-reorder'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
@@ -146,6 +148,14 @@ const STATUS_COLORS: Record<OrderStatus, { bg: string, text: string, dot: string
 
 const ACTIVE_STATUSES: OrderStatus[] = ['PENDING_PAYMENT', 'PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY']
 
+/** What each tab asks the API for; an empty list means every status. */
+const FILTER_STATUSES: Record<FilterTab, OrderStatus[]> = {
+  ALL: [],
+  ACTIVE: ACTIVE_STATUSES,
+  COMPLETED: ['DELIVERED'],
+  CANCELLED: ['CANCELLED'],
+}
+
 const FILTER_TABS: Array<{ key: FilterTab, label: string }> = [
   { key: 'ALL', label: 'Toutes' },
   { key: 'ACTIVE', label: 'En cours' },
@@ -173,6 +183,39 @@ function buildItemsSummary(items: OrderItem[]): string {
     .join(', ')
 }
 
+/** One row of `GET /api/orders?view=buyer`, shaped for the list. */
+function toOrderListItem(o: Record<string, unknown>): OrderListItem {
+  return {
+    id: o.id as string,
+    orderNumber: o.orderNumber as string,
+    supplierName: o.supplierName as string,
+    total: (o.totalAmount ?? o.total) as number,
+    status: o.status as OrderListItem['status'],
+    createdAt: o.createdAt as string,
+    items: ((o.items ?? []) as Array<Record<string, unknown>>).map(item => ({
+      productId: item.productId as string,
+      productName: item.productName as string,
+      productPhoto: (item.productPhoto ?? null) as string | null,
+      quantity: item.quantity as number,
+      isGift: Boolean(item.isGift),
+    })),
+    delivery: (o.delivery ?? null) as DeliveryRun | null,
+  }
+}
+
+/** One page of the buyer's orders, newest first, for a tab's statuses, with their count. */
+async function fetchOrdersPage(page: number, statuses: OrderStatus[]): Promise<{ items: OrderListItem[], total: number }> {
+  const statusFilter = statuses.length > 0 ? `&status=${statuses.join(',')}` : ''
+  const res = await apiFetch(`/api/orders?view=buyer&page=${page}&limit=${PAGE_SIZE}${statusFilter}`)
+  if (!res.ok) {
+    throw new Error('Chargement des commandes impossible')
+  }
+  const json = await res.json() as Record<string, unknown>
+  const raw = (Array.isArray(json) ? json : (json.orders ?? json.data ?? [])) as Array<Record<string, unknown>>
+  const total = typeof json.total === 'number' ? json.total : raw.length
+  return { items: raw.map(toOrderListItem), total }
+}
+
 function getFirstPhoto(items: OrderItem[]): string | null {
   if (!items || items.length === 0)
     return null
@@ -181,9 +224,6 @@ function getFirstPhoto(items: OrderItem[]): string | null {
 
 export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
   const tabBarHeight = useBottomTabBarHeight()
-  const [orders, setOrders] = useState<OrderListItem[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [activeFilter, setActiveFilter] = useState<FilterTab>('ALL')
   const { semantic } = useTheme()
   const { isPending: isReordering, reorder } = useReorder()
@@ -214,77 +254,64 @@ export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
     }
   }, [onGoToCart, reorder])
 
-  const fetchOrders = useCallback(async () => {
-    try {
-      const res = await apiFetch('/api/orders?view=buyer')
-      if (res.ok) {
-        const json = await res.json()
-        const raw = Array.isArray(json) ? json : (json.orders ?? json.data ?? [])
-        const data: OrderListItem[] = raw.map((o: Record<string, unknown>) => ({
-          id: o.id as string,
-          orderNumber: o.orderNumber as string,
-          supplierName: o.supplierName as string,
-          total: (o.totalAmount ?? o.total) as number,
-          status: o.status as OrderListItem['status'],
-          createdAt: o.createdAt as string,
-          items: ((o.items ?? []) as Array<Record<string, unknown>>).map(item => ({
-            productId: item.productId as string,
-            productName: item.productName as string,
-            productPhoto: (item.productPhoto ?? null) as string | null,
-            quantity: item.quantity as number,
-            isGift: Boolean(item.isGift),
-          })),
-          delivery: (o.delivery ?? null) as DeliveryRun | null,
-        }))
-        setOrders(data)
-      }
-    }
-    catch {
-      // Silently fail
-    }
-    finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    fetchOrders()
-  }, [fetchOrders])
+  // The tab's count on the server, not only the orders loaded so far.
+  const [totalOrders, setTotalOrders] = useState(0)
+  const filterStatuses = FILTER_STATUSES[activeFilter]
+  const {
+    items: orders,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    refresh: handleRefresh,
+    loadMore,
+    setItems: setOrders,
+  } = usePaginatedList<OrderListItem>(async (page) => {
+    const result = await fetchOrdersPage(page, filterStatuses)
+    setTotalOrders(result.total)
+    return { items: result.items, hasMore: hasMoreAfter(page, PAGE_SIZE, result.total) }
+  }, activeFilter)
 
   // Live delivery line: while a run is in progress and the screen is focused,
-  // re-fetch quietly so the courier's progress shows without pull-to-refresh.
+  // re-read the first page quietly and patch the rows in place, so the
+  // courier's progress shows without losing the pages scrolled through.
   const hasLiveRun = orders.some(o => o.delivery !== null && LIVE_RUN_STATUSES.includes(o.delivery.status))
+  const pollLatest = useCallback(async () => {
+    try {
+      const latest = await fetchOrdersPage(1, filterStatuses)
+      setTotalOrders(latest.total)
+      setOrders((current) => {
+        const fresh = new Map(latest.items.map(order => [order.id, order]))
+        const known = new Set(current.map(order => order.id))
+        const added = latest.items.filter(order => !known.has(order.id))
+        return [...added, ...current.map(order => fresh.get(order.id) ?? order)]
+      })
+    }
+    catch {
+      // The next tick tries again.
+    }
+  }, [setOrders, filterStatuses])
   useFocusEffect(
     useCallback(() => {
       if (!hasLiveRun) {
         return undefined
       }
       const timer = setInterval(() => {
-        void fetchOrders()
+        void pollLatest()
       }, LIVE_REFRESH_MS)
       return () => {
         clearInterval(timer)
       }
-    }, [hasLiveRun, fetchOrders]),
+    }, [hasLiveRun, pollLatest]),
   )
 
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true)
-    fetchOrders()
-  }, [fetchOrders])
+  // The server already filtered by tab; this only drops an order whose status
+  // moved out of it since it was loaded (a live poll, for instance).
+  const filteredOrders = useMemo(
+    () => (filterStatuses.length === 0 ? orders : orders.filter(order => filterStatuses.includes(order.status))),
+    [orders, filterStatuses],
+  )
 
-  const filteredOrders = useMemo(() => orders.filter((order) => {
-    if (activeFilter === 'ACTIVE')
-      return ACTIVE_STATUSES.includes(order.status)
-    if (activeFilter === 'COMPLETED')
-      return order.status === 'DELIVERED'
-    if (activeFilter === 'CANCELLED')
-      return order.status === 'CANCELLED'
-    return true
-  }), [orders, activeFilter])
-
-  const orderCount = filteredOrders.length
+  const orderCount = totalOrders
 
   const renderItem = useCallback(
     ({ item, index }: { item: OrderListItem, index: number }) => {
@@ -474,6 +501,9 @@ export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
               ]}
               refreshing={isRefreshing}
               onRefresh={handleRefresh}
+              onEndReached={loadMore}
+              onEndReachedThreshold={0.5}
+              ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
               showsVerticalScrollIndicator={false}
               // Rendered inside the list rather than beside it: an empty state
               // laid out as a sibling cannot be pulled, and waiting for a first

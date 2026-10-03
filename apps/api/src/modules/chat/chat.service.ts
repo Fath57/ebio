@@ -1,3 +1,4 @@
+import type { PageWindow } from '../../common/page-window'
 import { QueryOrder } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
@@ -172,7 +173,7 @@ export class ChatService {
     return user?.role === UserRole.ADMIN
   }
 
-  async getConversations(userId: string): Promise<ConversationListEntry[]> {
+  async getConversations(userId: string, window?: PageWindow | null): Promise<ConversationListEntry[]> {
     const em = this.em.fork()
 
     const staff = await this.isStaff(em, userId)
@@ -184,7 +185,8 @@ export class ChatService {
       },
       {
         populate: ['buyer', 'supplier', 'courier', 'courier.user'],
-        orderBy: { lastMessageAt: QueryOrder.DESC_NULLS_LAST },
+        orderBy: { lastMessageAt: QueryOrder.DESC_NULLS_LAST, id: QueryOrder.DESC },
+        ...(window ?? {}),
       },
     )
 

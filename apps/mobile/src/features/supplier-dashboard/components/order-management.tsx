@@ -17,7 +17,9 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { apiFetch } from '../../../utils/api-client'
 import { formatTime } from '../../../utils/format-time'
 import { ConfirmModal } from '../../common/components/confirm-modal'
+import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { askPrepMinutes } from '../utils/prep-minutes'
 
 type OrderStatus = 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED' | 'DISPUTED'
@@ -97,14 +99,48 @@ const NEXT_STATUS: Partial<Record<OrderStatus, { status: OrderStatus, label: str
   PREPARING: { status: 'READY', label: 'Prête' },
 }
 
+/** One row of `GET /api/orders` (shop view), shaped for the list. */
+function toSupplierOrder(o: Record<string, unknown>): SupplierOrder {
+  return {
+    id: o.id as string,
+    orderNumber: o.orderNumber as string,
+    buyerName: (o.buyerName as string) ?? '',
+    items: ((o.items as Array<Record<string, unknown>>) ?? []).map(it => ({
+      name: (it.productName as string) ?? (it.name as string) ?? '',
+      quantity: (it.quantity as number) ?? 0,
+      unitPrice: (it.unitPrice as number) ?? 0,
+    })),
+    total: (o.totalAmount as number) ?? (o.total as number) ?? 0,
+    status: o.status as OrderStatus,
+    pickupMode: o.pickupMode === 'DELIVERY' ? 'DELIVERY' : 'ON_SITE',
+    estimatedReadyAt: (o.estimatedReadyAt as string | null) ?? null,
+    createdAt: o.createdAt as string,
+  }
+}
+
+/**
+ * One page of the shop's orders, newest first, restricted to a tab's statuses.
+ *
+ * The API takes them comma-separated, so a tab that groups several statuses
+ * (« En cours » is four of them) pages through its own orders only.
+ */
+async function fetchSupplierOrdersPage(page: number, statuses: OrderStatus[]): Promise<{ items: SupplierOrder[], total: number }> {
+  const statusFilter = statuses.length > 0 ? `&status=${statuses.join(',')}` : ''
+  const res = await apiFetch(`/api/orders?page=${page}&limit=${PAGE_SIZE}${statusFilter}`)
+  if (!res.ok) {
+    throw new Error('Chargement des commandes impossible')
+  }
+  const json = await res.json() as Record<string, unknown>
+  const raw = (Array.isArray(json) ? json : (json.orders ?? json.data ?? [])) as Array<Record<string, unknown>>
+  const total = typeof json.total === 'number' ? json.total : raw.length
+  return { items: raw.map(toSupplierOrder), total }
+}
+
 const REJECT_REASONS = ['Rupture de stock', 'Boutique fermée', 'Zone non desservie', 'Autre'] as const
 
 export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderManagementProps) {
   const tabBarHeight = useBottomTabBarHeight()
-  const [orders, setOrders] = useState<SupplierOrder[]>([])
   const [tab, setTab] = useState<Tab>('pending')
-  const [isLoading, setIsLoading] = useState(true)
-  const [isRefreshing, setIsRefreshing] = useState(false)
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [modal, setModal] = useState<{ visible: boolean, title: string, message: string, type: 'success' | 'error' | 'confirm', onConfirm?: () => void }>({ visible: false, title: '', message: '', type: 'error' })
 
@@ -117,49 +153,42 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
   const [rejectReason, setRejectReason] = useState<string>(REJECT_REASONS[0])
   const [rejectCustomText, setRejectCustomText] = useState('')
 
-  const fetchOrders = useCallback(async () => {
-    try {
-      const res = await apiFetch('/api/orders?limit=100')
-      if (res.ok) {
-        const json = await res.json()
-        const items = (json.orders ?? json.data ?? json ?? []) as Array<Record<string, unknown>>
-        setOrders(items.map((o): SupplierOrder => ({
-          id: o.id as string,
-          orderNumber: o.orderNumber as string,
-          buyerName: (o.buyerName as string) ?? '',
-          items: ((o.items as Array<Record<string, unknown>>) ?? []).map(it => ({
-            name: (it.productName as string) ?? (it.name as string) ?? '',
-            quantity: (it.quantity as number) ?? 0,
-            unitPrice: (it.unitPrice as number) ?? 0,
-          })),
-          total: (o.totalAmount as number) ?? (o.total as number) ?? 0,
-          status: o.status as OrderStatus,
-          pickupMode: o.pickupMode === 'DELIVERY' ? 'DELIVERY' : 'ON_SITE',
-          estimatedReadyAt: (o.estimatedReadyAt as string | null) ?? null,
-          createdAt: o.createdAt as string,
-        })))
-      }
-    }
-    catch {
-      // Silently fail
-    }
-    finally {
-      setIsLoading(false)
-      setIsRefreshing(false)
-    }
-  }, [supplierId])
+  const activeTab = TABS.find(t => t.key === tab) ?? TABS[0]
+
+  const {
+    items: orders,
+    isLoading,
+    isRefreshing,
+    isLoadingMore,
+    refresh: handleRefresh,
+    loadMore,
+    setItems: setOrders,
+  } = usePaginatedList<SupplierOrder>(async (page) => {
+    const result = await fetchSupplierOrdersPage(page, activeTab.statuses)
+    return { items: result.items, hasMore: hasMoreAfter(page, PAGE_SIZE, result.total) }
+  }, `${supplierId}:${tab}`)
 
   // On focus, not just on mount: the screen stays mounted while an order's
   // detail is open — and a notification opens that detail directly — so
   // coming back used to show a list from before the order that caused it.
+  // The first page is re-read and merged, so the pages scrolled through stay.
+  const syncLatest = useCallback(async () => {
+    try {
+      const latest = await fetchSupplierOrdersPage(1, activeTab.statuses)
+      setOrders((current) => {
+        const fresh = new Map(latest.items.map(order => [order.id, order]))
+        const known = new Set(current.map(order => order.id))
+        const added = latest.items.filter(order => !known.has(order.id))
+        return [...added, ...current.map(order => fresh.get(order.id) ?? order)]
+      })
+    }
+    catch {
+      // Pull-to-refresh remains.
+    }
+  }, [setOrders, activeTab.statuses])
   useFocusEffect(useCallback(() => {
-    fetchOrders()
-  }, [fetchOrders]))
-
-  const handleRefresh = useCallback(() => {
-    setIsRefreshing(true)
-    fetchOrders()
-  }, [fetchOrders])
+    void syncLatest()
+  }, [syncLatest]))
 
   async function handleAccept(orderId: string): Promise<void> {
     setProcessingId(orderId)
@@ -406,15 +435,8 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
 
   const keyExtractor = useCallback((item: SupplierOrder) => item.id, [])
 
-  if (isLoading) {
-    return (
-      <View style={styles.emptyContainer}>
-        <ActivityIndicator size="large" color={colors.green[400]} />
-      </View>
-    )
-  }
-
-  const activeTab = TABS.find(t => t.key === tab) ?? TABS[0]
+  // The server already filtered by tab; this only drops an order that left it
+  // locally (accepted from « En attente », for instance) until the next load.
   const filtered = activeTab.statuses.length === 0 ? orders : orders.filter(o => activeTab.statuses.includes(o.status))
 
   return (
@@ -445,12 +467,21 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderMana
         contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[4] }]}
         refreshing={isRefreshing}
         onRefresh={handleRefresh}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
         showsVerticalScrollIndicator={false}
-        ListEmptyComponent={(
-          <View style={styles.emptylist}>
-            <Text style={styles.emptyText}>Aucune commande</Text>
-          </View>
-        )}
+        ListEmptyComponent={isLoading
+          ? (
+              <View style={styles.emptylist}>
+                <ActivityIndicator size="large" color={colors.green[400]} />
+              </View>
+            )
+          : (
+              <View style={styles.emptylist}>
+                <Text style={styles.emptyText}>Aucune commande</Text>
+              </View>
+            )}
       />
 
       {/* Reject reason picker */}

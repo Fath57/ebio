@@ -4,6 +4,7 @@ import { Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { CanRead, CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
+import { readPageWindow } from '../../common/page-window'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import {
@@ -39,9 +40,11 @@ export class DeliveriesController {
   async mine(
     @Session() session: LoggedInBetterAuthSession,
     @Query('status') status?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ) {
     const filter = status === 'active' || status === 'done' ? status : undefined
-    const deliveries = await this.deliveriesService.getMine(session.user.id, filter)
+    const deliveries = await this.deliveriesService.getMine(session.user.id, filter, readPageWindow(page, limit))
     const responses = []
     for (const delivery of deliveries) {
       const events = await this.deliveriesService.getEvents(delivery.id)

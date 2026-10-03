@@ -1,3 +1,4 @@
+import type { PageWindow } from '../../common/page-window'
 import type { PushOptions } from './fcm.service'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
@@ -150,13 +151,17 @@ export class NotificationsService {
     await em.flush()
   }
 
-  async getAll(userId: string, audience?: NotificationAudience): Promise<Notification[]> {
+  /**
+   * Newest first. Without a window, the latest hundred: what the app received
+   * before the list was paginated.
+   */
+  async getAll(userId: string, audience?: NotificationAudience, window?: PageWindow | null): Promise<Notification[]> {
     return this.em.find(Notification, {
       user: { id: userId },
       ...(audience ? { type: { $in: AUDIENCE_TYPES[audience] } } : {}),
     }, {
-      orderBy: { createdAt: 'DESC' },
-      limit: 100,
+      orderBy: { createdAt: 'DESC', id: 'DESC' },
+      ...(window ?? { limit: 100 }),
     })
   }
 

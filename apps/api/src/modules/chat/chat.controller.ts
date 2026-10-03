@@ -18,6 +18,7 @@ import { CanCreate, CanRead } from '../../common/decorators/check-permissions.de
 import { Public } from '../../common/decorators/public.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard'
+import { readPageWindow } from '../../common/page-window'
 import { ChatService } from './chat.service'
 import {
 
@@ -71,8 +72,10 @@ export class ChatController {
   @CanRead('Conversation')
   async getConversations(
     @Req() req: JwtAuthenticatedRequest,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
   ): Promise<ConversationResponse[]> {
-    const conversations = await this.chatService.getConversations(req.user.sub)
+    const conversations = await this.chatService.getConversations(req.user.sub, readPageWindow(page, limit))
     return conversations.map(c => this.mapConversation(c, req.user.sub))
   }
 
