@@ -1,5 +1,6 @@
 import type { BannerOffers, DeliveryPricingConfig } from '@boilerstone/openapi-generator/client/types.gen'
 import type { CommissionCategoryRate } from '../forms/commission-form'
+import type { EscrowReleaseFormData } from '../forms/escrow-release-form'
 import type { ReferralRewardsFormData } from '../forms/referral-rewards-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
@@ -38,6 +39,7 @@ import { CashLimitForm } from '../forms/cash-limit-form'
 import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
+import { EscrowReleaseForm } from '../forms/escrow-release-form'
 import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
 import { ReferralRewardsForm } from '../forms/referral-rewards-form'
 
@@ -111,6 +113,23 @@ interface ProductReviewTiming {
   relancesMaximum: number
 }
 
+/**
+ * The SDK has no function for /api/admin/escrow-release yet: it goes through
+ * the shared client, like GET /api/admin/settings above. Same session, same
+ * base URL; swap for the generated functions once the SDK is regenerated.
+ */
+function fetchEscrowReleaseQueryOptions() {
+  return {
+    queryKey: ['admin', 'escrow-release'],
+    queryFn: async () => {
+      const result = await client.get({ url: '/api/admin/escrow-release' })
+      if (result.error)
+        throw new Error('Failed to fetch escrow release delays')
+      return result.data as EscrowReleaseFormData
+    },
+  }
+}
+
 function fetchProductReviewTimingQueryOptions() {
   return {
     queryKey: ['admin', 'product-review-timing'],
@@ -150,6 +169,7 @@ export default function AdminSettingsPage() {
   const [referralFeedback, setReferralFeedback] = useState<'saved' | 'error' | null>(null)
   const [assistantFeedback, setAssistantFeedback] = useState<'saved' | 'error' | null>(null)
   const [reviewFeedback, setReviewFeedback] = useState<'saved' | 'error' | null>(null)
+  const [escrowFeedback, setEscrowFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
   const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
@@ -157,6 +177,7 @@ export default function AdminSettingsPage() {
   const { data: referralRewards, isLoading: isReferralLoading } = useQuery(fetchReferralRewardsQueryOptions())
   const { data: assistant, isLoading: isAssistantLoading } = useQuery(fetchAssistantQueryOptions())
   const { data: reviewTiming, isLoading: isReviewLoading } = useQuery(fetchProductReviewTimingQueryOptions())
+  const { data: escrowRelease, isLoading: isEscrowLoading } = useQuery(fetchEscrowReleaseQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
     mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
@@ -310,6 +331,25 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setAssistantFeedback('error')
+    },
+  })
+
+  const { mutate: updateEscrowRelease, isPending: isEscrowPending } = useMutation({
+    mutationFn: async (delays: EscrowReleaseFormData) => {
+      const result = await client.put({ url: '/api/admin/escrow-release', body: delays })
+      if (result.error)
+        throw new Error('Failed to update escrow release delays')
+      return result.data as EscrowReleaseFormData
+    },
+    onMutate: () => {
+      setEscrowFeedback(null)
+    },
+    onSuccess: (saved) => {
+      setEscrowFeedback('saved')
+      queryClient.setQueryData(['admin', 'escrow-release'], saved)
+    },
+    onError: () => {
+      setEscrowFeedback('error')
     },
   })
 
@@ -513,6 +553,32 @@ export default function AdminSettingsPage() {
                 {reviewFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.productReview.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.escrowRelease.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.escrowRelease.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isEscrowLoading || !escrowRelease
+                  ? <Skeleton className="h-24 w-full" />
+                  : (
+                      <EscrowReleaseForm
+                        delays={escrowRelease}
+                        onSubmit={updateEscrowRelease}
+                        isPending={isEscrowPending}
+                      />
+                    )}
+                {escrowFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.escrowRelease.saved')}</p>
+                )}
+                {escrowFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.escrowRelease.error')}
                   </p>
                 )}
               </CardContent>

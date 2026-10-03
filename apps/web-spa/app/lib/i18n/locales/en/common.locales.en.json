@@ -1321,6 +1321,17 @@
         "saved": "Saved.",
         "error": "The change was not saved."
       },
+      "escrowRelease": {
+        "title": "Sales payout",
+        "description": "When a shop receives the money of an order paid online in its wallet. Until then it stays with eBio, giving time for a complaint to come in.",
+        "afterConfirmation": "After confirmation (hours)",
+        "afterConfirmationHint": "Delay after delivery once both the buyer and the shop have confirmed it.",
+        "maximum": "Maximum delay (days)",
+        "maximumHint": "Automatic payout after delivery, even when a confirmation is missing.",
+        "invalid": "The delay after confirmation cannot exceed the maximum delay.",
+        "saved": "Saved.",
+        "error": "The change was not saved."
+      },
       "homeSections": {
         "title": "Home sections",
         "description": "What the buyer sees on opening the app: the product rails, their titles, their order and what they hold. They used to live in the code — renaming one meant shipping a new app version."
