@@ -1,3 +1,4 @@
+import { config } from '../../../config/env.config'
 import { IntramGateway } from './intram.gateway'
 
 function buildGateway(client: { get: ReturnType<typeof vi.fn>, post: ReturnType<typeof vi.fn> }) {
@@ -204,5 +205,41 @@ describe('intramGateway', () => {
       const result = await buildGateway({ get: vi.fn(), post }).processRefund('AB12CD34EF', 12000)
       expect(result.success).toBe(false)
     })
+  })
+})
+
+describe('intramGateway — lecture du statut par l\'ancienne API', () => {
+  const intram = config.payments.intram
+  const saved = { ...intram }
+
+  beforeEach(() => {
+    Object.assign(intram, { legacyPublicKey: 'pub', legacyPrivateKey: 'priv', legacySecretKey: 'sec' })
+  })
+
+  afterEach(() => {
+    Object.assign(intram, saved)
+    vi.unstubAllGlobals()
+  })
+
+  it('confirme un paiement quand la v1 refuse le serveur (liste d\'IP vide)', async () => {
+    const get = vi.fn().mockRejectedValue(new Error('INTRAM /transactions/5MO6tOS7L8: ip_allowlist_empty'))
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ status: 'SUCCESS', amount: 900, currency: 'XOF', source: 'MTN', fees: 18 }),
+    })
+    vi.stubGlobal('fetch', fetchMock)
+
+    const result = await buildGateway({ get, post: vi.fn() }).checkStatus('5MO6tOS7L8')
+
+    expect(result.status).toBe('completed')
+    expect(result.amount).toBe(900)
+    expect(fetchMock.mock.calls[0][0]).toContain('/transactions/confirm/5MO6tOS7L8')
+  })
+
+  it('garde l\'erreur de la v1 quand l\'ancienne API ne répond pas non plus', async () => {
+    const get = vi.fn().mockRejectedValue(new Error('INTRAM: ip_allowlist_empty'))
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: false }))
+
+    await expect(buildGateway({ get, post: vi.fn() }).checkStatus('X')).rejects.toThrow('ip_allowlist_empty')
   })
 })

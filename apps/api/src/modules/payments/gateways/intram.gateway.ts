@@ -26,6 +26,9 @@ const INTRAM_STATUS_MAP: Record<string, string> = {
   pending: 'pending',
   queued: 'pending',
   ERROR: 'failed',
+  FAILED: 'failed',
+  CANCELED: 'failed',
+  CANCELLED: 'failed',
   failed: 'failed',
   REFUNDED: 'refunded',
   refunded: 'refunded',
@@ -263,7 +266,23 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
   }
 
   async checkStatus(providerTransactionId: string): Promise<CheckStatusResult> {
-    const transaction = await this.client.get<IntramTransaction>(`/transactions/${providerTransactionId}`)
+    let transaction: IntramTransaction
+    try {
+      transaction = await this.client.get<IntramTransaction>(`/transactions/${providerTransactionId}`)
+    }
+    catch (error) {
+      // The v1 API refuses a server whose IP is not in the merchant's
+      // allowlist (`ip_allowlist_empty`), and answers 504 on a bad day. The
+      // older endpoint has neither constraint and reads the same transaction:
+      // a payment that went through must never stay unconfirmed because one
+      // of the two doors is shut.
+      const legacy = await this.checkLegacyStatus(providerTransactionId)
+      if (legacy) {
+        this.logger.warn(`INTRAM v1 indisponible pour ${providerTransactionId}, statut lu par l'ancienne API : ${legacy.status}`)
+        return legacy
+      }
+      throw error
+    }
     const status = INTRAM_STATUS_MAP[transaction.status] ?? 'pending'
 
     return {
@@ -273,6 +292,46 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
       providerPaymentMethodId: transaction.payment_method,
       // What INTRAM actually took, fees excluded — the figure to reconcile on.
       amount: typeof transaction.amount === 'number' ? transaction.amount : undefined,
+    }
+  }
+
+  /**
+   * The same transaction, read through the older API. Null when it is not
+   * configured or cannot answer, so the caller keeps the v1 error.
+   */
+  private async checkLegacyStatus(providerTransactionId: string): Promise<CheckStatusResult | null> {
+    const { legacyUrl, legacyPublicKey, legacyPrivateKey, legacySecretKey } = config.payments.intram
+    if (!legacyPublicKey || !legacyPrivateKey || !legacySecretKey) {
+      return null
+    }
+    try {
+      const response = await fetch(`${legacyUrl}/transactions/confirm/${encodeURIComponent(providerTransactionId)}`, {
+        headers: {
+          'X-API-KEY': legacyPublicKey,
+          'X-PRIVATE-KEY': legacyPrivateKey,
+          'X-SECRET-KEY': legacySecretKey,
+        },
+        signal: AbortSignal.timeout(15_000),
+      })
+      if (!response.ok) {
+        return null
+      }
+      const data = await response.json() as { status?: string, amount?: number, source?: string }
+      if (!data.status) {
+        return null
+      }
+      const status = INTRAM_STATUS_MAP[data.status] ?? 'pending'
+      return {
+        status,
+        paidAt: status === 'completed' ? new Date() : undefined,
+        reference: providerTransactionId,
+        providerPaymentMethodId: data.source || undefined,
+        // Like v1, the amount without INTRAM's fees: the figure to reconcile on.
+        amount: typeof data.amount === 'number' ? data.amount : undefined,
+      }
+    }
+    catch {
+      return null
     }
   }
 
