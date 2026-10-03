@@ -104,7 +104,7 @@ function SafeScreen({ children }: { children: React.ReactNode }) {
 const SearchStack = createNativeStackNavigator()
 function SearchStackScreen() {
   return (
-    <SearchStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <SearchStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <SearchStack.Screen name="SearchHome" component={SearchHomeWrapper} />
       <SearchStack.Screen name="SearchResults" component={SearchResultsWrapper} />
       <SearchStack.Screen name="LocationPicker" component={SearchLocationPickerWrapper} />
@@ -392,17 +392,36 @@ function ProductReviewsWrapper({ route, navigation }: any) {
   )
 }
 
+interface LoadedProductDetail {
+  product: ProductDetailProduct
+  supplier: ProductDetailSupplier | null
+  /** The raw detail, handed to the screen so it does not fetch it again. */
+  detail: Record<string, unknown>
+  at: number
+}
+
+/** Long enough to cover a back-and-forth, short enough for a price to stay current. */
+const PRODUCT_DETAIL_TTL_MS = 2 * 60 * 1000
+
+/**
+ * Products opened a moment ago. Going back to a product, or opening it again
+ * from the shop, then slides in already filled instead of on a spinner.
+ */
+const productDetailCache = new Map<string, LoadedProductDetail>()
+
+function freshProductDetail(productId: string | undefined): LoadedProductDetail | null {
+  const entry = productId ? productDetailCache.get(productId) : undefined
+  return entry && Date.now() - entry.at < PRODUCT_DETAIL_TTL_MS ? entry : null
+}
+
 function ProductDetailWrapper({ route, navigation }: any) {
   const { productId } = route.params ?? {}
-  const [loaded, setLoaded] = React.useState<{
-    product: ProductDetailProduct
-    supplier: ProductDetailSupplier | null
-  } | null>(null)
+  const [loaded, setLoaded] = React.useState<LoadedProductDetail | null>(() => freshProductDetail(productId))
 
   // A banner only carries an id: we fill in the product and its
   // supplier ourselves, which the screen expects as objects.
   React.useEffect(() => {
-    if (!productId)
+    if (!productId || freshProductDetail(productId))
       return
     let cancelled = false
     async function load() {
@@ -413,11 +432,15 @@ function ProductDetailWrapper({ route, navigation }: any) {
         const rawProduct = await productRes.json() as ApiProductDetail
         const supplierRes = await apiFetch(`/api/suppliers/${rawProduct.supplierId}`)
         const rawSupplier = supplierRes.ok ? await supplierRes.json() as ApiSupplierDetail : null
+        const entry: LoadedProductDetail = {
+          product: toDetailProduct(rawProduct),
+          supplier: rawSupplier && toDetailSupplier(rawSupplier),
+          detail: rawProduct as unknown as Record<string, unknown>,
+          at: Date.now(),
+        }
+        productDetailCache.set(productId, entry)
         if (!cancelled) {
-          setLoaded({
-            product: toDetailProduct(rawProduct),
-            supplier: rawSupplier && toDetailSupplier(rawSupplier),
-          })
+          setLoaded(entry)
         }
       }
       catch {
@@ -448,6 +471,7 @@ function ProductDetailWrapper({ route, navigation }: any) {
       <ProductDetailScreen
         product={product}
         supplier={supplier}
+        detail={route.params?.product ? null : loaded?.detail}
         onGoBack={() => navigation.goBack()}
         onNavigateToSupplier={id => navigation.navigate('SupplierProfile', { supplierId: id })}
         onOpenProduct={id => navigation.push('ProductDetail', { productId: id })}
@@ -463,7 +487,7 @@ function ChatStackScreen() {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id ?? ''
   return (
-    <ChatStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <ChatStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <ChatStack.Screen name="ChatHome">
         {({ navigation }) => (
           <SafeScreen>
@@ -512,7 +536,7 @@ function ChatStackScreen() {
 const CartStack = createNativeStackNavigator()
 function CartStackScreen() {
   return (
-    <CartStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <CartStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <CartStack.Screen name="CartHome" component={CartHomeWrapper} />
       <CartStack.Screen name="Login" component={LoginWrapper} />
       <CartStack.Screen name="Register" component={RegisterWrapper} />
@@ -690,7 +714,7 @@ function OrderSuccessWrapper({ route, navigation }: any) {
 const OrdersStack = createNativeStackNavigator()
 function OrdersStackScreen() {
   return (
-    <OrdersStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <OrdersStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <OrdersStack.Screen name="MyOrders" component={MyOrdersWrapper} />
       <OrdersStack.Screen name="OrderTracking" component={OrderTrackingWrapper} />
       <OrdersStack.Screen name="RateOrder" component={RateOrderWrapper} />
@@ -703,7 +727,7 @@ function OrdersStackScreen() {
 const ProfileStack = createNativeStackNavigator()
 function ProfileStackScreen() {
   return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <ProfileStack.Screen name="ProfileHome" component={ProfileHomeWrapper} />
       <ProfileStack.Screen name="EditProfile" component={EditProfileWrapper} />
       <ProfileStack.Screen name="ChangePassword" component={ChangePasswordWrapper} />
@@ -996,6 +1020,46 @@ function popTabStackToTop(navigation: any, tabName: string) {
   navigation.dispatch({ ...StackActions.popToTop(), target: state.key })
 }
 
+/**
+ * Where the buyer is (tab and screen), outside React state.
+ *
+ * Only the live-order notice needs it; subscribing that one component keeps
+ * a navigation from re-rendering everything mounted beside the navigator.
+ */
+function createPlaceStore() {
+  let place = { tab: '', screen: '' }
+  const listeners = new Set<() => void>()
+  return {
+    get: () => place,
+    set: (next: { tab: string, screen: string }) => {
+      if (next.tab === place.tab && next.screen === place.screen) {
+        return
+      }
+      place = next
+      listeners.forEach(listener => listener())
+    },
+    subscribe: (listener: () => void) => {
+      listeners.add(listener)
+      return () => {
+        listeners.delete(listener)
+      }
+    },
+  }
+}
+
+const buyerPlace = createPlaceStore()
+
+/** The live-order notice, silent on the orders tab and on screens without a tab bar. */
+function LiveOrderToastHost() {
+  const place = React.useSyncExternalStore(buyerPlace.subscribe, buyerPlace.get)
+  return (
+    <LiveOrderToast
+      hidden={place.tab === 'Commandes' || HIDE_TAB_BAR_ROUTES.has(place.screen)}
+      onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
+    />
+  )
+}
+
 const HIDE_TAB_BAR_ROUTES = new Set([
   'Assistant',
   'LocationPicker',
@@ -1036,13 +1100,14 @@ function BuyerTabs() {
   // reminds afterwards without taking any room.
   const { order: liveOrder } = useLiveOrder()
   // Where the buyer is, read on every state change: the notice is mounted
-  // outside the navigator, so it cannot read the route through a hook.
-  const [place, setPlace] = React.useState({ tab: '', screen: '' })
+  // outside the navigator, so it cannot read the route through a hook. Kept in
+  // a store rather than in this component's state: a state here re-rendered
+  // the whole tab bar and its overlays at the start of every push and pop.
   const handleStateChange = React.useCallback(() => {
     const state = navigationRef.getRootState()
     const tab = state?.routes?.[state.index ?? 0]?.name ?? ''
     const screen = navigationRef.getCurrentRoute()?.name ?? ''
-    setPlace(prev => (prev.tab === tab && prev.screen === screen ? prev : { tab, screen }))
+    buyerPlace.set({ tab, screen })
   }, [])
 
   const baseTabBarStyle = {
@@ -1092,6 +1157,8 @@ function BuyerTabs() {
           const shouldHide = focused ? HIDE_TAB_BAR_ROUTES.has(focused) : false
           return {
             headerShown: false,
+            // A tab out of sight stops rendering until it comes back.
+            freezeOnBlur: true,
             tabBarActiveTintColor: colors.green[400],
             tabBarInactiveTintColor: colors.neutral[400],
             tabBarHideOnKeyboard: true,
@@ -1181,10 +1248,7 @@ function BuyerTabs() {
         * on the orders tab (the screen says it already) and on the screens
         * without a tab bar: a checkout or a conversation is no place to
         * interrupt someone. */}
-      <LiveOrderToast
-        hidden={place.tab === 'Commandes' || HIDE_TAB_BAR_ROUTES.has(place.screen)}
-        onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
-      />
+      <LiveOrderToastHost />
 
       <BuyerAnnouncement />
 

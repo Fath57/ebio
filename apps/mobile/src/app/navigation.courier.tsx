@@ -110,7 +110,7 @@ function AuthForgotWrapper({ navigation }: any) {
 
 function CourierAuthFlow() {
   return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+    <AuthStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <AuthStack.Screen name="CourierLogin" component={AuthLoginWrapper} />
       <AuthStack.Screen name="CourierRegister" component={AuthRegisterWrapper} />
       <AuthStack.Screen name="CourierForgotPassword" component={AuthForgotWrapper} />
@@ -151,7 +151,7 @@ function CourierGate() {
   }
 
   return (
-    <GateStack.Navigator screenOptions={{ headerShown: false }}>
+    <GateStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       {state === 'none'
         ? (
             <>
@@ -347,7 +347,7 @@ function CourierChatWrapper({ route, navigation }: any) {
 
 function CoursesStackScreen() {
   return (
-    <CoursesStack.Navigator screenOptions={{ headerShown: false }}>
+    <CoursesStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <CoursesStack.Screen name="CoursesHome" component={CoursesHomeWrapper} />
       <CoursesStack.Screen name="CourierProof" component={CourierProofWrapper} />
       <CoursesStack.Screen name="CourierChat" component={CourierChatWrapper} />
@@ -382,7 +382,7 @@ function HistoryDetailWrapper({ route, navigation }: any) {
 
 function HistoryStackScreen() {
   return (
-    <HistoryStack.Navigator screenOptions={{ headerShown: false }}>
+    <HistoryStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <HistoryStack.Screen name="HistoryHome" component={HistoryHomeWrapper} />
       <HistoryStack.Screen name="HistoryDetail" component={HistoryDetailWrapper} />
       {/* Distinct route name: CourierChat already lives in the Courses branch. */}
@@ -404,7 +404,7 @@ function CourierWalletWrapper() {
 
 function WalletStackScreen() {
   return (
-    <WalletStack.Navigator screenOptions={{ headerShown: false }}>
+    <WalletStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <WalletStack.Screen name="CourierWalletHome" component={CourierWalletWrapper} />
     </WalletStack.Navigator>
   )
@@ -478,7 +478,7 @@ function CourierNotificationsWrapper({ navigation }: any) {
 const NotificationsStack = createNativeStackNavigator()
 function NotificationsStackScreen() {
   return (
-    <NotificationsStack.Navigator screenOptions={{ headerShown: false }}>
+    <NotificationsStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <NotificationsStack.Screen name="CourierNotificationsHome" component={CourierNotificationsTabWrapper} />
     </NotificationsStack.Navigator>
   )
@@ -495,7 +495,7 @@ function CourierNotificationsTabWrapper() {
 
 function ProfileStackScreen() {
   return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false }}>
+    <ProfileStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <ProfileStack.Screen name="CourierProfileHome" component={CourierProfileWrapper} />
       <ProfileStack.Screen name="CourierEditProfile" component={CourierEditProfileWrapper} />
       <ProfileStack.Screen name="CourierNotifications" component={CourierNotificationsWrapper} />
@@ -530,6 +530,8 @@ function CourierTabs() {
         const shouldHide = focused ? HIDE_TAB_BAR_ROUTES.has(focused) : false
         return {
           headerShown: false,
+          // A tab out of sight stops rendering until it comes back.
+          freezeOnBlur: true,
           tabBarActiveTintColor: colors.green[400],
           tabBarInactiveTintColor: colors.neutral[400],
           tabBarHideOnKeyboard: true,

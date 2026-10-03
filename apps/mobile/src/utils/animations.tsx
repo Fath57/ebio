@@ -102,9 +102,12 @@ interface StaggerItemProps {
   style?: StyleProp<ViewStyle>
 }
 
+/** Past the first screenful the cascade only made rows late, not lively. */
+const MAX_STAGGERED_ROWS = 6
+
 export function StaggerItem({ index, children, style }: StaggerItemProps) {
   return (
-    <FadeInView delay={index * 80} duration={350} slideDistance={16} style={style}>
+    <FadeInView delay={Math.min(index, MAX_STAGGERED_ROWS) * 60} duration={250} slideDistance={12} style={style}>
       {children}
     </FadeInView>
   )

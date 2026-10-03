@@ -119,7 +119,7 @@ function AuthForgotWrapper({ navigation }: any) {
 
 function SupplierAuthFlow() {
   return (
-    <AuthStack.Navigator screenOptions={{ headerShown: false }}>
+    <AuthStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <AuthStack.Screen name="SupplierAuthLogin" component={AuthLoginWrapper} />
       <AuthStack.Screen name="SupplierAuthRegister" component={AuthRegisterWrapper} />
       <AuthStack.Screen name="SupplierAuthForgot" component={AuthForgotWrapper} />
@@ -201,7 +201,7 @@ function SupplierGate() {
   }
 
   return (
-    <GateStack.Navigator screenOptions={{ headerShown: false }}>
+    <GateStack.Navigator screenOptions={{ headerShown: false, freezeOnBlur: true }}>
       <GateStack.Screen name="SupplierGateHome">
         {({ navigation }: any) => (
           <SafeScreen>
@@ -462,7 +462,7 @@ function SupplierBannerRequestFormWrapper({ navigation }: any) {
 
 function HomeStackScreen() {
   return (
-    <HomeStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <HomeStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <HomeStack.Screen name="SupplierDashboard" component={DashboardWrapper} />
       <HomeStack.Screen name="SupplierProducts" component={SupplierProductsWrapper} />
       <HomeStack.Screen name="SupplierProductDetail" component={SupplierProductDetailWrapper} />
@@ -509,7 +509,7 @@ function SupplierOrderDetailWrapper({ route, navigation }: any) {
 
 function OrdersStackScreen() {
   return (
-    <OrdersStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <OrdersStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <OrdersStack.Screen name="SupplierOrders" component={SupplierOrdersWrapper} />
       <OrdersStack.Screen name="SupplierOrderDetail" component={SupplierOrderDetailWrapper} />
     </OrdersStack.Navigator>
@@ -524,7 +524,7 @@ function ChatStackScreen() {
   const { data: session } = useSession()
   const currentUserId = session?.user?.id ?? ''
   return (
-    <ChatStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <ChatStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <ChatStack.Screen name="ChatHome">
         {({ navigation }: any) => (
           <SafeScreen>
@@ -656,7 +656,7 @@ function SupplierNotificationsWrapper({ navigation }: any) {
 
 function ProfileStackScreen() {
   return (
-    <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
+    <ProfileStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
       <ProfileStack.Screen name="SupplierAccountHome" component={SupplierAccountHome} />
       <ProfileStack.Screen name="SupplierEditProfile" component={SupplierEditProfileWrapper} />
       <ProfileStack.Screen name="SupplierNotifications" component={SupplierNotificationsWrapper} />
@@ -707,6 +707,8 @@ function SupplierTabs() {
         const shouldHide = focused ? HIDE_TAB_BAR_ROUTES.has(focused) : false
         return {
           headerShown: false,
+          // A tab out of sight stops rendering until it comes back.
+          freezeOnBlur: true,
           tabBarActiveTintColor: colors.green[400],
           tabBarInactiveTintColor: colors.neutral[400],
           tabBarHideOnKeyboard: true,

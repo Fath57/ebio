@@ -92,6 +92,12 @@ interface ProductDetailScreenProps {
   onOpenProduct?: (productId: string) => void
   /** Opens the full, paginated review list of this product. */
   onSeeAllReviews?: (productId: string) => void
+  /**
+   * The product's full detail, when the caller already fetched it (a banner
+   * or a shared link opens with an id only). Spares a second identical
+   * request while the screen is sliding in.
+   */
+  detail?: Record<string, unknown> | null
 }
 
 export function ProductDetailScreen({
@@ -101,6 +107,7 @@ export function ProductDetailScreen({
   onNavigateToSupplier,
   onOpenProduct,
   onSeeAllReviews,
+  detail,
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
   const { shortLabel } = useProductUnits()
@@ -120,9 +127,27 @@ export function ProductDetailScreen({
   const [promotions, setPromotions] = useState<ProductPromotion[] | null>(null)
   const scrollY = useRef(new Animated.Value(0)).current
 
-  // The navigation param is a lean list payload — fetch the full product
-  // detail to get the composition fields (fiche produit).
+  // The navigation param is a lean list payload — the full product detail
+  // brings the composition fields (fiche produit). Fetched only when the
+  // caller did not already hand it over.
   useEffect(() => {
+    function applyDetail(data: Record<string, unknown>): void {
+      setPromotions(parsePromotions(data.promotions))
+      setComposition({
+        ingredients: typeof data.ingredients === 'string' ? data.ingredients : null,
+        allergens: Array.isArray(data.allergens) ? data.allergens as string[] : [],
+        labels: Array.isArray(data.labels) ? data.labels as string[] : [],
+        origin: typeof data.origin === 'string' ? data.origin : null,
+        conservation: typeof data.conservation === 'string' ? data.conservation : null,
+        nutritionalValues: data.nutritionalValues !== null && typeof data.nutritionalValues === 'object'
+          ? data.nutritionalValues as NutritionalValues
+          : null,
+      })
+    }
+    if (detail) {
+      applyDetail(detail)
+      return undefined
+    }
     let cancelled = false
     async function loadComposition() {
       try {
@@ -130,19 +155,8 @@ export function ProductDetailScreen({
         if (!res.ok)
           return
         const data = await res.json() as Record<string, unknown>
-        if (cancelled)
-          return
-        setPromotions(parsePromotions(data.promotions))
-        setComposition({
-          ingredients: typeof data.ingredients === 'string' ? data.ingredients : null,
-          allergens: Array.isArray(data.allergens) ? data.allergens as string[] : [],
-          labels: Array.isArray(data.labels) ? data.labels as string[] : [],
-          origin: typeof data.origin === 'string' ? data.origin : null,
-          conservation: typeof data.conservation === 'string' ? data.conservation : null,
-          nutritionalValues: data.nutritionalValues !== null && typeof data.nutritionalValues === 'object'
-            ? data.nutritionalValues as NutritionalValues
-            : null,
-        })
+        if (!cancelled)
+          applyDetail(data)
       }
       catch {
         // Composition sections simply stay hidden when the fetch fails.
@@ -152,7 +166,7 @@ export function ProductDetailScreen({
     return () => {
       cancelled = true
     }
-  }, [product.id])
+  }, [product.id, detail])
 
   const hasPromo = product.promotionalPrice !== null && product.promotionalPrice < product.pricePerUnit
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
