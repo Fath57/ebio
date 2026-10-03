@@ -1,6 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Module } from '@nestjs/common'
-import { AdminAssistantController, AdminBannerOffersController, AdminDeliveryPricingController, AdminProductReviewTimingController, AdminReferralRewardsController, DeliveryPricingController } from './delivery-pricing.controller'
+import { AdminAssistantController, AdminBannerOffersController, AdminDeliveryPricingController, AdminEscrowReleaseController, AdminProductReviewTimingController, AdminReferralRewardsController, DeliveryPricingController } from './delivery-pricing.controller'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSetting } from './platform-setting.entity'
 import { PlatformSettingsService } from './platform-settings.service'
@@ -8,7 +8,7 @@ import { PublicSettingsController } from './public-settings.controller'
 
 @Module({
   imports: [MikroOrmModule.forFeature([PlatformSetting])],
-  controllers: [PublicSettingsController, DeliveryPricingController, AdminDeliveryPricingController, AdminBannerOffersController, AdminAssistantController, AdminProductReviewTimingController, AdminReferralRewardsController],
+  controllers: [PublicSettingsController, DeliveryPricingController, AdminDeliveryPricingController, AdminBannerOffersController, AdminAssistantController, AdminProductReviewTimingController, AdminReferralRewardsController, AdminEscrowReleaseController],
   providers: [PlatformSettingsService, DeliveryPricingService],
   exports: [PlatformSettingsService, DeliveryPricingService],
 })
