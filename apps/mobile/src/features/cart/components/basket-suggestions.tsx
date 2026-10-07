@@ -94,7 +94,7 @@ function SuggestionCard({ item, quantity, onAdd, onChangeQuantity, onOpen, reaso
       accessibilityLabel={`${item.name}, ${formatPrice(displayPrice)} FCFA`}
     >
       {imageUri
-        ? <Image source={{ uri: imageUri }} style={styles.image} resizeMode="cover" />
+        ? <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
         : (
             <View style={[styles.image, styles.imagePlaceholder, { backgroundColor: semantic.bgCard }]}>
               <Package size={22} color={semantic.textTertiary} strokeWidth={1.5} />

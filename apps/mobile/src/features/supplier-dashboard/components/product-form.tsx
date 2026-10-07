@@ -392,7 +392,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         <View style={styles.photoRow}>
           {existingPhotos.map((uri, index) => (
             <View key={`existing-${uri}`} style={styles.photoContainer}>
-              <Image source={{ uri }} style={styles.photoImage} resizeMode="cover" />
+              <Image source={{ uri }} style={styles.photoImage} resizeMode="contain" />
               <TouchableOpacity
                 style={styles.photoRemoveButton}
                 onPress={() => handleRemoveExistingPhoto(index)}
@@ -404,7 +404,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
           ))}
           {newPhotos.map(photo => (
             <View key={photo.mediaId} style={styles.photoContainer}>
-              <Image source={{ uri: photo.url }} style={styles.photoImage} resizeMode="cover" />
+              <Image source={{ uri: photo.url }} style={styles.photoImage} resizeMode="contain" />
               <TouchableOpacity
                 style={styles.photoRemoveButton}
                 onPress={() => handleRemoveNewPhoto(photo.mediaId)}

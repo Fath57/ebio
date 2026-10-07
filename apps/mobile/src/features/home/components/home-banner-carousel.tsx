@@ -148,7 +148,7 @@ export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: Hom
             accessibilityRole="button"
             accessibilityLabel={banner.subtitle ? `${banner.title} — ${banner.subtitle}` : banner.title}
           >
-            <Image source={{ uri: banner.imageUrl }} style={styles.image} resizeMode="cover" />
+            <Image source={{ uri: banner.imageUrl }} style={styles.image} resizeMode="contain" />
 
             <LinearGradient
               colors={['transparent', 'rgba(0,0,0,0.45)', 'rgba(0,0,0,0.88)']}
@@ -227,6 +227,9 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+    // The whole photo is shown (contain): white fills the margins, as
+    // most product shots are on white.
+    backgroundColor: colors.neutral[0],
   },
   scrim: {
     ...StyleSheet.absoluteFillObject,

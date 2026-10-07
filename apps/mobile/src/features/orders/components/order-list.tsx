@@ -332,7 +332,7 @@ export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
               <View style={[styles.thumbnail, { backgroundColor: semantic.bgSurface }]}>
                 {photo
                   ? (
-                      <Image source={{ uri: photo }} style={styles.thumbnailImage} />
+                      <Image source={{ uri: photo }} style={styles.thumbnailImage} resizeMode="contain" />
                     )
                   : (
                       <ImageIcon size={24} color={semantic.textTertiary} />

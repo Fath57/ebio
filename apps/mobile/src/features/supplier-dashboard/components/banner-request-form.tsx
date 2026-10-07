@@ -351,7 +351,7 @@ export function BannerRequestForm({ onGoBack, onCreated, kind = 'banner' }: Bann
           accessibilityLabel={imageUrl ? 'Changer le visuel' : 'Choisir un visuel'}
         >
           {imageUrl
-            ? <Image source={{ uri: imageUrl }} style={styles.imagePreview} resizeMode="cover" />
+            ? <Image source={{ uri: imageUrl }} style={styles.imagePreview} resizeMode="contain" />
             : (
                 <View style={styles.imagePlaceholder}>
                   {uploading
@@ -459,7 +459,7 @@ export function BannerRequestForm({ onGoBack, onCreated, kind = 'banner' }: Bann
                           accessibilityLabel={product.name}
                         >
                           {product.photoUri
-                            ? <Image source={{ uri: product.photoUri }} style={styles.productThumb} />
+                            ? <Image source={{ uri: product.photoUri }} style={styles.productThumb} resizeMode="contain" />
                             : (
                                 <View style={[styles.productThumb, { backgroundColor: colors.green[50], alignItems: 'center', justifyContent: 'center' }]}>
                                   <Package size={16} color={colors.green[600]} />

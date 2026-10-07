@@ -90,7 +90,7 @@ export function AssistantCartPanel({
                   <Image
                     source={{ uri: line.imageUrl }}
                     style={styles.thumbImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                     accessibilityIgnoresInvertColors
                     // Decorative: the name right next to it already says what this is.
                     accessible={false}

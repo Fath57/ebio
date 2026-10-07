@@ -204,7 +204,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
                 <Image
                   source={{ uri: product.photos[selectedPhoto] }}
                   style={styles.mainPhoto}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
                 {hasPromotion && !selectedVariant && (
                   <View style={styles.promoBadge}>
@@ -223,7 +223,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
                         onPress={() => setSelectedPhoto(i)}
                         style={[styles.thumbnail, i === selectedPhoto && styles.thumbnailActive]}
                       >
-                        <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="cover" />
+                        <Image source={{ uri: url }} style={styles.thumbnailImage} resizeMode="contain" />
                       </TouchableOpacity>
                     ))}
                   </ScrollView>

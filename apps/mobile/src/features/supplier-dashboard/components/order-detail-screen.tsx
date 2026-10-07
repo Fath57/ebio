@@ -284,7 +284,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           {order.items.map((it, i) => (
             <View key={`${it.productName}-${i}`} style={[styles.itemRow, i > 0 && { borderTopColor: semantic.borderLight, borderTopWidth: 1 }]}>
               {it.productPhoto
-                ? <Image source={{ uri: it.productPhoto }} style={styles.itemImage} resizeMode="cover" />
+                ? <Image source={{ uri: it.productPhoto }} style={styles.itemImage} resizeMode="contain" />
                 : (
                     <View style={[styles.itemImage, styles.itemImagePlaceholder, { backgroundColor: semantic.bgSurface }]}>
                       <Text style={[styles.itemImageLetter, { color: semantic.textTertiary }]}>{it.productName.charAt(0).toUpperCase()}</Text>

@@ -421,7 +421,7 @@ export function OrderTracking({
                     <View style={[styles.itemThumb, { backgroundColor: semantic.bgSurface }]}>
                       {item.productPhoto
                         ? (
-                            <Image source={{ uri: item.productPhoto }} style={styles.itemThumbImage} />
+                            <Image source={{ uri: item.productPhoto }} style={styles.itemThumbImage} resizeMode="contain" />
                           )
                         : (
                             <ImageIcon size={16} color={semantic.textTertiary} />

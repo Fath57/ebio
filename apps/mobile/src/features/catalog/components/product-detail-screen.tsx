@@ -331,7 +331,7 @@ export function ProductDetailScreen({
                   <Image
                     source={{ uri: product.imageUrl }}
                     style={styles.heroImage}
-                    resizeMode="cover"
+                    resizeMode="contain"
                   />
                 )
               : (
@@ -707,6 +707,9 @@ const styles = StyleSheet.create({
   heroImage: {
     width: '100%',
     height: '100%',
+    // The whole photo is shown (contain): white fills the margins, as
+    // most product shots are on white.
+    backgroundColor: colors.neutral[0],
   },
   heroPlaceholder: {
     justifyContent: 'center',

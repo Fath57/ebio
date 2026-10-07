@@ -231,7 +231,7 @@ export function BannerRequestsScreen({ onGoBack, onNewRequest, refreshKey = 0 }:
               const pill = describeRequestStatus(request)
               return (
                 <View key={request.id} style={[styles.requestCard, { backgroundColor: semantic.bgCard }]}>
-                  <Image source={{ uri: request.imageUrl }} style={styles.requestImage} resizeMode="cover" />
+                  <Image source={{ uri: request.imageUrl }} style={styles.requestImage} resizeMode="contain" />
                   <View style={styles.requestBody}>
                     <View style={styles.requestHeader}>
                       <Text style={[styles.requestTitle, { color: semantic.textPrimary }]} numberOfLines={1}>

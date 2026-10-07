@@ -158,7 +158,7 @@ export function ProductRatingStep({ orderId, onComplete }: ProductRatingStepProp
               <View key={item.orderItemId} style={[styles.row, { backgroundColor: semantic.bgCard }]}>
                 <View style={styles.rowHead}>
                   {item.thumbnail
-                    ? <Image source={{ uri: item.thumbnail }} style={styles.thumb} />
+                    ? <Image source={{ uri: item.thumbnail }} style={styles.thumb} resizeMode="contain" />
                     : <View style={[styles.thumb, { backgroundColor: semantic.bgSurface }]} />}
                   <Text style={[styles.name, { color: semantic.textPrimary }]} numberOfLines={2}>
                     {item.productName}

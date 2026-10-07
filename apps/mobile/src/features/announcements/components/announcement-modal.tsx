@@ -154,7 +154,7 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
               <Image
                 source={{ uri: announcement.imageUrl }}
                 style={imageOnly ? [styles.imageAlone, { aspectRatio: imageRatio ?? 4 / 5 }] : styles.image}
-                resizeMode="cover"
+                resizeMode="contain"
                 accessible={false}
               />
             </Pressable>

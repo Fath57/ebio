@@ -57,7 +57,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
               <Image
                 source={{ uri: product.thumbnail ?? product.photo }}
                 style={styles.image}
-                resizeMode="cover"
+                resizeMode="contain"
               />
             )
           : (
@@ -200,6 +200,9 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
+    // The whole photo is shown (contain): white fills the margins, as
+    // most product shots are on white.
+    backgroundColor: colors.neutral[0],
   },
   imagePlaceholder: {
     justifyContent: 'center',

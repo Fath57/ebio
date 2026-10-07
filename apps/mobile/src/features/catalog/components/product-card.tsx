@@ -113,7 +113,7 @@ export function ProductCard({
               <Image
                 source={{ uri: imageUrl }}
                 style={styles.image}
-                resizeMode="cover"
+                resizeMode="contain"
                 accessibilityLabel={`Photo de ${name}`}
               />
             )
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    backgroundColor: colors.neutral[50],
+    backgroundColor: colors.neutral[0],
   },
   imagePlaceholder: {
     backgroundColor: colors.green[50],

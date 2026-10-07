@@ -203,7 +203,7 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
                 <Image
                   source={{ uri: item.photoUri }}
                   style={styles.thumbnail}
-                  resizeMode="cover"
+                  resizeMode="contain"
                 />
               )
             : (
