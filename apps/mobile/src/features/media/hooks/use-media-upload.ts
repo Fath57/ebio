@@ -27,9 +27,12 @@ export type MediaContext
  * une preuve de livraison n'a rien à gagner à être rognée : on l'ouvre sur
  * « Image entière ». Les autres s'affichent dans un gabarit connu, autant le
  * cadrer soi-même plutôt que de laisser l'affichage couper au hasard.
+ *
+ * Product photos are shown whole (contain) everywhere, so forcing 4:3 here
+ * only cut off the top and bottom of portrait shots: they open on
+ * « Image entière » with the other formats still offered.
  */
 const DEFAULT_ASPECT: Partial<Record<MediaContext, [number, number]>> = {
-  PRODUCT_PHOTO: [4, 3],
   SUPPLIER_COVER: [2, 1],
   SUPPLIER_PROFILE: [1, 1],
   BANNER_IMAGE: [2, 1],
