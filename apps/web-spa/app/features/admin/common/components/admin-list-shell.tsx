@@ -196,8 +196,8 @@ function SearchField({ value, onChange, placeholder }: SearchFieldProps) {
   }
 
   return (
-    <div className="relative min-w-64 flex-1">
-      <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2" />
+    <div className="relative w-full lg:w-auto lg:min-w-96 lg:flex-1">
+      <Search className="text-muted-foreground pointer-events-none absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2" />
       <Input
         type="search"
         className="h-10 pr-9 pl-9 [&::-webkit-search-cancel-button]:hidden"

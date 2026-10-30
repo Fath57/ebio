@@ -22,6 +22,7 @@ import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog
 import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
+import { useReturnFocus } from '@/features/admin/common/utils/use-return-focus'
 import { BeneficiaryCell } from '../components/beneficiary-cell'
 import {
   actOnPayoutNumber,
@@ -131,6 +132,7 @@ export default function AdminWithdrawalsPage() {
   })
 
   const isActing = numberAction.isPending || withdrawalAction.isPending
+  const returnFocusAfterReject = useReturnFocus(rejectTarget !== null)
 
   const submitReject = () => {
     if (!rejectTarget || rejectReason.trim().length < 3)
@@ -480,7 +482,7 @@ export default function AdminWithdrawalsPage() {
       />
 
       <Dialog open={rejectTarget !== null} onOpenChange={open => !open && setRejectTarget(null)}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md" onCloseAutoFocus={returnFocusAfterReject}>
           <DialogHeader>
             <DialogTitle>{t('admin.withdrawals.rejectTitle')}</DialogTitle>
             <DialogDescription>

@@ -30,8 +30,13 @@ const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 
   FAILED: 'destructive',
 }
 
+/**
+ * French grouping uses a narrow no-break space (U+202F) that Plus Jakarta Sans
+ * lacks — "58 100" rendered as "58100" outside the mono font. A plain
+ * no-break space is in every font.
+ */
 function formatAmount(value: number): string {
-  return `${value.toLocaleString('fr-FR')} FCFA`
+  return `${value.toLocaleString('fr-FR').replace(/\u202F/g, '\u00A0')}\u00A0FCFA`
 }
 
 function TotalCard({ label, value, hint, accent }: {
@@ -46,7 +51,7 @@ function TotalCard({ label, value, hint, accent }: {
         <CardTitle className="text-muted-foreground text-sm font-medium">{label}</CardTitle>
       </CardHeader>
       <CardContent>
-        <p className={`text-2xl font-bold ${accent ? 'text-primary' : ''}`}>{formatAmount(value)}</p>
+        <p className={`font-mono text-2xl font-bold ${accent ? 'text-primary' : ''}`}>{formatAmount(value)}</p>
         <p className="text-muted-foreground mt-1 text-xs">{hint}</p>
       </CardContent>
     </Card>

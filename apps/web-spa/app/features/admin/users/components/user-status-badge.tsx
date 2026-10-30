@@ -1,6 +1,6 @@
 import type { UserStatus } from '../utils/users-queries'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { useTranslation } from 'react-i18next'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
 
 interface UserStatusBadgeProps {
   status: UserStatus
@@ -13,15 +13,15 @@ export function UserStatusBadge({ status, isBlocked, suspendedUntil }: UserStatu
   const { t, i18n } = useTranslation()
 
   if (!isBlocked)
-    return <Badge variant="default">{t('admin.users.status.active')}</Badge>
+    return <StatusBadge tone="done">{t('admin.users.status.active')}</StatusBadge>
 
   if (status === 'BANNED')
-    return <Badge variant="destructive">{t('admin.users.status.banned')}</Badge>
+    return <StatusBadge tone="problem">{t('admin.users.status.banned')}</StatusBadge>
 
   if (suspendedUntil) {
     const date = new Date(suspendedUntil).toLocaleDateString(i18n.language)
-    return <Badge variant="secondary">{t('admin.users.status.suspendedUntil', { date })}</Badge>
+    return <StatusBadge tone="problem">{t('admin.users.status.suspendedUntil', { date })}</StatusBadge>
   }
 
-  return <Badge variant="secondary">{t('admin.users.status.suspended')}</Badge>
+  return <StatusBadge tone="problem">{t('admin.users.status.suspended')}</StatusBadge>
 }

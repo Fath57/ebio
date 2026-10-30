@@ -48,13 +48,7 @@ export default function CategoriesPage() {
       id: 'image',
       header: '',
       meta: { className: 'w-16' },
-      cell: ({ row }) => (row.original.imageUrl
-        ? <img src={row.original.imageUrl} alt={row.original.name} className="h-10 w-10 rounded-lg object-cover" />
-        : (
-            <span className="bg-muted text-muted-foreground flex h-10 w-10 items-center justify-center rounded-lg">
-              <ImageOff className="h-4 w-4" />
-            </span>
-          )),
+      cell: ({ row }) => <CategoryThumbnail category={row.original} />,
     },
     {
       id: 'name',
@@ -155,5 +149,26 @@ export default function CategoriesPage() {
         destructive
       />
     </>
+  )
+}
+
+/** A dead image URL falls back to the placeholder instead of printing its alt text in the cell. */
+function CategoryThumbnail({ category }: { category: CategoryRecord }) {
+  const [broken, setBroken] = useState(false)
+
+  if (!category.imageUrl || broken) {
+    return (
+      <span className="bg-muted text-muted-foreground flex h-10 w-10 items-center justify-center rounded-lg">
+        <ImageOff className="h-4 w-4" />
+      </span>
+    )
+  }
+  return (
+    <img
+      src={category.imageUrl}
+      alt={category.name}
+      className="h-10 w-10 rounded-lg object-cover"
+      onError={() => setBroken(true)}
+    />
   )
 }

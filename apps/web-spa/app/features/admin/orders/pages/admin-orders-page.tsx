@@ -45,6 +45,7 @@ export default function AdminOrdersPage() {
     {
       id: 'createdAt',
       header: t('admin.orders.columns.date'),
+      meta: { hideBelow: 'sm' },
       cell: ({ row }) => {
         const date = new Date(row.original.createdAt)
         return (
@@ -60,11 +61,13 @@ export default function AdminOrdersPage() {
     {
       id: 'buyer',
       header: t('admin.orders.columns.buyer'),
+      meta: { wrap: true },
       cell: ({ row }) => row.original.buyer.name,
     },
     {
       id: 'supplier',
       header: t('admin.orders.columns.supplier'),
+      meta: { wrap: true, hideBelow: 'lg' },
       cell: ({ row }) => row.original.supplier.shopName,
     },
     {
@@ -79,6 +82,8 @@ export default function AdminOrdersPage() {
     {
       id: 'paymentMethod',
       header: t('admin.orders.columns.payment'),
+      enableSorting: false,
+      meta: { hideBelow: 'lg' },
       cell: ({ row }) => {
         const method = row.original.paymentMethod
         if (!method)
@@ -94,14 +99,14 @@ export default function AdminOrdersPage() {
       id: 'totalAmount',
       header: t('admin.orders.columns.amount'),
       meta: { numeric: true },
-      cell: ({ row }) => <span className="font-medium">{formatAmount(row.original.totalAmount)}</span>,
-    },
-    {
-      id: 'commissionAmount',
-      header: t('admin.orders.columns.commission'),
-      meta: { numeric: true },
+      // The commission rides under the total: one column fewer, and the two are read together anyway.
       cell: ({ row }) => (
-        <span className="text-muted-foreground">{formatAmount(row.original.commissionAmount)}</span>
+        <span className="flex flex-col items-end">
+          <span className="font-medium">{formatAmount(row.original.totalAmount)}</span>
+          <span className="text-muted-foreground hidden text-xs lg:inline">
+            {t('admin.orders.commissionShort', { amount: formatAmount(row.original.commissionAmount) })}
+          </span>
+        </span>
       ),
     },
   ], [t, i18n.language])

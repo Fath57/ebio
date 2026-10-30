@@ -48,24 +48,21 @@ export default function AdminUsersPage() {
     {
       id: 'email',
       header: t('admin.users.columns.email'),
+      meta: { wrap: true },
+      // The phone rides under the email: both are "how to reach them".
       cell: ({ row }) => (
-        <>
-          <span className={row.original.emailVerified ? '' : 'text-muted-foreground'}>
-            {row.original.email ?? '—'}
+        <span className="flex flex-col">
+          <span className="flex flex-wrap items-center gap-2">
+            <span className={row.original.emailVerified ? '' : 'text-muted-foreground'}>
+              {row.original.email ?? '—'}
+            </span>
+            {row.original.email && !row.original.emailVerified && (
+              <Badge variant="outline">{t('admin.users.unverified')}</Badge>
+            )}
           </span>
-          {row.original.email && !row.original.emailVerified && (
-            <Badge variant="outline" className="ml-2">
-              {t('admin.users.unverified')}
-            </Badge>
-          )}
-        </>
+          {row.original.phone && <span className="text-muted-foreground text-xs">{row.original.phone}</span>}
+        </span>
       ),
-    },
-    {
-      id: 'phone',
-      header: t('admin.users.columns.phone'),
-      enableSorting: false,
-      cell: ({ row }) => row.original.phone ?? '—',
     },
     {
       id: 'role',
@@ -97,6 +94,7 @@ export default function AdminUsersPage() {
       id: 'shop',
       header: t('admin.users.columns.shop'),
       enableSorting: false,
+      meta: { hideBelow: 'xl' },
       // Raccourci vers la fiche fournisseur quand le compte en a une.
       cell: ({ row }) => (row.original.supplierId
         ? (
@@ -112,6 +110,7 @@ export default function AdminUsersPage() {
     {
       id: 'createdAt',
       header: t('admin.users.columns.since'),
+      meta: { hideBelow: 'lg' },
       cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(i18n.language),
     },
   ], [t, i18n.language])

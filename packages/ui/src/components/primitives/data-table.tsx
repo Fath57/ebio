@@ -52,13 +52,28 @@ export interface DataTableLabels {
  * Options de colonne transportées par `meta` :
  * - `align: 'right'` aligne à droite ;
  * - `numeric` aligne à droite en chiffres tabulaires et en police mono (montants) ;
+ * - `wrap` laisse le texte passer à la ligne (noms, adresses) au lieu d'élargir le tableau ;
+ * - `hideBelow` masque une colonne secondaire sous un point de rupture ;
  * - `className` s'applique à l'en-tête et aux cellules (largeur, troncature).
  */
 export interface DataTableColumnMeta {
   align?: 'left' | 'right'
   numeric?: boolean
+  wrap?: boolean
+  hideBelow?: 'sm' | 'md' | 'lg' | 'xl'
   className?: string
 }
+
+/** Literal classes, so Tailwind's scanner generates them. */
+const HIDE_BELOW: Record<NonNullable<DataTableColumnMeta['hideBelow']>, string> = {
+  sm: 'hidden sm:table-cell',
+  md: 'hidden md:table-cell',
+  lg: 'hidden lg:table-cell',
+  xl: 'hidden xl:table-cell',
+}
+
+/** Visible focus for rows and sort headers: the full primary ring, at least 3:1 on both themes. */
+const FOCUS_RING = 'focus-visible:ring-primary focus-visible:ring-2 focus-visible:outline-none'
 
 export interface DataTableProps<TData> {
   columns: Array<ColumnDef<TData, unknown>>
@@ -85,6 +100,9 @@ export interface DataTableProps<TData> {
 }
 
 const SKELETON_ROWS = 8
+
+/** 44 px under the tablet breakpoint (touch), 40 px on desktop. */
+const PAGE_BUTTON = 'h-11 w-11 md:h-10 md:w-10'
 
 const NO_SORTING: SortingState = []
 
@@ -139,14 +157,16 @@ export function DataTable<TData>({
   const showEmpty = !showSkeleton && !showError && data.length === 0
   const columnCount = columns.length + (clickable ? 1 : 0)
 
-  const openRow = (row: TData, event: MouseEvent<HTMLTableRowElement>) => {
+  const hasRows = data.length > 0
+
+  const openRow = (row: TData, event: MouseEvent<HTMLElement>) => {
     const target = event.target as HTMLElement
     if (target.closest(INTERACTIVE_SELECTOR))
       return
     onRowClick?.(row)
   }
 
-  const handleRowKey = (row: TData, event: KeyboardEvent<HTMLTableRowElement>) => {
+  const handleRowKey = (row: TData, event: KeyboardEvent<HTMLElement>) => {
     if (event.target !== event.currentTarget)
       return
     if (event.key === 'Enter' || event.key === ' ') {
@@ -163,22 +183,63 @@ export function DataTable<TData>({
             <div className="bg-primary h-full w-1/3 animate-[data-table-progress_1s_ease-in-out_infinite]" />
           </div>
         )}
-        <Table>
+        {/* Under 640 px a row of columns cannot fit: the rows become cards. States (skeleton,
+            error, empty) keep the table, whose single wide cell already reads on a phone. */}
+        {hasRows && (
+          <ul className={cn('divide-y sm:hidden', isFetching && 'opacity-60')}>
+            {table.getRowModel().rows.map((row) => {
+              const [first, ...rest] = row.getVisibleCells()
+              const fields = rest.filter(cell => typeof cell.column.columnDef.header === 'string' && cell.column.columnDef.header !== '')
+              const trailing = rest.filter(cell => !fields.includes(cell))
+              return (
+                <li
+                  key={row.id}
+                  tabIndex={clickable ? 0 : undefined}
+                  className={cn('space-y-2 p-4', clickable && cn('active:bg-muted/50 cursor-pointer focus-visible:ring-inset', FOCUS_RING))}
+                  onClick={clickable ? event => openRow(row.original, event) : undefined}
+                  onKeyDown={clickable ? event => handleRowKey(row.original, event) : undefined}
+                >
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 font-medium">{first && flexRender(first.column.columnDef.cell, first.getContext())}</div>
+                    {clickable && <ChevronRight className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />}
+                  </div>
+                  <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 text-sm">
+                    {fields.map(cell => (
+                      <div key={cell.id} className="contents">
+                        <dt className="text-muted-foreground text-xs leading-5 font-semibold tracking-widest uppercase">
+                          {cell.column.columnDef.header as string}
+                        </dt>
+                        <dd className={cn('min-w-0 text-right', columnMeta(cell.column.columnDef)?.numeric && 'font-mono tabular-nums')}>
+                          {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+                  {trailing.map(cell => (
+                    <div key={cell.id} className="flex justify-end">
+                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                    </div>
+                  ))}
+                </li>
+              )
+            })}
+          </ul>
+        )}
+        <Table className={cn(hasRows && 'hidden sm:table')}>
           <TableHeader className="bg-muted/50">
             {table.getHeaderGroups().map(headerGroup => (
               <TableRow key={headerGroup.id} className="hover:bg-transparent">
                 {headerGroup.headers.map((header) => {
-                  const canSort = header.column.getCanSort()
-                  const sorted = header.column.getIsSorted()
                   const meta = columnMeta(header.column.columnDef)
+                  const canSort = isSortable(header.column.columnDef, Boolean(onSortingChange))
+                  const sorted = sortedState(sorting, header.column.id)
                   return (
                     <TableHead
                       key={header.id}
                       aria-sort={canSort ? ariaSort(sorted) : undefined}
                       className={cn(
-                        'h-11 px-4 text-xs font-semibold tracking-widest uppercase',
-                        alignClass(meta),
-                        meta?.className,
+                        'h-11 px-3 text-xs font-semibold tracking-widest uppercase sm:px-4',
+                        columnClasses(meta),
                       )}
                     >
                       {header.isPlaceholder
@@ -188,10 +249,11 @@ export function DataTable<TData>({
                               <button
                                 type="button"
                                 className={cn(
-                                  'hover:text-foreground focus-visible:ring-ring/50 -mx-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 uppercase transition-colors focus-visible:ring-[3px] focus-visible:outline-none',
+                                  'hover:text-foreground -mx-2 inline-flex items-center gap-1.5 rounded-md px-2 py-1 uppercase transition-colors',
+                                  FOCUS_RING,
                                   sorted && 'text-foreground',
                                 )}
-                                onClick={header.column.getToggleSortingHandler()}
+                                onClick={() => onSortingChange?.([{ id: header.column.id, desc: sorted !== 'desc' }])}
                               >
                                 {flexRender(header.column.columnDef.header, header.getContext())}
                                 <SortIcon sorted={sorted} />
@@ -209,12 +271,13 @@ export function DataTable<TData>({
             {showSkeleton && Array.from({ length: SKELETON_ROWS }).map((_, rowIndex) => (
               // eslint-disable-next-line react/no-array-index-key -- placeholder rows have no identity
               <TableRow key={rowIndex} className="hover:bg-transparent">
-                {Array.from({ length: columnCount }).map((__, cellIndex) => (
+                {columns.map((column, cellIndex) => (
                   // eslint-disable-next-line react/no-array-index-key -- placeholder cells have no identity
-                  <TableCell key={cellIndex} className="px-4 py-3.5">
+                  <TableCell key={cellIndex} className={cn('px-3 py-3.5 sm:px-4', columnClasses(columnMeta(column)))}>
                     <Skeleton className={cn('h-4', cellIndex === 0 ? 'w-32' : 'w-20')} />
                   </TableCell>
                 ))}
+                {clickable && <TableCell className="w-10 px-2" />}
               </TableRow>
             ))}
 
@@ -244,7 +307,7 @@ export function DataTable<TData>({
                 tabIndex={clickable ? 0 : undefined}
                 className={cn(
                   'group',
-                  clickable && 'focus-visible:bg-muted/50 focus-visible:ring-ring/50 cursor-pointer focus-visible:ring-2 focus-visible:outline-none focus-visible:ring-inset',
+                  clickable && cn('focus-visible:bg-muted/50 cursor-pointer focus-visible:ring-inset', FOCUS_RING),
                 )}
                 onClick={clickable ? event => openRow(row.original, event) : undefined}
                 onKeyDown={clickable ? event => handleRowKey(row.original, event) : undefined}
@@ -255,10 +318,9 @@ export function DataTable<TData>({
                     <TableCell
                       key={cell.id}
                       className={cn(
-                        'px-4 py-3',
-                        alignClass(meta),
+                        'px-3 py-3 sm:px-4',
                         meta?.numeric && 'font-mono tabular-nums',
-                        meta?.className,
+                        columnClasses(meta),
                       )}
                     >
                       {flexRender(cell.column.columnDef.cell, cell.getContext())}
@@ -319,10 +381,10 @@ function Pagination({ page, lastPage, from, to, total, onPageChange, labels }: P
       <p className="text-muted-foreground text-sm tabular-nums">{labels.range(from, to, total)}</p>
       {lastPage > 1 && (
         <nav aria-label={labels.pagination} className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-9 w-9" disabled={page <= 1} aria-label={labels.first} onClick={() => onPageChange(1)}>
+          <Button variant="ghost" size="icon" className={PAGE_BUTTON} disabled={page <= 1} aria-label={labels.first} onClick={() => onPageChange(1)}>
             <ChevronsLeft className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9" disabled={page <= 1} aria-label={labels.previous} onClick={() => onPageChange(page - 1)}>
+          <Button variant="ghost" size="icon" className={PAGE_BUTTON} disabled={page <= 1} aria-label={labels.previous} onClick={() => onPageChange(page - 1)}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           {pageItems(page, lastPage).map((item, index) => item === 'gap'
@@ -335,17 +397,17 @@ function Pagination({ page, lastPage, from, to, total, onPageChange, labels }: P
                   key={item}
                   variant={item === page ? 'outline' : 'ghost'}
                   size="icon"
-                  className={cn('h-9 w-9 tabular-nums', item === page && 'border-primary text-primary font-semibold')}
+                  className={cn(PAGE_BUTTON, 'tabular-nums', item === page && 'border-primary text-primary font-semibold')}
                   aria-current={item === page ? 'page' : undefined}
                   onClick={() => onPageChange(item)}
                 >
                   {item}
                 </Button>
               ))}
-          <Button variant="ghost" size="icon" className="h-9 w-9" disabled={page >= lastPage} aria-label={labels.next} onClick={() => onPageChange(page + 1)}>
+          <Button variant="ghost" size="icon" className={PAGE_BUTTON} disabled={page >= lastPage} aria-label={labels.next} onClick={() => onPageChange(page + 1)}>
             <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon" className="h-9 w-9" disabled={page >= lastPage} aria-label={labels.last} onClick={() => onPageChange(lastPage)}>
+          <Button variant="ghost" size="icon" className={PAGE_BUTTON} disabled={page >= lastPage} aria-label={labels.last} onClick={() => onPageChange(lastPage)}>
             <ChevronsRight className="h-4 w-4" />
           </Button>
         </nav>
@@ -379,8 +441,29 @@ function columnMeta(columnDef: { meta?: unknown }): DataTableColumnMeta | undefi
   return columnDef.meta as DataTableColumnMeta | undefined
 }
 
-function alignClass(meta: DataTableColumnMeta | undefined): string | undefined {
-  return meta?.align === 'right' || meta?.numeric ? 'text-right' : undefined
+function columnClasses(meta: DataTableColumnMeta | undefined): string {
+  return cn(
+    (meta?.align === 'right' || meta?.numeric) && 'text-right',
+    meta?.wrap && 'min-w-32 whitespace-normal',
+    meta?.hideBelow && HIDE_BELOW[meta.hideBelow],
+    meta?.className,
+  )
+}
+
+/**
+ * Sorting is the server's: TanStack's own `getCanSort` wants an accessor the
+ * columns don't declare, so sortability is read from the definition — a list
+ * that handles sorting, a labelled header, and no `enableSorting: false`.
+ */
+function isSortable(columnDef: { enableSorting?: boolean, header?: unknown }, listSorts: boolean): boolean {
+  return listSorts && columnDef.enableSorting !== false && typeof columnDef.header === 'string' && columnDef.header !== ''
+}
+
+function sortedState(sorting: SortingState | undefined, columnId: string): false | 'asc' | 'desc' {
+  const entry = sorting?.find(item => item.id === columnId)
+  if (!entry)
+    return false
+  return entry.desc ? 'desc' : 'asc'
 }
 
 function ariaSort(sorted: false | 'asc' | 'desc'): 'ascending' | 'descending' | 'none' {

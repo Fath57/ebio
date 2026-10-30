@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from '@boilerstone/ui/components/primitives/dialog'
 import { useTranslation } from 'react-i18next'
+import { useReturnFocus } from '../utils/use-return-focus'
 
 interface ConfirmDialogProps {
   open: boolean
@@ -36,10 +37,11 @@ export function ConfirmDialog({
   destructive = false,
 }: ConfirmDialogProps) {
   const { t } = useTranslation()
+  const returnFocus = useReturnFocus(open)
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" onCloseAutoFocus={returnFocus}>
         <DialogHeader>
           <DialogTitle>{title}</DialogTitle>
           <DialogDescription>{description}</DialogDescription>

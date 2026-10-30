@@ -919,7 +919,7 @@
     "orders": {
       "title": "Commandes",
       "description": "Toutes les commandes de la marketplace.",
-      "searchPlaceholder": "N° de commande, acheteur ou boutique…",
+      "searchPlaceholder": "N°, acheteur ou boutique…",
       "allStatuses": "Tous les statuts",
       "empty": "Aucune commande.",
       "notFound": "Commande introuvable.",
@@ -930,7 +930,8 @@
         "supplier": "Fournisseur",
         "status": "Statut",
         "amount": "Montant",
-        "commission": "Commission"
+        "commission": "Commission",
+        "payment": "Paiement"
       },
       "status": {
         "PENDING_PAYMENT": "En attente de paiement",
@@ -984,7 +985,8 @@
           "PLATFORM": "Livraison offerte par eBio"
         },
         "promoCompensation": "Compensation promo eBio"
-      }
+      },
+      "commissionShort": "dont {{amount}} de commission"
     },
     "products": {
       "title": "Tous les produits",

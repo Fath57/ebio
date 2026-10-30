@@ -13,6 +13,7 @@ import { fetchCategoriesQueryOptions } from '@/features/admin/categories/utils/c
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
 import { EntityPicker } from '@/features/admin/common/components/entity-picker'
 import { FilterSelect } from '@/features/admin/common/components/filter-select'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { searchSuppliers } from '@/features/admin/common/utils/target-search'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { Can } from '@/lib/casl/can'
@@ -138,7 +139,7 @@ export default function AdminProductsPage() {
         const hasDiscount = discounted !== null && discounted < row.original.pricePerUnit
         return (
           <span className="flex flex-col items-end font-mono">
-            <span className={hasDiscount ? 'text-ebio-coral-600' : ''}>
+            <span className={hasDiscount ? 'text-ebio-earth-600 dark:text-ebio-earth-200' : ''}>
               {formatAmount(hasDiscount ? discounted : row.original.pricePerUnit)}
               {' '}
               FCFA
@@ -171,23 +172,24 @@ export default function AdminProductsPage() {
       cell: ({ row }) => (
         <span className="flex flex-wrap items-center gap-1">
           {row.original.status === 'ACTIVE' && (
-            <Badge className="bg-ebio-green-600">{t('catalog.status.active')}</Badge>
+            <StatusBadge tone="done">{t('catalog.status.active')}</StatusBadge>
           )}
           {row.original.status === 'OUT_OF_STOCK' && (
-            <Badge variant="destructive">{t('catalog.status.outOfStock')}</Badge>
+            <StatusBadge tone="problem">{t('catalog.status.outOfStock')}</StatusBadge>
           )}
           {row.original.status === 'HIDDEN' && (
-            <Badge variant="secondary">{t('catalog.status.hidden')}</Badge>
+            <StatusBadge tone="idle">{t('catalog.status.hidden')}</StatusBadge>
           )}
+          {/* Earth, the brand's badge colour: a promotion is news, not an error. */}
           {row.original.hasPromotion && (
-            <Badge variant="outline" className="text-ebio-coral-600">
+            <Badge variant="outline" className="border-ebio-earth-200 text-ebio-earth-800 dark:border-ebio-earth-800 dark:text-ebio-earth-100 rounded-full">
               {t('catalog.promo')}
             </Badge>
           )}
           {/* A shop that is not validated shows nothing to buyers, whatever
               the product's own status says. */}
           {row.original.supplierValidationStatus !== 'VALIDATED' && (
-            <Badge variant="outline">{t('admin.products.shopNotValidated')}</Badge>
+            <StatusBadge tone="action">{t('admin.products.shopNotValidated')}</StatusBadge>
           )}
         </span>
       ),

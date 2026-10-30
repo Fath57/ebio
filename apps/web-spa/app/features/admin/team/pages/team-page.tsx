@@ -31,6 +31,7 @@ import { Link } from 'react-router'
 import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
+import { useReturnFocus } from '@/features/admin/common/utils/use-return-focus'
 import { formatRelative } from '@/features/admin/deliveries/utils/deliveries-queries'
 import { fetchRolesQueryOptions } from '@/features/admin/roles/utils/roles-queries'
 import { AuditTimeline } from '@/features/admin/users/components/audit-timeline'
@@ -110,6 +111,7 @@ export default function TeamPage() {
   }
 
   const tableLabels = useDataTableLabels(t('admin.team.empty'))
+  const returnFocusAfterRole = useReturnFocus(memberToEdit !== null)
 
   const columns = useMemo<Array<ColumnDef<StaffMember, unknown>>>(() => {
     const dateFormatter = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' })
@@ -274,7 +276,7 @@ export default function TeamPage() {
             setMemberToEdit(null)
         }}
       >
-        <DialogContent>
+        <DialogContent onCloseAutoFocus={returnFocusAfterRole}>
           <DialogHeader>
             <DialogTitle>{t('admin.team.changeRoleTitle')}</DialogTitle>
             <DialogDescription>{memberToEdit?.name}</DialogDescription>
