@@ -85,6 +85,8 @@ export interface AdminDeliveryDetail extends AdminDelivery {
 export interface AdminDeliveriesData {
   deliveries: AdminDelivery[]
   total: number
+  /** Rows per status under the other filters, for the tabs. */
+  statusCounts: Record<string, number>
 }
 
 export interface CourierCandidate {

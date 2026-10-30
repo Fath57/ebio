@@ -1,6 +1,5 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { AdminDelivery } from '../utils/deliveries-queries'
-import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
 import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -8,7 +7,6 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
-import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import {
@@ -112,29 +110,20 @@ export default function AdminDeliveriesPage() {
     },
   ], [t, i18n.language])
 
-  const activeFilters: ActiveFilter[] = status
-    ? [{
-        key: 'statut',
-        group: t('admin.deliveries.columns.status'),
-        value: t(`admin.deliveries.statuses.${status}`),
-        onRemove: () => list.setFilter('statut', ''),
-      }]
-    : []
-
   return (
     <AdminListShell
       title={t('admin.deliveries.title')}
       description={t('admin.deliveries.description')}
-      filters={(
-        <FilterSelect
-          value={status}
-          onValueChange={value => list.setFilter('statut', value)}
-          allLabel={t('admin.deliveries.statuses.all')}
-          ariaLabel={t('admin.deliveries.filterByStatus')}
-          options={DELIVERY_STATUSES.map(value => ({ value, label: t(`admin.deliveries.statuses.${value}`) }))}
-        />
-      )}
-      activeFilters={activeFilters}
+      statusTabs={{
+        tabs: DELIVERY_STATUSES.map(value => ({
+          value,
+          label: t(`admin.deliveries.statuses.${value}`),
+          tone: STATUS_TONES[value],
+        })),
+        value: status,
+        onChange: value => list.setFilter('statut', value),
+        counts: data?.statusCounts,
+      }}
       onResetFilters={list.reset}
       columns={columns}
       data={data?.deliveries ?? []}

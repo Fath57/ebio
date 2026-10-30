@@ -127,37 +127,30 @@ export default function ModerationPage() {
       onRemove: () => list.setFilter('type', ''),
     })
   }
-  if (status) {
-    activeFilters.push({
-      key: 'statut',
-      group: t('admin.moderation.columns.status'),
-      value: t(`admin.moderation.statuses.${status.toLowerCase()}`),
-      onRemove: () => list.setFilter('statut', ''),
-    })
-  }
 
   return (
     <>
       <AdminListShell
         title={t('admin.moderation.title')}
         description={t('admin.moderation.description')}
+        statusTabs={{
+          tabs: REPORT_STATUSES.map(value => ({
+            value,
+            label: t(`admin.moderation.statuses.${value.toLowerCase()}`),
+            tone: STATUS_TONES[value],
+          })),
+          value: status,
+          onChange: value => list.setFilter('statut', value),
+          counts: data?.statusCounts,
+        }}
         filters={(
-          <>
-            <FilterSelect
-              value={type}
-              onValueChange={value => list.setFilter('type', value)}
-              allLabel={t('admin.moderation.types.all')}
-              ariaLabel={t('admin.moderation.filterByType')}
-              options={REPORT_TARGET_TYPES.map(value => ({ value, label: t(`admin.moderation.types.${value.toLowerCase()}`) }))}
-            />
-            <FilterSelect
-              value={status}
-              onValueChange={value => list.setFilter('statut', value)}
-              allLabel={t('admin.moderation.statuses.all')}
-              ariaLabel={t('admin.moderation.columns.status')}
-              options={REPORT_STATUSES.map(value => ({ value, label: t(`admin.moderation.statuses.${value.toLowerCase()}`) }))}
-            />
-          </>
+          <FilterSelect
+            value={type}
+            onValueChange={value => list.setFilter('type', value)}
+            allLabel={t('admin.moderation.types.all')}
+            ariaLabel={t('admin.moderation.filterByType')}
+            options={REPORT_TARGET_TYPES.map(value => ({ value, label: t(`admin.moderation.types.${value.toLowerCase()}`) }))}
+          />
         )}
         activeFilters={activeFilters}
         onResetFilters={list.reset}

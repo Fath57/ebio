@@ -1,5 +1,6 @@
 import type { ColumnDef, OnChangeFn, SortingState } from '@boilerstone/ui/components/primitives/data-table'
 import type { ReactNode } from 'react'
+import type { StatusTab } from './status-tabs'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import { Input } from '@boilerstone/ui/components/primitives/input'
@@ -7,6 +8,7 @@ import { Search, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useDataTableLabels } from '../utils/use-data-table-labels'
+import { StatusTabs } from './status-tabs'
 
 /** Delay between the last keystroke and the request: one query per word, not per letter. */
 const SEARCH_DEBOUNCE_MS = 300
@@ -25,6 +27,13 @@ interface AdminListShellProps<T> {
   description: string
   /** Main actions of the page (create, export), top right. */
   actions?: ReactNode
+  /** Status tabs with their counts, between the header and the toolbar. */
+  statusTabs?: {
+    tabs: StatusTab[]
+    value: string
+    onChange: (value: string) => void
+    counts?: Record<string, number>
+  }
   /** The three search props go together; a list the API cannot search leaves them out. */
   searchValue?: string
   onSearchChange?: (value: string) => void
@@ -60,6 +69,7 @@ export function AdminListShell<T>({
   title,
   description,
   actions,
+  statusTabs,
   searchValue = '',
   onSearchChange,
   searchPlaceholder = '',
@@ -94,6 +104,8 @@ export function AdminListShell<T>({
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
+
+      {statusTabs && <StatusTabs {...statusTabs} />}
 
       <div className="space-y-3">
         {(onSearchChange || filters) && (

@@ -1,3 +1,4 @@
+import type { StatusCounts } from '../../common/status-counts'
 import type { TemplateName } from '../email/email-template.service'
 import type {
   BroadcastNotification,
@@ -17,6 +18,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { thumbnailUrlFor } from '../../common/media-urls'
+import { toStatusCounts } from '../../common/status-counts'
 import { config } from '../../config/env.config'
 import { User, UserRole } from '../auth/auth.entity'
 import { EmailService } from '../email/email.service'
@@ -246,12 +248,17 @@ export class AdminService {
     status?: string
     page: number
     limit: number
-  }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
+  }): Promise<{ items: unknown[], total: number, page: number, limit: number, statusCounts: StatusCounts }> {
     const where: Record<string, unknown> = {}
 
     if (params.targetType) {
       where.targetType = params.targetType as ReportTargetType
     }
+
+    const statusCounts = toStatusCounts(await this.em.getConnection().execute(
+      `SELECT status, COUNT(*) AS count FROM content_reports ${params.targetType ? 'WHERE target_type = ?' : ''} GROUP BY status`,
+      params.targetType ? [params.targetType] : [],
+    ))
     if (params.status) {
       where.status = params.status as ReportStatus
     }
@@ -277,7 +284,7 @@ export class AdminService {
       createdAt: r.createdAt.toISOString(),
     }))
 
-    return { items, total, page: params.page, limit: params.limit }
+    return { items, total, page: params.page, limit: params.limit, statusCounts }
   }
 
   async resolveReport(
@@ -805,14 +812,10 @@ export class AdminService {
     sortDir?: string
     page: number
     limit: number
-  }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
+  }): Promise<{ items: unknown[], total: number, page: number, limit: number, statusCounts: StatusCounts }> {
     const conditions: string[] = ['1=1']
     const queryParams: unknown[] = []
 
-    if (params.status) {
-      conditions.push(`o.status = ?`)
-      queryParams.push(params.status)
-    }
     if (params.supplierId) {
       conditions.push(`o.supplier_id = ?`)
       queryParams.push(params.supplierId)
@@ -826,6 +829,17 @@ export class AdminService {
     const from = `FROM orders o
        LEFT JOIN users bu ON o.buyer_id = bu.id
        LEFT JOIN suppliers s ON o.supplier_id = s.id`
+
+    // The tabs count every status under the other filters, so the status itself is left out here.
+    const statusCounts = toStatusCounts(await this.em.getConnection().execute(
+      `SELECT o.status AS status, COUNT(*) AS count ${from} WHERE ${conditions.join(' AND ')} GROUP BY o.status`,
+      [...queryParams],
+    ))
+
+    if (params.status) {
+      conditions.push(`o.status = ?`)
+      queryParams.push(params.status)
+    }
     const whereClause = conditions.join(' AND ')
 
     const countResult = await this.em.getConnection().execute(
@@ -853,6 +867,7 @@ export class AdminService {
       total,
       page: params.page,
       limit: params.limit,
+      statusCounts,
     }
   }
 
@@ -945,20 +960,26 @@ export class AdminService {
     sortDir?: string
     page: number
     limit: number
-  }): Promise<{ items: unknown[], total: number, page: number, limit: number }> {
+  }): Promise<{ items: unknown[], total: number, page: number, limit: number, statusCounts: StatusCounts }> {
     const conditions: string[] = ['1=1']
     const queryParams: unknown[] = []
 
-    if (params.status) {
-      conditions.push(`s.validation_status = ?`)
-      queryParams.push(params.status)
-    }
     if (params.q) {
       conditions.push(`(s.shop_name ILIKE ? OR u.name ILIKE ? OR u.email ILIKE ?)`)
       queryParams.push(`%${params.q}%`, `%${params.q}%`, `%${params.q}%`)
     }
 
     const from = `FROM suppliers s LEFT JOIN users u ON s.user_id = u.id`
+
+    const statusCounts = toStatusCounts(await this.em.getConnection().execute(
+      `SELECT s.validation_status AS status, COUNT(*) AS count ${from} WHERE ${conditions.join(' AND ')} GROUP BY s.validation_status`,
+      [...queryParams],
+    ))
+
+    if (params.status) {
+      conditions.push(`s.validation_status = ?`)
+      queryParams.push(params.status)
+    }
     const whereClause = conditions.join(' AND ')
 
     const countResult = await this.em.getConnection().execute(
@@ -991,6 +1012,7 @@ export class AdminService {
       total,
       page: params.page,
       limit: params.limit,
+      statusCounts,
     }
   }
 

@@ -70,6 +70,8 @@ export interface AdminOrdersPage {
   total: number
   page: number
   limit: number
+  /** Orders per status under the other filters, for the tabs. */
+  statusCounts: Record<string, number>
 }
 
 export interface AdminOrdersFilters {

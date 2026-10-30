@@ -2160,7 +2160,9 @@
     "clearSearch": "Effacer la recherche",
     "activeFilters": "Filtres actifs",
     "removeFilter": "Retirer le filtre {{filter}}",
-    "resetAll": "Tout effacer"
+    "resetAll": "Tout effacer",
+    "allTab": "Tous",
+    "statusTabs": "Filtrer par statut"
   },
   "media": {
     "cropper": {

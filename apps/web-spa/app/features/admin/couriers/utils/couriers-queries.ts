@@ -49,6 +49,8 @@ export interface AdminCourierDetail extends AdminCourierItem {
 export interface AdminCouriersData {
   couriers: AdminCourierItem[]
   total: number
+  /** Rows per status under the other filters, for the tabs. */
+  statusCounts: Record<string, number>
 }
 
 export function fetchAdminCouriersQueryOptions(params: { status?: string, page?: number }) {

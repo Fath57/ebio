@@ -50,6 +50,7 @@ export class AdminCouriersController {
     return {
       couriers: result.couriers.map(profile => DeliveriesMapper.toCourierProfileResponse(profile)),
       total: result.total,
+      statusCounts: result.statusCounts,
     }
   }
 
@@ -128,7 +129,7 @@ export class AdminCouriersController {
       const events = await this.deliveriesService.getEvents(delivery.id)
       deliveries.push(DeliveriesMapper.toResponse(delivery, 'admin', events))
     }
-    return { deliveries, total: result.total }
+    return { deliveries, total: result.total, statusCounts: result.statusCounts }
   }
 
   @CanRead('Delivery')

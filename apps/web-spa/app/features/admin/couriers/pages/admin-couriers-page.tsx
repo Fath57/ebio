@@ -1,13 +1,11 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { AdminCourierItem } from '../utils/couriers-queries'
-import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
 import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
-import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { CourierRating } from '../components/courier-rating'
@@ -80,29 +78,20 @@ export default function AdminCouriersPage() {
     },
   ], [t, i18n.language])
 
-  const activeFilters: ActiveFilter[] = status
-    ? [{
-        key: 'statut',
-        group: t('admin.couriers.columns.status'),
-        value: t(`admin.couriers.statuses.${status.toLowerCase()}`),
-        onRemove: () => list.setFilter('statut', ''),
-      }]
-    : []
-
   return (
     <AdminListShell
       title={t('admin.couriers.title')}
       description={t('admin.couriers.description')}
-      filters={(
-        <FilterSelect
-          value={status}
-          onValueChange={value => list.setFilter('statut', value)}
-          allLabel={t('admin.couriers.statuses.all')}
-          ariaLabel={t('admin.couriers.columns.status')}
-          options={STATUS_OPTIONS.map(value => ({ value, label: t(`admin.couriers.statuses.${value.toLowerCase()}`) }))}
-        />
-      )}
-      activeFilters={activeFilters}
+      statusTabs={{
+        tabs: STATUS_OPTIONS.map(value => ({
+          value,
+          label: t(`admin.couriers.statuses.${value.toLowerCase()}`),
+          tone: STATUS_TONES[value],
+        })),
+        value: status,
+        onChange: value => list.setFilter('statut', value),
+        counts: data?.statusCounts,
+      }}
       onResetFilters={list.reset}
       columns={columns}
       data={data?.couriers ?? []}

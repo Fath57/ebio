@@ -20,6 +20,8 @@ export interface ReportsData {
   total: number
   page: number
   limit: number
+  /** Rows per status under the other filters, for the tabs. */
+  statusCounts: Record<string, number>
 }
 
 export const REPORT_TARGET_TYPES = ['PRODUCT', 'REVIEW', 'PRODUCT_REVIEW', 'PUBLICATION', 'MESSAGE']

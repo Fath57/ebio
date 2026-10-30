@@ -1,6 +1,5 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { AdminSupplierListItem } from '../utils/suppliers-queries'
-import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
 import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
@@ -8,14 +7,14 @@ import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
-import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { fetchAdminSuppliersQueryOptions } from '../utils/suppliers-queries'
 
 const PAGE_SIZE = 20
 
-const STATUS_OPTIONS = ['PENDING', 'VALIDATED', 'COMPLEMENT_REQUESTED', 'SUSPENDED', 'REJECTED']
+// Review order: waiting, waiting on the shop, then the outcomes.
+const STATUS_OPTIONS = ['PENDING', 'COMPLEMENT_REQUESTED', 'VALIDATED', 'SUSPENDED', 'REJECTED']
 
 /** A shop waiting for review is the staff's move; one waiting for documents is the shop's. */
 const STATUS_TONES: Record<string, StatusTone> = {
@@ -105,15 +104,6 @@ export default function AdminSuppliersPage() {
     },
   ], [t])
 
-  const activeFilters: ActiveFilter[] = status
-    ? [{
-        key: 'statut',
-        group: t('admin.suppliers.columns.status'),
-        value: t(`admin.suppliers.status.${status}`),
-        onRemove: () => list.setFilter('statut', ''),
-      }]
-    : []
-
   return (
     <AdminListShell
       title={t('admin.suppliers.title')}
@@ -121,16 +111,16 @@ export default function AdminSuppliersPage() {
       searchValue={list.q}
       onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.suppliers.searchPlaceholder')}
-      filters={(
-        <FilterSelect
-          value={status}
-          onValueChange={value => list.setFilter('statut', value)}
-          allLabel={t('admin.suppliers.allStatuses')}
-          ariaLabel={t('admin.suppliers.columns.status')}
-          options={STATUS_OPTIONS.map(value => ({ value, label: t(`admin.suppliers.status.${value}`) }))}
-        />
-      )}
-      activeFilters={activeFilters}
+      statusTabs={{
+        tabs: STATUS_OPTIONS.map(value => ({
+          value,
+          label: t(`admin.suppliers.status.${value}`),
+          tone: STATUS_TONES[value],
+        })),
+        value: status,
+        onChange: value => list.setFilter('statut', value),
+        counts: data?.statusCounts,
+      }}
       onResetFilters={list.reset}
       columns={columns}
       data={data?.items ?? []}

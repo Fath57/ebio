@@ -2160,7 +2160,9 @@
     "clearSearch": "Clear search",
     "activeFilters": "Active filters",
     "removeFilter": "Remove filter {{filter}}",
-    "resetAll": "Clear all"
+    "resetAll": "Clear all",
+    "allTab": "All",
+    "statusTabs": "Filter by status"
   },
   "media": {
     "cropper": {

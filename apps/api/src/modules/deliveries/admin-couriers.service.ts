@@ -1,3 +1,4 @@
+import type { StatusCounts } from '../../common/status-counts'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
@@ -5,6 +6,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
+import { toStatusCounts } from '../../common/status-counts'
 import { User, UserRole } from '../auth/auth.entity'
 import { MediaService } from '../media/media.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
@@ -53,9 +55,13 @@ export class AdminCouriersService {
     private readonly mediaService: MediaService,
   ) {}
 
-  async list(filters: ListFilters): Promise<{ couriers: CourierProfile[], total: number }> {
+  async list(filters: ListFilters): Promise<{ couriers: CourierProfile[], total: number, statusCounts: StatusCounts }> {
     const limit = filters.limit ?? 20
     const offset = ((filters.page ?? 1) - 1) * limit
+    // Every status, whatever the one asked for: these feed the tabs above the list.
+    const statusCounts = toStatusCounts(await this.em.getConnection().execute(
+      `SELECT validation_status AS status, COUNT(*) AS count FROM courier_profiles GROUP BY validation_status`,
+    ))
     const [couriers, total] = await this.em.findAndCount(CourierProfile, {
       ...(filters.status ? { validationStatus: filters.status } : {}),
     }, {
@@ -64,7 +70,7 @@ export class AdminCouriersService {
       limit,
       offset,
     })
-    return { couriers, total }
+    return { couriers, total, statusCounts }
   }
 
   async getById(id: string): Promise<{ profile: CourierProfile, stats: CourierStats, identityDocument: CourierDocument | null }> {
@@ -214,9 +220,13 @@ export class AdminCouriersService {
     return profile
   }
 
-  async listDeliveries(filters: DeliveryListFilters): Promise<{ deliveries: Delivery[], total: number }> {
+  async listDeliveries(filters: DeliveryListFilters): Promise<{ deliveries: Delivery[], total: number, statusCounts: StatusCounts }> {
     const limit = filters.limit ?? 20
     const offset = ((filters.page ?? 1) - 1) * limit
+    const statusCounts = toStatusCounts(await this.em.getConnection().execute(
+      `SELECT status, COUNT(*) AS count FROM deliveries ${filters.courierId ? 'WHERE courier_id = ?' : ''} GROUP BY status`,
+      filters.courierId ? [filters.courierId] : [],
+    ))
     const [deliveries, total] = await this.em.findAndCount(Delivery, {
       ...(filters.status ? { status: filters.status } : {}),
       ...(filters.courierId ? { courier: { id: filters.courierId } } : {}),
@@ -226,7 +236,7 @@ export class AdminCouriersService {
       limit,
       offset,
     })
-    return { deliveries, total }
+    return { deliveries, total, statusCounts }
   }
 
   /**

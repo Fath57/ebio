@@ -1,13 +1,11 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { AdminOrderListItem } from '../utils/orders-queries'
-import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
-import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { ORDER_STATUS_OPTIONS, ORDER_STATUS_TONES, PAYMENT_METHODS } from '../utils/order-status'
@@ -111,15 +109,6 @@ export default function AdminOrdersPage() {
     },
   ], [t, i18n.language])
 
-  const activeFilters: ActiveFilter[] = status
-    ? [{
-        key: 'statut',
-        group: t('admin.orders.columns.status'),
-        value: t(`admin.orders.status.${status}`),
-        onRemove: () => list.setFilter('statut', ''),
-      }]
-    : []
-
   return (
     <AdminListShell
       title={t('admin.orders.title')}
@@ -127,16 +116,16 @@ export default function AdminOrdersPage() {
       searchValue={list.q}
       onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.orders.searchPlaceholder')}
-      filters={(
-        <FilterSelect
-          value={status}
-          onValueChange={value => list.setFilter('statut', value)}
-          allLabel={t('admin.orders.allStatuses')}
-          ariaLabel={t('admin.orders.columns.status')}
-          options={ORDER_STATUS_OPTIONS.map(value => ({ value, label: t(`admin.orders.status.${value}`) }))}
-        />
-      )}
-      activeFilters={activeFilters}
+      statusTabs={{
+        tabs: ORDER_STATUS_OPTIONS.map(value => ({
+          value,
+          label: t(`admin.orders.status.${value}`),
+          tone: ORDER_STATUS_TONES[value],
+        })),
+        value: status,
+        onChange: value => list.setFilter('statut', value),
+        counts: data?.statusCounts,
+      }}
       onResetFilters={list.reset}
       columns={columns}
       data={data?.items ?? []}
