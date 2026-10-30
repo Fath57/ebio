@@ -4,6 +4,7 @@ import { Injectable, Logger } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { computeCourierFee, orderPickups } from '../../common/delivery-fee'
 import { User } from '../auth/auth.entity'
+import { SingleInstance } from '../db/cron-lock'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Checkout } from '../payments/entities/checkout.entity'
@@ -319,6 +320,7 @@ export class DispatchService {
   }
 
   @Cron('*/30 * * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async startScheduledCron(): Promise<void> {
     await this.startScheduled()
@@ -703,6 +705,7 @@ export class DispatchService {
   }
 
   @Cron('*/60 * * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async escalateStaleRunsCron(): Promise<void> {
     await this.escalateStaleRuns()
@@ -814,6 +817,7 @@ export class DispatchService {
   }
 
   @Cron('*/60 * * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async promptBuyersCron(): Promise<void> {
     await this.promptBuyersForUnservedRuns()
@@ -893,6 +897,7 @@ export class DispatchService {
   }
 
   @Cron('*/10 * * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async expireOffersCron(): Promise<void> {
     await this.expireOffers()
@@ -935,6 +940,7 @@ export class DispatchService {
 
   /** Cron wrapper — the request-context decorator needs a real EntityManager. */
   @Cron('*/2 * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async rebroadcastStaleCron(): Promise<void> {
     await this.rebroadcastStale()
@@ -942,6 +948,7 @@ export class DispatchService {
   }
 
   @Cron('*/2 * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async reassignStuckCron(): Promise<void> {
     await this.reassignStuck()

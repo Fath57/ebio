@@ -1,5 +1,6 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { Global, Module } from '@nestjs/common'
+import { CronLockRegistrar } from './cron-lock'
 import { DbService } from './db.service'
 
 @Global()
@@ -9,7 +10,7 @@ import { DbService } from './db.service'
       useClass: DbService,
     }),
   ],
-  providers: [DbService],
+  providers: [DbService, CronLockRegistrar],
   exports: [DbService],
 })
 export class DbModule {}

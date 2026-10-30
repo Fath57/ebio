@@ -4,6 +4,7 @@ import { Cron } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
 import { User, UserRole } from '../auth/auth.entity'
 import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
+import { SingleInstance } from '../db/cron-lock'
 import { EmailService } from '../email/email.service'
 
 export type InboxQueueKey = 'bannerRequests' | 'supplierValidations' | 'courierApplications' | 'withdrawals' | 'disputes'
@@ -94,6 +95,7 @@ export class StaffInboxService {
   }
 
   @Cron('0 7 * * *', { timeZone: 'Africa/Porto-Novo' })
+  @SingleInstance()
   async dailyDigestCron(): Promise<void> {
     try {
       const sent = await this.sendDailyDigest()

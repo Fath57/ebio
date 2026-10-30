@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { User, UserRole } from '../auth/auth.entity'
+import { SingleInstance } from '../db/cron-lock'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
 import { VehicleType } from '../deliveries/entities/courier-profile.entity'
 import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
@@ -945,6 +946,7 @@ export class OrdersService {
   }
 
   @Cron(CronExpression.EVERY_HOUR)
+  @SingleInstance()
   @EnsureRequestContext()
   async autoCancelUnaccepted(): Promise<void> {
     const cutoff = new Date(Date.now() - TWENTY_FOUR_HOURS_MS)

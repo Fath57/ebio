@@ -2,6 +2,7 @@ import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
+import { SingleInstance } from '../db/cron-lock'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
@@ -43,6 +44,7 @@ export class ProductReviewInvitesService {
    * broad query running constantly would cost more than it returns.
    */
   @Cron('0 */10 * * * *')
+  @SingleInstance()
   // Outside a request the global EntityManager is refused: the decorator
   // opens the context MikroORM demands. Same trap as the dispatch crons.
   @EnsureRequestContext()

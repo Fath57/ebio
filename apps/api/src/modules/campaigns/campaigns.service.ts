@@ -4,6 +4,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { User } from '../auth/auth.entity'
+import { SingleInstance } from '../db/cron-lock'
 import { FcmService } from '../notifications/fcm.service'
 import { Campaign, CampaignSegment, CampaignStatus } from './entities/campaign.entity'
 
@@ -238,6 +239,7 @@ export class CampaignsService {
    * nobody, and looking every minute would cost a query a minute for nothing.
    */
   @Cron('0 */5 * * * *')
+  @SingleInstance()
   // Outside a request the global EntityManager is refused; the decorator opens
   // the context, as for the review invitations.
   @EnsureRequestContext()

@@ -2,6 +2,7 @@ import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { SingleInstance } from '../db/cron-lock'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
@@ -24,6 +25,7 @@ export class EscrowSchedulerService {
   ) {}
 
   @Cron(CronExpression.EVERY_HOUR)
+  @SingleInstance()
   @EnsureRequestContext()
   async processEscrowReleases(): Promise<void> {
     // Read on every run: a delay changed in the back-office applies from the

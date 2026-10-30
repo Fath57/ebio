@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
+import { SingleInstance } from '../db/cron-lock'
 import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -499,6 +500,7 @@ export class PaymentsService {
    * down — its orders are cancelled after 24 h by the orders module.
    */
   @Cron('1-59/2 * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async reconcilePendingCarts(): Promise<void> {
     await this.journalUnrecordedCarts()

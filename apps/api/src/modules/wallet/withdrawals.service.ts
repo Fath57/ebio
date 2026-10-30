@@ -4,6 +4,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
+import { SingleInstance } from '../db/cron-lock'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -386,6 +387,7 @@ export class WithdrawalsService {
 
   /** Safety net when the webhook never lands. */
   @Cron(CronExpression.EVERY_10_MINUTES)
+  @SingleInstance()
   @EnsureRequestContext()
   async pollStaleProcessing(): Promise<void> {
     const cutoff = new Date(Date.now() - STALE_PROCESSING_MS)
@@ -412,6 +414,7 @@ export class WithdrawalsService {
    * twice; if it did not, the payout is created now.
    */
   @Cron(CronExpression.EVERY_10_MINUTES)
+  @SingleInstance()
   @EnsureRequestContext()
   async retryUnconfirmedPayouts(): Promise<void> {
     const now = Date.now()

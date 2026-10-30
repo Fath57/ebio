@@ -4,6 +4,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { Cron } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
 import { User } from '../auth/auth.entity'
+import { SingleInstance } from '../db/cron-lock'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { PaymentProvider } from '../payments/payment.entity'
@@ -303,6 +304,7 @@ export class TopupService {
    * good. The webhook would do the same job; it is not relied on.
    */
   @Cron('*/2 * * * *')
+  @SingleInstance()
   @EnsureRequestContext()
   async reconcilePending(): Promise<void> {
     await this.journalUnrecordedTopups()
