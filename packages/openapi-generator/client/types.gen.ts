@@ -35,6 +35,26 @@ export type CompleteUpload = {
 };
 
 /**
+ * RegisterDeviceToken
+ *
+ * Attaches a push token to the signed-in account
+ */
+export type RegisterDeviceToken = {
+  token: string;
+  platform: string;
+  app?: string;
+};
+
+/**
+ * UnregisterDeviceToken
+ *
+ * Detaches a push token from the signed-in account
+ */
+export type UnregisterDeviceToken = {
+  token: string;
+};
+
+/**
  * DeliveryQuoteRequest
  *
  * What the buyer would pay to have this basket delivered to this point
@@ -120,6 +140,16 @@ export type AssistantSetting = {
 export type ProductReviewTiming = {
   delaiHeures: number;
   relancesMaximum: number;
+};
+
+/**
+ * EscrowRelease
+ *
+ * Délais de versement des ventes payées en ligne au portefeuille de la boutique
+ */
+export type EscrowRelease = {
+  heuresApresConfirmation: number;
+  joursMaximum: number;
 };
 
 /**
@@ -5084,6 +5114,36 @@ export type AdminReferralRewardsControllerUpdateResponses = {
   200: unknown;
 };
 
+export type AdminEscrowReleaseControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/escrow-release";
+};
+
+export type AdminEscrowReleaseControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminEscrowReleaseControllerUpdateData = {
+  /**
+   * EscrowRelease
+   *
+   * Délais de versement des ventes payées en ligne au portefeuille de la boutique
+   */
+  body: {
+    heuresApresConfirmation: number;
+    joursMaximum: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/escrow-release";
+};
+
+export type AdminEscrowReleaseControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -5691,7 +5751,16 @@ export type MediaControllerFindByEntityResponses = {
 };
 
 export type NotificationsControllerRegisterTokenData = {
-  body?: never;
+  /**
+   * RegisterDeviceToken
+   *
+   * Attaches a push token to the signed-in account
+   */
+  body: {
+    token: string;
+    platform: string;
+    app?: string;
+  };
   path?: never;
   query?: never;
   url: "/api/notifications/register-token";
@@ -5702,7 +5771,14 @@ export type NotificationsControllerRegisterTokenResponses = {
 };
 
 export type NotificationsControllerUnregisterTokenData = {
-  body?: never;
+  /**
+   * UnregisterDeviceToken
+   *
+   * Detaches a push token from the signed-in account
+   */
+  body: {
+    token: string;
+  };
   path?: never;
   query?: never;
   url: "/api/notifications/unregister-token";
@@ -5730,6 +5806,8 @@ export type NotificationsControllerGetAllData = {
   path?: never;
   query: {
     audience: string;
+    page: string;
+    limit: string;
   };
   url: "/api/notifications";
 };
@@ -5868,6 +5946,20 @@ export type SupplierWalletControllerTopupData = {
 
 export type SupplierWalletControllerTopupResponses = {
   201: unknown;
+};
+
+export type SupplierWalletControllerListTopupsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/suppliers/me/wallet/topups";
+};
+
+export type SupplierWalletControllerListTopupsResponses = {
+  200: unknown;
 };
 
 export type SupplierWalletControllerVerifyTopupData = {
@@ -7503,6 +7595,8 @@ export type DeliveriesControllerMineData = {
   path?: never;
   query: {
     status: string;
+    page: string;
+    limit: string;
   };
   url: "/api/deliveries/mine";
 };
@@ -9756,7 +9850,10 @@ export type GeocodingControllerReverseResponses = {
 export type ChatControllerGetConversationsData = {
   body?: never;
   path?: never;
-  query?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
   url: "/api/chat/conversations";
 };
 
@@ -10262,7 +10359,9 @@ export type TrainingControllerGetMyProgressResponses = {
 export type AdminControllerGetDashboardData = {
   body?: never;
   path?: never;
-  query?: never;
+  query: {
+    period: string;
+  };
   url: "/api/admin/dashboard";
 };
 

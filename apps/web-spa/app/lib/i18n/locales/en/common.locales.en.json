@@ -849,18 +849,7 @@
       "empty": "No category."
     },
     "dashboard": {
-      "title": "Admin Dashboard",
-      "description": "eBio platform overview",
-      "currency": "FCFA",
-      "kpis": {
-        "suppliers": "Suppliers",
-        "activeUsers": "Active buyers",
-        "transactions": "Transactions",
-        "revenue": "Revenue",
-        "pendingValidations": "Pending validations",
-        "disputes": "Disputes",
-        "searchesPerDay": "Searches/day"
-      },
+      "title": "Dashboard",
       "inbox": {
         "title": "To handle",
         "allClear": "Everything is up to date",
@@ -874,6 +863,43 @@
           "withdrawals": "Pending withdrawals",
           "disputes": "Disputes"
         }
+      },
+      "activityTitle": "Activity",
+      "periodLabel": "Period",
+      "periods": {
+        "7d": "7 days",
+        "30d": "30 days",
+        "90d": "90 days",
+        "month": "This month"
+      },
+      "error": "The figures could not be loaded.",
+      "noComparison": "No previous period",
+      "vsPrevious": "vs previous period",
+      "seeAll": "See all",
+      "standing": "Total to date",
+      "kpis": {
+        "gmv": "Order value",
+        "orders": "Orders",
+        "commission": "eBio commission (delivered)",
+        "basket": "Average basket",
+        "newBuyers": "New buyers",
+        "cancellationRate": "Cancellation rate",
+        "validatedSuppliers": "Validated suppliers",
+        "validatedCouriers": "Validated couriers",
+        "buyersTotal_one": "{{count}} registered buyer",
+        "buyersTotal_other": "{{count}} registered buyers"
+      },
+      "chart": {
+        "title": "Orders per day",
+        "hint": "Paid, non-cancelled orders, Porto-Novo time",
+        "empty": "No order in this period.",
+        "orders_one": "{{count}} order",
+        "orders_other": "{{count}} orders",
+        "day": "Day"
+      },
+      "topSuppliers": {
+        "title": "Most active suppliers",
+        "empty": "No sale in this period."
       }
     },
     "moderation": {

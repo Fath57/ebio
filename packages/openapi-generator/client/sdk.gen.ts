@@ -130,6 +130,10 @@ import type {
   AdminDeliveryPricingControllerGetResponses,
   AdminDeliveryPricingControllerUpdateData,
   AdminDeliveryPricingControllerUpdateResponses,
+  AdminEscrowReleaseControllerGetData,
+  AdminEscrowReleaseControllerGetResponses,
+  AdminEscrowReleaseControllerUpdateData,
+  AdminEscrowReleaseControllerUpdateResponses,
   AdminHomeSectionsControllerCreateData,
   AdminHomeSectionsControllerCreateResponses,
   AdminHomeSectionsControllerListData,
@@ -728,6 +732,8 @@ import type {
   SupplierWalletControllerGetWalletResponses,
   SupplierWalletControllerListNumbersData,
   SupplierWalletControllerListNumbersResponses,
+  SupplierWalletControllerListTopupsData,
+  SupplierWalletControllerListTopupsResponses,
   SupplierWalletControllerListWithdrawalsData,
   SupplierWalletControllerListWithdrawalsResponses,
   SupplierWalletControllerRemoveNumberData,
@@ -1897,6 +1903,35 @@ export const adminReferralRewardsControllerUpdate = <
     },
   });
 
+export const adminEscrowReleaseControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminEscrowReleaseControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminEscrowReleaseControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/escrow-release", ...options });
+
+export const adminEscrowReleaseControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminEscrowReleaseControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminEscrowReleaseControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/escrow-release",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const suppliersControllerRegister = <
   ThrowOnError extends boolean = false,
 >(
@@ -2297,24 +2332,38 @@ export const mediaControllerFindByEntity = <
 export const notificationsControllerRegisterToken = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<NotificationsControllerRegisterTokenData, ThrowOnError>,
+  options: Options<NotificationsControllerRegisterTokenData, ThrowOnError>,
 ) =>
-  (options?.client ?? client).post<
+  (options.client ?? client).post<
     NotificationsControllerRegisterTokenResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/notifications/register-token", ...options });
+  >({
+    url: "/api/notifications/register-token",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const notificationsControllerUnregisterToken = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<NotificationsControllerUnregisterTokenData, ThrowOnError>,
+  options: Options<NotificationsControllerUnregisterTokenData, ThrowOnError>,
 ) =>
-  (options?.client ?? client).delete<
+  (options.client ?? client).delete<
     NotificationsControllerUnregisterTokenResponses,
     unknown,
     ThrowOnError
-  >({ url: "/api/notifications/unregister-token", ...options });
+  >({
+    url: "/api/notifications/unregister-token",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const notificationsControllerGetUnread = <
   ThrowOnError extends boolean = false,
@@ -2458,6 +2507,17 @@ export const supplierWalletControllerTopup = <
       ...options.headers,
     },
   });
+
+export const supplierWalletControllerListTopups = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SupplierWalletControllerListTopupsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SupplierWalletControllerListTopupsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/suppliers/me/wallet/topups", ...options });
 
 export const supplierWalletControllerVerifyTopup = <
   ThrowOnError extends boolean = false,
@@ -5290,9 +5350,9 @@ export const geocodingControllerReverse = <
 export const chatControllerGetConversations = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<ChatControllerGetConversationsData, ThrowOnError>,
+  options: Options<ChatControllerGetConversationsData, ThrowOnError>,
 ) =>
-  (options?.client ?? client).get<
+  (options.client ?? client).get<
     ChatControllerGetConversationsResponses,
     unknown,
     ThrowOnError
@@ -5737,9 +5797,9 @@ export const trainingControllerGetMyProgress = <
 export const adminControllerGetDashboard = <
   ThrowOnError extends boolean = false,
 >(
-  options?: Options<AdminControllerGetDashboardData, ThrowOnError>,
+  options: Options<AdminControllerGetDashboardData, ThrowOnError>,
 ) =>
-  (options?.client ?? client).get<
+  (options.client ?? client).get<
     AdminControllerGetDashboardResponses,
     unknown,
     ThrowOnError

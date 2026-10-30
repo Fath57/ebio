@@ -3,6 +3,26 @@
 import { z } from "zod";
 
 /**
+ * RegisterDeviceToken
+ *
+ * Attaches a push token to the signed-in account
+ */
+export const zRegisterDeviceToken = z.object({
+  token: z.string().min(1).max(4096),
+  platform: z.string().min(1).max(20),
+  app: z.optional(z.string()),
+});
+
+/**
+ * UnregisterDeviceToken
+ *
+ * Detaches a push token from the signed-in account
+ */
+export const zUnregisterDeviceToken = z.object({
+  token: z.string().min(1).max(4096),
+});
+
+/**
  * DeliveryQuoteRequest
  *
  * What the buyer would pay to have this basket delivered to this point
@@ -74,6 +94,16 @@ export const zAssistantSetting = z.object({
 export const zProductReviewTiming = z.object({
   delaiHeures: z.int().gte(1).lte(720),
   relancesMaximum: z.int().gte(1).lte(10),
+});
+
+/**
+ * EscrowRelease
+ *
+ * Délais de versement des ventes payées en ligne au portefeuille de la boutique
+ */
+export const zEscrowRelease = z.object({
+  heuresApresConfirmation: z.int().gte(0).lte(720),
+  joursMaximum: z.int().gte(1).lte(60),
 });
 
 /**
@@ -4755,6 +4785,21 @@ export const zAdminReferralRewardsControllerUpdateData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminEscrowReleaseControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminEscrowReleaseControllerUpdateData = z.object({
+  body: z.object({
+    heuresApresConfirmation: z.int().gte(0).lte(720),
+    joursMaximum: z.int().gte(1).lte(60),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -5182,13 +5227,19 @@ export const zMediaControllerFindByEntityData = z.object({
 });
 
 export const zNotificationsControllerRegisterTokenData = z.object({
-  body: z.optional(z.never()),
+  body: z.object({
+    token: z.string().min(1).max(4096),
+    platform: z.string().min(1).max(20),
+    app: z.optional(z.string()),
+  }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
 
 export const zNotificationsControllerUnregisterTokenData = z.object({
-  body: z.optional(z.never()),
+  body: z.object({
+    token: z.string().min(1).max(4096),
+  }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
 });
@@ -5206,6 +5257,8 @@ export const zNotificationsControllerGetAllData = z.object({
   path: z.optional(z.never()),
   query: z.object({
     audience: z.string(),
+    page: z.string(),
+    limit: z.string(),
   }),
 });
 
@@ -5279,6 +5332,15 @@ export const zSupplierWalletControllerTopupData = z.object({
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
+});
+
+export const zSupplierWalletControllerListTopupsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
 });
 
 export const zSupplierWalletControllerVerifyTopupData = z.object({
@@ -6370,6 +6432,8 @@ export const zDeliveriesControllerMineData = z.object({
   path: z.optional(z.never()),
   query: z.object({
     status: z.string(),
+    page: z.string(),
+    limit: z.string(),
   }),
 });
 
@@ -8122,7 +8186,10 @@ export const zGeocodingControllerReverseData = z.object({
 export const zChatControllerGetConversationsData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
-  query: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
 });
 
 export const zChatControllerCreateConversationData = z.object({
@@ -8461,7 +8528,9 @@ export const zTrainingControllerGetMyProgressData = z.object({
 export const zAdminControllerGetDashboardData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
-  query: z.optional(z.never()),
+  query: z.object({
+    period: z.string(),
+  }),
 });
 
 export const zAdminControllerGetValidationsData = z.object({

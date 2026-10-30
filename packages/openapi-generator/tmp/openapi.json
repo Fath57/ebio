@@ -4235,6 +4235,62 @@
         }
       }
     },
+    "/api/admin/escrow-release": {
+      "get": {
+        "operationId": "AdminEscrowReleaseController_get",
+        "tags": [
+          "AdminEscrowRelease"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminEscrowReleaseController_update",
+        "tags": [
+          "AdminEscrowRelease"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "heuresApresConfirmation": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 720
+                  },
+                  "joursMaximum": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 60
+                  }
+                },
+                "required": [
+                  "heuresApresConfirmation",
+                  "joursMaximum"
+                ],
+                "additionalProperties": false,
+                "title": "EscrowRelease",
+                "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/register": {
       "post": {
         "operationId": "SuppliersController_register",
@@ -5670,6 +5726,46 @@
           "Notifications"
         ],
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Attaches a push token to the signed-in account",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  },
+                  "platform": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 20
+                  },
+                  "app": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "token",
+                  "platform"
+                ],
+                "additionalProperties": false,
+                "title": "RegisterDeviceToken",
+                "description": "Attaches a push token to the signed-in account",
+                "examples": [
+                  {
+                    "token": "fcm-token",
+                    "platform": "android",
+                    "app": "client"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "201": {
             "description": ""
@@ -5684,6 +5780,35 @@
           "Notifications"
         ],
         "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Detaches a push token from the signed-in account",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096
+                  }
+                },
+                "required": [
+                  "token"
+                ],
+                "additionalProperties": false,
+                "title": "UnregisterDeviceToken",
+                "description": "Detaches a push token from the signed-in account",
+                "examples": [
+                  {
+                    "token": "fcm-token"
+                  }
+                ]
+              }
+            }
+          }
+        },
         "responses": {
           "200": {
             "description": ""
@@ -5723,6 +5848,22 @@
         "parameters": [
           {
             "name": "audience",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
             "required": true,
             "in": "query",
             "schema": {
@@ -5991,6 +6132,37 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/wallet/topups": {
+      "get": {
+        "operationId": "SupplierWalletController_listTopups",
+        "tags": [
+          "SupplierWallet"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": ""
           }
         }
@@ -9553,6 +9725,22 @@
         "parameters": [
           {
             "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
             "required": true,
             "in": "query",
             "schema": {
@@ -14968,7 +15156,24 @@
         "tags": [
           "Chat"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -15993,7 +16198,16 @@
         "tags": [
           "Admin"
         ],
-        "parameters": [],
+        "parameters": [
+          {
+            "name": "period",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": ""
@@ -17641,6 +17855,59 @@
         "title": "CompleteUpload",
         "description": "Finalise un upload multipart et déclenche l'optimisation"
       },
+      "RegisterDeviceToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          },
+          "platform": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 20
+          },
+          "app": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "token",
+          "platform"
+        ],
+        "additionalProperties": false,
+        "title": "RegisterDeviceToken",
+        "description": "Attaches a push token to the signed-in account",
+        "examples": [
+          {
+            "token": "fcm-token",
+            "platform": "android",
+            "app": "client"
+          }
+        ]
+      },
+      "UnregisterDeviceToken": {
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 4096
+          }
+        },
+        "required": [
+          "token"
+        ],
+        "additionalProperties": false,
+        "title": "UnregisterDeviceToken",
+        "description": "Detaches a push token from the signed-in account",
+        "examples": [
+          {
+            "token": "fcm-token"
+          }
+        ]
+      },
       "DeliveryQuoteRequest": {
         "type": "object",
         "properties": {
@@ -17941,6 +18208,28 @@
         "additionalProperties": false,
         "title": "ProductReviewTiming",
         "description": "Délai et relances de la demande d'avis produit"
+      },
+      "EscrowRelease": {
+        "type": "object",
+        "properties": {
+          "heuresApresConfirmation": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 720
+          },
+          "joursMaximum": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 60
+          }
+        },
+        "required": [
+          "heuresApresConfirmation",
+          "joursMaximum"
+        ],
+        "additionalProperties": false,
+        "title": "EscrowRelease",
+        "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique"
       },
       "CartSync": {
         "type": "object",

@@ -849,18 +849,7 @@
       "empty": "Aucune catégorie."
     },
     "dashboard": {
-      "title": "Tableau de bord Admin",
-      "description": "Vue d'ensemble de la plateforme eBio",
-      "currency": "FCFA",
-      "kpis": {
-        "suppliers": "Fournisseurs",
-        "activeUsers": "Acheteurs actifs",
-        "transactions": "Transactions",
-        "revenue": "Chiffre d'affaires",
-        "pendingValidations": "Validations en attente",
-        "disputes": "Litiges",
-        "searchesPerDay": "Recherches/jour"
-      },
+      "title": "Tableau de bord",
       "inbox": {
         "title": "À traiter",
         "allClear": "Tout est à jour",
@@ -874,6 +863,43 @@
           "withdrawals": "Reversements en attente",
           "disputes": "Litiges"
         }
+      },
+      "activityTitle": "Activité",
+      "periodLabel": "Période",
+      "periods": {
+        "7d": "7 jours",
+        "30d": "30 jours",
+        "90d": "90 jours",
+        "month": "Ce mois-ci"
+      },
+      "error": "Impossible de charger les chiffres.",
+      "noComparison": "Pas de période précédente",
+      "vsPrevious": "vs période précédente",
+      "seeAll": "Tout voir",
+      "standing": "Total à ce jour",
+      "kpis": {
+        "gmv": "Volume d'affaires",
+        "orders": "Commandes",
+        "commission": "Commission eBio (livrées)",
+        "basket": "Panier moyen",
+        "newBuyers": "Nouveaux acheteurs",
+        "cancellationRate": "Taux d'annulation",
+        "validatedSuppliers": "Fournisseurs validés",
+        "validatedCouriers": "Livreurs validés",
+        "buyersTotal_one": "{{count}} acheteur inscrit",
+        "buyersTotal_other": "{{count}} acheteurs inscrits"
+      },
+      "chart": {
+        "title": "Commandes par jour",
+        "hint": "Commandes payées et non annulées, heure de Porto-Novo",
+        "empty": "Aucune commande sur la période.",
+        "orders_one": "{{count}} commande",
+        "orders_other": "{{count}} commandes",
+        "day": "Jour"
+      },
+      "topSuppliers": {
+        "title": "Fournisseurs les plus actifs",
+        "empty": "Aucune vente sur la période."
       }
     },
     "moderation": {

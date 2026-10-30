@@ -46,19 +46,6 @@ export const reportResolveActionEnum = z.enum([
   description: 'Action to take when resolving a content report',
 })
 
-export const dashboardKpiSchema = z.object({
-  activeUsers: z.number().int(),
-  activeSuppliers: z.number().int(),
-  dailySearches: z.number().int(),
-  monthlyTransactions: z.number().int(),
-  platformRevenue: z.number(),
-  pendingValidations: z.number().int(),
-  openDisputes: z.number().int(),
-}).meta({
-  title: 'DashboardKpi',
-  description: 'Key performance indicators for the admin dashboard',
-})
-
 export const validationQueueSchema = z.object({
   id: z.string().uuid(),
   shopName: z.string(),
@@ -270,7 +257,6 @@ export const transactionListSchema = z.object({
   description: 'Paginated list of transactions',
 })
 
-export type DashboardKpi = z.infer<typeof dashboardKpiSchema>
 export type ValidationQueueItem = z.infer<typeof validationQueueSchema>
 export type ValidationQueueResponse = z.infer<typeof validationQueueResponseSchema>
 export type ValidationActionInput = z.infer<typeof validationActionSchema>

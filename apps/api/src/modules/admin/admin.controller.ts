@@ -33,6 +33,7 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { OrdersService } from '../orders/orders.service'
+import { AdminDashboardService, parseDashboardPeriod } from './admin-dashboard.service'
 import { AdminService } from './admin.service'
 import {
   adminOrderStatusSchema,
@@ -54,12 +55,14 @@ import {
 export class AdminController {
   constructor(
     private readonly adminService: AdminService,
+    private readonly dashboardService: AdminDashboardService,
     private readonly ordersService: OrdersService,
   ) {}
 
+  /** Back-office home: the period's figures against the period before, a daily series, the top shops. */
   @Get('dashboard')
-  async getDashboard() {
-    return this.adminService.getDashboardKpis()
+  async getDashboard(@Query('period') period?: string) {
+    return this.dashboardService.getOverview(parseDashboardPeriod(period))
   }
 
   @CanRead('Supplier')

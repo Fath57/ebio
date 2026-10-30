@@ -6,6 +6,7 @@ import { NotificationsModule } from '../notifications/notifications.module'
 import { OrdersModule } from '../orders/orders.module'
 import { PaymentsModule } from '../payments/payments.module'
 import { PlatformSettingsModule } from '../settings/platform-settings.module'
+import { AdminDashboardService } from './admin-dashboard.service'
 import { AdminUsersController } from './admin-users.controller'
 import { AdminUsersService } from './admin-users.service'
 import { AdminController } from './admin.controller'
@@ -23,7 +24,7 @@ import { ContentReport } from './entities/content-report.entity'
     PlatformSettingsModule,
   ],
   controllers: [AdminController, AdminUsersController],
-  providers: [AdminService, AdminUsersService],
+  providers: [AdminService, AdminUsersService, AdminDashboardService],
   exports: [AdminService],
 })
 export class AdminModule {}

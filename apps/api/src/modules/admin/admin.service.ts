@@ -5,7 +5,6 @@ import type {
   CommissionOrderList,
   CommissionRates,
   CommissionSummary,
-  DashboardKpi,
   DisputeResolutionInput,
   ResolveReportInput,
   ValidationActionInput,
@@ -70,47 +69,6 @@ export class AdminService {
     private readonly commissionService: CommissionService,
     private readonly platformSettings: PlatformSettingsService,
   ) {}
-
-  async getDashboardKpis(): Promise<DashboardKpi> {
-    const now = new Date()
-    const startOfDay = new Date(now.getFullYear(), now.getMonth(), now.getDate())
-    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-
-    const [
-      activeUsers,
-      activeSuppliers,
-      monthlyTransactionsResult,
-      pendingValidations,
-      openDisputes,
-    ] = await Promise.all([
-      this.em.count(User, { role: { $ne: UserRole.ADMIN } }),
-      this.em.count(Supplier, { validationStatus: ValidationStatus.VALIDATED }),
-      this.em.getConnection().execute(
-        `SELECT COUNT(*) as count, COALESCE(SUM(commission_amount), 0) as revenue
-         FROM orders WHERE "createdAt" >= ?`,
-        [startOfMonth],
-      ),
-      this.em.count(Supplier, {
-        validationStatus: { $in: [ValidationStatus.PENDING, ValidationStatus.COMPLEMENT_REQUESTED] },
-      }),
-      this.em.count(Dispute, { status: DisputeStatus.OPEN }),
-    ])
-
-    const dailySearchesResult = await this.em.getConnection().execute(
-      `SELECT COUNT(*) as count FROM search_logs WHERE "createdAt" >= ?`,
-      [startOfDay],
-    ).catch(() => [{ count: 0 }])
-
-    return {
-      activeUsers,
-      activeSuppliers,
-      dailySearches: Number(dailySearchesResult[0]?.count ?? 0),
-      monthlyTransactions: Number(monthlyTransactionsResult[0]?.count ?? 0),
-      platformRevenue: Number(monthlyTransactionsResult[0]?.revenue ?? 0),
-      pendingValidations,
-      openDisputes,
-    }
-  }
 
   async getValidationQueue(params: {
     status?: string
