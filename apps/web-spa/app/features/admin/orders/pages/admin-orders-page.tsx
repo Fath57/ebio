@@ -1,42 +1,19 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { AdminOrderListItem } from '../utils/orders-queries'
+import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { useQuery } from '@tanstack/react-query'
-import { useCallback, useMemo, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
-import { useServerSorting } from '@/features/admin/common/utils/use-server-sorting'
+import { FilterSelect } from '@/features/admin/common/components/filter-select'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { useListParams } from '@/features/admin/common/utils/use-list-params'
+import { ORDER_STATUS_OPTIONS, ORDER_STATUS_TONES, PAYMENT_METHODS } from '../utils/order-status'
 import { fetchAdminOrdersQueryOptions } from '../utils/orders-queries'
 
 const PAGE_SIZE = 20
-
-/** Statuts de commande, dans l'ordre du cycle de vie. */
-const STATUS_OPTIONS = [
-  'PENDING_PAYMENT',
-  'PLACED',
-  'ACCEPTED',
-  'PREPARING',
-  'READY',
-  'IN_DELIVERY',
-  'DELIVERED',
-  'CANCELLED',
-  'DISPUTED',
-]
-
-const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  PLACED: 'secondary',
-  ACCEPTED: 'default',
-  PREPARING: 'default',
-  READY: 'default',
-  IN_DELIVERY: 'default',
-  DELIVERED: 'outline',
-  CANCELLED: 'destructive',
-  DISPUTED: 'destructive',
-}
-
-/** Known payment methods; anything else falls back to the raw value. */
-const PAYMENT_METHODS = ['CASH_ON_DELIVERY', 'FEDAPAY', 'WALLET']
 
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
@@ -45,32 +22,40 @@ function formatAmount(value: number): string {
 export default function AdminOrdersPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [page, setPage] = useState(1)
-  const resetPage = useCallback(() => setPage(1), [])
-  const { sorting, setSorting, sortBy, sortDir } = useServerSorting('createdAt', resetPage)
+  const list = useListParams({ defaultSort: 'createdAt', filters: ['statut'] })
+  const status = list.values.statut
 
-  const { data, isLoading } = useQuery(
-    fetchAdminOrdersQueryOptions({
-      q: search || undefined,
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    ...fetchAdminOrdersQueryOptions({
+      q: list.q || undefined,
       status: status || undefined,
-      sortBy,
-      sortDir,
-      page,
+      sortBy: list.sortBy,
+      sortDir: list.sortDir,
+      page: list.page,
     }),
-  )
+    placeholderData: keepPreviousData,
+  })
 
   const columns = useMemo<Array<ColumnDef<AdminOrderListItem, unknown>>>(() => [
     {
       id: 'orderNumber',
       header: t('admin.orders.columns.number'),
-      cell: ({ row }) => <span className="font-medium">{row.original.orderNumber}</span>,
+      cell: ({ row }) => <span className="font-mono font-medium">{row.original.orderNumber}</span>,
     },
     {
       id: 'createdAt',
       header: t('admin.orders.columns.date'),
-      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(i18n.language),
+      cell: ({ row }) => {
+        const date = new Date(row.original.createdAt)
+        return (
+          <span className="flex flex-col">
+            <span>{date.toLocaleDateString(i18n.language)}</span>
+            <span className="text-muted-foreground text-xs">
+              {date.toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })}
+            </span>
+          </span>
+        )
+      },
     },
     {
       id: 'buyer',
@@ -86,9 +71,9 @@ export default function AdminOrdersPage() {
       id: 'status',
       header: t('admin.orders.columns.status'),
       cell: ({ row }) => (
-        <Badge variant={STATUS_VARIANTS[row.original.status] ?? 'secondary'}>
+        <StatusBadge tone={ORDER_STATUS_TONES[row.original.status] ?? 'idle'}>
           {t(`admin.orders.status.${row.original.status}`)}
-        </Badge>
+        </StatusBadge>
       ),
     },
     {
@@ -108,56 +93,59 @@ export default function AdminOrdersPage() {
     {
       id: 'totalAmount',
       header: t('admin.orders.columns.amount'),
-      meta: { align: 'right' },
-      cell: ({ row }) => formatAmount(row.original.totalAmount),
+      meta: { numeric: true },
+      cell: ({ row }) => <span className="font-medium">{formatAmount(row.original.totalAmount)}</span>,
     },
     {
       id: 'commissionAmount',
       header: t('admin.orders.columns.commission'),
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => (
         <span className="text-muted-foreground">{formatAmount(row.original.commissionAmount)}</span>
       ),
     },
   ], [t, i18n.language])
 
+  const activeFilters: ActiveFilter[] = status
+    ? [{
+        key: 'statut',
+        group: t('admin.orders.columns.status'),
+        value: t(`admin.orders.status.${status}`),
+        onRemove: () => list.setFilter('statut', ''),
+      }]
+    : []
+
   return (
     <AdminListShell
       title={t('admin.orders.title')}
       description={t('admin.orders.description')}
-      searchValue={search}
-      onSearchChange={(value) => {
-        setSearch(value)
-        setPage(1)
-      }}
+      searchValue={list.q}
+      onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.orders.searchPlaceholder')}
       filters={(
-        <select
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+        <FilterSelect
           value={status}
-          onChange={(event) => {
-            setStatus(event.target.value)
-            setPage(1)
-          }}
-        >
-          <option value="">{t('admin.orders.allStatuses')}</option>
-          {STATUS_OPTIONS.map(value => (
-            <option key={value} value={value}>
-              {t(`admin.orders.status.${value}`)}
-            </option>
-          ))}
-        </select>
+          onValueChange={value => list.setFilter('statut', value)}
+          allLabel={t('admin.orders.allStatuses')}
+          ariaLabel={t('admin.orders.columns.status')}
+          options={ORDER_STATUS_OPTIONS.map(value => ({ value, label: t(`admin.orders.status.${value}`) }))}
+        />
       )}
+      activeFilters={activeFilters}
+      onResetFilters={list.reset}
       columns={columns}
       data={data?.items ?? []}
       total={data?.total ?? 0}
-      page={page}
+      page={list.page}
       pageSize={PAGE_SIZE}
-      onPageChange={setPage}
-      sorting={sorting}
-      onSortingChange={setSorting}
+      onPageChange={list.setPage}
+      sorting={list.sorting}
+      onSortingChange={list.setSorting}
       onRowClick={order => navigate(`/admin/commandes/${order.id}`)}
       isLoading={isLoading}
+      isFetching={isFetching}
+      isError={isError}
+      onRetry={() => refetch()}
       emptyLabel={t('admin.orders.empty')}
     />
   )

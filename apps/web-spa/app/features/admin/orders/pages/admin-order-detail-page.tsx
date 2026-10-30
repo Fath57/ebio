@@ -19,11 +19,14 @@ import {
   TableRow,
 } from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Star, Truck } from 'lucide-react'
+import { Star, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { BackLink } from '@/features/admin/common/components/back-link'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { fetchAdminDeliveryQueryOptions } from '../../deliveries/utils/deliveries-queries'
+import { ORDER_STATUS_TONES } from '../utils/order-status'
 import {
   ADMIN_ORDER_STATUSES,
   fetchAdminOrderQueryOptions,
@@ -115,14 +118,11 @@ export default function AdminOrderDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/admin/commandes">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('common.back')}
-          </Link>
-        </Button>
+        <BackLink fallback="/admin/commandes" />
         <h2 className="text-2xl font-bold">{order.orderNumber}</h2>
-        <Badge>{t(`admin.orders.status.${order.status}`)}</Badge>
+        <StatusBadge tone={ORDER_STATUS_TONES[order.status] ?? 'idle'}>
+          {t(`admin.orders.status.${order.status}`)}
+        </StatusBadge>
         {readyAround && (
           <span className="text-sm text-muted-foreground">
             {t('admin.orders.detail.readyAround', { time: readyAround })}

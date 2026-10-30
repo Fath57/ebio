@@ -1,24 +1,15 @@
+import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { ProductUnit } from '../utils/product-units-queries'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import {
-  Dialog as AlertDialog,
-  DialogContent as AlertDialogContent,
-} from '@boilerstone/ui/components/primitives/dialog'
-import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { PlusCircle, Trash2 } from 'lucide-react'
-import { useState } from 'react'
+import { Pencil, PlusCircle, Trash2 } from 'lucide-react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
+import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
+import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { useAbility } from '@/lib/casl/ability-context'
 import { Can } from '@/lib/casl/can'
 import {
   deleteProductUnitMutationOptions,
@@ -29,10 +20,12 @@ export default function ProductUnitsPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
+  const { ability } = useAbility()
+  const canUpdate = ability?.can('update', 'ProductUnit') ?? false
   const [deletingUnit, setDeletingUnit] = useState<ProductUnit | null>(null)
   const [deleteError, setDeleteError] = useState<string | null>(null)
 
-  const { data, isLoading } = useQuery(fetchProductUnitsQueryOptions())
+  const { data, isLoading, isError, refetch } = useQuery(fetchProductUnitsQueryOptions())
 
   const { mutate: deleteUnit, isPending: isDeleting } = useMutation({
     ...deleteProductUnitMutationOptions,
@@ -46,119 +39,123 @@ export default function ProductUnitsPage() {
     onError: (error: Error) => setDeleteError(error.message),
   })
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
+  const columns = useMemo<Array<ColumnDef<ProductUnit, unknown>>>(() => [
+    {
+      id: 'label',
+      header: t('admin.productUnits.columns.label'),
+      cell: ({ row }) => (
+        <span className="flex flex-col">
+          <span className="font-medium">{row.original.label}</span>
+          <span className="text-muted-foreground font-mono text-xs">{row.original.code}</span>
+        </span>
+      ),
+    },
+    {
+      id: 'shortLabel',
+      header: t('admin.productUnits.columns.shortLabel'),
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.shortLabel}</span>,
+    },
+    {
+      id: 'sortOrder',
+      header: t('admin.productUnits.columns.sortOrder'),
+      meta: { numeric: true },
+      cell: ({ row }) => row.original.sortOrder,
+    },
+    {
+      id: 'productCount',
+      header: t('admin.productUnits.columns.productCount'),
+      meta: { numeric: true },
+      cell: ({ row }) => row.original.productCount,
+    },
+    {
+      id: 'status',
+      header: t('admin.productUnits.columns.status'),
+      cell: ({ row }) => (
+        <StatusBadge tone={row.original.isActive ? 'done' : 'idle'}>
+          {row.original.isActive ? t('admin.productUnits.active') : t('admin.productUnits.inactive')}
+        </StatusBadge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      meta: { align: 'right' },
+      cell: ({ row }) => {
+        const inUse = row.original.productCount > 0
+        return (
+          <div className="flex justify-end gap-1">
+            <Can action="update" subject="ProductUnit">
+              <Button size="icon" variant="ghost" asChild aria-label={t('common.edit')}>
+                <Link to={`/admin/unites/${row.original.id}/modifier`}>
+                  <Pencil className="h-4 w-4" />
+                </Link>
+              </Button>
+            </Can>
+            <Can action="delete" subject="ProductUnit">
+              <Button
+                size="icon"
+                variant="ghost"
+                aria-label={inUse ? t('admin.productUnits.deleteBlocked') : t('common.delete')}
+                title={inUse ? t('admin.productUnits.deleteBlocked') : undefined}
+                disabled={isDeleting || inUse}
+                onClick={() => {
+                  setDeleteError(null)
+                  setDeletingUnit(row.original)
+                }}
+              >
+                <Trash2 className="text-destructive h-4 w-4" />
+              </Button>
+            </Can>
+          </div>
+        )
+      },
+    },
+  ], [t, isDeleting])
 
   const units = data?.items ?? []
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{t('admin.productUnits.title')}</h2>
-          <p className="text-muted-foreground">{t('admin.productUnits.description')}</p>
-        </div>
-        <Can action="create" subject="ProductUnit">
-          <Button asChild>
-            <Link to="/admin/unites/nouveau">
-              <PlusCircle className="mr-2 h-4 w-4" />
-              {t('admin.productUnits.addUnit')}
-            </Link>
-          </Button>
-        </Can>
-      </div>
+    <>
+      <AdminListShell
+        title={t('admin.productUnits.title')}
+        description={t('admin.productUnits.description')}
+        actions={(
+          <Can action="create" subject="ProductUnit">
+            <Button asChild>
+              <Link to="/admin/unites/nouveau">
+                <PlusCircle className="mr-2 h-4 w-4" />
+                {t('admin.productUnits.addUnit')}
+              </Link>
+            </Button>
+          </Can>
+        )}
+        columns={columns}
+        data={units}
+        total={units.length}
+        page={1}
+        pageSize={Math.max(units.length, 1)}
+        onPageChange={() => {}}
+        onRowClick={canUpdate ? unit => navigate(`/admin/unites/${unit.id}/modifier`) : undefined}
+        isLoading={isLoading}
+        isError={isError}
+        onRetry={() => refetch()}
+        emptyLabel={t('admin.productUnits.empty')}
+      />
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('admin.productUnits.columns.label')}</TableHead>
-            <TableHead>{t('admin.productUnits.columns.shortLabel')}</TableHead>
-            <TableHead>{t('admin.productUnits.columns.code')}</TableHead>
-            <TableHead>{t('admin.productUnits.columns.sortOrder')}</TableHead>
-            <TableHead>{t('admin.productUnits.columns.productCount')}</TableHead>
-            <TableHead>{t('admin.productUnits.columns.status')}</TableHead>
-            <TableHead>{t('admin.productUnits.columns.actions')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {units.map((unit: ProductUnit) => (
-            <TableRow key={unit.id}>
-              <TableCell className="font-medium">{unit.label}</TableCell>
-              <TableCell className="text-muted-foreground">{unit.shortLabel}</TableCell>
-              <TableCell className="font-mono text-xs text-muted-foreground">{unit.code}</TableCell>
-              <TableCell>{unit.sortOrder}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">{unit.productCount}</Badge>
-              </TableCell>
-              <TableCell>
-                <Badge variant={unit.isActive ? 'default' : 'outline'}>
-                  {unit.isActive
-                    ? t('admin.productUnits.active')
-                    : t('admin.productUnits.inactive')}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <div className="flex gap-2">
-                  <Can action="update" subject="ProductUnit">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/admin/unites/${unit.id}/modifier`)}
-                    >
-                      {t('common.edit')}
-                    </Button>
-                  </Can>
-                  <Can action="delete" subject="ProductUnit">
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      disabled={isDeleting || unit.productCount > 0}
-                      title={unit.productCount > 0 ? t('admin.productUnits.deleteBlocked') : undefined}
-                      onClick={() => {
-                        setDeleteError(null)
-                        setDeletingUnit(unit)
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </Can>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-
-      <AlertDialog
-        open={!!deletingUnit}
-        onOpenChange={open => !open && setDeletingUnit(null)}
-      >
-        <AlertDialogContent>
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-lg font-semibold">{t('admin.productUnits.deleteConfirm')}</h3>
-              <p className="text-sm text-muted-foreground">{t('admin.productUnits.deleteWarning')}</p>
-              {deleteError && <p className="mt-2 text-sm text-destructive">{deleteError}</p>}
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button variant="outline" onClick={() => setDeletingUnit(null)}>{t('common.cancel')}</Button>
-              <Button
-                variant="destructive"
-                disabled={isDeleting}
-                onClick={() => deletingUnit && deleteUnit(deletingUnit.id)}
-              >
-                {t('common.confirm')}
-              </Button>
-            </div>
-          </div>
-        </AlertDialogContent>
-      </AlertDialog>
-    </div>
+      <ConfirmDialog
+        open={deletingUnit !== null}
+        onOpenChange={(open) => {
+          if (!open)
+            setDeletingUnit(null)
+        }}
+        title={t('admin.productUnits.deleteConfirm')}
+        description={t('admin.productUnits.deleteWarning')}
+        confirmLabel={t('common.delete')}
+        onConfirm={() => deletingUnit && deleteUnit(deletingUnit.id)}
+        isPending={isDeleting}
+        error={deleteError}
+        destructive
+      />
+    </>
   )
 }

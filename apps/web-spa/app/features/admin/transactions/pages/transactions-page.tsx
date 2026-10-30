@@ -6,10 +6,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/compon
 import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Download, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import {
   exportPaymentsCsvUrl,
   fetchDisputesQueryOptions,
@@ -67,7 +68,11 @@ export default function TransactionsPage() {
     to: to || undefined,
   }
 
-  const { data, isLoading } = useQuery(fetchPaymentsQueryOptions({ ...filters, page }))
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    ...fetchPaymentsQueryOptions({ ...filters, page }),
+    placeholderData: keepPreviousData,
+  })
+  const tableLabels = useDataTableLabels(t('admin.transactions.empty'))
   const { data: disputes, isLoading: isLoadingDisputes } = useQuery(fetchDisputesQueryOptions())
 
   const columns = useMemo<Array<ColumnDef<PaymentItem, unknown>>>(() => [
@@ -116,14 +121,14 @@ export default function TransactionsPage() {
       id: 'amount',
       header: t('admin.transactions.columns.amount'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => formatAmount(row.original.amount),
     },
     {
       id: 'commission',
       header: t('admin.transactions.columns.commission'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       // Zéro tant que le séquestre n'est pas libéré : rien n'est acquis.
       cell: ({ row }) => (row.original.commission > 0
         ? formatAmount(row.original.commission)
@@ -226,13 +231,10 @@ export default function TransactionsPage() {
         sorting={[]}
         onSortingChange={() => {}}
         isLoading={isLoading}
-        labels={{
-          empty: t('admin.transactions.empty'),
-          resultCount: count => t('dataTable.resultCount', { count }),
-          pageOf: (current, lastPage) => t('dataTable.pageOf', { page: current, lastPage }),
-          previous: t('dataTable.previous'),
-          next: t('dataTable.next'),
-        }}
+        isFetching={isFetching}
+        isError={isError}
+        onRetry={() => refetch()}
+        labels={tableLabels}
       />
 
       <Card>

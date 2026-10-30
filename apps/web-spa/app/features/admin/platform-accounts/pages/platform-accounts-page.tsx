@@ -16,9 +16,10 @@ import {
   DialogTitle,
 } from '@boilerstone/ui/components/primitives/dialog'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import {
   COST_CENTRE_ACCOUNTS,
   fetchPlatformAccountsQueryOptions,
@@ -138,9 +139,11 @@ interface AccountLedgerProps {
 function AccountLedger({ account }: AccountLedgerProps) {
   const { t, i18n } = useTranslation()
   const [page, setPage] = useState(1)
-  const { data, isLoading } = useQuery(
-    fetchPlatformAccountTransactionsQueryOptions(account, page),
-  )
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    ...fetchPlatformAccountTransactionsQueryOptions(account, page),
+    placeholderData: keepPreviousData,
+  })
+  const ledgerLabels = useDataTableLabels(t('admin.platformAccounts.ledgerEmpty'))
 
   const columns = useMemo<Array<ColumnDef<PlatformTransaction, unknown>>>(() => [
     {
@@ -168,7 +171,7 @@ function AccountLedger({ account }: AccountLedgerProps) {
       id: 'amount',
       header: t('admin.platformAccounts.columns.amount'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => (
         <span className={`font-medium ${amountToneClass(row.original.amount)}`}>
           {formatSignedAmount(row.original.amount)}
@@ -179,7 +182,7 @@ function AccountLedger({ account }: AccountLedgerProps) {
       id: 'balanceAfter',
       header: t('admin.platformAccounts.columns.balanceAfter'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => formatAmount(row.original.balanceAfter),
     },
   ], [t, i18n.language])
@@ -198,13 +201,10 @@ function AccountLedger({ account }: AccountLedgerProps) {
       sorting={[]}
       onSortingChange={() => {}}
       isLoading={isLoading}
-      labels={{
-        empty: t('admin.platformAccounts.ledgerEmpty'),
-        resultCount: count => t('dataTable.resultCount', { count }),
-        pageOf: (current, lastPage) => t('dataTable.pageOf', { page: current, lastPage }),
-        previous: t('dataTable.previous'),
-        next: t('dataTable.next'),
-      }}
+      isFetching={isFetching}
+      isError={isError}
+      onRetry={() => refetch()}
+      labels={ledgerLabels}
     />
   )
 }

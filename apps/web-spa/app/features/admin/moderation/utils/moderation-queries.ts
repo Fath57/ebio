@@ -5,23 +5,38 @@ import {
 
 export interface ReportItem {
   id: string
-  type: string
-  contentPreview: string
-  reportedByName: string
-  authorName: string
+  /** PRODUCT | REVIEW | PRODUCT_REVIEW | PUBLICATION | MESSAGE */
+  targetType: string
+  targetId: string
+  reporterName: string
+  reason: string
+  /** PENDING | RESOLVED | DISMISSED */
+  status: string
   createdAt: string
 }
 
 export interface ReportsData {
-  data: ReportItem[]
+  items: ReportItem[]
+  total: number
+  page: number
+  limit: number
 }
 
-export function fetchReportsQueryOptions(type?: string) {
+export const REPORT_TARGET_TYPES = ['PRODUCT', 'REVIEW', 'PRODUCT_REVIEW', 'PUBLICATION', 'MESSAGE']
+export const REPORT_STATUSES = ['PENDING', 'RESOLVED', 'DISMISSED']
+export const REPORTS_PAGE_SIZE = 20
+
+export function fetchReportsQueryOptions(filters: { type?: string, status?: string, page?: number }) {
   return {
-    queryKey: ['admin', 'moderation', 'reports', type],
+    queryKey: ['admin', 'moderation', 'reports', filters],
     queryFn: async () => {
       const response = await adminControllerGetReports({
-        query: { targetType: type ?? '', status: '', page: '1', limit: '50' },
+        query: {
+          targetType: filters.type ?? '',
+          status: filters.status ?? '',
+          page: String(filters.page ?? 1),
+          limit: String(REPORTS_PAGE_SIZE),
+        },
       })
       if (response.error)
         throw new Error('Failed to fetch reports')

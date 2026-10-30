@@ -27,12 +27,14 @@ export interface ValidationsData {
   limit: number
 }
 
-export function fetchPendingSuppliersQueryOptions() {
+export const VALIDATIONS_PAGE_SIZE = 50
+
+export function fetchPendingSuppliersQueryOptions(page = 1) {
   return {
-    queryKey: ['admin', 'validation', 'pending'],
+    queryKey: ['admin', 'validation', 'pending', page],
     queryFn: async () => {
       const response = await adminControllerGetValidations({
-        query: { status: 'pending', page: '1', limit: '50' },
+        query: { status: 'pending', page: String(page), limit: String(VALIDATIONS_PAGE_SIZE) },
       })
       if (response.error)
         throw new Error('Failed to fetch pending suppliers')

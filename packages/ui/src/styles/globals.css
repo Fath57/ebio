@@ -137,3 +137,13 @@
     background-color: #FFFFFF;
   }
 }
+
+/* Indeterminate bar shown by `DataTable` while a page, sort or filter reloads. */
+@keyframes data-table-progress {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(300%);
+  }
+}

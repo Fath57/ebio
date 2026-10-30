@@ -7,10 +7,11 @@ import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Ban, CircleCheck, Info, PauseCircle } from 'lucide-react'
+import { Ban, CircleCheck, Info, PauseCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { BackLink } from '@/features/admin/common/components/back-link'
 import { Can } from '@/lib/casl/can'
 import { AuditTimeline } from '../components/audit-timeline'
 import { BuyerCheckoutPanel } from '../components/buyer-checkout-panel'
@@ -114,12 +115,7 @@ export default function AdminUserDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center gap-3">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/admin/utilisateurs">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('common.back')}
-          </Link>
-        </Button>
+        <BackLink fallback="/admin/utilisateurs" />
         <h2 className="text-2xl font-bold">{user.name}</h2>
         <Badge variant={ROLE_VARIANTS[user.role] ?? 'outline'}>
           {t(`admin.users.role.${user.role}`)}

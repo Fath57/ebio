@@ -845,7 +845,8 @@
         "addImage": "Add",
         "create": "Create category",
         "update": "Update"
-      }
+      },
+      "empty": "No category."
     },
     "dashboard": {
       "title": "Admin Dashboard",
@@ -887,7 +888,9 @@
         "author": "Author",
         "reportedBy": "Reported by",
         "date": "Date",
-        "actions": "Actions"
+        "actions": "Actions",
+        "reason": "Reason",
+        "status": "Status"
       },
       "description": "Manage reported content on the platform",
       "filterByType": "Filter by type",
@@ -896,7 +899,21 @@
         "product": "Product",
         "review": "Review",
         "publication": "Publication",
-        "message": "Message"
+        "message": "Message",
+        "all": "All types",
+        "product_review": "Product review"
+      },
+      "statuses": {
+        "all": "All statuses",
+        "pending": "To handle",
+        "resolved": "Handled",
+        "dismissed": "Dismissed"
+      },
+      "empty": "No report.",
+      "resolved": "Report handled.",
+      "confirmDelete": {
+        "title": "Delete this content?",
+        "description": "The reported content will be removed from the platform. This cannot be undone."
       }
     },
     "orders": {
@@ -1082,7 +1099,8 @@
         "isActiveHint": "A disabled unit disappears from the product form without touching existing products",
         "create": "Create unit",
         "update": "Update"
-      }
+      },
+      "empty": "No sales unit."
     },
     "roles": {
       "title": "Roles management",
@@ -1685,7 +1703,9 @@
         "shopName": "Shop name",
         "status": "Status",
         "submittedAt": "Submitted at",
-        "actions": "Actions"
+        "actions": "Actions",
+        "supplier": "Supplier",
+        "phone": "Phone"
       },
       "actions": {
         "validate": "Validate eBio",
@@ -1714,7 +1734,11 @@
         "identityDocument": "Identity document",
         "businessDocument": "Business document",
         "viewDocument": "View document"
-      }
+      },
+      "review": "Review",
+      "empty": "No validation request pending.",
+      "pendingCount_one": "{{count}} pending",
+      "pendingCount_other": "{{count}} pending"
     },
     "commissions": {
       "title": "Commissions",
@@ -1853,7 +1877,10 @@
         "SUPPLIER": "Supplier",
         "COURIER": "Courier",
         "USER": "Buyer"
-      }
+      },
+      "allStatuses": "All statuses",
+      "approveTitle": "Pay this withdrawal?",
+      "approveBody": "{{amount}} will be sent to {{name}} on {{number}}. The payment leaves at once and cannot be undone."
     },
     "couriers": {
       "title": "Couriers",
@@ -2118,11 +2145,20 @@
     "PASSWORDS_DO_NOT_MATCH": "Passwords do not match"
   },
   "dataTable": {
-    "next": "Next",
-    "previous": "Previous",
-    "pageOf": "Page {{page}} of {{lastPage}}",
-    "resultCount_one": "{{count}} result",
-    "resultCount_other": "{{count}} results"
+    "next": "Next page",
+    "previous": "Previous page",
+    "first": "First page",
+    "last": "Last page",
+    "pagination": "Pagination",
+    "range_one": "{{from}}–{{to}} of {{total}} result",
+    "range_other": "{{from}}–{{to}} of {{total}} results",
+    "error": "The list could not be loaded.",
+    "retry": "Retry",
+    "clearFilters": "Clear filters",
+    "clearSearch": "Clear search",
+    "activeFilters": "Active filters",
+    "removeFilter": "Remove filter {{filter}}",
+    "resetAll": "Clear all"
   },
   "media": {
     "cropper": {

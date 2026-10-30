@@ -1,44 +1,47 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { AdminSupplierListItem } from '../utils/suppliers-queries'
+import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
+import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { useQuery } from '@tanstack/react-query'
-import { useCallback, useMemo, useState } from 'react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
-import { useServerSorting } from '@/features/admin/common/utils/use-server-sorting'
+import { FilterSelect } from '@/features/admin/common/components/filter-select'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { fetchAdminSuppliersQueryOptions } from '../utils/suppliers-queries'
 
 const PAGE_SIZE = 20
 
 const STATUS_OPTIONS = ['PENDING', 'VALIDATED', 'COMPLEMENT_REQUESTED', 'SUSPENDED', 'REJECTED']
 
-const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  PENDING: 'secondary',
-  VALIDATED: 'default',
-  COMPLEMENT_REQUESTED: 'secondary',
-  SUSPENDED: 'destructive',
-  REJECTED: 'destructive',
+/** A shop waiting for review is the staff's move; one waiting for documents is the shop's. */
+const STATUS_TONES: Record<string, StatusTone> = {
+  PENDING: 'action',
+  VALIDATED: 'done',
+  COMPLEMENT_REQUESTED: 'progress',
+  SUSPENDED: 'problem',
+  REJECTED: 'idle',
 }
 
 export default function AdminSuppliersPage() {
   const { t } = useTranslation()
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [status, setStatus] = useState('')
-  const [page, setPage] = useState(1)
-  const resetPage = useCallback(() => setPage(1), [])
-  const { sorting, setSorting, sortBy, sortDir } = useServerSorting('createdAt', resetPage)
+  const list = useListParams({ defaultSort: 'createdAt', filters: ['statut'] })
+  const status = list.values.statut
 
-  const { data, isLoading } = useQuery(
-    fetchAdminSuppliersQueryOptions({
-      q: search || undefined,
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    ...fetchAdminSuppliersQueryOptions({
+      q: list.q || undefined,
       status: status || undefined,
-      sortBy,
-      sortDir,
-      page,
+      sortBy: list.sortBy,
+      sortDir: list.sortDir,
+      page: list.page,
     }),
-  )
+    placeholderData: keepPreviousData,
+  })
 
   const columns = useMemo<Array<ColumnDef<AdminSupplierListItem, unknown>>>(() => [
     {
@@ -68,27 +71,27 @@ export default function AdminSuppliersPage() {
       id: 'validationStatus',
       header: t('admin.suppliers.columns.status'),
       cell: ({ row }) => (
-        <Badge variant={STATUS_VARIANTS[row.original.validationStatus] ?? 'secondary'}>
+        <StatusBadge tone={STATUS_TONES[row.original.validationStatus] ?? 'idle'}>
           {t(`admin.suppliers.status.${row.original.validationStatus}`)}
-        </Badge>
+        </StatusBadge>
       ),
     },
     {
       id: 'productCount',
       header: t('admin.suppliers.columns.products'),
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => row.original.productCount,
     },
     {
       id: 'orderCount',
       header: t('admin.suppliers.columns.orders'),
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => row.original.orderCount,
     },
     {
       id: 'rating',
       header: t('admin.suppliers.columns.rating'),
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => (row.original.rating !== null ? row.original.rating.toFixed(1) : '—'),
     },
     {
@@ -102,43 +105,46 @@ export default function AdminSuppliersPage() {
     },
   ], [t])
 
+  const activeFilters: ActiveFilter[] = status
+    ? [{
+        key: 'statut',
+        group: t('admin.suppliers.columns.status'),
+        value: t(`admin.suppliers.status.${status}`),
+        onRemove: () => list.setFilter('statut', ''),
+      }]
+    : []
+
   return (
     <AdminListShell
       title={t('admin.suppliers.title')}
       description={t('admin.suppliers.description')}
-      searchValue={search}
-      onSearchChange={(value) => {
-        setSearch(value)
-        setPage(1)
-      }}
+      searchValue={list.q}
+      onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.suppliers.searchPlaceholder')}
       filters={(
-        <select
-          className="border-input bg-background h-9 rounded-md border px-3 text-sm"
+        <FilterSelect
           value={status}
-          onChange={(event) => {
-            setStatus(event.target.value)
-            setPage(1)
-          }}
-        >
-          <option value="">{t('admin.suppliers.allStatuses')}</option>
-          {STATUS_OPTIONS.map(value => (
-            <option key={value} value={value}>
-              {t(`admin.suppliers.status.${value}`)}
-            </option>
-          ))}
-        </select>
+          onValueChange={value => list.setFilter('statut', value)}
+          allLabel={t('admin.suppliers.allStatuses')}
+          ariaLabel={t('admin.suppliers.columns.status')}
+          options={STATUS_OPTIONS.map(value => ({ value, label: t(`admin.suppliers.status.${value}`) }))}
+        />
       )}
+      activeFilters={activeFilters}
+      onResetFilters={list.reset}
       columns={columns}
       data={data?.items ?? []}
       total={data?.total ?? 0}
-      page={page}
+      page={list.page}
       pageSize={PAGE_SIZE}
-      onPageChange={setPage}
-      sorting={sorting}
-      onSortingChange={setSorting}
+      onPageChange={list.setPage}
+      sorting={list.sorting}
+      onSortingChange={list.setSorting}
       onRowClick={supplier => navigate(`/admin/fournisseurs/${supplier.id}`)}
       isLoading={isLoading}
+      isFetching={isFetching}
+      isError={isError}
+      onRetry={() => refetch()}
       emptyLabel={t('admin.suppliers.empty')}
     />
   )

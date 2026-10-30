@@ -845,7 +845,8 @@
         "addImage": "Ajouter",
         "create": "Créer la catégorie",
         "update": "Mettre à jour"
-      }
+      },
+      "empty": "Aucune catégorie."
     },
     "dashboard": {
       "title": "Tableau de bord Admin",
@@ -887,7 +888,9 @@
         "author": "Auteur",
         "reportedBy": "Signalé par",
         "date": "Date",
-        "actions": "Actions"
+        "actions": "Actions",
+        "reason": "Motif",
+        "status": "Statut"
       },
       "description": "Gérez les contenus signalés sur la plateforme",
       "filterByType": "Filtrer par type",
@@ -896,7 +899,21 @@
         "product": "Produit",
         "review": "Avis",
         "publication": "Publication",
-        "message": "Message"
+        "message": "Message",
+        "all": "Tous les types",
+        "product_review": "Avis produit"
+      },
+      "statuses": {
+        "all": "Tous les statuts",
+        "pending": "À traiter",
+        "resolved": "Traité",
+        "dismissed": "Ignoré"
+      },
+      "empty": "Aucun signalement.",
+      "resolved": "Signalement traité.",
+      "confirmDelete": {
+        "title": "Supprimer ce contenu ?",
+        "description": "Le contenu signalé sera retiré de la plateforme. Cette action est définitive."
       }
     },
     "orders": {
@@ -1082,7 +1099,8 @@
         "isActiveHint": "Une unité désactivée disparaît du formulaire produit sans toucher aux produits existants",
         "create": "Créer l'unité",
         "update": "Mettre à jour"
-      }
+      },
+      "empty": "Aucune unité de vente."
     },
     "roles": {
       "title": "Gestion des rôles",
@@ -1685,7 +1703,9 @@
         "shopName": "Nom de la boutique",
         "status": "Statut",
         "submittedAt": "Date de soumission",
-        "actions": "Actions"
+        "actions": "Actions",
+        "supplier": "Fournisseur",
+        "phone": "Téléphone"
       },
       "actions": {
         "validate": "Valider eBio",
@@ -1714,7 +1734,11 @@
         "identityDocument": "Pièce d'identité",
         "businessDocument": "Document professionnel",
         "viewDocument": "Voir le document"
-      }
+      },
+      "review": "Examiner",
+      "empty": "Aucune demande de validation en attente.",
+      "pendingCount_one": "{{count}} en attente",
+      "pendingCount_other": "{{count}} en attente"
     },
     "commissions": {
       "title": "Commissions",
@@ -1853,7 +1877,10 @@
         "SUPPLIER": "Fournisseur",
         "COURIER": "Livreur",
         "USER": "Acheteur"
-      }
+      },
+      "allStatuses": "Tous les statuts",
+      "approveTitle": "Payer ce reversement ?",
+      "approveBody": "{{amount}} seront envoyés à {{name}} sur le {{number}}. Le paiement part immédiatement et ne peut pas être annulé."
     },
     "couriers": {
       "title": "Livreurs",
@@ -2118,11 +2145,20 @@
     "PASSWORDS_DO_NOT_MATCH": "Les mots de passe ne correspondent pas"
   },
   "dataTable": {
-    "next": "Suivant",
-    "previous": "Précédent",
-    "pageOf": "Page {{page}} / {{lastPage}}",
-    "resultCount_one": "{{count}} résultat",
-    "resultCount_other": "{{count}} résultats"
+    "next": "Page suivante",
+    "previous": "Page précédente",
+    "first": "Première page",
+    "last": "Dernière page",
+    "pagination": "Pagination",
+    "range_one": "{{from}}–{{to}} sur {{total}} résultat",
+    "range_other": "{{from}}–{{to}} sur {{total}} résultats",
+    "error": "Impossible de charger la liste.",
+    "retry": "Réessayer",
+    "clearFilters": "Effacer les filtres",
+    "clearSearch": "Effacer la recherche",
+    "activeFilters": "Filtres actifs",
+    "removeFilter": "Retirer le filtre {{filter}}",
+    "resetAll": "Tout effacer"
   },
   "media": {
     "cropper": {

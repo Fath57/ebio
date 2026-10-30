@@ -6,11 +6,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/compon
 import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Download, X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import {
   exportCommissionsCsvUrl,
   fetchCommissionOrdersQueryOptions,
@@ -70,8 +71,15 @@ export default function AdminCommissionsPage() {
     supplierId: supplierFilter?.id,
   }
 
-  const { data: summary, isLoading } = useQuery(fetchCommissionsQueryOptions(filters, suppliersPage))
-  const { data: orders, isLoading: isLoadingOrders } = useQuery(fetchCommissionOrdersQueryOptions(filters, ordersPage))
+  const { data: summary, isLoading, isFetching } = useQuery({
+    ...fetchCommissionsQueryOptions(filters, suppliersPage),
+    placeholderData: keepPreviousData,
+  })
+  const { data: orders, isLoading: isLoadingOrders, isFetching: isFetchingOrders } = useQuery({
+    ...fetchCommissionOrdersQueryOptions(filters, ordersPage),
+    placeholderData: keepPreviousData,
+  })
+  const tableLabels = useDataTableLabels(t('admin.commissions.empty'))
 
   const resetPages = () => {
     setSuppliersPage(1)
@@ -101,28 +109,28 @@ export default function AdminCommissionsPage() {
       id: 'deliveredOrders',
       header: t('admin.commissions.columns.deliveredOrders'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => row.original.deliveredOrders,
     },
     {
       id: 'realizedBase',
       header: t('admin.commissions.columns.base'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => formatAmount(row.original.realizedBase),
     },
     {
       id: 'realizedCommission',
       header: t('admin.commissions.columns.realized'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => <span className="font-medium">{formatAmount(row.original.realizedCommission)}</span>,
     },
     {
       id: 'pendingCommission',
       header: t('admin.commissions.columns.pending'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => (row.original.pendingCommission > 0
         ? formatAmount(row.original.pendingCommission)
         : <span className="text-muted-foreground">—</span>),
@@ -183,21 +191,21 @@ export default function AdminCommissionsPage() {
       id: 'base',
       header: t('admin.commissions.columns.base'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => formatAmount(row.original.base),
     },
     {
       id: 'rate',
       header: t('admin.commissions.columns.rate'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => formatRate(row.original.rate),
     },
     {
       id: 'commission',
       header: t('admin.commissions.columns.commission'),
       enableSorting: false,
-      meta: { align: 'right' },
+      meta: { numeric: true },
       cell: ({ row }) => <span className="font-medium">{formatAmount(row.original.commission)}</span>,
     },
   ], [t, i18n.language])
@@ -305,13 +313,8 @@ export default function AdminCommissionsPage() {
             sorting={[]}
             onSortingChange={() => {}}
             isLoading={isLoading}
-            labels={{
-              empty: t('admin.commissions.empty'),
-              resultCount: count => t('dataTable.resultCount', { count }),
-              pageOf: (current, lastPage) => t('dataTable.pageOf', { page: current, lastPage }),
-              previous: t('dataTable.previous'),
-              next: t('dataTable.next'),
-            }}
+            isFetching={isFetching}
+            labels={tableLabels}
           />
         </CardContent>
       </Card>
@@ -331,13 +334,8 @@ export default function AdminCommissionsPage() {
             sorting={[]}
             onSortingChange={() => {}}
             isLoading={isLoadingOrders}
-            labels={{
-              empty: t('admin.commissions.empty'),
-              resultCount: count => t('dataTable.resultCount', { count }),
-              pageOf: (current, lastPage) => t('dataTable.pageOf', { page: current, lastPage }),
-              previous: t('dataTable.previous'),
-              next: t('dataTable.next'),
-            }}
+            isFetching={isFetchingOrders}
+            labels={tableLabels}
           />
         </CardContent>
       </Card>

@@ -1,7 +1,10 @@
+import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
+import type { ReactNode } from 'react'
 import type { AdminPayoutNumber, AdminTopup, AdminWalletRow, AdminWithdrawal } from '../utils/withdrawals-queries'
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
+import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import {
   Dialog,
   DialogContent,
@@ -10,19 +13,15 @@ import {
   DialogTitle,
 } from '@boilerstone/ui/components/primitives/dialog'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CheckCircle2, XCircle } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog'
+import { FilterSelect } from '@/features/admin/common/components/filter-select'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import { BeneficiaryCell } from '../components/beneficiary-cell'
 import {
   actOnPayoutNumber,
@@ -33,19 +32,23 @@ import {
   fetchWalletsOverviewQueryOptions,
 } from '../utils/withdrawals-queries'
 
-const TOPUP_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive'> = {
-  PENDING: 'secondary',
-  COMPLETED: 'default',
-  FAILED: 'destructive',
+const PAGE_SIZE = 20
+
+const WITHDRAWAL_STATUSES = ['PENDING', 'PROCESSING', 'PAID', 'FAILED', 'REJECTED', 'CANCELLED']
+
+const WITHDRAWAL_TONES: Record<string, StatusTone> = {
+  PENDING: 'action',
+  PROCESSING: 'progress',
+  PAID: 'done',
+  FAILED: 'problem',
+  REJECTED: 'idle',
+  CANCELLED: 'idle',
 }
 
-const WITHDRAWAL_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  PENDING: 'secondary',
-  PROCESSING: 'secondary',
-  PAID: 'default',
-  FAILED: 'destructive',
-  REJECTED: 'destructive',
-  CANCELLED: 'outline',
+const TOPUP_TONES: Record<string, StatusTone> = {
+  PENDING: 'progress',
+  COMPLETED: 'done',
+  FAILED: 'problem',
 }
 
 function formatAmount(value: number): string {
@@ -59,22 +62,40 @@ interface RejectTarget {
   label: string
 }
 
+/**
+ * Money first: the requests waiting to be paid, then the numbers waiting to
+ * be trusted, then the balances and the topups, which are only there to be read.
+ */
 export default function AdminWithdrawalsPage() {
   const { t, i18n } = useTranslation()
   const queryClient = useQueryClient()
   const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null)
   const [rejectReason, setRejectReason] = useState('')
+  const [approveTarget, setApproveTarget] = useState<AdminWithdrawal | null>(null)
   const [approveError, setApproveError] = useState<string | null>(null)
-
-  const { data: pendingNumbers, isLoading: isLoadingNumbers } = useQuery(
-    fetchPayoutNumbersQueryOptions('PENDING', 1),
-  )
-  const { data: withdrawals, isLoading: isLoadingWithdrawals } = useQuery(
-    fetchAdminWithdrawalsQueryOptions(undefined, 1),
-  )
-  const { data: overview, isLoading: isLoadingOverview } = useQuery(fetchWalletsOverviewQueryOptions())
+  const [requestsStatus, setRequestsStatus] = useState('PENDING')
+  const [requestsPage, setRequestsPage] = useState(1)
+  const [numbersPage, setNumbersPage] = useState(1)
   const [topupsPage, setTopupsPage] = useState(1)
-  const { data: topups, isLoading: isLoadingTopups } = useQuery(fetchAdminTopupsQueryOptions(undefined, topupsPage))
+
+  const numbers = useQuery({
+    ...fetchPayoutNumbersQueryOptions('PENDING', numbersPage),
+    placeholderData: keepPreviousData,
+  })
+  const withdrawals = useQuery({
+    ...fetchAdminWithdrawalsQueryOptions(requestsStatus || undefined, requestsPage),
+    placeholderData: keepPreviousData,
+  })
+  const overview = useQuery(fetchWalletsOverviewQueryOptions())
+  const topups = useQuery({
+    ...fetchAdminTopupsQueryOptions(undefined, topupsPage),
+    placeholderData: keepPreviousData,
+  })
+
+  const requestsLabels = useDataTableLabels(t('admin.withdrawals.requestsEmpty'))
+  const numbersLabels = useDataTableLabels(t('admin.withdrawals.numbersEmpty'))
+  const walletsLabels = useDataTableLabels(t('admin.withdrawals.walletsEmpty'))
+  const topupsLabels = useDataTableLabels(t('admin.withdrawals.topupsEmpty'))
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'payout-numbers'] })
@@ -98,6 +119,7 @@ export default function AdminWithdrawalsPage() {
     onSuccess: () => {
       setRejectTarget(null)
       setRejectReason('')
+      setApproveTarget(null)
       setApproveError(null)
       invalidate()
     },
@@ -119,311 +141,344 @@ export default function AdminWithdrawalsPage() {
       withdrawalAction.mutate({ id: rejectTarget.id, action: 'reject', reason: rejectReason.trim() })
   }
 
+  const requestColumns = useMemo<Array<ColumnDef<AdminWithdrawal, unknown>>>(() => [
+    {
+      id: 'createdAt',
+      header: t('admin.withdrawals.columns.date'),
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(i18n.language),
+    },
+    {
+      id: 'beneficiary',
+      header: t('admin.withdrawals.columns.beneficiary'),
+      cell: ({ row }) => (
+        <BeneficiaryCell
+          ownerType={row.original.ownerType}
+          ownerName={row.original.ownerName}
+          supplierId={row.original.supplierId}
+          courierId={row.original.courierId}
+        />
+      ),
+    },
+    {
+      id: 'number',
+      header: t('admin.withdrawals.columns.number'),
+      cell: ({ row }) => (
+        <span className="flex flex-col">
+          <span className="font-mono">{row.original.phoneNumber}</span>
+          <span className="text-muted-foreground text-xs">{row.original.operatorLabel}</span>
+        </span>
+      ),
+    },
+    {
+      id: 'amount',
+      header: t('admin.withdrawals.columns.amount'),
+      meta: { numeric: true },
+      cell: ({ row }) => <span className="font-medium">{formatAmount(row.original.amount)}</span>,
+    },
+    {
+      id: 'status',
+      header: t('admin.withdrawals.columns.status'),
+      cell: ({ row }) => (
+        <span className="flex flex-col items-start gap-1">
+          <StatusBadge tone={WITHDRAWAL_TONES[row.original.status] ?? 'idle'}>
+            {t(`admin.withdrawals.status.${row.original.status}`)}
+          </StatusBadge>
+          {row.original.rejectionReason && (
+            <span className="text-muted-foreground text-xs whitespace-normal">{row.original.rejectionReason}</span>
+          )}
+        </span>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      meta: { align: 'right' },
+      cell: ({ row }) => row.original.status === 'PENDING' && (
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isActing}
+            onClick={() => setRejectTarget({
+              kind: 'withdrawal',
+              id: row.original.id,
+              label: `${formatAmount(row.original.amount)} — ${row.original.ownerName}`,
+            })}
+          >
+            {t('admin.withdrawals.reject')}
+          </Button>
+          <Button
+            size="sm"
+            disabled={isActing}
+            onClick={() => {
+              setApproveError(null)
+              setApproveTarget(row.original)
+            }}
+          >
+            {t('admin.withdrawals.approve')}
+          </Button>
+        </div>
+      ),
+    },
+  ], [t, i18n.language, isActing])
+
+  const numberColumns = useMemo<Array<ColumnDef<AdminPayoutNumber, unknown>>>(() => [
+    {
+      id: 'beneficiary',
+      header: t('admin.withdrawals.columns.beneficiary'),
+      cell: ({ row }) => (
+        <BeneficiaryCell
+          ownerType={row.original.ownerType}
+          ownerName={row.original.ownerName}
+          supplierId={row.original.supplierId}
+          courierId={row.original.courierId}
+        />
+      ),
+    },
+    {
+      id: 'number',
+      header: t('admin.withdrawals.columns.number'),
+      cell: ({ row }) => <span className="font-mono">{row.original.phoneNumber}</span>,
+    },
+    {
+      id: 'operator',
+      header: t('admin.withdrawals.columns.operator'),
+      cell: ({ row }) => row.original.operatorLabel,
+    },
+    {
+      id: 'holder',
+      header: t('admin.withdrawals.columns.holder'),
+      cell: ({ row }) => row.original.holderName,
+    },
+    {
+      id: 'actions',
+      header: '',
+      meta: { align: 'right' },
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            disabled={isActing}
+            onClick={() => setRejectTarget({ kind: 'number', id: row.original.id, label: row.original.phoneNumber })}
+          >
+            <XCircle className="text-destructive mr-1 h-4 w-4" />
+            {t('admin.withdrawals.reject')}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            disabled={isActing}
+            onClick={() => numberAction.mutate({ id: row.original.id, action: 'validate' })}
+          >
+            <CheckCircle2 className="text-ebio-green-600 mr-1 h-4 w-4" />
+            {t('admin.withdrawals.validate')}
+          </Button>
+        </div>
+      ),
+    },
+  ], [t, isActing, numberAction])
+
+  const walletColumns = useMemo<Array<ColumnDef<AdminWalletRow, unknown>>>(() => [
+    {
+      id: 'beneficiary',
+      header: t('admin.withdrawals.columns.beneficiary'),
+      cell: ({ row }) => (
+        <BeneficiaryCell
+          ownerType={row.original.ownerType}
+          ownerName={row.original.ownerName}
+          supplierId={row.original.supplierId}
+          courierId={row.original.courierId}
+        />
+      ),
+    },
+    {
+      id: 'balance',
+      header: t('admin.withdrawals.columns.balance'),
+      meta: { numeric: true },
+      cell: ({ row }) => (
+        <span className={row.original.balance < 0 ? 'text-destructive font-medium' : 'font-medium'}>
+          {formatAmount(row.original.balance)}
+        </span>
+      ),
+    },
+    {
+      id: 'updatedAt',
+      header: t('admin.withdrawals.columns.updatedAt'),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">{new Date(row.original.updatedAt).toLocaleDateString(i18n.language)}</span>
+      ),
+    },
+  ], [t, i18n.language])
+
+  const topupColumns = useMemo<Array<ColumnDef<AdminTopup, unknown>>>(() => [
+    {
+      id: 'createdAt',
+      header: t('admin.withdrawals.columns.date'),
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(i18n.language),
+    },
+    {
+      id: 'user',
+      header: t('admin.withdrawals.columns.user'),
+      cell: ({ row }) => (
+        <span className="flex flex-col">
+          <span className="font-medium">{row.original.userName}</span>
+          {row.original.userEmail && <span className="text-muted-foreground text-xs">{row.original.userEmail}</span>}
+        </span>
+      ),
+    },
+    {
+      id: 'reference',
+      header: t('admin.withdrawals.columns.reference'),
+      cell: ({ row }) => (
+        <span className="text-muted-foreground font-mono text-xs">{row.original.fedapayTransactionId ?? '—'}</span>
+      ),
+    },
+    {
+      id: 'amount',
+      header: t('admin.withdrawals.columns.amount'),
+      meta: { numeric: true },
+      cell: ({ row }) => <span className="font-medium">{formatAmount(row.original.amount)}</span>,
+    },
+    {
+      id: 'status',
+      header: t('admin.withdrawals.columns.status'),
+      cell: ({ row }) => (
+        <StatusBadge tone={TOPUP_TONES[row.original.status] ?? 'idle'}>
+          {t(`admin.withdrawals.topupStatus.${row.original.status}`)}
+        </StatusBadge>
+      ),
+    },
+  ], [t, i18n.language])
+
+  const wallets = overview.data?.wallets ?? []
+
   return (
     <div className="space-y-6">
-      <div>
+      <div className="space-y-1">
         <h2 className="text-2xl font-bold">{t('admin.withdrawals.title')}</h2>
         <p className="text-muted-foreground">{t('admin.withdrawals.description')}</p>
       </div>
 
-      {approveError && (
-        <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+      {approveError && !approveTarget && (
+        <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm" role="alert">
           {approveError}
         </p>
       )}
 
-      {/* Balances overview */}
+      <Section
+        title={t('admin.withdrawals.requestsTitle')}
+        hint={t('admin.withdrawals.requestsHint')}
+        action={(
+          <FilterSelect
+            value={requestsStatus}
+            onValueChange={(value) => {
+              setRequestsStatus(value)
+              setRequestsPage(1)
+            }}
+            allLabel={t('admin.withdrawals.allStatuses')}
+            ariaLabel={t('admin.withdrawals.columns.status')}
+            options={WITHDRAWAL_STATUSES.map(value => ({ value, label: t(`admin.withdrawals.status.${value}`) }))}
+          />
+        )}
+      >
+        <DataTable
+          columns={requestColumns}
+          data={withdrawals.data?.items ?? []}
+          total={withdrawals.data?.total ?? 0}
+          page={requestsPage}
+          pageSize={withdrawals.data?.limit ?? PAGE_SIZE}
+          onPageChange={setRequestsPage}
+          isLoading={withdrawals.isLoading}
+          isFetching={withdrawals.isFetching}
+          isError={withdrawals.isError}
+          onRetry={() => withdrawals.refetch()}
+          labels={requestsLabels}
+        />
+      </Section>
+
+      <Section title={t('admin.withdrawals.numbersTitle')} hint={t('admin.withdrawals.numbersHint')}>
+        <DataTable
+          columns={numberColumns}
+          data={numbers.data?.items ?? []}
+          total={numbers.data?.total ?? 0}
+          page={numbersPage}
+          pageSize={numbers.data?.limit ?? PAGE_SIZE}
+          onPageChange={setNumbersPage}
+          isLoading={numbers.isLoading}
+          isFetching={numbers.isFetching}
+          isError={numbers.isError}
+          onRetry={() => numbers.refetch()}
+          labels={numbersLabels}
+        />
+      </Section>
+
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-sm font-medium">
-              {t('admin.withdrawals.totalOwed')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingOverview
-              ? <Skeleton className="h-8 w-32" />
-              : <p className="text-primary text-2xl font-bold">{formatAmount(overview?.totalOwed ?? 0)}</p>}
-            <p className="text-muted-foreground mt-1 text-xs">{t('admin.withdrawals.totalOwedHint')}</p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-muted-foreground text-sm font-medium">
-              {t('admin.withdrawals.totalDebt')}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isLoadingOverview
-              ? <Skeleton className="h-8 w-32" />
-              : <p className="text-2xl font-bold">{formatAmount(overview?.totalDebt ?? 0)}</p>}
-            <p className="text-muted-foreground mt-1 text-xs">{t('admin.withdrawals.totalDebtHint')}</p>
-          </CardContent>
-        </Card>
+        <BalanceCard
+          label={t('admin.withdrawals.totalOwed')}
+          hint={t('admin.withdrawals.totalOwedHint')}
+          value={formatAmount(overview.data?.totalOwed ?? 0)}
+          isLoading={overview.isLoading}
+          highlight
+        />
+        <BalanceCard
+          label={t('admin.withdrawals.totalDebt')}
+          hint={t('admin.withdrawals.totalDebtHint')}
+          value={formatAmount(overview.data?.totalDebt ?? 0)}
+          isLoading={overview.isLoading}
+        />
       </div>
 
-      {/* Payout numbers to validate */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.withdrawals.numbersTitle')}</CardTitle>
-          <p className="text-muted-foreground text-sm">{t('admin.withdrawals.numbersHint')}</p>
-        </CardHeader>
-        <CardContent>
-          {isLoadingNumbers
-            ? <Skeleton className="h-24 w-full" />
-            : (pendingNumbers?.items.length ?? 0) === 0
-                ? <p className="text-muted-foreground py-4 text-center text-sm">{t('admin.withdrawals.numbersEmpty')}</p>
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t('admin.withdrawals.columns.beneficiary')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.number')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.operator')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.holder')}</TableHead>
-                          <TableHead />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {pendingNumbers?.items.map((number: AdminPayoutNumber) => (
-                          <TableRow key={number.id}>
-                            <TableCell>
-                              <BeneficiaryCell
-                                ownerType={number.ownerType}
-                                ownerName={number.ownerName}
-                                supplierId={number.supplierId}
-                                courierId={number.courierId}
-                              />
-                            </TableCell>
-                            <TableCell className="font-mono">{number.phoneNumber}</TableCell>
-                            <TableCell>{number.operatorLabel}</TableCell>
-                            <TableCell>{number.holderName}</TableCell>
-                            <TableCell className="text-right">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={isActing}
-                                onClick={() => numberAction.mutate({ id: number.id, action: 'validate' })}
-                              >
-                                <CheckCircle2 className="mr-1 h-4 w-4 text-green-600" />
-                                {t('admin.withdrawals.validate')}
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                disabled={isActing}
-                                onClick={() => setRejectTarget({ kind: 'number', id: number.id, label: number.phoneNumber })}
-                              >
-                                <XCircle className="text-destructive mr-1 h-4 w-4" />
-                                {t('admin.withdrawals.reject')}
-                              </Button>
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-        </CardContent>
-      </Card>
+      <Section title={t('admin.withdrawals.walletsTitle')} hint={t('admin.withdrawals.walletsHint')}>
+        <DataTable
+          columns={walletColumns}
+          data={wallets}
+          total={wallets.length}
+          page={1}
+          pageSize={Math.max(wallets.length, 1)}
+          onPageChange={() => {}}
+          isLoading={overview.isLoading}
+          isError={overview.isError}
+          onRetry={() => overview.refetch()}
+          labels={walletsLabels}
+        />
+      </Section>
 
-      {/* Withdrawal requests */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.withdrawals.requestsTitle')}</CardTitle>
-          <p className="text-muted-foreground text-sm">{t('admin.withdrawals.requestsHint')}</p>
-        </CardHeader>
-        <CardContent>
-          {isLoadingWithdrawals
-            ? <Skeleton className="h-24 w-full" />
-            : (withdrawals?.items.length ?? 0) === 0
-                ? <p className="text-muted-foreground py-4 text-center text-sm">{t('admin.withdrawals.requestsEmpty')}</p>
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t('admin.withdrawals.columns.date')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.beneficiary')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.number')}</TableHead>
-                          <TableHead className="text-right">{t('admin.withdrawals.columns.amount')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.status')}</TableHead>
-                          <TableHead />
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {withdrawals?.items.map((withdrawal: AdminWithdrawal) => (
-                          <TableRow key={withdrawal.id}>
-                            <TableCell>{new Date(withdrawal.createdAt).toLocaleDateString(i18n.language)}</TableCell>
-                            <TableCell>
-                              <BeneficiaryCell
-                                ownerType={withdrawal.ownerType}
-                                ownerName={withdrawal.ownerName}
-                                supplierId={withdrawal.supplierId}
-                                courierId={withdrawal.courierId}
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <span className="font-mono">{withdrawal.phoneNumber}</span>
-                              <span className="text-muted-foreground ml-2 text-xs">{withdrawal.operatorLabel}</span>
-                            </TableCell>
-                            <TableCell className="text-right font-medium">{formatAmount(withdrawal.amount)}</TableCell>
-                            <TableCell>
-                              <Badge variant={WITHDRAWAL_VARIANTS[withdrawal.status] ?? 'outline'}>
-                                {t(`admin.withdrawals.status.${withdrawal.status}`)}
-                              </Badge>
-                              {withdrawal.rejectionReason && (
-                                <p className="text-muted-foreground mt-1 text-xs">{withdrawal.rejectionReason}</p>
-                              )}
-                            </TableCell>
-                            <TableCell className="text-right">
-                              {withdrawal.status === 'PENDING' && (
-                                <>
-                                  <Button
-                                    size="sm"
-                                    disabled={isActing}
-                                    onClick={() => withdrawalAction.mutate({ id: withdrawal.id, action: 'approve' })}
-                                  >
-                                    {t('admin.withdrawals.approve')}
-                                  </Button>
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    disabled={isActing}
-                                    onClick={() => setRejectTarget({
-                                      kind: 'withdrawal',
-                                      id: withdrawal.id,
-                                      label: `${formatAmount(withdrawal.amount)} — ${withdrawal.ownerName}`,
-                                    })}
-                                  >
-                                    {t('admin.withdrawals.reject')}
-                                  </Button>
-                                </>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-        </CardContent>
-      </Card>
+      <Section title={t('admin.withdrawals.topupsTitle')} hint={t('admin.withdrawals.topupsHint')}>
+        <DataTable
+          columns={topupColumns}
+          data={topups.data?.items ?? []}
+          total={topups.data?.total ?? 0}
+          page={topupsPage}
+          pageSize={topups.data?.limit ?? PAGE_SIZE}
+          onPageChange={setTopupsPage}
+          isLoading={topups.isLoading}
+          isFetching={topups.isFetching}
+          isError={topups.isError}
+          onRetry={() => topups.refetch()}
+          labels={topupsLabels}
+        />
+      </Section>
 
-      {/* Wallet balances per owner */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.withdrawals.walletsTitle')}</CardTitle>
-          <p className="text-muted-foreground text-sm">{t('admin.withdrawals.walletsHint')}</p>
-        </CardHeader>
-        <CardContent>
-          {isLoadingOverview
-            ? <Skeleton className="h-24 w-full" />
-            : (overview?.wallets.length ?? 0) === 0
-                ? <p className="text-muted-foreground py-4 text-center text-sm">{t('admin.withdrawals.walletsEmpty')}</p>
-                : (
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t('admin.withdrawals.columns.beneficiary')}</TableHead>
-                          <TableHead className="text-right">{t('admin.withdrawals.columns.balance')}</TableHead>
-                          <TableHead>{t('admin.withdrawals.columns.updatedAt')}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {overview?.wallets.map((wallet: AdminWalletRow) => (
-                          <TableRow key={wallet.id}>
-                            <TableCell>
-                              <BeneficiaryCell
-                                ownerType={wallet.ownerType}
-                                ownerName={wallet.ownerName}
-                                supplierId={wallet.supplierId}
-                                courierId={wallet.courierId}
-                              />
-                            </TableCell>
-                            <TableCell className={`text-right font-medium ${wallet.balance < 0 ? 'text-destructive' : ''}`}>
-                              {formatAmount(wallet.balance)}
-                            </TableCell>
-                            <TableCell className="text-muted-foreground">
-                              {new Date(wallet.updatedAt).toLocaleDateString(i18n.language)}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  )}
-        </CardContent>
-      </Card>
+      {/* Paying sends money out at once: it never happens on a single click. */}
+      <ConfirmDialog
+        open={approveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open)
+            setApproveTarget(null)
+        }}
+        title={t('admin.withdrawals.approveTitle')}
+        description={t('admin.withdrawals.approveBody', {
+          amount: approveTarget ? formatAmount(approveTarget.amount) : '',
+          name: approveTarget?.ownerName ?? '',
+          number: approveTarget ? `${approveTarget.phoneNumber} (${approveTarget.operatorLabel})` : '',
+        })}
+        confirmLabel={t('admin.withdrawals.approve')}
+        onConfirm={() => approveTarget && withdrawalAction.mutate({ id: approveTarget.id, action: 'approve' })}
+        isPending={withdrawalAction.isPending}
+        error={approveError}
+      />
 
-      {/* Buyer wallet topups */}
-      <Card>
-        <CardHeader>
-          <CardTitle>{t('admin.withdrawals.topupsTitle')}</CardTitle>
-          <p className="text-muted-foreground text-sm">{t('admin.withdrawals.topupsHint')}</p>
-        </CardHeader>
-        <CardContent>
-          {isLoadingTopups
-            ? <Skeleton className="h-24 w-full" />
-            : (topups?.items.length ?? 0) === 0
-                ? <p className="text-muted-foreground py-4 text-center text-sm">{t('admin.withdrawals.topupsEmpty')}</p>
-                : (
-                    <>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>{t('admin.withdrawals.columns.date')}</TableHead>
-                            <TableHead>{t('admin.withdrawals.columns.user')}</TableHead>
-                            <TableHead>{t('admin.withdrawals.columns.reference')}</TableHead>
-                            <TableHead className="text-right">{t('admin.withdrawals.columns.amount')}</TableHead>
-                            <TableHead>{t('admin.withdrawals.columns.status')}</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {topups?.items.map((topup: AdminTopup) => (
-                            <TableRow key={topup.id}>
-                              <TableCell>{new Date(topup.createdAt).toLocaleString(i18n.language)}</TableCell>
-                              <TableCell>
-                                <span className="font-medium">{topup.userName}</span>
-                                {topup.userEmail && (
-                                  <span className="text-muted-foreground ml-2 text-xs">{topup.userEmail}</span>
-                                )}
-                              </TableCell>
-                              <TableCell className="text-muted-foreground font-mono text-xs">
-                                {topup.fedapayTransactionId ?? '—'}
-                              </TableCell>
-                              <TableCell className="text-right font-medium">{formatAmount(topup.amount)}</TableCell>
-                              <TableCell>
-                                <Badge variant={TOPUP_VARIANTS[topup.status] ?? 'secondary'}>
-                                  {t(`admin.withdrawals.topupStatus.${topup.status}`)}
-                                </Badge>
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                      {(topups?.total ?? 0) > (topups?.limit ?? 20) && (
-                        <div className="mt-3 flex items-center justify-end gap-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={topupsPage <= 1}
-                            onClick={() => setTopupsPage(page => page - 1)}
-                          >
-                            {t('dataTable.previous')}
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            disabled={topupsPage * (topups?.limit ?? 20) >= (topups?.total ?? 0)}
-                            onClick={() => setTopupsPage(page => page + 1)}
-                          >
-                            {t('dataTable.next')}
-                          </Button>
-                        </div>
-                      )}
-                    </>
-                  )}
-        </CardContent>
-      </Card>
-
-      {/* Reject dialog */}
       <Dialog open={rejectTarget !== null} onOpenChange={open => !open && setRejectTarget(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -450,5 +505,51 @@ export default function AdminWithdrawalsPage() {
         </DialogContent>
       </Dialog>
     </div>
+  )
+}
+
+interface SectionProps {
+  title: string
+  hint: string
+  action?: ReactNode
+  children: ReactNode
+}
+
+function Section({ title, hint, action, children }: SectionProps) {
+  return (
+    <section className="space-y-3">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div className="space-y-1">
+          <h3 className="text-lg font-semibold">{title}</h3>
+          <p className="text-muted-foreground text-sm">{hint}</p>
+        </div>
+        {action}
+      </div>
+      {children}
+    </section>
+  )
+}
+
+interface BalanceCardProps {
+  label: string
+  hint: string
+  value: string
+  isLoading: boolean
+  highlight?: boolean
+}
+
+function BalanceCard({ label, hint, value, isLoading, highlight = false }: BalanceCardProps) {
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-muted-foreground text-sm font-medium">{label}</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {isLoading
+          ? <Skeleton className="h-8 w-32" />
+          : <p className={`font-mono text-2xl font-bold ${highlight ? 'text-primary' : ''}`}>{value}</p>}
+        <p className="text-muted-foreground mt-1 text-xs">{hint}</p>
+      </CardContent>
+    </Card>
   )
 }

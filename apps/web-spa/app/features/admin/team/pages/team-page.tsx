@@ -1,8 +1,10 @@
+import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { StaffMember } from '../utils/team-queries'
 import { Alert, AlertDescription } from '@boilerstone/ui/components/primitives/alert'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import {
   Dialog,
   DialogContent,
@@ -21,19 +23,14 @@ import {
 } from '@boilerstone/ui/components/primitives/select'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { ChevronDown, ChevronUp, Info, MailPlus, Shield, UserMinus, UserPlus } from 'lucide-react'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import { formatRelative } from '@/features/admin/deliveries/utils/deliveries-queries'
 import { fetchRolesQueryOptions } from '@/features/admin/roles/utils/roles-queries'
 import { AuditTimeline } from '@/features/admin/users/components/audit-timeline'
@@ -59,7 +56,7 @@ export default function TeamPage() {
   const [memberToRemove, setMemberToRemove] = useState<StaffMember | null>(null)
   const [auditOpen, setAuditOpen] = useState(false)
 
-  const { data: staff, isLoading } = useQuery(fetchStaffQueryOptions())
+  const { data: staff, isLoading, isError, refetch } = useQuery(fetchStaffQueryOptions())
   const { data: rolesData } = useQuery(fetchRolesQueryOptions())
   const roles = rolesData?.roles ?? []
   // Team-wide audit trail, fetched only once the section is expanded.
@@ -112,17 +109,108 @@ export default function TeamPage() {
     setMemberToEdit(member)
   }
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
+  const tableLabels = useDataTableLabels(t('admin.team.empty'))
+
+  const columns = useMemo<Array<ColumnDef<StaffMember, unknown>>>(() => {
+    const dateFormatter = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' })
+    return [
+      {
+        id: 'member',
+        header: t('admin.team.member'),
+        cell: ({ row }) => (
+          <span className="flex flex-col">
+            <span className="font-medium">
+              {row.original.name}
+              {row.original.id === currentUserId && (
+                <span className="text-muted-foreground ml-1 text-xs">
+                  (
+                  {t('admin.team.you')}
+                  )
+                </span>
+              )}
+            </span>
+            <span className="text-muted-foreground text-xs">{row.original.email}</span>
+          </span>
+        ),
+      },
+      {
+        id: 'role',
+        header: t('admin.team.role'),
+        cell: ({ row }) => (
+          <Badge variant={row.original.role ? 'secondary' : 'default'}>
+            {row.original.role?.name ?? t('admin.team.superAdmin')}
+          </Badge>
+        ),
+      },
+      {
+        id: 'status',
+        header: t('admin.team.status'),
+        cell: ({ row }) => {
+          if (row.original.invitationPending)
+            return <StatusBadge tone="action">{t('admin.team.pending')}</StatusBadge>
+          return (
+            <span className="text-muted-foreground text-sm">
+              {row.original.lastLoginAt
+                ? t('admin.team.lastLogin', { ago: formatRelative(row.original.lastLoginAt, i18n.language) ?? '' })
+                : t('admin.team.neverConnected')}
+            </span>
+          )
+        },
+      },
+      {
+        id: 'createdAt',
+        header: t('admin.team.createdAt'),
+        cell: ({ row }) => <span className="text-muted-foreground">{dateFormatter.format(new Date(row.original.createdAt))}</span>,
+      },
+      {
+        id: 'actions',
+        header: '',
+        meta: { align: 'right' },
+        cell: ({ row }) => {
+          const member = row.original
+          const isSelf = member.id === currentUserId
+          return (
+            <div className="flex justify-end gap-1">
+              <Button
+                size="icon"
+                variant="ghost"
+                disabled={isSelf}
+                title={t('admin.team.changeRole')}
+                aria-label={t('admin.team.changeRole')}
+                onClick={() => openRoleDialog(member)}
+              >
+                <Shield className="h-4 w-4" />
+              </Button>
+              {member.invitationPending && (
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  disabled={isSelf || isResending}
+                  title={t('admin.team.resend')}
+                  aria-label={t('admin.team.resend')}
+                  onClick={() => resend(member.id)}
+                >
+                  <MailPlus className="h-4 w-4" />
+                </Button>
+              )}
+              <Button
+                size="icon"
+                variant="ghost"
+                disabled={isSelf}
+                title={t('admin.team.remove')}
+                aria-label={t('admin.team.remove')}
+                onClick={() => setMemberToRemove(member)}
+              >
+                <UserMinus className="text-destructive h-4 w-4" />
+              </Button>
+            </div>
+          )
+        },
+      },
+    ]
+  }, [t, i18n.language, currentUserId, isResending, resend])
 
   const members = staff?.members ?? []
-  const dateFormatter = new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium' })
 
   return (
     <div className="space-y-6">
@@ -147,102 +235,18 @@ export default function TeamPage() {
         </AlertDescription>
       </Alert>
 
-      {members.length === 0
-        ? (
-            <p className="text-muted-foreground">{t('admin.team.empty')}</p>
-          )
-        : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>{t('admin.team.member')}</TableHead>
-                  <TableHead>{t('admin.team.role')}</TableHead>
-                  <TableHead>{t('admin.team.status')}</TableHead>
-                  <TableHead>{t('admin.team.createdAt')}</TableHead>
-                  <TableHead className="text-right">{t('admin.team.actions')}</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {members.map((member) => {
-                  const isSelf = member.id === currentUserId
-                  return (
-                    <TableRow key={member.id}>
-                      <TableCell>
-                        <div className="flex flex-col">
-                          <span className="font-medium">
-                            {member.name}
-                            {isSelf && (
-                              <span className="ml-1 text-xs text-muted-foreground">
-                                (
-                                {t('admin.team.you')}
-                                )
-                              </span>
-                            )}
-                          </span>
-                          <span className="text-xs text-muted-foreground">{member.email}</span>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        <Badge variant={member.role ? 'secondary' : 'default'}>
-                          {member.role?.name ?? t('admin.team.superAdmin')}
-                        </Badge>
-                      </TableCell>
-                      <TableCell>
-                        {member.invitationPending
-                          ? <Badge variant="outline">{t('admin.team.pending')}</Badge>
-                          : member.lastLoginAt
-                            ? (
-                                <span className="text-sm text-muted-foreground">
-                                  {t('admin.team.lastLogin', { ago: formatRelative(member.lastLoginAt, i18n.language) ?? '' })}
-                                </span>
-                              )
-                            : <span className="text-sm text-muted-foreground">{t('admin.team.neverConnected')}</span>}
-                      </TableCell>
-                      <TableCell className="text-muted-foreground">
-                        {dateFormatter.format(new Date(member.createdAt))}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={isSelf}
-                            title={t('admin.team.changeRole')}
-                            aria-label={t('admin.team.changeRole')}
-                            onClick={() => openRoleDialog(member)}
-                          >
-                            <Shield className="h-4 w-4" />
-                          </Button>
-                          {member.invitationPending && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              disabled={isSelf || isResending}
-                              title={t('admin.team.resend')}
-                              aria-label={t('admin.team.resend')}
-                              onClick={() => resend(member.id)}
-                            >
-                              <MailPlus className="h-4 w-4" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            disabled={isSelf}
-                            title={t('admin.team.remove')}
-                            aria-label={t('admin.team.remove')}
-                            onClick={() => setMemberToRemove(member)}
-                          >
-                            <UserMinus className="h-4 w-4 text-destructive" />
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
-                  )
-                })}
-              </TableBody>
-            </Table>
-          )}
+      <DataTable
+        columns={columns}
+        data={members}
+        total={members.length}
+        page={1}
+        pageSize={Math.max(members.length, 1)}
+        onPageChange={() => {}}
+        isLoading={isLoading}
+        isError={isError}
+        onRetry={() => refetch()}
+        labels={tableLabels}
+      />
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
@@ -305,37 +309,19 @@ export default function TeamPage() {
         </DialogContent>
       </Dialog>
 
-      <Dialog
+      <ConfirmDialog
         open={memberToRemove !== null}
         onOpenChange={(open) => {
           if (!open)
             setMemberToRemove(null)
         }}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{t('admin.team.removeTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('admin.team.removeConfirm', { name: memberToRemove?.name ?? '' })}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setMemberToRemove(null)} disabled={isRemoving}>
-              {t('common.cancel')}
-            </Button>
-            <Button
-              variant="destructive"
-              disabled={isRemoving}
-              onClick={() => {
-                if (memberToRemove)
-                  remove(memberToRemove.id)
-              }}
-            >
-              {isRemoving ? t('common.saving') : t('admin.team.remove')}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+        title={t('admin.team.removeTitle')}
+        description={t('admin.team.removeConfirm', { name: memberToRemove?.name ?? '' })}
+        confirmLabel={t('admin.team.remove')}
+        onConfirm={() => memberToRemove && remove(memberToRemove.id)}
+        isPending={isRemoving}
+        destructive
+      />
     </div>
   )
 }

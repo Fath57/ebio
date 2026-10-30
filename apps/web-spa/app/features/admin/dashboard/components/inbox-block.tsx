@@ -11,13 +11,13 @@ import { Link } from 'react-router'
 import { Can } from '@/lib/casl/can'
 import { fetchInboxQueryOptions, sendDigestMutationOptions } from '../utils/inbox-queries'
 
-/** Target page for each queue. Neither the couriers nor the orders page reads a URL filter, hence plain paths. */
+/** Target page for each queue, already filtered where the list reads its filters from the URL. */
 const QUEUE_LINKS: Record<InboxQueueKey, string> = {
   bannerRequests: '/admin/bannieres/demandes',
   supplierValidations: '/admin/validations',
   courierApplications: '/admin/livreurs',
   withdrawals: '/admin/reversements',
-  disputes: '/admin/commandes',
+  disputes: '/admin/commandes?statut=DISPUTED',
 }
 
 export function InboxBlock() {

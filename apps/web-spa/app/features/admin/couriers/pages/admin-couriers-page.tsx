@@ -1,147 +1,121 @@
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@boilerstone/ui/components/primitives/select'
-import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
-import { useQuery } from '@tanstack/react-query'
-import { useState } from 'react'
+import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
+import type { AdminCourierItem } from '../utils/couriers-queries'
+import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
+import type { StatusTone } from '@/features/admin/common/components/status-badge'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
+import { FilterSelect } from '@/features/admin/common/components/filter-select'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { CourierRating } from '../components/courier-rating'
 import { fetchAdminCouriersQueryOptions } from '../utils/couriers-queries'
 
-const STATUS_OPTIONS = ['ALL', 'PENDING', 'VALIDATED', 'REJECTED', 'SUSPENDED']
+const PAGE_SIZE = 20
 
-const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  PENDING: 'secondary',
-  VALIDATED: 'default',
-  REJECTED: 'destructive',
-  SUSPENDED: 'destructive',
+const STATUS_OPTIONS = ['PENDING', 'VALIDATED', 'REJECTED', 'SUSPENDED']
+
+const STATUS_TONES: Record<string, StatusTone> = {
+  PENDING: 'action',
+  COMPLEMENT_REQUESTED: 'progress',
+  VALIDATED: 'done',
+  REJECTED: 'idle',
+  SUSPENDED: 'problem',
 }
 
 export default function AdminCouriersPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const [status, setStatus] = useState('PENDING')
-  const [page, setPage] = useState(1)
+  // Applications waiting for review come first: that is what the staff opens this page for.
+  const list = useListParams({ defaultSort: 'createdAt', filters: ['statut'], defaults: { statut: 'PENDING' } })
+  const status = list.values.statut
 
-  const { data, isLoading } = useQuery(
-    fetchAdminCouriersQueryOptions({
-      status: status === 'ALL' ? undefined : status,
-      page,
-    }),
-  )
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    ...fetchAdminCouriersQueryOptions({ status: status || undefined, page: list.page }),
+    placeholderData: keepPreviousData,
+  })
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
+  const columns = useMemo<Array<ColumnDef<AdminCourierItem, unknown>>>(() => [
+    {
+      id: 'name',
+      header: t('admin.couriers.columns.name'),
+      cell: ({ row }) => (
+        <span className="flex flex-col">
+          <span className="font-medium">{row.original.fullName}</span>
+          <span className="text-muted-foreground text-xs">{row.original.phone}</span>
+        </span>
+      ),
+    },
+    {
+      id: 'vehicle',
+      header: t('admin.couriers.columns.vehicle'),
+      cell: ({ row }) => t(`admin.couriers.vehicles.${row.original.vehicleType.toLowerCase()}`),
+    },
+    {
+      id: 'zone',
+      header: t('admin.couriers.columns.zone'),
+      meta: { className: 'max-w-xs truncate' },
+      cell: ({ row }) => row.original.zone,
+    },
+    {
+      id: 'status',
+      header: t('admin.couriers.columns.status'),
+      cell: ({ row }) => (
+        <StatusBadge tone={STATUS_TONES[row.original.validationStatus] ?? 'idle'}>
+          {t(`admin.couriers.statuses.${row.original.validationStatus.toLowerCase()}`)}
+        </StatusBadge>
+      ),
+    },
+    {
+      id: 'rating',
+      header: t('admin.couriers.columns.rating'),
+      cell: ({ row }) => <CourierRating ratingAvg={row.original.ratingAvg} ratingCount={row.original.ratingCount} />,
+    },
+    {
+      id: 'createdAt',
+      header: t('admin.couriers.columns.submittedAt'),
+      cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(i18n.language),
+    },
+  ], [t, i18n.language])
 
-  const totalPages = Math.max(1, Math.ceil((data?.total ?? 0) / 20))
+  const activeFilters: ActiveFilter[] = status
+    ? [{
+        key: 'statut',
+        group: t('admin.couriers.columns.status'),
+        value: t(`admin.couriers.statuses.${status.toLowerCase()}`),
+        onRemove: () => list.setFilter('statut', ''),
+      }]
+    : []
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{t('admin.couriers.title')}</h2>
-          <p className="text-muted-foreground">{t('admin.couriers.description')}</p>
-        </div>
-        <Select
+    <AdminListShell
+      title={t('admin.couriers.title')}
+      description={t('admin.couriers.description')}
+      filters={(
+        <FilterSelect
           value={status}
-          onValueChange={(value) => {
-            setStatus(value)
-            setPage(1)
-          }}
-        >
-          <SelectTrigger className="w-56">
-            <SelectValue placeholder={t('admin.couriers.filterByStatus')} />
-          </SelectTrigger>
-          <SelectContent>
-            {STATUS_OPTIONS.map(option => (
-              <SelectItem key={option} value={option}>
-                {t(`admin.couriers.statuses.${option.toLowerCase()}`)}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>{t('admin.couriers.columns.name')}</TableHead>
-            <TableHead>{t('admin.couriers.columns.phone')}</TableHead>
-            <TableHead>{t('admin.couriers.columns.vehicle')}</TableHead>
-            <TableHead>{t('admin.couriers.columns.zone')}</TableHead>
-            <TableHead>{t('admin.couriers.columns.status')}</TableHead>
-            <TableHead>{t('admin.couriers.columns.rating')}</TableHead>
-            <TableHead>{t('admin.couriers.columns.submittedAt')}</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {data?.couriers?.map(courier => (
-            <TableRow
-              key={courier.id}
-              className="cursor-pointer"
-              onClick={() => navigate(`/admin/livreurs/${courier.id}`)}
-            >
-              <TableCell className="font-medium">{courier.fullName}</TableCell>
-              <TableCell>{courier.phone}</TableCell>
-              <TableCell>{t(`admin.couriers.vehicles.${courier.vehicleType.toLowerCase()}`)}</TableCell>
-              <TableCell className="max-w-xs truncate">{courier.zone}</TableCell>
-              <TableCell>
-                <Badge variant={STATUS_VARIANTS[courier.validationStatus] ?? 'outline'}>
-                  {t(`admin.couriers.statuses.${courier.validationStatus.toLowerCase()}`)}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                <CourierRating ratingAvg={courier.ratingAvg} ratingCount={courier.ratingCount} />
-              </TableCell>
-              <TableCell>{new Date(courier.createdAt).toLocaleDateString('fr-FR')}</TableCell>
-            </TableRow>
-          ))}
-          {(data?.couriers?.length ?? 0) === 0 && (
-            <TableRow>
-              <TableCell colSpan={7} className="text-center text-muted-foreground">
-                {t('admin.couriers.empty')}
-              </TableCell>
-            </TableRow>
-          )}
-        </TableBody>
-      </Table>
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-end gap-2">
-          <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-            {t('admin.couriers.pagination.previous')}
-          </Button>
-          <span className="text-sm text-muted-foreground">
-            {page}
-            {' / '}
-            {totalPages}
-          </span>
-          <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(p => p + 1)}>
-            {t('admin.couriers.pagination.next')}
-          </Button>
-        </div>
+          onValueChange={value => list.setFilter('statut', value)}
+          allLabel={t('admin.couriers.statuses.all')}
+          ariaLabel={t('admin.couriers.columns.status')}
+          options={STATUS_OPTIONS.map(value => ({ value, label: t(`admin.couriers.statuses.${value.toLowerCase()}`) }))}
+        />
       )}
-    </div>
+      activeFilters={activeFilters}
+      onResetFilters={list.reset}
+      columns={columns}
+      data={data?.couriers ?? []}
+      total={data?.total ?? 0}
+      page={list.page}
+      pageSize={PAGE_SIZE}
+      onPageChange={list.setPage}
+      onRowClick={courier => navigate(`/admin/livreurs/${courier.id}`)}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      isError={isError}
+      onRetry={() => refetch()}
+      emptyLabel={t('admin.couriers.empty')}
+    />
   )
 }

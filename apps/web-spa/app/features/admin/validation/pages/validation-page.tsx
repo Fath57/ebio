@@ -1,124 +1,100 @@
-import { Badge } from '@boilerstone/ui/components/primitives/badge'
+import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
+import type { SupplierValidationItem } from '../utils/validation-queries'
+import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@boilerstone/ui/components/primitives/table'
-import { useQuery } from '@tanstack/react-query'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useNavigate } from 'react-router'
-import { fetchPendingSuppliersQueryOptions } from '../utils/validation-queries'
+import { Link, useNavigate } from 'react-router'
+import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { useListParams } from '@/features/admin/common/utils/use-list-params'
+import { fetchPendingSuppliersQueryOptions, VALIDATIONS_PAGE_SIZE } from '../utils/validation-queries'
 
-const STATUS_VARIANTS: Record<string, 'outline' | 'default' | 'destructive' | 'secondary'> = {
-  PENDING: 'outline',
-  COMPLEMENT_REQUESTED: 'secondary',
-  VALIDATED: 'default',
-  REJECTED: 'destructive',
-}
-
-const STATUS_LABELS: Record<string, string> = {
-  PENDING: 'En attente',
-  COMPLEMENT_REQUESTED: 'Complément demandé',
-  VALIDATED: 'Validé',
-  REJECTED: 'Rejeté',
+const STATUS_TONES: Record<string, StatusTone> = {
+  PENDING: 'action',
+  COMPLEMENT_REQUESTED: 'progress',
+  VALIDATED: 'done',
+  REJECTED: 'idle',
 }
 
 export default function ValidationPage() {
-  const { t } = useTranslation()
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
+  const list = useListParams({ defaultSort: 'submittedAt' })
 
-  const { data, isLoading } = useQuery(fetchPendingSuppliersQueryOptions())
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    ...fetchPendingSuppliersQueryOptions(list.page),
+    placeholderData: keepPreviousData,
+  })
+  const total = data?.total ?? 0
 
-  if (isLoading) {
-    return (
-      <div className="space-y-4">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
-
-  const suppliers = data?.items ?? []
+  const columns = useMemo<Array<ColumnDef<SupplierValidationItem, unknown>>>(() => [
+    {
+      id: 'supplier',
+      header: t('admin.validation.columns.supplier'),
+      cell: ({ row }) => (
+        <span className="flex flex-col">
+          <span className="font-medium">{row.original.fullName}</span>
+          {row.original.email && <span className="text-muted-foreground text-xs">{row.original.email}</span>}
+        </span>
+      ),
+    },
+    {
+      id: 'shopName',
+      header: t('admin.validation.columns.shopName'),
+      cell: ({ row }) => row.original.shopName,
+    },
+    {
+      id: 'phone',
+      header: t('admin.validation.columns.phone'),
+      cell: ({ row }) => row.original.phone ?? <span className="text-muted-foreground">—</span>,
+    },
+    {
+      id: 'submittedAt',
+      header: t('admin.validation.columns.submittedAt'),
+      cell: ({ row }) => new Date(row.original.submittedAt).toLocaleDateString(i18n.language),
+    },
+    {
+      id: 'status',
+      header: t('admin.validation.columns.status'),
+      cell: ({ row }) => (
+        <StatusBadge tone={STATUS_TONES[row.original.validationStatus] ?? 'idle'}>
+          {t(`admin.suppliers.status.${row.original.validationStatus}`)}
+        </StatusBadge>
+      ),
+    },
+    {
+      id: 'actions',
+      header: '',
+      meta: { align: 'right' },
+      cell: ({ row }) => (
+        <Button size="sm" asChild>
+          <Link to={`/admin/validations/${row.original.id}`}>{t('admin.validation.review')}</Link>
+        </Button>
+      ),
+    },
+  ], [t, i18n.language])
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">{t('admin.validation.title')}</h2>
-          <p className="text-muted-foreground">{t('admin.validation.description')}</p>
-        </div>
-        {suppliers.length > 0 && (
-          <Badge variant="outline" className="text-sm">
-            {suppliers.length}
-            {' '}
-            en attente
-          </Badge>
-        )}
-      </div>
-
-      {suppliers.length === 0
-        ? (
-            <div className="rounded-lg border border-dashed p-8 text-center text-muted-foreground">
-              Aucune demande de validation en attente.
-            </div>
-          )
-        : (
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead>Fournisseur</TableHead>
-                  <TableHead>Boutique</TableHead>
-                  <TableHead>Téléphone</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Statut</TableHead>
-                  <TableHead>Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {suppliers.map(supplier => (
-                  <TableRow
-                    key={supplier.id}
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => navigate(`/admin/validations/${supplier.id}`)}
-                  >
-                    <TableCell>
-                      <div>
-                        <p className="font-medium">{supplier.fullName}</p>
-                        {supplier.email && (
-                          <p className="text-xs text-muted-foreground">{supplier.email}</p>
-                        )}
-                      </div>
-                    </TableCell>
-                    <TableCell>{supplier.shopName}</TableCell>
-                    <TableCell>{supplier.phone ?? '-'}</TableCell>
-                    <TableCell>{new Date(supplier.submittedAt).toLocaleDateString('fr-FR')}</TableCell>
-                    <TableCell>
-                      <Badge variant={STATUS_VARIANTS[supplier.validationStatus] ?? 'outline'}>
-                        {STATUS_LABELS[supplier.validationStatus] ?? supplier.validationStatus}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          navigate(`/admin/validations/${supplier.id}`)
-                        }}
-                      >
-                        Examiner
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          )}
-    </div>
+    <AdminListShell
+      title={t('admin.validation.title')}
+      description={t('admin.validation.description')}
+      actions={total > 0 && (
+        <StatusBadge tone="action">{t('admin.validation.pendingCount', { count: total })}</StatusBadge>
+      )}
+      columns={columns}
+      data={data?.items ?? []}
+      total={total}
+      page={list.page}
+      pageSize={VALIDATIONS_PAGE_SIZE}
+      onPageChange={list.setPage}
+      onRowClick={supplier => navigate(`/admin/validations/${supplier.id}`)}
+      isLoading={isLoading}
+      isFetching={isFetching}
+      isError={isError}
+      onRetry={() => refetch()}
+      emptyLabel={t('admin.validation.empty')}
+    />
   )
 }

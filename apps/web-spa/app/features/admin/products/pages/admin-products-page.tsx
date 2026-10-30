@@ -1,18 +1,20 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { AdminProductItem, ProductStatusFilter, StockFilter } from '../utils/products-queries'
+import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
 import type { PickerOption } from '@/features/admin/common/components/entity-picker'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import { useQuery } from '@tanstack/react-query'
-import { ImageOff, Pencil, X } from 'lucide-react'
+import { keepPreviousData, useQuery } from '@tanstack/react-query'
+import { ImageOff, Pencil } from 'lucide-react'
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { fetchCategoriesQueryOptions } from '@/features/admin/categories/utils/categories-queries'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
 import { EntityPicker } from '@/features/admin/common/components/entity-picker'
+import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { searchSuppliers } from '@/features/admin/common/utils/target-search'
-import { useServerSorting } from '@/features/admin/common/utils/use-server-sorting'
+import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { Can } from '@/lib/casl/can'
 import {
   ADMIN_PRODUCTS_PAGE_SIZE,
@@ -20,8 +22,6 @@ import {
   PRODUCT_STATUS_OPTIONS,
   STOCK_OPTIONS,
 } from '../utils/products-queries'
-
-const SELECT_CLASS = 'border-input bg-background h-9 rounded-md border px-3 text-sm'
 
 function formatAmount(value: number): string {
   return value.toLocaleString('fr-FR')
@@ -62,37 +62,43 @@ function ProductThumbnail({ product }: { product: AdminProductItem }) {
 export default function AdminProductsPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const [search, setSearch] = useState('')
-  const [categoryId, setCategoryId] = useState('')
-  const [status, setStatus] = useState<ProductStatusFilter>('')
-  const [stock, setStock] = useState<StockFilter>('')
-  const [promo, setPromo] = useState(false)
-  const [shop, setShop] = useState<PickerOption | null>(null)
-  const [page, setPage] = useState(1)
-
-  const resetPage = useCallback(() => setPage(1), [])
-  const { sorting, setSorting, sortBy, sortDir } = useServerSorting('created', resetPage)
+  const list = useListParams({
+    defaultSort: 'created',
+    filters: ['boutique', 'boutiqueNom', 'categorie', 'statut', 'stock', 'promo'],
+  })
+  const { boutique, boutiqueNom, categorie: categoryId } = list.values
+  const status = (PRODUCT_STATUS_OPTIONS as string[]).includes(list.values.statut)
+    ? list.values.statut as ProductStatusFilter
+    : ''
+  const stock = (STOCK_OPTIONS as string[]).includes(list.values.stock)
+    ? list.values.stock as StockFilter
+    : ''
+  const promo = list.values.promo === '1'
+  // Only the id narrows the query; the name rides along so the picker and the chip read well after a reload.
+  const shop: PickerOption | null = boutique ? { id: boutique, label: boutiqueNom || boutique } : null
 
   const { data: categories } = useQuery(fetchCategoriesQueryOptions())
+  const categoryName = categories?.categories.find(category => category.id === categoryId)?.name
 
-  const { data, isLoading } = useQuery(
-    fetchAdminProductsQueryOptions({
-      q: search || undefined,
-      supplierId: shop?.id,
+  const { data, isLoading, isFetching, isError, refetch } = useQuery({
+    ...fetchAdminProductsQueryOptions({
+      q: list.q || undefined,
+      supplierId: boutique || undefined,
       categoryId: categoryId || undefined,
       status,
       stock,
       promo,
-      sortBy,
-      sortDir,
-      page,
+      sortBy: list.sortBy,
+      sortDir: list.sortDir,
+      page: list.page,
     }),
-  )
+    placeholderData: keepPreviousData,
+  })
 
+  const { setFilters } = list
   const handleShop = useCallback((option: PickerOption) => {
-    setShop(option)
-    setPage(1)
-  }, [])
+    setFilters({ boutique: option.id, boutiqueNom: option.label })
+  }, [setFilters])
 
   const columns = useMemo<Array<ColumnDef<AdminProductItem, unknown>>>(() => [
     {
@@ -118,7 +124,6 @@ export default function AdminProductsPage() {
         <Link
           className="text-primary underline-offset-4 hover:underline"
           to={`/admin/fournisseurs/${row.original.supplierId}`}
-          onClick={event => event.stopPropagation()}
         >
           {row.original.supplierName}
         </Link>
@@ -127,6 +132,7 @@ export default function AdminProductsPage() {
     {
       id: 'price',
       header: t('admin.products.columns.price'),
+      meta: { numeric: true },
       cell: ({ row }) => {
         const discounted = row.original.promotionalPrice
         const hasDiscount = discounted !== null && discounted < row.original.pricePerUnit
@@ -149,11 +155,12 @@ export default function AdminProductsPage() {
     {
       id: 'stock',
       header: t('admin.products.columns.stock'),
+      meta: { numeric: true },
       cell: ({ row }) => {
         const { stock: value, stockAlertThreshold } = row.original
         const tone = value === 0
           ? 'text-destructive font-bold'
-          : value <= stockAlertThreshold ? 'font-bold text-amber-500' : ''
+          : value <= stockAlertThreshold ? 'text-ebio-earth-600 font-bold' : ''
         return <span className={tone}>{value}</span>
       },
     },
@@ -200,10 +207,7 @@ export default function AdminProductsPage() {
             size="sm"
             variant="ghost"
             aria-label={t('admin.products.edit')}
-            onClick={(event) => {
-              event.stopPropagation()
-              navigate(`/catalogue/${row.original.id}/modifier?boutique=${row.original.supplierId}`)
-            }}
+            onClick={() => navigate(`/catalogue/${row.original.id}/modifier?boutique=${row.original.supplierId}`)}
           >
             <Pencil className="h-4 w-4" />
           </Button>
@@ -212,15 +216,54 @@ export default function AdminProductsPage() {
     },
   ], [t, i18n.language, navigate])
 
+  const activeFilters: ActiveFilter[] = []
+  if (shop) {
+    activeFilters.push({
+      key: 'boutique',
+      group: t('admin.products.columns.shop'),
+      value: shop.label,
+      onRemove: () => list.setFilters({ boutique: '', boutiqueNom: '' }),
+    })
+  }
+  if (categoryId) {
+    activeFilters.push({
+      key: 'categorie',
+      group: t('admin.products.columns.category'),
+      value: categoryName ?? '…',
+      onRemove: () => list.setFilter('categorie', ''),
+    })
+  }
+  if (status) {
+    activeFilters.push({
+      key: 'statut',
+      group: t('admin.products.columns.status'),
+      value: t(`admin.products.status.${status}`),
+      onRemove: () => list.setFilter('statut', ''),
+    })
+  }
+  if (stock) {
+    activeFilters.push({
+      key: 'stock',
+      group: t('admin.products.columns.stock'),
+      value: t(`admin.products.stock.${stock}`),
+      onRemove: () => list.setFilter('stock', ''),
+    })
+  }
+  if (promo) {
+    activeFilters.push({
+      key: 'promo',
+      group: t('catalog.promo'),
+      value: t('admin.products.onlyPromotions'),
+      onRemove: () => list.setFilter('promo', ''),
+    })
+  }
+
   return (
     <AdminListShell
       title={t('admin.products.title')}
       description={t('admin.products.description')}
-      searchValue={search}
-      onSearchChange={(value) => {
-        setSearch(value)
-        setPage(1)
-      }}
+      searchValue={list.q}
+      onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.products.searchPlaceholder')}
       filters={(
         <>
@@ -235,95 +278,57 @@ export default function AdminProductsPage() {
               selected={shop}
             />
           </div>
-          {shop && (
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={t('admin.products.clearShop')}
-              onClick={() => {
-                setShop(null)
-                setPage(1)
-              }}
-            >
-              <X className="h-4 w-4" />
-            </Button>
-          )}
 
-          <select
-            className={SELECT_CLASS}
+          <FilterSelect
             value={categoryId}
-            aria-label={t('admin.products.columns.category')}
-            onChange={(event) => {
-              setCategoryId(event.target.value)
-              setPage(1)
-            }}
-          >
-            <option value="">{t('admin.products.allCategories')}</option>
-            {(categories?.categories ?? []).map(category => (
-              <option key={category.id} value={category.id}>
-                {category.name}
-              </option>
-            ))}
-          </select>
+            onValueChange={value => list.setFilter('categorie', value)}
+            allLabel={t('admin.products.allCategories')}
+            ariaLabel={t('admin.products.columns.category')}
+            options={(categories?.categories ?? []).map(category => ({ value: category.id, label: category.name }))}
+          />
 
-          <select
-            className={SELECT_CLASS}
+          <FilterSelect
             value={status}
-            aria-label={t('admin.products.columns.status')}
-            onChange={(event) => {
-              setStatus(event.target.value as ProductStatusFilter)
-              setPage(1)
-            }}
-          >
-            <option value="">{t('admin.products.allStatuses')}</option>
-            {PRODUCT_STATUS_OPTIONS.map(option => (
-              <option key={option} value={option}>
-                {t(`admin.products.status.${option}`)}
-              </option>
-            ))}
-          </select>
+            onValueChange={value => list.setFilter('statut', value)}
+            allLabel={t('admin.products.allStatuses')}
+            ariaLabel={t('admin.products.columns.status')}
+            options={PRODUCT_STATUS_OPTIONS.map(option => ({ value: option, label: t(`admin.products.status.${option}`) }))}
+          />
 
-          <select
-            className={SELECT_CLASS}
+          <FilterSelect
             value={stock}
-            aria-label={t('admin.products.columns.stock')}
-            onChange={(event) => {
-              setStock(event.target.value as StockFilter)
-              setPage(1)
-            }}
-          >
-            <option value="">{t('admin.products.allStock')}</option>
-            {STOCK_OPTIONS.map(option => (
-              <option key={option} value={option}>
-                {t(`admin.products.stock.${option}`)}
-              </option>
-            ))}
-          </select>
+            onValueChange={value => list.setFilter('stock', value)}
+            allLabel={t('admin.products.allStock')}
+            ariaLabel={t('admin.products.columns.stock')}
+            options={STOCK_OPTIONS.map(option => ({ value: option, label: t(`admin.products.stock.${option}`) }))}
+          />
 
-          <label className="flex items-center gap-2 text-sm">
+          <label className="flex h-10 items-center gap-2 text-sm">
             <input
               type="checkbox"
               className="accent-primary h-4 w-4"
               checked={promo}
-              onChange={(event) => {
-                setPromo(event.target.checked)
-                setPage(1)
-              }}
+              onChange={event => list.setFilter('promo', event.target.checked ? '1' : '')}
             />
             {t('admin.products.onlyPromotions')}
           </label>
         </>
       )}
+      activeFilters={activeFilters}
+      onResetFilters={list.reset}
       columns={columns}
       data={data?.items ?? []}
       total={data?.total ?? 0}
-      page={page}
+      page={list.page}
       pageSize={ADMIN_PRODUCTS_PAGE_SIZE}
-      onPageChange={setPage}
-      sorting={sorting}
-      onSortingChange={setSorting}
+      onPageChange={list.setPage}
+      sorting={list.sorting}
+      onSortingChange={list.setSorting}
       onRowClick={product => navigate(`/catalogue/${product.id}?boutique=${product.supplierId}`)}
       isLoading={isLoading}
+      isFetching={isFetching}
+      isError={isError}
+      onRetry={() => refetch()}
       emptyLabel={t('admin.products.empty')}
     />
   )

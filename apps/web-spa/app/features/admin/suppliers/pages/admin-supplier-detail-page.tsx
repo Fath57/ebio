@@ -15,10 +15,11 @@ import {
 } from '@boilerstone/ui/components/primitives/table'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Ban, ImageOff, Pencil, RotateCcw, Tag } from 'lucide-react'
+import { Ban, ImageOff, Pencil, RotateCcw, Tag } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { BackLink } from '@/features/admin/common/components/back-link'
 import { Can } from '@/lib/casl/can'
 import { ProductPromotionsDialog } from '../../promotions/components/product-promotions-dialog'
 import {
@@ -248,12 +249,7 @@ export default function AdminSupplierDetailPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="sm" asChild>
-          <Link to="/admin/fournisseurs">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            {t('common.back')}
-          </Link>
-        </Button>
+        <BackLink fallback="/admin/fournisseurs" />
         <h2 className="text-2xl font-bold">{supplier.shopName}</h2>
         <Badge>{t(`admin.suppliers.status.${supplier.validationStatus}`)}</Badge>
       </div>
