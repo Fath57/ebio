@@ -1,6 +1,7 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
-import type { AdminProductItem, ProductStatusFilter, StockFilter } from '../utils/products-queries'
+import type { AdminProductItem, ProductAdvancedFilterKey, ProductStatusFilter, StockFilter } from '../utils/products-queries'
 import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
+import type { AdvancedFilterField } from '@/features/admin/common/components/advanced-filters'
 import type { PickerOption } from '@/features/admin/common/components/entity-picker'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
@@ -11,15 +12,18 @@ import { useTranslation } from 'react-i18next'
 import { Link, useNavigate } from 'react-router'
 import { fetchCategoriesQueryOptions } from '@/features/admin/categories/utils/categories-queries'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
+import { advancedFilterChips, AdvancedFilters } from '@/features/admin/common/components/advanced-filters'
 import { EntityPicker } from '@/features/admin/common/components/entity-picker'
 import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { searchSuppliers } from '@/features/admin/common/utils/target-search'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
+import { useCertifications } from '@/features/catalog/utils/use-certifications'
 import { Can } from '@/lib/casl/can'
 import {
   ADMIN_PRODUCTS_PAGE_SIZE,
   fetchAdminProductsQueryOptions,
+  PRODUCT_ADVANCED_FILTER_KEYS,
   PRODUCT_STATUS_OPTIONS,
   STOCK_OPTIONS,
 } from '../utils/products-queries'
@@ -65,7 +69,7 @@ export default function AdminProductsPage() {
   const navigate = useNavigate()
   const list = useListParams({
     defaultSort: 'created',
-    filters: ['boutique', 'boutiqueNom', 'categorie', 'statut', 'stock', 'promo'],
+    filters: ['boutique', 'boutiqueNom', 'categorie', 'statut', 'stock', 'promo', ...PRODUCT_ADVANCED_FILTER_KEYS],
   })
   const { boutique, boutiqueNom, categorie: categoryId } = list.values
   const status = (PRODUCT_STATUS_OPTIONS as string[]).includes(list.values.statut)
@@ -75,6 +79,8 @@ export default function AdminProductsPage() {
     ? list.values.stock as StockFilter
     : ''
   const promo = list.values.promo === '1'
+  const advanced = Object.fromEntries(PRODUCT_ADVANCED_FILTER_KEYS.map(key => [key, list.values[key]])) as Record<ProductAdvancedFilterKey, string>
+  const { items: certifications } = useCertifications()
   // Only the id narrows the query; the name rides along so the picker and the chip read well after a reload.
   const shop: PickerOption | null = boutique ? { id: boutique, label: boutiqueNom || boutique } : null
 
@@ -89,6 +95,7 @@ export default function AdminProductsPage() {
       status,
       stock,
       promo,
+      advanced,
       sortBy: list.sortBy,
       sortDir: list.sortDir,
       page: list.page,
@@ -195,8 +202,22 @@ export default function AdminProductsPage() {
       ),
     },
     {
+      id: 'sold',
+      header: t('admin.products.columns.sold'),
+      meta: { numeric: true },
+      cell: ({ row }) => (
+        <span className="flex flex-col items-end">
+          <span>{row.original.unitsSold}</span>
+          {row.original.ratingAvg !== null && (
+            <span className="text-muted-foreground font-sans text-xs">{`★ ${row.original.ratingAvg.toFixed(1)} (${row.original.ratingCount})`}</span>
+          )}
+        </span>
+      ),
+    },
+    {
       id: 'created',
       header: t('admin.products.columns.created'),
+      meta: { hideBelow: 'xl' },
       cell: ({ row }) => new Date(row.original.createdAt).toLocaleDateString(i18n.language),
     },
     {
@@ -217,6 +238,31 @@ export default function AdminProductsPage() {
       ),
     },
   ], [t, i18n.language, navigate])
+
+  const advancedFields: AdvancedFilterField[] = [
+    { kind: 'min', key: 'minPrice', label: t('admin.products.filters.minPrice'), unit: 'FCFA', step: 100 },
+    { kind: 'min', key: 'maxPrice', label: t('admin.products.filters.maxPrice'), unit: 'FCFA', step: 100 },
+    { kind: 'min', key: 'minSold', label: t('admin.products.filters.minSold') },
+    { kind: 'select', key: 'sales', label: t('admin.products.filters.sales'), allLabel: t('admin.products.filters.all'), options: [
+      { value: 'some', label: t('admin.products.filters.salesSome') },
+      { value: 'none', label: t('admin.products.filters.salesNone') },
+    ] },
+    { kind: 'select', key: 'label', label: t('admin.products.filters.label'), allLabel: t('admin.products.filters.all'), options: certifications.map(item => ({ value: item.code, label: item.name })) },
+    { kind: 'select', key: 'formats', label: t('admin.products.filters.formats'), allLabel: t('admin.products.filters.all'), options: [
+      { value: 'formats', label: t('admin.products.filters.withFormats') },
+      { value: 'packs', label: t('admin.products.filters.withPacks') },
+    ] },
+    { kind: 'select', key: 'shop', label: t('admin.products.filters.shop'), allLabel: t('admin.products.filters.all'), options: [
+      { value: 'validated', label: t('admin.products.filters.shopValidated') },
+      { value: 'not_validated', label: t('admin.products.filters.shopNotValidated') },
+    ] },
+    { kind: 'select', key: 'photo', label: t('admin.products.filters.photo'), allLabel: t('admin.products.filters.all'), options: [
+      { value: 'missing', label: t('admin.products.filters.noPhoto') },
+    ] },
+    { kind: 'min', key: 'minRating', label: t('admin.products.filters.minRating'), step: 0.5 },
+    { kind: 'date', key: 'createdFrom', label: t('admin.products.filters.createdFrom') },
+    { kind: 'date', key: 'createdTo', label: t('admin.products.filters.createdTo') },
+  ]
 
   const activeFilters: ActiveFilter[] = []
   if (shop) {
@@ -259,6 +305,8 @@ export default function AdminProductsPage() {
       onRemove: () => list.setFilter('promo', ''),
     })
   }
+
+  activeFilters.push(...advancedFilterChips(advancedFields, advanced, key => list.setFilter(key as ProductAdvancedFilterKey, ''), i18n.language))
 
   return (
     <AdminListShell
@@ -314,6 +362,8 @@ export default function AdminProductsPage() {
             />
             {t('admin.products.onlyPromotions')}
           </label>
+
+          <AdvancedFilters fields={advancedFields} values={advanced} onChange={(key, value) => list.setFilter(key as ProductAdvancedFilterKey, value)} />
         </>
       )}
       activeFilters={activeFilters}
@@ -326,7 +376,7 @@ export default function AdminProductsPage() {
       onPageChange={list.setPage}
       sorting={list.sorting}
       onSortingChange={list.setSorting}
-      onRowClick={product => navigate(`/catalogue/${product.id}?boutique=${product.supplierId}`)}
+      onRowClick={product => navigate(`/admin/produits/${product.id}`)}
       isLoading={isLoading}
       isFetching={isFetching}
       isError={isError}

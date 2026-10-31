@@ -5,6 +5,7 @@ import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.fact
 import { ProviderTransactionsModule } from '../provider-transactions/provider-transactions.module'
 import { PlatformSettingsModule } from '../settings/platform-settings.module'
 import { SuppliersModule } from '../suppliers/suppliers.module'
+import { AdminWalletsService } from './admin-wallets.service'
 import { CourierWalletController } from './courier-wallet.controller'
 import { PayoutNumber } from './entities/payout-number.entity'
 import { WalletTopup } from './entities/wallet-topup.entity'
@@ -35,7 +36,7 @@ import { WithdrawalsService } from './withdrawals.service'
    * instance of a stateless factory costs nothing — far less than a circular
    * import held together by `forwardRef`.
    */
-  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PendingEarningsService, PaymentGatewayFactory],
+  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PendingEarningsService, PaymentGatewayFactory, AdminWalletsService],
   exports: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService],
 })
 export class WalletModule {}

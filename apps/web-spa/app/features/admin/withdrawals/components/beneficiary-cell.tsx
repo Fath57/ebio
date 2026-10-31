@@ -8,10 +8,14 @@ interface BeneficiaryCellProps {
   ownerName: string
   supplierId: string | null
   courierId: string | null
+  /** A buyer's wallet: links to the account page. */
+  userId?: string | null
 }
 
 /** Route of the owner's back-office page, or null when there is none (buyers). */
-function ownerRoute({ ownerType, supplierId, courierId }: Omit<BeneficiaryCellProps, 'ownerName'>): string | null {
+function ownerRoute({ ownerType, supplierId, courierId, userId }: Omit<BeneficiaryCellProps, 'ownerName'>): string | null {
+  if (ownerType === 'USER' && userId)
+    return `/admin/utilisateurs/${userId}`
   if (ownerType === 'SUPPLIER' && supplierId)
     return `/admin/fournisseurs/${supplierId}`
   if (ownerType === 'COURIER' && courierId)
@@ -23,9 +27,9 @@ function ownerRoute({ ownerType, supplierId, courierId }: Omit<BeneficiaryCellPr
  * Who the money belongs to: the name links to the supplier or courier page,
  * and a small badge tells the two apart at a glance.
  */
-export function BeneficiaryCell({ ownerType, ownerName, supplierId, courierId }: BeneficiaryCellProps) {
+export function BeneficiaryCell({ ownerType, ownerName, supplierId, courierId, userId }: BeneficiaryCellProps) {
   const { t } = useTranslation()
-  const route = ownerRoute({ ownerType, supplierId, courierId })
+  const route = ownerRoute({ ownerType, supplierId, courierId, userId })
 
   return (
     <div className="flex items-center gap-2">

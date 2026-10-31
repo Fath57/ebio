@@ -9,6 +9,8 @@ import type {
   ResolveReportInput,
   ValidationActionInput,
 } from './contracts/admin.contract'
+import type { ProductAdvancedFilters } from './product-filters'
+import type { SupplierFilters } from './supplier-filters'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
@@ -29,6 +31,8 @@ import { CommissionService } from '../payments/commission.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, ValidationStatus } from '../suppliers/supplier.entity'
 import { ContentReport, ReportStatus, ReportTargetType } from './entities/content-report.entity'
+import { buildProductConditions, PRODUCT_SALES_JOIN } from './product-filters'
+import { buildSupplierConditions, SUPPLIER_LIST_FROM } from './supplier-filters'
 
 /** Colonnes triables — liste fermée, aucune valeur de requête n'atteint le SQL. */
 const ORDER_SORT_COLUMNS: Record<string, string> = {
@@ -48,6 +52,8 @@ const SUPPLIER_SORT_COLUMNS: Record<string, string> = {
   rating: 's.global_rating',
   productCount: 'product_count',
   orderCount: 'order_count',
+  walletBalance: 'wallet_balance',
+  lastOrderAt: 'last_order_at',
 }
 
 const USER_SORT_COLUMNS: Record<string, string> = {
@@ -916,58 +922,51 @@ export class AdminService {
     }
   }
 
-  async getSuppliers(params: {
+  async getSuppliers(params: SupplierFilters & {
     status?: string
-    q?: string
     sortBy?: string
     sortDir?: string
     page: number
     limit: number
   }): Promise<{ items: unknown[], total: number, page: number, limit: number, statusCounts: StatusCounts }> {
-    const conditions: string[] = ['1=1']
-    const queryParams: unknown[] = []
+    const { conditions, values } = buildSupplierConditions(params)
+    const connection = this.em.getConnection()
 
-    if (params.q) {
-      conditions.push(`(s.shop_name ILIKE ? OR u.name ILIKE ? OR u.email ILIKE ?)`)
-      queryParams.push(`%${params.q}%`, `%${params.q}%`, `%${params.q}%`)
-    }
-
-    const from = `FROM suppliers s LEFT JOIN users u ON s.user_id = u.id`
-
-    const statusCounts = toStatusCounts(await this.em.getConnection().execute(
-      `SELECT s.validation_status AS status, COUNT(*) AS count ${from} WHERE ${conditions.join(' AND ')} GROUP BY s.validation_status`,
-      [...queryParams],
+    // The tabs count every status under the other filters, so the status itself is left out here.
+    const statusCounts = toStatusCounts(await connection.execute(
+      `SELECT s.validation_status AS status, COUNT(*) AS count ${SUPPLIER_LIST_FROM} WHERE ${conditions.join(' AND ')} GROUP BY s.validation_status`,
+      [...values],
     ))
 
     if (params.status) {
       conditions.push(`s.validation_status = ?`)
-      queryParams.push(params.status)
+      values.push(params.status)
     }
     const whereClause = conditions.join(' AND ')
 
-    const countResult = await this.em.getConnection().execute(
-      `SELECT COUNT(*) as count ${from} WHERE ${whereClause}`,
-      queryParams,
+    const countResult = await connection.execute(
+      `SELECT COUNT(*) as count ${SUPPLIER_LIST_FROM} WHERE ${whereClause}`,
+      values,
     )
     const total = Number(countResult[0]?.count ?? 0)
 
-    queryParams.push(params.limit, (params.page - 1) * params.limit)
-
-    const rows = await this.em.getConnection().execute(
+    const rows = await connection.execute(
       `SELECT s.id, s.shop_name, s.type, s.mode, s.validation_status, s.timezone,
-              s.address, s.neighborhood, s.global_rating, s.total_reviews,
+              s.address, s.neighborhood, s.global_rating, s.total_reviews, s.commission_rate,
               s.profile_photo, s."createdAt" as created_at,
               ST_Y(s.location::geometry) as latitude,
               ST_X(s.location::geometry) as longitude,
               u.id as user_id, u.name as owner_name, u.email as owner_email,
               u.phone as owner_phone,
-              (SELECT COUNT(*) FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE') as product_count,
-              (SELECT COUNT(*) FROM orders o WHERE o.supplier_id = s.id) as order_count
-       ${from}
+              COALESCE(ps.product_count, 0) as product_count,
+              COALESCE(os.order_count, 0) as order_count,
+              os.last_order_at,
+              COALESCE(w.balance, 0) as wallet_balance
+       ${SUPPLIER_LIST_FROM}
        WHERE ${whereClause}
        ${this.buildOrderBy(SUPPLIER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
        LIMIT ? OFFSET ?`,
-      queryParams,
+      [...values, params.limit, (params.page - 1) * params.limit],
     )
 
     return {
@@ -1037,7 +1036,7 @@ export class AdminService {
    * has no need of the joins that only serve the display, and a filtered list
    * whose total lies is worse than no total at all.
    */
-  async getCatalogue(params: {
+  async getCatalogue(params: ProductAdvancedFilters & {
     q?: string
     supplierId?: string
     categoryId?: string
@@ -1114,6 +1113,10 @@ export class AdminService {
       conditions.push(LIVE_PROMOTION)
     }
 
+    const advanced = buildProductConditions(params)
+    conditions.push(...advanced.conditions)
+    values.push(...advanced.values)
+
     const where = conditions.join(' AND ')
     const connection = this.em.getConnection()
 
@@ -1121,6 +1124,7 @@ export class AdminService {
       `SELECT COUNT(*)::text AS total
        FROM products p
        JOIN suppliers s ON s.id = p.supplier_id
+       ${PRODUCT_SALES_JOIN}
        WHERE ${where}`,
       [...values],
     )
@@ -1134,6 +1138,7 @@ export class AdminService {
       stock: 'p.stock',
       shop: 's.shop_name',
       created: 'p."createdAt"',
+      sold: 'sales.units_sold',
     }
     const sortColumn = SORTS[params.sortBy ?? ''] ?? 'p."createdAt"'
     const sortDirection = params.sortDir === 'asc' ? 'ASC' : 'DESC'
@@ -1150,10 +1155,12 @@ export class AdminService {
               p.status, p."createdAt",
               c.id AS category_id, c.name AS category_name,
               s.id AS supplier_id, s.shop_name, s.validation_status,
-              ${LIVE_PROMOTION} AS has_promotion
+              ${LIVE_PROMOTION} AS has_promotion,
+              sales.units_sold, sales.order_count, p.rating_avg, p.rating_count
        FROM products p
        JOIN suppliers s ON s.id = p.supplier_id
        JOIN categories c ON c.id = p.category_id
+       ${PRODUCT_SALES_JOIN}
        WHERE ${where}
        ORDER BY ${sortColumn} ${sortDirection}
        LIMIT ? OFFSET ?`,
@@ -1168,6 +1175,10 @@ export class AdminService {
         pricePerUnit: Number(r.price_per_unit ?? 0),
         promotionalPrice: r.promotional_price != null ? Number(r.promotional_price) : null,
         hasPromotion: Boolean(r.has_promotion),
+        unitsSold: Number(r.units_sold ?? 0),
+        orderCount: Number(r.order_count ?? 0),
+        ratingAvg: r.rating_avg != null ? Number(r.rating_avg) : null,
+        ratingCount: Number(r.rating_count ?? 0),
         unit: (r.unit as string) ?? null,
         stock: Number(r.stock ?? 0),
         stockAlertThreshold: Number(r.stock_alert_threshold ?? 0),
@@ -1487,6 +1498,9 @@ export class AdminService {
       reviewCount: Number(r.total_reviews ?? 0),
       productCount: Number(r.product_count ?? 0),
       orderCount: Number(r.order_count ?? 0),
+      walletBalance: Number(r.wallet_balance ?? 0),
+      lastOrderAt: this.toIso(r.last_order_at),
+      commissionRate: r.commission_rate !== null && r.commission_rate !== undefined ? Number(r.commission_rate) : null,
       createdAt: this.toIso(r.created_at) ?? '',
       owner: {
         id: (r.user_id as string) ?? null,

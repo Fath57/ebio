@@ -1,8 +1,10 @@
 import {
   walletAdminControllerActOnNumber,
   walletAdminControllerActOnWithdrawal,
+  walletAdminControllerDebitWallet,
   walletAdminControllerListNumbers,
   walletAdminControllerListTopups,
+  walletAdminControllerListWallets,
   walletAdminControllerListWithdrawals,
   walletAdminControllerWalletsOverview,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
@@ -148,4 +150,66 @@ export async function actOnWithdrawal(id: string, action: 'approve' | 'reject', 
     const detail = (response.error as { message?: string })?.message
     throw new Error(detail ?? 'Failed to update withdrawal')
   }
+}
+
+export interface AdminWalletListItem {
+  id: string
+  balance: number
+  ownerType: WalletOwnerType
+  ownerName: string
+  supplierId: string | null
+  courierId: string | null
+  userId: string | null
+  updatedAt: string
+}
+
+export interface AdminWalletsPage {
+  items: AdminWalletListItem[]
+  total: number
+  page: number
+  limit: number
+  /** Over the whole filtered set, not the page. */
+  totalOwed: number
+  totalDebt: number
+}
+
+export interface AdminWalletFilters {
+  q?: string
+  ownerType?: string
+  balance?: string
+  sort?: string
+  page: number
+}
+
+export const WALLETS_PAGE_SIZE = 20
+
+export function fetchWalletsListQueryOptions(filters: AdminWalletFilters) {
+  return {
+    queryKey: ['admin', 'wallets', 'list', filters],
+    queryFn: async () => {
+      const response = await walletAdminControllerListWallets({
+        query: {
+          q: filters.q ?? '',
+          ownerType: filters.ownerType ?? '',
+          balance: filters.balance ?? '',
+          sort: filters.sort ?? '',
+          page: String(filters.page),
+          limit: String(WALLETS_PAGE_SIZE),
+        },
+      })
+      if (response.error)
+        throw new Error('Failed to load wallets')
+      return response.data as AdminWalletsPage
+    },
+  }
+}
+
+/** Staff debit; the API refuses a debit past the balance and explains why in French. */
+export async function debitWallet(walletId: string, body: { amount: number, reason: string, notify: boolean }): Promise<{ balanceAfter: number }> {
+  const response = await walletAdminControllerDebitWallet({ path: { id: walletId }, body })
+  if (response.error) {
+    const message = (response.error as { message?: unknown }).message
+    throw new Error(typeof message === 'string' ? message : 'Le débit a échoué')
+  }
+  return response.data as { balanceAfter: number }
 }

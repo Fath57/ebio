@@ -373,6 +373,17 @@ export type AdminWithdrawalAction = {
 };
 
 /**
+ * AdminWalletDebit
+ *
+ * Manual debit of a wallet by staff, with its reason
+ */
+export type AdminWalletDebit = {
+  amount: number;
+  reason: string;
+  notify: boolean;
+};
+
+/**
  * RejectCourier
  *
  * Reason shown to the rejected courier applicant
@@ -633,6 +644,33 @@ export type UpdateCategory = {
 };
 
 /**
+ * CreateCertification
+ *
+ * A label or certification products can carry
+ */
+export type CreateCertification = {
+  code: string;
+  name: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+/**
+ * UpdateCertification
+ *
+ * Update a label or certification — every field optional, the code is immutable
+ */
+export type UpdateCertification = {
+  name?: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+/**
  * EnhancePhoto
  *
  * Retoucher une photo de produit et enregistrer le résultat
@@ -700,33 +738,6 @@ export type CreateProductUnit = {
 export type UpdateProductUnit = {
   label?: string;
   shortLabel?: string;
-  isActive?: boolean;
-  sortOrder?: number;
-};
-
-/**
- * CreateCertification
- *
- * A label or certification products can carry
- */
-export type CreateCertification = {
-  code: string;
-  name: string;
-  description?: string | null;
-  logoUrl?: string | null;
-  isActive: boolean;
-  sortOrder: number;
-};
-
-/**
- * UpdateCertification
- *
- * Update a label or certification — every field optional, the code is immutable
- */
-export type UpdateCertification = {
-  name?: string;
-  description?: string | null;
-  logoUrl?: string | null;
   isActive?: boolean;
   sortOrder?: number;
 };
@@ -6378,6 +6389,46 @@ export type WalletAdminControllerWalletsOverviewResponses = {
   200: unknown;
 };
 
+export type WalletAdminControllerListWalletsData = {
+  body?: never;
+  path?: never;
+  query: {
+    q: string;
+    ownerType: string;
+    balance: string;
+    sort: string;
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/wallets/list";
+};
+
+export type WalletAdminControllerListWalletsResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerDebitWalletData = {
+  /**
+   * AdminWalletDebit
+   *
+   * Manual debit of a wallet by staff, with its reason
+   */
+  body: {
+    amount: number;
+    reason: string;
+    notify: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/wallets/{id}/debit";
+};
+
+export type WalletAdminControllerDebitWalletResponses = {
+  201: unknown;
+};
+
 export type AnalyticsControllerFunnelReportData = {
   body?: never;
   path?: never;
@@ -10747,6 +10798,17 @@ export type AdminControllerGetSuppliersData = {
   query: {
     status: string;
     q: string;
+    type: string;
+    mode: string;
+    minOrders: string;
+    minBalance: string;
+    minProducts: string;
+    minRating: string;
+    inactiveDays: string;
+    located: string;
+    negotiatedRate: string;
+    createdFrom: string;
+    createdTo: string;
     sortBy: string;
     sortDir: string;
     page: string;
@@ -10797,6 +10859,17 @@ export type AdminControllerGetCatalogueData = {
     status: string;
     stock: string;
     promo: string;
+    minPrice: string;
+    maxPrice: string;
+    minSold: string;
+    sales: string;
+    label: string;
+    photo: string;
+    shop: string;
+    formats: string;
+    minRating: string;
+    createdFrom: string;
+    createdTo: string;
     sortBy: string;
     sortDir: string;
     page: string;
@@ -10806,6 +10879,19 @@ export type AdminControllerGetCatalogueData = {
 };
 
 export type AdminControllerGetCatalogueResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetCatalogueProductData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/catalogue/{id}";
+};
+
+export type AdminControllerGetCatalogueProductResponses = {
   200: unknown;
 };
 
@@ -10825,6 +10911,19 @@ export type AdminControllerGetUsersData = {
 };
 
 export type AdminControllerGetUsersResponses = {
+  200: unknown;
+};
+
+export type AdminControllerGetPaymentDetailData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/payments/{id}";
+};
+
+export type AdminControllerGetPaymentDetailResponses = {
   200: unknown;
 };
 

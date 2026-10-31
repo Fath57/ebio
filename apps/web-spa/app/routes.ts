@@ -20,12 +20,14 @@ export default [
 
   // App routes (protected via app-layout)
   layout('features/layouts/app-layout.tsx', [
-    layout('features/layouts/supplier-layout.tsx', [
-      // Supplier — Catalogue
+    // Catalogue — the shop's, and the studio staff open on a shop's behalf.
+    layout('features/layouts/catalog-layout.tsx', [
       route('catalogue', 'features/catalog/pages/catalog-page.tsx'),
       route('catalogue/nouveau', 'features/catalog/pages/product-create-page.tsx'),
       route('catalogue/:productId', 'features/catalog/pages/product-detail-page.tsx'),
       route('catalogue/:productId/modifier', 'features/catalog/pages/product-edit-page.tsx'),
+    ]),
+    layout('features/layouts/supplier-layout.tsx', [
 
       // Supplier — Commandes
       route('commandes', 'features/orders/pages/orders-page.tsx'),
@@ -85,6 +87,7 @@ export default [
 
       // Admin — Transactions
       route('admin/transactions', 'features/admin/transactions/pages/transactions-page.tsx'),
+      route('admin/transactions/:paymentId', 'features/admin/transactions/pages/transaction-detail-page.tsx'),
 
       route('admin/commissions', 'features/admin/commissions/pages/admin-commissions-page.tsx'),
       route('admin/comptes', 'features/admin/platform-accounts/pages/platform-accounts-page.tsx'),
@@ -95,6 +98,7 @@ export default [
 
       // Admin — Catalogue de la plateforme
       route('admin/produits', 'features/admin/products/pages/admin-products-page.tsx'),
+      route('admin/produits/:productId', 'features/admin/products/pages/admin-product-detail-page.tsx'),
 
       // Admin — Categories
       route('admin/categories', 'features/admin/categories/pages/categories-page.tsx'),

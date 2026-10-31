@@ -51,6 +51,8 @@ import type {
   AdminControllerBroadcastNotificationData,
   AdminControllerBroadcastNotificationResponses,
   AdminControllerGetCatalogueData,
+  AdminControllerGetCatalogueProductData,
+  AdminControllerGetCatalogueProductResponses,
   AdminControllerGetCatalogueResponses,
   AdminControllerGetCommissionOrdersData,
   AdminControllerGetCommissionOrdersResponses,
@@ -64,6 +66,8 @@ import type {
   AdminControllerGetOrderByIdResponses,
   AdminControllerGetOrdersData,
   AdminControllerGetOrdersResponses,
+  AdminControllerGetPaymentDetailData,
+  AdminControllerGetPaymentDetailResponses,
   AdminControllerGetPaymentsData,
   AdminControllerGetPaymentsResponses,
   AdminControllerGetProductsData,
@@ -790,10 +794,14 @@ import type {
   WalletAdminControllerActOnNumberResponses,
   WalletAdminControllerActOnWithdrawalData,
   WalletAdminControllerActOnWithdrawalResponses,
+  WalletAdminControllerDebitWalletData,
+  WalletAdminControllerDebitWalletResponses,
   WalletAdminControllerListNumbersData,
   WalletAdminControllerListNumbersResponses,
   WalletAdminControllerListTopupsData,
   WalletAdminControllerListTopupsResponses,
+  WalletAdminControllerListWalletsData,
+  WalletAdminControllerListWalletsResponses,
   WalletAdminControllerListWithdrawalsData,
   WalletAdminControllerListWithdrawalsResponses,
   WalletAdminControllerPlatformOverviewData,
@@ -2881,6 +2889,35 @@ export const walletAdminControllerWalletsOverview = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/wallets", ...options });
+
+export const walletAdminControllerListWallets = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerListWalletsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerListWalletsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/wallets/list", ...options });
+
+export const walletAdminControllerDebitWallet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerDebitWalletData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    WalletAdminControllerDebitWalletResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/wallets/{id}/debit",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const analyticsControllerFunnelReport = <
   ThrowOnError extends boolean = false,
@@ -6149,6 +6186,17 @@ export const adminControllerGetCatalogue = <
     ThrowOnError
   >({ url: "/api/admin/catalogue", ...options });
 
+export const adminControllerGetCatalogueProduct = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetCatalogueProductData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetCatalogueProductResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/catalogue/{id}", ...options });
+
 export const adminControllerGetUsers = <ThrowOnError extends boolean = false>(
   options: Options<AdminControllerGetUsersData, ThrowOnError>,
 ) =>
@@ -6157,6 +6205,17 @@ export const adminControllerGetUsers = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({ url: "/api/admin/users", ...options });
+
+export const adminControllerGetPaymentDetail = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerGetPaymentDetailData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminControllerGetPaymentDetailResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/payments/{id}", ...options });
 
 export const adminControllerGetPayments = <
   ThrowOnError extends boolean = false,

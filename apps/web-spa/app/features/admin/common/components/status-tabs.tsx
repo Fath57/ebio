@@ -15,6 +15,8 @@ interface StatusTabsProps {
   onChange: (value: string) => void
   /** Rows per status under the other filters; undefined while the first page loads. */
   counts?: Record<string, number>
+  /** Lead with an « All » tab, totalled from the others (default). Off for tabs that are sections. */
+  allTab?: boolean
 }
 
 /**
@@ -32,17 +34,20 @@ const LOUD_COUNT: Partial<Record<StatusTone, string>> = {
  * first thing to read on a back-office list is where the work is waiting.
  * An "All" tab leads, totalled from the others.
  */
-export function StatusTabs({ tabs, value, onChange, counts }: StatusTabsProps) {
+export function StatusTabs({ tabs, value, onChange, counts, allTab = true }: StatusTabsProps) {
   const { t, i18n } = useTranslation()
   const total = counts ? Object.values(counts).reduce((sum, count) => sum + count, 0) : undefined
-  const allTabs: StatusTab[] = [{ value: '', label: t('dataTable.allTab') }, ...tabs]
+  const allTabs: StatusTab[] = allTab ? [{ value: '', label: t('dataTable.allTab') }, ...tabs] : tabs
 
   return (
     <div className="border-b">
       <div role="tablist" aria-label={t('dataTable.statusTabs')} className="-mb-px flex gap-1 overflow-x-auto">
         {allTabs.map((tab) => {
           const active = tab.value === value
-          const count = tab.value === '' ? total : (counts?.[tab.value] ?? (counts ? 0 : undefined))
+          // A status tab with no row counts 0; a section tab nobody counts shows no pill at all.
+          const count = tab.value === ''
+            ? total
+            : counts && tab.value in counts ? counts[tab.value] : (allTab && counts ? 0 : undefined)
           const loud = count && tab.tone ? LOUD_COUNT[tab.tone] : undefined
           return (
             <button

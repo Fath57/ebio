@@ -1039,7 +1039,8 @@
         "price": "Prix",
         "stock": "Stock",
         "status": "Statut",
-        "created": "Ajouté le"
+        "created": "Ajouté le",
+        "sold": "Vendus"
       },
       "status": {
         "ACTIVE": "En vente",
@@ -1050,6 +1051,65 @@
         "out": "En rupture",
         "low": "Stock bas",
         "in": "En stock"
+      },
+      "filters": {
+        "minPrice": "Prix minimum",
+        "maxPrice": "Prix maximum",
+        "minSold": "Unités vendues",
+        "sales": "Ventes",
+        "salesSome": "Déjà vendu",
+        "salesNone": "Jamais vendu",
+        "label": "Label",
+        "formats": "Formats",
+        "withFormats": "Plusieurs formats",
+        "withPacks": "Avec un pack",
+        "shop": "Boutique",
+        "shopValidated": "Boutique validée",
+        "shopNotValidated": "Boutique non validée",
+        "photo": "Photo",
+        "noPhoto": "Sans photo",
+        "minRating": "Note",
+        "createdFrom": "Créé à partir du",
+        "createdTo": "Créé jusqu'au",
+        "all": "Tous"
+      },
+      "detail": {
+        "error": "Impossible de charger ce produit.",
+        "edit": "Modifier dans l'atelier",
+        "openShop": "Ouvrir la fiche boutique",
+        "visible": "Visible et commandable par les acheteurs à proximité.",
+        "notVisible": "Ce produit n'est pas visible ou pas commandable :",
+        "issues": {
+          "SHOP_NOT_VALIDATED": "La boutique n'est pas validée : aucun de ses produits n'apparaît.",
+          "SHOP_NOT_LOCATED": "La boutique n'a pas de position : elle n'apparaît dans aucune recherche à proximité.",
+          "SHOP_CONTACT_ONLY": "La boutique est en mise en relation : le produit se voit mais ne se commande pas.",
+          "PRODUCT_HIDDEN": "Le produit est masqué.",
+          "OUT_OF_STOCK": "Le produit est en rupture de stock.",
+          "NO_PHOTO": "Le produit n'a pas de photo."
+        },
+        "photo": "Photo {{index}}",
+        "unitsSold": "Unités vendues",
+        "orders": "Commandes",
+        "revenue": "Chiffre d'affaires",
+        "lastSold": "Dernière vente",
+        "sale": "Mise en vente",
+        "alertAt": "alerte à {{count}}",
+        "cancelled": "Unités annulées",
+        "formats": "Formats et packs",
+        "perUnit": "soit {{amount}} / unité",
+        "available_one": "{{count}} disponible",
+        "available_other": "{{count}} disponibles",
+        "description": "Description et labels",
+        "noDescription": "Aucune description.",
+        "ingredients": "Ingrédients",
+        "origin": "Origine",
+        "conservation": "Conservation",
+        "reviews": "Avis des acheteurs",
+        "noReviews": "Aucun avis pour le moment.",
+        "hiddenReview": "Avis masqué par la modération.",
+        "recentOrders": "Dernières commandes",
+        "noOrders": "Aucune commande pour ce produit.",
+        "unit": "unité"
       }
     },
     "promotions": {
@@ -1521,7 +1581,8 @@
         "products": "Produits",
         "orders": "Commandes",
         "rating": "Note",
-        "located": "Localisation"
+        "located": "Localisation",
+        "balance": "Solde"
       },
       "days": {
         "monday": "Lundi",
@@ -1596,7 +1657,35 @@
         "suspend": "Suspendre le compte",
         "reinstate": "Lever la suspension"
       },
-      "title": "Fournisseurs"
+      "title": "Fournisseurs",
+      "located": "Localisé",
+      "lastOrder": "dernière le {{date}}",
+      "noOrder": "aucune commande",
+      "filters": {
+        "minOrders": "Commandes reçues",
+        "minBalance": "Solde du portefeuille",
+        "minProducts": "Produits en vente",
+        "minRating": "Note",
+        "inactiveDays": "Sans commande depuis",
+        "days": "jours",
+        "type": "Type",
+        "mode": "Mode",
+        "located": "Localisation",
+        "negotiatedRate": "Commission",
+        "negotiated": "Taux négocié",
+        "categoryRate": "Taux de la catégorie",
+        "createdFrom": "Inscrit à partir du",
+        "createdTo": "Inscrit jusqu'au",
+        "all": "Tous",
+        "types": {
+          "INPUTS": "Intrants",
+          "TRANSFORMER": "Transformateur"
+        },
+        "modes": {
+          "ORDER": "Commande en ligne",
+          "CONTACT": "Mise en relation"
+        }
+      }
     },
     "transactions": {
       "allStatuses": "Tous les statuts",
@@ -1645,6 +1734,61 @@
         "commissionEarnedHint": "Uniquement sur les paiements reversés.",
         "refunded": "Remboursé",
         "refundedHint": "Rendu aux acheteurs."
+      },
+      "detail": {
+        "error": "Impossible de charger ce paiement.",
+        "forOrder": "pour la commande",
+        "dispute": "Litige sur cette commande",
+        "payment": "Paiement",
+        "provider": "Prestataire",
+        "method": "Moyen",
+        "operator": "Opérateur",
+        "phone": "Numéro débité",
+        "providerReference": "Référence prestataire",
+        "receipt": "Reçu",
+        "openReceipt": "Ouvrir le reçu",
+        "timeline": "Chronologie",
+        "created": "Paiement initié",
+        "paid": "Paiement reçu",
+        "released": "Reversé à la boutique",
+        "refunded": "Remboursé",
+        "order": "Commande",
+        "gift": "offert",
+        "cart": "Panier",
+        "cartHint_one": "Ce paiement couvre {{count}} commande, {{total}} au total.",
+        "cartHint_other": "Ce paiement couvre {{count}} commandes, {{total}} au total.",
+        "journal": "Journal du prestataire",
+        "journalHint": "Chaque échange d'eBio avec le prestataire de paiement pour ce panier : tentative, statut renvoyé, échec.",
+        "journalEmpty": "Aucun échange enregistré.",
+        "kinds": {
+          "CART_PAYMENT": "Paiement du panier",
+          "TOPUP": "Recharge",
+          "PAYOUT": "Reversement"
+        },
+        "journalStatus": {
+          "PENDING": "En attente",
+          "COMPLETED": "Réussi",
+          "FAILED": "Échoué",
+          "ABANDONED": "Abandonné"
+        },
+        "movements": "Mouvements de portefeuille",
+        "movementsHint": "L'argent qui a bougé dans eBio à cause de ce paiement ou de sa commande : vente, commission, remboursement, livraison.",
+        "movementsEmpty": "Aucun mouvement de portefeuille.",
+        "balanceAfter": "solde {{amount}}",
+        "movementTypes": {
+          "SALE_CREDIT": "Vente",
+          "COMMISSION_DEBIT": "Commission",
+          "REFUND": "Remboursement",
+          "ORDER_PAYMENT": "Paiement de commande",
+          "DELIVERY_EARNING": "Gain livreur",
+          "DELIVERY_COMMISSION": "Commission livraison",
+          "PLATFORM_COMMISSION": "Commission eBio",
+          "PLATFORM_DELIVERY_SHARE": "Part eBio de la livraison",
+          "PROMO_COMPENSATION": "Compensation promotion",
+          "TIP_PAYMENT": "Pourboire",
+          "TIP_EARNING": "Pourboire reçu",
+          "ADJUSTMENT": "Ajustement"
+        }
       }
     },
     "users": {
@@ -1922,7 +2066,41 @@
       },
       "allStatuses": "Tous les statuts",
       "approveTitle": "Payer ce reversement ?",
-      "approveBody": "{{amount}} seront envoyés à {{name}} sur le {{number}}. Le paiement part immédiatement et ne peut pas être annulé."
+      "approveBody": "{{amount}} seront envoyés à {{name}} sur le {{number}}. Le paiement part immédiatement et ne peut pas être annulé.",
+      "sections": {
+        "demandes": "Demandes de reversement",
+        "numeros": "Numéros à valider",
+        "portefeuilles": "Portefeuilles",
+        "recharges": "Recharges"
+      },
+      "walletsSearch": "Rechercher un titulaire…",
+      "allOwners": "Tous les titulaires",
+      "allBalances": "Tous les soldes",
+      "balances": {
+        "positive": "Solde positif",
+        "negative": "En dette",
+        "zero": "Solde nul"
+      },
+      "sortLabel": "Tri",
+      "sorts": {
+        "balance_desc": "Solde décroissant",
+        "balance_asc": "Solde croissant",
+        "updated_desc": "Dernier mouvement"
+      },
+      "filteredTotals": "Sur cette sélection : {{owed}} dus aux titulaires, {{debt}} de dettes.",
+      "debit": {
+        "action": "Débiter",
+        "title": "Débiter le portefeuille",
+        "body": "Portefeuille de {{name}}, solde actuel {{balance}}. Le débit apparaît dans son historique avec le motif.",
+        "amount": "Montant à débiter",
+        "tooMuch": "Le montant dépasse le solde du portefeuille.",
+        "reason": "Motif",
+        "reasonPlaceholder": "Ex : correction d’un remboursement crédité par erreur",
+        "reasonHint": "Le titulaire lit ce motif dans son historique et dans la notification.",
+        "notify": "Prévenir le titulaire (notification push et dans l’app)",
+        "confirm": "Débiter {{amount}}",
+        "done": "{{amount}} débités. Nouveau solde : {{balance}}."
+      }
     },
     "couriers": {
       "title": "Livreurs",
@@ -2239,7 +2417,8 @@
     "removeFilter": "Retirer le filtre {{filter}}",
     "resetAll": "Tout effacer",
     "allTab": "Tous",
-    "statusTabs": "Filtrer par statut"
+    "statusTabs": "Filtrer par statut",
+    "moreFilters": "Plus de filtres"
   },
   "media": {
     "cropper": {

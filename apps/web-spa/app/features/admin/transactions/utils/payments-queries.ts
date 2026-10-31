@@ -1,5 +1,7 @@
+import type { AdminOrderDetail } from '../../orders/utils/orders-queries'
 import {
   adminControllerGetDisputes,
+  adminControllerGetPaymentDetail,
   adminControllerGetPayments,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
@@ -110,4 +112,68 @@ export function exportPaymentsCsvUrl(filters: PaymentFilters = {}): string {
   if (filters.to)
     params.set('to', filters.to)
   return `/api/admin/payments?${params.toString()}`
+}
+
+export interface PaymentDetail {
+  payment: {
+    id: string
+    amount: number
+    status: string
+    provider: string
+    providerTransactionId: string | null
+    providerReference: string | null
+    paymentMethod: string | null
+    operator: string | null
+    phoneNumber: string | null
+    receiptUrl: string | null
+    createdAt: string
+    paidAt: string | null
+    releasedAt: string | null
+    refundedAt: string | null
+  }
+  order: AdminOrderDetail | null
+  checkout: {
+    id: string
+    status: string
+    totalAmount: number
+    deliveryFee: number
+    discount: number
+    paymentMethod: string
+    createdAt: string
+    orders: Array<{ id: string, orderNumber: string, status: string, totalAmount: number, supplierName: string }>
+  } | null
+  providerJournal: Array<{
+    kind: string
+    reference: string | null
+    amount: number
+    status: string
+    providerStatus: string | null
+    failureReason: string | null
+    createdAt: string
+    lastCheckedAt: string | null
+    settledAt: string | null
+  }>
+  walletMovements: Array<{
+    id: string
+    type: string
+    amount: number
+    balanceAfter: number
+    description: string | null
+    ownerLabel: string
+    ownerKind: 'BUYER' | 'SUPPLIER' | 'COURIER' | 'PLATFORM' | 'OTHER'
+    createdAt: string
+  }>
+  dispute: { id: string, status: string, reason: string | null, createdAt: string } | null
+}
+
+export function fetchPaymentDetailQueryOptions(paymentId: string) {
+  return {
+    queryKey: ['admin', 'payments', 'detail', paymentId],
+    queryFn: async () => {
+      const response = await adminControllerGetPaymentDetail({ path: { id: paymentId } })
+      if (response.error)
+        throw new Error('Failed to fetch payment')
+      return response.data as PaymentDetail
+    },
+  }
 }

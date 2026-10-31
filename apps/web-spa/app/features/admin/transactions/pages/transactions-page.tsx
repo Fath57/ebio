@@ -10,7 +10,10 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query'
 import { Download, Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { useNavigate } from 'react-router'
+import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
+import { PAYMENT_STATUS_TONES } from '../utils/payment-status'
 import {
   exportPaymentsCsvUrl,
   fetchDisputesQueryOptions,
@@ -20,15 +23,6 @@ import {
 const PAGE_SIZE = 20
 
 const STATUS_OPTIONS = ['PENDING', 'CAPTURED', 'ESCROW', 'RELEASED', 'REFUNDED', 'FAILED']
-
-const STATUS_VARIANTS: Record<string, 'default' | 'secondary' | 'destructive' | 'outline'> = {
-  PENDING: 'secondary',
-  CAPTURED: 'secondary',
-  ESCROW: 'secondary',
-  RELEASED: 'default',
-  REFUNDED: 'outline',
-  FAILED: 'destructive',
-}
 
 /**
  * French grouping uses a narrow no-break space (U+202F) that Plus Jakarta Sans
@@ -60,6 +54,7 @@ function TotalCard({ label, value, hint, accent }: {
 
 export default function TransactionsPage() {
   const { t, i18n } = useTranslation()
+  const navigate = useNavigate()
   const [search, setSearch] = useState('')
   const [status, setStatus] = useState('')
   const [from, setFrom] = useState('')
@@ -117,9 +112,9 @@ export default function TransactionsPage() {
       header: t('admin.transactions.columns.status'),
       enableSorting: false,
       cell: ({ row }) => (
-        <Badge variant={STATUS_VARIANTS[row.original.status] ?? 'outline'}>
+        <StatusBadge tone={PAYMENT_STATUS_TONES[row.original.status] ?? 'idle'}>
           {t(`admin.transactions.status.${row.original.status}`)}
-        </Badge>
+        </StatusBadge>
       ),
     },
     {
@@ -239,6 +234,7 @@ export default function TransactionsPage() {
         isFetching={isFetching}
         isError={isError}
         onRetry={() => refetch()}
+        onRowClick={payment => navigate(`/admin/transactions/${payment.id}`)}
         labels={tableLabels}
       />
 

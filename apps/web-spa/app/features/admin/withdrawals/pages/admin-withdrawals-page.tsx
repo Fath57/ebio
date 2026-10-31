@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { ReactNode } from 'react'
-import type { AdminPayoutNumber, AdminTopup, AdminWalletRow, AdminWithdrawal } from '../utils/withdrawals-queries'
+import type { AdminPayoutNumber, AdminTopup, AdminWalletListItem, AdminWithdrawal } from '../utils/withdrawals-queries'
 import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
@@ -9,33 +9,47 @@ import {
   Dialog,
   DialogContent,
   DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
 } from '@boilerstone/ui/components/primitives/dialog'
+import { Input } from '@boilerstone/ui/components/primitives/input'
+import { Label } from '@boilerstone/ui/components/primitives/label'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
+import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, XCircle } from 'lucide-react'
+import { CheckCircle2, MinusCircle, XCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog'
 import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { StatusTabs } from '@/features/admin/common/components/status-tabs'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
+import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { useReturnFocus } from '@/features/admin/common/utils/use-return-focus'
+import { Can } from '@/lib/casl/can'
 import { BeneficiaryCell } from '../components/beneficiary-cell'
 import {
   actOnPayoutNumber,
   actOnWithdrawal,
+  debitWallet,
   fetchAdminTopupsQueryOptions,
   fetchAdminWithdrawalsQueryOptions,
   fetchPayoutNumbersQueryOptions,
-  fetchWalletsOverviewQueryOptions,
+  fetchWalletsListQueryOptions,
+  WALLETS_PAGE_SIZE,
 } from '../utils/withdrawals-queries'
 
 const PAGE_SIZE = 20
 
+/** The four jobs of the page, one tab each, in the order money flows. */
+const SECTIONS = ['demandes', 'numeros', 'portefeuilles', 'recharges'] as const
+type Section = typeof SECTIONS[number]
+
 const WITHDRAWAL_STATUSES = ['PENDING', 'PROCESSING', 'PAID', 'FAILED', 'REJECTED', 'CANCELLED']
+const TOPUP_STATUSES = ['PENDING', 'COMPLETED', 'FAILED']
 
 const WITHDRAWAL_TONES: Record<string, StatusTone> = {
   PENDING: 'action',
@@ -53,97 +67,131 @@ const TOPUP_TONES: Record<string, StatusTone> = {
 }
 
 function formatAmount(value: number): string {
-  return `${value.toLocaleString('fr-FR')} FCFA`
+  return `${value.toLocaleString('fr-FR').replace(/\u202F/g, '\u00A0')}\u00A0FCFA`
 }
 
-/** Reject dialog shared by numbers and withdrawals: the reason is mandatory. */
+function useWithdrawalsParams() {
+  return useListParams({
+    defaultSort: 'createdAt',
+    filters: ['onglet', 'statutDemande', 'statutRecharge', 'type', 'solde', 'ordre'],
+    defaults: { onglet: 'demandes', statutDemande: 'PENDING' },
+  })
+}
+
+type ListParams = ReturnType<typeof useWithdrawalsParams>
+
+/**
+ * Money leaving or owed by eBio, in four separate tabs: requests to pay,
+ * numbers to trust, every wallet (with the staff debit), and buyer topups.
+ * Each tab pages on its own and keeps its place in the URL.
+ */
+export default function AdminWithdrawalsPage() {
+  const { t } = useTranslation()
+  const list = useWithdrawalsParams()
+  const section: Section = (SECTIONS as readonly string[]).includes(list.values.onglet) ? list.values.onglet as Section : 'demandes'
+
+  // Counts for the tabs and the cards: cheap first pages, whatever tab is open.
+  const pendingRequests = useQuery(fetchAdminWithdrawalsQueryOptions('PENDING', 1))
+  const pendingNumbers = useQuery(fetchPayoutNumbersQueryOptions('PENDING', 1))
+  const allWallets = useQuery(fetchWalletsListQueryOptions({ page: 1 }))
+
+  const changeSection = (next: string) => {
+    list.setFilters({ onglet: next, statutRecharge: '', type: '', solde: '', ordre: '' })
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-1">
+        <h2 className="text-2xl font-bold">{t('admin.withdrawals.title')}</h2>
+        <p className="text-muted-foreground">{t('admin.withdrawals.description')}</p>
+      </div>
+
+      <div className="grid gap-4 sm:grid-cols-2">
+        <BalanceCard
+          label={t('admin.withdrawals.totalOwed')}
+          hint={t('admin.withdrawals.totalOwedHint')}
+          value={formatAmount(allWallets.data?.totalOwed ?? 0)}
+          isLoading={allWallets.isLoading}
+          highlight
+        />
+        <BalanceCard
+          label={t('admin.withdrawals.totalDebt')}
+          hint={t('admin.withdrawals.totalDebtHint')}
+          value={formatAmount(allWallets.data?.totalDebt ?? 0)}
+          isLoading={allWallets.isLoading}
+        />
+      </div>
+
+      <StatusTabs
+        allTab={false}
+        tabs={[
+          { value: 'demandes', label: t('admin.withdrawals.sections.demandes'), tone: 'action' },
+          { value: 'numeros', label: t('admin.withdrawals.sections.numeros'), tone: 'action' },
+          { value: 'portefeuilles', label: t('admin.withdrawals.sections.portefeuilles') },
+          { value: 'recharges', label: t('admin.withdrawals.sections.recharges') },
+        ]}
+        value={section}
+        onChange={changeSection}
+        counts={{
+          ...(pendingRequests.data ? { demandes: pendingRequests.data.total } : {}),
+          ...(pendingNumbers.data ? { numeros: pendingNumbers.data.total } : {}),
+        }}
+      />
+
+      {section === 'demandes' && <RequestsSection list={list} />}
+      {section === 'numeros' && <NumbersSection list={list} />}
+      {section === 'portefeuilles' && <WalletsSection list={list} />}
+      {section === 'recharges' && <TopupsSection list={list} />}
+    </div>
+  )
+}
+
+/** Shared by numbers and requests: the money did not move, so the reason is all the owner gets. */
 interface RejectTarget {
   kind: 'number' | 'withdrawal'
   id: string
   label: string
 }
 
-/**
- * Money first: the requests waiting to be paid, then the numbers waiting to
- * be trusted, then the balances and the topups, which are only there to be read.
- */
-export default function AdminWithdrawalsPage() {
-  const { t, i18n } = useTranslation()
+function useInvalidateMoney() {
   const queryClient = useQueryClient()
-  const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null)
-  const [rejectReason, setRejectReason] = useState('')
-  const [approveTarget, setApproveTarget] = useState<AdminWithdrawal | null>(null)
-  const [approveError, setApproveError] = useState<string | null>(null)
-  const [requestsStatus, setRequestsStatus] = useState('PENDING')
-  const [requestsPage, setRequestsPage] = useState(1)
-  const [numbersPage, setNumbersPage] = useState(1)
-  const [topupsPage, setTopupsPage] = useState(1)
-
-  const numbers = useQuery({
-    ...fetchPayoutNumbersQueryOptions('PENDING', numbersPage),
-    placeholderData: keepPreviousData,
-  })
-  const withdrawals = useQuery({
-    ...fetchAdminWithdrawalsQueryOptions(requestsStatus || undefined, requestsPage),
-    placeholderData: keepPreviousData,
-  })
-  const overview = useQuery(fetchWalletsOverviewQueryOptions())
-  const topups = useQuery({
-    ...fetchAdminTopupsQueryOptions(undefined, topupsPage),
-    placeholderData: keepPreviousData,
-  })
-
-  const requestsLabels = useDataTableLabels(t('admin.withdrawals.requestsEmpty'))
-  const numbersLabels = useDataTableLabels(t('admin.withdrawals.numbersEmpty'))
-  const walletsLabels = useDataTableLabels(t('admin.withdrawals.walletsEmpty'))
-  const topupsLabels = useDataTableLabels(t('admin.withdrawals.topupsEmpty'))
-
-  const invalidate = () => {
+  return () => {
     queryClient.invalidateQueries({ queryKey: ['admin', 'payout-numbers'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'withdrawals'] })
     queryClient.invalidateQueries({ queryKey: ['admin', 'wallets'] })
   }
+}
 
-  const numberAction = useMutation({
-    mutationFn: ({ id, action, reason }: { id: string, action: 'validate' | 'reject', reason?: string }) =>
-      actOnPayoutNumber(id, action, reason),
-    onSuccess: () => {
-      setRejectTarget(null)
-      setRejectReason('')
-      invalidate()
-    },
+function RequestsSection({ list }: { list: ListParams }) {
+  const { t, i18n } = useTranslation()
+  const invalidate = useInvalidateMoney()
+  const status = list.values.statutDemande
+  const labels = useDataTableLabels(t('admin.withdrawals.requestsEmpty'))
+  const [approveTarget, setApproveTarget] = useState<AdminWithdrawal | null>(null)
+  const [approveError, setApproveError] = useState<string | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null)
+
+  const query = useQuery({
+    ...fetchAdminWithdrawalsQueryOptions(status || undefined, list.page),
+    placeholderData: keepPreviousData,
   })
 
-  const withdrawalAction = useMutation({
-    mutationFn: ({ id, action, reason }: { id: string, action: 'approve' | 'reject', reason?: string }) =>
-      actOnWithdrawal(id, action, reason),
+  const action = useMutation({
+    mutationFn: ({ id, kind, reason }: { id: string, kind: 'approve' | 'reject', reason?: string }) => actOnWithdrawal(id, kind, reason),
     onSuccess: () => {
-      setRejectTarget(null)
-      setRejectReason('')
       setApproveTarget(null)
+      setRejectTarget(null)
       setApproveError(null)
       invalidate()
     },
-    // A failed payout re-credits the supplier automatically; surface why.
+    // A failed payout re-credits the owner automatically; surface why.
     onError: (error: Error) => {
       setApproveError(error.message)
       invalidate()
     },
   })
 
-  const isActing = numberAction.isPending || withdrawalAction.isPending
-  const returnFocusAfterReject = useReturnFocus(rejectTarget !== null)
-
-  const submitReject = () => {
-    if (!rejectTarget || rejectReason.trim().length < 3)
-      return
-    if (rejectTarget.kind === 'number')
-      numberAction.mutate({ id: rejectTarget.id, action: 'reject', reason: rejectReason.trim() })
-    else
-      withdrawalAction.mutate({ id: rejectTarget.id, action: 'reject', reason: rejectReason.trim() })
-  }
-
-  const requestColumns = useMemo<Array<ColumnDef<AdminWithdrawal, unknown>>>(() => [
+  const columns = useMemo<Array<ColumnDef<AdminWithdrawal, unknown>>>(() => [
     {
       id: 'createdAt',
       header: t('admin.withdrawals.columns.date'),
@@ -152,14 +200,7 @@ export default function AdminWithdrawalsPage() {
     {
       id: 'beneficiary',
       header: t('admin.withdrawals.columns.beneficiary'),
-      cell: ({ row }) => (
-        <BeneficiaryCell
-          ownerType={row.original.ownerType}
-          ownerName={row.original.ownerName}
-          supplierId={row.original.supplierId}
-          courierId={row.original.courierId}
-        />
-      ),
+      cell: ({ row }) => <BeneficiaryCell {...row.original} />,
     },
     {
       id: 'number',
@@ -196,46 +237,112 @@ export default function AdminWithdrawalsPage() {
       header: '',
       meta: { align: 'right' },
       cell: ({ row }) => row.original.status === 'PENDING' && (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={isActing}
-            onClick={() => setRejectTarget({
-              kind: 'withdrawal',
-              id: row.original.id,
-              label: `${formatAmount(row.original.amount)} — ${row.original.ownerName}`,
-            })}
-          >
-            {t('admin.withdrawals.reject')}
-          </Button>
-          <Button
-            size="sm"
-            disabled={isActing}
-            onClick={() => {
-              setApproveError(null)
-              setApproveTarget(row.original)
-            }}
-          >
-            {t('admin.withdrawals.approve')}
-          </Button>
-        </div>
+        <Can action="manage" subject="Withdrawal">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={action.isPending}
+              onClick={() => setRejectTarget({ kind: 'withdrawal', id: row.original.id, label: `${formatAmount(row.original.amount)} — ${row.original.ownerName}` })}
+            >
+              {t('admin.withdrawals.reject')}
+            </Button>
+            <Button
+              size="sm"
+              disabled={action.isPending}
+              onClick={() => {
+                setApproveError(null)
+                setApproveTarget(row.original)
+              }}
+            >
+              {t('admin.withdrawals.approve')}
+            </Button>
+          </div>
+        </Can>
       ),
     },
-  ], [t, i18n.language, isActing])
+  ], [t, i18n.language, action.isPending])
 
-  const numberColumns = useMemo<Array<ColumnDef<AdminPayoutNumber, unknown>>>(() => [
+  return (
+    <section className="space-y-4">
+      <SectionToolbar hint={t('admin.withdrawals.requestsHint')}>
+        <FilterSelect
+          value={status}
+          onValueChange={value => list.setFilter('statutDemande', value)}
+          allLabel={t('admin.withdrawals.allStatuses')}
+          ariaLabel={t('admin.withdrawals.columns.status')}
+          options={WITHDRAWAL_STATUSES.map(value => ({ value, label: t(`admin.withdrawals.status.${value}`) }))}
+        />
+      </SectionToolbar>
+      {approveError && !approveTarget && (
+        <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm" role="alert">{approveError}</p>
+      )}
+      <DataTable
+        columns={columns}
+        data={query.data?.items ?? []}
+        total={query.data?.total ?? 0}
+        page={list.page}
+        pageSize={query.data?.limit ?? PAGE_SIZE}
+        onPageChange={list.setPage}
+        isLoading={query.isLoading}
+        isFetching={query.isFetching}
+        isError={query.isError}
+        onRetry={() => query.refetch()}
+        labels={labels}
+      />
+
+      {/* Paying sends money out at once: it never happens on a single click. */}
+      <ConfirmDialog
+        open={approveTarget !== null}
+        onOpenChange={(open) => {
+          if (!open)
+            setApproveTarget(null)
+        }}
+        title={t('admin.withdrawals.approveTitle')}
+        description={t('admin.withdrawals.approveBody', {
+          amount: approveTarget ? formatAmount(approveTarget.amount) : '',
+          name: approveTarget?.ownerName ?? '',
+          number: approveTarget ? `${approveTarget.phoneNumber} (${approveTarget.operatorLabel})` : '',
+        })}
+        confirmLabel={t('admin.withdrawals.approve')}
+        onConfirm={() => approveTarget && action.mutate({ id: approveTarget.id, kind: 'approve' })}
+        isPending={action.isPending}
+        error={approveError}
+      />
+      <RejectDialog
+        target={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        onSubmit={reason => rejectTarget && action.mutate({ id: rejectTarget.id, kind: 'reject', reason })}
+        isPending={action.isPending}
+      />
+    </section>
+  )
+}
+
+function NumbersSection({ list }: { list: ListParams }) {
+  const { t } = useTranslation()
+  const invalidate = useInvalidateMoney()
+  const labels = useDataTableLabels(t('admin.withdrawals.numbersEmpty'))
+  const [rejectTarget, setRejectTarget] = useState<RejectTarget | null>(null)
+
+  const query = useQuery({
+    ...fetchPayoutNumbersQueryOptions('PENDING', list.page),
+    placeholderData: keepPreviousData,
+  })
+  const action = useMutation({
+    mutationFn: ({ id, kind, reason }: { id: string, kind: 'validate' | 'reject', reason?: string }) => actOnPayoutNumber(id, kind, reason),
+    onSuccess: () => {
+      setRejectTarget(null)
+      invalidate()
+    },
+    onError: (error: Error) => toast.error(error.message || t('common.error')),
+  })
+
+  const columns = useMemo<Array<ColumnDef<AdminPayoutNumber, unknown>>>(() => [
     {
       id: 'beneficiary',
       header: t('admin.withdrawals.columns.beneficiary'),
-      cell: ({ row }) => (
-        <BeneficiaryCell
-          ownerType={row.original.ownerType}
-          ownerName={row.original.ownerName}
-          supplierId={row.original.supplierId}
-          courierId={row.original.courierId}
-        />
-      ),
+      cell: ({ row }) => <BeneficiaryCell {...row.original} />,
     },
     {
       id: 'number',
@@ -257,63 +364,179 @@ export default function AdminWithdrawalsPage() {
       header: '',
       meta: { align: 'right' },
       cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
-          <Button
-            variant="ghost"
-            size="sm"
-            disabled={isActing}
-            onClick={() => setRejectTarget({ kind: 'number', id: row.original.id, label: row.original.phoneNumber })}
-          >
-            <XCircle className="text-destructive mr-1 h-4 w-4" />
-            {t('admin.withdrawals.reject')}
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={isActing}
-            onClick={() => numberAction.mutate({ id: row.original.id, action: 'validate' })}
-          >
-            <CheckCircle2 className="text-ebio-green-600 mr-1 h-4 w-4" />
-            {t('admin.withdrawals.validate')}
-          </Button>
-        </div>
+        <Can action="manage" subject="Withdrawal">
+          <div className="flex justify-end gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              disabled={action.isPending}
+              onClick={() => setRejectTarget({ kind: 'number', id: row.original.id, label: row.original.phoneNumber })}
+            >
+              <XCircle className="text-destructive mr-1 h-4 w-4" />
+              {t('admin.withdrawals.reject')}
+            </Button>
+            <Button variant="outline" size="sm" disabled={action.isPending} onClick={() => action.mutate({ id: row.original.id, kind: 'validate' })}>
+              <CheckCircle2 className="text-ebio-green-600 mr-1 h-4 w-4" />
+              {t('admin.withdrawals.validate')}
+            </Button>
+          </div>
+        </Can>
       ),
     },
-  ], [t, isActing, numberAction])
+  ], [t, action])
 
-  const walletColumns = useMemo<Array<ColumnDef<AdminWalletRow, unknown>>>(() => [
+  return (
+    <section className="space-y-4">
+      <SectionToolbar hint={t('admin.withdrawals.numbersHint')} />
+      <DataTable
+        columns={columns}
+        data={query.data?.items ?? []}
+        total={query.data?.total ?? 0}
+        page={list.page}
+        pageSize={query.data?.limit ?? PAGE_SIZE}
+        onPageChange={list.setPage}
+        isLoading={query.isLoading}
+        isFetching={query.isFetching}
+        isError={query.isError}
+        onRetry={() => query.refetch()}
+        labels={labels}
+      />
+      <RejectDialog
+        target={rejectTarget}
+        onClose={() => setRejectTarget(null)}
+        onSubmit={reason => rejectTarget && action.mutate({ id: rejectTarget.id, kind: 'reject', reason })}
+        isPending={action.isPending}
+      />
+    </section>
+  )
+}
+
+function WalletsSection({ list }: { list: ListParams }) {
+  const { t, i18n } = useTranslation()
+  const labels = useDataTableLabels(t('admin.withdrawals.walletsEmpty'))
+  const [debitTarget, setDebitTarget] = useState<AdminWalletListItem | null>(null)
+  const [search, setSearch] = useState(list.q)
+
+  const query = useQuery({
+    ...fetchWalletsListQueryOptions({
+      q: list.q || undefined,
+      ownerType: list.values.type || undefined,
+      balance: list.values.solde || undefined,
+      sort: list.values.ordre || undefined,
+      page: list.page,
+    }),
+    placeholderData: keepPreviousData,
+  })
+
+  const columns = useMemo<Array<ColumnDef<AdminWalletListItem, unknown>>>(() => [
     {
       id: 'beneficiary',
       header: t('admin.withdrawals.columns.beneficiary'),
-      cell: ({ row }) => (
-        <BeneficiaryCell
-          ownerType={row.original.ownerType}
-          ownerName={row.original.ownerName}
-          supplierId={row.original.supplierId}
-          courierId={row.original.courierId}
-        />
-      ),
+      cell: ({ row }) => <BeneficiaryCell {...row.original} />,
     },
     {
       id: 'balance',
       header: t('admin.withdrawals.columns.balance'),
       meta: { numeric: true },
       cell: ({ row }) => (
-        <span className={row.original.balance < 0 ? 'text-destructive font-medium' : 'font-medium'}>
-          {formatAmount(row.original.balance)}
-        </span>
+        <span className={row.original.balance < 0 ? 'text-ebio-coral-600 font-medium' : 'font-medium'}>{formatAmount(row.original.balance)}</span>
       ),
     },
     {
       id: 'updatedAt',
       header: t('admin.withdrawals.columns.updatedAt'),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground">{new Date(row.original.updatedAt).toLocaleDateString(i18n.language)}</span>
+      meta: { hideBelow: 'md' },
+      cell: ({ row }) => <span className="text-muted-foreground">{new Date(row.original.updatedAt).toLocaleDateString(i18n.language)}</span>,
+    },
+    {
+      id: 'actions',
+      header: '',
+      meta: { align: 'right' },
+      cell: ({ row }) => row.original.balance > 0 && (
+        <Can action="manage" subject="Withdrawal">
+          <Button variant="outline" size="sm" onClick={() => setDebitTarget(row.original)}>
+            <MinusCircle className="mr-1 h-4 w-4" />
+            {t('admin.withdrawals.debit.action')}
+          </Button>
+        </Can>
       ),
     },
   ], [t, i18n.language])
 
-  const topupColumns = useMemo<Array<ColumnDef<AdminTopup, unknown>>>(() => [
+  return (
+    <section className="space-y-4">
+      <SectionToolbar hint={t('admin.withdrawals.walletsHint')}>
+        <form
+          onSubmit={(event) => {
+            event.preventDefault()
+            list.setSearch(search)
+          }}
+        >
+          <Input
+            type="search"
+            className="h-10 min-w-56"
+            value={search}
+            placeholder={t('admin.withdrawals.walletsSearch')}
+            aria-label={t('admin.withdrawals.walletsSearch')}
+            onChange={event => setSearch(event.target.value)}
+            onBlur={() => list.setSearch(search)}
+          />
+        </form>
+        <FilterSelect
+          value={list.values.type}
+          onValueChange={value => list.setFilter('type', value)}
+          allLabel={t('admin.withdrawals.allOwners')}
+          ariaLabel={t('admin.withdrawals.columns.beneficiary')}
+          options={['SUPPLIER', 'COURIER', 'USER'].map(value => ({ value, label: t(`admin.withdrawals.ownerTypes.${value}`) }))}
+        />
+        <FilterSelect
+          value={list.values.solde}
+          onValueChange={value => list.setFilter('solde', value)}
+          allLabel={t('admin.withdrawals.allBalances')}
+          ariaLabel={t('admin.withdrawals.columns.balance')}
+          options={['positive', 'negative', 'zero'].map(value => ({ value, label: t(`admin.withdrawals.balances.${value}`) }))}
+        />
+        <FilterSelect
+          value={list.values.ordre}
+          onValueChange={value => list.setFilter('ordre', value)}
+          allLabel={t('admin.withdrawals.sorts.balance_desc')}
+          ariaLabel={t('admin.withdrawals.sortLabel')}
+          options={['balance_asc', 'updated_desc'].map(value => ({ value, label: t(`admin.withdrawals.sorts.${value}`) }))}
+        />
+      </SectionToolbar>
+      {query.data && (list.q || list.values.type || list.values.solde) && (
+        <p className="text-muted-foreground text-sm">
+          {t('admin.withdrawals.filteredTotals', { owed: formatAmount(query.data.totalOwed), debt: formatAmount(query.data.totalDebt) })}
+        </p>
+      )}
+      <DataTable
+        columns={columns}
+        data={query.data?.items ?? []}
+        total={query.data?.total ?? 0}
+        page={list.page}
+        pageSize={WALLETS_PAGE_SIZE}
+        onPageChange={list.setPage}
+        isLoading={query.isLoading}
+        isFetching={query.isFetching}
+        isError={query.isError}
+        onRetry={() => query.refetch()}
+        labels={labels}
+      />
+      <DebitDialog wallet={debitTarget} onClose={() => setDebitTarget(null)} />
+    </section>
+  )
+}
+
+function TopupsSection({ list }: { list: ListParams }) {
+  const { t, i18n } = useTranslation()
+  const status = list.values.statutRecharge
+  const labels = useDataTableLabels(t('admin.withdrawals.topupsEmpty'))
+  const query = useQuery({
+    ...fetchAdminTopupsQueryOptions(status || undefined, list.page),
+    placeholderData: keepPreviousData,
+  })
+
+  const columns = useMemo<Array<ColumnDef<AdminTopup, unknown>>>(() => [
     {
       id: 'createdAt',
       header: t('admin.withdrawals.columns.date'),
@@ -332,9 +555,8 @@ export default function AdminWithdrawalsPage() {
     {
       id: 'reference',
       header: t('admin.withdrawals.columns.reference'),
-      cell: ({ row }) => (
-        <span className="text-muted-foreground font-mono text-xs">{row.original.fedapayTransactionId ?? '—'}</span>
-      ),
+      meta: { hideBelow: 'md' },
+      cell: ({ row }) => <span className="text-muted-foreground font-mono text-xs">{row.original.fedapayTransactionId ?? '—'}</span>,
     },
     {
       id: 'amount',
@@ -353,194 +575,165 @@ export default function AdminWithdrawalsPage() {
     },
   ], [t, i18n.language])
 
-  const wallets = overview.data?.wallets ?? []
-
   return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-2xl font-bold">{t('admin.withdrawals.title')}</h2>
-        <p className="text-muted-foreground">{t('admin.withdrawals.description')}</p>
-      </div>
-
-      {approveError && !approveTarget && (
-        <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm" role="alert">
-          {approveError}
-        </p>
-      )}
-
-      <Section
-        title={t('admin.withdrawals.requestsTitle')}
-        hint={t('admin.withdrawals.requestsHint')}
-        action={(
-          <FilterSelect
-            value={requestsStatus}
-            onValueChange={(value) => {
-              setRequestsStatus(value)
-              setRequestsPage(1)
-            }}
-            allLabel={t('admin.withdrawals.allStatuses')}
-            ariaLabel={t('admin.withdrawals.columns.status')}
-            options={WITHDRAWAL_STATUSES.map(value => ({ value, label: t(`admin.withdrawals.status.${value}`) }))}
-          />
-        )}
-      >
-        <DataTable
-          columns={requestColumns}
-          data={withdrawals.data?.items ?? []}
-          total={withdrawals.data?.total ?? 0}
-          page={requestsPage}
-          pageSize={withdrawals.data?.limit ?? PAGE_SIZE}
-          onPageChange={setRequestsPage}
-          isLoading={withdrawals.isLoading}
-          isFetching={withdrawals.isFetching}
-          isError={withdrawals.isError}
-          onRetry={() => withdrawals.refetch()}
-          labels={requestsLabels}
+    <section className="space-y-4">
+      <SectionToolbar hint={t('admin.withdrawals.topupsHint')}>
+        <FilterSelect
+          value={status}
+          onValueChange={value => list.setFilter('statutRecharge', value)}
+          allLabel={t('admin.withdrawals.allStatuses')}
+          ariaLabel={t('admin.withdrawals.columns.status')}
+          options={TOPUP_STATUSES.map(value => ({ value, label: t(`admin.withdrawals.topupStatus.${value}`) }))}
         />
-      </Section>
-
-      <Section title={t('admin.withdrawals.numbersTitle')} hint={t('admin.withdrawals.numbersHint')}>
-        <DataTable
-          columns={numberColumns}
-          data={numbers.data?.items ?? []}
-          total={numbers.data?.total ?? 0}
-          page={numbersPage}
-          pageSize={numbers.data?.limit ?? PAGE_SIZE}
-          onPageChange={setNumbersPage}
-          isLoading={numbers.isLoading}
-          isFetching={numbers.isFetching}
-          isError={numbers.isError}
-          onRetry={() => numbers.refetch()}
-          labels={numbersLabels}
-        />
-      </Section>
-
-      <div className="grid gap-4 sm:grid-cols-2">
-        <BalanceCard
-          label={t('admin.withdrawals.totalOwed')}
-          hint={t('admin.withdrawals.totalOwedHint')}
-          value={formatAmount(overview.data?.totalOwed ?? 0)}
-          isLoading={overview.isLoading}
-          highlight
-        />
-        <BalanceCard
-          label={t('admin.withdrawals.totalDebt')}
-          hint={t('admin.withdrawals.totalDebtHint')}
-          value={formatAmount(overview.data?.totalDebt ?? 0)}
-          isLoading={overview.isLoading}
-        />
-      </div>
-
-      <Section title={t('admin.withdrawals.walletsTitle')} hint={t('admin.withdrawals.walletsHint')}>
-        <DataTable
-          columns={walletColumns}
-          data={wallets}
-          total={wallets.length}
-          page={1}
-          pageSize={Math.max(wallets.length, 1)}
-          onPageChange={() => {}}
-          isLoading={overview.isLoading}
-          isError={overview.isError}
-          onRetry={() => overview.refetch()}
-          labels={walletsLabels}
-        />
-      </Section>
-
-      <Section title={t('admin.withdrawals.topupsTitle')} hint={t('admin.withdrawals.topupsHint')}>
-        <DataTable
-          columns={topupColumns}
-          data={topups.data?.items ?? []}
-          total={topups.data?.total ?? 0}
-          page={topupsPage}
-          pageSize={topups.data?.limit ?? PAGE_SIZE}
-          onPageChange={setTopupsPage}
-          isLoading={topups.isLoading}
-          isFetching={topups.isFetching}
-          isError={topups.isError}
-          onRetry={() => topups.refetch()}
-          labels={topupsLabels}
-        />
-      </Section>
-
-      {/* Paying sends money out at once: it never happens on a single click. */}
-      <ConfirmDialog
-        open={approveTarget !== null}
-        onOpenChange={(open) => {
-          if (!open)
-            setApproveTarget(null)
-        }}
-        title={t('admin.withdrawals.approveTitle')}
-        description={t('admin.withdrawals.approveBody', {
-          amount: approveTarget ? formatAmount(approveTarget.amount) : '',
-          name: approveTarget?.ownerName ?? '',
-          number: approveTarget ? `${approveTarget.phoneNumber} (${approveTarget.operatorLabel})` : '',
-        })}
-        confirmLabel={t('admin.withdrawals.approve')}
-        onConfirm={() => approveTarget && withdrawalAction.mutate({ id: approveTarget.id, action: 'approve' })}
-        isPending={withdrawalAction.isPending}
-        error={approveError}
+      </SectionToolbar>
+      <DataTable
+        columns={columns}
+        data={query.data?.items ?? []}
+        total={query.data?.total ?? 0}
+        page={list.page}
+        pageSize={query.data?.limit ?? PAGE_SIZE}
+        onPageChange={list.setPage}
+        isLoading={query.isLoading}
+        isFetching={query.isFetching}
+        isError={query.isError}
+        onRetry={() => query.refetch()}
+        labels={labels}
       />
-
-      <Dialog open={rejectTarget !== null} onOpenChange={open => !open && setRejectTarget(null)}>
-        <DialogContent className="max-w-md" onCloseAutoFocus={returnFocusAfterReject}>
-          <DialogHeader>
-            <DialogTitle>{t('admin.withdrawals.rejectTitle')}</DialogTitle>
-            <DialogDescription>
-              {t('admin.withdrawals.rejectBody', { label: rejectTarget?.label ?? '' })}
-            </DialogDescription>
-          </DialogHeader>
-          <Textarea
-            value={rejectReason}
-            placeholder={t('admin.withdrawals.rejectPlaceholder')}
-            onChange={event => setRejectReason(event.target.value)}
-          />
-          <div className="flex justify-end gap-2">
-            <Button variant="ghost" onClick={() => setRejectTarget(null)}>{t('common.cancel')}</Button>
-            <Button
-              variant="destructive"
-              disabled={isActing || rejectReason.trim().length < 3}
-              onClick={submitReject}
-            >
-              {t('admin.withdrawals.reject')}
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog>
-    </div>
-  )
-}
-
-interface SectionProps {
-  title: string
-  hint: string
-  action?: ReactNode
-  children: ReactNode
-}
-
-function Section({ title, hint, action, children }: SectionProps) {
-  return (
-    <section className="space-y-3">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div className="space-y-1">
-          <h3 className="text-lg font-semibold">{title}</h3>
-          <p className="text-muted-foreground text-sm">{hint}</p>
-        </div>
-        {action}
-      </div>
-      {children}
     </section>
   )
 }
 
-interface BalanceCardProps {
-  label: string
-  hint: string
-  value: string
-  isLoading: boolean
-  highlight?: boolean
+function SectionToolbar({ hint, children }: { hint: string, children?: ReactNode }) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3">
+      <p className="text-muted-foreground max-w-2xl text-sm">{hint}</p>
+      {children && <div className="flex flex-wrap items-center gap-3">{children}</div>}
+    </div>
+  )
 }
 
-function BalanceCard({ label, hint, value, isLoading, highlight = false }: BalanceCardProps) {
+function RejectDialog({ target, onClose, onSubmit, isPending }: {
+  target: RejectTarget | null
+  onClose: () => void
+  onSubmit: (reason: string) => void
+  isPending: boolean
+}) {
+  const { t } = useTranslation()
+  const [reason, setReason] = useState('')
+  const returnFocus = useReturnFocus(target !== null)
+
+  return (
+    <Dialog
+      open={target !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          setReason('')
+          onClose()
+        }
+      }}
+    >
+      <DialogContent className="max-w-md" onCloseAutoFocus={returnFocus}>
+        <DialogHeader>
+          <DialogTitle>{t('admin.withdrawals.rejectTitle')}</DialogTitle>
+          <DialogDescription>{t('admin.withdrawals.rejectBody', { label: target?.label ?? '' })}</DialogDescription>
+        </DialogHeader>
+        <Textarea value={reason} placeholder={t('admin.withdrawals.rejectPlaceholder')} onChange={event => setReason(event.target.value)} />
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
+          <Button variant="destructive" disabled={isPending || reason.trim().length < 3} onClick={() => onSubmit(reason.trim())}>
+            {t('admin.withdrawals.reject')}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+/**
+ * The staff debit: an amount up to the balance, a reason the owner will read,
+ * and — on by default — a notification to them. Nothing is debited without
+ * a reason; nothing goes below zero.
+ */
+function DebitDialog({ wallet, onClose }: { wallet: AdminWalletListItem | null, onClose: () => void }) {
+  const { t } = useTranslation()
+  const invalidate = useInvalidateMoney()
+  const [amount, setAmount] = useState('')
+  const [reason, setReason] = useState('')
+  const [notify, setNotify] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const returnFocus = useReturnFocus(wallet !== null)
+
+  const reset = () => {
+    setAmount('')
+    setReason('')
+    setNotify(true)
+    setError(null)
+  }
+
+  const debit = useMutation({
+    mutationFn: () => debitWallet(wallet!.id, { amount: Number(amount), reason: reason.trim(), notify }),
+    onSuccess: (result) => {
+      toast.success(t('admin.withdrawals.debit.done', { amount: formatAmount(Number(amount)), balance: formatAmount(result.balanceAfter) }))
+      invalidate()
+      reset()
+      onClose()
+    },
+    onError: (mutationError: Error) => setError(mutationError.message),
+  })
+
+  const value = Number(amount)
+  const tooMuch = wallet !== null && value > wallet.balance
+  const valid = value > 0 && !tooMuch && reason.trim().length >= 3
+
+  return (
+    <Dialog
+      open={wallet !== null}
+      onOpenChange={(open) => {
+        if (!open) {
+          reset()
+          onClose()
+        }
+      }}
+    >
+      <DialogContent className="max-w-md" onCloseAutoFocus={returnFocus}>
+        <DialogHeader>
+          <DialogTitle>{t('admin.withdrawals.debit.title')}</DialogTitle>
+          <DialogDescription>
+            {t('admin.withdrawals.debit.body', { name: wallet?.ownerName ?? '', balance: formatAmount(wallet?.balance ?? 0) })}
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="debit-amount">{t('admin.withdrawals.debit.amount')}</Label>
+            <div className="relative">
+              <Input id="debit-amount" type="number" min={1} step={100} inputMode="numeric" className="pr-16" value={amount} onChange={event => setAmount(event.target.value)} />
+              <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs">FCFA</span>
+            </div>
+            {tooMuch && <p className="text-destructive text-sm">{t('admin.withdrawals.debit.tooMuch')}</p>}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="debit-reason">{t('admin.withdrawals.debit.reason')}</Label>
+            <Textarea id="debit-reason" value={reason} rows={3} placeholder={t('admin.withdrawals.debit.reasonPlaceholder')} onChange={event => setReason(event.target.value)} />
+            <p className="text-muted-foreground text-xs">{t('admin.withdrawals.debit.reasonHint')}</p>
+          </div>
+          <label className="flex items-center gap-2 text-sm">
+            <input type="checkbox" className="accent-primary h-4 w-4" checked={notify} onChange={event => setNotify(event.target.checked)} />
+            {t('admin.withdrawals.debit.notify')}
+          </label>
+          {error && <p className="text-destructive text-sm" role="alert">{error}</p>}
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={debit.isPending}>{t('common.cancel')}</Button>
+          <Button variant="destructive" disabled={!valid || debit.isPending} onClick={() => debit.mutate()}>
+            {debit.isPending ? t('common.saving') : t('admin.withdrawals.debit.confirm', { amount: value > 0 ? formatAmount(value) : '' })}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+function BalanceCard({ label, hint, value, isLoading, highlight = false }: { label: string, hint: string, value: string, isLoading: boolean, highlight?: boolean }) {
   return (
     <Card>
       <CardHeader className="pb-2">

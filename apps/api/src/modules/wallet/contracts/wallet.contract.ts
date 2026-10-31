@@ -132,3 +132,16 @@ export type CreatePayoutNumberInput = z.infer<typeof createPayoutNumberSchema>
 export type CreateWithdrawalInput = z.infer<typeof createWithdrawalSchema>
 export type AdminWithdrawalAction = z.infer<typeof adminWithdrawalActionSchema>
 export type AdminPayoutNumberAction = z.infer<typeof adminPayoutNumberActionSchema>
+
+export const adminWalletDebitSchema = z.object({
+  /** FCFA taken off the wallet; refused if it would go below zero. */
+  amount: z.number().positive().max(10_000_000),
+  /** Shown to the owner in their history and in the notification. */
+  reason: z.string().trim().min(3).max(300),
+  /** Tell the owner, by push and in the app. */
+  notify: z.boolean().default(true),
+}).meta({
+  title: 'AdminWalletDebit',
+  description: 'Manual debit of a wallet by staff, with its reason',
+})
+export type AdminWalletDebit = z.infer<typeof adminWalletDebitSchema>

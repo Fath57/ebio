@@ -29,6 +29,10 @@ export interface AdminSupplierListItem {
   reviewCount: number
   productCount: number
   orderCount: number
+  /** Balance of the shop wallet, FCFA. */
+  walletBalance: number
+  lastOrderAt: string | null
+  commissionRate: number | null
   createdAt: string
   owner: AdminSupplierOwner
 }
@@ -51,12 +55,29 @@ export interface AdminSuppliersPage {
   statusCounts: Record<string, number>
 }
 
+/** The advanced filters, by API query name; values travel as typed in the URL. */
+export const SUPPLIER_ADVANCED_FILTER_KEYS = [
+  'type',
+  'mode',
+  'minOrders',
+  'minBalance',
+  'minProducts',
+  'minRating',
+  'inactiveDays',
+  'located',
+  'negotiatedRate',
+  'createdFrom',
+  'createdTo',
+] as const
+export type SupplierAdvancedFilterKey = typeof SUPPLIER_ADVANCED_FILTER_KEYS[number]
+
 export interface AdminSuppliersFilters {
   status?: string
   q?: string
   sortBy?: string
   sortDir?: string
   page?: number
+  advanced?: Partial<Record<SupplierAdvancedFilterKey, string>>
 }
 
 export function fetchAdminSuppliersQueryOptions(filters: AdminSuppliersFilters = {}) {
@@ -67,6 +88,7 @@ export function fetchAdminSuppliersQueryOptions(filters: AdminSuppliersFilters =
         query: {
           status: filters.status ?? '',
           q: filters.q ?? '',
+          ...Object.fromEntries(SUPPLIER_ADVANCED_FILTER_KEYS.map(key => [key, filters.advanced?.[key] ?? ''])) as Record<SupplierAdvancedFilterKey, string>,
           sortBy: filters.sortBy ?? '',
           sortDir: filters.sortDir ?? '',
           page: String(filters.page ?? 1),

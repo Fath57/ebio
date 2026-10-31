@@ -23,7 +23,7 @@ interface FormatPickerProps {
 }
 
 function formatPrice(value: number): string {
-  return Math.round(value).toLocaleString('fr-FR').replace(/\u202F/g, ' ')
+  return Math.round(value).toLocaleString('fr-FR').replace(/\u202F/g, '\u00A0')
 }
 
 /**

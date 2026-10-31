@@ -1039,7 +1039,8 @@
         "price": "Price",
         "stock": "Stock",
         "status": "Status",
-        "created": "Added on"
+        "created": "Added on",
+        "sold": "Sold"
       },
       "status": {
         "ACTIVE": "On sale",
@@ -1050,6 +1051,65 @@
         "out": "Out of stock",
         "low": "Low stock",
         "in": "In stock"
+      },
+      "filters": {
+        "minPrice": "Minimum price",
+        "maxPrice": "Maximum price",
+        "minSold": "Units sold",
+        "sales": "Sales",
+        "salesSome": "Sold at least once",
+        "salesNone": "Never sold",
+        "label": "Label",
+        "formats": "Formats",
+        "withFormats": "Several formats",
+        "withPacks": "With a pack",
+        "shop": "Shop",
+        "shopValidated": "Validated shop",
+        "shopNotValidated": "Shop not validated",
+        "photo": "Photo",
+        "noPhoto": "No photo",
+        "minRating": "Rating",
+        "createdFrom": "Created from",
+        "createdTo": "Created until",
+        "all": "All"
+      },
+      "detail": {
+        "error": "This product could not be loaded.",
+        "edit": "Edit in the studio",
+        "openShop": "Open the shop page",
+        "visible": "Visible and orderable by nearby buyers.",
+        "notVisible": "This product is not visible or not orderable:",
+        "issues": {
+          "SHOP_NOT_VALIDATED": "The shop is not validated: none of its products show.",
+          "SHOP_NOT_LOCATED": "The shop has no position: it shows in no nearby search.",
+          "SHOP_CONTACT_ONLY": "The shop is contact-only: the product shows but cannot be ordered.",
+          "PRODUCT_HIDDEN": "The product is hidden.",
+          "OUT_OF_STOCK": "The product is out of stock.",
+          "NO_PHOTO": "The product has no photo."
+        },
+        "photo": "Photo {{index}}",
+        "unitsSold": "Units sold",
+        "orders": "Orders",
+        "revenue": "Revenue",
+        "lastSold": "Last sale",
+        "sale": "On sale",
+        "alertAt": "alert at {{count}}",
+        "cancelled": "Cancelled units",
+        "formats": "Formats and packs",
+        "perUnit": "{{amount}} per unit",
+        "available_one": "{{count}} available",
+        "available_other": "{{count}} available",
+        "description": "Description and labels",
+        "noDescription": "No description.",
+        "ingredients": "Ingredients",
+        "origin": "Origin",
+        "conservation": "Storage",
+        "reviews": "Buyer reviews",
+        "noReviews": "No review yet.",
+        "hiddenReview": "Review hidden by moderation.",
+        "recentOrders": "Latest orders",
+        "noOrders": "No order for this product.",
+        "unit": "unit"
       }
     },
     "promotions": {
@@ -1521,7 +1581,8 @@
         "products": "Products",
         "orders": "Orders",
         "rating": "Rating",
-        "located": "Location"
+        "located": "Location",
+        "balance": "Balance"
       },
       "days": {
         "monday": "Monday",
@@ -1596,7 +1657,35 @@
         "suspend": "Suspend account",
         "reinstate": "Lift suspension"
       },
-      "title": "Suppliers"
+      "title": "Suppliers",
+      "located": "Located",
+      "lastOrder": "last on {{date}}",
+      "noOrder": "no order",
+      "filters": {
+        "minOrders": "Orders received",
+        "minBalance": "Wallet balance",
+        "minProducts": "Products on sale",
+        "minRating": "Rating",
+        "inactiveDays": "No order for",
+        "days": "days",
+        "type": "Type",
+        "mode": "Mode",
+        "located": "Location",
+        "negotiatedRate": "Commission",
+        "negotiated": "Negotiated rate",
+        "categoryRate": "Category rate",
+        "createdFrom": "Joined from",
+        "createdTo": "Joined until",
+        "all": "All",
+        "types": {
+          "INPUTS": "Inputs",
+          "TRANSFORMER": "Processor"
+        },
+        "modes": {
+          "ORDER": "Online orders",
+          "CONTACT": "Contact only"
+        }
+      }
     },
     "transactions": {
       "allStatuses": "All statuses",
@@ -1645,6 +1734,61 @@
         "commissionEarnedHint": "Only on released payments.",
         "refunded": "Refunded",
         "refundedHint": "Returned to buyers."
+      },
+      "detail": {
+        "error": "This payment could not be loaded.",
+        "forOrder": "for order",
+        "dispute": "Dispute on this order",
+        "payment": "Payment",
+        "provider": "Provider",
+        "method": "Method",
+        "operator": "Operator",
+        "phone": "Debited number",
+        "providerReference": "Provider reference",
+        "receipt": "Receipt",
+        "openReceipt": "Open receipt",
+        "timeline": "Timeline",
+        "created": "Payment started",
+        "paid": "Payment received",
+        "released": "Released to the shop",
+        "refunded": "Refunded",
+        "order": "Order",
+        "gift": "free",
+        "cart": "Cart",
+        "cartHint_one": "This payment covers {{count}} order, {{total}} in total.",
+        "cartHint_other": "This payment covers {{count}} orders, {{total}} in total.",
+        "journal": "Provider journal",
+        "journalHint": "Every exchange with the payment provider for this cart: attempt, returned status, failure.",
+        "journalEmpty": "No exchange recorded.",
+        "kinds": {
+          "CART_PAYMENT": "Cart payment",
+          "TOPUP": "Top-up",
+          "PAYOUT": "Payout"
+        },
+        "journalStatus": {
+          "PENDING": "Pending",
+          "COMPLETED": "Completed",
+          "FAILED": "Failed",
+          "ABANDONED": "Abandoned"
+        },
+        "movements": "Wallet movements",
+        "movementsHint": "Money that moved inside eBio because of this payment or its order: sale, commission, refund, delivery.",
+        "movementsEmpty": "No wallet movement.",
+        "balanceAfter": "balance {{amount}}",
+        "movementTypes": {
+          "SALE_CREDIT": "Sale",
+          "COMMISSION_DEBIT": "Commission",
+          "REFUND": "Refund",
+          "ORDER_PAYMENT": "Order payment",
+          "DELIVERY_EARNING": "Courier earning",
+          "DELIVERY_COMMISSION": "Delivery commission",
+          "PLATFORM_COMMISSION": "eBio commission",
+          "PLATFORM_DELIVERY_SHARE": "eBio delivery share",
+          "PROMO_COMPENSATION": "Promotion compensation",
+          "TIP_PAYMENT": "Tip",
+          "TIP_EARNING": "Tip received",
+          "ADJUSTMENT": "Adjustment"
+        }
       }
     },
     "users": {
@@ -1922,7 +2066,41 @@
       },
       "allStatuses": "All statuses",
       "approveTitle": "Pay this withdrawal?",
-      "approveBody": "{{amount}} will be sent to {{name}} on {{number}}. The payment leaves at once and cannot be undone."
+      "approveBody": "{{amount}} will be sent to {{name}} on {{number}}. The payment leaves at once and cannot be undone.",
+      "sections": {
+        "demandes": "Payout requests",
+        "numeros": "Numbers to validate",
+        "portefeuilles": "Wallets",
+        "recharges": "Top-ups"
+      },
+      "walletsSearch": "Search an owner…",
+      "allOwners": "All owners",
+      "allBalances": "All balances",
+      "balances": {
+        "positive": "Positive balance",
+        "negative": "In debt",
+        "zero": "Zero balance"
+      },
+      "sortLabel": "Sort",
+      "sorts": {
+        "balance_desc": "Balance, highest first",
+        "balance_asc": "Balance, lowest first",
+        "updated_desc": "Latest movement"
+      },
+      "filteredTotals": "On this selection: {{owed}} owed to owners, {{debt}} of debt.",
+      "debit": {
+        "action": "Debit",
+        "title": "Debit the wallet",
+        "body": "Wallet of {{name}}, current balance {{balance}}. The debit shows in their history with its reason.",
+        "amount": "Amount to debit",
+        "tooMuch": "The amount exceeds the wallet balance.",
+        "reason": "Reason",
+        "reasonPlaceholder": "E.g. correction of a refund credited by mistake",
+        "reasonHint": "The owner reads this reason in their history and in the notification.",
+        "notify": "Tell the owner (push and in-app notification)",
+        "confirm": "Debit {{amount}}",
+        "done": "{{amount}} debited. New balance: {{balance}}."
+      }
     },
     "couriers": {
       "title": "Couriers",
@@ -2239,7 +2417,8 @@
     "removeFilter": "Remove filter {{filter}}",
     "resetAll": "Clear all",
     "allTab": "All",
-    "statusTabs": "Filter by status"
+    "statusTabs": "Filter by status",
+    "moreFilters": "More filters"
   },
   "media": {
     "cropper": {

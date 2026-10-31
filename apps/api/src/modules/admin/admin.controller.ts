@@ -20,6 +20,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Patch,
   Post,
   Put,
@@ -35,6 +36,8 @@ import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { OrdersService } from '../orders/orders.service'
 import { AdminDashboardService, parseDashboardPeriod } from './admin-dashboard.service'
+import { AdminPaymentDetailService } from './admin-payment-detail.service'
+import { AdminProductDetailService } from './admin-product-detail.service'
 import { AdminService } from './admin.service'
 import {
   adminOrderStatusSchema,
@@ -50,6 +53,7 @@ import {
   suspendSupplierSchema,
   validationActionSchema,
 } from './contracts/admin.contract'
+import { readDay, readMinimum } from './supplier-filters'
 
 @Controller('admin')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
@@ -58,6 +62,8 @@ export class AdminController {
   constructor(
     private readonly adminService: AdminService,
     private readonly dashboardService: AdminDashboardService,
+    private readonly paymentDetailService: AdminPaymentDetailService,
+    private readonly productDetailService: AdminProductDetailService,
     private readonly ordersService: OrdersService,
   ) {}
 
@@ -290,6 +296,17 @@ export class AdminController {
   async getSuppliers(
     @Query('status') status?: string,
     @Query('q') q?: string,
+    @Query('type') type?: string,
+    @Query('mode') mode?: string,
+    @Query('minOrders') minOrders?: string,
+    @Query('minBalance') minBalance?: string,
+    @Query('minProducts') minProducts?: string,
+    @Query('minRating') minRating?: string,
+    @Query('inactiveDays') inactiveDays?: string,
+    @Query('located') located?: string,
+    @Query('negotiatedRate') negotiatedRate?: string,
+    @Query('createdFrom') createdFrom?: string,
+    @Query('createdTo') createdTo?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
     @Query('page') page: string = '1',
@@ -298,6 +315,17 @@ export class AdminController {
     return this.adminService.getSuppliers({
       status,
       q,
+      type: type || undefined,
+      mode: mode || undefined,
+      minOrders: readMinimum(minOrders),
+      minBalance: readMinimum(minBalance),
+      minProducts: readMinimum(minProducts),
+      minRating: readMinimum(minRating),
+      inactiveDays: readMinimum(inactiveDays),
+      located: located === 'yes' || located === 'no' ? located : undefined,
+      negotiatedRate: negotiatedRate === 'yes' || negotiatedRate === 'no' ? negotiatedRate : undefined,
+      createdFrom: readDay(createdFrom),
+      createdTo: readDay(createdTo, true),
       sortBy,
       sortDir,
       page: Number(page),
@@ -343,6 +371,17 @@ export class AdminController {
     @Query('status') status?: string,
     @Query('stock') stock?: string,
     @Query('promo') promo?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('minSold') minSold?: string,
+    @Query('sales') sales?: string,
+    @Query('label') label?: string,
+    @Query('photo') photo?: string,
+    @Query('shop') shop?: string,
+    @Query('formats') formats?: string,
+    @Query('minRating') minRating?: string,
+    @Query('createdFrom') createdFrom?: string,
+    @Query('createdTo') createdTo?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
     @Query('page') page: string = '1',
@@ -355,11 +394,29 @@ export class AdminController {
       status,
       stock,
       promo: promo === 'true',
+      minPrice: readMinimum(minPrice),
+      maxPrice: readMinimum(maxPrice),
+      minSold: readMinimum(minSold),
+      sales: sales === 'none' || sales === 'some' ? sales : undefined,
+      label: label && /^[a-z0-9-]{2,64}$/.test(label) ? label : undefined,
+      photo: photo === 'missing' ? 'missing' : undefined,
+      shop: shop === 'validated' || shop === 'not_validated' ? shop : undefined,
+      formats: formats === 'formats' || formats === 'packs' ? formats : undefined,
+      minRating: readMinimum(minRating),
+      createdFrom: readDay(createdFrom),
+      createdTo: readDay(createdTo, true),
       sortBy,
       sortDir,
       page: Number(page),
       limit: Number(limit),
     })
+  }
+
+  /** A product as staff see it: its page, its sales, its latest orders and reviews, why it may be invisible. */
+  @CanRead('Product')
+  @Get('catalogue/:id')
+  async getCatalogueProduct(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.productDetailService.getDetail(id)
   }
 
   @CanRead('User')
@@ -382,6 +439,13 @@ export class AdminController {
       page: Number(page),
       limit: Number(limit),
     })
+  }
+
+  /** One payment, its order and cart, the provider's journal and the wallet movements it caused. */
+  @CanRead('Payment')
+  @Get('payments/:id')
+  async getPaymentDetail(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.paymentDetailService.getDetail(id)
   }
 
   @CanRead('Payment')

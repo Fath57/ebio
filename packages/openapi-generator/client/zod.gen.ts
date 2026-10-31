@@ -270,6 +270,17 @@ export const zAdminWithdrawalAction = z.object({
 });
 
 /**
+ * AdminWalletDebit
+ *
+ * Manual debit of a wallet by staff, with its reason
+ */
+export const zAdminWalletDebit = z.object({
+  amount: z.number().gt(0).lte(10000000),
+  reason: z.string().min(3).max(300),
+  notify: z.boolean().default(true),
+});
+
+/**
  * RejectCourier
  *
  * Reason shown to the rejected courier applicant
@@ -542,6 +553,37 @@ export const zUpdateCategory = z.object({
 });
 
 /**
+ * CreateCertification
+ *
+ * A label or certification products can carry
+ */
+export const zCreateCertification = z.object({
+  code: z
+    .string()
+    .min(2)
+    .max(64)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  name: z.string().min(1).max(100),
+  description: z.optional(z.union([z.string().max(500), z.null()])),
+  logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
+  isActive: z.boolean().default(true),
+  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateCertification
+ *
+ * Update a label or certification — every field optional, the code is immutable
+ */
+export const zUpdateCertification = z.object({
+  name: z.optional(z.string().min(1).max(100)),
+  description: z.optional(z.union([z.string().max(500), z.null()])),
+  logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
+  isActive: z.optional(z.boolean()).default(true),
+  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
  * DescribeProduct
  *
  * Rédiger une description à partir des informations déjà saisies
@@ -603,37 +645,6 @@ export const zCreateProductUnit = z.object({
 export const zUpdateProductUnit = z.object({
   label: z.optional(z.string().min(1).max(64)),
   shortLabel: z.optional(z.string().min(1).max(16)),
-  isActive: z.optional(z.boolean()).default(true),
-  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
-});
-
-/**
- * CreateCertification
- *
- * A label or certification products can carry
- */
-export const zCreateCertification = z.object({
-  code: z
-    .string()
-    .min(2)
-    .max(64)
-    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
-  name: z.string().min(1).max(100),
-  description: z.optional(z.union([z.string().max(500), z.null()])),
-  logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
-  isActive: z.boolean().default(true),
-  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
-});
-
-/**
- * UpdateCertification
- *
- * Update a label or certification — every field optional, the code is immutable
- */
-export const zUpdateCertification = z.object({
-  name: z.optional(z.string().min(1).max(100)),
-  description: z.optional(z.union([z.string().max(500), z.null()])),
-  logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
   isActive: z.optional(z.boolean()).default(true),
   sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
 });
@@ -5624,6 +5635,31 @@ export const zWalletAdminControllerWalletsOverviewData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zWalletAdminControllerListWalletsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    q: z.string(),
+    ownerType: z.string(),
+    balance: z.string(),
+    sort: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerDebitWalletData = z.object({
+  body: z.object({
+    amount: z.number().gt(0).lte(10000000),
+    reason: z.string().min(3).max(300),
+    notify: z.boolean().default(true),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zAnalyticsControllerFunnelReportData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -8796,6 +8832,17 @@ export const zAdminControllerGetSuppliersData = z.object({
   query: z.object({
     status: z.string(),
     q: z.string(),
+    type: z.string(),
+    mode: z.string(),
+    minOrders: z.string(),
+    minBalance: z.string(),
+    minProducts: z.string(),
+    minRating: z.string(),
+    inactiveDays: z.string(),
+    located: z.string(),
+    negotiatedRate: z.string(),
+    createdFrom: z.string(),
+    createdTo: z.string(),
     sortBy: z.string(),
     sortDir: z.string(),
     page: z.string(),
@@ -8831,11 +8878,30 @@ export const zAdminControllerGetCatalogueData = z.object({
     status: z.string(),
     stock: z.string(),
     promo: z.string(),
+    minPrice: z.string(),
+    maxPrice: z.string(),
+    minSold: z.string(),
+    sales: z.string(),
+    label: z.string(),
+    photo: z.string(),
+    shop: z.string(),
+    formats: z.string(),
+    minRating: z.string(),
+    createdFrom: z.string(),
+    createdTo: z.string(),
     sortBy: z.string(),
     sortDir: z.string(),
     page: z.string(),
     limit: z.string(),
   }),
+});
+
+export const zAdminControllerGetCatalogueProductData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
 });
 
 export const zAdminControllerGetUsersData = z.object({
@@ -8850,6 +8916,14 @@ export const zAdminControllerGetUsersData = z.object({
     page: z.string(),
     limit: z.string(),
   }),
+});
+
+export const zAdminControllerGetPaymentDetailData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
 });
 
 export const zAdminControllerGetPaymentsData = z.object({

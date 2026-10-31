@@ -1,14 +1,16 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
-import type { AdminPayoutNumberAction, AdminWithdrawalAction } from './contracts/wallet.contract'
+import type { AdminWalletFilters, WalletOwnerType } from './admin-wallets.service'
+import type { AdminPayoutNumberAction, AdminWalletDebit, AdminWithdrawalAction } from './contracts/wallet.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
-import { BadRequestException, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common'
+import { BadRequestException, Controller, Get, Param, ParseUUIDPipe, Patch, Post, Query, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
 import { Roles } from '../../common/decorators/roles.decorator'
 import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
-import { adminPayoutNumberActionSchema, adminWithdrawalActionSchema } from './contracts/wallet.contract'
+import { AdminWalletsService } from './admin-wallets.service'
+import { adminPayoutNumberActionSchema, adminWalletDebitSchema, adminWithdrawalActionSchema } from './contracts/wallet.contract'
 import { PlatformAccount } from './entities/wallet.entity'
 import { PlatformAccountsService } from './platform-accounts.service'
 import { TopupService } from './topup.service'
@@ -22,6 +24,7 @@ export class WalletAdminController {
     private readonly withdrawalsService: WithdrawalsService,
     private readonly topupService: TopupService,
     private readonly platformAccounts: PlatformAccountsService,
+    private readonly adminWallets: AdminWalletsService,
   ) {}
 
   /** eBio's own accounts: live balance per revenue stream. */
@@ -112,5 +115,37 @@ export class WalletAdminController {
   @Get('wallets')
   async walletsOverview() {
     return this.withdrawalsService.adminWalletsOverview()
+  }
+
+  /** The wallets, paged and filtered; eBio's own accounts live on their own page. */
+  @CanRead('Payment')
+  @Get('wallets/list')
+  async listWallets(
+    @Query('q') q?: string,
+    @Query('ownerType') ownerType?: string,
+    @Query('balance') balance?: string,
+    @Query('sort') sort?: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminWallets.list({
+      q: q?.trim() || undefined,
+      ownerType: ['SUPPLIER', 'COURIER', 'USER'].includes(ownerType ?? '') ? ownerType as WalletOwnerType : undefined,
+      balance: ['positive', 'negative', 'zero'].includes(balance ?? '') ? balance as AdminWalletFilters['balance'] : undefined,
+      sort: ['balance_desc', 'balance_asc', 'updated_desc'].includes(sort ?? '') ? sort as AdminWalletFilters['sort'] : undefined,
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
+    })
+  }
+
+  /** Staff debit of a wallet: written in the owner's history, the audit trail, and told to the owner. */
+  @CanManage('Withdrawal')
+  @Post('wallets/:id/debit')
+  async debitWallet(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @TypedBody(adminWalletDebitSchema) body: AdminWalletDebit,
+    @Session() session: LoggedInBetterAuthSession,
+  ) {
+    return this.adminWallets.debit(id, body, session.user.id)
   }
 }
