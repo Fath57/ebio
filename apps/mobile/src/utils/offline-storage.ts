@@ -49,6 +49,7 @@ export const OfflineCache = {
  */
 const ACCOUNT_KEYS = [
   'ebio_cart',
+  'ebio_checkout_draft',
   'search_history',
   'sync:search_history',
   'sync:supplier_registration_draft',

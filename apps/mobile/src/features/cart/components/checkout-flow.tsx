@@ -42,6 +42,7 @@ import { buildCheckoutHtml, paymentPublicKey } from '../../payments/utils/checko
 import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
 import { useRecommendations } from '../hooks/use-recommendations'
+import { loadCheckoutDraft, saveCheckoutDraft } from '../utils/checkout-draft'
 import { BasketSuggestions } from './basket-suggestions'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
@@ -321,6 +322,45 @@ export function CheckoutFlow({
   // Amount as the server settled it, delivery fee included. The payment widget
   // must charge that, never a total recomputed on the phone.
   const [amountDue, setAmountDue] = useState<number | null>(null)
+
+  // What was typed survives leaving the screen. Read once, then written on
+  // every change — writing before the read would replace the draft with the
+  // empty fields of a fresh screen.
+  const draftLoadedRef = useRef(false)
+  useEffect(() => {
+    let cancelled = false
+    loadCheckoutDraft().then((draft) => {
+      if (cancelled) {
+        return
+      }
+      // Whatever the buyer already typed in the meantime wins over the draft.
+      setDeliveryAddress(current => current || draft.address || '')
+      setDeliveryPosition(current => current ?? draft.position ?? null)
+      setDeliveryPlaceLabel(current => current ?? draft.placeLabel ?? null)
+      setDeliverySlot(current => current || draft.slot || '')
+      setPromoInput(current => current || draft.promoInput || '')
+      if (draft.paymentChoice) {
+        setPaymentChoice(draft.paymentChoice)
+      }
+      draftLoadedRef.current = true
+    })
+    return () => {
+      cancelled = true
+    }
+  }, [])
+  useEffect(() => {
+    if (!draftLoadedRef.current) {
+      return
+    }
+    void saveCheckoutDraft({
+      address: deliveryAddress,
+      position: deliveryPosition,
+      placeLabel: deliveryPlaceLabel,
+      slot: deliverySlot,
+      paymentChoice,
+      promoInput,
+    })
+  }, [deliveryAddress, deliveryPosition, deliveryPlaceLabel, deliverySlot, paymentChoice, promoInput])
 
   const isPickup = orderSummary.deliveryMode === 'PICKUP'
   // `orderSummary` is a snapshot taken when leaving the cart; the basket keeps

@@ -30,6 +30,7 @@ import { useCart } from '../features/cart/cart-context'
 import { CartCtaBar } from '../features/cart/components/cart-cta-bar'
 import { CartScreen } from '../features/cart/components/cart-screen'
 import { CheckoutFlow } from '../features/cart/components/checkout-flow'
+import { keepCheckoutAddressOnly } from '../features/cart/utils/checkout-draft'
 import { ProductDetailScreen } from '../features/catalog/components/product-detail-screen'
 import { toDetailProduct, toDetailSupplier } from '../features/catalog/product-detail-mapping'
 import { ChatDetailScreen } from '../features/chat/components/chat-detail-screen'
@@ -679,6 +680,7 @@ function CheckoutWrapper({ route, navigation }: any) {
           // Only the shop just ordered. The other baskets are separate orders
           // still waiting to be placed, and emptying them here would throw
           // away what the buyer had chosen.
+          void keepCheckoutAddressOnly()
           if (orderSummary.supplierId) {
             clearSupplierCart(orderSummary.supplierId)
           }
