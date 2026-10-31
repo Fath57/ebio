@@ -1,5 +1,5 @@
 import type { Rel } from '@mikro-orm/core'
-import type { AllergenCode, LabelCode } from '../composition.constants'
+import type { AllergenCode } from '../composition.constants'
 import {
   Entity,
   Enum,
@@ -89,9 +89,9 @@ export class Product {
   @Property({ type: 'jsonb', default: '[]' })
   allergens: AllergenCode[] = []
 
-  /** Canonical label codes (e.g. `organic`, `ecocert`), GIN-indexed. */
+  /** Codes of the label catalogue (`certifications`: `organic`, `ecocert`…), GIN-indexed. */
   @Property({ type: 'jsonb', default: '[]' })
-  labels: LabelCode[] = []
+  labels: string[] = []
 
   /** Provenance (e.g. « Bénin, Atacora »). */
   @Property({ nullable: true })

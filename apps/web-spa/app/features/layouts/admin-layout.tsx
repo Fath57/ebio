@@ -29,6 +29,7 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: '/admin/codes-promo', action: 'manage', subject: 'PromoCode' },
   { prefix: '/admin/categories', action: 'manage', subject: 'Category' },
   { prefix: '/admin/unites', action: 'manage', subject: 'ProductUnit' },
+  { prefix: '/admin/certifications', action: 'manage', subject: 'Certification' },
   { prefix: '/admin/bannieres', action: 'manage', subject: 'Banner' },
   { prefix: '/admin/fournisseurs', action: 'read', subject: 'Supplier' },
   { prefix: '/admin/validations', action: 'read', subject: 'Supplier' },

@@ -4,7 +4,8 @@ import {
   paginatedSchema,
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
-import { ALLERGEN_CODES, LABEL_CODES } from '../composition.constants'
+import { ALLERGEN_CODES } from '../composition.constants'
+import { certificationCodeSchema } from './certification.contract'
 
 /**
  * Free-form code rather than an enum: the list of units is managed from the
@@ -32,11 +33,6 @@ const variantInputSchema = z.object({
 export const allergenCodeEnum = z.enum(ALLERGEN_CODES).meta({
   title: 'AllergenCode',
   description: 'One of the 14 EU-regulated allergens (canonical code)',
-})
-
-export const labelCodeEnum = z.enum(LABEL_CODES).meta({
-  title: 'ProductLabelCode',
-  description: 'Quality / certification label (canonical code)',
 })
 
 export const nutritionBasisEnum = z.enum(['100g', '100ml']).meta({
@@ -83,7 +79,8 @@ export const createProductSchema = z.object({
   // Composition / fiche produit
   ingredients: z.string().max(4000).optional(),
   allergens: z.array(allergenCodeEnum).max(ALLERGEN_CODES.length).optional(),
-  labels: z.array(labelCodeEnum).max(LABEL_CODES.length).optional(),
+  // Codes of the back-office catalogue (`certifications`), checked by the service.
+  labels: z.array(certificationCodeSchema).max(20).optional(),
   origin: z.string().max(200).optional(),
   conservation: z.string().max(1000).optional(),
   nutritionalValues: nutritionalValuesSchema.optional(),

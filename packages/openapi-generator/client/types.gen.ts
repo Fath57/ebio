@@ -705,6 +705,33 @@ export type UpdateProductUnit = {
 };
 
 /**
+ * CreateCertification
+ *
+ * A label or certification products can carry
+ */
+export type CreateCertification = {
+  code: string;
+  name: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+/**
+ * UpdateCertification
+ *
+ * Update a label or certification — every field optional, the code is immutable
+ */
+export type UpdateCertification = {
+  name?: string;
+  description?: string | null;
+  logoUrl?: string | null;
+  isActive?: boolean;
+  sortOrder?: number;
+};
+
+/**
  * CreateProduct
  *
  * Data required to create a new product
@@ -727,7 +754,7 @@ export type CreateProduct = {
   mediaIds?: Array<string>;
   ingredients?: string;
   allergens?: Array<AllergenCode>;
-  labels?: Array<ProductLabelCode>;
+  labels?: Array<string>;
   origin?: string;
   conservation?: string;
   nutritionalValues?: NutritionalValues;
@@ -756,7 +783,7 @@ export type UpdateProduct = {
   mediaIds?: Array<string>;
   ingredients?: string;
   allergens?: Array<AllergenCode>;
-  labels?: Array<ProductLabelCode>;
+  labels?: Array<string>;
   origin?: string;
   conservation?: string;
   nutritionalValues?: NutritionalValues;
@@ -2528,34 +2555,6 @@ export const AllergenCode = {
  * One of the 14 EU-regulated allergens (canonical code)
  */
 export type AllergenCode = (typeof AllergenCode)[keyof typeof AllergenCode];
-
-/**
- * ProductLabelCode
- *
- * Quality / certification label (canonical code)
- */
-export const ProductLabelCode = {
-  ORGANIC: "organic",
-  ECOCERT: "ecocert",
-  LOCAL: "local",
-  FAIR_TRADE: "fair-trade",
-  GMO_FREE: "gmo-free",
-  HANDMADE: "handmade",
-  ARTISANAL: "artisanal",
-  VEGAN: "vegan",
-  VEGETARIAN: "vegetarian",
-  GLUTEN_FREE: "gluten-free",
-  LACTOSE_FREE: "lactose-free",
-  SUGAR_FREE: "sugar-free",
-} as const;
-
-/**
- * ProductLabelCode
- *
- * Quality / certification label (canonical code)
- */
-export type ProductLabelCode =
-  (typeof ProductLabelCode)[keyof typeof ProductLabelCode];
 
 /**
  * NutritionalValues
@@ -8361,20 +8360,7 @@ export type ProductsControllerCreateData = {
       | "lupin"
       | "molluscs"
     >;
-    labels?: Array<
-      | "organic"
-      | "ecocert"
-      | "local"
-      | "fair-trade"
-      | "gmo-free"
-      | "handmade"
-      | "artisanal"
-      | "vegan"
-      | "vegetarian"
-      | "gluten-free"
-      | "lactose-free"
-      | "sugar-free"
-    >;
+    labels?: Array<string>;
     origin?: string;
     conservation?: string;
     /**
@@ -8486,20 +8472,7 @@ export type ProductsControllerUpdateData = {
       | "lupin"
       | "molluscs"
     >;
-    labels?: Array<
-      | "organic"
-      | "ecocert"
-      | "local"
-      | "fair-trade"
-      | "gmo-free"
-      | "handmade"
-      | "artisanal"
-      | "vegan"
-      | "vegetarian"
-      | "gluten-free"
-      | "lactose-free"
-      | "sugar-free"
-    >;
+    labels?: Array<string>;
     origin?: string;
     conservation?: string;
     /**
@@ -8769,6 +8742,101 @@ export type ProductUnitsControllerUpdateData = {
 };
 
 export type ProductUnitsControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type CertificationsControllerFindActiveData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/certifications/active";
+};
+
+export type CertificationsControllerFindActiveResponses = {
+  200: unknown;
+};
+
+export type CertificationsControllerFindAllData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/certifications";
+};
+
+export type CertificationsControllerFindAllResponses = {
+  200: unknown;
+};
+
+export type CertificationsControllerCreateData = {
+  /**
+   * CreateCertification
+   *
+   * A label or certification products can carry
+   */
+  body: {
+    code: string;
+    name: string;
+    description?: string | null;
+    logoUrl?: string | null;
+    isActive: boolean;
+    sortOrder: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/certifications";
+};
+
+export type CertificationsControllerCreateResponses = {
+  201: unknown;
+};
+
+export type CertificationsControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/certifications/{id}";
+};
+
+export type CertificationsControllerRemoveResponses = {
+  200: unknown;
+};
+
+export type CertificationsControllerFindByIdData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/certifications/{id}";
+};
+
+export type CertificationsControllerFindByIdResponses = {
+  200: unknown;
+};
+
+export type CertificationsControllerUpdateData = {
+  /**
+   * UpdateCertification
+   *
+   * Update a label or certification — every field optional, the code is immutable
+   */
+  body: {
+    name?: string;
+    description?: string | null;
+    logoUrl?: string | null;
+    isActive?: boolean;
+    sortOrder?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/certifications/{id}";
+};
+
+export type CertificationsControllerUpdateResponses = {
   200: unknown;
 };
 

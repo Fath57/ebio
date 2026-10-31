@@ -37,9 +37,9 @@ interface ProductUnit {
 }
 
 /**
- * French display names for the API's canonical label codes. The API keeps the
- * codes so the filters stay exact; every client carries its own dictionary,
- * and this is the landing's.
+ * French names of the labels the platform shipped with. The back office now
+ * manages the list (`/api/certifications/active`); these only stand in when
+ * that call fails.
  */
 const LABEL_NAMES: Record<string, string> = {
   'organic': 'Bio',
@@ -66,11 +66,13 @@ const LABEL_NAMES: Record<string, string> = {
  */
 export async function loader({ params }: Route.LoaderArgs) {
   const base = process.env.API_URL ?? 'http://localhost:3000'
-  const [content, productRes, unitsRes] = await Promise.all([
+  const [content, productRes, unitsRes, certificationsRes] = await Promise.all([
     fetchLandingContent(),
     fetch(`${base}/api/products/${params.id}`, { signal: AbortSignal.timeout(5000) })
       .catch(() => null),
     fetch(`${base}/api/product-units/active`, { signal: AbortSignal.timeout(5000) })
+      .catch(() => null),
+    fetch(`${base}/api/certifications/active`, { signal: AbortSignal.timeout(5000) })
       .catch(() => null),
   ])
 
@@ -99,7 +101,13 @@ export async function loader({ params }: Route.LoaderArgs) {
     unitLabel = units.items.find(u => u.code === product.unit)?.shortLabel ?? ''
   }
 
-  return { content, product, supplier, unitLabel, productId: params.id }
+  let labelNames: Record<string, string> = LABEL_NAMES
+  if (certificationsRes?.ok) {
+    const list = await certificationsRes.json() as { items: Array<{ code: string, name: string }> }
+    labelNames = { ...LABEL_NAMES, ...Object.fromEntries(list.items.map(item => [item.code, item.name])) }
+  }
+
+  return { content, product, supplier, unitLabel, labelNames, productId: params.id }
 }
 
 export function meta({ data }: Route.MetaArgs) {
@@ -130,11 +138,11 @@ export function meta({ data }: Route.MetaArgs) {
 }
 
 export default function Produit({ loaderData }: Route.ComponentProps) {
-  const { content, product, supplier, unitLabel, productId } = loaderData
+  const { content, product, supplier, unitLabel, labelNames, productId } = loaderData
   const hasPromo = product !== null
     && product.promotionalPrice !== null
     && product.promotionalPrice < product.pricePerUnit
-  const labels = product?.labels.map(code => LABEL_NAMES[code]).filter(Boolean) ?? []
+  const labels = product?.labels.map(code => labelNames[code]).filter(Boolean) ?? []
 
   return (
     <>

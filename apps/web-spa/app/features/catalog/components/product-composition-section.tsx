@@ -4,6 +4,7 @@ import { Separator } from '@boilerstone/ui/components/primitives/separator'
 import { Award, Leaf, MapPin, Snowflake, TriangleAlert } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { allergenName, labelName, nutritionBasisOf, nutritionPerBasis } from '../utils/composition'
+import { useCertifications } from '../utils/use-certifications'
 
 interface ProductCompositionSectionProps {
   ingredients?: string | null
@@ -38,6 +39,7 @@ export function ProductCompositionSection({
   nutritionalValues,
 }: ProductCompositionSectionProps) {
   const { t } = useTranslation()
+  const { names: certificationNames } = useCertifications()
 
   const nutritionRows = NUTRITION_ROWS.filter(
     row => nutritionalValues?.[row.key] != null,
@@ -69,7 +71,7 @@ export function ProductCompositionSection({
               </p>
               <div className="flex flex-wrap gap-2">
                 {labels.map(label => (
-                  <Badge key={label} className="bg-ebio-green-600">{labelName(t, label)}</Badge>
+                  <Badge key={label} className="bg-ebio-green-600">{labelName(t, label, certificationNames)}</Badge>
                 ))}
               </div>
             </div>

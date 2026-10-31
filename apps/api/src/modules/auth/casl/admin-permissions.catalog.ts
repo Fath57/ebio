@@ -80,6 +80,7 @@ export const ADMIN_PERMISSIONS_CATALOG: CatalogSection[] = [
       { key: 'productsManage', action: 'manage', subject: 'Product', description: 'Modifier le catalogue d\'une boutique à sa place' },
       { key: 'categories', action: 'manage', subject: 'Category', description: 'Gérer les catégories' },
       { key: 'units', action: 'manage', subject: 'ProductUnit', description: 'Gérer les unités de vente' },
+      { key: 'certifications', action: 'manage', subject: 'Certification', description: 'Gérer les labels et certifications' },
       { key: 'promoCodes', action: 'manage', subject: 'PromoCode', description: 'Gérer les codes promo' },
       { key: 'promotions', action: 'manage', subject: 'Promotion', description: 'Créer des promotions eBio sur les produits' },
     ],

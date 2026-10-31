@@ -16,7 +16,8 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
-import { allergenLabel, labelLabel, nutritionBasisLabel } from '../../catalog/composition'
+import { allergenLabel, nutritionBasisLabel } from '../../catalog/composition'
+import { certificationName } from '../../catalog/hooks/use-certifications'
 import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
@@ -355,7 +356,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
               <View style={styles.compositionChipRow}>
                 {product.labels?.map(l => (
                   <View key={l} style={[styles.compositionChip, { backgroundColor: colors.green[50] }]}>
-                    <Text style={[styles.compositionChipText, { color: colors.green[800] }]}>{labelLabel(l)}</Text>
+                    <Text style={[styles.compositionChipText, { color: colors.green[800] }]}>{certificationName(l)}</Text>
                   </View>
                 ))}
               </View>

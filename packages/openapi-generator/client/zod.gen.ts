@@ -608,6 +608,37 @@ export const zUpdateProductUnit = z.object({
 });
 
 /**
+ * CreateCertification
+ *
+ * A label or certification products can carry
+ */
+export const zCreateCertification = z.object({
+  code: z
+    .string()
+    .min(2)
+    .max(64)
+    .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+  name: z.string().min(1).max(100),
+  description: z.optional(z.union([z.string().max(500), z.null()])),
+  logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
+  isActive: z.boolean().default(true),
+  sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+});
+
+/**
+ * UpdateCertification
+ *
+ * Update a label or certification — every field optional, the code is immutable
+ */
+export const zUpdateCertification = z.object({
+  name: z.optional(z.string().min(1).max(100)),
+  description: z.optional(z.union([z.string().max(500), z.null()])),
+  logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
+  isActive: z.optional(z.boolean()).default(true),
+  sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
  * StockUpdate
  *
  * Update product stock level
@@ -2457,26 +2488,6 @@ export const zAllergenCode = z.enum([
 ]);
 
 /**
- * ProductLabelCode
- *
- * Quality / certification label (canonical code)
- */
-export const zProductLabelCode = z.enum([
-  "organic",
-  "ecocert",
-  "local",
-  "fair-trade",
-  "gmo-free",
-  "handmade",
-  "artisanal",
-  "vegan",
-  "vegetarian",
-  "gluten-free",
-  "lactose-free",
-  "sugar-free",
-]);
-
-/**
  * NutritionalValues
  *
  * Valeurs nutritionnelles pour 100 g / 100 ml
@@ -2532,7 +2543,17 @@ export const zCreateProduct = z.object({
   ),
   ingredients: z.optional(z.string().max(4000)),
   allergens: z.optional(z.array(zAllergenCode).max(14)),
-  labels: z.optional(z.array(zProductLabelCode).max(12)),
+  labels: z.optional(
+    z
+      .array(
+        z
+          .string()
+          .min(2)
+          .max(64)
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      )
+      .max(20),
+  ),
   origin: z.optional(z.string().max(200)),
   conservation: z.optional(z.string().max(1000)),
   nutritionalValues: z.optional(zNutritionalValues),
@@ -2581,7 +2602,17 @@ export const zUpdateProduct = z.object({
   ),
   ingredients: z.optional(z.string().max(4000)),
   allergens: z.optional(z.array(zAllergenCode).max(14)),
-  labels: z.optional(z.array(zProductLabelCode).max(12)),
+  labels: z.optional(
+    z
+      .array(
+        z
+          .string()
+          .min(2)
+          .max(64)
+          .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+      )
+      .max(20),
+  ),
   origin: z.optional(z.string().max(200)),
   conservation: z.optional(z.string().max(1000)),
   nutritionalValues: z.optional(zNutritionalValues),
@@ -7048,22 +7079,13 @@ export const zProductsControllerCreateData = z.object({
     labels: z.optional(
       z
         .array(
-          z.enum([
-            "organic",
-            "ecocert",
-            "local",
-            "fair-trade",
-            "gmo-free",
-            "handmade",
-            "artisanal",
-            "vegan",
-            "vegetarian",
-            "gluten-free",
-            "lactose-free",
-            "sugar-free",
-          ]),
+          z
+            .string()
+            .min(2)
+            .max(64)
+            .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
         )
-        .max(12),
+        .max(20),
     ),
     origin: z.optional(z.string().max(200)),
     conservation: z.optional(z.string().max(1000)),
@@ -7167,22 +7189,13 @@ export const zProductsControllerUpdateData = z.object({
     labels: z.optional(
       z
         .array(
-          z.enum([
-            "organic",
-            "ecocert",
-            "local",
-            "fair-trade",
-            "gmo-free",
-            "handmade",
-            "artisanal",
-            "vegan",
-            "vegetarian",
-            "gluten-free",
-            "lactose-free",
-            "sugar-free",
-          ]),
+          z
+            .string()
+            .min(2)
+            .max(64)
+            .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
         )
-        .max(12),
+        .max(20),
     ),
     origin: z.optional(z.string().max(200)),
     conservation: z.optional(z.string().max(1000)),
@@ -7342,6 +7355,65 @@ export const zProductUnitsControllerUpdateData = z.object({
   body: z.object({
     label: z.optional(z.string().min(1).max(64)),
     shortLabel: z.optional(z.string().min(1).max(16)),
+    isActive: z.optional(z.boolean()).default(true),
+    sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCertificationsControllerFindActiveData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCertificationsControllerFindAllData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCertificationsControllerCreateData = z.object({
+  body: z.object({
+    code: z
+      .string()
+      .min(2)
+      .max(64)
+      .regex(/^[a-z0-9]+(?:-[a-z0-9]+)*$/),
+    name: z.string().min(1).max(100),
+    description: z.optional(z.union([z.string().max(500), z.null()])),
+    logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
+    isActive: z.boolean().default(true),
+    sortOrder: z.int().gte(0).lte(9007199254740991).default(0),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zCertificationsControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCertificationsControllerFindByIdData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCertificationsControllerUpdateData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(1).max(100)),
+    description: z.optional(z.union([z.string().max(500), z.null()])),
+    logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
     isActive: z.optional(z.boolean()).default(true),
     sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
   }),

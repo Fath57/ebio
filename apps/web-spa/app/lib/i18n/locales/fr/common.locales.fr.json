@@ -186,7 +186,8 @@
     "promoCodes": "Codes promo",
     "couriers": "Livreurs",
     "deliveries": "Livraisons",
-    "team": "Équipe"
+    "team": "Équipe",
+    "certifications": "Labels et certifications"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -2180,6 +2181,43 @@
         }
       },
       "recentActions": "Dernières actions"
+    },
+    "certifications": {
+      "title": "Labels et certifications",
+      "description": "Les labels que les fournisseurs peuvent mettre sur leurs produits (Bio, Ecocert, Commerce équitable…). Un label désactivé disparaît des formulaires mais reste affiché sur les produits qui le portent.",
+      "add": "Ajouter un label",
+      "edit": "Modifier le label",
+      "formDescription": "Nom, logo et description s'affichent sur la fiche produit.",
+      "empty": "Aucun label.",
+      "active": "Actif",
+      "inactive": "Désactivé",
+      "deleteBlocked": "Des produits portent ce label : désactivez-le plutôt",
+      "deleteTitle": "Supprimer ce label ?",
+      "deleteWarning": "Le label sera retiré de la liste. Cette action est définitive.",
+      "columns": {
+        "name": "Label",
+        "description": "Description",
+        "products": "Produits",
+        "status": "État"
+      },
+      "form": {
+        "logo": "Logo",
+        "logoHint": "Image carrée, fond clair de préférence. Facultatif.",
+        "name": "Nom",
+        "namePlaceholder": "Ex : Commerce équitable",
+        "description": "Ce que le label garantit",
+        "descriptionPlaceholder": "Ex : Produit certifié par un organisme indépendant, sans pesticides de synthèse.",
+        "descriptionHint": "Une phrase, affichée aux acheteurs. Facultatif.",
+        "code": "Code",
+        "codeHint": "Identifiant enregistré sur chaque produit. Généré depuis le nom.",
+        "codeLocked": "Le code est figé : il est déjà inscrit sur des produits.",
+        "sortOrder": "Ordre d'affichage",
+        "sortOrderHint": "Croissant, du plus petit au plus grand",
+        "isActive": "Label actif",
+        "isActiveHint": "Désactivé, il disparaît des formulaires produit",
+        "create": "Créer le label",
+        "update": "Mettre à jour"
+      }
     }
   },
   "errorCodes": {

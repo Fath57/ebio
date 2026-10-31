@@ -6,6 +6,7 @@ import { StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { allergenLabel, labelLabel, nutritionBasisLabel } from '../composition'
+import { useCertifications } from '../hooks/use-certifications'
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -37,12 +38,16 @@ export interface ProductCompositionData {
  * fragment so the chips flow inside the detail screen's existing tag row.
  */
 export function ProductLabelChips({ labels }: { labels: string[] }) {
+  // Names come from the back-office list; the hook re-renders once it lands.
+  const certifications = useCertifications()
   return (
     <>
       {labels.map(label => (
         <View key={label} style={styles.labelChip}>
           <Leaf size={10} color={colors.earth[600]} strokeWidth={2.5} />
-          <Text style={styles.labelChipText}>{labelLabel(label)}</Text>
+          <Text style={styles.labelChipText}>
+            {certifications.find(item => item.code === label)?.name ?? labelLabel(label)}
+          </Text>
         </View>
       ))}
     </>

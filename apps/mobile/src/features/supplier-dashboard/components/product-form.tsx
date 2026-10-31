@@ -22,7 +22,8 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
-import { ALLERGEN_CODES, ALLERGEN_LABELS, LABEL_CODES, LABEL_LABELS, NUTRITION_BASES, NUTRITION_BASIS_LABELS } from '../../catalog/composition'
+import { ALLERGEN_CODES, ALLERGEN_LABELS, labelLabel, NUTRITION_BASES, NUTRITION_BASIS_LABELS } from '../../catalog/composition'
+import { useCertifications } from '../../catalog/hooks/use-certifications'
 import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
@@ -140,6 +141,15 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   const [ingredients, setIngredients] = useState('')
   const [allergensSel, setAllergensSel] = useState<string[]>([])
   const [labelsSel, setLabelsSel] = useState<string[]>([])
+  const certifications = useCertifications()
+  // The back-office list, plus any label the product already wears that has
+  // since been retired — still shown, so it can be seen and removed.
+  const labelChoices = [
+    ...certifications.map(item => ({ code: item.code, name: item.name })),
+    ...labelsSel
+      .filter(code => !certifications.some(item => item.code === code))
+      .map(code => ({ code, name: labelLabel(code) })),
+  ]
   const [origin, setOrigin] = useState('')
   const [conservation, setConservation] = useState('')
   const [nutrition, setNutrition] = useState<Record<NutritionKey, string>>(EMPTY_NUTRITION)
@@ -707,7 +717,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
 
             <Text style={[styles.label, { color: semantic.textSecondary }]}>Labels</Text>
             <View style={styles.chipWrap}>
-              {LABEL_CODES.map((qualityLabel) => {
+              {labelChoices.map(({ code: qualityLabel, name }) => {
                 const isSelected = labelsSel.includes(qualityLabel)
                 return (
                   <TouchableOpacity
@@ -720,10 +730,10 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
                     onPress={() => toggleLabel(qualityLabel)}
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked: isSelected }}
-                    accessibilityLabel={LABEL_LABELS[qualityLabel]}
+                    accessibilityLabel={name}
                   >
                     <Text style={[styles.unitChipText, { color: semantic.textSecondary }, isSelected && styles.unitChipTextActive]}>
-                      {LABEL_LABELS[qualityLabel]}
+                      {name}
                     </Text>
                   </TouchableOpacity>
                 )

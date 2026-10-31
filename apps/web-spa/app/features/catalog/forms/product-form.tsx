@@ -38,12 +38,12 @@ import {
   allergenName,
   basisName,
   DEFAULT_NUTRITION_BASIS,
-  LABEL_CODES,
   labelName,
   NUTRITION_BASES,
   nutritionPerBasis,
 } from '../utils/composition'
 import { describeProduct } from '../utils/photo-studio-queries'
+import { useCertifications } from '../utils/use-certifications'
 
 // ---------- Schema ----------
 
@@ -102,7 +102,8 @@ const productSchema = z.object({
   // Composition & product sheet
   ingredients: z.string().max(4000).optional(),
   allergens: z.array(z.enum(ALLERGEN_CODES)).max(20).optional(),
-  labels: z.array(z.enum(LABEL_CODES)).max(10).optional(),
+  // Codes of the back-office catalogue; the API checks they exist and are active.
+  labels: z.array(z.string()).max(20).optional(),
   origin: z.string().max(200).optional(),
   conservation: z.string().max(1000).optional(),
   nutritionalValues: nutritionalValuesSchema.optional(),
@@ -166,6 +167,7 @@ interface ProductFormProps {
 
 export function ProductForm({ onSubmit, isPending, initialData }: ProductFormProps) {
   const { t } = useTranslation()
+  const { items: certifications, names: certificationNames } = useCertifications()
   const [currentStep, setCurrentStep] = useState<number>(0)
   const [nutritionOpen, setNutritionOpen] = useState<boolean>(
     NUTRITION_FIELDS.some(f => initialData?.nutritionalValues?.[f.key] != null),
@@ -249,7 +251,7 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
         origin: values.origin ?? undefined,
         ingredients: values.ingredients ?? undefined,
         conservation: values.conservation ?? undefined,
-        labels: values.labels?.map(code => labelName(t, code)),
+        labels: values.labels?.map(code => labelName(t, code, certificationNames)),
         current: values.description ?? undefined,
       })
       form.setValue('description', description, { shouldDirty: true })
@@ -271,7 +273,14 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
 
   // Closed vocabularies: the API only accepts canonical codes
   const allergenOptions = ALLERGEN_CODES.map(code => ({ value: code, label: allergenName(t, code) }))
-  const labelOptions = LABEL_CODES.map(code => ({ value: code, label: labelName(t, code) }))
+  // A label the product already wears stays listed even once retired, so it can be seen and removed.
+  const carriedLabels = form.watch('labels') ?? []
+  const labelOptions = [
+    ...certifications.map(item => ({ value: item.code, label: item.name })),
+    ...carriedLabels
+      .filter(code => !certifications.some(item => item.code === code))
+      .map(code => ({ value: code, label: labelName(t, code) })),
+  ]
 
   async function handleNext() {
     const fields = STEP_FIELDS[step]

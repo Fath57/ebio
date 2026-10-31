@@ -5,6 +5,7 @@ import { Navigation } from '@boilerstone/ui/components/layout/Navigation'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import {
+  Award,
   Banknote,
   BarChart3,
   Bell,
@@ -164,6 +165,7 @@ export default function AppLayout() {
         { to: '/admin/produits', label: t('nav.allProducts'), icon: <Package className="h-4 w-4" />, permission: { action: 'read', subject: 'Product' } },
         { to: '/admin/categories', label: t('nav.categories'), icon: <FolderTree className="h-4 w-4" />, permission: { action: 'manage', subject: 'Category' } },
         { to: '/admin/unites', label: t('nav.productUnits'), icon: <Ruler className="h-4 w-4" />, permission: { action: 'manage', subject: 'ProductUnit' } },
+        { to: '/admin/certifications', label: t('nav.certifications'), icon: <Award className="h-4 w-4" />, permission: { action: 'manage', subject: 'Certification' } },
         { to: '/admin/bannieres', label: t('nav.banners'), icon: <Images className="h-4 w-4" />, permission: { action: 'manage', subject: 'Banner' } },
       ],
     },

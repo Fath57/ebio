@@ -10,6 +10,7 @@ import { Media, MediaStatus } from '../media/media.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Supplier } from '../suppliers/supplier.entity'
+import { CertificationsService } from './certifications.service'
 import { Category } from './entities/category.entity'
 import { ProductVariant } from './entities/product-variant.entity'
 import { Product, ProductStatus } from './entities/product.entity'
@@ -21,6 +22,7 @@ export class ProductsService {
     private readonly em: EntityManager,
     private readonly notificationsService: NotificationsService,
     private readonly productUnitsService: ProductUnitsService,
+    private readonly certificationsService: CertificationsService,
   ) {}
 
   async create(supplierId: string, data: CreateProduct): Promise<Product> {
@@ -32,6 +34,7 @@ export class ProductsService {
     }
 
     await this.productUnitsService.assertUsable(data.unit)
+    await this.certificationsService.assertUsable(data.labels ?? [])
 
     // Resolve mediaIds to photo URLs
     let photos: string[] = []
@@ -184,8 +187,11 @@ export class ProductsService {
       product.ingredients = data.ingredients
     if (data.allergens !== undefined)
       product.allergens = data.allergens
-    if (data.labels !== undefined)
+    if (data.labels !== undefined) {
+      // A label the product already wears stays accepted even once retired.
+      await this.certificationsService.assertUsable(data.labels, product.labels)
       product.labels = data.labels
+    }
     if (data.origin !== undefined)
       product.origin = data.origin
     if (data.conservation !== undefined)

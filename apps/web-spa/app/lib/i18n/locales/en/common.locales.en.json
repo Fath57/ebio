@@ -186,7 +186,8 @@
     "promoCodes": "Promo codes",
     "couriers": "Couriers",
     "deliveries": "Deliveries",
-    "team": "Team"
+    "team": "Team",
+    "certifications": "Labels & certifications"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -2180,6 +2181,43 @@
         }
       },
       "recentActions": "Recent actions"
+    },
+    "certifications": {
+      "title": "Labels & certifications",
+      "description": "The labels suppliers can put on their products (Organic, Ecocert, Fair trade…). A deactivated label leaves the forms but stays on the products that carry it.",
+      "add": "Add a label",
+      "edit": "Edit label",
+      "formDescription": "Name, logo and description show on the product page.",
+      "empty": "No label.",
+      "active": "Active",
+      "inactive": "Deactivated",
+      "deleteBlocked": "Products carry this label: deactivate it instead",
+      "deleteTitle": "Delete this label?",
+      "deleteWarning": "The label will be removed from the list. This cannot be undone.",
+      "columns": {
+        "name": "Label",
+        "description": "Description",
+        "products": "Products",
+        "status": "Status"
+      },
+      "form": {
+        "logo": "Logo",
+        "logoHint": "Square image, light background preferably. Optional.",
+        "name": "Name",
+        "namePlaceholder": "E.g. Fair trade",
+        "description": "What the label guarantees",
+        "descriptionPlaceholder": "E.g. Certified by an independent body, no synthetic pesticides.",
+        "descriptionHint": "One sentence, shown to buyers. Optional.",
+        "code": "Code",
+        "codeHint": "Identifier stored on each product. Generated from the name.",
+        "codeLocked": "The code is locked: products already carry it.",
+        "sortOrder": "Display order",
+        "sortOrderHint": "Ascending",
+        "isActive": "Active label",
+        "isActiveHint": "Deactivated, it leaves the product forms",
+        "create": "Create label",
+        "update": "Update"
+      }
     }
   },
   "errorCodes": {

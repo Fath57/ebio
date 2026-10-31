@@ -276,6 +276,18 @@ import type {
   CategoriesControllerRemoveResponses,
   CategoriesControllerUpdateData,
   CategoriesControllerUpdateResponses,
+  CertificationsControllerCreateData,
+  CertificationsControllerCreateResponses,
+  CertificationsControllerFindActiveData,
+  CertificationsControllerFindActiveResponses,
+  CertificationsControllerFindAllData,
+  CertificationsControllerFindAllResponses,
+  CertificationsControllerFindByIdData,
+  CertificationsControllerFindByIdResponses,
+  CertificationsControllerRemoveData,
+  CertificationsControllerRemoveResponses,
+  CertificationsControllerUpdateData,
+  CertificationsControllerUpdateResponses,
   ChatControllerCreateConversationData,
   ChatControllerCreateConversationResponses,
   ChatControllerCreateDeliveryConversationData,
@@ -4515,6 +4527,86 @@ export const productUnitsControllerUpdate = <
     ThrowOnError
   >({
     url: "/api/product-units/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const certificationsControllerFindActive = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<CertificationsControllerFindActiveData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    CertificationsControllerFindActiveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/certifications/active", ...options });
+
+export const certificationsControllerFindAll = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<CertificationsControllerFindAllData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    CertificationsControllerFindAllResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/certifications", ...options });
+
+export const certificationsControllerCreate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CertificationsControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CertificationsControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/certifications",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const certificationsControllerRemove = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CertificationsControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    CertificationsControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/certifications/{id}", ...options });
+
+export const certificationsControllerFindById = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CertificationsControllerFindByIdData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    CertificationsControllerFindByIdResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/certifications/{id}", ...options });
+
+export const certificationsControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CertificationsControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    CertificationsControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/certifications/{id}",
     ...options,
     headers: {
       "Content-Type": "application/json",

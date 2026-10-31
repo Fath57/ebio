@@ -4,6 +4,7 @@ export type Actions = 'create' | 'read' | 'update' | 'delete' | 'manage'
 export type Subjects
   = | 'Product'
     | 'ProductUnit'
+    | 'Certification'
     | 'Order'
     | 'Payment'
     | 'Supplier'

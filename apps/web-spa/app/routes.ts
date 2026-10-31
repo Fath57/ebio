@@ -109,6 +109,11 @@ export default [
       route('admin/unites/nouveau', 'features/admin/product-units/pages/product-unit-create-page.tsx'),
       route('admin/unites/:unitId/modifier', 'features/admin/product-units/pages/product-unit-edit-page.tsx'),
 
+      // Admin — Labels et certifications (one page creates and edits: two route ids)
+      route('admin/certifications', 'features/admin/certifications/pages/certifications-page.tsx'),
+      route('admin/certifications/nouveau', 'features/admin/certifications/pages/certification-form-page.tsx', { id: 'certification-create' }),
+      route('admin/certifications/:certificationId/modifier', 'features/admin/certifications/pages/certification-form-page.tsx', { id: 'certification-edit' }),
+
       // Admin — Settings & Roles
       route('admin/parametres', 'features/admin/settings/pages/admin-settings-page.tsx'),
       route('admin/equipe', 'features/admin/team/pages/team-page.tsx'),
