@@ -31,9 +31,23 @@ interface LocationPickerScreenProps {
   /** `label` is the reverse-geocoded address of the pin when one was found. */
   onConfirm: (coords: { latitude: number, longitude: number, label?: string | null }) => void
   onGoBack: () => void
+  /**
+   * `door` is for a delivery point: street-level zoom, search on places and
+   * neighbourhoods, high-accuracy GPS. `area` (default) picks a town or a shop.
+   */
+  precision?: 'area' | 'door'
+  /** Start from a fresh GPS fix instead of the given point (no point chosen yet). */
+  locateOnOpen?: boolean
 }
 
-export function LocationPickerScreen({ initialLatitude, initialLongitude, onConfirm, onGoBack }: LocationPickerScreenProps) {
+/** Map span per precision: ~2 km to find one's way, ~400 m to put a pin on a door. */
+const SPAN = { area: 0.02, door: 0.004 }
+/** Beyond this GPS uncertainty, the buyer is asked to move the pin to the door themself. */
+const ROUGH_FIX_M = 50
+
+export function LocationPickerScreen({ initialLatitude, initialLongitude, onConfirm, onGoBack, precision = 'area', locateOnOpen = false }: LocationPickerScreenProps) {
+  const door = precision === 'door'
+  const span = SPAN[precision]
   // The bottom tab bar overlays these stack screens: without this offset the
   // confirm button hides behind it. Context (not the hook) so the picker also
   // works outside any tab navigator.
@@ -44,6 +58,8 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
   const [locating, setLocating] = useState(false)
   // Address under the pin, refreshed a moment after the map stops moving.
   const [centerLabel, setCenterLabel] = useState<string | null>(null)
+  /** Uncertainty of the last GPS fix, in metres; cleared once the user moves the map by hand. */
+  const [fixAccuracy, setFixAccuracy] = useState<number | null>(null)
 
   useEffect(() => {
     let cancelled = false
@@ -58,7 +74,16 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
       clearTimeout(timer)
     }
   }, [center.latitude, center.longitude])
-  const { query, setQuery, suggestions, searching, resolve, accept, reset } = usePlaceSearch()
+  const { query, setQuery, suggestions, searching, resolve, accept, reset } = usePlaceSearch(door ? 'address' : 'city')
+
+  // No point chosen yet: start where the buyer actually stands, not from the
+  // town they browse — that one is often kilometres from the door.
+  useEffect(() => {
+    if (locateOnOpen)
+      void handleUseMyLocation()
+    // Once, on open.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   async function handleSelectPlace(placeId: string, label: string) {
     Keyboard.dismiss()
@@ -71,8 +96,10 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
     }
     const coords = { latitude: place.latitude, longitude: place.longitude }
     setCenter(coords)
-    // Zoom « ville » : assez large pour se repérer, assez serré pour ajuster.
-    mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.08, longitudeDelta: 0.08 }, 600)
+    // A town needs room to find one's way; a place for a delivery is already close.
+    const zoom = door ? span : 0.08
+    mapRef.current?.animateToRegion({ ...coords, latitudeDelta: zoom, longitudeDelta: zoom }, 600)
+    setFixAccuracy(null)
   }
 
   async function handleUseMyLocation() {
@@ -80,10 +107,13 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
     try {
       const { status } = await Location.requestForegroundPermissionsAsync()
       if (status === 'granted') {
-        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+        // A fresh, precise fix: the balanced one is often a cell tower 100 m+ away,
+        // which is how pins ended up a street off the door.
+        const loc = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High })
         const coords = { latitude: loc.coords.latitude, longitude: loc.coords.longitude }
         setCenter(coords)
-        mapRef.current?.animateToRegion({ ...coords, latitudeDelta: 0.02, longitudeDelta: 0.02 }, 500)
+        setFixAccuracy(loc.coords.accuracy ?? null)
+        mapRef.current?.animateToRegion({ ...coords, latitudeDelta: span, longitudeDelta: span }, 500)
       }
     }
     catch {
@@ -107,11 +137,11 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
             style={[styles.searchInput, { color: semantic.textPrimary }]}
             value={query}
             onChangeText={setQuery}
-            placeholder="Rechercher une ville…"
+            placeholder={door ? 'Rechercher un quartier, un lieu…' : 'Rechercher une ville…'}
             placeholderTextColor={semantic.textTertiary}
             autoCorrect={false}
             returnKeyType="search"
-            accessibilityLabel="Rechercher une ville"
+            accessibilityLabel={door ? 'Rechercher un quartier ou un lieu' : 'Rechercher une ville'}
           />
           {searching
             ? <ActivityIndicator size="small" color={colors.green[400]} />
@@ -130,8 +160,9 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
           ref={mapRef}
           style={StyleSheet.absoluteFill}
           provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-          initialRegion={{ ...center, latitudeDelta: 0.02, longitudeDelta: 0.02 }}
+          initialRegion={{ ...center, latitudeDelta: span, longitudeDelta: span }}
           onRegionChangeComplete={r => setCenter({ latitude: r.latitude, longitude: r.longitude })}
+          onPanDrag={() => setFixAccuracy(null)}
           showsUserLocation
           showsMyLocationButton={false}
         />
@@ -178,7 +209,7 @@ export function LocationPickerScreen({ initialLatitude, initialLongitude, onConf
         {suggestions.length === 0 && (
           <View style={[styles.hint, { backgroundColor: semantic.bgCard }]}>
             <Text style={[styles.hintText, { color: semantic.textSecondary }]}>
-              Déplacez la carte pour ajuster le point
+              {pickerHint(door, fixAccuracy)}
             </Text>
           </View>
         )}
@@ -335,3 +366,14 @@ const styles = StyleSheet.create({
     color: colors.neutral[0],
   },
 })
+
+/** What the floating hint says, from the most useful to the most generic. */
+function pickerHint(door: boolean, accuracy: number | null): string {
+  if (door && accuracy !== null && accuracy > ROUGH_FIX_M)
+    return `Position approximative (± ${Math.round(accuracy)} m) : glissez la carte pour placer le repère sur votre porte`
+  if (door && accuracy !== null)
+    return `Position GPS à ± ${Math.round(accuracy)} m — ajustez si besoin sur votre porte`
+  if (door)
+    return 'Placez le repère exactement sur votre porte'
+  return 'Déplacez la carte pour ajuster le point'
+}

@@ -1130,6 +1130,10 @@ export function CheckoutFlow({
           <LocationPickerScreen
             initialLatitude={deliveryPosition?.latitude ?? pickerStart?.latitude ?? currentLatitude}
             initialLongitude={deliveryPosition?.longitude ?? pickerStart?.longitude ?? currentLongitude}
+            precision="door"
+            // The app's location is the town the buyer browses, possibly set by
+            // hand: a fresh GPS fix is the better start when nothing else is known.
+            locateOnOpen={!deliveryPosition && !pickerStart}
             onConfirm={(coords) => {
               setDeliveryPosition({ latitude: coords.latitude, longitude: coords.longitude })
               setDeliveryPlaceLabel(coords.label ?? null)

@@ -19,7 +19,8 @@ const MIN_QUERY_LENGTH = 2
  * résolution finale en une seule session facturée par Google ; il est
  * renouvelé après chaque sélection.
  */
-export function usePlaceSearch() {
+/** `address` also finds neighbourhoods, landmarks and streets; `city` keeps to towns. */
+export function usePlaceSearch(kind: 'city' | 'address' = 'city') {
   const [query, setQuery] = useState('')
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([])
   const [searching, setSearching] = useState(false)
@@ -42,7 +43,7 @@ export function usePlaceSearch() {
     const timer = setTimeout(async () => {
       setSearching(true)
       try {
-        const params = new URLSearchParams({ q: trimmed, session: sessionToken.current })
+        const params = new URLSearchParams({ q: trimmed, session: sessionToken.current, kind })
         const res = await apiFetch(`/api/geocoding/autocomplete?${params}`)
         if (res.ok && !cancelled) {
           const data = await res.json()
@@ -65,7 +66,7 @@ export function usePlaceSearch() {
       cancelled = true
       clearTimeout(timer)
     }
-  }, [query])
+  }, [query, kind])
 
   const resolve = useCallback(async (placeId: string) => {
     const params = new URLSearchParams({ placeId, session: sessionToken.current })
