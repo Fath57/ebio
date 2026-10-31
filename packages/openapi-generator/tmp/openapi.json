@@ -11550,6 +11550,18 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 9007199254740991
+                        },
+                        "packSize": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 1000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -11833,6 +11845,18 @@
                           "type": "integer",
                           "minimum": 0,
                           "maximum": 9007199254740991
+                        },
+                        "packSize": {
+                          "anyOf": [
+                            {
+                              "type": "integer",
+                              "minimum": 2,
+                              "maximum": 1000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
                         }
                       },
                       "required": [
@@ -19765,6 +19789,18 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 9007199254740991
+                },
+                "packSize": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 1000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [
@@ -19882,6 +19918,18 @@
                   "type": "integer",
                   "minimum": 0,
                   "maximum": 9007199254740991
+                },
+                "packSize": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 1000
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
                 }
               },
               "required": [

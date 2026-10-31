@@ -80,7 +80,9 @@ export class ProductsService {
           product,
           label: v.label,
           pricePerUnit: v.pricePerUnit,
-          stock: v.stock ?? 0,
+          // A pack keeps no stock of its own: it is counted on the product.
+          stock: v.packSize ? 0 : v.stock ?? 0,
+          packSize: v.packSize ?? null,
         })
       }
       await this.em.flush()
@@ -233,7 +235,13 @@ export class ProductsService {
         const match = byLabel.get(input.label)
         if (match) {
           match.pricePerUnit = input.pricePerUnit
-          if (input.stock !== undefined) {
+          if (input.packSize !== undefined) {
+            match.packSize = input.packSize
+          }
+          if (match.packSize) {
+            match.stock = 0
+          }
+          else if (input.stock !== undefined) {
             match.stock = input.stock
           }
         }
@@ -242,7 +250,8 @@ export class ProductsService {
             product,
             label: input.label,
             pricePerUnit: input.pricePerUnit,
-            stock: input.stock ?? 0,
+            stock: input.packSize ? 0 : input.stock ?? 0,
+            packSize: input.packSize ?? null,
           })
         }
       }

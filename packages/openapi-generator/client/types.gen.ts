@@ -722,6 +722,7 @@ export type CreateProduct = {
     label: string;
     pricePerUnit: number;
     stock?: number;
+    packSize?: number | null;
   }>;
   mediaIds?: Array<string>;
   ingredients?: string;
@@ -750,6 +751,7 @@ export type UpdateProduct = {
     label: string;
     pricePerUnit: number;
     stock?: number;
+    packSize?: number | null;
   }>;
   mediaIds?: Array<string>;
   ingredients?: string;
@@ -8339,6 +8341,7 @@ export type ProductsControllerCreateData = {
       label: string;
       pricePerUnit: number;
       stock?: number;
+      packSize?: number | null;
     }>;
     mediaIds?: Array<string>;
     ingredients?: string;
@@ -8463,6 +8466,7 @@ export type ProductsControllerUpdateData = {
       label: string;
       pricePerUnit: number;
       stock?: number;
+      packSize?: number | null;
     }>;
     mediaIds?: Array<string>;
     ingredients?: string;

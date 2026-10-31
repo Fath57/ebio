@@ -25,6 +25,8 @@ const variantInputSchema = z.object({
   label: z.string().min(1).max(100),
   pricePerUnit: z.number().min(0),
   stock: z.number().int().min(0).optional(),
+  /** Units in one pack; set, the format draws from the product's stock and `stock` is ignored. */
+  packSize: z.number().int().min(2).max(1000).nullable().optional(),
 })
 
 export const allergenCodeEnum = z.enum(ALLERGEN_CODES).meta({
@@ -158,8 +160,11 @@ export const promotionSchema = z.object({
 const variantResponseSchema = z.object({
   id: z.string().uuid(),
   label: z.string(),
+  /** Price of one unit of this format — of one whole pack for a pack. */
   pricePerUnit: z.number(),
+  /** Sellable quantity of this format: whole packs out of the product's stock for a pack. */
   stock: z.number(),
+  packSize: z.number().int().nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 })

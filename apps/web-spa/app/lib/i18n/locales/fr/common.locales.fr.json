@@ -332,9 +332,9 @@
       "stepPricing": "Prix & Stock",
       "stepExtras": "Options",
       "processing": "Traitement...",
-      "variants": "Variantes",
-      "variantsDescription": "Proposez différents conditionnements (ex: 0,5L, 1L, 5L)",
-      "addVariant": "Ajouter une variante",
+      "variants": "Formats et packs",
+      "variantsDescription": "Vendez le produit à l'unité et par lot (pack de 6, 12, 24…), chacun à son prix. Un pack puise dans le stock du produit : vendre un pack de 6 retire 6 unités.",
+      "addVariant": "Autre format",
       "variantLabel": "Libellé",
       "variantPrice": "Prix (FCFA)",
       "variantStock": "Stock",
@@ -358,7 +358,11 @@
       "promotionPriceTooHigh": "Le prix promotionnel doit être inférieur au prix unitaire",
       "promotionExpiryRequired": "Veuillez choisir une date d'expiration",
       "draftDescription": "Rédiger avec l'assistant",
-      "draftDescriptionError": "La description n'a pas pu être rédigée"
+      "draftDescriptionError": "La description n'a pas pu être rédigée",
+      "variantPackSize": "Unités par pack",
+      "variantStockFromProduct": "Stock du produit",
+      "packLabel_one": "Pack de {{count}}",
+      "packLabel_other": "Pack de {{count}}"
     },
     "units": {
       "kg": "Kilogramme",

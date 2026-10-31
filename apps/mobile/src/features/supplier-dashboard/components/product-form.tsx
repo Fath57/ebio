@@ -68,7 +68,12 @@ interface Variant {
   label: string
   price: string
   stock: string
+  /** Units per pack, '' for a format with its own stock (size, flavour). */
+  packSize: string
 }
+
+/** The packs most shops sell; one tap fills the label and the unit count. */
+const PACK_PRESETS = [6, 12, 24]
 
 interface ProductFormProps {
   /** Existing product data for edit mode */
@@ -221,14 +226,15 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
     setNutrition(prev => ({ ...prev, [key]: value }))
   }
 
-  function handleAddVariant(): void {
+  function handleAddVariant(packSize?: number): void {
     setVariants(prev => [
       ...prev,
       {
         id: Date.now().toString(),
-        label: '',
+        label: packSize ? `Pack de ${packSize}` : '',
         price: '',
         stock: '',
+        packSize: packSize ? String(packSize) : '',
       },
     ])
   }
@@ -332,11 +338,13 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         stockAlertThreshold: alertThreshold ? Number.parseInt(alertThreshold, 10) : 5,
         status: isActive ? 'ACTIVE' : 'HIDDEN',
         mediaIds: newPhotos.map(p => p.mediaId),
-        variants: variants.map(v => ({
-          label: v.label,
-          pricePerUnit: Number.parseFloat(v.price),
-          stock: Number.parseInt(v.stock, 10),
-        })),
+        variants: variants.map((v) => {
+          const packSize = Number.parseInt(v.packSize, 10)
+          // A pack has no stock of its own: the API counts it on the product.
+          return Number.isInteger(packSize) && packSize >= 2
+            ? { label: v.label, pricePerUnit: Number.parseFloat(v.price), packSize }
+            : { label: v.label, pricePerUnit: Number.parseFloat(v.price), stock: Number.parseInt(v.stock, 10), packSize: null }
+        }),
         ...buildCompositionBody(),
       }
       if (existingId) {
@@ -542,14 +550,30 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
 
         {/* Variants */}
         <View style={styles.sectionHeader}>
-          <Text style={[styles.label, { color: semantic.textSecondary }]}>Variantes</Text>
+          <Text style={[styles.label, { color: semantic.textSecondary }]}>Formats et packs</Text>
           <TouchableOpacity
             style={styles.addVariantButton}
-            onPress={handleAddVariant}
-            accessibilityLabel="Ajouter une variante"
+            onPress={() => handleAddVariant()}
+            accessibilityLabel="Ajouter un format"
           >
-            <Text style={[styles.addVariantText, { color: semantic.colorPrimary }]}>+ Ajouter</Text>
+            <Text style={[styles.addVariantText, { color: semantic.colorPrimary }]}>+ Autre format</Text>
           </TouchableOpacity>
+        </View>
+        <Text style={[styles.hint, { color: semantic.textTertiary }]}>
+          Un pack se vend à son propre prix et puise dans le stock du produit : vendre un pack de 6 retire 6 unités.
+        </Text>
+        <View style={styles.packPresets}>
+          {PACK_PRESETS.map(size => (
+            <TouchableOpacity
+              key={size}
+              style={[styles.packPreset, { borderColor: semantic.borderNormal }]}
+              onPress={() => handleAddVariant(size)}
+              accessibilityRole="button"
+              accessibilityLabel={`Ajouter un pack de ${size}`}
+            >
+              <Text style={[styles.addVariantText, { color: semantic.colorPrimary }]}>{`+ Pack de ${size}`}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
         {variants.map(variant => (
           <View key={variant.id} style={styles.variantRow}>
@@ -574,14 +598,29 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
             />
             <TextInput
               style={[styles.textInput, styles.variantSmallInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
-              placeholder="Stock"
+              placeholder="Unités"
               placeholderTextColor={semantic.textTertiary}
               keyboardType="numeric"
-              value={variant.stock}
+              value={variant.packSize}
               onChangeText={text =>
-                handleUpdateVariant(variant.id, 'stock', text)}
-              accessibilityLabel="Stock de la variante"
+                handleUpdateVariant(variant.id, 'packSize', text)}
+              accessibilityLabel="Nombre d'unités par pack"
             />
+            {/* A pack is counted on the product's stock: no stock of its own to type. */}
+            {variant.packSize === ''
+              ? (
+                  <TextInput
+                    style={[styles.textInput, styles.variantSmallInput, { borderColor: semantic.borderNormal, color: semantic.textPrimary, backgroundColor: semantic.bgSurface }]}
+                    placeholder="Stock"
+                    placeholderTextColor={semantic.textTertiary}
+                    keyboardType="numeric"
+                    value={variant.stock}
+                    onChangeText={text =>
+                      handleUpdateVariant(variant.id, 'stock', text)}
+                    accessibilityLabel="Stock du format"
+                  />
+                )
+              : null}
             <TouchableOpacity
               style={styles.variantRemoveButton}
               onPress={() => handleRemoveVariant(variant.id)}
@@ -957,6 +996,19 @@ const styles = StyleSheet.create({
   },
   variantSmallInput: {
     flex: 1,
+  },
+  packPresets: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing[2],
+    marginBottom: spacing[2],
+  },
+  packPreset: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[3],
+    borderWidth: 1,
+    borderRadius: radius.pill,
   },
   variantRemoveButton: {
     minHeight: 44,

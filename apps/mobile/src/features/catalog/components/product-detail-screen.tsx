@@ -1,5 +1,6 @@
 import type { ScrollView } from 'react-native'
 import type { ProductPromotion } from '../promotions'
+import type { ProductFormat } from './format-picker'
 import type { NutritionalValues, ProductCompositionData } from './product-composition'
 import * as Haptics from 'expo-haptics'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
@@ -40,6 +41,7 @@ import { useFavorite } from '../../favorites/hooks/use-favorite'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 import { useProductUnits } from '../hooks/use-product-units'
 import { describePromotion, parsePromotions, promotionChipLabels, promotionChipLabelsFor } from '../promotions'
+import { FormatPicker } from './format-picker'
 import { ProductCompositionSections, ProductLabelChips } from './product-composition'
 import { ProductRatingLine, ProductReviewsSection } from './product-reviews-section'
 import { PromotionChips } from './promotion-chips'
@@ -125,6 +127,10 @@ export function ProductDetailScreen({
   const [composition, setComposition] = useState<ProductCompositionData | null>(null)
   // Null until the detail fetch answers: the list row's types stand in meanwhile.
   const [promotions, setPromotions] = useState<ProductPromotion[] | null>(null)
+  /** Packs and sizes from the detail fetch; empty until it answers, or when there are none. */
+  const [variantFormats, setVariantFormats] = useState<ProductFormat[]>([])
+  /** Format chosen, null for the plain unit. */
+  const [selectedFormatId, setSelectedFormatId] = useState<string | null>(null)
   const scrollY = useRef(new Animated.Value(0)).current
 
   // The navigation param is a lean list payload — the full product detail
@@ -133,6 +139,7 @@ export function ProductDetailScreen({
   useEffect(() => {
     function applyDetail(data: Record<string, unknown>): void {
       setPromotions(parsePromotions(data.promotions))
+      setVariantFormats(parseFormats(data.variants))
       setComposition({
         ingredients: typeof data.ingredients === 'string' ? data.ingredients : null,
         allergens: Array.isArray(data.allergens) ? data.allergens as string[] : [],
@@ -168,10 +175,23 @@ export function ProductDetailScreen({
     }
   }, [product.id, detail])
 
-  const hasPromo = product.promotionalPrice !== null && product.promotionalPrice < product.pricePerUnit
-  const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
+  const unitHasPromo = product.promotionalPrice !== null && product.promotionalPrice < product.pricePerUnit
+  const unitPrice = unitHasPromo ? product.promotionalPrice! : product.pricePerUnit
+  // The unit always comes first; a format is a choice, never a default.
+  const formats = useMemo<ProductFormat[]>(() => variantFormats.length === 0
+    ? []
+    : [
+        { id: null, label: 'À l\'unité', price: unitPrice, packSize: null, stock: product.stock ?? (product.isInStock ? 1 : 0) },
+        ...variantFormats,
+      ], [variantFormats, unitPrice, product.stock, product.isInStock])
+  const selectedFormat = formats.find(format => format.id === selectedFormatId && format.id !== null) ?? null
+  // A promotional price is the unit's; a pack keeps the price its shop set.
+  const hasPromo = unitHasPromo && !selectedFormat
+  const displayPrice = selectedFormat ? selectedFormat.price : unitPrice
+  const isInStock = selectedFormat ? selectedFormat.stock > 0 : product.isInStock
   const discount = hasPromo ? Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100) : 0
-  const unitLabel = shortLabel(product.unit)
+  const unitShort = shortLabel(product.unit)
+  const unitLabel = selectedFormat ? selectedFormat.label.toLowerCase() : unitShort
   const promotionTypes = useMemo(
     () => (promotions ? promotions.map(p => p.type) : product.promotionTypes ?? []),
     [promotions, product.promotionTypes],
@@ -203,16 +223,17 @@ export function ProductDetailScreen({
   /** La quantité affichée est celle du panier : il n'y a plus d'état local. */
   const cartItem = useMemo(() => {
     for (const group of groups) {
-      const found = group.items.find(item => item.productId === product.id)
+      const found = group.items.find(item =>
+        item.productId === product.id && (item.variantId ?? null) === (selectedFormat?.id ?? null))
       if (found) {
         return found
       }
     }
     return null
-  }, [groups, product.id])
+  }, [groups, product.id, selectedFormat])
 
   const handleAdd = useCallback(() => {
-    if (!product.isInStock) {
+    if (!isInStock) {
       return
     }
     // Un petit coup sous le doigt : ajouter au panier change quelque chose,
@@ -232,8 +253,9 @@ export function ProductDetailScreen({
       unit: product.unit,
       quantity: 1,
       promotionTypes,
+      ...(selectedFormat?.id ? { variantId: selectedFormat.id, variantLabel: selectedFormat.label } : {}),
     })
-  }, [cartItem, product, supplier, displayPrice, promotionTypes, addItem, updateQuantity])
+  }, [cartItem, product, supplier, displayPrice, promotionTypes, addItem, updateQuantity, isInStock, selectedFormat])
 
   const handleRemove = useCallback(() => {
     if (cartItem) {
@@ -449,7 +471,7 @@ export function ProductDetailScreen({
 
               {/* Le geste d'achat est ici, à hauteur du prix : il n'y a plus de
                   bouton à aller chercher au bas d'une longue fiche. */}
-              {product.isInStock && (
+              {isInStock && (
                 <CartControl
                   quantity={cartItem?.quantity ?? 0}
                   unitLabel={unitLabel}
@@ -458,6 +480,15 @@ export function ProductDetailScreen({
                 />
               )}
             </View>
+
+            {formats.length > 0 && (
+              <FormatPicker
+                formats={formats}
+                selectedId={selectedFormat?.id ?? null}
+                onSelect={format => setSelectedFormatId(format.id)}
+                unitLabel={unitShort}
+              />
+            )}
           </View>
 
           {/* Live promotions, in plain words */}
@@ -1182,3 +1213,23 @@ const styles = StyleSheet.create({
     marginTop: spacing[1],
   },
 })
+
+/** Reads the formats of the detail payload; anything malformed is left out. */
+function parseFormats(raw: unknown): ProductFormat[] {
+  if (!Array.isArray(raw))
+    return []
+  const formats: ProductFormat[] = []
+  for (const entry of raw) {
+    const row = entry as Record<string, unknown>
+    if (typeof row.id !== 'string' || typeof row.label !== 'string' || typeof row.pricePerUnit !== 'number')
+      continue
+    formats.push({
+      id: row.id,
+      label: row.label,
+      price: row.pricePerUnit,
+      packSize: typeof row.packSize === 'number' ? row.packSize : null,
+      stock: typeof row.stock === 'number' ? row.stock : 0,
+    })
+  }
+  return formats
+}

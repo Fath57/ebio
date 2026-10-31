@@ -335,7 +335,7 @@ export function CartScreen({
                           {' '}
                           FCFA /
                           {' '}
-                          {unitShortLabel(item.unit)}
+                          {item.selectedVariant ? item.selectedVariant.label.toLowerCase() : unitShortLabel(item.unit)}
                         </Text>
 
                         {item.availableVariants.length > 0 && (

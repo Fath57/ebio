@@ -553,9 +553,10 @@ function CartStackScreen() {
 function CartHomeWrapper({ navigation }: any) {
   const { items, groups, deliveryModeFor, updateQuantity, removeItem, setDeliveryMode } = useCart()
   const { data: session } = useSession()
+  // The format is chosen on the product page; the cart shows it, it does not change it.
   const mappedItems = items.map(item => ({
     ...item,
-    selectedVariant: null,
+    selectedVariant: item.variantId ? { id: item.variantId, label: item.variantLabel ?? '' } : null,
     availableVariants: [],
   }))
 
@@ -575,7 +576,8 @@ function CartHomeWrapper({ navigation }: any) {
         productId: i.productId,
         supplierId: i.supplierId,
         supplierName: i.supplierName,
-        name: i.name,
+        ...(i.variantId ? { variantId: i.variantId } : {}),
+        name: i.variantLabel ? `${i.name} — ${i.variantLabel}` : i.name,
         quantity: i.quantity,
         pricePerUnit: i.pricePerUnit,
         unit: i.unit,

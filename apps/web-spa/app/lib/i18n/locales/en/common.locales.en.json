@@ -332,9 +332,9 @@
       "stepPricing": "Price & Stock",
       "stepExtras": "Options",
       "processing": "Processing...",
-      "variants": "Variants",
-      "variantsDescription": "Offer different packaging options (e.g. 0.5L, 1L, 5L)",
-      "addVariant": "Add variant",
+      "variants": "Formats and packs",
+      "variantsDescription": "Sell the product by the unit and by the pack (6, 12, 24…), each at its own price. A pack draws from the product stock: selling a pack of 6 takes 6 units.",
+      "addVariant": "Other format",
       "variantLabel": "Label",
       "variantPrice": "Price (FCFA)",
       "variantStock": "Stock",
@@ -358,7 +358,11 @@
       "promotionPriceTooHigh": "The promotional price must be lower than the unit price",
       "promotionExpiryRequired": "Please choose an expiry date",
       "draftDescription": "Draft with the assistant",
-      "draftDescriptionError": "The description could not be drafted"
+      "draftDescriptionError": "The description could not be drafted",
+      "variantPackSize": "Units per pack",
+      "variantStockFromProduct": "Product stock",
+      "packLabel_one": "Pack of {{count}}",
+      "packLabel_other": "Pack of {{count}}"
     },
     "units": {
       "kg": "Kilogram",

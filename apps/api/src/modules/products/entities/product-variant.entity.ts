@@ -4,7 +4,7 @@ import { Product } from './product.entity'
 
 @Entity({ tableName: 'product_variants' })
 export class ProductVariant {
-  [OptionalProps]?: 'id' | 'stock' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'stock' | 'packSize' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -20,6 +20,14 @@ export class ProductVariant {
 
   @Property({ default: 0 })
   stock: number = 0
+
+  /**
+   * Units in one pack (« Pack de 6 » = 6). A pack has no stock of its own:
+   * it draws `quantity × packSize` units from the product. Null for a
+   * variant with its own stock (size, flavour).
+   */
+  @Property({ fieldName: 'pack_size', type: 'integer', nullable: true })
+  packSize?: number | null
 
   @Property({ fieldName: 'createdAt' })
   createdAt: Date = new Date()

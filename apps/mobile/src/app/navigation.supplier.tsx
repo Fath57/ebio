@@ -318,6 +318,7 @@ function SupplierProductFormWrapper({ route, navigation }: any) {
             label: v.label,
             price: String(v.pricePerUnit),
             stock: String(v.stock),
+            packSize: typeof v.packSize === 'number' ? String(v.packSize) : '',
           })),
           isActive: p.status !== 'HIDDEN',
           voiceDescriptionUri: p.voiceDescriptionUrl ?? null,

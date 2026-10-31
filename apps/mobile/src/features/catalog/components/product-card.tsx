@@ -61,7 +61,8 @@ export function ProductCard({
 
   const cartItem = useMemo(() => {
     for (const group of groups) {
-      const found = group.items.find(i => i.productId === id)
+      // The card adds the plain unit: a pack of the same product is another line.
+      const found = group.items.find(i => i.productId === id && !i.variantId)
       if (found)
         return found
     }

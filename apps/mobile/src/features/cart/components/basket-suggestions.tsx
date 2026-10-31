@@ -194,7 +194,7 @@ export function BasketSuggestions({
   // The cart line, not just whether it is there: it carries the quantity to
   // display and the id that `updateQuantity` and `removeItem` expect.
   const cartLineFor = (productId: string) =>
-    cartItems.find(line => line.productId === productId && line.supplierId === supplierId) ?? null
+    cartItems.find(line => line.productId === productId && line.supplierId === supplierId && !line.variantId) ?? null
 
   const handleChangeQuantity = (item: RecommendedProduct, next: number): void => {
     const line = cartLineFor(item.id)

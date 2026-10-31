@@ -3,6 +3,7 @@ import type { ProductPromotion } from './entities/product-promotion.entity'
 import type { ProductVariant } from './entities/product-variant.entity'
 import type { Product } from './entities/product.entity'
 import { thumbnailUrlFor } from '../../common/media-urls'
+import { availableQuantity } from '../orders/order-stock'
 import { PromotionsService } from './promotions.service'
 
 /** The legacy promo price, only while it is running — started and not over. */
@@ -56,7 +57,10 @@ export class ProductMapper {
         id: v.id,
         label: v.label,
         pricePerUnit: v.pricePerUnit,
-        stock: v.stock,
+        // Apps read `stock` to cap the quantity: for a pack it is computed, so
+        // even an app that knows nothing of packs sells no more than the shelf holds.
+        stock: availableQuantity(product.stock, v),
+        packSize: v.packSize ?? null,
         createdAt: v.createdAt.toISOString(),
         updatedAt: v.updatedAt.toISOString(),
       })),

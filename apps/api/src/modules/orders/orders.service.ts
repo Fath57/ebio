@@ -45,7 +45,7 @@ import { OrderItem } from './entities/order-item.entity'
 import { Order, OrderStatus, PaymentMethod, PickupMode } from './entities/order.entity'
 import { OrderEmailsService } from './order-emails.service'
 import { buildInvoiceItems, formatFcfa, formatInvoiceDate, PAYMENT_LABELS } from './order-format'
-import { returnStock } from './order-stock'
+import { availableQuantity, returnStock, stockDraw, takeStock } from './order-stock'
 
 interface OrderFilters {
   /** One status or several: a tab of the app can group a few of them. */
@@ -485,20 +485,13 @@ export class OrdersService {
       throw new BadRequestException('Only placed orders can be accepted')
     }
 
-    for (const item of order.items.getItems()) {
-      const product = item.product
-      if (item.variant) {
-        if (item.variant.stock < item.quantity) {
-          throw new BadRequestException(`Insufficient stock for variant ${item.variant.label} of ${product.name}`)
-        }
-        item.variant.stock -= item.quantity
-      }
-      else {
-        if (product.stock < item.quantity) {
-          throw new BadRequestException(`Insufficient stock for ${product.name}`)
-        }
-        product.stock -= item.quantity
-      }
+    // A pack takes its units from the product: the unit and a pack of the
+    // same product are counted together before anything moves.
+    const short = takeStock(order.items.getItems(), item => item.variant
+      ? `variant ${item.variant.label} of ${item.product.name}`
+      : item.product.name)
+    if (short) {
+      throw new BadRequestException(`Insufficient stock for ${short}`)
     }
 
     order.status = OrderStatus.ACCEPTED
@@ -1153,18 +1146,31 @@ export class OrdersService {
       productMap.set(product.id, product)
     }
 
+    // Units each stock holder must supply across the whole basket: the unit
+    // and a pack of one product draw from the same shelf.
+    const needed = new Map<{ stock: number }, number>()
+    const lines: Array<{ product: Product, variant: ProductVariant | null, quantity: number }> = []
     for (const item of items) {
       const product = productMap.get(item.productId)
       if (!product) {
         throw new NotFoundException(`Product ${item.productId} not found`)
       }
+      const variant = item.variantId
+        ? await this.em.findOne(ProductVariant, { id: item.variantId, product: { id: product.id } })
+        : null
+      if (item.variantId && !variant) {
+        throw new NotFoundException(`Format ${item.variantId} not found for ${product.name}`)
+      }
+      const draw = stockDraw({ quantity: item.quantity, product, variant })
+      needed.set(draw.holder, (needed.get(draw.holder) ?? 0) + draw.units)
+      lines.push({ product, variant, quantity: item.quantity })
+    }
 
-      const stock = item.variantId
-        ? (await this.em.findOne(ProductVariant, { id: item.variantId }))?.stock ?? 0
-        : product.stock
-
-      if (stock < item.quantity) {
-        throw new BadRequestException(`Insufficient stock for ${product.name}: available ${stock}, requested ${item.quantity}`)
+    for (const line of lines) {
+      const draw = stockDraw(line)
+      if (draw.holder.stock < (needed.get(draw.holder) ?? 0)) {
+        const available = availableQuantity(line.product.stock, line.variant)
+        throw new BadRequestException(`Insufficient stock for ${line.product.name}: available ${available}, requested ${line.quantity}`)
       }
     }
 

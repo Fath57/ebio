@@ -21,6 +21,9 @@ export interface CartItem {
   quantity: number
   /** Live promotion types on the product when added (absent on carts stored before). */
   promotionTypes?: string[]
+  /** Format bought (« Pack de 6 »…); absent for the plain unit. */
+  variantId?: string
+  variantLabel?: string
 }
 
 export type DeliveryMode = 'PICKUP' | 'DELIVERY'
@@ -47,6 +50,8 @@ export interface AddItemInput {
   unit: string
   quantity?: number
   promotionTypes?: string[]
+  variantId?: string
+  variantLabel?: string
 }
 
 // ---------------------------------------------------------------------------
@@ -178,7 +183,9 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case 'ADD_ITEM': {
       const { input } = action
       const qty = capQuantity(input.quantity ?? 1)
-      const existingIndex = state.items.findIndex(item => item.productId === input.productId)
+      // The unit and a pack of one product are two lines: one key, product and format.
+      const existingIndex = state.items.findIndex(item =>
+        item.productId === input.productId && (item.variantId ?? null) === (input.variantId ?? null))
 
       if (existingIndex !== -1) {
         const items = [...state.items]
@@ -204,6 +211,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           unit: input.unit,
           quantity: qty,
           promotionTypes: input.promotionTypes,
+          ...(input.variantId ? { variantId: input.variantId, variantLabel: input.variantLabel } : {}),
         }],
       }
     }

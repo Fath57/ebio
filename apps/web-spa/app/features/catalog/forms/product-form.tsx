@@ -51,7 +51,16 @@ const variantSchema = z.object({
   label: z.string().min(1),
   pricePerUnit: z.coerce.number().min(0),
   stock: z.coerce.number().int().min(0),
+  // Units per pack; empty for a format with its own stock. A pack draws from
+  // the product's stock, so its own `stock` is ignored by the API.
+  packSize: z.preprocess(
+    value => (value === '' || value === undefined ? null : value),
+    z.coerce.number().int().min(2).max(1000).nullable(),
+  ).optional(),
 })
+
+/** The packs most shops sell; one click fills the label and the unit count. */
+const PACK_PRESETS = [6, 12, 24]
 
 // Empty numeric inputs must resolve to undefined, not 0 (coerce turns '' into 0)
 function optionalAmount(max: number) {
@@ -254,6 +263,7 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
   }
 
   const hasPromotion = form.watch('hasPromotion')
+  const variantPackSizes = form.watch('variants')
   const pricePerUnit = form.watch('pricePerUnit')
   const keptPhotos = form.watch('photos') ?? []
   const nutritionBasis = form.watch('nutritionalValues.basis') ?? DEFAULT_NUTRITION_BASIS
@@ -719,10 +729,25 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
                   <FormLabel>{t('catalog.form.variants')}</FormLabel>
                   <FormDescription>{t('catalog.form.variantsDescription')}</FormDescription>
                 </div>
-                <Button type="button" variant="outline" size="sm" onClick={() => addVariant({ label: '', pricePerUnit: pricePerUnit ?? 0, stock: 0 })}>
+                <Button type="button" variant="outline" size="sm" onClick={() => addVariant({ label: '', pricePerUnit: pricePerUnit ?? 0, stock: 0, packSize: null })}>
                   <Plus className="mr-1 h-4 w-4" />
                   {t('catalog.form.addVariant')}
                 </Button>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {PACK_PRESETS.map(size => (
+                  <Button
+                    key={size}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    onClick={() => addVariant({ label: t('catalog.form.packLabel', { count: size }), pricePerUnit: (pricePerUnit ?? 0) * size, stock: 0, packSize: size })}
+                  >
+                    <Plus className="mr-1 h-4 w-4" />
+                    {t('catalog.form.packLabel', { count: size })}
+                  </Button>
+                ))}
               </div>
               {variantFields.length > 0 && (
                 <div className="mt-3 space-y-3">
@@ -750,14 +775,33 @@ export function ProductForm({ onSubmit, isPending, initialData }: ProductFormPro
                       />
                       <FormField
                         control={form.control}
-                        name={`variants.${index}.stock`}
+                        name={`variants.${index}.packSize`}
                         render={({ field: f }) => (
-                          <FormItem className="w-24">
-                            <FormLabel className="text-xs">{t('catalog.form.variantStock')}</FormLabel>
-                            <FormControl><Input {...f} type="number" min="0" /></FormControl>
+                          <FormItem className="w-28">
+                            <FormLabel className="text-xs">{t('catalog.form.variantPackSize')}</FormLabel>
+                            <FormControl>
+                              <Input {...f} value={f.value ?? ''} type="number" min="2" max="1000" placeholder="—" />
+                            </FormControl>
                           </FormItem>
                         )}
                       />
+                      {/* A pack is counted on the product's stock: nothing to type here. */}
+                      {variantPackSizes?.[index]?.packSize
+                        ? (
+                            <p className="text-muted-foreground w-24 pb-2 text-xs">{t('catalog.form.variantStockFromProduct')}</p>
+                          )
+                        : (
+                            <FormField
+                              control={form.control}
+                              name={`variants.${index}.stock`}
+                              render={({ field: f }) => (
+                                <FormItem className="w-24">
+                                  <FormLabel className="text-xs">{t('catalog.form.variantStock')}</FormLabel>
+                                  <FormControl><Input {...f} type="number" min="0" /></FormControl>
+                                </FormItem>
+                              )}
+                            />
+                          )}
                       <Button type="button" variant="ghost" size="sm" onClick={() => removeVariant(index)} className="text-destructive hover:text-destructive">
                         <Trash2 className="h-4 w-4" />
                       </Button>
