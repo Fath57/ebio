@@ -229,6 +229,11 @@ function RequestsSection({ list }: { list: ListParams }) {
           {row.original.rejectionReason && (
             <span className="text-muted-foreground text-xs whitespace-normal">{row.original.rejectionReason}</span>
           )}
+          {row.original.failureReason && (
+            <span className="text-ebio-coral-600 text-xs whitespace-normal">
+              {t('admin.withdrawals.providerFailure', { reason: row.original.failureReason })}
+            </span>
+          )}
         </span>
       ),
     },

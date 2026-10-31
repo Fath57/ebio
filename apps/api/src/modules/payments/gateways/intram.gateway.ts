@@ -437,7 +437,7 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
   }
 
   async checkPayoutStatus(payoutId: string): Promise<PayoutStatusResult> {
-    const operation = await this.client.get<IntramOperation & { error_message?: string }>(`/operations/${payoutId}`)
+    const operation = await this.client.get<IntramOperation & { error?: { code?: string, message?: string } | null, error_message?: string }>(`/operations/${payoutId}`)
     const raw = operation.result?.status ?? operation.status
 
     // `result.status` says what the worker concluded (`completed` / `failed`);
@@ -450,7 +450,9 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
     return {
       status,
       reference: operation.result?.transaction_reference ?? null,
-      errorMessage: operation.error_message ?? null,
+      // A failed operation carries `error: { code, message }`; `error_message`
+      // is the shape their docs announce, kept as a fallback.
+      errorMessage: operation.error?.message ?? operation.error_message ?? null,
     }
   }
 }

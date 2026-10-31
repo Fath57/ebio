@@ -1,5 +1,5 @@
 import type { User } from '../auth/auth.entity'
-import { EnsureRequestContext } from '@mikro-orm/core'
+import { EnsureRequestContext, RequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
@@ -23,6 +23,13 @@ export const WITHDRAWAL_MIN_AMOUNT = 1000
 
 /** A payout silent for this long is re-checked against FedaPay directly. */
 const STALE_PROCESSING_MS = 10 * 60 * 1000
+/**
+ * Right after an approval, ask the provider again at these delays instead of
+ * waiting for the 10-minute poll: INTRAM can refuse within a second, and the
+ * owner should get their balance back as fast. The poll stays the safety net
+ * (a restart loses these timers).
+ */
+const QUICK_CHECK_DELAYS_MS = [30 * 1000, 2 * 60 * 1000]
 /** A payout INTRAM never answered is sent again (same idempotency key) after this. */
 const UNCONFIRMED_RETRY_AFTER_MS = 5 * 60 * 1000
 /** Past this, retrying stops and a person has to look: never an automatic refund. */
@@ -202,11 +209,14 @@ export class WithdrawalsService {
       limit,
       offset: (page - 1) * limit,
     })
+    const failureReasons = await this.payoutFailureReasons(rows.filter(w => w.status === WithdrawalStatus.FAILED).map(w => w.id))
     return {
       items: rows.map(w => ({
         ...this.mapWithdrawal(w),
         ...this.mapOwner(w),
         holderName: w.payoutNumber.holderName,
+        // Staff only: the provider's own words, never shown to the owner.
+        failureReason: failureReasons.get(w.id) ?? null,
       })),
       total,
       page,
@@ -238,6 +248,9 @@ export class WithdrawalsService {
     const outcome = await this.sendPayout(withdrawal, operation)
     if (outcome === 'refused') {
       throw new BadRequestException('Le versement a échoué ; le solde du bénéficiaire est rétabli')
+    }
+    if (outcome === 'sent' && withdrawal.fedapayPayoutId) {
+      this.scheduleQuickChecks(withdrawal.fedapayPayoutId)
     }
     return this.mapWithdrawal(withdrawal)
   }
@@ -357,6 +370,7 @@ export class WithdrawalsService {
     await this.journal.recordOutcome(
       fedapayPayoutId,
       check.status === 'sent' ? 'completed' : check.status === 'pending' ? 'pending' : 'failed',
+      check.errorMessage,
     )
     if (check.status === 'pending') {
       return
@@ -446,6 +460,32 @@ export class WithdrawalsService {
   }
 
   // ---------- Internals ----------
+
+  private scheduleQuickChecks(fedapayPayoutId: string): void {
+    for (const delay of QUICK_CHECK_DELAYS_MS) {
+      const timer = setTimeout(() => {
+        // A timer runs outside any request: give it its own EntityManager context.
+        RequestContext.create(this.em, () => this.settleFromProvider(fedapayPayoutId))
+          .catch(error => this.logger.error(`Vérification rapide du reversement ${fedapayPayoutId} impossible`, error))
+      }, delay)
+      timer.unref()
+    }
+  }
+
+  /** Why the provider failed each payout, from the journal's latest line per withdrawal. */
+  private async payoutFailureReasons(withdrawalIds: string[]): Promise<Map<string, string>> {
+    if (withdrawalIds.length === 0) {
+      return new Map()
+    }
+    const rows = await this.em.getConnection().execute(
+      `SELECT DISTINCT ON (subject_id) subject_id, failure_reason
+       FROM provider_transactions
+       WHERE kind = ? AND subject_id IN (?)
+       ORDER BY subject_id, created_at DESC`,
+      [ProviderTransactionKind.PAYOUT, withdrawalIds],
+    ) as Array<{ subject_id: string, failure_reason: string | null }>
+    return new Map(rows.filter(row => row.failure_reason).map(row => [row.subject_id, row.failure_reason!]))
+  }
 
   /**
    * One attempt at sending a withdrawal's money.

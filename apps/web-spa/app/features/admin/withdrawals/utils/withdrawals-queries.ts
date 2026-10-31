@@ -42,6 +42,8 @@ export interface AdminWithdrawal extends PayoutOwner {
   operatorLabel: string
   holderName: string
   rejectionReason: string | null
+  /** The provider's reason for a failed payout; staff only. */
+  failureReason: string | null
   providerReference: string | null
   createdAt: string
   processedAt: string | null

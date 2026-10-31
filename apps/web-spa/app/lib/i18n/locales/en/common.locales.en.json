@@ -2100,7 +2100,8 @@
         "notify": "Tell the owner (push and in-app notification)",
         "confirm": "Debit {{amount}}",
         "done": "{{amount}} debited. New balance: {{balance}}."
-      }
+      },
+      "providerFailure": "Provider: {{reason}}"
     },
     "couriers": {
       "title": "Couriers",

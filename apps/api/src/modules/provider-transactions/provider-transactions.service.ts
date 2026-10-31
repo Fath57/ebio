@@ -65,7 +65,7 @@ export class ProviderTransactionsService {
    * moves again. Returns the status written, or null when the reference is
    * not in the journal (an operation from before it existed).
    */
-  async recordOutcome(reference: string, outcome: ProviderOutcome): Promise<ProviderTransactionStatus | null> {
+  async recordOutcome(reference: string, outcome: ProviderOutcome, failureReason?: string | null): Promise<ProviderTransactionStatus | null> {
     const transaction = await this.em.findOne(
       ProviderTransaction,
       { reference },
@@ -77,6 +77,9 @@ export class ProviderTransactionsService {
 
     transaction.providerStatus = outcome
     transaction.lastCheckedAt = new Date()
+    if (outcome === 'failed' && failureReason) {
+      transaction.failureReason = failureReason.slice(0, 1000)
+    }
     if (transaction.status !== ProviderTransactionStatus.COMPLETED) {
       const next = nextStatus(transaction.status, outcome, transaction.createdAt)
       if (next !== transaction.status) {

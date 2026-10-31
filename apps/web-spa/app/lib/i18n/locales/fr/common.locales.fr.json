@@ -2100,7 +2100,8 @@
         "notify": "Prévenir le titulaire (notification push et dans l’app)",
         "confirm": "Débiter {{amount}}",
         "done": "{{amount}} débités. Nouveau solde : {{balance}}."
-      }
+      },
+      "providerFailure": "Prestataire : {{reason}}"
     },
     "couriers": {
       "title": "Livreurs",

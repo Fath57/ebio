@@ -64,7 +64,7 @@ describe('clôture d\'une demande de reversement', () => {
 })
 
 describe('envoi d\'un reversement au prestataire', () => {
-  function buildApproveService(createPayout: ReturnType<typeof vi.fn>, processedAt = new Date()) {
+  function buildApproveService(createPayout: ReturnType<typeof vi.fn>, processedAt = new Date(), checkPayoutStatus = vi.fn()) {
     const withdrawal = {
       id: 'withdrawal-1',
       amount: '5000',
@@ -86,6 +86,7 @@ describe('envoi d\'un reversement au prestataire', () => {
       flush: vi.fn(),
       find: vi.fn().mockResolvedValue([withdrawal]),
       findOneOrFail: vi.fn().mockImplementation(async (entity: { name: string }) => (entity.name === 'Supplier' ? supplier : withdrawal)),
+      findOne: vi.fn().mockImplementation(async () => withdrawal),
       transactional: vi.fn(),
       fork: vi.fn(),
     })
@@ -93,7 +94,7 @@ describe('envoi d\'un reversement au prestataire', () => {
     em.transactional.mockImplementation(async (work: () => Promise<unknown>) => work())
     const wallet = { credit: vi.fn().mockResolvedValue(5000) }
     const notifications = { send: vi.fn().mockResolvedValue(undefined) }
-    const factory = { createPayoutGateway: () => ({ createPayout }) }
+    const factory = { createPayoutGateway: () => ({ createPayout, checkPayoutStatus }) }
     const operation = { id: 'op-1' }
     const journal = {
       open: vi.fn().mockResolvedValue(operation),
@@ -101,6 +102,7 @@ describe('envoi d\'un reversement au prestataire', () => {
       attachReference: vi.fn(),
       markFailed: vi.fn(),
       noteUncertain: vi.fn(),
+      recordOutcome: vi.fn(),
     }
     const service = new WithdrawalsService(em as never, wallet as never, notifications as never, factory as never, journal as never)
     return { service, em, wallet, journal, withdrawal }
@@ -135,6 +137,28 @@ describe('envoi d\'un reversement au prestataire', () => {
 
     expect(createPayout).toHaveBeenCalledWith(expect.objectContaining({ withdrawalId: 'withdrawal-1' }))
     expect(withdrawal.fedapayPayoutId).toBe('op_42')
+  })
+
+  // INTRAM can refuse within a second: the owner should not wait for the 10-minute poll.
+  it('revérifie peu après l\'approbation et rend le solde d\'un échec, motif gardé', async () => {
+    vi.useFakeTimers()
+    try {
+      const createPayout = vi.fn().mockResolvedValue({ payoutId: 'op_7', reference: null })
+      const checkPayoutStatus = vi.fn().mockResolvedValue({ status: 'failed', reference: null, errorMessage: 'No payment mean matching BJ/MTN_BENIN_229' })
+      const { service, wallet, journal } = buildApproveService(createPayout, new Date(), checkPayoutStatus)
+
+      await service.approve('withdrawal-1', 'admin-1')
+      expect(checkPayoutStatus).not.toHaveBeenCalled()
+
+      await vi.advanceTimersByTimeAsync(30 * 1000)
+
+      expect(checkPayoutStatus).toHaveBeenCalledWith('op_7')
+      expect(journal.recordOutcome).toHaveBeenCalledWith('op_7', 'failed', 'No payment mean matching BJ/MTN_BENIN_229')
+      expect(wallet.credit).toHaveBeenCalledWith('wallet-1', expect.objectContaining({ type: 'WITHDRAWAL_REFUND' }))
+    }
+    finally {
+      vi.useRealTimers()
+    }
   })
 
   it('n\'insiste plus au-delà de 24 h et ne rend jamais le solde d\'office', async () => {

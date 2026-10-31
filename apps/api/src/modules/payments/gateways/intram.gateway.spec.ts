@@ -190,6 +190,18 @@ describe('intramGateway', () => {
       expect(result.status).toBe('sent')
       expect(result.reference).toBe('PO-2026-0001')
     })
+
+    // The shape INTRAM really returns (2026-10-31): `error: { code, message }`.
+    it('garde le motif d\'un reversement échoué', async () => {
+      const get = vi.fn().mockResolvedValue({
+        operation_id: 'op_pay_3',
+        status: 'failed',
+        error: { code: 'provider_unavailable', message: 'No payment mean matching BJ/MTN_BENIN_229' },
+      })
+      const result = await buildGateway({ get, post: vi.fn() }).checkPayoutStatus('op_pay_3')
+      expect(result.status).toBe('failed')
+      expect(result.errorMessage).toBe('No payment mean matching BJ/MTN_BENIN_229')
+    })
   })
 
   describe('remboursement', () => {
