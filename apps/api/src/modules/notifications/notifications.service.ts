@@ -3,6 +3,7 @@ import type { PushOptions } from './fcm.service'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
 import { SmsService } from '../../common/sms.service'
+import { config } from '../../config/env.config'
 import { User } from '../auth/auth.entity'
 import { DeviceToken } from './device-token.entity'
 import { FcmService } from './fcm.service'
@@ -236,8 +237,14 @@ export class NotificationsService {
       return {
         ttlSeconds: 900,
         collapseKey: data?.deliveryId ? `offer-${data.deliveryId}` : undefined,
-        channelId: 'ebio-offers',
+        ...(config.fcm.customSounds
+          ? { channelId: 'ebio-offers-v2', sound: 'ebio_offer.wav' }
+          : { channelId: 'ebio-offers' }),
       }
+    }
+    // A new order rings the shop's own tone: it must be heard from across the counter.
+    if (type === NotificationType.ORDER_PLACED && config.fcm.customSounds) {
+      return { channelId: 'ebio-orders', sound: 'ebio_order.wav' }
     }
     if (type === NotificationType.NEW_MESSAGE) {
       return {

@@ -12,6 +12,8 @@ export interface PushOptions {
   collapseKey?: string
   /** Android notification channel; defaults to 'ebio-default'. */
   channelId?: string
+  /** Bundled sound file (`ebio_order.wav`); the platform default otherwise. */
+  sound?: string
   /**
    * A picture shown in the tray, for the messages that are worth one.
    *
@@ -86,7 +88,7 @@ export class FcmService implements OnModuleInit {
         ...(options?.ttlSeconds !== undefined ? { ttl: options.ttlSeconds * 1000 } : {}),
         ...(options?.collapseKey ? { collapseKey: options.collapseKey } : {}),
         notification: {
-          sound: 'default',
+          sound: options?.sound ?? 'default',
           channelId: options?.channelId ?? 'ebio-default',
           ...(options?.collapseKey ? { tag: options.collapseKey } : {}),
           ...(options?.imageUrl ? { imageUrl: options.imageUrl } : {}),
@@ -99,7 +101,7 @@ export class FcmService implements OnModuleInit {
         },
         payload: {
           aps: {
-            sound: 'default',
+            sound: options?.sound ?? 'default',
             // Without this the extension that downloads the picture never runs.
             ...(options?.imageUrl ? { mutableContent: true } : {}),
           },

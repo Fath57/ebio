@@ -52,6 +52,24 @@ async function setupAndroidChannels(): Promise<void> {
     bypassDnd: true,
     lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
   })
+  // Android freezes a channel's sound once it exists on the phone: the custom
+  // ringtones need channels of their own. The two above stay for pushes sent
+  // by an API that predates them.
+  await Notifications.setNotificationChannelAsync('ebio-orders', {
+    name: 'Nouvelles commandes',
+    importance: Notifications.AndroidImportance.MAX,
+    sound: 'ebio_order.wav',
+    vibrationPattern: [0, 400, 200, 400],
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  })
+  await Notifications.setNotificationChannelAsync('ebio-offers-v2', {
+    name: 'Courses à livrer (sonnerie)',
+    importance: Notifications.AndroidImportance.MAX,
+    sound: 'ebio_offer.wav',
+    vibrationPattern: [0, 400, 200, 400, 200, 400],
+    bypassDnd: true,
+    lockscreenVisibility: Notifications.AndroidNotificationVisibility.PUBLIC,
+  })
   await Notifications.setNotificationChannelAsync('ebio-messages', {
     name: 'Messages',
     importance: Notifications.AndroidImportance.HIGH,

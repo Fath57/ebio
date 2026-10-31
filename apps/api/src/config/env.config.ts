@@ -191,6 +191,10 @@ export const configValidationSchema = z.object({
   FCM_PROJECT_ID: z.string().optional(),
   FCM_CLIENT_EMAIL: z.string().optional(),
   FCM_PRIVATE_KEY: z.string().optional(),
+  // Custom ringtones (new order, new run) ride on Android channels only the
+  // apps built after 2026-10-31 create. Switch on once those apps are out:
+  // an older app files a push on an unknown channel under a generic one.
+  PUSH_CUSTOM_SOUNDS: z.stringbool().default(false),
 
   // JWT
   // Signs the chat, OTP and assistant tokens: a known default would let anyone
@@ -347,6 +351,7 @@ export const config = {
     projectId: configParsed.data.FCM_PROJECT_ID,
     clientEmail: configParsed.data.FCM_CLIENT_EMAIL,
     privateKey: configParsed.data.FCM_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    customSounds: configParsed.data.PUSH_CUSTOM_SOUNDS,
   },
   jwt: {
     secret: configParsed.data.JWT_SECRET,

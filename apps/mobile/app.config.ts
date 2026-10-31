@@ -205,7 +205,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
           microphonePermission: 'eBio utilise le micro pour enregistrer vos notes vocales dans la messagerie.',
         },
       ],
-      'expo-notifications',
+      // Custom ringtones for what must not be missed: a new order (shop) and
+      // a new run (courier). Bundled as raw resources on Android, in the app on iOS.
+      ['expo-notifications', {
+        sounds: ['./assets/sounds/ebio_order.wav', './assets/sounds/ebio_offer.wav'],
+      }],
       'expo-secure-store',
       'expo-font',
       [
