@@ -1069,6 +1069,15 @@ export type CourierDebtLimit = {
 };
 
 /**
+ * CourierOfferTimeout
+ *
+ * Exclusive window of a run offered to one courier, in seconds
+ */
+export type CourierOfferTimeout = {
+  seconds: number;
+};
+
+/**
  * BroadcastNotification
  *
  * Send a notification to a group of users
@@ -10850,6 +10859,24 @@ export type AdminControllerUpdateCourierDebtLimitData = {
 };
 
 export type AdminControllerUpdateCourierDebtLimitResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateCourierOfferTimeoutData = {
+  /**
+   * CourierOfferTimeout
+   *
+   * Exclusive window of a run offered to one courier, in seconds
+   */
+  body: {
+    seconds: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings/courier-offer-timeout";
+};
+
+export type AdminControllerUpdateCourierOfferTimeoutResponses = {
   200: unknown;
 };
 

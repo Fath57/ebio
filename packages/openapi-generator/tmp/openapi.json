@@ -17506,6 +17506,44 @@
         }
       }
     },
+    "/api/admin/settings/courier-offer-timeout": {
+      "put": {
+        "operationId": "AdminController_updateCourierOfferTimeout",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Exclusive window of a run offered to one courier, in seconds",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "seconds": {
+                    "type": "integer",
+                    "minimum": 20,
+                    "maximum": 600
+                  }
+                },
+                "required": [
+                  "seconds"
+                ],
+                "additionalProperties": false,
+                "title": "CourierOfferTimeout",
+                "description": "Exclusive window of a run offered to one courier, in seconds"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/notifications/broadcast": {
       "post": {
         "operationId": "AdminController_broadcastNotification",
@@ -20688,6 +20726,22 @@
         "additionalProperties": false,
         "title": "CourierDebtLimit",
         "description": "Deepest negative courier wallet balance before offers and acceptance are suspended"
+      },
+      "CourierOfferTimeout": {
+        "type": "object",
+        "properties": {
+          "seconds": {
+            "type": "integer",
+            "minimum": 20,
+            "maximum": 600
+          }
+        },
+        "required": [
+          "seconds"
+        ],
+        "additionalProperties": false,
+        "title": "CourierOfferTimeout",
+        "description": "Exclusive window of a run offered to one courier, in seconds"
       },
       "BroadcastNotification": {
         "type": "object",

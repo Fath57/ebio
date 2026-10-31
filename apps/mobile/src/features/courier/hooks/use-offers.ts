@@ -1,4 +1,4 @@
-import type { CourierOffer, DeliveryOffer } from '../types'
+import type { CourierOffer, Delivery, DeliveryOffer } from '../types'
 import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
@@ -11,6 +11,8 @@ export interface AcceptResult {
   debtMessage: string | null
   /** Server `message` of a 409 (e.g. run held by another courier), null otherwise. */
   message: string | null
+  /** The delivery now ours, as the server returned it — shown at once, no second fetch. */
+  delivery: Delivery | null
 }
 
 export interface DeclineResult {
@@ -167,7 +169,8 @@ export function useOffers() {
     try {
       const res = await apiFetch(`${base}/${offer.id}/accept`, { method: 'POST' })
       if (res.ok) {
-        return { ok: true, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null }
+        const delivery = await res.json().catch(() => null) as Delivery | null
+        return { ok: true, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null, delivery }
       }
       const block = res.status === 403 ? await readDebtBlock(res) : null
       const message = res.status === 409 ? await readMessage(res) : null
@@ -178,10 +181,11 @@ export function useOffers() {
         forbidden: res.status === 403,
         debtMessage: block?.message ?? null,
         message,
+        delivery: null,
       }
     }
     catch {
-      return { ok: false, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null }
+      return { ok: false, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null, delivery: null }
     }
     finally {
       await load()

@@ -11,6 +11,7 @@ import {
   adminControllerUpdateCashOnDeliveryLimit,
   adminControllerUpdateCommissions,
   adminControllerUpdateCourierDebtLimit,
+  adminControllerUpdateCourierOfferTimeout,
   adminControllerUpdateDeliveryCommission,
   adminDeliveryPricingControllerGet,
   adminDeliveryPricingControllerUpdate,
@@ -40,6 +41,7 @@ import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
 import { EscrowReleaseForm } from '../forms/escrow-release-form'
+import { OfferTimeoutForm } from '../forms/offer-timeout-form'
 import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
 import { ReferralRewardsForm } from '../forms/referral-rewards-form'
 
@@ -51,6 +53,7 @@ interface AdminSettingsData {
   cashOnDeliveryMaxAmount: number
   /** Deepest negative courier balance before runs are suspended (0 = no limit). */
   courierMaxDebt: number
+  courierOfferTimeoutSeconds?: number
 }
 
 function fetchDeliveryPricingQueryOptions() {
@@ -164,6 +167,7 @@ export default function AdminSettingsPage() {
   const [deliveryFeedback, setDeliveryFeedback] = useState<'saved' | 'error' | null>(null)
   const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
+  const [offerTimeoutFeedback, setOfferTimeoutFeedback] = useState<'saved' | 'error' | null>(null)
   const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
   const [bannerOffersFeedback, setBannerOffersFeedback] = useState<'saved' | 'error' | null>(null)
   const [referralFeedback, setReferralFeedback] = useState<'saved' | 'error' | null>(null)
@@ -227,6 +231,25 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setCashLimitFeedback('error')
+    },
+  })
+
+  const { mutate: updateOfferTimeout, isPending: isOfferTimeoutPending } = useMutation({
+    mutationFn: async (seconds: number) => {
+      const response = await adminControllerUpdateCourierOfferTimeout({ body: { seconds } })
+      if (response.error)
+        throw new Error('Failed to update courier offer timeout')
+      return response.data
+    },
+    onMutate: () => {
+      setOfferTimeoutFeedback(null)
+    },
+    onSuccess: () => {
+      setOfferTimeoutFeedback('saved')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
+    },
+    onError: () => {
+      setOfferTimeoutFeedback('error')
     },
   })
 
@@ -741,6 +764,28 @@ export default function AdminSettingsPage() {
                 {debtLimitFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.debtLimit.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.offerTimeout.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.offerTimeout.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <OfferTimeoutForm
+                  seconds={settings?.courierOfferTimeoutSeconds ?? 90}
+                  onSubmit={updateOfferTimeout}
+                  isPending={isOfferTimeoutPending}
+                />
+                {offerTimeoutFeedback === 'saved' && (
+                  <p className="text-ebio-green-600 text-sm">{t('admin.settings.offerTimeout.saved')}</p>
+                )}
+                {offerTimeoutFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.offerTimeout.error')}
                   </p>
                 )}
               </CardContent>

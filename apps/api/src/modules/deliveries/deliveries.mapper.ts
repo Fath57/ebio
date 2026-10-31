@@ -4,6 +4,8 @@ import type { CourierProfile } from './entities/courier-profile.entity'
 import type { CourierRating } from './entities/courier-rating.entity'
 import type { DeliveryEvent } from './entities/delivery-event.entity'
 import type { Delivery } from './entities/delivery.entity'
+import { wrap } from '@mikro-orm/core'
+import { thumbnailUrlFor } from '../../common/media-urls'
 import { DeliveryStatus } from './entities/delivery.entity'
 
 /** Who is looking at the delivery — shapes contacts and the confirmation code. */
@@ -282,6 +284,7 @@ export class DeliveriesMapper {
       failReason: delivery.failReason ?? null,
       failComment: delivery.failComment ?? null,
       itemsCount: order.items.isInitialized() ? order.items.count() : 0,
+      items: deliveryItems(delivery),
       totalAmount: order.totalAmount,
       paymentMethod: order.paymentMethod,
       // The buyer-paid fee (0 when sponsored) is what the courier keeps in hand.
@@ -308,4 +311,26 @@ export class DeliveriesMapper {
       createdAt: delivery.createdAt.toISOString(),
     }
   }
+}
+
+/**
+ * The lines of the order, for the courier to prepare the pickup. Empty when
+ * the caller did not load the products (lists that only need a count).
+ */
+function deliveryItems(delivery: Delivery): DeliveryResponse['items'] {
+  const items = delivery.order.items
+  if (!items.isInitialized())
+    return []
+  return items.getItems()
+    .filter(item => wrap(item.product).isInitialized())
+    .map((item) => {
+      const photo = item.product.photos?.[0] ?? null
+      return {
+        name: item.product.name,
+        variantLabel: item.variant && wrap(item.variant).isInitialized() ? item.variant.label : null,
+        quantity: item.quantity,
+        isGift: item.isGift,
+        photo: thumbnailUrlFor(photo) ?? photo,
+      }
+    })
 }

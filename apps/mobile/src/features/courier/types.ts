@@ -104,6 +104,8 @@ export interface Delivery {
   failReason: DeliveryFailReason | null
   failComment: string | null
   itemsCount: number
+  /** The lines to collect at the shop; empty from an API older than the list. */
+  items?: DeliveryItem[]
   totalAmount: number
   /** What the buyer paid for delivery. */
   deliveryFee: number
@@ -165,3 +167,14 @@ export const FAIL_REASON_LABELS: Record<DeliveryFailReason, string> = {
  * delivery is the only thing there is to offer.
  */
 export type CourierOffer = { kind: 'DELIVERY' } & DeliveryOffer
+
+/** One line of what the courier carries. */
+export interface DeliveryItem {
+  name: string
+  /** Format bought (« Pack de 6 »…), null for the plain product. */
+  variantLabel: string | null
+  quantity: number
+  /** Free unit of a promotion: carried, not charged. */
+  isGift: boolean
+  photo: string | null
+}

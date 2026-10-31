@@ -33,5 +33,15 @@ export function useActiveDelivery() {
     }, [refresh]),
   )
 
-  return { delivery, loading, refresh }
+  /**
+   * Puts a delivery on screen at once — the one just accepted — and confirms
+   * it with the server behind. Without it the courier stared at the offer
+   * list until they pulled to refresh.
+   */
+  const show = useCallback((accepted: Delivery) => {
+    setDelivery(accepted)
+    refresh()
+  }, [refresh])
+
+  return { delivery, loading, refresh, show }
 }

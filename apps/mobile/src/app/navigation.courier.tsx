@@ -9,7 +9,7 @@ import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import User from 'lucide-react-native/dist/esm/icons/user'
 import Wallet from 'lucide-react-native/dist/esm/icons/wallet'
 import { useEffect } from 'react'
-import { ActivityIndicator, Platform, StatusBar, StyleSheet, View } from 'react-native'
+import { ActivityIndicator, AppState, Platform, StatusBar, StyleSheet, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { ChangePasswordScreen } from '../features/auth/components/change-password-screen'
 import { ForgotPasswordScreen } from '../features/auth/components/forgot-password-screen'
@@ -224,7 +224,7 @@ function CourierGate() {
 const CoursesStack = createNativeStackNavigator()
 
 function CoursesHomeWrapper({ navigation }: any) {
-  const { delivery, loading, refresh } = useActiveDelivery()
+  const { delivery, loading, refresh, show } = useActiveDelivery()
   const offers = useOffers()
   const refreshOffers = offers.refresh
   const { profile, refresh: refreshProfile } = useCourierProfile()
@@ -245,6 +245,20 @@ function CoursesHomeWrapper({ navigation }: any) {
       sub.remove()
     }
   }, [refreshOffers])
+
+  // Back from the background (a push tapped, the phone unlocked), the screen
+  // was frozen on what it last knew: re-read both the job and the offers.
+  useEffect(() => {
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        refresh()
+        refreshOffers()
+      }
+    })
+    return () => {
+      sub.remove()
+    }
+  }, [refresh, refreshOffers])
 
   if (loading) {
     return (
@@ -301,9 +315,13 @@ function CoursesHomeWrapper({ navigation }: any) {
         onRefresh={offers.refresh}
         onAccept={offers.accept}
         onDecline={offers.decline}
-        onAccepted={() => {
-          // The accepted course replaces the list at once.
-          refresh()
+        onAccepted={(accepted) => {
+          // The accepted course replaces the list at once, from the accept
+          // response itself; the re-read only confirms it.
+          if (accepted)
+            show(accepted)
+          else
+            refresh()
         }}
         onOpenWallet={() => navigation.navigate('Portefeuille')}
       />

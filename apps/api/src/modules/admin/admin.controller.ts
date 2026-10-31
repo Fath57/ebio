@@ -7,6 +7,7 @@ import type {
   CashOnDeliveryLimitInput,
   CommissionRates,
   CourierDebtLimitInput,
+  CourierOfferTimeoutInput,
   DeliveryCommissionRateInput,
   DisputeResolutionInput,
   ResolveReportInput,
@@ -41,6 +42,7 @@ import {
   cashOnDeliveryLimitSchema,
   commissionRateSchema,
   courierDebtLimitSchema,
+  courierOfferTimeoutSchema,
   deliveryCommissionSchema,
   disputeResolutionSchema,
   resolveReportSchema,
@@ -452,6 +454,15 @@ export class AdminController {
     @TypedBody(courierDebtLimitSchema) body: CourierDebtLimitInput,
   ) {
     await this.adminService.updateCourierMaxDebt(body.amount)
+    return { success: true }
+  }
+
+  @CanManage('Settings')
+  @Put('settings/courier-offer-timeout')
+  async updateCourierOfferTimeout(
+    @TypedBody(courierOfferTimeoutSchema) body: CourierOfferTimeoutInput,
+  ) {
+    await this.adminService.updateCourierOfferTimeout(body.seconds)
     return { success: true }
   }
 

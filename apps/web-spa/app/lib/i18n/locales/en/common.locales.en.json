@@ -1397,6 +1397,15 @@
         "activeHint": "Pauses the programme without erasing existing links or codes.",
         "saved": "Rewards saved",
         "error": "Could not save the rewards. Check the values and try again."
+      },
+      "offerTimeout": {
+        "title": "Time to accept a run",
+        "description": "A run is first offered to a single courier, the best placed. Without an answer within this delay it moves to the next; after three couriers it is offered to all. A longer delay lets the courier stop to read the offer, but delays the pickup.",
+        "seconds": "Delay",
+        "unit": "seconds",
+        "hint": "Between 20 and 600 seconds. Applies to the next offers.",
+        "saved": "Delay saved",
+        "error": "The delay could not be saved. Try again."
       }
     },
     "site": {

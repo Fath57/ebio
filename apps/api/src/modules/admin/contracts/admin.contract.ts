@@ -279,6 +279,15 @@ export const courierDebtLimitSchema = z.object({
   description: 'Deepest negative courier wallet balance before offers and acceptance are suspended',
 })
 export type CourierDebtLimitInput = z.infer<typeof courierDebtLimitSchema>
+
+export const courierOfferTimeoutSchema = z.object({
+  /** Seconds a targeted courier has to accept before the run moves on. */
+  seconds: z.number().int().min(20).max(600),
+}).meta({
+  title: 'CourierOfferTimeout',
+  description: 'Exclusive window of a run offered to one courier, in seconds',
+})
+export type CourierOfferTimeoutInput = z.infer<typeof courierOfferTimeoutSchema>
 export type SupplierCommissionRateInput = z.infer<typeof supplierCommissionRateSchema>
 export type CommissionSummary = z.infer<typeof commissionSummarySchema>
 export type CommissionOrderList = z.infer<typeof commissionOrderListSchema>

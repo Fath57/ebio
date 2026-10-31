@@ -15,6 +15,7 @@ import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
 import { useLiveLocation } from '../hooks/use-live-location'
 import { FAIL_REASON_LABELS } from '../types'
+import { DeliveryItemsCard } from './delivery-items-card'
 
 interface ActiveDeliveryScreenProps {
   delivery: Delivery
@@ -275,6 +276,8 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
           </View>
         </View>
       </View>
+
+      <DeliveryItemsCard items={delivery.items ?? []} itemsCount={delivery.itemsCount} />
 
       {delivery.status === 'ACCEPTED'
         ? (

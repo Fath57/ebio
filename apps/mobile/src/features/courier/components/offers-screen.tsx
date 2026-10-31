@@ -1,5 +1,5 @@
 import type { AcceptResult, DebtBlock, DeclineResult } from '../hooks/use-offers'
-import type { CourierOffer, DeliveryOffer } from '../types'
+import type { CourierOffer, Delivery, DeliveryOffer } from '../types'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
@@ -30,7 +30,7 @@ interface OffersScreenProps {
   onAccept: (offer: CourierOffer) => Promise<AcceptResult>
   /** Targeted offers only: hand the run to the next courier in line. */
   onDecline: (offer: CourierOffer) => Promise<DeclineResult>
-  onAccepted: () => void
+  onAccepted: (delivery: Delivery | null) => void
   onOpenWallet: () => void
 }
 
@@ -133,7 +133,7 @@ export function OffersScreen({ offers, refreshing, unavailable, debtBlock, outOf
   async function accept(offer: CourierOffer) {
     const result = await onAccept(offer)
     if (result.ok) {
-      onAccepted()
+      onAccepted(result.delivery)
       return
     }
     const nom = 'course'

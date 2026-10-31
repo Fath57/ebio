@@ -1397,6 +1397,15 @@
         "activeHint": "Suspend le programme sans effacer les liens déjà noués ni les codes distribués.",
         "saved": "Barème enregistré",
         "error": "Impossible d'enregistrer le barème. Vérifiez les valeurs et réessayez."
+      },
+      "offerTimeout": {
+        "title": "Délai pour accepter une course",
+        "description": "Une course est d'abord proposée à un seul livreur, le mieux placé. S'il ne répond pas dans ce délai, elle passe au suivant ; après trois livreurs, elle est proposée à tous. Un délai plus long laisse au livreur le temps de s'arrêter pour lire l'offre, mais retarde la prise en charge.",
+        "seconds": "Délai",
+        "unit": "secondes",
+        "hint": "Entre 20 et 600 secondes. Appliqué aux prochaines offres.",
+        "saved": "Délai enregistré",
+        "error": "Impossible d'enregistrer le délai. Réessayez."
       }
     },
     "site": {

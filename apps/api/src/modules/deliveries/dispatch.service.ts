@@ -26,7 +26,6 @@ const PROMPT_AFTER_UNGROUP_MS = 15 * 60 * 1000
 const RADIUS_STEP_KM = 5
 const RADIUS_CAP_KM = 25
 /** Exclusive offer window per courier, then the next one is asked. */
-export const OFFER_TIMEOUT_S = 40
 /** Targeted rounds before everyone in the radius is asked at once. */
 export const TARGETED_ROUNDS = 3
 /** Distance assumed for a courier with no usable position (km). */
@@ -76,7 +75,7 @@ export function scoreCandidate(row: { distanceKm: number | null, activeDeliverie
 
 /**
  * Two-phase dispatch. A new run is first offered to one ranked courier at a
- * time (TARGETED, OFFER_TIMEOUT_S each, TARGETED_ROUNDS rounds); when nobody
+ * time (TARGETED, the configured offer window each, TARGETED_ROUNDS rounds); when nobody
  * takes it, it falls back to the broadcast where the first to accept wins the
  * atomic claim in DeliveriesService.
  */
@@ -351,7 +350,8 @@ export class DispatchService {
     }
 
     const round = delivery.offerRound + 1
-    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_S * 1000)
+    const timeoutS = await this.platformSettings.getCourierOfferTimeoutSeconds()
+    const expiresAt = new Date(Date.now() + timeoutS * 1000)
     const courier = this.em.getReference(CourierProfile, best.id)
     this.em.create(DeliveryOffer, { delivery, courier, round, score: best.score, expiresAt })
     delivery.dispatchPhase = DispatchPhase.TARGETED
@@ -371,7 +371,7 @@ export class DispatchService {
         user,
         type: NotificationType.DELIVERY_OFFER,
         title: 'Course proposée en priorité',
-        body: `Retrait chez ${delivery.order.supplier.shopName} — répondez dans les ${OFFER_TIMEOUT_S} s`,
+        body: `Retrait chez ${delivery.order.supplier.shopName} — répondez dans les ${formatWindow(timeoutS)}`,
         data: { deliveryId: delivery.id, orderId: delivery.order.id, expiresAt: expiresAt.toISOString(), targeted: true },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
@@ -485,7 +485,8 @@ export class DispatchService {
     }
 
     const round = run.offerRound + 1
-    const expiresAt = new Date(Date.now() + OFFER_TIMEOUT_S * 1000)
+    const timeoutS = await this.platformSettings.getCourierOfferTimeoutSeconds()
+    const expiresAt = new Date(Date.now() + timeoutS * 1000)
     const courier = this.em.getReference(CourierProfile, best.id)
     this.em.create(DeliveryOffer, { deliveryRun: run, courier, round, score: best.score, expiresAt })
     run.dispatchPhase = DispatchPhase.TARGETED
@@ -501,7 +502,7 @@ export class DispatchService {
         user,
         type: NotificationType.DELIVERY_OFFER,
         title: 'Tournée proposée en priorité',
-        body: `${this.runLabel(run)} — répondez dans les ${OFFER_TIMEOUT_S} s`,
+        body: `${this.runLabel(run)} — répondez dans les ${formatWindow(timeoutS)}`,
         data: { deliveryRunId: run.id, expiresAt: expiresAt.toISOString(), targeted: true },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
@@ -1016,4 +1017,13 @@ export class DispatchService {
       this.logger.log(`Reassigned delivery ${delivery.id} (courier never picked up)`)
     }
   }
+}
+
+/** « 90 s » reads worse than « 1 min 30 » on a lock screen. */
+export function formatWindow(seconds: number): string {
+  if (seconds < 60)
+    return `${seconds} s`
+  const minutes = Math.floor(seconds / 60)
+  const rest = seconds % 60
+  return rest === 0 ? `${minutes} min` : `${minutes} min ${rest.toString().padStart(2, '0')}`
 }

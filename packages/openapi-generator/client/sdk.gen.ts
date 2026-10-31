@@ -96,6 +96,8 @@ import type {
   AdminControllerUpdateCommissionsResponses,
   AdminControllerUpdateCourierDebtLimitData,
   AdminControllerUpdateCourierDebtLimitResponses,
+  AdminControllerUpdateCourierOfferTimeoutData,
+  AdminControllerUpdateCourierOfferTimeoutResponses,
   AdminControllerUpdateDeliveryCommissionData,
   AdminControllerUpdateDeliveryCommissionResponses,
   AdminControllerUpdateOrderStatusData,
@@ -6151,6 +6153,24 @@ export const adminControllerUpdateCourierDebtLimit = <
     ThrowOnError
   >({
     url: "/api/admin/settings/courier-debt-limit",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminControllerUpdateCourierOfferTimeout = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerUpdateCourierOfferTimeoutData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminControllerUpdateCourierOfferTimeoutResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/settings/courier-offer-timeout",
     ...options,
     headers: {
       "Content-Type": "application/json",

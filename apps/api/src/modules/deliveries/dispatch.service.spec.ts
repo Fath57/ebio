@@ -1,4 +1,4 @@
-import { DispatchService } from './dispatch.service'
+import { DispatchService, formatWindow } from './dispatch.service'
 import { DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 function buildService() {
@@ -12,7 +12,7 @@ function buildService() {
   }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
   // No debt limit by default: the eligibility SQL stays exactly as before.
-  const settings = { getCourierMaxDebt: vi.fn().mockResolvedValue(0) }
+  const settings = { getCourierMaxDebt: vi.fn().mockResolvedValue(0), getCourierOfferTimeoutSeconds: vi.fn().mockResolvedValue(90) }
   const service = new DispatchService(em as never, notifications as never, settings as never)
   return { service, em, execute, notifications, settings }
 }
@@ -278,5 +278,14 @@ describe('dispatchService', () => {
       expect(notified).toBe(0)
       expect(notifications.send).not.toHaveBeenCalled()
     })
+  })
+})
+
+describe('formatWindow', () => {
+  it('reads seconds under a minute, minutes beyond', () => {
+    expect(formatWindow(40)).toBe('40 s')
+    expect(formatWindow(60)).toBe('1 min')
+    expect(formatWindow(90)).toBe('1 min 30')
+    expect(formatWindow(125)).toBe('2 min 05')
   })
 })

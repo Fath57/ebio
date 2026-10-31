@@ -797,6 +797,15 @@ export const zCourierDebtLimit = z.object({
 });
 
 /**
+ * CourierOfferTimeout
+ *
+ * Exclusive window of a run offered to one courier, in seconds
+ */
+export const zCourierOfferTimeout = z.object({
+  seconds: z.int().gte(20).lte(600),
+});
+
+/**
  * BroadcastNotification
  *
  * Send a notification to a group of users
@@ -8820,6 +8829,14 @@ export const zAdminControllerUpdateCashOnDeliveryLimitData = z.object({
 export const zAdminControllerUpdateCourierDebtLimitData = z.object({
   body: z.object({
     amount: z.int().gte(0).lte(10000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminControllerUpdateCourierOfferTimeoutData = z.object({
+  body: z.object({
+    seconds: z.int().gte(20).lte(600),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),

@@ -40,6 +40,17 @@ import { DeliveryOfferResponse } from './entities/delivery-offer.entity'
 import { DeliveryRun, DeliveryRunOutcome, DeliveryRunStatus } from './entities/delivery-run.entity'
 import { Delivery, DeliveryFailReason, DeliveryProofType, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
+/** What a delivery response needs, down to the products the courier carries. */
+const DELIVERY_POPULATE = [
+  'order',
+  'order.buyer',
+  'order.supplier',
+  'order.items',
+  'order.items.product',
+  'order.items.variant',
+  'courier',
+] as const
+
 const ACTIVE_STATUSES = [DeliveryStatus.ACCEPTED, DeliveryStatus.PICKED_UP, DeliveryStatus.IN_TRANSIT]
 /** The courier search starts this long before the shop's readiness estimate. */
 export const DISPATCH_LEAD_MINUTES = 10
@@ -440,7 +451,9 @@ export class DeliveriesService {
     }
 
     await this.dispatchService.respondToOffer(deliveryId, profile.id, DeliveryOfferResponse.ACCEPTED)
-    const delivery = await this.loadDelivery(deliveryId)
+    // The claim was a raw UPDATE: without a refresh the courier got back the
+    // delivery as it was before — no courier, still awaiting one.
+    const delivery = await this.loadDelivery(deliveryId, { refresh: true })
     this.em.create(DeliveryEvent, {
       delivery,
       type: DeliveryEventType.ACCEPTED,
@@ -1487,7 +1500,7 @@ export class DeliveriesService {
       courier: { id: profile.id },
       ...(statuses ? { status: { $in: statuses } } : {}),
     }, {
-      populate: ['order', 'order.buyer', 'order.supplier', 'order.items', 'courier'],
+      populate: [...DELIVERY_POPULATE],
       // The id breaks ties between rows updated in the same instant, so a
       // page boundary never repeats or skips one.
       orderBy: { updatedAt: 'DESC', id: 'DESC' },
@@ -1634,9 +1647,14 @@ export class DeliveriesService {
 
   // ===== Helpers =====
 
-  private async loadDelivery(deliveryId: string): Promise<Delivery> {
+  /**
+   * `refresh` re-reads the row: after a raw UPDATE, the copy already in the
+   * identity map still holds the values from before it.
+   */
+  private async loadDelivery(deliveryId: string, options: { refresh?: boolean } = {}): Promise<Delivery> {
     const delivery = await this.em.findOne(Delivery, { id: deliveryId }, {
-      populate: ['order', 'order.buyer', 'order.supplier', 'order.items', 'courier'],
+      populate: [...DELIVERY_POPULATE],
+      refresh: options.refresh,
     })
     if (!delivery) {
       throw new NotFoundException('Delivery not found')

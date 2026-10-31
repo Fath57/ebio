@@ -13,6 +13,7 @@ import { PlatformSetting } from './platform-setting.entity'
 export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
 export const CASH_ON_DELIVERY_MAX_AMOUNT_KEY = 'cash_on_delivery_max_amount'
 export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
+export const COURIER_OFFER_TIMEOUT_KEY = 'courier_offer_timeout_s'
 export const DELIVERY_PRICING_KEY = 'delivery_pricing'
 export const BANNER_OFFERS_KEY = 'banner_offers'
 export const ASSISTANT_ENABLED_KEY = 'assistant_enabled'
@@ -66,6 +67,13 @@ export const DEFAULT_CASH_ON_DELIVERY_MAX_AMOUNT = 25_000
 const CASH_LIMIT_CEILING = 10_000_000
 /** Deepest negative courier balance (FCFA) before offers stop; 0 = no limit. */
 export const DEFAULT_COURIER_MAX_DEBT = 5_000
+/**
+ * Seconds a courier has to take a run offered to them alone before it moves
+ * to the next one. 40 s turned out too short on the road.
+ */
+export const DEFAULT_COURIER_OFFER_TIMEOUT_S = 90
+export const COURIER_OFFER_TIMEOUT_MIN_S = 20
+export const COURIER_OFFER_TIMEOUT_MAX_S = 600
 
 /**
  * The assistant stays off until someone turns it on.
@@ -207,6 +215,21 @@ export class PlatformSettingsService {
       throw new BadRequestException('La dette maximale doit être un montant entier entre 0 et 10 000 000 FCFA')
     }
     await this.set(COURIER_MAX_DEBT_KEY, String(amount))
+  }
+
+  /** Exclusive window of a targeted offer, in seconds. */
+  async getCourierOfferTimeoutSeconds(): Promise<number> {
+    return this.readInteger(COURIER_OFFER_TIMEOUT_KEY, DEFAULT_COURIER_OFFER_TIMEOUT_S, COURIER_OFFER_TIMEOUT_MIN_S, COURIER_OFFER_TIMEOUT_MAX_S)
+  }
+
+  async setCourierOfferTimeoutSeconds(seconds: number): Promise<void> {
+    this.assertInteger(
+      seconds,
+      COURIER_OFFER_TIMEOUT_MIN_S,
+      COURIER_OFFER_TIMEOUT_MAX_S,
+      `Le délai doit être un nombre de secondes entre ${COURIER_OFFER_TIMEOUT_MIN_S} et ${COURIER_OFFER_TIMEOUT_MAX_S}`,
+    )
+    await this.set(COURIER_OFFER_TIMEOUT_KEY, String(seconds))
   }
 
   /** Platform delivery pricing; an unreadable or missing row yields the defaults. */

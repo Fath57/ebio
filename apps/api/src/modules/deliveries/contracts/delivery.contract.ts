@@ -255,6 +255,17 @@ export const courierRatingResponseSchema = z.object({
   description: 'The rating the buyer left on a delivery',
 })
 
+/** One line of what the courier carries: enough to check the bag at the shop counter. */
+export const deliveryItemSchema = z.object({
+  name: z.string(),
+  /** Format bought (« Pack de 6 »…), null for the plain product. */
+  variantLabel: z.string().nullable(),
+  quantity: z.number().int(),
+  /** Free unit of a « 1 acheté = 1 offert » promotion: carried, not charged. */
+  isGift: z.boolean(),
+  photo: z.string().nullable(),
+})
+
 export const deliveryResponseSchema = z.object({
   id: z.string().uuid(),
   orderId: z.string().uuid(),
@@ -291,6 +302,7 @@ export const deliveryResponseSchema = z.object({
   failReason: deliveryFailReasonEnum.nullable(),
   failComment: z.string().nullable(),
   itemsCount: z.number(),
+  items: z.array(deliveryItemSchema),
   totalAmount: z.number(),
   paymentMethod: z.string(),
   /** Cash order: what the courier collects from the buyer at the door (null otherwise). */
