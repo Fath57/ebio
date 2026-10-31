@@ -29,6 +29,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { appAlert } from '../../common/components/app-alert'
 import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { announceTopupOutcome, awaitSettlement } from '../../payments/utils/await-settlement'
 import { buildTopupCheckoutHtml } from '../../wallet/utils/topup-checkout'
@@ -185,6 +186,7 @@ interface CourierWalletScreenProps {
  */
 export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: CourierWalletScreenProps = {}) {
   const { semantic } = useTheme()
+  const tabBarClearance = useTabBarClearance()
   const { data: session } = useSession()
   const fedapayPublicKey = process.env.EXPO_PUBLIC_FEDAPAY_PUBLIC_KEY ?? null
   const {
@@ -433,7 +435,7 @@ export function CourierWalletScreen({ dispatchBlock = null, onRefreshed }: Couri
         renderItem={({ item, index }) => (
           <MovementRow movement={item} isFirst={index === 0} isLast={index === movements.length - 1} />
         )}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + spacing[6] }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={handleRefresh} tintColor={colors.green[400]} />}
         onEndReached={loadMore}

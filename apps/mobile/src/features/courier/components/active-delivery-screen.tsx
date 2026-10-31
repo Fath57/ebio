@@ -13,6 +13,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { formatTime, isFutureIso } from '../../../utils/format-time'
 import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { useLiveLocation } from '../hooks/use-live-location'
 import { FAIL_REASON_LABELS } from '../types'
 import { DeliveryItemsCard } from './delivery-items-card'
@@ -67,6 +68,7 @@ const FAIL_REASONS = Object.keys(FAIL_REASON_LABELS) as DeliveryFailReason[]
 /** The courier's current job: itinerary, contacts and step transitions. */
 export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onProof, onChanged, onOpenChat }: ActiveDeliveryScreenProps) {
   const { semantic } = useTheme()
+  const tabBarClearance = useTabBarClearance()
   const [openingChat, setOpeningChat] = useState(false)
 
   async function openChat(): Promise<void> {
@@ -140,7 +142,7 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
   }
 
   return (
-    <ScrollView style={{ backgroundColor: semantic.bgPage }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ backgroundColor: semantic.bgPage }} contentContainerStyle={[styles.container, { paddingBottom: tabBarClearance + spacing[6] }]}>
       {pendingCount > 0
         ? (
             <View style={[styles.pendingBanner, { backgroundColor: colors.earth[50] }]}>

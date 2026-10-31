@@ -14,6 +14,7 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 
 interface SupplierSettingsScreenProps {
   onGoBack: () => void
@@ -35,11 +36,12 @@ export function SupplierSettingsScreen({
   onNavigateToAnnouncementRequest,
 }: SupplierSettingsScreenProps) {
   const { semantic } = useTheme()
+  const tabBarClearance = useTabBarClearance()
 
   return (
     <ScrollView
       style={[styles.container, { backgroundColor: semantic.bgPage }]}
-      contentContainerStyle={styles.content}
+      contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + spacing[6] }]}
     >
       <ScreenHeader title="Paramètres boutique" onBack={onGoBack} />
 

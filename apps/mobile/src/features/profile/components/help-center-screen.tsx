@@ -3,11 +3,11 @@ import Mail from 'lucide-react-native/dist/esm/icons/mail'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 
 interface FaqItem {
   question: string
@@ -29,7 +29,7 @@ const SUPPORT_EMAIL = 'contact@e-bio.org'
  */
 export function HelpCenterScreen({ onGoBack, onOpenChat }: HelpCenterScreenProps) {
   const { semantic } = useTheme()
-  const insets = useSafeAreaInsets()
+  const tabBarClearance = useTabBarClearance()
   const [faq, setFaq] = useState<FaqItem[]>([])
   const [openIndex, setOpenIndex] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
@@ -73,7 +73,7 @@ export function HelpCenterScreen({ onGoBack, onOpenChat }: HelpCenterScreenProps
       <ScreenHeader title="Centre d'aide" onBack={onGoBack} />
 
       <ScrollView
-        contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + spacing[10] }]}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + spacing[6] }]}
         showsVerticalScrollIndicator={false}
       >
         <Text style={[styles.intro, { color: semantic.textSecondary }]}>

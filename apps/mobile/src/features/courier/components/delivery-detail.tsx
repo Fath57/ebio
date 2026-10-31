@@ -9,6 +9,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
 import { StarRating } from '../../common/components/star-rating'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { DELIVERY_STATUS_LABELS, FAIL_REASON_LABELS } from '../types'
 
 interface DeliveryDetailProps {
@@ -53,6 +54,7 @@ function openRoute(position: { latitude: number, longitude: number }): void {
 
 export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
   const { semantic } = useTheme()
+  const tabBarClearance = useTabBarClearance()
   const [openingChat, setOpeningChat] = useState(false)
   const failed = delivery.status === 'FAILED'
   const delivered = delivery.status === 'DELIVERED'
@@ -82,7 +84,7 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
     : 0
 
   return (
-    <ScrollView style={{ backgroundColor: semantic.bgPage }} contentContainerStyle={styles.container}>
+    <ScrollView style={{ backgroundColor: semantic.bgPage }} contentContainerStyle={[styles.container, { paddingBottom: tabBarClearance + spacing[6] }]}>
       <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
         <View style={styles.headerRow}>
           <Text style={[styles.orderNumber, { color: semantic.textTertiary }]}>{delivery.orderNumber}</Text>

@@ -19,6 +19,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { readApiError } from '../utils/read-api-error'
 
 export type BannerRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
@@ -107,6 +108,7 @@ interface BannerRequestsScreenProps {
  */
 export function BannerRequestsScreen({ onGoBack, onNewRequest, refreshKey = 0 }: BannerRequestsScreenProps) {
   const { semantic } = useTheme()
+  const tabBarClearance = useTabBarClearance()
   const [requests, setRequests] = useState<BannerRequest[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isRefreshing, setIsRefreshing] = useState(false)
@@ -179,7 +181,7 @@ export function BannerRequestsScreen({ onGoBack, onNewRequest, refreshKey = 0 }:
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader title="Ma publicité" onBack={onGoBack} />
       <ScrollView
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + spacing[6] }]}
         showsVerticalScrollIndicator={false}
         refreshControl={(
           <RefreshControl

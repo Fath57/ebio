@@ -10,6 +10,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { StarRating } from '../../common/components/star-rating'
 import { hasMoreFromLength, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 
 interface HistoryScreenProps {
   onOpenDetail: (delivery: Delivery) => void
@@ -35,6 +36,7 @@ function formatDate(iso: string | null): string {
 /** Finished deliveries (delivered and failed) — FR-019. */
 export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
   const { semantic } = useTheme()
+  const tabBarClearance = useTabBarClearance()
   // A failed page keeps the rows already shown (offline).
   const { items: deliveries, isLoading, isRefreshing, isLoadingMore, refresh, loadMore } = usePaginatedList(fetchHistoryPage)
 
@@ -89,7 +91,7 @@ export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
   return (
     <FlatList
       style={{ backgroundColor: semantic.bgPage }}
-      contentContainerStyle={styles.list}
+      contentContainerStyle={[styles.list, { paddingBottom: tabBarClearance + spacing[6] }]}
       data={deliveries}
       keyExtractor={item => item.id}
       renderItem={renderItem}

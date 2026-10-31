@@ -23,6 +23,7 @@ import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
+import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { SupplierTopupSheet } from './supplier-topup-sheet'
 
 const MIN_WITHDRAWAL = 1000
@@ -193,6 +194,7 @@ interface SupplierWalletScreenProps {
 
 export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
   const { semantic } = useTheme()
+  const tabBarClearance = useTabBarClearance()
   const [balance, setBalance] = useState(0)
   const [pending, setPending] = useState<PendingEarnings | null>(null)
   const [numbers, setNumbers] = useState<PayoutNumber[]>([])
@@ -362,7 +364,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
         renderItem={({ item, index }) => (
           <MovementRow movement={item} isFirst={index === 0} isLast={index === movements.length - 1} />
         )}
-        contentContainerStyle={styles.content}
+        contentContainerStyle={[styles.content, { paddingBottom: tabBarClearance + spacing[6] }]}
         showsVerticalScrollIndicator={false}
         refreshControl={<RefreshControl refreshing={isRefreshing} onRefresh={load} />}
         onEndReached={loadMore}
