@@ -21,6 +21,12 @@ const TRIM_THRESHOLD = 12
 const RESTAGE_SIZE = 1024
 /** `medium` kept the bottle's shape; `low` turned its cork into a metal cap. */
 const RESTAGE_QUALITY = 'medium'
+/**
+ * The image editor. `gpt-image-1` was withdrawn from `/v1/images/edits` —
+ * OpenAI now answers « does not exist » although it is still listed in
+ * `/v1/models` — so the studio's restage failed on every call.
+ */
+const RESTAGE_MODEL = 'gpt-image-2'
 /** Redrawing a scene takes its time; a shorter leash just loses the result. */
 const RESTAGE_TIMEOUT_MS = 120_000
 
@@ -263,7 +269,7 @@ export class PhotoStudioService {
     const wish = consigne?.trim() ? ` Ambiance souhaitée : ${consigne.trim()}.` : ''
 
     const form = new FormData()
-    form.append('model', 'gpt-image-1')
+    form.append('model', RESTAGE_MODEL)
     form.append('image', new Blob([new Uint8Array(square)], { type: 'image/png' }), 'produit.png')
     form.append('size', `${RESTAGE_SIZE}x${RESTAGE_SIZE}`)
     form.append('quality', RESTAGE_QUALITY)
