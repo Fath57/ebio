@@ -10738,8 +10738,18 @@ export type AdminControllerGetOrdersData = {
     status: string;
     supplierId: string;
     q: string;
+    paymentMethod: string;
+    pickupMode: string;
+    from: string;
+    to: string;
+    minAmount: string;
+    maxAmount: string;
+    promo: string;
+    sponsor: string;
+    courier: string;
     sortBy: string;
     sortDir: string;
+    format: string;
     page: string;
     limit: string;
   };

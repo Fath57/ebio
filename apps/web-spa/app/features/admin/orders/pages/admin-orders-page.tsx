@@ -1,15 +1,24 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
-import type { AdminOrderListItem } from '../utils/orders-queries'
+import type { OrderAdvancedFilterKey } from '../utils/order-status'
+import type { AdminOrderListItem, AdminOrdersFilters } from '../utils/orders-queries'
+import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
+import type { AdvancedFilterField } from '@/features/admin/common/components/advanced-filters'
+import type { PickerOption } from '@/features/admin/common/components/entity-picker'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
 import { AdminListShell } from '@/features/admin/common/components/admin-list-shell'
+import { advancedFilterChips, AdvancedFilters } from '@/features/admin/common/components/advanced-filters'
+import { EntityPicker } from '@/features/admin/common/components/entity-picker'
+import { ExportCsvButton } from '@/features/admin/common/components/export-csv-button'
+import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { searchSuppliers } from '@/features/admin/common/utils/target-search'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
-import { ORDER_STATUS_OPTIONS, ORDER_STATUS_TONES, PAYMENT_METHODS } from '../utils/order-status'
-import { fetchAdminOrdersQueryOptions } from '../utils/orders-queries'
+import { ORDER_ADVANCED_FILTER_KEYS, ORDER_STATUS_OPTIONS, ORDER_STATUS_TONES, PAYMENT_METHODS, PICKUP_MODES } from '../utils/order-status'
+import { adminOrdersExportPath, fetchAdminOrdersQueryOptions } from '../utils/orders-queries'
 
 const PAGE_SIZE = 20
 
@@ -20,19 +29,44 @@ function formatAmount(value: number): string {
 export default function AdminOrdersPage() {
   const { t, i18n } = useTranslation()
   const navigate = useNavigate()
-  const list = useListParams({ defaultSort: 'createdAt', filters: ['statut'] })
-  const status = list.values.statut
+  const list = useListParams({
+    defaultSort: 'createdAt',
+    filters: ['statut', 'boutique', 'boutiqueNom', 'paiement', 'mode', ...ORDER_ADVANCED_FILTER_KEYS],
+  })
+  const { statut: status, boutique, boutiqueNom } = list.values
+  const paymentMethod = PAYMENT_METHODS.includes(list.values.paiement) ? list.values.paiement : ''
+  const pickupMode = PICKUP_MODES.includes(list.values.mode) ? list.values.mode : ''
+  const advanced = Object.fromEntries(ORDER_ADVANCED_FILTER_KEYS.map(key => [key, list.values[key]])) as Record<OrderAdvancedFilterKey, string>
+  // Only the id narrows the query; the name rides along so the picker and the chip read well after a reload.
+  const shop: PickerOption | null = boutique ? { id: boutique, label: boutiqueNom || boutique } : null
+
+  // One object for the list and the export, so the file always matches the screen.
+  const filters: AdminOrdersFilters = {
+    q: list.q || undefined,
+    status: status || undefined,
+    supplierId: boutique || undefined,
+    paymentMethod: paymentMethod || undefined,
+    pickupMode: pickupMode || undefined,
+    from: advanced.du || undefined,
+    to: advanced.au || undefined,
+    minAmount: advanced.montantMin || undefined,
+    maxAmount: advanced.montantMax || undefined,
+    promo: advanced.promo || undefined,
+    sponsor: advanced.offerte || undefined,
+    courier: advanced.livreur || undefined,
+    sortBy: list.sortBy,
+    sortDir: list.sortDir,
+  }
 
   const { data, isLoading, isFetching, isError, refetch } = useQuery({
-    ...fetchAdminOrdersQueryOptions({
-      q: list.q || undefined,
-      status: status || undefined,
-      sortBy: list.sortBy,
-      sortDir: list.sortDir,
-      page: list.page,
-    }),
+    ...fetchAdminOrdersQueryOptions({ ...filters, page: list.page }),
     placeholderData: keepPreviousData,
   })
+
+  const { setFilters } = list
+  const handleShop = useCallback((option: PickerOption) => {
+    setFilters({ boutique: option.id, boutiqueNom: option.label })
+  }, [setFilters])
 
   const columns = useMemo<Array<ColumnDef<AdminOrderListItem, unknown>>>(() => [
     {
@@ -109,10 +143,58 @@ export default function AdminOrdersPage() {
     },
   ], [t, i18n.language])
 
+  const advancedFields: AdvancedFilterField[] = [
+    { kind: 'date', key: 'du', label: t('admin.orders.filters.from') },
+    { kind: 'date', key: 'au', label: t('admin.orders.filters.to') },
+    { kind: 'min', key: 'montantMin', label: t('admin.orders.filters.minAmount'), unit: 'FCFA', step: 500 },
+    { kind: 'min', key: 'montantMax', label: t('admin.orders.filters.maxAmount'), unit: 'FCFA', step: 500 },
+    { kind: 'select', key: 'promo', label: t('admin.orders.filters.promo'), allLabel: t('admin.orders.filters.all'), options: [
+      { value: 'with', label: t('admin.orders.filters.promoWith') },
+      { value: 'without', label: t('admin.orders.filters.promoWithout') },
+    ] },
+    { kind: 'select', key: 'offerte', label: t('admin.orders.filters.sponsor'), allLabel: t('admin.orders.filters.all'), options: [
+      { value: 'PLATFORM', label: t('admin.orders.filters.sponsorPlatform') },
+      { value: 'SUPPLIER', label: t('admin.orders.filters.sponsorSupplier') },
+      { value: 'none', label: t('admin.orders.filters.sponsorNone') },
+    ] },
+    { kind: 'select', key: 'livreur', label: t('admin.orders.filters.courier'), allLabel: t('admin.orders.filters.all'), options: [
+      { value: 'assigned', label: t('admin.orders.filters.courierAssigned') },
+      { value: 'unassigned', label: t('admin.orders.filters.courierUnassigned') },
+    ] },
+  ]
+
+  const activeFilters: ActiveFilter[] = []
+  if (shop) {
+    activeFilters.push({
+      key: 'boutique',
+      group: t('admin.orders.columns.supplier'),
+      value: shop.label,
+      onRemove: () => list.setFilters({ boutique: '', boutiqueNom: '' }),
+    })
+  }
+  if (paymentMethod) {
+    activeFilters.push({
+      key: 'paiement',
+      group: t('admin.orders.columns.payment'),
+      value: t(`admin.orders.paymentMethods.${paymentMethod}`),
+      onRemove: () => list.setFilter('paiement', ''),
+    })
+  }
+  if (pickupMode) {
+    activeFilters.push({
+      key: 'mode',
+      group: t('admin.orders.filters.mode'),
+      value: t(`admin.orders.pickupModes.${pickupMode}`),
+      onRemove: () => list.setFilter('mode', ''),
+    })
+  }
+  activeFilters.push(...advancedFilterChips(advancedFields, advanced, key => list.setFilter(key as OrderAdvancedFilterKey, ''), i18n.language))
+
   return (
     <AdminListShell
       title={t('admin.orders.title')}
       description={t('admin.orders.description')}
+      actions={<ExportCsvButton path={adminOrdersExportPath(filters)} filename="commandes" />}
       searchValue={list.q}
       onSearchChange={list.setSearch}
       searchPlaceholder={t('admin.orders.searchPlaceholder')}
@@ -126,6 +208,40 @@ export default function AdminOrdersPage() {
         onChange: value => list.setFilter('statut', value),
         counts: data?.statusCounts,
       }}
+      filters={(
+        <>
+          <div className="w-56">
+            <EntityPicker
+              value={shop?.id ?? ''}
+              placeholder={t('admin.orders.filters.allShops')}
+              searchPlaceholder={t('catalog.scope.pickerSearch')}
+              emptyLabel={t('catalog.scope.pickerEmpty')}
+              onSearch={searchSuppliers}
+              onSelect={handleShop}
+              selected={shop}
+            />
+          </div>
+
+          <FilterSelect
+            value={paymentMethod}
+            onValueChange={value => list.setFilter('paiement', value)}
+            allLabel={t('admin.orders.filters.allPayments')}
+            ariaLabel={t('admin.orders.columns.payment')}
+            options={PAYMENT_METHODS.map(method => ({ value: method, label: t(`admin.orders.paymentMethods.${method}`) }))}
+          />
+
+          <FilterSelect
+            value={pickupMode}
+            onValueChange={value => list.setFilter('mode', value)}
+            allLabel={t('admin.orders.filters.allModes')}
+            ariaLabel={t('admin.orders.filters.mode')}
+            options={PICKUP_MODES.map(mode => ({ value: mode, label: t(`admin.orders.pickupModes.${mode}`) }))}
+          />
+
+          <AdvancedFilters fields={advancedFields} values={advanced} onChange={(key, value) => list.setFilter(key as OrderAdvancedFilterKey, value)} />
+        </>
+      )}
+      activeFilters={activeFilters}
       onResetFilters={list.reset}
       columns={columns}
       data={data?.items ?? []}

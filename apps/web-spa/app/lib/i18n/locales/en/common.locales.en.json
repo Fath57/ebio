@@ -1017,7 +1017,32 @@
         },
         "promoCompensation": "eBio promo compensation"
       },
-      "commissionShort": "incl. {{amount}} commission"
+      "commissionShort": "incl. {{amount}} commission",
+      "filters": {
+        "allShops": "All shops",
+        "allPayments": "All payments",
+        "allModes": "Delivery and pickup",
+        "mode": "Mode",
+        "from": "Placed from",
+        "to": "Placed until",
+        "minAmount": "Minimum amount",
+        "maxAmount": "Maximum amount",
+        "promo": "Promo code",
+        "promoWith": "With promo code",
+        "promoWithout": "Without promo code",
+        "sponsor": "Free delivery",
+        "sponsorPlatform": "Paid by eBio",
+        "sponsorSupplier": "Paid by the shop",
+        "sponsorNone": "Paid by the buyer",
+        "courier": "Courier",
+        "courierAssigned": "Courier assigned",
+        "courierUnassigned": "Delivery without courier",
+        "all": "All"
+      },
+      "pickupModes": {
+        "DELIVERY": "Delivery",
+        "ON_SITE": "On-site pickup"
+      }
     },
     "products": {
       "title": "All products",
@@ -2419,7 +2444,9 @@
     "resetAll": "Clear all",
     "allTab": "All",
     "statusTabs": "Filter by status",
-    "moreFilters": "More filters"
+    "moreFilters": "More filters",
+    "exportCsv": "Export (CSV)",
+    "exportFailed": "The export failed. Try again in a moment."
   },
   "media": {
     "cropper": {

@@ -74,13 +74,57 @@ export interface AdminOrdersPage {
   statusCounts: Record<string, number>
 }
 
-export interface AdminOrdersFilters {
-  status?: string
+/** Filters beyond status and search; each maps to one query parameter of `GET /admin/orders`. */
+export interface AdminOrderFilterValues {
   supplierId?: string
+  paymentMethod?: string
+  pickupMode?: string
+  /** `YYYY-MM-DD`, both days included. */
+  from?: string
+  to?: string
+  minAmount?: string
+  maxAmount?: string
+  promo?: string
+  sponsor?: string
+  courier?: string
+}
+
+export interface AdminOrdersFilters extends AdminOrderFilterValues {
+  status?: string
   q?: string
   sortBy?: string
   sortDir?: string
   page?: number
+}
+
+/** Every list parameter but the page, '' when unset. */
+function orderListQuery(filters: AdminOrdersFilters) {
+  return {
+    status: filters.status ?? '',
+    supplierId: filters.supplierId ?? '',
+    q: filters.q ?? '',
+    paymentMethod: filters.paymentMethod ?? '',
+    pickupMode: filters.pickupMode ?? '',
+    from: filters.from ?? '',
+    to: filters.to ?? '',
+    minAmount: filters.minAmount ?? '',
+    maxAmount: filters.maxAmount ?? '',
+    promo: filters.promo ?? '',
+    sponsor: filters.sponsor ?? '',
+    courier: filters.courier ?? '',
+    sortBy: filters.sortBy ?? '',
+    sortDir: filters.sortDir ?? '',
+  }
+}
+
+/** Same filters, status and sort as the list, as a CSV: what is on screen, without the pages. */
+export function adminOrdersExportPath(filters: AdminOrdersFilters): string {
+  const params = new URLSearchParams({ format: 'csv' })
+  for (const [key, value] of Object.entries(orderListQuery(filters))) {
+    if (value)
+      params.set(key, value)
+  }
+  return `/api/admin/orders?${params.toString()}`
 }
 
 /** Le SDK généré exige toutes les clés de query : un filtre vide vaut ''. */
@@ -90,11 +134,8 @@ export function fetchAdminOrdersQueryOptions(filters: AdminOrdersFilters = {}) {
     queryFn: async () => {
       const response = await adminControllerGetOrders({
         query: {
-          status: filters.status ?? '',
-          supplierId: filters.supplierId ?? '',
-          q: filters.q ?? '',
-          sortBy: filters.sortBy ?? '',
-          sortDir: filters.sortDir ?? '',
+          ...orderListQuery(filters),
+          format: 'json',
           page: String(filters.page ?? 1),
           limit: '20',
         },

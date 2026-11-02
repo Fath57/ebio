@@ -7,10 +7,11 @@ import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Download, X } from 'lucide-react'
+import { X } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link } from 'react-router'
+import { ExportCsvButton } from '@/features/admin/common/components/export-csv-button'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import {
   exportCommissionsCsvUrl,
@@ -219,10 +220,7 @@ export default function AdminCommissionsPage() {
           <h2 className="text-2xl font-bold">{t('admin.commissions.title')}</h2>
           <p className="text-muted-foreground">{t('admin.commissions.description')}</p>
         </div>
-        <Button variant="outline" onClick={() => window.open(exportCommissionsCsvUrl(filters), '_blank')}>
-          <Download className="mr-2 h-4 w-4" />
-          {t('admin.commissions.exportCsv')}
-        </Button>
+        <ExportCsvButton path={exportCommissionsCsvUrl(filters)} filename="commissions" label={t('admin.commissions.exportCsv')} />
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

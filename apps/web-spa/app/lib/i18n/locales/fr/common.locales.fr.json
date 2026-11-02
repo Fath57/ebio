@@ -1017,7 +1017,32 @@
         },
         "promoCompensation": "Compensation promo eBio"
       },
-      "commissionShort": "dont {{amount}} de commission"
+      "commissionShort": "dont {{amount}} de commission",
+      "filters": {
+        "allShops": "Toutes les boutiques",
+        "allPayments": "Tous les paiements",
+        "allModes": "Livraison et retrait",
+        "mode": "Mode",
+        "from": "Passée à partir du",
+        "to": "Passée jusqu'au",
+        "minAmount": "Montant minimum",
+        "maxAmount": "Montant maximum",
+        "promo": "Code promo",
+        "promoWith": "Avec code promo",
+        "promoWithout": "Sans code promo",
+        "sponsor": "Livraison offerte",
+        "sponsorPlatform": "Offerte par eBio",
+        "sponsorSupplier": "Offerte par la boutique",
+        "sponsorNone": "Payée par l'acheteur",
+        "courier": "Livreur",
+        "courierAssigned": "Livreur attribué",
+        "courierUnassigned": "Livraison sans livreur",
+        "all": "Tous"
+      },
+      "pickupModes": {
+        "DELIVERY": "Livraison",
+        "ON_SITE": "Retrait sur place"
+      }
     },
     "products": {
       "title": "Tous les produits",
@@ -2419,7 +2444,9 @@
     "resetAll": "Tout effacer",
     "allTab": "Tous",
     "statusTabs": "Filtrer par statut",
-    "moreFilters": "Plus de filtres"
+    "moreFilters": "Plus de filtres",
+    "exportCsv": "Exporter (CSV)",
+    "exportFailed": "L'export a échoué. Réessayez dans un instant."
   },
   "media": {
     "cropper": {

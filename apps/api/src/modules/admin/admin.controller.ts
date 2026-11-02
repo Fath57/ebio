@@ -53,6 +53,7 @@ import {
   suspendSupplierSchema,
   validationActionSchema,
 } from './contracts/admin.contract'
+import { readOrderFilters } from './order-filters'
 import { readDay, readMinimum } from './supplier-filters'
 
 @Controller('admin')
@@ -258,15 +259,35 @@ export class AdminController {
     @Query('status') status?: string,
     @Query('supplierId') supplierId?: string,
     @Query('q') q?: string,
+    @Query('paymentMethod') paymentMethod?: string,
+    @Query('pickupMode') pickupMode?: string,
+    @Query('from') from?: string,
+    @Query('to') to?: string,
+    @Query('minAmount') minAmount?: string,
+    @Query('maxAmount') maxAmount?: string,
+    @Query('promo') promo?: string,
+    @Query('sponsor') sponsor?: string,
+    @Query('courier') courier?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
+    @Query('format') format: string = 'json',
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
+    @Res({ passthrough: true }) res?: Response,
   ) {
+    const filters = readOrderFilters({ supplierId, paymentMethod, pickupMode, from, to, minAmount, maxAmount, promo, sponsor, courier })
+
+    if (format === 'csv') {
+      const csv = await this.adminService.exportOrdersCsv({ status: status || undefined, q: q || undefined, filters, sortBy, sortDir })
+      res!.setHeader('Content-Type', 'text/csv; charset=utf-8')
+      res!.setHeader('Content-Disposition', 'attachment; filename=commandes.csv')
+      return csv
+    }
+
     return this.adminService.getOrders({
       status,
-      supplierId,
       q,
+      filters,
       sortBy,
       sortDir,
       page: Number(page),

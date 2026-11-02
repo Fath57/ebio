@@ -9,6 +9,7 @@ import type {
   ResolveReportInput,
   ValidationActionInput,
 } from './contracts/admin.contract'
+import type { OrderFilters } from './order-filters'
 import type { ProductAdvancedFilters } from './product-filters'
 import type { SupplierFilters } from './supplier-filters'
 import { EntityManager } from '@mikro-orm/postgresql'
@@ -18,6 +19,7 @@ import {
   Logger,
   NotFoundException,
 } from '@nestjs/common'
+import { csvDateTime, toCsv } from '../../common/csv'
 import { thumbnailUrlFor } from '../../common/media-urls'
 import { toStatusCounts } from '../../common/status-counts'
 import { config } from '../../config/env.config'
@@ -31,6 +33,7 @@ import { CommissionService } from '../payments/commission.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, ValidationStatus } from '../suppliers/supplier.entity'
 import { ContentReport, ReportStatus, ReportTargetType } from './entities/content-report.entity'
+import { buildOrderConditions } from './order-filters'
 import { buildProductConditions, PRODUCT_SALES_JOIN } from './product-filters'
 import { buildSupplierConditions, SUPPLIER_LIST_FROM } from './supplier-filters'
 
@@ -43,6 +46,32 @@ const ORDER_SORT_COLUMNS: Record<string, string> = {
   commissionAmount: 'o.commission_amount',
   buyer: 'bu.name',
   supplier: 's.shop_name',
+}
+
+const ORDER_LIST_FROM = `FROM orders o
+       LEFT JOIN users bu ON o.buyer_id = bu.id
+       LEFT JOIN suppliers s ON o.supplier_id = s.id`
+
+/** A spreadsheet export, not a dump of the table: past this, narrow the filters. */
+const ORDER_EXPORT_MAX = 20000
+
+/** French labels for the CSV, matching the back office. */
+const ORDER_STATUS_LABELS: Record<string, string> = {
+  PENDING_PAYMENT: 'En attente de paiement',
+  PLACED: 'Passée',
+  ACCEPTED: 'Acceptée',
+  PREPARING: 'En préparation',
+  READY: 'Prête',
+  IN_DELIVERY: 'En livraison',
+  DELIVERED: 'Livrée',
+  CANCELLED: 'Annulée',
+  DISPUTED: 'Litige',
+}
+const PICKUP_MODE_LABELS: Record<string, string> = { DELIVERY: 'Livraison', ON_SITE: 'Retrait sur place' }
+const PAYMENT_METHOD_LABELS: Record<string, string> = {
+  CASH_ON_DELIVERY: 'Espèces',
+  FEDAPAY: 'Paiement en ligne',
+  WALLET: 'Portefeuille',
 }
 
 const SUPPLIER_SORT_COLUMNS: Record<string, string> = {
@@ -499,11 +528,18 @@ export class AdminService {
 
   async exportTransactionsCsv(from?: string, to?: string): Promise<string> {
     const result = await this.getTransactions({ from, to, page: 1, limit: 10000 })
-    const header = 'Date;N° commande;Acheteur;Fournisseur;Montant;Commission;Statut'
-    const rows = (result.items as Array<Record<string, unknown>>).map(item =>
-      `${item.date};${item.orderNumber};${item.buyerName};${item.supplierName};${item.amount};${item.commission};${item.status}`,
+    return toCsv(
+      ['Date', 'N° commande', 'Acheteur', 'Fournisseur', 'Montant', 'Commission', 'Statut'],
+      (result.items as Array<Record<string, unknown>>).map(item => [
+        csvDateTime(item.date),
+        item.orderNumber as string,
+        item.buyerName as string,
+        item.supplierName as string,
+        item.amount as number,
+        item.commission as number,
+        item.status as string,
+      ]),
     )
-    return [header, ...rows].join('\n')
   }
 
   async getSettings() {
@@ -687,18 +723,18 @@ export class AdminService {
     const { sql, params } = this.commissionOrdersQuery(filters)
     const rows = await this.em.getConnection().execute(sql, params)
 
-    const header = 'Date;Commande;Boutique;Statut;Base;Taux;Commission'
-    const lines = rows.map((r: Record<string, unknown>) => [
-      this.toIso(r.date) ?? '',
-      r.order_number,
-      `"${String(r.shop_name).replaceAll('"', '""')}"`,
-      r.status,
-      Number(r.base).toFixed(2),
-      Number(r.commission_rate).toFixed(4),
-      Number(r.commission_amount).toFixed(2),
-    ].join(';'))
-
-    return [header, ...lines].join('\n')
+    return toCsv(
+      ['Date', 'Commande', 'Boutique', 'Statut', 'Base', 'Taux', 'Commission'],
+      rows.map((r: Record<string, unknown>) => [
+        csvDateTime(r.date),
+        r.order_number as string,
+        r.shop_name as string,
+        ORDER_STATUS_LABELS[r.status as string] ?? (r.status as string),
+        Number(r.base).toFixed(2),
+        Number(r.commission_rate).toFixed(4),
+        Number(r.commission_amount).toFixed(2),
+      ]),
+    )
   }
 
   async broadcastNotification(input: BroadcastNotification): Promise<{ sent: number }> {
@@ -775,29 +811,15 @@ export class AdminService {
 
   async getOrders(params: {
     status?: string
-    supplierId?: string
     q?: string
+    filters?: OrderFilters
     sortBy?: string
     sortDir?: string
     page: number
     limit: number
   }): Promise<{ items: unknown[], total: number, page: number, limit: number, statusCounts: StatusCounts }> {
-    const conditions: string[] = ['1=1']
-    const queryParams: unknown[] = []
-
-    if (params.supplierId) {
-      conditions.push(`o.supplier_id = ?`)
-      queryParams.push(params.supplierId)
-    }
-    if (params.q) {
-      // Trois placeholders distincts : knex lie positionnellement, sans réutilisation.
-      conditions.push(`(o.order_number ILIKE ? OR bu.name ILIKE ? OR s.shop_name ILIKE ?)`)
-      queryParams.push(`%${params.q}%`, `%${params.q}%`, `%${params.q}%`)
-    }
-
-    const from = `FROM orders o
-       LEFT JOIN users bu ON o.buyer_id = bu.id
-       LEFT JOIN suppliers s ON o.supplier_id = s.id`
+    const { conditions, queryParams } = this.orderListConditions(params.q, params.filters)
+    const from = ORDER_LIST_FROM
 
     // The tabs count every status under the other filters, so the status itself is left out here.
     const statusCounts = toStatusCounts(await this.em.getConnection().execute(
@@ -838,6 +860,78 @@ export class AdminService {
       limit: params.limit,
       statusCounts,
     }
+  }
+
+  /**
+   * Every order matching the list's filters, status and sort included — the
+   * file says what the screen says, without the pagination.
+   */
+  async exportOrdersCsv(params: {
+    status?: string
+    q?: string
+    filters?: OrderFilters
+    sortBy?: string
+    sortDir?: string
+  }): Promise<string> {
+    const { conditions, queryParams } = this.orderListConditions(params.q, params.filters)
+    if (params.status) {
+      conditions.push(`o.status = ?`)
+      queryParams.push(params.status)
+    }
+
+    const rows = await this.em.getConnection().execute(
+      `SELECT o.order_number, o."createdAt" AS created_at, o.status, o.pickup_mode, o.payment_method,
+              o.total_amount, o.delivery_fee, o.discount_amount, o.commission_amount, o.delivery_sponsor,
+              o.delivery_address, o.delivery_slot, o.delivered_at,
+              bu.name AS buyer_name, bu.phone AS buyer_phone, bu.email AS buyer_email,
+              s.shop_name AS supplier_name,
+              (SELECT COALESCE(SUM(oi.quantity), 0) FROM order_items oi WHERE oi.order_id = o.id) AS item_count,
+              (SELECT cp.full_name FROM deliveries d JOIN courier_profiles cp ON cp.id = d.courier_id
+               WHERE d.order_id = o.id ORDER BY d."createdAt" DESC LIMIT 1) AS courier_name
+       ${ORDER_LIST_FROM}
+       WHERE ${conditions.join(' AND ')}
+       ${this.buildOrderBy(ORDER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
+       LIMIT ${ORDER_EXPORT_MAX}`,
+      queryParams,
+    ) as Array<Record<string, unknown>>
+
+    return toCsv(
+      ['N° commande', 'Date', 'Statut', 'Acheteur', 'Téléphone', 'Email', 'Boutique', 'Mode', 'Paiement', 'Articles', 'Total (FCFA)', 'Frais de livraison (FCFA)', 'Remise (FCFA)', 'Commission (FCFA)', 'Livraison offerte par', 'Livreur', 'Adresse', 'Créneau', 'Livrée le'],
+      rows.map(r => [
+        r.order_number as string,
+        csvDateTime(r.created_at),
+        ORDER_STATUS_LABELS[r.status as string] ?? (r.status as string),
+        r.buyer_name as string,
+        r.buyer_phone as string,
+        r.buyer_email as string,
+        r.supplier_name as string,
+        PICKUP_MODE_LABELS[r.pickup_mode as string] ?? (r.pickup_mode as string),
+        PAYMENT_METHOD_LABELS[r.payment_method as string] ?? (r.payment_method as string),
+        Number(r.item_count ?? 0),
+        Number(r.total_amount ?? 0),
+        Number(r.delivery_fee ?? 0),
+        Number(r.discount_amount ?? 0),
+        Number(r.commission_amount ?? 0),
+        r.delivery_sponsor === 'PLATFORM' ? 'eBio' : r.delivery_sponsor === 'SUPPLIER' ? 'Boutique' : '',
+        r.courier_name as string,
+        r.delivery_address as string,
+        r.delivery_slot as string,
+        csvDateTime(r.delivered_at),
+      ]),
+    )
+  }
+
+  /** Search and filters of the order list, without the status (the tabs count across it). */
+  private orderListConditions(q?: string, filters: OrderFilters = {}): { conditions: string[], queryParams: unknown[] } {
+    const built = buildOrderConditions(filters)
+    const conditions: string[] = ['1=1', ...built.conditions]
+    const queryParams: unknown[] = [...built.values]
+    if (q) {
+      // Distinct placeholders: knex binds positionally, with no reuse.
+      conditions.push(`(o.order_number ILIKE ? OR bu.name ILIKE ? OR bu.phone ILIKE ? OR s.shop_name ILIKE ?)`)
+      queryParams.push(`%${q}%`, `%${q}%`, `%${q}%`, `%${q}%`)
+    }
+    return { conditions, queryParams }
   }
 
   async getOrderById(orderId: string): Promise<unknown> {
@@ -1435,22 +1529,21 @@ export class AdminService {
     to?: string
   }): Promise<string> {
     const result = await this.getPayments({ ...params, page: 1, limit: 10000 })
-    const header = 'Date;Référence;N° commande;Acheteur;Fournisseur;Montant;Commission;Prestataire;Réf. prestataire;Statut'
-    const rows = (result.items as Array<Record<string, unknown>>).map(item =>
-      [
-        item.createdAt,
-        item.id,
-        item.orderNumber ?? '',
-        item.buyerName,
-        item.supplierName,
-        item.amount,
-        item.commission,
-        item.provider,
-        item.providerReference ?? '',
-        item.status,
-      ].join(';'),
+    return toCsv(
+      ['Date', 'Référence', 'N° commande', 'Acheteur', 'Fournisseur', 'Montant', 'Commission', 'Prestataire', 'Réf. prestataire', 'Statut'],
+      (result.items as Array<Record<string, unknown>>).map(item => [
+        csvDateTime(item.createdAt),
+        item.id as string,
+        (item.orderNumber as string) ?? '',
+        item.buyerName as string,
+        item.supplierName as string,
+        item.amount as number,
+        item.commission as number,
+        item.provider as string,
+        (item.providerReference as string) ?? '',
+        item.status as string,
+      ]),
     )
-    return [header, ...rows].join('\n')
   }
 
   /** Le driver renvoie les timestamps tantôt en `Date`, tantôt en chaîne. */

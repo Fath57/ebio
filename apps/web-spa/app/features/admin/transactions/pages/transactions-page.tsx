@@ -1,16 +1,16 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { PaymentItem } from '../utils/payments-queries'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
-import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { keepPreviousData, useQuery } from '@tanstack/react-query'
-import { Download, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router'
+import { ExportCsvButton } from '@/features/admin/common/components/export-csv-button'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import { PAYMENT_STATUS_TONES } from '../utils/payment-status'
@@ -145,10 +145,7 @@ export default function TransactionsPage() {
           <h2 className="text-2xl font-bold">{t('admin.transactions.title')}</h2>
           <p className="text-muted-foreground">{t('admin.transactions.description')}</p>
         </div>
-        <Button variant="outline" onClick={() => window.open(exportPaymentsCsvUrl(filters), '_blank')}>
-          <Download className="mr-2 h-4 w-4" />
-          {t('admin.transactions.exportCsv')}
-        </Button>
+        <ExportCsvButton path={exportPaymentsCsvUrl(filters)} filename="paiements" label={t('admin.transactions.exportCsv')} />
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
