@@ -20,7 +20,8 @@
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
         "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "27f8d05eec5794db074121f52cb38073f9cf4fd1d48fa41de386a2dbf6d4e68f",
         "EXPO_PUBLIC_INTRAM_SANDBOX": "true",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "800553989525-e5nv1fjmckuc6utr99r495878dqe0nhj.apps.googleusercontent.com"
       }
     },
     "development-supplier": {
@@ -39,7 +40,8 @@
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
         "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "27f8d05eec5794db074121f52cb38073f9cf4fd1d48fa41de386a2dbf6d4e68f",
         "EXPO_PUBLIC_INTRAM_SANDBOX": "true",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "800553989525-6tm5vc91tlann7iqgjob0t26lnvhb4ac.apps.googleusercontent.com"
       }
     },
     "development-courier": {
@@ -76,7 +78,8 @@
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
         "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "27f8d05eec5794db074121f52cb38073f9cf4fd1d48fa41de386a2dbf6d4e68f",
         "EXPO_PUBLIC_INTRAM_SANDBOX": "true",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "800553989525-e5nv1fjmckuc6utr99r495878dqe0nhj.apps.googleusercontent.com"
       }
     },
     "preview-supplier": {
@@ -94,7 +97,8 @@
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
         "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "27f8d05eec5794db074121f52cb38073f9cf4fd1d48fa41de386a2dbf6d4e68f",
         "EXPO_PUBLIC_INTRAM_SANDBOX": "true",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "800553989525-6tm5vc91tlann7iqgjob0t26lnvhb4ac.apps.googleusercontent.com"
       }
     },
     "preview-courier": {
@@ -130,7 +134,8 @@
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
         "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "12393976eaefc9f9f8e21e75fa87cc6e",
         "EXPO_PUBLIC_INTRAM_SANDBOX": "false",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "800553989525-e5nv1fjmckuc6utr99r495878dqe0nhj.apps.googleusercontent.com"
       }
     },
     "production-supplier": {
@@ -148,7 +153,8 @@
         "EXPO_PUBLIC_PAYMENT_PROVIDER": "intram",
         "EXPO_PUBLIC_INTRAM_PUBLIC_KEY": "12393976eaefc9f9f8e21e75fa87cc6e",
         "EXPO_PUBLIC_INTRAM_SANDBOX": "false",
-        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "800553989525-dqp6pjdbl70k0ikrr87pjj4ut61leh7v.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "800553989525-6tm5vc91tlann7iqgjob0t26lnvhb4ac.apps.googleusercontent.com"
       }
     },
     "production-courier": {
@@ -176,6 +182,9 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "alpha",
         "releaseStatus": "completed"
+      },
+      "ios": {
+        "appleTeamId": "784296T6FJ"
       }
     },
     "production-supplier": {
@@ -183,6 +192,9 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "alpha",
         "releaseStatus": "completed"
+      },
+      "ios": {
+        "appleTeamId": "784296T6FJ"
       }
     },
     "production-courier": {
@@ -218,6 +230,9 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "production",
         "releaseStatus": "completed"
+      },
+      "ios": {
+        "appleTeamId": "784296T6FJ"
       }
     },
     "store-supplier": {
@@ -225,6 +240,9 @@
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "production",
         "releaseStatus": "completed"
+      },
+      "ios": {
+        "appleTeamId": "784296T6FJ"
       }
     }
   }
