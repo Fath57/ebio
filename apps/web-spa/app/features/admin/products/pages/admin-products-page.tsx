@@ -1,5 +1,5 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
-import type { AdminProductItem, ProductAdvancedFilterKey, ProductStatusFilter, StockFilter } from '../utils/products-queries'
+import type { AdminProductItem, ModerationFilter, ProductAdvancedFilterKey, ProductStatusFilter, StockFilter } from '../utils/products-queries'
 import type { ActiveFilter } from '@/features/admin/common/components/admin-list-shell'
 import type { AdvancedFilterField } from '@/features/admin/common/components/advanced-filters'
 import type { PickerOption } from '@/features/admin/common/components/entity-picker'
@@ -23,6 +23,7 @@ import { Can } from '@/lib/casl/can'
 import {
   ADMIN_PRODUCTS_PAGE_SIZE,
   fetchAdminProductsQueryOptions,
+  MODERATION_OPTIONS,
   PRODUCT_ADVANCED_FILTER_KEYS,
   PRODUCT_STATUS_OPTIONS,
   STOCK_OPTIONS,
@@ -69,11 +70,14 @@ export default function AdminProductsPage() {
   const navigate = useNavigate()
   const list = useListParams({
     defaultSort: 'created',
-    filters: ['boutique', 'boutiqueNom', 'categorie', 'statut', 'stock', 'promo', ...PRODUCT_ADVANCED_FILTER_KEYS],
+    filters: ['boutique', 'boutiqueNom', 'categorie', 'statut', 'moderation', 'stock', 'promo', ...PRODUCT_ADVANCED_FILTER_KEYS],
   })
   const { boutique, boutiqueNom, categorie: categoryId } = list.values
   const status = (PRODUCT_STATUS_OPTIONS as string[]).includes(list.values.statut)
     ? list.values.statut as ProductStatusFilter
+    : ''
+  const moderation = (MODERATION_OPTIONS as string[]).includes(list.values.moderation)
+    ? list.values.moderation as ModerationFilter
     : ''
   const stock = (STOCK_OPTIONS as string[]).includes(list.values.stock)
     ? list.values.stock as StockFilter
@@ -93,6 +97,7 @@ export default function AdminProductsPage() {
       supplierId: boutique || undefined,
       categoryId: categoryId || undefined,
       status,
+      moderation,
       stock,
       promo,
       advanced,
@@ -186,6 +191,14 @@ export default function AdminProductsPage() {
           )}
           {row.original.status === 'HIDDEN' && (
             <StatusBadge tone="idle">{t('catalog.status.hidden')}</StatusBadge>
+          )}
+          {/* eBio's decision, apart from the shop's status: waiting is a task
+              for the staff, a refusal or a withdrawal a closed matter. */}
+          {row.original.moderationStatus === 'PENDING' && (
+            <StatusBadge tone="action">{t('admin.products.moderation.badge.PENDING')}</StatusBadge>
+          )}
+          {(row.original.moderationStatus === 'REJECTED' || row.original.moderationStatus === 'WITHDRAWN') && (
+            <StatusBadge tone="idle">{t(`admin.products.moderation.badge.${row.original.moderationStatus}`)}</StatusBadge>
           )}
           {/* Earth, the brand's badge colour: a promotion is news, not an error. */}
           {row.original.hasPromotion && (
@@ -289,6 +302,14 @@ export default function AdminProductsPage() {
       onRemove: () => list.setFilter('statut', ''),
     })
   }
+  if (moderation) {
+    activeFilters.push({
+      key: 'moderation',
+      group: t('admin.products.moderation.filterLabel'),
+      value: t(`admin.products.moderation.filter.${moderation}`),
+      onRemove: () => list.setFilter('moderation', ''),
+    })
+  }
   if (stock) {
     activeFilters.push({
       key: 'stock',
@@ -343,6 +364,14 @@ export default function AdminProductsPage() {
             allLabel={t('admin.products.allStatuses')}
             ariaLabel={t('admin.products.columns.status')}
             options={PRODUCT_STATUS_OPTIONS.map(option => ({ value: option, label: t(`admin.products.status.${option}`) }))}
+          />
+
+          <FilterSelect
+            value={moderation}
+            onValueChange={value => list.setFilter('moderation', value)}
+            allLabel={t('admin.products.moderation.allLabel')}
+            ariaLabel={t('admin.products.moderation.filterLabel')}
+            options={MODERATION_OPTIONS.map(option => ({ value: option, label: t(`admin.products.moderation.filter.${option}`) }))}
           />
 
           <FilterSelect

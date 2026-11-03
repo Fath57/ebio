@@ -1,4 +1,5 @@
 import type { NutritionBasis } from '../../catalog/composition'
+import type { ModerationStatus } from '../utils/product-moderation'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Camera from 'lucide-react-native/dist/esm/icons/camera'
 import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
@@ -30,7 +31,9 @@ import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 import { useCategories } from '../../search/hooks/use-search'
+import { parseModerationReason, parseModerationStatus } from '../utils/product-moderation'
 import { CategoryPickerField } from './category-picker'
+import { ModerationNotice } from './moderation-notice'
 import { ProductPromotionsSection } from './product-promotions-section'
 
 const MAX_PHOTOS = 3
@@ -154,6 +157,7 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
   const [conservation, setConservation] = useState('')
   const [nutrition, setNutrition] = useState<Record<NutritionKey, string>>(EMPTY_NUTRITION)
   const [nutritionBasis, setNutritionBasis] = useState<NutritionBasis>('100g')
+  const [moderation, setModeration] = useState<{ status: ModerationStatus, reason: string | null }>({ status: 'APPROVED', reason: null })
 
   // Edit mode: initialData (built by the navigation wrapper) does not carry
   // the composition fields, so hydrate them from the product endpoint.
@@ -184,6 +188,10 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         setConservation((p.conservation as string) ?? '')
         setNutrition(nextNutrition)
         setNutritionBasis(nv?.basis === '100ml' ? '100ml' : '100g')
+        setModeration({
+          status: parseModerationStatus(p.moderationStatus),
+          reason: parseModerationReason(p.moderationReason),
+        })
         const hasComposition = Boolean(p.ingredients)
           || ((p.allergens as string[]) ?? []).length > 0
           || ((p.labels as string[]) ?? []).length > 0
@@ -399,6 +407,12 @@ export function ProductForm({ initialData, onSave, onCancel }: ProductFormProps)
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
+        {moderation.status !== 'APPROVED' && (
+          <View style={styles.moderationNotice}>
+            <ModerationNotice status={moderation.status} reason={moderation.reason} />
+          </View>
+        )}
+
         {/* Photos */}
         <Text style={[styles.label, { color: semantic.textSecondary }]}>
           Photos (
@@ -876,6 +890,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingBottom: spacing[10],
     gap: spacing[2],
+  },
+  moderationNotice: {
+    marginBottom: spacing[2],
   },
   title: {
     ...typography.h1,

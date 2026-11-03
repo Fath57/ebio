@@ -233,7 +233,7 @@ export class SearchService {
     // `VALIDATED` instead would also hide shops merely awaiting review, which
     // is what the optional `validatedOnly` flag below is for.
     let whereClause = `
-      WHERE p.status = 'ACTIVE'
+      WHERE p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED'
         AND s.validation_status <> 'SUSPENDED'
     `
 
@@ -400,7 +400,7 @@ export class SearchService {
         SELECT DISTINCT p.name as text, 'product' as type, p.id::text as id
         FROM products p
         JOIN suppliers s ON p.supplier_id = s.id
-        WHERE p.status = 'ACTIVE'
+        WHERE p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED'
           AND s.validation_status <> 'SUSPENDED'
           AND s.location IS NOT NULL
           AND ST_DWithin(s.location, ST_MakePoint(?, ?)::geography, 50000)
@@ -450,7 +450,7 @@ export class SearchService {
         c.image_url,
         COUNT(p.id)::int as product_count
       FROM categories c
-      LEFT JOIN products p ON p.category_id = c.id AND p.status = 'ACTIVE'
+      LEFT JOIN products p ON p.category_id = c.id AND p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED'
       GROUP BY c.id, c.name, c.slug, c.image_url, c.sort_order
       ORDER BY c.sort_order ASC
     `
@@ -478,6 +478,9 @@ export class SearchService {
         return 'ORDER BY p.rating_avg DESC NULLS LAST, distance ASC'
       case 'price':
         return 'ORDER BY p.price_per_unit ASC, distance ASC'
+      case 'newest':
+        // The id breaks ties so pages never overlap when products share a second.
+        return 'ORDER BY p."createdAt" DESC, p.id DESC'
       default:
         return 'ORDER BY distance ASC'
     }

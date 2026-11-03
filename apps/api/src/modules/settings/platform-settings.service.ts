@@ -27,6 +27,14 @@ export const ANNOUNCEMENT_OFFERS_KEY = 'announcement_offers'
 export const APP_VERSIONS_KEY = 'app_versions'
 export const REFERRAL_REWARDS_KEY = 'referral_rewards'
 export const ESCROW_RELEASE_KEY = 'escrow_release'
+export const PRODUCT_APPROVAL_REQUIRED_KEY = 'product_approval_required'
+export const NEW_PRODUCT_ALERT_EMAILS_KEY = 'new_product_alert_emails'
+
+/**
+ * Products go on sale at once until someone decides otherwise: turning review
+ * on is a staffing decision, since every new product then waits for a person.
+ */
+export const DEFAULT_PRODUCT_APPROVAL_REQUIRED = false
 
 /**
  * Two days once both sides confirmed delivery — time for a late complaint —
@@ -450,6 +458,43 @@ export class PlatformSettingsService {
     if (!Number.isInteger(value) || value < min || value > max) {
       throw new BadRequestException(message)
     }
+  }
+
+  /** Must a new product wait for eBio before buyers can see it? */
+  async getProductApprovalRequired(): Promise<boolean> {
+    const raw = await this.get(PRODUCT_APPROVAL_REQUIRED_KEY)
+    if (raw === null) {
+      return DEFAULT_PRODUCT_APPROVAL_REQUIRED
+    }
+    return raw === 'true'
+  }
+
+  async setProductApprovalRequired(required: boolean): Promise<void> {
+    await this.set(PRODUCT_APPROVAL_REQUIRED_KEY, required ? 'true' : 'false')
+  }
+
+  /**
+   * Addresses told of every new product. An unreadable row means nobody,
+   * never a crash: this runs right after a shop saves a product.
+   */
+  async getNewProductAlertEmails(): Promise<string[]> {
+    const raw = await this.get(NEW_PRODUCT_ALERT_EMAILS_KEY)
+    if (raw === null) {
+      return []
+    }
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+    }
+    catch {
+      return []
+    }
+  }
+
+  async setNewProductAlertEmails(emails: string[]): Promise<void> {
+    // Typed by hand: the same address twice, or in capitals, is still one person.
+    const unique = [...new Set(emails.map(email => email.trim().toLowerCase()).filter(Boolean))]
+    await this.set(NEW_PRODUCT_ALERT_EMAILS_KEY, JSON.stringify(unique))
   }
 
   private async get(key: string): Promise<string | null> {

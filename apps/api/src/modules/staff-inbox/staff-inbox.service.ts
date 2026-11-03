@@ -7,7 +7,7 @@ import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
 import { SingleInstance } from '../db/cron-lock'
 import { EmailService } from '../email/email.service'
 
-export type InboxQueueKey = 'bannerRequests' | 'supplierValidations' | 'courierApplications' | 'withdrawals' | 'disputes'
+export type InboxQueueKey = 'productReviews' | 'bannerRequests' | 'supplierValidations' | 'courierApplications' | 'withdrawals' | 'disputes'
 
 export interface InboxQueue {
   key: InboxQueueKey
@@ -17,13 +17,14 @@ export interface InboxQueue {
 interface QueueDefinition {
   key: InboxQueueKey
   /** Permission needed to act on the queue. */
-  subject: 'Banner' | 'Supplier' | 'CourierProfile' | 'Withdrawal' | 'Order'
+  subject: 'Product' | 'Banner' | 'Supplier' | 'CourierProfile' | 'Withdrawal' | 'Order'
   sql: string
   label: string
   path: string
 }
 
 const QUEUES: QueueDefinition[] = [
+  { key: 'productReviews', subject: 'Product', sql: `SELECT COUNT(*)::int AS n FROM products WHERE moderation_status = 'PENDING' AND status <> 'HIDDEN'`, label: 'Produits à valider', path: '/admin/produits?moderation=PENDING' },
   { key: 'bannerRequests', subject: 'Banner', sql: `SELECT COUNT(*)::int AS n FROM banner_requests WHERE status = 'PENDING'`, label: 'Demandes de bannière à valider', path: '/admin/bannieres/demandes' },
   { key: 'supplierValidations', subject: 'Supplier', sql: `SELECT COUNT(*)::int AS n FROM suppliers WHERE validation_status = 'PENDING'`, label: 'Boutiques à valider', path: '/admin/validations' },
   { key: 'courierApplications', subject: 'CourierProfile', sql: `SELECT COUNT(*)::int AS n FROM courier_profiles WHERE validation_status = 'PENDING'`, label: 'Candidatures livreur', path: '/admin/livreurs' },

@@ -1,5 +1,5 @@
 import type { ReferralRewards } from '../referrals/contracts/referral.contract'
-import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, EscrowReleaseInput, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
+import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, EscrowReleaseInput, NewProductSettingsInput, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
@@ -8,7 +8,7 @@ import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { AuthGuard } from '../auth/auth.guard'
 import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
-import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, escrowReleaseSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
+import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, escrowReleaseSchema, newProductSettingsSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSettingsService } from './platform-settings.service'
 
@@ -202,5 +202,38 @@ export class AdminEscrowReleaseController {
   async update(@TypedBody(escrowReleaseSchema) body: EscrowReleaseInput) {
     await this.platformSettings.setEscrowRelease(body)
     return this.platformSettings.getEscrowRelease()
+  }
+}
+
+/**
+ * New products: reviewed by eBio before going on sale or not, and who hears
+ * about them. Turning review off does not release the products already
+ * waiting — each one still takes a decision.
+ */
+@Controller('admin/new-products')
+@UseGuards(AuthGuard, RolesGuard, CaslGuard)
+@Roles('ADMIN')
+export class AdminNewProductSettingsController {
+  constructor(private readonly platformSettings: PlatformSettingsService) {}
+
+  @CanRead('Settings')
+  @Get()
+  async get() {
+    return this.read()
+  }
+
+  @CanManage('Settings')
+  @Put()
+  async update(@TypedBody(newProductSettingsSchema) body: NewProductSettingsInput) {
+    await this.platformSettings.setProductApprovalRequired(body.validationRequise)
+    await this.platformSettings.setNewProductAlertEmails(body.emailsAlerte)
+    return this.read()
+  }
+
+  private async read() {
+    return {
+      validationRequise: await this.platformSettings.getProductApprovalRequired(),
+      emailsAlerte: await this.platformSettings.getNewProductAlertEmails(),
+    }
   }
 }

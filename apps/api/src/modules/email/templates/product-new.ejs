@@ -1,0 +1,19 @@
+<%- include('partials/heading', { text: pending ? 'Nouveau produit à valider' : 'Nouveau produit en ligne', level: 1 }) %>
+
+<p>
+  La boutique <strong><%= shopName %></strong> vient d’ajouter
+  « <strong><%= productName %></strong> »
+  (<%= price.toLocaleString('fr-FR') %> FCFA<% if (unit) { %> / <%= unit %><% } %>).
+</p>
+
+<% if (pending) { %>
+<p>
+  Il n’est pas encore visible des acheteurs : il attend votre validation.
+</p>
+<% } else { %>
+<p>
+  Il est déjà visible des acheteurs. Vous pouvez le retirer depuis le back-office s’il ne respecte pas les règles.
+</p>
+<% } %>
+
+<%- include('partials/button', { href: reviewUrl, label: pending ? 'Valider ou refuser' : 'Voir le produit', variant: 'primary' }) %>

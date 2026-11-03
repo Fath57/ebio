@@ -1079,7 +1079,7 @@ export class AdminService {
    * needs to see the whole catalogue, including a shop that is only pending.
    */
   async getProducts(params: { q?: string, supplierId?: string, limit: number }): Promise<{ items: unknown[] }> {
-    const conditions: string[] = [`p.status = 'ACTIVE'`]
+    const conditions: string[] = [`p.status = 'ACTIVE'`, `p.moderation_status = 'APPROVED'`]
     const queryParams: unknown[] = []
 
     if (params.q) {
@@ -1135,6 +1135,7 @@ export class AdminService {
     supplierId?: string
     categoryId?: string
     status?: string
+    moderation?: string
     stock?: string
     promo?: boolean
     sortBy?: string
@@ -1160,6 +1161,10 @@ export class AdminService {
     if (params.status && ['ACTIVE', 'OUT_OF_STOCK', 'HIDDEN'].includes(params.status)) {
       conditions.push('p.status = ?')
       values.push(params.status)
+    }
+    if (params.moderation && ['APPROVED', 'PENDING', 'REJECTED', 'WITHDRAWN'].includes(params.moderation)) {
+      conditions.push('p.moderation_status = ?')
+      values.push(params.moderation)
     }
 
     // "Low" means low for this product: a threshold the shop sets itself, not
@@ -1246,7 +1251,7 @@ export class AdminService {
       `SELECT p.id, p.name, p.photos->>0 AS photo, p.price_per_unit,
               ${LEGACY_DISCOUNT} AS promotional_price,
               p.unit, p.stock, p.stock_alert_threshold,
-              p.status, p."createdAt",
+              p.status, p.moderation_status, p.moderation_reason, p."createdAt",
               c.id AS category_id, c.name AS category_name,
               s.id AS supplier_id, s.shop_name, s.validation_status,
               ${LIVE_PROMOTION} AS has_promotion,
@@ -1277,6 +1282,8 @@ export class AdminService {
         stock: Number(r.stock ?? 0),
         stockAlertThreshold: Number(r.stock_alert_threshold ?? 0),
         status: r.status as string,
+        moderationStatus: r.moderation_status as string,
+        moderationReason: (r.moderation_reason as string | null) ?? null,
         categoryId: r.category_id as string,
         categoryName: r.category_name as string,
         supplierId: r.supplier_id as string,

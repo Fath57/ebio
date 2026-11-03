@@ -3032,7 +3032,8 @@
               "enum": [
                 "distance",
                 "rating",
-                "price"
+                "price",
+                "newest"
               ]
             }
           },
@@ -4291,6 +4292,65 @@
         }
       }
     },
+    "/api/admin/new-products": {
+      "get": {
+        "operationId": "AdminNewProductSettingsController_get",
+        "tags": [
+          "AdminNewProductSettings"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminNewProductSettingsController_update",
+        "tags": [
+          "AdminNewProductSettings"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Validation préalable des nouveaux produits et adresses prévenues par e-mail",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "validationRequise": {
+                    "type": "boolean"
+                  },
+                  "emailsAlerte": {
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "maxLength": 254,
+                      "format": "email",
+                      "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                    }
+                  }
+                },
+                "required": [
+                  "validationRequise",
+                  "emailsAlerte"
+                ],
+                "additionalProperties": false,
+                "title": "NewProductSettings",
+                "description": "Validation préalable des nouveaux produits et adresses prévenues par e-mail"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/register": {
       "post": {
         "operationId": "SuppliersController_register",
@@ -5250,6 +5310,18 @@
         "parameters": [],
         "responses": {
           "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "UsersController_deleteMe",
+        "tags": [
+          "Users"
+        ],
+        "parameters": [],
+        "responses": {
+          "204": {
             "description": ""
           }
         }
@@ -12308,6 +12380,61 @@
         }
       }
     },
+    "/api/admin/catalogue/{id}/moderation": {
+      "post": {
+        "operationId": "AdminProductModerationController_decide",
+        "tags": [
+          "AdminProductModeration"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Valider, refuser, retirer ou remettre en ligne un produit",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "action": {
+                    "type": "string",
+                    "enum": [
+                      "approve",
+                      "reject",
+                      "withdraw",
+                      "restore"
+                    ]
+                  },
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "action"
+                ],
+                "additionalProperties": false,
+                "title": "ProductModerationAction",
+                "description": "Valider, refuser, retirer ou remettre en ligne un produit"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/categories/{id}": {
       "get": {
         "operationId": "CategoriesController_findById",
@@ -17631,6 +17758,14 @@
             }
           },
           {
+            "name": "moderation",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "stock",
             "required": true,
             "in": "query",
@@ -18914,6 +19049,31 @@
         "additionalProperties": false,
         "title": "EscrowRelease",
         "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique"
+      },
+      "NewProductSettings": {
+        "type": "object",
+        "properties": {
+          "validationRequise": {
+            "type": "boolean"
+          },
+          "emailsAlerte": {
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "maxLength": 254,
+              "format": "email",
+              "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+            }
+          }
+        },
+        "required": [
+          "validationRequise",
+          "emailsAlerte"
+        ],
+        "additionalProperties": false,
+        "title": "NewProductSettings",
+        "description": "Validation préalable des nouveaux produits et adresses prévenues par e-mail"
       },
       "CartSync": {
         "type": "object",
@@ -20306,6 +20466,30 @@
         "additionalProperties": false,
         "title": "UpdateCertification",
         "description": "Update a label or certification — every field optional, the code is immutable"
+      },
+      "ProductModerationAction": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "enum": [
+              "approve",
+              "reject",
+              "withdraw",
+              "restore"
+            ]
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "additionalProperties": false,
+        "title": "ProductModerationAction",
+        "description": "Valider, refuser, retirer ou remettre en ligne un produit"
       },
       "EnhancePhoto": {
         "type": "object",
@@ -25427,7 +25611,8 @@
             "enum": [
               "distance",
               "rating",
-              "price"
+              "price",
+              "newest"
             ]
           },
           "page": {

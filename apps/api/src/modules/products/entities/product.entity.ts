@@ -19,6 +19,24 @@ export enum ProductStatus {
   HIDDEN = 'HIDDEN',
 }
 
+/**
+ * eBio's say on a product, kept apart from `status`, which belongs to the shop.
+ *
+ * A shop switching its product back to ACTIVE must not lift a decision taken
+ * by eBio: the two answers are stored separately and a buyer sees the product
+ * only when both say yes.
+ */
+export enum ProductModeration {
+  /** Visible, subject to the shop's own status. */
+  APPROVED = 'APPROVED',
+  /** Created while approval is required, waiting for eBio. */
+  PENDING = 'PENDING',
+  /** Refused before ever going on sale; the shop may correct and resubmit. */
+  REJECTED = 'REJECTED',
+  /** Taken off the apps by eBio after being on sale. Only eBio lifts it. */
+  WITHDRAWN = 'WITHDRAWN',
+}
+
 /** Nutrition facts per 100 g / 100 ml, every entry optional. */
 export interface NutritionalValues {
   /** Reference quantity; defaults to 100 g when absent (legacy rows). */
@@ -36,7 +54,7 @@ export interface NutritionalValues {
 @Entity({ tableName: 'products' })
 @Index({ properties: ['supplier', 'category', 'status'] })
 export class Product {
-  [OptionalProps]?: 'id' | 'photos' | 'stock' | 'stockAlertThreshold' | 'status' | 'allergens' | 'labels' | 'ratingCount' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'photos' | 'stock' | 'stockAlertThreshold' | 'status' | 'moderationStatus' | 'allergens' | 'labels' | 'ratingCount' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -78,6 +96,16 @@ export class Product {
 
   @Enum({ items: () => ProductStatus, default: ProductStatus.ACTIVE })
   status: ProductStatus = ProductStatus.ACTIVE
+
+  @Enum({ items: () => ProductModeration, fieldName: 'moderation_status', default: ProductModeration.APPROVED })
+  moderationStatus: ProductModeration = ProductModeration.APPROVED
+
+  /** Why eBio refused or withdrew it, shown to the shop. */
+  @Property({ fieldName: 'moderation_reason', type: 'text', nullable: true })
+  moderationReason?: string
+
+  @Property({ fieldName: 'moderated_at', type: 'Date', nullable: true })
+  moderatedAt?: Date
 
   // ===== Composition / product sheet =====
 

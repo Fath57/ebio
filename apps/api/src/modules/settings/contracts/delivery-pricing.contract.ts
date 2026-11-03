@@ -195,3 +195,17 @@ export const escrowReleaseSchema = z.object({
 })
 
 export type EscrowReleaseInput = z.infer<typeof escrowReleaseSchema>
+
+/**
+ * What happens when a shop adds a product: whether eBio checks it before it
+ * goes on sale, and who is told by e-mail.
+ */
+export const newProductSettingsSchema = z.object({
+  validationRequise: z.boolean(),
+  emailsAlerte: z.array(z.email('Adresse e-mail invalide').max(254)).max(20),
+}).meta({
+  title: 'NewProductSettings',
+  description: 'Validation préalable des nouveaux produits et adresses prévenues par e-mail',
+})
+
+export type NewProductSettingsInput = z.infer<typeof newProductSettingsSchema>

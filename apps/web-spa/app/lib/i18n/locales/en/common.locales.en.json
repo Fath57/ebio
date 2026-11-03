@@ -866,7 +866,8 @@
           "supplierValidations": "Supplier validations",
           "courierApplications": "Courier applications",
           "withdrawals": "Pending withdrawals",
-          "disputes": "Disputes"
+          "disputes": "Disputes",
+          "productReviews": "Products to review"
         }
       },
       "activityTitle": "Activity",
@@ -1110,7 +1111,10 @@
           "SHOP_CONTACT_ONLY": "The shop is contact-only: the product shows but cannot be ordered.",
           "PRODUCT_HIDDEN": "The product is hidden.",
           "OUT_OF_STOCK": "The product is out of stock.",
-          "NO_PHOTO": "The product has no photo."
+          "NO_PHOTO": "The product has no photo.",
+          "PENDING_REVIEW": "The product is waiting for eBio's review.",
+          "REJECTED": "The product was rejected by eBio.",
+          "WITHDRAWN": "The product was withdrawn from the app by eBio."
         },
         "photo": "Photo {{index}}",
         "unitsSold": "Units sold",
@@ -1135,6 +1139,47 @@
         "recentOrders": "Latest orders",
         "noOrders": "No order for this product.",
         "unit": "unit"
+      },
+      "moderation": {
+        "state": {
+          "APPROVED": "Approved by eBio: visible to buyers when the shop puts it on sale.",
+          "PENDING": "Waiting for review: hidden from buyers for now.",
+          "REJECTED": "Rejected: the shop can correct it, it then goes back to review.",
+          "WITHDRAWN": "Withdrawn from the app by eBio: hidden from buyers."
+        },
+        "reasonShown": "Reason sent to the shop: {{reason}}",
+        "actions": {
+          "approve": "Approve",
+          "reject": "Reject",
+          "withdraw": "Withdraw from the app",
+          "restore": "Put back online"
+        },
+        "dialog": {
+          "reject": {
+            "title": "Reject “{{name}}”",
+            "description": "The product stays hidden. The shop receives the reason and can correct the product to submit it again."
+          },
+          "withdraw": {
+            "title": "Withdraw “{{name}}” from the app",
+            "description": "The product disappears at once from searches, shop pages and baskets. The shop receives the reason. You can put it back online."
+          }
+        },
+        "reasonLabel": "Reason",
+        "reasonPlaceholder": "E.g. photo not showing the product, inconsistent price, not organic…",
+        "error": "The decision was not saved. Try again.",
+        "badge": {
+          "PENDING": "To review",
+          "REJECTED": "Rejected",
+          "WITHDRAWN": "Withdrawn by eBio"
+        },
+        "filterLabel": "eBio review",
+        "allLabel": "All reviews",
+        "filter": {
+          "APPROVED": "Approved",
+          "PENDING": "To review",
+          "REJECTED": "Rejected",
+          "WITHDRAWN": "Withdrawn by eBio"
+        }
       }
     },
     "promotions": {
@@ -1496,6 +1541,19 @@
         "hint": "Between 20 and 600 seconds. Applies to the next offers.",
         "saved": "Delay saved",
         "error": "The delay could not be saved. Try again."
+      },
+      "newProducts": {
+        "title": "New products",
+        "description": "What happens when a shop adds a product: checked by eBio before buyers see it or not, and who is told by e-mail.",
+        "validationLabel": "Review new products before they go live",
+        "validationOn": "On: a new product stays hidden from buyers until it is approved in Products. The shop is told of the decision.",
+        "validationOff": "Off: a new product is visible to buyers as soon as it is saved. It can still be withdrawn later.",
+        "emailsLabel": "Addresses told of every new product",
+        "emailsHint": "One address per line, 20 at most. Leave empty to send no e-mail.",
+        "invalidEmail": "One of the addresses is not valid.",
+        "tooMany": "20 addresses at most.",
+        "saved": "Saved.",
+        "error": "The change was not saved."
       }
     },
     "site": {

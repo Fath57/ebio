@@ -13,7 +13,8 @@ import { Supplier } from '../suppliers/supplier.entity'
 import { CertificationsService } from './certifications.service'
 import { Category } from './entities/category.entity'
 import { ProductVariant } from './entities/product-variant.entity'
-import { Product, ProductStatus } from './entities/product.entity'
+import { Product, ProductModeration, ProductStatus } from './entities/product.entity'
+import { ProductModerationService } from './product-moderation.service'
 import { ProductUnitsService } from './product-units.service'
 
 @Injectable()
@@ -23,6 +24,7 @@ export class ProductsService {
     private readonly notificationsService: NotificationsService,
     private readonly productUnitsService: ProductUnitsService,
     private readonly certificationsService: CertificationsService,
+    private readonly moderation: ProductModerationService,
   ) {}
 
   async create(supplierId: string, data: CreateProduct): Promise<Product> {
@@ -59,6 +61,7 @@ export class ProductsService {
       stock: data.stock ?? 0,
       stockAlertThreshold: data.stockAlertThreshold ?? 5,
       status: (data.status as ProductStatus) ?? ProductStatus.ACTIVE,
+      moderationStatus: await this.moderation.initialStatus(),
       ingredients: data.ingredients,
       allergens: data.allergens ?? [],
       labels: data.labels ?? [],
@@ -90,6 +93,8 @@ export class ProductsService {
       }
       await this.em.flush()
     }
+
+    await this.moderation.announceNewProduct(product)
 
     return product
   }
@@ -150,6 +155,11 @@ export class ProductsService {
       .filter(status => filters?.includeHidden || status !== ProductStatus.HIDDEN)
     where.status = {
       $in: filters?.status ? allowed.filter(status => status === filters.status) : allowed,
+    }
+    // Waiting for, refused or withdrawn by eBio: the owner's view alone, for
+    // the same reason.
+    if (!filters?.includeHidden) {
+      where.moderationStatus = ProductModeration.APPROVED
     }
 
     const [products, total] = await this.em.findAndCount(Product, where, {
@@ -276,6 +286,8 @@ export class ProductsService {
         }
       }
     }
+
+    this.moderation.resubmitIfRejected(product)
 
     await this.em.flush()
     return product

@@ -1,6 +1,7 @@
 import type { BannerOffers, DeliveryPricingConfig } from '@boilerstone/openapi-generator/client/types.gen'
 import type { CommissionCategoryRate } from '../forms/commission-form'
 import type { EscrowReleaseFormData } from '../forms/escrow-release-form'
+import type { NewProductSettings } from '../forms/new-product-settings-form'
 import type { ReferralRewardsFormData } from '../forms/referral-rewards-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
@@ -15,6 +16,8 @@ import {
   adminControllerUpdateDeliveryCommission,
   adminDeliveryPricingControllerGet,
   adminDeliveryPricingControllerUpdate,
+  adminNewProductSettingsControllerGet,
+  adminNewProductSettingsControllerUpdate,
   adminProductReviewTimingControllerGet,
   adminProductReviewTimingControllerUpdate,
   adminReferralRewardsControllerGet,
@@ -41,6 +44,7 @@ import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
 import { EscrowReleaseForm } from '../forms/escrow-release-form'
+import { NewProductSettingsForm } from '../forms/new-product-settings-form'
 import { OfferTimeoutForm } from '../forms/offer-timeout-form'
 import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
 import { ReferralRewardsForm } from '../forms/referral-rewards-form'
@@ -133,6 +137,18 @@ function fetchEscrowReleaseQueryOptions() {
   }
 }
 
+function fetchNewProductSettingsQueryOptions() {
+  return {
+    queryKey: ['admin', 'new-products'],
+    queryFn: async () => {
+      const response = await adminNewProductSettingsControllerGet()
+      if (response.error)
+        throw new Error('Failed to fetch new product settings')
+      return response.data as NewProductSettings
+    },
+  }
+}
+
 function fetchProductReviewTimingQueryOptions() {
   return {
     queryKey: ['admin', 'product-review-timing'],
@@ -174,6 +190,7 @@ export default function AdminSettingsPage() {
   const [assistantFeedback, setAssistantFeedback] = useState<'saved' | 'error' | null>(null)
   const [reviewFeedback, setReviewFeedback] = useState<'saved' | 'error' | null>(null)
   const [escrowFeedback, setEscrowFeedback] = useState<'saved' | 'error' | null>(null)
+  const [newProductFeedback, setNewProductFeedback] = useState<'saved' | 'error' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
   const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
@@ -182,6 +199,7 @@ export default function AdminSettingsPage() {
   const { data: assistant, isLoading: isAssistantLoading } = useQuery(fetchAssistantQueryOptions())
   const { data: reviewTiming, isLoading: isReviewLoading } = useQuery(fetchProductReviewTimingQueryOptions())
   const { data: escrowRelease, isLoading: isEscrowLoading } = useQuery(fetchEscrowReleaseQueryOptions())
+  const { data: newProducts, isLoading: isNewProductsLoading } = useQuery(fetchNewProductSettingsQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
     mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
@@ -376,6 +394,25 @@ export default function AdminSettingsPage() {
     },
   })
 
+  const { mutate: updateNewProducts, isPending: isNewProductsPending } = useMutation({
+    mutationFn: async (body: NewProductSettings) => {
+      const response = await adminNewProductSettingsControllerUpdate({ body })
+      if (response.error)
+        throw new Error('Failed to update new product settings')
+      return response.data as NewProductSettings
+    },
+    onMutate: () => {
+      setNewProductFeedback(null)
+    },
+    onSuccess: (saved) => {
+      setNewProductFeedback('saved')
+      queryClient.setQueryData(['admin', 'new-products'], saved)
+    },
+    onError: () => {
+      setNewProductFeedback('error')
+    },
+  })
+
   const { mutate: updateReviewTiming, isPending: isReviewPending } = useMutation({
     mutationFn: async (timing: ProductReviewTiming) => {
       const response = await adminProductReviewTimingControllerUpdate({ body: timing })
@@ -550,6 +587,32 @@ export default function AdminSettingsPage() {
                 {pricingFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.deliveryPricing.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.newProducts.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.newProducts.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isNewProductsLoading || !newProducts
+                  ? <Skeleton className="h-40 w-full" />
+                  : (
+                      <NewProductSettingsForm
+                        settings={newProducts}
+                        onSubmit={updateNewProducts}
+                        isPending={isNewProductsPending}
+                      />
+                    )}
+                {newProductFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.newProducts.saved')}</p>
+                )}
+                {newProductFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.newProducts.error')}
                   </p>
                 )}
               </CardContent>

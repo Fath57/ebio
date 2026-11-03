@@ -155,7 +155,7 @@ export class SuppliersService {
       ? ` AND EXISTS (
             SELECT 1 FROM products p
             JOIN categories c ON c.id = p.category_id
-            WHERE p.supplier_id = s.id AND p.status = 'ACTIVE'
+            WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED'
               AND ${productConditions.join(' AND ')}
           )`
       : ''
@@ -190,7 +190,7 @@ export class SuppliersService {
           s.timezone,
           s.cover_photo AS "coverPhoto",
           ROUND(ST_Distance(l.location, ST_MakePoint(?, ?)::geography)::numeric / 1000, 2) AS distance,
-          (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
+          (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
         FROM lieux l
         JOIN suppliers s ON s.id = l.supplier_id
         WHERE s.validation_status = 'VALIDATED'
@@ -210,7 +210,7 @@ export class SuppliersService {
           s.timezone,
           s.cover_photo AS "coverPhoto",
           NULL AS distance,
-          (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
+          (SELECT p.name FROM products p WHERE p.supplier_id = s.id AND p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED' ORDER BY p.stock DESC LIMIT 1) AS "topProduct"
         FROM suppliers s
         WHERE s.validation_status = 'VALIDATED'${productClause}
         ORDER BY s.global_rating DESC NULLS LAST`

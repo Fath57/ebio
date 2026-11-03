@@ -42,7 +42,7 @@ export const searchProductsQuerySchema = z.object({
     value => (typeof value === 'string' ? value.split(',').filter(Boolean) : value),
     z.array(z.string().uuid()).max(200),
   ).optional(),
-  sortBy: z.enum(['distance', 'rating', 'price']).default('distance'),
+  sortBy: z.enum(['distance', 'rating', 'price', 'newest']).default('distance'),
   page: z.coerce.number().default(1),
   limit: z.coerce.number().max(50).default(20),
 }).meta({ title: 'SearchProductsQuery', description: 'Geolocation-based product search' })

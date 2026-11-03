@@ -13,18 +13,25 @@ import { BackLink } from '@/features/admin/common/components/back-link'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { ORDER_STATUS_TONES } from '@/features/admin/orders/utils/order-status'
 import { Can } from '@/lib/casl/can'
+import { ProductModerationPanel } from '../components/product-moderation-panel'
 import { fetchAdminProductDetailQueryOptions } from '../utils/products-queries'
 
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR').replace(/\u202F/g, '\u00A0')}\u00A0FCFA`
 }
 
-/** Where each visibility issue is fixed — the shop's page for most of them. */
-const ISSUE_TARGET: Record<VisibilityIssue, 'shop' | 'studio'> = {
+/**
+ * Where each visibility issue is fixed — the shop's page for most of them.
+ * Null for eBio's own decisions, taken in the moderation panel just above.
+ */
+const ISSUE_TARGET: Record<VisibilityIssue, 'shop' | 'studio' | null> = {
   SHOP_NOT_VALIDATED: 'shop',
   SHOP_NOT_LOCATED: 'shop',
   SHOP_CONTACT_ONLY: 'shop',
   PRODUCT_HIDDEN: 'studio',
+  PENDING_REVIEW: null,
+  REJECTED: null,
+  WITHDRAWN: null,
   OUT_OF_STOCK: 'studio',
   NO_PHOTO: 'studio',
 }
@@ -87,6 +94,13 @@ export default function AdminProductDetailPage() {
         </Can>
       </div>
 
+      <ProductModerationPanel
+        productId={product.id}
+        productName={product.name}
+        moderationStatus={product.moderationStatus ?? 'APPROVED'}
+        moderationReason={product.moderationReason ?? null}
+      />
+
       {visibilityIssues.length === 0
         ? (
             <div className="border-ebio-green-200 bg-ebio-green-50 dark:border-ebio-green-800 dark:bg-ebio-green-900 flex items-center gap-3 rounded-xl border p-4">
@@ -104,12 +118,14 @@ export default function AdminProductDetailPage() {
                 {visibilityIssues.map(issue => (
                   <li key={issue} className="flex flex-wrap items-center gap-2">
                     <span>{t(`admin.products.detail.issues.${issue}`)}</span>
-                    <Link
-                      to={ISSUE_TARGET[issue] === 'shop' ? `/admin/fournisseurs/${shop.id}` : studioPath}
-                      className="text-primary font-medium underline-offset-4 hover:underline"
-                    >
-                      {ISSUE_TARGET[issue] === 'shop' ? t('admin.products.detail.openShop') : t('admin.products.detail.edit')}
-                    </Link>
+                    {ISSUE_TARGET[issue] !== null && (
+                      <Link
+                        to={ISSUE_TARGET[issue] === 'shop' ? `/admin/fournisseurs/${shop.id}` : studioPath}
+                        className="text-primary font-medium underline-offset-4 hover:underline"
+                      >
+                        {ISSUE_TARGET[issue] === 'shop' ? t('admin.products.detail.openShop') : t('admin.products.detail.edit')}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

@@ -1,7 +1,11 @@
-import { adminControllerGetCatalogue, adminControllerGetCatalogueProduct } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { adminControllerGetCatalogue, adminControllerGetCatalogueProduct, adminProductModerationControllerDecide } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export type ProductStatusFilter = '' | 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN'
 export type StockFilter = '' | 'out' | 'low' | 'in'
+/** eBio's review of a product, apart from the shop's own status. */
+export type ProductModeration = 'APPROVED' | 'PENDING' | 'REJECTED' | 'WITHDRAWN'
+export type ModerationFilter = '' | ProductModeration
+export type ModerationAction = 'approve' | 'reject' | 'withdraw' | 'restore'
 
 export interface AdminProductItem {
   id: string
@@ -14,6 +18,8 @@ export interface AdminProductItem {
   stock: number
   stockAlertThreshold: number
   status: 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN'
+  moderationStatus: ProductModeration
+  moderationReason: string | null
   categoryId: string
   categoryName: string
   supplierId: string
@@ -55,6 +61,7 @@ export interface AdminProductsFilters {
   supplierId?: string
   categoryId?: string
   status?: ProductStatusFilter
+  moderation?: ModerationFilter
   stock?: StockFilter
   promo?: boolean
   advanced?: Partial<Record<ProductAdvancedFilterKey, string>>
@@ -68,6 +75,7 @@ export const ADMIN_PRODUCTS_PAGE_SIZE = 25
 
 export const PRODUCT_STATUS_OPTIONS: ProductStatusFilter[] = ['ACTIVE', 'OUT_OF_STOCK', 'HIDDEN']
 export const STOCK_OPTIONS: StockFilter[] = ['out', 'low', 'in']
+export const MODERATION_OPTIONS: ProductModeration[] = ['PENDING', 'REJECTED', 'WITHDRAWN', 'APPROVED']
 
 /**
  * The whole platform's catalogue.
@@ -86,6 +94,7 @@ export function fetchAdminProductsQueryOptions(filters: AdminProductsFilters = {
           supplierId: filters.supplierId ?? '',
           categoryId: filters.categoryId ?? '',
           status: filters.status ?? '',
+          moderation: filters.moderation ?? '',
           stock: filters.stock ?? '',
           promo: filters.promo ? 'true' : '',
           ...Object.fromEntries(PRODUCT_ADVANCED_FILTER_KEYS.map(key => [key, filters.advanced?.[key] ?? ''])) as Record<ProductAdvancedFilterKey, string>,
@@ -107,6 +116,9 @@ export type VisibilityIssue
     | 'SHOP_NOT_LOCATED'
     | 'SHOP_CONTACT_ONLY'
     | 'PRODUCT_HIDDEN'
+    | 'PENDING_REVIEW'
+    | 'REJECTED'
+    | 'WITHDRAWN'
     | 'OUT_OF_STOCK'
     | 'NO_PHOTO'
 
@@ -121,6 +133,8 @@ export interface AdminProductRecord {
   stock: number
   stockAlertThreshold: number
   status: 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN'
+  moderationStatus: ProductModeration
+  moderationReason: string | null
   ingredients: string | null
   allergens: string[]
   origin: string | null
@@ -157,4 +171,15 @@ export function fetchAdminProductDetailQueryOptions(productId: string) {
       return response.data as AdminProductDetail
     },
   }
+}
+
+/** An eBio decision on a product; the shop is told, with the reason. */
+export async function decideProductModeration(productId: string, action: ModerationAction, reason?: string) {
+  const response = await adminProductModerationControllerDecide({
+    path: { id: productId },
+    body: { action, reason },
+  })
+  if (response.error)
+    throw new Error('Failed to apply the moderation decision')
+  return response.data
 }

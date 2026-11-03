@@ -22,6 +22,22 @@ export const productStatusEnum = z.enum(['ACTIVE', 'OUT_OF_STOCK', 'HIDDEN']).me
   description: 'Product visibility and availability status',
 })
 
+export const productModerationEnum = z.enum(['APPROVED', 'PENDING', 'REJECTED', 'WITHDRAWN']).meta({
+  title: 'ProductModeration',
+  description: 'eBio review of the product: approved, waiting, refused or withdrawn from the apps',
+})
+
+/** An eBio decision on a product. The reason is required to refuse or withdraw. */
+export const productModerationActionSchema = z.object({
+  action: z.enum(['approve', 'reject', 'withdraw', 'restore']),
+  reason: z.string().trim().max(500).optional(),
+}).meta({
+  title: 'ProductModerationAction',
+  description: 'Valider, refuser, retirer ou remettre en ligne un produit',
+})
+
+export type ProductModerationActionInput = z.infer<typeof productModerationActionSchema>
+
 const variantInputSchema = z.object({
   label: z.string().min(1).max(100),
   pricePerUnit: z.number().min(0),
@@ -182,6 +198,9 @@ export const productResponseSchema = z.object({
   stock: z.number(),
   stockAlertThreshold: z.number(),
   status: productStatusEnum,
+  moderationStatus: productModerationEnum,
+  /** Why eBio refused or withdrew it; null otherwise. */
+  moderationReason: z.string().nullable(),
   /** Weighted average of the product's reviews, null below three of them. */
   ratingAvg: z.number().nullable(),
   /** Visible reviews. Shown even while the average stays hidden. */
@@ -213,6 +232,8 @@ export const productSummarySchema = z.object({
   unit: productUnitCode,
   stock: z.number(),
   status: productStatusEnum,
+  moderationStatus: productModerationEnum,
+  moderationReason: z.string().nullable(),
   /** Weighted average of the product's reviews, null below three of them. */
   ratingAvg: z.number().nullable(),
   /** Visible reviews. Shown even while the average stays hidden. */

@@ -21,6 +21,8 @@ import { certificationName } from '../../catalog/hooks/use-certifications'
 import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { parseModerationReason, parseModerationStatus } from '../utils/product-moderation'
+import { ModerationNotice } from './moderation-notice'
 
 interface Variant {
   id: string
@@ -61,6 +63,9 @@ interface ProductDetail {
   origin?: string | null
   conservation?: string | null
   nutritionalValues?: NutritionalValues | null
+  /** eBio's verdict; missing from older APIs, read as APPROVED */
+  moderationStatus?: string
+  moderationReason?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -175,6 +180,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
   const isOutOfStock = activeStock === 0 || product.status === 'OUT_OF_STOCK'
   const unitLabel = shortLabel(product.unit)
   const statusInfo = STATUS_LABELS[product.status] ?? STATUS_LABELS.ACTIVE
+  const moderationStatus = parseModerationStatus(product.moderationStatus)
 
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
@@ -197,6 +203,14 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
         contentContainerStyle={[styles.content, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}
       >
+        {moderationStatus !== 'APPROVED' && (
+          <View style={styles.moderationNotice}>
+            <ModerationNotice
+              status={moderationStatus}
+              reason={parseModerationReason(product.moderationReason)}
+            />
+          </View>
+        )}
 
         {/* Photo */}
         {product.photos.length > 0
@@ -469,6 +483,7 @@ const styles = StyleSheet.create({
     paddingVertical: spacing[3],
   },
 
+  moderationNotice: { paddingHorizontal: spacing[4], paddingVertical: spacing[3] },
   mainPhoto: { width: '100%', height: 300 },
   photoPlaceholder: {
     backgroundColor: colors.neutral[100],

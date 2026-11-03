@@ -153,6 +153,16 @@ export type EscrowRelease = {
 };
 
 /**
+ * NewProductSettings
+ *
+ * Validation préalable des nouveaux produits et adresses prévenues par e-mail
+ */
+export type NewProductSettings = {
+  validationRequise: boolean;
+  emailsAlerte: Array<string>;
+};
+
+/**
  * CartSync
  *
  * Le panier tel que l'application le détient
@@ -668,6 +678,16 @@ export type UpdateCertification = {
   logoUrl?: string | null;
   isActive?: boolean;
   sortOrder?: number;
+};
+
+/**
+ * ProductModerationAction
+ *
+ * Valider, refuser, retirer ou remettre en ligne un produit
+ */
+export type ProductModerationAction = {
+  action: "approve" | "reject" | "withdraw" | "restore";
+  reason?: string;
 };
 
 /**
@@ -2759,7 +2779,7 @@ export type SearchProductsQuery = {
   newerThanDays?: number;
   productIds?: Array<string>;
   excludeProductIds?: Array<string>;
-  sortBy: "distance" | "rating" | "price";
+  sortBy: "distance" | "rating" | "price" | "newest";
   page: number;
   limit: number;
 };
@@ -4603,7 +4623,7 @@ export type SearchControllerSearchProductsData = {
     newerThanDays?: number;
     productIds?: Array<string>;
     excludeProductIds?: Array<string>;
-    sortBy: "distance" | "rating" | "price";
+    sortBy: "distance" | "rating" | "price" | "newest";
     page: number;
     limit: number;
   };
@@ -5165,6 +5185,36 @@ export type AdminEscrowReleaseControllerUpdateResponses = {
   200: unknown;
 };
 
+export type AdminNewProductSettingsControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/new-products";
+};
+
+export type AdminNewProductSettingsControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminNewProductSettingsControllerUpdateData = {
+  /**
+   * NewProductSettings
+   *
+   * Validation préalable des nouveaux produits et adresses prévenues par e-mail
+   */
+  body: {
+    validationRequise: boolean;
+    emailsAlerte: Array<string>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/new-products";
+};
+
+export type AdminNewProductSettingsControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -5548,6 +5598,20 @@ export type SalesPointsControllerUpdateData = {
 export type SalesPointsControllerUpdateResponses = {
   200: unknown;
 };
+
+export type UsersControllerDeleteMeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/users/me";
+};
+
+export type UsersControllerDeleteMeResponses = {
+  204: void;
+};
+
+export type UsersControllerDeleteMeResponse =
+  UsersControllerDeleteMeResponses[keyof UsersControllerDeleteMeResponses];
 
 export type UsersControllerGetMeData = {
   body?: never;
@@ -8631,6 +8695,27 @@ export type ProductsControllerSubscribeToStockAlertResponses = {
   201: unknown;
 };
 
+export type AdminProductModerationControllerDecideData = {
+  /**
+   * ProductModerationAction
+   *
+   * Valider, refuser, retirer ou remettre en ligne un produit
+   */
+  body: {
+    action: "approve" | "reject" | "withdraw" | "restore";
+    reason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/catalogue/{id}/moderation";
+};
+
+export type AdminProductModerationControllerDecideResponses = {
+  201: unknown;
+};
+
 export type CategoriesControllerRemoveData = {
   body?: never;
   path: {
@@ -10867,6 +10952,7 @@ export type AdminControllerGetCatalogueData = {
     supplierId: string;
     categoryId: string;
     status: string;
+    moderation: string;
     stock: string;
     promo: string;
     minPrice: string;

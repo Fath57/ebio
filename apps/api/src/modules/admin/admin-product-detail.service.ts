@@ -13,6 +13,9 @@ export type VisibilityIssue
     | 'SHOP_NOT_LOCATED'
     | 'SHOP_CONTACT_ONLY'
     | 'PRODUCT_HIDDEN'
+    | 'PENDING_REVIEW'
+    | 'REJECTED'
+    | 'WITHDRAWN'
     | 'OUT_OF_STOCK'
     | 'NO_PHOTO'
 
@@ -99,6 +102,12 @@ export class AdminProductDetailService {
       issues.push('SHOP_CONTACT_ONLY')
     if (product.status === 'HIDDEN')
       issues.push('PRODUCT_HIDDEN')
+    if (product.moderationStatus === 'PENDING')
+      issues.push('PENDING_REVIEW')
+    if (product.moderationStatus === 'REJECTED')
+      issues.push('REJECTED')
+    if (product.moderationStatus === 'WITHDRAWN')
+      issues.push('WITHDRAWN')
     if (product.stock <= 0 || product.status === 'OUT_OF_STOCK')
       issues.push('OUT_OF_STOCK')
     if ((product.photos ?? []).length === 0)

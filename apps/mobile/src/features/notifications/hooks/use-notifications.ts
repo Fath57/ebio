@@ -477,6 +477,21 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
     case 'STOCK_ALERT':
       navigationRef.navigate('Accueil', { screen: 'SupplierProducts', initial: false })
       break
+    case 'product_moderation':
+    case 'PRODUCT_MODERATION':
+      // eBio approved, refused or withdrew a product: its detail screen shows
+      // the verdict and the reason.
+      if (typeof data.productId === 'string' && data.productId.length > 0) {
+        navigationRef.navigate('Accueil', {
+          screen: 'SupplierProductDetail',
+          initial: false,
+          params: { productId: data.productId },
+        })
+      }
+      else {
+        navigationRef.navigate('Accueil', { screen: 'SupplierProducts', initial: false })
+      }
+      break
     case 'BANNER_APPROVED':
     case 'BANNER_REJECTED':
       navigationRef.navigate('Accueil', { screen: 'SupplierBannerRequests', initial: false })

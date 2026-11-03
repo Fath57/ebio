@@ -4,7 +4,8 @@ import {
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export type InboxQueueKey
-  = | 'bannerRequests'
+  = | 'productReviews'
+    | 'bannerRequests'
     | 'supplierValidations'
     | 'courierApplications'
     | 'withdrawals'

@@ -1,3 +1,4 @@
+import type { ModerationStatus } from '../utils/product-moderation'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Check from 'lucide-react-native/dist/esm/icons/check'
@@ -24,6 +25,7 @@ import { apiFetch } from '../../../utils/api-client'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { moderationPill, parseModerationStatus } from '../utils/product-moderation'
 
 type ProductStatus = 'ACTIVE' | 'OUT_OF_STOCK' | 'HIDDEN'
 
@@ -37,6 +39,9 @@ interface Product {
   status: ProductStatus
   /** Types of the promotions currently live on the product (PRICE, BOGO, FREE_DELIVERY) */
   promotionTypes: string[]
+  /** eBio's verdict; missing from older APIs, read as APPROVED */
+  moderationStatus?: ModerationStatus
+  moderationReason?: string | null
 }
 
 const PROMO_BADGES: Record<string, { label: string, bgColor: string, textColor: string }> = {
@@ -120,6 +125,8 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
           stock: (p.stock as number) ?? 0,
           status: (p.status as ProductStatus) ?? 'ACTIVE',
           promotionTypes: Array.isArray(p.promotionTypes) ? p.promotionTypes as string[] : [],
+          moderationStatus: parseModerationStatus(p.moderationStatus),
+          moderationReason: (p.moderationReason as string | null) ?? null,
         })))
       }
     }
@@ -188,6 +195,7 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
     const promoBadges = item.promotionTypes
       .map(type => PROMO_BADGES[type])
       .filter((badge): badge is NonNullable<typeof badge> => badge != null)
+    const moderation = moderationPill(item.moderationStatus ?? 'APPROVED')
 
     return (
       <TouchableOpacity
@@ -224,8 +232,13 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
               FCFA /
               {unitShortLabel(item.unit)}
             </Text>
-            {promoBadges.length > 0 && (
+            {(moderation != null || promoBadges.length > 0) && (
               <View style={styles.promoRow}>
+                {moderation != null && (
+                  <View style={[styles.promoBadge, { backgroundColor: moderation.bgColor }]}>
+                    <Text style={[styles.promoBadgeText, { color: moderation.textColor }]}>{moderation.label}</Text>
+                  </View>
+                )}
                 {promoBadges.map(badge => (
                   <View key={badge.label} style={[styles.promoBadge, { backgroundColor: badge.bgColor }]}>
                     <Text style={[styles.promoBadgeText, { color: badge.textColor }]}>{badge.label}</Text>

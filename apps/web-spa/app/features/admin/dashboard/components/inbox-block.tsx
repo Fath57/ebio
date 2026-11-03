@@ -12,6 +12,7 @@ import { fetchInboxQueryOptions, sendDigestMutationOptions } from '../utils/inbo
 
 /** Target page for each queue, already filtered where the list reads its filters from the URL. */
 const QUEUE_LINKS: Record<InboxQueueKey, string> = {
+  productReviews: '/admin/produits?moderation=PENDING',
   bannerRequests: '/admin/bannieres/demandes',
   supplierValidations: '/admin/validations',
   courierApplications: '/admin/livreurs',

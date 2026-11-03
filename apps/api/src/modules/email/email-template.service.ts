@@ -11,6 +11,7 @@ export type TemplateName
     | 'staff-invitation'
     | 'staff-digest'
     | 'banner-request-new'
+    | 'product-new'
     | 'account-suspended'
     | 'account-reinstated'
     | 'verify-email'

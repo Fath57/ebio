@@ -150,6 +150,12 @@ import type {
   AdminHomeSectionsControllerReorderResponses,
   AdminHomeSectionsControllerUpdateData,
   AdminHomeSectionsControllerUpdateResponses,
+  AdminNewProductSettingsControllerGetData,
+  AdminNewProductSettingsControllerGetResponses,
+  AdminNewProductSettingsControllerUpdateData,
+  AdminNewProductSettingsControllerUpdateResponses,
+  AdminProductModerationControllerDecideData,
+  AdminProductModerationControllerDecideResponses,
   AdminProductReviewTimingControllerGetData,
   AdminProductReviewTimingControllerGetResponses,
   AdminProductReviewTimingControllerUpdateData,
@@ -784,6 +790,8 @@ import type {
   UsersControllerAcceptTermsResponses,
   UsersControllerConfirmEmailChangeData,
   UsersControllerConfirmEmailChangeResponses,
+  UsersControllerDeleteMeData,
+  UsersControllerDeleteMeResponses,
   UsersControllerGetMeData,
   UsersControllerGetMeResponses,
   UsersControllerRequestEmailChangeData,
@@ -1954,6 +1962,35 @@ export const adminEscrowReleaseControllerUpdate = <
     },
   });
 
+export const adminNewProductSettingsControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminNewProductSettingsControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminNewProductSettingsControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/new-products", ...options });
+
+export const adminNewProductSettingsControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminNewProductSettingsControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminNewProductSettingsControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/new-products",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const suppliersControllerRegister = <
   ThrowOnError extends boolean = false,
 >(
@@ -2193,6 +2230,15 @@ export const salesPointsControllerUpdate = <
       ...options.headers,
     },
   });
+
+export const usersControllerDeleteMe = <ThrowOnError extends boolean = false>(
+  options?: Options<UsersControllerDeleteMeData, ThrowOnError>,
+) =>
+  (options?.client ?? client).delete<
+    UsersControllerDeleteMeResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/users/me", ...options });
 
 export const usersControllerGetMe = <ThrowOnError extends boolean = false>(
   options?: Options<UsersControllerGetMeData, ThrowOnError>,
@@ -4432,6 +4478,24 @@ export const productsControllerSubscribeToStockAlert = <
     unknown,
     ThrowOnError
   >({ url: "/api/products/{id}/stock-alert", ...options });
+
+export const adminProductModerationControllerDecide = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminProductModerationControllerDecideData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminProductModerationControllerDecideResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/catalogue/{id}/moderation",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const categoriesControllerRemove = <
   ThrowOnError extends boolean = false,

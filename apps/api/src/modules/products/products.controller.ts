@@ -33,7 +33,7 @@ import {
   updateProductSchema,
 } from './contracts/product.contract'
 import { PromotionAuthor } from './entities/product-promotion.entity'
-import { ProductStatus } from './entities/product.entity'
+import { ProductModeration, ProductStatus } from './entities/product.entity'
 import { ProductMapper } from './products.mapper'
 import { ProductsService } from './products.service'
 import { PromotionsService } from './promotions.service'
@@ -127,6 +127,7 @@ export class ProductsController {
       && product.supplier.user?.id === session.user.id
     const isWithdrawn = product.supplier.validationStatus === ValidationStatus.SUSPENDED
       || product.status === ProductStatus.HIDDEN
+      || product.moderationStatus !== ProductModeration.APPROVED
     if (isWithdrawn && !isOwner) {
       throw new NotFoundException('Product not found')
     }

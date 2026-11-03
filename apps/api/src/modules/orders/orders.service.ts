@@ -29,7 +29,7 @@ import { Checkout } from '../payments/entities/checkout.entity'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { ProductPromotion, PromotionType } from '../products/entities/product-promotion.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
-import { Product } from '../products/entities/product.entity'
+import { Product, ProductModeration, ProductStatus } from '../products/entities/product.entity'
 import { PromotionsService } from '../products/promotions.service'
 import { PromoCode } from '../promo-codes/entities/promo-code.entity'
 import { PromoCodesService } from '../promo-codes/promo-codes.service'
@@ -1154,6 +1154,11 @@ export class OrdersService {
       const product = productMap.get(item.productId)
       if (!product) {
         throw new NotFoundException(`Product ${item.productId} not found`)
+      }
+      // Off the apps for buyers — withdrawn by its shop or by eBio, or still
+      // waiting for review — so not orderable from an old basket either.
+      if (product.status === ProductStatus.HIDDEN || product.moderationStatus !== ProductModeration.APPROVED) {
+        throw new BadRequestException(`${product.name} n’est plus disponible`)
       }
       const variant = item.variantId
         ? await this.em.findOne(ProductVariant, { id: item.variantId, product: { id: product.id } })

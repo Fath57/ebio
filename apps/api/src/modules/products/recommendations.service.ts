@@ -68,7 +68,7 @@ export class RecommendationsService {
        LEFT JOIN together t ON t.product_id = p.id
        LEFT JOIN sales sa ON sa.product_id = p.id
        WHERE p.supplier_id = ?
-         AND p.status = 'ACTIVE' AND p.stock > 0
+         AND p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED' AND p.stock > 0
          AND p.id NOT IN (SELECT product_id FROM basket)
        ORDER BY co_score DESC, has_promo DESC, sales DESC, p."createdAt" DESC
        LIMIT ?`,

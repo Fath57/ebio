@@ -107,6 +107,25 @@ export const zEscrowRelease = z.object({
 });
 
 /**
+ * NewProductSettings
+ *
+ * Validation préalable des nouveaux produits et adresses prévenues par e-mail
+ */
+export const zNewProductSettings = z.object({
+  validationRequise: z.boolean(),
+  emailsAlerte: z
+    .array(
+      z
+        .email()
+        .max(254)
+        .regex(
+          /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+        ),
+    )
+    .max(20),
+});
+
+/**
  * CartSync
  *
  * Le panier tel que l'application le détient
@@ -581,6 +600,16 @@ export const zUpdateCertification = z.object({
   logoUrl: z.optional(z.union([z.url().max(2000), z.null()])),
   isActive: z.optional(z.boolean()).default(true),
   sortOrder: z.optional(z.int().gte(0).lte(9007199254740991)).default(0),
+});
+
+/**
+ * ProductModerationAction
+ *
+ * Valider, refuser, retirer ou remettre en ligne un produit
+ */
+export const zProductModerationAction = z.object({
+  action: z.enum(["approve", "reject", "withdraw", "restore"]),
+  reason: z.optional(z.string().max(500)),
 });
 
 /**
@@ -2980,7 +3009,7 @@ export const zSearchProductsQuery = z.object({
       )
       .max(200),
   ),
-  sortBy: z.enum(["distance", "rating", "price"]),
+  sortBy: z.enum(["distance", "rating", "price", "newest"]),
   page: z.number().default(1),
   limit: z.number().lte(50).default(20),
 });
@@ -4508,7 +4537,7 @@ export const zSearchControllerSearchProductsData = z.object({
         )
         .max(200),
     ),
-    sortBy: z.enum(["distance", "rating", "price"]),
+    sortBy: z.enum(["distance", "rating", "price", "newest"]),
     page: z.number().default(1),
     limit: z.number().lte(50).default(20),
   }),
@@ -4853,6 +4882,30 @@ export const zAdminEscrowReleaseControllerUpdateData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminNewProductSettingsControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminNewProductSettingsControllerUpdateData = z.object({
+  body: z.object({
+    validationRequise: z.boolean(),
+    emailsAlerte: z
+      .array(
+        z
+          .email()
+          .max(254)
+          .regex(
+            /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+          ),
+      )
+      .max(20),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -5126,6 +5179,14 @@ export const zSalesPointsControllerUpdateData = z.object({
   }),
   query: z.optional(z.never()),
 });
+
+export const zUsersControllerDeleteMeData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zUsersControllerDeleteMeResponse = z.void();
 
 export const zUsersControllerGetMeData = z.object({
   body: z.optional(z.never()),
@@ -7301,6 +7362,17 @@ export const zProductsControllerSubscribeToStockAlertData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminProductModerationControllerDecideData = z.object({
+  body: z.object({
+    action: z.enum(["approve", "reject", "withdraw", "restore"]),
+    reason: z.optional(z.string().max(500)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zCategoriesControllerRemoveData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -8886,6 +8958,7 @@ export const zAdminControllerGetCatalogueData = z.object({
     supplierId: z.string(),
     categoryId: z.string(),
     status: z.string(),
+    moderation: z.string(),
     stock: z.string(),
     promo: z.string(),
     minPrice: z.string(),

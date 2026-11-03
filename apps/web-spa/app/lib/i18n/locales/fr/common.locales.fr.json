@@ -866,7 +866,8 @@
           "supplierValidations": "Validations fournisseurs",
           "courierApplications": "Candidatures livreurs",
           "withdrawals": "Reversements en attente",
-          "disputes": "Litiges"
+          "disputes": "Litiges",
+          "productReviews": "Produits à valider"
         }
       },
       "activityTitle": "Activité",
@@ -1110,7 +1111,10 @@
           "SHOP_CONTACT_ONLY": "La boutique est en mise en relation : le produit se voit mais ne se commande pas.",
           "PRODUCT_HIDDEN": "Le produit est masqué.",
           "OUT_OF_STOCK": "Le produit est en rupture de stock.",
-          "NO_PHOTO": "Le produit n'a pas de photo."
+          "NO_PHOTO": "Le produit n'a pas de photo.",
+          "PENDING_REVIEW": "Le produit attend la validation d'eBio.",
+          "REJECTED": "Le produit a été refusé par eBio.",
+          "WITHDRAWN": "Le produit a été retiré de l'app par eBio."
         },
         "photo": "Photo {{index}}",
         "unitsSold": "Unités vendues",
@@ -1135,6 +1139,47 @@
         "recentOrders": "Dernières commandes",
         "noOrders": "Aucune commande pour ce produit.",
         "unit": "unité"
+      },
+      "moderation": {
+        "state": {
+          "APPROVED": "Validé par eBio : visible des acheteurs si la boutique le met en vente.",
+          "PENDING": "En attente de validation : invisible des acheteurs pour l'instant.",
+          "REJECTED": "Refusé : la boutique peut le corriger, il reviendra alors en attente.",
+          "WITHDRAWN": "Retiré de l'app par eBio : invisible des acheteurs."
+        },
+        "reasonShown": "Motif transmis à la boutique : {{reason}}",
+        "actions": {
+          "approve": "Valider",
+          "reject": "Refuser",
+          "withdraw": "Retirer de l'app",
+          "restore": "Remettre en ligne"
+        },
+        "dialog": {
+          "reject": {
+            "title": "Refuser « {{name}} »",
+            "description": "Le produit reste invisible. La boutique reçoit le motif et peut corriger le produit pour le soumettre à nouveau."
+          },
+          "withdraw": {
+            "title": "Retirer « {{name}} » de l'app",
+            "description": "Le produit disparaît aussitôt des recherches, des pages boutique et des paniers. La boutique reçoit le motif. Vous pourrez le remettre en ligne."
+          }
+        },
+        "reasonLabel": "Motif",
+        "reasonPlaceholder": "Ex. : photo qui ne montre pas le produit, prix incohérent, produit non bio…",
+        "error": "La décision n'a pas été enregistrée. Réessayez.",
+        "badge": {
+          "PENDING": "À valider",
+          "REJECTED": "Refusé",
+          "WITHDRAWN": "Retiré par eBio"
+        },
+        "filterLabel": "Validation eBio",
+        "allLabel": "Toutes validations",
+        "filter": {
+          "APPROVED": "Validés",
+          "PENDING": "À valider",
+          "REJECTED": "Refusés",
+          "WITHDRAWN": "Retirés par eBio"
+        }
       }
     },
     "promotions": {
@@ -1496,6 +1541,19 @@
         "hint": "Entre 20 et 600 secondes. Appliqué aux prochaines offres.",
         "saved": "Délai enregistré",
         "error": "Impossible d'enregistrer le délai. Réessayez."
+      },
+      "newProducts": {
+        "title": "Nouveaux produits",
+        "description": "Ce qui se passe quand une boutique ajoute un produit : vérifié par eBio avant d'être visible ou non, et qui en est prévenu par e-mail.",
+        "validationLabel": "Valider les nouveaux produits avant leur mise en ligne",
+        "validationOn": "Activé : un nouveau produit reste invisible des acheteurs jusqu'à sa validation dans Produits. La boutique est prévenue de la décision.",
+        "validationOff": "Désactivé : un nouveau produit est visible des acheteurs dès son enregistrement. Il peut toujours être retiré ensuite.",
+        "emailsLabel": "Adresses prévenues de chaque nouveau produit",
+        "emailsHint": "Une adresse par ligne, 20 au plus. Laisser vide pour n'envoyer aucun e-mail.",
+        "invalidEmail": "Une des adresses n'est pas valide.",
+        "tooMany": "20 adresses au plus.",
+        "saved": "Enregistré.",
+        "error": "Le changement n'a pas été enregistré."
       }
     },
     "site": {
