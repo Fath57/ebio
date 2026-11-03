@@ -13,6 +13,7 @@ import {
 } from 'react-native'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { CAN_SELL_ADS_IN_APP } from '../../../utils/store-policy'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 
@@ -96,33 +97,38 @@ export function SupplierSettingsScreen({
           <ChevronRight size={18} color={semantic.textTertiary} />
         </TouchableOpacity>
 
-        <View style={styles.menuDivider} />
+        {/* Paid ads stay off the iPhone app — see store-policy. */}
+        {CAN_SELL_ADS_IN_APP && (
+          <>
+            <View style={styles.menuDivider} />
 
-        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToBannerRequests} activeOpacity={0.6}>
-          <View style={[styles.menuIcon, { backgroundColor: colors.green[50] }]}>
-            <Megaphone size={18} color={colors.green[600]} />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Ma publicité</Text>
-            <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Bannière en page d'accueil client</Text>
-          </View>
-          <ChevronRight size={18} color={semantic.textTertiary} />
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToBannerRequests} activeOpacity={0.6}>
+              <View style={[styles.menuIcon, { backgroundColor: colors.green[50] }]}>
+                <Megaphone size={18} color={colors.green[600]} />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Ma publicité</Text>
+                <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>Bannière en page d'accueil client</Text>
+              </View>
+              <ChevronRight size={18} color={semantic.textTertiary} />
+            </TouchableOpacity>
 
-        <View style={styles.menuDivider} />
+            <View style={styles.menuDivider} />
 
-        <TouchableOpacity style={styles.menuItem} onPress={onNavigateToAnnouncementRequest} activeOpacity={0.6}>
-          <View style={[styles.menuIcon, { backgroundColor: colors.earth[50] }]}>
-            <Megaphone size={18} color={colors.earth[600]} />
-          </View>
-          <View style={styles.menuTextContainer}>
-            <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Mon annonce</Text>
-            <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>
-              À l'ouverture de l'application, une fois par jour
-            </Text>
-          </View>
-          <ChevronRight size={18} color={semantic.textTertiary} />
-        </TouchableOpacity>
+            <TouchableOpacity style={styles.menuItem} onPress={onNavigateToAnnouncementRequest} activeOpacity={0.6}>
+              <View style={[styles.menuIcon, { backgroundColor: colors.earth[50] }]}>
+                <Megaphone size={18} color={colors.earth[600]} />
+              </View>
+              <View style={styles.menuTextContainer}>
+                <Text style={[styles.menuLabel, { color: semantic.textPrimary }]}>Mon annonce</Text>
+                <Text style={[styles.menuSublabel, { color: semantic.textTertiary }]}>
+                  À l'ouverture de l'application, une fois par jour
+                </Text>
+              </View>
+              <ChevronRight size={18} color={semantic.textTertiary} />
+            </TouchableOpacity>
+          </>
+        )}
 
       </View>
     </ScrollView>
