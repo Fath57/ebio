@@ -184,7 +184,8 @@
         "releaseStatus": "completed"
       },
       "ios": {
-        "appleTeamId": "784296T6FJ"
+        "appleTeamId": "784296T6FJ",
+        "ascAppId": "6830140598"
       }
     },
     "production-supplier": {
@@ -194,7 +195,8 @@
         "releaseStatus": "completed"
       },
       "ios": {
-        "appleTeamId": "784296T6FJ"
+        "appleTeamId": "784296T6FJ",
+        "ascAppId": "6830140874"
       }
     },
     "production-courier": {
@@ -232,7 +234,8 @@
         "releaseStatus": "completed"
       },
       "ios": {
-        "appleTeamId": "784296T6FJ"
+        "appleTeamId": "784296T6FJ",
+        "ascAppId": "6830140598"
       }
     },
     "store-supplier": {
@@ -242,7 +245,8 @@
         "releaseStatus": "completed"
       },
       "ios": {
-        "appleTeamId": "784296T6FJ"
+        "appleTeamId": "784296T6FJ",
+        "ascAppId": "6830140874"
       }
     }
   }
