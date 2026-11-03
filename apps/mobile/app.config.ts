@@ -210,6 +210,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // Keeps Kotlin and Java on the same JVM target; without it any library
       // that does not pin one fails the build outright.
       './plugins/with-kotlin-jvm-target',
+      './plugins/with-ios-modular-headers',
       'expo-dev-client',
       // Required by expo-localization since it was aligned on SDK 54; PostHog
       // reads the locale through it.
