@@ -86,7 +86,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
           <div className="mx-auto grid max-w-6xl items-center gap-12 px-5 py-16 md:grid-cols-[1.05fr_1fr] md:py-24">
             <div>
               <p className="eyebrow text-earth-600">{content.hero.eyebrow}</p>
-              <h1 className="mt-5 font-display text-[2.6rem] leading-[1.05] text-ink md:text-[3.9rem]">
+              <h1 className="mt-5 font-display text-[2.6rem] leading-[1.05] text-green-600 md:text-[3.9rem]">
                 {highlightIndex >= 0
                   ? (
                       <>

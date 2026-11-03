@@ -29,7 +29,8 @@ const MAX_PER_SHOP = 2
  * Real products from validated shops, for the landing's showcase.
  *
  * Read through the public search, which already filters out withdrawn
- * products and suspended shops. Like the editable content, a failing API
+ * products and suspended shops, newest first: the showcase is where a
+ * returning visitor looks for what has just arrived. Like the editable content, a failing API
  * must never break the page: the section simply disappears.
  */
 export async function fetchFeaturedProducts(): Promise<FeaturedProduct[]> {
@@ -37,7 +38,7 @@ export async function fetchFeaturedProducts(): Promise<FeaturedProduct[]> {
   const signal = AbortSignal.timeout(3000)
   try {
     const [searchRes, unitsRes] = await Promise.all([
-      fetch(`${base}/api/search/products?validatedOnly=true&sortBy=rating&limit=50`, { signal }),
+      fetch(`${base}/api/search/products?validatedOnly=true&sortBy=newest&limit=50`, { signal }),
       fetch(`${base}/api/product-units/active`, { signal }),
     ])
     if (!searchRes.ok) {
@@ -57,7 +58,7 @@ export async function fetchFeaturedProducts(): Promise<FeaturedProduct[]> {
 }
 
 /**
- * Keeps the search order but caps each shop, so the showcase reads as a
+ * Keeps the search order (newest first) but caps each shop, so the showcase reads as a
  * market rather than one shop's catalogue.
  */
 function pickVaried(results: SearchResult[]): SearchResult[] {
