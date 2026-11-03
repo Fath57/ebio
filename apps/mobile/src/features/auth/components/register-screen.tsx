@@ -19,6 +19,7 @@ import {
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import {
+  isGoogleSignInAvailable,
   notifyAuthChange,
   registerWithEmailOtp,
   registerWithToken,
@@ -31,6 +32,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { APP_VARIANT, BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { AppleSignInButton } from './apple-sign-in-button'
 import { GoogleSignInButton } from './google-sign-in-button'
 import { OtpInput, ResendTimer } from './otp-input'
 
@@ -344,15 +346,24 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
 
               <View
                 pointerEvents={acceptedTerms ? 'auto' : 'none'}
-                style={!acceptedTerms && styles.submitButtonDisabled}
+                style={[styles.socialButtons, !acceptedTerms && styles.submitButtonDisabled]}
               >
-                <GoogleSignInButton
-                  label="S'inscrire avec Google"
+                <AppleSignInButton
+                  mode="signUp"
                   onSuccess={() => {
                     void finishRegistration()
                   }}
                   onError={setError}
                 />
+                {isGoogleSignInAvailable && (
+                  <GoogleSignInButton
+                    label="S'inscrire avec Google"
+                    onSuccess={() => {
+                      void finishRegistration()
+                    }}
+                    onError={setError}
+                  />
+                )}
               </View>
             </>
           )}
@@ -613,6 +624,7 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.bodyL, marginBottom: spacing[5] },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
+  socialButtons: { gap: spacing[3] },
   dividerLine: { flex: 1, height: 1 },
   dividerText: { ...typography.caption },
 

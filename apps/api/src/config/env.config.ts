@@ -51,6 +51,8 @@ export const configValidationSchema = z.object({
   TRUSTED_ORIGINS: z.string().transform(val => val.split(',')),
   GOOGLE_OAUTH_CLIENT_ID: z.string().optional(),
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
+  // Sign in with Apple: comma-separated bundle ids of the iOS apps.
+  APPLE_BUNDLE_IDS: z.string().default('com.ebio.mobile,com.ebio.supplier'),
   GOOGLE_MAPS_API_KEY: z.string().optional(), // Places : suggestions de villes
 
   // Clients
@@ -196,6 +198,15 @@ export const configValidationSchema = z.object({
   // an older app files a push on an unknown channel under a generic one.
   PUSH_CUSTOM_SOUNDS: z.stringbool().default(false),
 
+  // Apple Push Notification service — iOS tokens are APNs tokens, which FCM
+  // cannot address without the Firebase SDK in the app. Key from
+  // developer.apple.com → Keys (.p8), PEM content with \n escapes.
+  APNS_KEY_ID: z.string().optional(),
+  APNS_TEAM_ID: z.string().optional(),
+  APNS_PRIVATE_KEY: z.string().optional(),
+  // false for builds signed with a development profile (dev client).
+  APNS_PRODUCTION: z.stringbool().default(true),
+
   // JWT
   // Signs the chat, OTP and assistant tokens: a known default would let anyone
   // forge them, so production must bring its own.
@@ -246,6 +257,7 @@ export const config = {
       clientId: configParsed.data.GOOGLE_OAUTH_CLIENT_ID,
       clientSecret: configParsed.data.GOOGLE_OAUTH_CLIENT_SECRET,
     },
+    appleBundleIds: configParsed.data.APPLE_BUNDLE_IDS.split(',').map(id => id.trim()).filter(Boolean),
   },
   database: {
     password: configParsed.data.DATABASE_PASSWORD,
@@ -352,6 +364,12 @@ export const config = {
     clientEmail: configParsed.data.FCM_CLIENT_EMAIL,
     privateKey: configParsed.data.FCM_PRIVATE_KEY?.replace(/\\n/g, '\n'),
     customSounds: configParsed.data.PUSH_CUSTOM_SOUNDS,
+  },
+  apns: {
+    keyId: configParsed.data.APNS_KEY_ID,
+    teamId: configParsed.data.APNS_TEAM_ID,
+    privateKey: configParsed.data.APNS_PRIVATE_KEY?.replace(/\\n/g, '\n'),
+    production: configParsed.data.APNS_PRODUCTION,
   },
   jwt: {
     secret: configParsed.data.JWT_SECRET,

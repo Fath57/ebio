@@ -9,6 +9,21 @@ type AppVariant = 'client' | 'supplier' | 'courier'
 
 const GOOGLE_MAPS_API_KEY = 'AIzaSyCORM4EfahnboCw0KbkZsazcAzuFnV30pY'
 
+const MICROPHONE_PERMISSION = 'eBio utilise le micro pour enregistrer vos notes vocales dans la messagerie.'
+
+/**
+ * Google Sign-In on iOS answers on the reversed iOS client id as URL scheme.
+ * The id comes from the build profile, one per bundle id; without it the
+ * button is hidden on iOS and the placeholder only keeps prebuild happy.
+ */
+function googleIosUrlScheme(): string {
+  const clientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID ?? ''
+  const prefix = clientId.replace(/\.apps\.googleusercontent\.com$/, '')
+  return prefix
+    ? `com.googleusercontent.apps.${prefix}`
+    : 'com.googleusercontent.apps.not-configured'
+}
+
 interface VariantConfig {
   name: string
   androidPackage: string
@@ -116,11 +131,20 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       backgroundColor: '#ffffff',
     },
     ios: {
-      supportsTablet: true,
+      // iPhone only: an iPad build must be reviewed — and screenshotted — on
+      // iPad too, for layouts never designed for it.
+      supportsTablet: false,
       bundleIdentifier: v.androidPackage,
-      googleServicesFile: './GoogleService-Info.plist',
+      // Required by the App Store whenever Google sign-in is offered.
+      usesAppleSignIn: true,
+      // No Firebase on iOS: pushes go to APNs straight from the API.
       config: {
         googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+      },
+      infoPlist: {
+        // Only HTTPS and the system's own crypto: exempt, which spares the
+        // export compliance question on every TestFlight upload.
+        ITSAppUsesNonExemptEncryption: false,
       },
     },
     android: {
@@ -198,11 +222,28 @@ export default ({ config }: ConfigContext): ExpoConfig => {
             : 'eBio utilise votre position pour afficher les produits et fournisseurs bio près de vous.',
         },
       ],
-      'expo-local-authentication',
+      [
+        'expo-local-authentication',
+        {
+          faceIDPermission: 'eBio utilise Face ID pour vous reconnecter sans saisir votre mot de passe.',
+        },
+      ],
+      [
+        'expo-image-picker',
+        {
+          photosPermission: 'eBio accède à vos photos pour ajouter une image à votre profil, à vos produits ou à vos messages.',
+          cameraPermission: 'eBio utilise l\'appareil photo pour photographier vos produits, votre profil ou un document à joindre.',
+          // Same text as expo-audio's: whichever plugin runs last writes it.
+          // Never `false` — that strips RECORD_AUDIO on Android and kills
+          // voice notes.
+          microphonePermission: MICROPHONE_PERMISSION,
+        },
+      ],
+      'expo-apple-authentication',
       [
         'expo-audio',
         {
-          microphonePermission: 'eBio utilise le micro pour enregistrer vos notes vocales dans la messagerie.',
+          microphonePermission: MICROPHONE_PERMISSION,
         },
       ],
       // Custom ringtones for what must not be missed: a new order (shop) and
@@ -215,7 +256,7 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       [
         '@react-native-google-signin/google-signin',
         {
-          iosUrlScheme: 'com.googleusercontent.apps.REPLACE_WITH_REVERSED_IOS_CLIENT_ID',
+          iosUrlScheme: googleIosUrlScheme(),
         },
       ],
     ],

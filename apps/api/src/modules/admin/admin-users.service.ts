@@ -12,7 +12,7 @@ export interface AdminUserDetail {
   phone: string | null
   role: UserRole
   staffRole: { id: string, name: string } | null
-  status: 'ACTIVE' | 'SUSPENDED' | 'BANNED'
+  status: 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'DELETED'
   /** Effective standing: an expired suspension reads as active. */
   isBlocked: boolean
   statusReason: string | null

@@ -16,13 +16,14 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { notifyAuthChange, signInWithEmail } from '../../../lib/auth-client'
+import { isGoogleSignInAvailable, notifyAuthChange, signInWithEmail } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { hasBiometricSecret, signInWithBiometrics } from '../hooks/use-biometric-auth'
+import { AppleSignInButton } from './apple-sign-in-button'
 import { GoogleSignInButton } from './google-sign-in-button'
 
 interface LoginScreenProps {
@@ -380,13 +381,24 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
             <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
           </View>
 
-          <GoogleSignInButton
-            onSuccess={() => {
-              notifyAuthChange()
-              onLoginSuccess()
-            }}
-            onError={setError}
-          />
+          <View style={styles.socialButtons}>
+            <AppleSignInButton
+              onSuccess={() => {
+                notifyAuthChange()
+                onLoginSuccess()
+              }}
+              onError={setError}
+            />
+            {isGoogleSignInAvailable && (
+              <GoogleSignInButton
+                onSuccess={() => {
+                  notifyAuthChange()
+                  onLoginSuccess()
+                }}
+                onError={setError}
+              />
+            )}
+          </View>
 
         </View>
       </ScrollView>
@@ -416,6 +428,7 @@ const styles = StyleSheet.create({
   subtitle: { ...typography.bodyL, marginBottom: spacing[6] },
 
   dividerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing[3] },
+  socialButtons: { gap: spacing[3] },
   dividerLine: { flex: 1, height: 1 },
   dividerText: { ...typography.caption },
 

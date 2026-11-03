@@ -3,6 +3,7 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common'
 import * as admin from 'firebase-admin'
 import { config } from '../../config/env.config'
+import { ApnsService } from './apns.service'
 
 /** Per-message tuning for time-sensitive or collapsible pushes. */
 export interface PushOptions {
@@ -29,7 +30,10 @@ export class FcmService implements OnModuleInit {
   private readonly logger = new Logger(FcmService.name)
   private initialized = false
 
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    private readonly apns: ApnsService,
+  ) {}
 
   onModuleInit() {
     if (!config.fcm.projectId || !config.fcm.clientEmail || !config.fcm.privateKey) {
@@ -67,6 +71,12 @@ export class FcmService implements OnModuleInit {
     data?: Record<string, string>,
     options?: PushOptions,
   ): Promise<boolean> {
+    // iOS registers its native APNs token: it goes to Apple directly, every
+    // caller keeps handing over a flat list of tokens.
+    if (ApnsService.isApnsToken(token)) {
+      return this.apns.send(token, title, body, data, options)
+    }
+
     if (!this.initialized) {
       this.logger.warn('FCM not initialized — skipping push')
       return false
@@ -143,7 +153,7 @@ export class FcmService implements OnModuleInit {
     data?: Record<string, string>,
     options?: PushOptions,
   ): Promise<{ success: number, failure: number }> {
-    if (!this.initialized || tokens.length === 0) {
+    if (tokens.length === 0 || (!this.initialized && !this.apns.enabled)) {
       return { success: 0, failure: 0 }
     }
 

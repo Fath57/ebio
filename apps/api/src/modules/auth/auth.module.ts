@@ -56,6 +56,7 @@ import { OtpAuthService } from './otp-auth.service'
           trustedOrigins: config.betterAuth.trustedOrigins,
           googleClientId: config.betterAuth.google.clientId,
           googleClientSecret: config.betterAuth.google.clientSecret,
+          appleBundleIds: config.betterAuth.appleBundleIds,
           connectionStringUrl: config.database.connectionStringUrl,
           sendResetPassword: async (data) => {
             const resetUrl = `${config.clients.webApp.url}/reset-password?token=${data.token}`

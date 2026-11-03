@@ -24,7 +24,9 @@ export enum UserRole {
  * Plain string column on purpose: no CHECK constraint to migrate when a
  * value is added.
  */
-export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED'
+// DELETED: the owner closed the account; the row stays for the accounting
+// records, with every personal field wiped (see AccountDeletionService).
+export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'DELETED'
 
 @Entity({ tableName: 'users' })
 export class User {
@@ -129,7 +131,7 @@ export class User {
 
   /** A suspension past its end date no longer blocks anything. */
   isBlocked(): boolean {
-    if (this.status === 'BANNED')
+    if (this.status === 'BANNED' || this.status === 'DELETED')
       return true
     if (this.status === 'SUSPENDED')
       return !this.suspendedUntil || this.suspendedUntil.getTime() > Date.now()

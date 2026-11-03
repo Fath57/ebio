@@ -1,5 +1,5 @@
 import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
-import { openAPI } from 'better-auth/plugins'
+import { bearer, openAPI } from 'better-auth/plugins'
 import { Pool } from 'pg'
 
 interface BetterAuthOptionsDynamic {
@@ -20,6 +20,8 @@ interface BetterAuthOptionsDynamic {
   baseUrl: string
   googleClientId?: string
   googleClientSecret?: string
+  /** Bundle identifiers of the iOS apps allowed to sign in with Apple. */
+  appleBundleIds: string[]
 }
 
 // We should use this, but sadly we do not have our custom fields in the session object (only the plugin added fields)
@@ -65,14 +67,29 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
         return options?.sendResetPassword?.(data, request)
       },
     },
-    socialProviders: options.googleClientId && options.googleClientSecret
-      ? {
-          google: {
-            clientId: options.googleClientId,
-            clientSecret: options.googleClientSecret,
-          },
-        }
-      : undefined,
+    socialProviders: {
+      ...(options.googleClientId && options.googleClientSecret
+        ? {
+            google: {
+              clientId: options.googleClientId,
+              clientSecret: options.googleClientSecret,
+            },
+          }
+        : {}),
+      // Native Sign in with Apple only: the app hands over the identity token
+      // and Better Auth checks it against Apple's keys, with the bundle id as
+      // audience. No secret is involved — that one only serves the web
+      // redirect flow, which the apps never use.
+      ...(options.appleBundleIds.length > 0
+        ? {
+            apple: {
+              clientId: options.appleBundleIds[0]!,
+              clientSecret: '',
+              audience: options.appleBundleIds,
+            },
+          }
+        : {}),
+    },
     emailVerification: {
       sendOnSignUp: true,
       expiresIn: 60 * 60 * 24 * 10, // 10 days
@@ -134,6 +151,11 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
     },
     plugins: [
       openAPI(),
+      // iOS does not hand the Set-Cookie header to JavaScript, so the app
+      // only ever sees the bare session token from the response body. This
+      // plugin accepts that token as `Authorization: Bearer` and returns the
+      // signed one in a readable `set-auth-token` header.
+      bearer(),
     ],
 
   } satisfies BetterAuthOptions

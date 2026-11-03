@@ -1,11 +1,12 @@
 import type { AuthenticatedRequest } from '../auth/auth.guard'
 import type { EmailChangeConfirm, EmailChangeRequest } from './contracts/user.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
-import { BadRequestException, ConflictException, Controller, Get, Post, Put, Req, UnauthorizedException, UseGuards } from '@nestjs/common'
+import { BadRequestException, ConflictException, Controller, Delete, Get, HttpCode, Post, Put, Req, UnauthorizedException, UseGuards } from '@nestjs/common'
 import { z } from 'zod'
 import { OtpService } from '../../common/otp.service'
 import { AuthGuard } from '../auth/auth.guard'
 import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
+import { AccountDeletionService } from './account-deletion.service'
 import { acceptTermsSchema, emailChangeConfirmSchema, emailChangeRequestSchema, updateUserSchema } from './contracts/user.contract'
 import { UserMapper } from './users.mapper'
 import { UsersService } from './users.service'
@@ -17,6 +18,7 @@ export class UsersController {
     private readonly usersService: UsersService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly otpService: OtpService,
+    private readonly accountDeletionService: AccountDeletionService,
   ) {}
 
   @Get('me')
@@ -24,6 +26,18 @@ export class UsersController {
     const user = await this.usersService.findById(req.session.user.id)
     const permissions = await this.caslAbilityFactory.listGrantedPermissions(user)
     return UserMapper.toResponse(user, permissions)
+  }
+
+  /**
+   * Deletes the signed-in account, as both stores require from inside the app.
+   *
+   * Refused with 409 while orders are open or a wallet holds money; the
+   * message says which, so the app can show it as is.
+   */
+  @Delete('me')
+  @HttpCode(204)
+  async deleteMe(@Req() req: AuthenticatedRequest): Promise<void> {
+    await this.accountDeletionService.deleteOwnAccount(req.session.user.id)
   }
 
   @Put('me')

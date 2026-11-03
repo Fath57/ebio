@@ -3,6 +3,7 @@ import Check from 'lucide-react-native/dist/esm/icons/check'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import Mail from 'lucide-react-native/dist/esm/icons/mail'
 import PhoneIcon from 'lucide-react-native/dist/esm/icons/phone'
+import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
 import { useEffect, useState } from 'react'
 import {
@@ -16,7 +17,7 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { notifyAuthChange } from '../../../lib/auth-client'
+import { deleteAccount, notifyAuthChange } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
@@ -50,6 +51,9 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
 
   /**
    * Changing the address, in two steps.
@@ -194,6 +198,19 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
     finally {
       setSaving(false)
     }
+  }
+
+  async function handleDeleteAccount() {
+    setShowDeleteConfirm(false)
+    setDeleting(true)
+    setDeleteError(null)
+    const result = await deleteAccount()
+    setDeleting(false)
+    if (result.error) {
+      setDeleteError(result.error)
+      return
+    }
+    onGoBack()
   }
 
   if (loading) {
@@ -370,7 +387,47 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
                 <Text style={styles.saveButtonText}>Enregistrer</Text>
               )}
         </Pressable>
+
+        {/* Account deletion — required in-app by both stores. Kept quiet and
+            last: it must be findable, not inviting. */}
+        <View style={styles.deleteSection}>
+          {deleteError && (
+            <Text style={styles.deleteError}>{deleteError}</Text>
+          )}
+          <Pressable
+            style={({ pressed }) => [styles.deleteButton, { opacity: pressed || deleting ? 0.6 : 1 }]}
+            onPress={() => setShowDeleteConfirm(true)}
+            disabled={deleting}
+            accessibilityRole="button"
+          >
+            {deleting
+              ? (
+                  <ActivityIndicator color={colors.coral[600]} size="small" />
+                )
+              : (
+                  <>
+                    <Trash2 size={18} color={colors.coral[600]} strokeWidth={1.8} />
+                    <Text style={styles.deleteButtonText}>Supprimer mon compte</Text>
+                  </>
+                )}
+          </Pressable>
+        </View>
       </ScrollView>
+
+      <ConfirmModal
+        visible={showDeleteConfirm}
+        icon={Trash2}
+        iconColor={colors.coral[600]}
+        iconBg={colors.coral[50]}
+        title="Supprimer votre compte ?"
+        message="Vos informations personnelles seront effacées et vous ne pourrez plus vous connecter avec ce compte. Vos commandes passées restent archivées pour la comptabilité. Cette action est définitive."
+        confirmLabel="Supprimer"
+        confirmStyle="destructive"
+        onConfirm={() => {
+          void handleDeleteAccount()
+        }}
+        onCancel={() => setShowDeleteConfirm(false)}
+      />
 
       <ConfirmModal
         visible={showSuccess}
@@ -490,4 +547,16 @@ const styles = StyleSheet.create({
   },
   saveButtonDisabled: { opacity: 0.6 },
   saveButtonText: { ...typography.h3, color: colors.neutral[0] },
+
+  deleteSection: { alignItems: 'center', marginTop: spacing[10], gap: spacing[2] },
+  deleteButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    paddingHorizontal: spacing[4],
+  },
+  deleteButtonText: { fontFamily: fonts.sansSb, fontSize: 15, color: colors.coral[600] },
+  deleteError: { ...typography.bodyS, color: colors.coral[600], textAlign: 'center' },
 })
