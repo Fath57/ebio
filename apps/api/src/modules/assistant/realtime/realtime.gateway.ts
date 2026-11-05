@@ -67,16 +67,25 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
       const token = client.handshake.auth.token as string | undefined
         ?? client.handshake.headers.authorization?.replace('Bearer ', '')
       if (!token) {
+        this.logger.warn('Voix refusée — aucun jeton')
         client.disconnect()
         return
       }
 
       const payload = await verifyAccountToken(this.em.fork(), token)
       client.data.userId = payload.sub
+      // Told apart here because the phone's platform is often what explains a
+      // microphone that behaves differently.
+      this.logger.log(
+        `Voix demandée par ${payload.sub} — ${client.handshake.headers['user-agent'] ?? 'client inconnu'}, `
+        + `transport ${client.conn.transport.name}`,
+      )
+      client.on('disconnect', reason => this.logger.log(`Téléphone de ${payload.sub} déconnecté — ${reason}`))
 
       // Checked here rather than at boot, like every other turn: closing her
       // from the back-office must cut the voice too.
       if (!await this.platformSettings.getAssistantEnabled()) {
+        this.logger.warn(`Voix refusée pour ${payload.sub} — assistante fermée`)
         client.emit('event', { type: 'error', message: 'L\'assistante est fermée pour le moment.' })
         client.disconnect()
         return
@@ -97,6 +106,11 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
 
       await session.open()
       client.data.session = session
+
+      this.logger.log(`Voix : ${client.data.waiting?.length ?? 0} message(s) reçu(s) pendant l'ouverture, rejoué(s)`)
+      if (!client.connected) {
+        this.logger.warn(`Téléphone de ${payload.sub} parti pendant l'ouverture de la ligne`)
+      }
 
       // Whatever arrived while we were opening is played back into the
       // session, in order, before anything new.
@@ -128,6 +142,7 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
         `Voix close pour ${client.data.userId} — ${heard.toFixed(1)} s entendues, `
         + `${spent.turns} tour(s), ${spent.audioOut} audio sortant, ${spent.usd.toFixed(4)} $`,
       )
+      this.logger.log(client.data.session?.summary())
     }
 
     // Closed on the way out, always: an open socket at the provider goes on

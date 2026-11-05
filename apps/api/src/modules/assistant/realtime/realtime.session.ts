@@ -1,5 +1,7 @@
 import type { AssistantTool, AssistantToolContext, RecordedToolCall } from '../tools/assistant-tool'
+import type { AudioLevel } from './realtime.audio-level'
 import type { RealtimeOutbound } from './realtime.contract'
+import { Buffer } from 'node:buffer'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Logger } from '@nestjs/common'
@@ -8,8 +10,12 @@ import { z } from 'zod'
 import { config } from '../../../config/env.config'
 import { isProviderRefusal, VOICE_UNAVAILABLE_MESSAGE } from '../provider-refusals'
 import { loadState } from '../tools/cart.tools'
+import { addLevels, EMPTY_LEVEL, formatDbfs, measureLevel, rmsDbfs, SILENCE_PEAK_DBFS, toDbfs } from './realtime.audio-level'
 
 const REALTIME_URL = 'wss://api.openai.com/v1/realtime?model=gpt-realtime'
+
+/** How much sound, in seconds, between two lines about the microphone's level. */
+const MIC_REPORT_EVERY_S = 5
 
 /** The token counts the provider reports at the end of each turn. */
 interface RealtimeUsage {
@@ -17,6 +23,12 @@ interface RealtimeUsage {
   output_tokens?: number
   input_token_details?: { text_tokens?: number, audio_tokens?: number, cached_tokens?: number }
   output_token_details?: { text_tokens?: number, audio_tokens?: number }
+}
+
+/** How the provider says a response ended. */
+interface RealtimeResponse {
+  status?: string
+  status_details?: unknown
 }
 
 /**
@@ -73,6 +85,7 @@ export class RealtimeSession {
       socket.once('open', () => resolve())
       socket.once('error', reject)
     })
+    this.trace(`Ligne fournisseur ouverte en ${Date.now() - this.openedAt} ms`)
 
     this.send({
       type: 'session.update',
@@ -112,6 +125,18 @@ export class RealtimeSession {
 
     socket.on('message', raw => this.receive(raw))
     socket.on('error', error => this.logger.error(`Socket temps réel — ${error}`))
+    // Without this, a line the provider hangs up looks like one that hears
+    // nothing: sends are dropped and no error is ever raised.
+    socket.on('close', (code, reason) => {
+      this.providerClose = `code ${code}`
+      const detail = `Ligne fournisseur fermée — code ${code}${reason.length > 0 ? `, ${reason.toString().slice(0, 200)}` : ''}`
+      if (this.closedByUs) {
+        this.trace(detail)
+      }
+      else {
+        this.logger.error(`[${this.traceId}] ${detail} (sans que nous l'ayons demandé)`)
+      }
+    })
   }
 
   /** A slice of what the microphone heard. */
@@ -120,10 +145,75 @@ export class RealtimeSession {
     // goes quiet looks identical to one that is working and hearing nothing,
     // and the two are fixed in opposite places.
     if (this.heardBytes === 0) {
-      this.logger.log(`Premier son du téléphone : ${base64.length} caractères`)
+      this.trace(`Premier son du téléphone : ${base64.length} caractères`)
     }
     this.heardBytes += (base64.length * 3) / 4
-    this.send({ type: 'input_audio_buffer.append', audio: base64 })
+
+    const level = measureLevel(Buffer.from(base64, 'base64'))
+    this.micWindow = addLevels(this.micWindow, level)
+    this.micPeak = Math.max(this.micPeak, level.peak)
+
+    this.micWindowSlices += 1
+    if (!this.send({ type: 'input_audio_buffer.append', audio: base64 })) {
+      this.slicesLost += 1
+      this.micWindowLost += 1
+    }
+    this.reportMicrophone()
+  }
+
+  /** Says, every few seconds of sound, how loud the microphone is and what was lost. */
+  private reportMicrophone(): void {
+    if (this.micWindow.samples < MIC_REPORT_EVERY_S * 24_000) {
+      return
+    }
+    this.trace(
+      `Micro — ${this.micWindowSlices} tranches, crête ${formatDbfs(toDbfs(this.micWindow.peak))}, `
+      + `moyenne ${formatDbfs(rmsDbfs(this.micWindow))}, ${this.micWindowLost} perdue(s)`,
+    )
+    this.micWindow = EMPTY_LEVEL
+    this.micWindowSlices = 0
+    this.micWindowLost = 0
+  }
+
+  /**
+   * Everything needed to tell where a conversation stopped, on one line.
+   *
+   * Written when the line closes. Only counts: what the buyer said stays out
+   * of the logs.
+   */
+  public summary(): string {
+    const events = [...this.eventCounts.entries()]
+      .map(([type, count]) => `${type}=${count}`)
+      .join(' ')
+
+    return `[${this.traceId}] Bilan — ${this.diagnosis()} | crête ${formatDbfs(toDbfs(this.micPeak))}, `
+      + `${this.slicesLost} tranche(s) perdue(s), ${this.speechStarts} parole(s) détectée(s), `
+      + `${this.transcriptions} transcription(s) dont ${this.transcriptionFailures} en échec, `
+      + `${this.responses} réponse(s) dont ${this.responseFailures} en échec, `
+      + `ligne fournisseur ${this.providerClose ?? 'ouverte'} | ${events}`
+  }
+
+  /** The first link of the chain that did not hold, from the microphone to the loudspeaker. */
+  private diagnosis(): string {
+    if (this.heardBytes === 0) {
+      return 'aucun son reçu du téléphone'
+    }
+    if (toDbfs(this.micPeak) < SILENCE_PEAK_DBFS) {
+      return 'son vide : le micro ne capte rien côté téléphone'
+    }
+    if (this.slicesLost > 0 && this.speechStarts === 0) {
+      return 'son perdu : ligne fournisseur fermée'
+    }
+    if (this.speechStarts === 0) {
+      return 'son présent, mais parole jamais détectée par le fournisseur'
+    }
+    if (this.responseFailures > 0 && this.responseFailures === this.responses) {
+      return 'réponses refusées par le fournisseur'
+    }
+    if (this.responses === 0) {
+      return 'parole détectée, mais aucune réponse du fournisseur'
+    }
+    return 'chaîne complète'
   }
 
   /** How long the microphone has been sending, in seconds of sound. */
@@ -147,6 +237,7 @@ export class RealtimeSession {
   }
 
   close(): void {
+    this.closedByUs = true
     this.socket?.close()
     this.socket = null
   }
@@ -178,6 +269,33 @@ export class RealtimeSession {
 
   /** What the microphone has sent, counted to tell silence from a dead line. */
   private heardBytes = 0
+
+  // ─── Trace ────────────────────────────────────────────────────────────────
+  private readonly openedAt = Date.now()
+  private micWindow: AudioLevel = EMPTY_LEVEL
+  private micWindowSlices = 0
+  private micWindowLost = 0
+  private micPeak = 0
+  private slicesLost = 0
+  private speechStarts = 0
+  private transcriptions = 0
+  private transcriptionFailures = 0
+  private responses = 0
+  private responseFailures = 0
+  private closedByUs = false
+  private providerClose: string | null = null
+  private speechStoppedAt: number | null = null
+  private readonly eventCounts = new Map<string, number>()
+
+  /** Ties a conversation's lines together when several people talk at once. */
+  private get traceId(): string {
+    return this.context.sessionId.slice(0, 8)
+  }
+
+  private trace(message: string): void {
+    const elapsed = ((Date.now() - this.openedAt) / 1000).toFixed(1)
+    this.logger.log(`[${this.traceId}] +${elapsed}s ${message}`)
+  }
 
   /**
    * The cart as last sent to the phone.
@@ -231,10 +349,13 @@ export class RealtimeSession {
     )
   }
 
-  private send(payload: unknown): void {
-    if (this.socket?.readyState === WebSocket.OPEN) {
-      this.socket.send(JSON.stringify(payload))
+  /** Returns whether it actually left: a closed line drops what it is given. */
+  private send(payload: unknown): boolean {
+    if (this.socket?.readyState !== WebSocket.OPEN) {
+      return false
     }
+    this.socket.send(JSON.stringify(payload))
+    return true
   }
 
   private receive(raw: WebSocket.RawData): void {
@@ -246,19 +367,47 @@ export class RealtimeSession {
       return
     }
 
+    this.eventCounts.set(event.type, (this.eventCounts.get(event.type) ?? 0) + 1)
+
     switch (event.type) {
+      case 'session.created':
+        this.trace('Session créée par le fournisseur')
+        break
+
+      // The provider's own account of the settings it accepted: a refusal
+      // arrives as an `error`, and this is what confirms the opposite.
+      case 'session.updated': {
+        const input = (event.session as {
+          audio?: { input?: { format?: { rate?: number }, turn_detection?: { type?: string } } }
+        } | undefined)?.audio?.input
+        this.trace(`Réglages acceptés — ${input?.format?.rate ?? '?'} Hz, détection ${input?.turn_detection?.type ?? 'aucune'}`)
+        break
+      }
+
       // The buyer has started talking. Said out loud so the phone can throw
       // away the sound still in its queue.
       case 'input_audio_buffer.speech_started':
+        this.speechStarts += 1
+        this.trace(`Parole détectée (n° ${this.speechStarts})`)
         this.speaking = false
         this.emit({ type: 'speaking' })
         break
 
       case 'input_audio_buffer.speech_stopped':
+        this.speechStoppedAt = Date.now()
+        this.trace('Fin de parole détectée')
         this.emit({ type: 'thinking' })
         break
 
+      case 'response.created':
+        this.trace('Réponse commencée')
+        break
+
       case 'response.output_audio.delta':
+        if (this.speechStoppedAt !== null) {
+          this.trace(`Premier son renvoyé, ${Date.now() - this.speechStoppedAt} ms après la fin de parole`)
+          this.speechStoppedAt = null
+        }
         this.speaking = true
         this.emit({ type: 'audio', chunk: event.delta as string })
         break
@@ -271,10 +420,20 @@ export class RealtimeSession {
       // transcription gets things wrong, and that has to be visible before it
       // becomes an order.
       case 'conversation.item.input_audio_transcription.completed':
+        this.transcriptions += 1
+        // The length only: what the buyer said stays out of the logs.
+        this.trace(`Transcription reçue — ${String(event.transcript ?? '').length} caractères`)
         this.emit({ type: 'heard', text: String(event.transcript ?? '') })
         break
 
+      case 'conversation.item.input_audio_transcription.failed':
+        this.transcriptions += 1
+        this.transcriptionFailures += 1
+        this.logger.error(`[${this.traceId}] Transcription en échec — ${JSON.stringify(event.error).slice(0, 300)}`)
+        break
+
       case 'response.function_call_arguments.done':
+        this.trace(`Outil demandé : ${String(event.name)}`)
         this.pending.set(event.call_id as string, {
           name: event.name as string,
           args: event.arguments as string,
@@ -283,6 +442,7 @@ export class RealtimeSession {
 
       case 'response.done':
         this.speaking = false
+        this.noteResponse(event.response as RealtimeResponse | undefined)
         this.account((event.response as { usage?: RealtimeUsage } | undefined)?.usage)
         void this.settle()
         break
@@ -304,6 +464,24 @@ export class RealtimeSession {
       default:
         break
     }
+  }
+
+  /**
+   * Writes down how a response ended.
+   *
+   * A provider refusal such as an exhausted quota can arrive here, as a failed
+   * response rather than an `error` event, and without any usage to account
+   * for: it would otherwise leave no trace at all.
+   */
+  private noteResponse(response: RealtimeResponse | undefined): void {
+    this.responses += 1
+    const status = response?.status ?? 'inconnu'
+    if (status === 'failed' || status === 'incomplete') {
+      this.responseFailures += 1
+      this.logger.error(`[${this.traceId}] Réponse ${status} — ${JSON.stringify(response?.status_details ?? null).slice(0, 300)}`)
+      return
+    }
+    this.trace(`Réponse terminée — ${status}`)
   }
 
   /**

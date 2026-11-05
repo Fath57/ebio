@@ -12,6 +12,9 @@ const REFUSAL_CODES = new Set([
   'rate_limit_exceeded',
   'invalid_api_key',
   'account_deactivated',
+  // Anthropic's names for a rejected key and for one lacking access.
+  'authentication_error',
+  'permission_error',
 ])
 
 /** What the buyer is told when the provider shuts the door on us. */
