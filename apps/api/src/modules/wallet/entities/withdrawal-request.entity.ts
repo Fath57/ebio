@@ -63,7 +63,9 @@ export class WithdrawalRequest {
   @Property({ fieldName: 'processed_by', type: 'uuid', nullable: true })
   processedBy?: string | null
 
-  @Property({ fieldName: 'processed_at', nullable: true })
+  // The union hides the type from reflection in the compiled build: without an
+  // explicit `type`, the column comes back as a string.
+  @Property({ fieldName: 'processed_at', type: 'Date', nullable: true })
   processedAt?: Date | null
 
   @Property({ fieldName: 'createdAt' })
