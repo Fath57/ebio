@@ -32,6 +32,7 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: '/admin/certifications', action: 'manage', subject: 'Certification' },
   { prefix: '/admin/bannieres', action: 'manage', subject: 'Banner' },
   { prefix: '/admin/fournisseurs', action: 'read', subject: 'Supplier' },
+  { prefix: '/admin/cartes-de-visite', action: 'read', subject: 'Supplier' },
   { prefix: '/admin/validations', action: 'read', subject: 'Supplier' },
   { prefix: '/admin/livreurs', action: 'read', subject: 'CourierProfile' },
   { prefix: '/admin/moderation', action: 'manage', subject: 'ContentReport' },

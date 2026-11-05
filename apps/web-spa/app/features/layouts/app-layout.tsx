@@ -26,6 +26,7 @@ import {
   Moon,
   Package,
   Percent,
+  QrCode,
   Ruler,
   Settings,
   Shield,
@@ -174,6 +175,7 @@ export default function AppLayout() {
       items: [
         { to: '/admin/fournisseurs', label: t('nav.suppliers'), icon: <Store className="h-4 w-4" />, permission: { action: 'read', subject: 'Supplier' } },
         { to: '/admin/validations', label: t('nav.validations'), icon: <CheckCircle className="h-4 w-4" />, permission: { action: 'read', subject: 'Supplier' } },
+        { to: '/admin/cartes-de-visite', label: t('nav.businessCards'), icon: <QrCode className="h-4 w-4" />, permission: { action: 'read', subject: 'Supplier' } },
         { to: '/admin/livreurs', label: t('nav.couriers'), icon: <Bike className="h-4 w-4" />, permission: { action: 'read', subject: 'CourierProfile' } },
       ],
     },

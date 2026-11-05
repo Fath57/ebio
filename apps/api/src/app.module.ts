@@ -17,6 +17,7 @@ import { AssistantModule } from './modules/assistant/assistant.module'
 import { AuthModule } from './modules/auth/auth.module'
 import { RolesModule } from './modules/auth/roles/roles.module'
 import { BannersModule } from './modules/banners/banners.module'
+import { BusinessCardsModule } from './modules/business-cards/business-cards.module'
 import { CampaignsModule } from './modules/campaigns/campaigns.module'
 import { CartModule } from './modules/cart/cart.module'
 import { ChatModule } from './modules/chat/chat.module'
@@ -157,6 +158,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     CommunityModule,
     TrainingModule,
     AdminModule,
+    BusinessCardsModule,
     AuditModule,
     RolesModule,
     StaffInboxModule,

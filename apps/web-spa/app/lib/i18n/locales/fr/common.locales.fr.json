@@ -172,6 +172,7 @@
     "settings": "Paramètres",
     "site": "Site vitrine",
     "support": "Support",
+    "businessCards": "Cartes de visite",
     "suppliers": "Fournisseurs",
     "themeDark": "Mode sombre",
     "themeLight": "Mode clair",
@@ -1654,6 +1655,28 @@
         "description": "Les messages envoyés depuis la section « Contactez-nous » du site arrivent dans ces boîtes.",
         "recipients": "Destinataires (un email par ligne)"
       }
+    },
+    "businessCards": {
+      "title": "Cartes de visite",
+      "description": "Générez des planches A4 de 8 cartes, avec le QR code qui ouvre la fiche du fournisseur. Seuls les fournisseurs validés apparaissent ici.",
+      "searchPlaceholder": "Rechercher un fournisseur…",
+      "empty": "Aucun fournisseur validé.",
+      "columns": {
+        "shop": "Fournisseur",
+        "logo": "Logo"
+      },
+      "withLogo": "Logo présent",
+      "withoutLogo": "Sans logo",
+      "noPlace": "Lieu non renseigné",
+      "download": "Télécharger",
+      "downloadOne": "Carte de visite",
+      "downloadFor": "Télécharger les cartes de {{shop}}",
+      "selectPage": "Sélectionner toute la page",
+      "selectShop": "Sélectionner {{shop}}",
+      "clearSelection": "Tout désélectionner",
+      "generateSelection": "Générer la sélection ({{count}})",
+      "generateAll": "Générer pour tous",
+      "failed": "La génération a échoué. Réessayez dans un instant."
     },
     "suppliers": {
       "allStatuses": "Tous les statuts",

@@ -23,7 +23,10 @@ import { csvDateTime, toCsv } from '../../common/csv'
 import { thumbnailUrlFor } from '../../common/media-urls'
 import { toStatusCounts } from '../../common/status-counts'
 import { config } from '../../config/env.config'
+import { s3Config } from '../../config/s3.config'
 import { User, UserRole } from '../auth/auth.entity'
+import { cardPlace } from '../business-cards/business-card-text'
+import { isStorageUrl } from '../business-cards/business-cards.service'
 import { EmailService } from '../email/email.service'
 import { MediaService } from '../media/media.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
@@ -1591,6 +1594,10 @@ export class AdminService {
       timezone: r.timezone as string,
       address: (r.address as string) ?? null,
       neighborhood: (r.neighborhood as string) ?? null,
+      // The line a business card would print, so the back office shows it before generating.
+      cardPlace: cardPlace(r.neighborhood as string | null, r.address as string | null),
+      // A photo outside our storage is never fetched: that card prints initials instead.
+      cardHasLogo: Boolean(r.profile_photo) && isStorageUrl(r.profile_photo as string, s3Config.publicUrl),
       profilePhoto: (r.profile_photo as string) ?? null,
       latitude: r.latitude !== null ? Number(r.latitude) : null,
       longitude: r.longitude !== null ? Number(r.longitude) : null,

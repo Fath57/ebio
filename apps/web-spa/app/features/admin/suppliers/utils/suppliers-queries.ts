@@ -23,6 +23,11 @@ export interface AdminSupplierListItem {
   timezone: string
   address: string | null
   neighborhood: string | null
+  /** Place line a business card prints: the address fields, tidied. */
+  cardPlace: string
+  /** False also when a photo exists outside our storage: that card prints initials. */
+  cardHasLogo: boolean
+  profilePhoto: string | null
   latitude: number | null
   longitude: number | null
   rating: number | null
@@ -40,7 +45,6 @@ export interface AdminSupplierListItem {
 export interface AdminSupplierDetail extends AdminSupplierListItem {
   openingHours: Record<string, { open?: string, close?: string, closed?: boolean }> | null
   coverPhoto: string | null
-  profilePhoto: string | null
   mobileMoneyNumber: string | null
   commissionRate: number | null
   revenue: number

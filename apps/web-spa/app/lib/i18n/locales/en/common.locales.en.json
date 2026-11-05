@@ -172,6 +172,7 @@
     "settings": "Settings",
     "site": "Landing site",
     "support": "Support",
+    "businessCards": "Business cards",
     "suppliers": "Suppliers",
     "themeDark": "Dark mode",
     "themeLight": "Light mode",
@@ -1654,6 +1655,28 @@
         "description": "Messages sent from the site's contact section land in these inboxes.",
         "recipients": "Recipients (one email per line)"
       }
+    },
+    "businessCards": {
+      "title": "Business cards",
+      "description": "Generate A4 sheets of 8 cards, with the QR code that opens the supplier page. Only validated suppliers appear here.",
+      "searchPlaceholder": "Search a supplier…",
+      "empty": "No validated supplier.",
+      "columns": {
+        "shop": "Supplier",
+        "logo": "Logo"
+      },
+      "withLogo": "Has a logo",
+      "withoutLogo": "No logo",
+      "noPlace": "Place not provided",
+      "download": "Download",
+      "downloadOne": "Business card",
+      "downloadFor": "Download the cards of {{shop}}",
+      "selectPage": "Select the whole page",
+      "selectShop": "Select {{shop}}",
+      "clearSelection": "Clear selection",
+      "generateSelection": "Generate selection ({{count}})",
+      "generateAll": "Generate for all",
+      "failed": "Generation failed. Try again in a moment."
     },
     "suppliers": {
       "allStatuses": "All statuses",

@@ -19,6 +19,7 @@ import { Ban, ImageOff, Pencil, RotateCcw, Tag } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
+import { BusinessCardDownloadButton } from '@/features/admin/business-cards/components/business-card-download-button'
 import { BackLink } from '@/features/admin/common/components/back-link'
 import { Can } from '@/lib/casl/can'
 import { ProductPromotionsDialog } from '../../promotions/components/product-promotions-dialog'
@@ -252,6 +253,11 @@ export default function AdminSupplierDetailPage() {
         <BackLink fallback="/admin/fournisseurs" />
         <h2 className="text-2xl font-bold">{supplier.shopName}</h2>
         <Badge>{t(`admin.suppliers.status.${supplier.validationStatus}`)}</Badge>
+        {supplier.validationStatus === 'VALIDATED' && (
+          <div className="ml-auto">
+            <BusinessCardDownloadButton supplierId={supplier.id} shopName={supplier.shopName} label={t('admin.businessCards.downloadOne')} />
+          </div>
+        )}
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

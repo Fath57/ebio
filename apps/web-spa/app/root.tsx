@@ -1,5 +1,6 @@
 import type { Route } from './+types/root'
 import { client } from '@boilerstone/openapi-generator'
+import { Toaster } from '@boilerstone/ui/components/primitives/sonner'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { useEffect } from 'react'
 import { isRouteErrorResponse, Links, Meta, Outlet, Scripts, ScrollRestoration } from 'react-router'
@@ -67,6 +68,7 @@ export default function App() {
     <QueryClientProvider client={queryClient}>
       <AbilityProvider>
         <Outlet />
+        <Toaster position="top-right" />
       </AbilityProvider>
     </QueryClientProvider>
   )

@@ -64,6 +64,7 @@ export default [
       // Admin — Fournisseurs
       route('admin/fournisseurs', 'features/admin/suppliers/pages/admin-suppliers-page.tsx'),
       route('admin/fournisseurs/:supplierId', 'features/admin/suppliers/pages/admin-supplier-detail-page.tsx'),
+      route('admin/cartes-de-visite', 'features/admin/business-cards/pages/admin-business-cards-page.tsx'),
 
       // Admin — Livreurs
       route('admin/livreurs', 'features/admin/couriers/pages/admin-couriers-page.tsx'),
