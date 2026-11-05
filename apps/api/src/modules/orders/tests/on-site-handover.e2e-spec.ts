@@ -7,6 +7,7 @@ import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
 import { DeliveriesModule } from '../../deliveries/deliveries.module'
+import { Notification, NotificationType } from '../../notifications/notification.entity'
 import { CheckoutService } from '../checkout.service'
 import { OrdersModule } from '../orders.module'
 import { OrdersService } from '../orders.service'
@@ -112,6 +113,14 @@ describe('remise au client d\'une commande en retrait (e2e)', () => {
     expect(order.status).toBe('DELIVERED')
     expect(order.delivered_at).not.toBeNull()
     expect(order.delivery_confirmed_by_supplier).toBe(true)
+
+    // The buyer collected it: « livrée » would describe a delivery that never happened.
+    const notice = await em.fork().findOneOrFail(Notification, {
+      user: fixture.buyerId,
+      type: NotificationType.ORDER_DELIVERED,
+    })
+    expect(notice.title).toBe('Commande remise')
+    expect(notice.body).toContain('vous a été remise')
   })
 
   it('refuse que l\'acheteur se déclare servi avant la remise', async (context) => {

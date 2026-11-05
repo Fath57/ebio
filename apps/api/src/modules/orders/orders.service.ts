@@ -697,11 +697,12 @@ export class OrdersService {
     }
 
     if (newStatus === OrderStatus.DELIVERED && !options.silent) {
+      const handedOver = order.pickupMode === PickupMode.ON_SITE
       await this.notificationsService.send({
         user: order.buyer,
         type: NotificationType.ORDER_DELIVERED,
-        title: 'Commande livrée',
-        body: `Votre commande ${order.orderNumber} a été livrée. Confirmez la réception dans l'app.`,
+        title: handedOver ? 'Commande remise' : 'Commande livrée',
+        body: `Votre commande ${order.orderNumber} ${handedOver ? 'vous a été remise' : 'a été livrée'}. Confirmez la réception dans l'app.`,
         data: { orderId: order.id },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
       })
