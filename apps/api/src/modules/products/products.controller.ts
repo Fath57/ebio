@@ -129,7 +129,7 @@ export class ProductsController {
       || product.status === ProductStatus.HIDDEN
       || product.moderationStatus !== ProductModeration.APPROVED
     if (isWithdrawn && !isOwner) {
-      throw new NotFoundException('Product not found')
+      throw new NotFoundException('Produit introuvable')
     }
 
     const [variants, stats, promotions] = await Promise.all([

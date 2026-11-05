@@ -32,7 +32,7 @@ export class ReceiptService {
     })
 
     if (!order) {
-      throw new NotFoundException('Order not found')
+      throw new NotFoundException('Commande introuvable')
     }
 
     const payment = await this.em.findOne(Payment, { order: { id: orderId } })

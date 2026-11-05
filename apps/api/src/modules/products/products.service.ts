@@ -32,7 +32,7 @@ export class ProductsService {
 
     const category = await this.em.findOne(Category, { id: data.categoryId })
     if (!category) {
-      throw new NotFoundException('Category not found')
+      throw new NotFoundException('Catégorie introuvable')
     }
 
     await this.productUnitsService.assertUsable(data.unit)
@@ -104,7 +104,7 @@ export class ProductsService {
       populate: ['supplier', 'category'],
     })
     if (!product) {
-      throw new NotFoundException('Product not found')
+      throw new NotFoundException('Produit introuvable')
     }
     return product
   }
@@ -212,7 +212,7 @@ export class ProductsService {
     if (data.categoryId !== undefined) {
       const category = await this.em.findOne(Category, { id: data.categoryId })
       if (!category) {
-        throw new NotFoundException('Category not found')
+        throw new NotFoundException('Catégorie introuvable')
       }
       product.category = category
     }
@@ -330,7 +330,7 @@ export class ProductsService {
     const product = await this.findByIdAndVerifyOwnership(productId, supplierId)
 
     if (price >= product.pricePerUnit) {
-      throw new BadRequestException('Promotional price must be lower than regular price')
+      throw new BadRequestException('Le prix promotionnel doit être inférieur au prix normal')
     }
 
     product.promotionalPrice = price
@@ -355,10 +355,10 @@ export class ProductsService {
   async findByIdAndVerifyOwnership(productId: string, supplierId: string): Promise<Product> {
     const product = await this.em.findOne(Product, { id: productId }, { populate: ['supplier', 'category'] })
     if (!product) {
-      throw new NotFoundException('Product not found')
+      throw new NotFoundException('Produit introuvable')
     }
     if (product.supplier.id !== supplierId) {
-      throw new ForbiddenException('You do not own this product')
+      throw new ForbiddenException('Ce produit ne vous appartient pas')
     }
     return product
   }

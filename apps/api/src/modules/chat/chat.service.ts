@@ -401,11 +401,11 @@ export class ChatService {
 
     const supplier = await em.findOne(Supplier, { id: supplierId }, { populate: ['user'] })
     if (!supplier)
-      throw new NotFoundException('Supplier not found')
+      throw new NotFoundException('Fournisseur introuvable')
 
     const phone = supplier.user.phone
     if (!phone)
-      throw new NotFoundException('Supplier has no phone number')
+      throw new NotFoundException('Ce fournisseur n’a pas de numéro de téléphone')
 
     const cleanPhone = phone.replace(/\D/g, '')
     const encodedMessage = message ? encodeURIComponent(message) : ''
@@ -438,7 +438,7 @@ export class ChatService {
     )
 
     if (!conversation) {
-      throw new NotFoundException('Conversation not found')
+      throw new NotFoundException('Conversation introuvable')
     }
 
     const isBuyer = conversation.buyer.id === userId
@@ -448,7 +448,7 @@ export class ChatService {
       && await this.isStaff(em, userId)
 
     if (!isBuyer && !isSupplierUser && !isCourierUser && !isSupportStaff) {
-      throw new ForbiddenException('You are not a participant of this conversation')
+      throw new ForbiddenException('Vous ne participez pas à cette conversation')
     }
 
     return conversation

@@ -84,7 +84,7 @@ export class DeliveriesService {
   async registerCourier(userId: string, data: RegisterCourier): Promise<CourierProfile> {
     const existing = await this.em.findOne(CourierProfile, { user: { id: userId } })
     if (existing) {
-      throw new ConflictException('A courier application already exists for this account')
+      throw new ConflictException('Une demande de livreur existe déjà pour ce compte')
     }
 
     const user = await this.em.findOneOrFail(User, { id: userId })
@@ -106,7 +106,7 @@ export class DeliveriesService {
   async getMyProfile(userId: string): Promise<CourierProfile> {
     const profile = await this.em.findOne(CourierProfile, { user: { id: userId } }, { populate: ['user'] })
     if (!profile) {
-      throw new NotFoundException('No courier profile for this account')
+      throw new NotFoundException('Aucun profil livreur pour ce compte')
     }
     return profile
   }
@@ -144,7 +144,7 @@ export class DeliveriesService {
   async setAvailability(userId: string, isAvailable: boolean): Promise<CourierProfile> {
     const profile = await this.getMyProfile(userId)
     if (profile.validationStatus !== ValidationStatus.VALIDATED) {
-      throw new ForbiddenException('Only validated couriers can go online')
+      throw new ForbiddenException('Seuls les livreurs validés peuvent se mettre en ligne')
     }
     profile.isAvailable = isAvailable
     await this.em.flush()
@@ -154,7 +154,7 @@ export class DeliveriesService {
   async updateLocation(userId: string, latitude: number, longitude: number): Promise<void> {
     const profile = await this.getMyProfile(userId)
     if (profile.validationStatus !== ValidationStatus.VALIDATED) {
-      throw new ForbiddenException('Only validated couriers can report a position')
+      throw new ForbiddenException('Seuls les livreurs validés peuvent partager leur position')
     }
     await this.em.getConnection().execute(
       `UPDATE courier_profiles
@@ -439,7 +439,7 @@ export class DeliveriesService {
     if (claimed.length === 0) {
       const delivery = await this.em.findOne(Delivery, { id: deliveryId })
       if (!delivery) {
-        throw new NotFoundException('Delivery not found')
+        throw new NotFoundException('Livraison introuvable')
       }
       if (delivery.status === DeliveryStatus.CANCELLED) {
         throw new GoneException('Cette commande a été annulée')
@@ -724,7 +724,7 @@ export class DeliveriesService {
     const profile = await this.getMyProfile(userId)
     const delivery = await this.em.findOne(Delivery, { id: deliveryId })
     if (!delivery) {
-      throw new NotFoundException('Delivery not found')
+      throw new NotFoundException('Livraison introuvable')
     }
     if (delivery.status !== DeliveryStatus.AWAITING_COURIER || delivery.offeredToCourier?.id !== profile.id) {
       throw new ConflictException('Cette course ne vous est plus proposée')
@@ -1454,7 +1454,7 @@ export class DeliveriesService {
   async fail(deliveryId: string, userId: string, data: FailDelivery): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
     if (!ACTIVE_STATUSES.includes(delivery.status)) {
-      throw new BadRequestException(`Cannot fail a delivery in status ${delivery.status}`)
+      throw new BadRequestException('Cette livraison ne peut plus être déclarée en échec')
     }
 
     const when = await this.clampOccurredAt(delivery, data.occurredAt)
@@ -1517,7 +1517,7 @@ export class DeliveriesService {
   async getByOrderForRequester(orderId: string, userId: string): Promise<{ delivery: Delivery, audience: DeliveryAudience }> {
     const found = await this.em.findOne(Delivery, { order: { id: orderId } })
     if (!found) {
-      throw new NotFoundException('No delivery for this order')
+      throw new NotFoundException('Aucune livraison pour cette commande')
     }
     const delivery = await this.loadDelivery(found.id)
     return { delivery, audience: await this.resolveAudience(delivery, userId) }
@@ -1532,7 +1532,7 @@ export class DeliveriesService {
     const delivery = await this.loadDelivery(deliveryId)
     const supplierUser = await this.resolveSupplierUser(delivery.order)
     if (supplierUser?.id !== userId) {
-      throw new ForbiddenException('Only the shop owner can rebroadcast this delivery')
+      throw new ForbiddenException('Seul le propriétaire de la boutique peut relancer la recherche de livreur')
     }
     if (delivery.status !== DeliveryStatus.AWAITING_COURIER) {
       throw new ConflictException('Cette course a déjà un livreur')
@@ -1657,7 +1657,7 @@ export class DeliveriesService {
       refresh: options.refresh,
     })
     if (!delivery) {
-      throw new NotFoundException('Delivery not found')
+      throw new NotFoundException('Livraison introuvable')
     }
     return delivery
   }
@@ -1667,7 +1667,7 @@ export class DeliveriesService {
     if (delivery.courier?.user?.id !== userId) {
       const profile = await this.em.findOne(CourierProfile, { user: { id: userId } })
       if (!profile || delivery.courier?.id !== profile.id) {
-        throw new ForbiddenException('This delivery is not assigned to you')
+        throw new ForbiddenException('Cette livraison ne vous est pas attribuée')
       }
     }
     return delivery
@@ -1735,7 +1735,7 @@ export class DeliveriesService {
         return 'courier'
       }
     }
-    throw new ForbiddenException('You are not a party to this delivery')
+    throw new ForbiddenException('Vous ne participez pas à cette livraison')
   }
 
   private async resolveSupplierUser(order: Order): Promise<User | null> {

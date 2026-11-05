@@ -52,7 +52,7 @@ export class PaymentMethodService {
       provider: input.provider as PaymentProvider,
     })
     if (existing) {
-      throw new ConflictException('A payment method with this code, country, and provider already exists')
+      throw new ConflictException('Un moyen de paiement avec ce code, ce pays et ce prestataire existe déjà')
     }
 
     const method = new PaymentMethod()
@@ -89,7 +89,7 @@ export class PaymentMethodService {
         id: { $ne: id },
       })
       if (existing) {
-        throw new ConflictException('A payment method with this code, country, and provider already exists')
+        throw new ConflictException('Un moyen de paiement avec ce code, ce pays et ce prestataire existe déjà')
       }
     }
 

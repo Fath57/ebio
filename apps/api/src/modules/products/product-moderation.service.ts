@@ -93,7 +93,7 @@ export class ProductModerationService {
   async decide(productId: string, action: ModerationAction, reason?: string): Promise<Product> {
     const product = await this.em.findOne(Product, { id: productId }, { populate: ['supplier', 'supplier.user'] })
     if (!product) {
-      throw new NotFoundException('Product not found')
+      throw new NotFoundException('Produit introuvable')
     }
 
     const transition = TRANSITIONS[action]

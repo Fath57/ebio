@@ -54,11 +54,11 @@ export class PaymentsService {
     )
 
     if (order.buyer.id !== userId) {
-      throw new BadRequestException('You can only view your own order payment info')
+      throw new BadRequestException('Vous ne pouvez consulter que le paiement de vos propres commandes')
     }
 
     if (order.paymentMethod !== OrderPaymentMethod.FEDAPAY) {
-      throw new BadRequestException('This order uses cash on delivery')
+      throw new BadRequestException('Cette commande se règle en espèces à la livraison')
     }
 
     return {
@@ -81,11 +81,11 @@ export class PaymentsService {
     )
 
     if (order.buyer.id !== userId) {
-      throw new BadRequestException('You can only pay for your own orders')
+      throw new BadRequestException('Vous ne pouvez payer que vos propres commandes')
     }
 
     if (order.paymentMethod !== OrderPaymentMethod.FEDAPAY) {
-      throw new BadRequestException('This order uses cash on delivery')
+      throw new BadRequestException('Cette commande se règle en espèces à la livraison')
     }
 
     const existingCompleted = await this.em.findOne(Payment, {
@@ -94,7 +94,7 @@ export class PaymentsService {
     })
 
     if (existingCompleted) {
-      throw new BadRequestException('A payment already exists for this order')
+      throw new BadRequestException('Un paiement existe déjà pour cette commande')
     }
 
     // Cancel any stale pending payments so the user can retry
@@ -112,11 +112,11 @@ export class PaymentsService {
     )
 
     if (paymentMethod.useFedapayCheckout) {
-      throw new BadRequestException('This payment method uses Checkout.js, not no-redirect mode')
+      throw new BadRequestException('Ce moyen de paiement n’est pas disponible dans ce mode')
     }
 
     if (!data.phoneNumber) {
-      throw new BadRequestException('Phone number is required for no-redirect payments')
+      throw new BadRequestException('Le numéro de téléphone est obligatoire pour ce paiement')
     }
 
     const gateway = this.gatewayFactory.createGateway(paymentMethod.provider)
@@ -175,11 +175,11 @@ export class PaymentsService {
     )
 
     if (order.buyer.id !== userId) {
-      throw new BadRequestException('You can only pay for your own orders')
+      throw new BadRequestException('Vous ne pouvez payer que vos propres commandes')
     }
 
     if (order.paymentMethod !== OrderPaymentMethod.FEDAPAY) {
-      throw new BadRequestException('This order uses cash on delivery')
+      throw new BadRequestException('Cette commande se règle en espèces à la livraison')
     }
 
     const existingCompleted = await this.em.findOne(Payment, {
@@ -188,7 +188,7 @@ export class PaymentsService {
     })
 
     if (existingCompleted) {
-      throw new BadRequestException('A payment already exists for this order')
+      throw new BadRequestException('Un paiement existe déjà pour cette commande')
     }
 
     // Reuse existing pending payment if one exists
@@ -234,7 +234,7 @@ export class PaymentsService {
     )
 
     if (order.buyer.id !== userId) {
-      throw new BadRequestException('You can only pay for your own orders')
+      throw new BadRequestException('Vous ne pouvez payer que vos propres commandes')
     }
 
     const payment = await this.em.findOneOrFail(Payment, {
@@ -647,7 +647,7 @@ export class PaymentsService {
     )
 
     if (order.buyer.id !== userId) {
-      throw new BadRequestException('You can only view your own payment status')
+      throw new BadRequestException('Vous ne pouvez consulter que le statut de vos propres paiements')
     }
 
     const payment = await this.em.findOne(
@@ -657,7 +657,7 @@ export class PaymentsService {
     )
 
     if (!payment) {
-      throw new NotFoundException('No payment found for this order')
+      throw new NotFoundException('Aucun paiement trouvé pour cette commande')
     }
 
     return {
@@ -678,7 +678,7 @@ export class PaymentsService {
     })
 
     if (payment.status !== PaymentStatus.CAPTURED && payment.status !== PaymentStatus.ESCROW) {
-      throw new BadRequestException(`Cannot release escrow for payment in status ${payment.status}`)
+      throw new BadRequestException('Les fonds de ce paiement ne peuvent pas être libérés dans son état actuel')
     }
 
     // A platform courier delivered this order: the delivery fee the buyer paid

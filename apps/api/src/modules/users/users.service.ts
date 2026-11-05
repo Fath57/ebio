@@ -11,7 +11,7 @@ export class UsersService {
     // The staff role rides along for /users/me (null for app users).
     const user = await this.em.findOne(User, { id }, { populate: ['userRole'] })
     if (!user)
-      throw new NotFoundException('User not found')
+      throw new NotFoundException('Compte introuvable')
     return user
   }
 

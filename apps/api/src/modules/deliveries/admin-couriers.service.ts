@@ -76,7 +76,7 @@ export class AdminCouriersService {
   async getById(id: string): Promise<{ profile: CourierProfile, stats: CourierStats, identityDocument: CourierDocument | null }> {
     const profile = await this.em.findOne(CourierProfile, { id }, { populate: ['user'] })
     if (!profile) {
-      throw new NotFoundException('Courier profile not found')
+      throw new NotFoundException('Profil livreur introuvable')
     }
     const identityDocument = await this.resolveDocument(profile.identityDocument)
     const rows = await this.em.getConnection().execute(

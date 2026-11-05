@@ -22,7 +22,7 @@ export class PaymentGatewayFactory {
       case PaymentProvider.INTRAM:
         return new IntramGateway()
       default:
-        throw new BadRequestException(`Unsupported payment provider: ${provider}`)
+        throw new BadRequestException(`Prestataire de paiement non pris en charge : ${provider}`)
     }
   }
 
@@ -40,7 +40,7 @@ export class PaymentGatewayFactory {
 
     const gateway = this.createGateway(provider)
     if (!('createPayout' in gateway)) {
-      throw new BadRequestException(`Provider ${provider} cannot send payouts`)
+      throw new BadRequestException(`Le prestataire ${provider} ne peut pas effectuer de reversement`)
     }
 
     this.logger.log(`Reversements servis par ${provider}`)

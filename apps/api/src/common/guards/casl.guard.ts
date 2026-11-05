@@ -39,7 +39,7 @@ export class CaslGuard implements CanActivate {
     const userId = request.user?.sub ?? request.user?.id ?? request.session?.user?.id
 
     if (!userId) {
-      throw new ForbiddenException('Acces refuse')
+      throw new ForbiddenException('Accès refusé')
     }
 
     const user = await this.em.findOne(User, { id: userId }, { populate: ['userRole'] })
@@ -52,7 +52,7 @@ export class CaslGuard implements CanActivate {
     for (const permission of requiredPermissions) {
       if (!ability.can(permission.action, permission.subject)) {
         throw new ForbiddenException(
-          `Permission refusee: ${permission.action} ${permission.subject}`,
+          `Permission refusée : ${permission.action} ${permission.subject}`,
         )
       }
     }

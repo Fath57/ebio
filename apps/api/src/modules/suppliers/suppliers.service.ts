@@ -18,7 +18,7 @@ export class SuppliersService {
   async register(userId: string, data: RegisterSupplier): Promise<Supplier> {
     const existing = await this.em.findOne(Supplier, { user: { id: userId } })
     if (existing) {
-      throw new ConflictException('User already registered as supplier')
+      throw new ConflictException('Ce compte est déjà enregistré comme fournisseur')
     }
 
     const user = await this.em.findOneOrFail(User, { id: userId })
@@ -73,7 +73,7 @@ export class SuppliersService {
   async findById(id: string): Promise<Supplier> {
     const supplier = await this.em.findOne(Supplier, { id }, { populate: ['user'] })
     if (!supplier) {
-      throw new NotFoundException('Supplier not found')
+      throw new NotFoundException('Fournisseur introuvable')
     }
     return supplier
   }
@@ -81,7 +81,7 @@ export class SuppliersService {
   async findByUserId(userId: string): Promise<Supplier> {
     const supplier = await this.em.findOne(Supplier, { user: { id: userId } }, { populate: ['user'] })
     if (!supplier) {
-      throw new NotFoundException('Supplier profile not found for this user')
+      throw new NotFoundException('Aucun profil fournisseur pour ce compte')
     }
     return supplier
   }

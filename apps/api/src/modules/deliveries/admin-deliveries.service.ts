@@ -63,7 +63,7 @@ export class AdminDeliveriesService {
       populate: ['order', 'order.buyer', 'order.supplier', 'order.items', 'courier', 'courier.user'],
     })
     if (!delivery) {
-      throw new NotFoundException('Delivery not found')
+      throw new NotFoundException('Livraison introuvable')
     }
     return delivery
   }
@@ -172,7 +172,7 @@ export class AdminDeliveriesService {
 
     const courier = await this.em.findOne(CourierProfile, { id: courierId }, { populate: ['user'] })
     if (!courier) {
-      throw new NotFoundException('Courier profile not found')
+      throw new NotFoundException('Profil livreur introuvable')
     }
     if (courier.validationStatus !== ValidationStatus.VALIDATED) {
       throw new BadRequestException('Ce livreur n\'est pas validé')
@@ -205,7 +205,7 @@ export class AdminDeliveriesService {
         populate: ['order', 'order.buyer', 'order.supplier', 'order.items', 'courier', 'courier.user'],
       })
       if (!fresh) {
-        throw new NotFoundException('Delivery not found')
+        throw new NotFoundException('Livraison introuvable')
       }
 
       if (released) {

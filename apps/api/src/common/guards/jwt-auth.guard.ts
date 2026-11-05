@@ -29,7 +29,7 @@ export async function verifyAccountToken(em: EntityManager, token: string): Prom
   const payload = jwt.verify(token, config.jwt.secret) as JwtPayload
   const user = await em.findOne(User, { id: payload.sub })
   if (!user) {
-    throw new UnauthorizedException('Unknown account')
+    throw new UnauthorizedException('Compte inconnu')
   }
   assertAccountActive(user)
   return { ...payload, role: user.role }
@@ -51,7 +51,7 @@ export class JwtAuthGuard implements CanActivate {
     const authHeader = request.headers.authorization as string | undefined
 
     if (!authHeader?.startsWith('Bearer ')) {
-      throw new UnauthorizedException('Missing or invalid authorization header')
+      throw new UnauthorizedException('En-tête d’autorisation manquant ou invalide')
     }
 
     try {
@@ -62,7 +62,7 @@ export class JwtAuthGuard implements CanActivate {
       // A blocked account keeps its own verdict: the apps key on its code.
       if (error instanceof HttpException)
         throw error
-      throw new UnauthorizedException('Invalid or expired token')
+      throw new UnauthorizedException('Session invalide ou expirée')
     }
   }
 }

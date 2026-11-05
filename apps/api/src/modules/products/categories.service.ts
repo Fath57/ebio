@@ -25,7 +25,7 @@ export class CategoriesService {
   async findById(id: string): Promise<Category> {
     const category = await this.em.findOne(Category, { id })
     if (!category) {
-      throw new NotFoundException('Category not found')
+      throw new NotFoundException('Catégorie introuvable')
     }
     return category
   }
@@ -45,7 +45,7 @@ export class CategoriesService {
   async update(id: string, data: UpdateCategoryInput): Promise<Category> {
     const category = await this.em.findOne(Category, { id })
     if (!category) {
-      throw new NotFoundException('Category not found')
+      throw new NotFoundException('Catégorie introuvable')
     }
 
     if (data.name !== undefined)
@@ -66,7 +66,7 @@ export class CategoriesService {
   async remove(id: string): Promise<void> {
     const category = await this.em.findOne(Category, { id })
     if (!category) {
-      throw new NotFoundException('Category not found')
+      throw new NotFoundException('Catégorie introuvable')
     }
     await this.em.removeAndFlush(category)
   }

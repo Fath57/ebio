@@ -62,7 +62,7 @@ export class DeliveryPricingService {
       [hasPoint, input.longitude ?? 0, input.latitude ?? 0, input.supplierId],
     ) as Array<{ has_location: boolean, distance_km: string | null }>
     if (rows.length === 0) {
-      throw new NotFoundException('Supplier not found')
+      throw new NotFoundException('Fournisseur introuvable')
     }
     const result = computeDeliveryFee(config, {
       isDelivery: input.isDelivery,

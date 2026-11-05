@@ -19,12 +19,12 @@ export class StockAlertService {
       product: { id: productId },
     })
     if (existing) {
-      throw new ConflictException('Already subscribed to stock alerts for this product')
+      throw new ConflictException('L’alerte de stock est déjà activée pour ce produit')
     }
 
     const product = await this.em.findOne(Product, { id: productId })
     if (!product) {
-      throw new NotFoundException('Product not found')
+      throw new NotFoundException('Produit introuvable')
     }
 
     const buyer = await this.em.findOneOrFail(User, { id: userId })

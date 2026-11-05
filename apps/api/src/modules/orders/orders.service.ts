@@ -197,11 +197,11 @@ export class OrdersService {
 
     const supplier = await this.em.findOne(Supplier, { id: data.supplierId }, { populate: ['user'] })
     if (!supplier) {
-      throw new NotFoundException('Supplier not found')
+      throw new NotFoundException('Fournisseur introuvable')
     }
 
     if (supplier.mode !== SupplierMode.ORDER) {
-      throw new BadRequestException('This supplier does not accept online orders. Use contact mode instead.')
+      throw new BadRequestException('Ce fournisseur ne prend pas de commande en ligne. Contactez-le directement.')
     }
 
     const products = await this.validateAndLoadItems(data.items)
@@ -418,7 +418,7 @@ export class OrdersService {
       populate: ['buyer', 'supplier', 'items', 'items.product', 'items.variant'],
     })
     if (!order) {
-      throw new NotFoundException('Order not found')
+      throw new NotFoundException('Commande introuvable')
     }
     return order
   }
@@ -482,16 +482,16 @@ export class OrdersService {
     this.verifySupplierOwnership(order, supplierId)
 
     if (order.status !== OrderStatus.PLACED) {
-      throw new BadRequestException('Only placed orders can be accepted')
+      throw new BadRequestException('Seule une commande en attente peut être acceptée')
     }
 
     // A pack takes its units from the product: the unit and a pack of the
     // same product are counted together before anything moves.
     const short = takeStock(order.items.getItems(), item => item.variant
-      ? `variant ${item.variant.label} of ${item.product.name}`
+      ? `format ${item.variant.label} de ${item.product.name}`
       : item.product.name)
     if (short) {
-      throw new BadRequestException(`Insufficient stock for ${short}`)
+      throw new BadRequestException(`Stock insuffisant pour ${short}`)
     }
 
     order.status = OrderStatus.ACCEPTED
@@ -515,7 +515,7 @@ export class OrdersService {
     this.verifySupplierOwnership(order, supplierId)
 
     if (order.status !== OrderStatus.PLACED) {
-      throw new BadRequestException('Only placed orders can be rejected')
+      throw new BadRequestException('Seule une commande en attente peut être refusée')
     }
 
     order.status = OrderStatus.CANCELLED
@@ -542,7 +542,7 @@ export class OrdersService {
     const allowedTransitions = VALID_TRANSITIONS[order.status]
     if (!allowedTransitions?.includes(newStatus)) {
       throw new BadRequestException(
-        `Cannot transition from ${order.status} to ${newStatus}`,
+        'Ce changement de statut n’est pas possible pour cette commande',
       )
     }
 
@@ -757,15 +757,15 @@ export class OrdersService {
       populate: ['buyer', 'supplier', 'supplier.user', 'items', 'items.product', 'items.variant'],
     })
     if (!order) {
-      throw new NotFoundException('Order not found')
+      throw new NotFoundException('Commande introuvable')
     }
     const isBuyer = order.buyer.id === userId
     const isSupplier = order.supplier.user.id === userId
     if (!isBuyer && !isSupplier && role !== UserRole.ADMIN) {
-      throw new ForbiddenException('You cannot access this invoice')
+      throw new ForbiddenException('Vous n’avez pas accès à cette facture')
     }
     if (order.status !== OrderStatus.DELIVERED) {
-      throw new BadRequestException('The invoice is only available once the order is delivered')
+      throw new BadRequestException('La facture n’est disponible qu’une fois la commande livrée')
     }
     const invoice = await this.renderInvoice(this.em, order, { inlineMap: false })
     return invoice.html
@@ -865,11 +865,17 @@ export class OrdersService {
     const isSupplier = order.supplier.user?.id === userId
 
     if (!isBuyer && !isSupplier) {
-      throw new ForbiddenException('Only the buyer or supplier can confirm delivery')
+      throw new ForbiddenException('Seuls l’acheteur ou le fournisseur peuvent confirmer la livraison')
     }
 
-    if (order.status !== OrderStatus.DELIVERED && order.status !== OrderStatus.IN_DELIVERY) {
-      throw new BadRequestException('Order must be delivered or in delivery to confirm')
+    // An on-site order never goes through IN_DELIVERY: the shop hands it over
+    // from READY. Only the shop can say so, the buyer confirms once it is done.
+    const isOnSiteHandover = isSupplier
+      && order.status === OrderStatus.READY
+      && order.pickupMode === PickupMode.ON_SITE
+
+    if (order.status !== OrderStatus.DELIVERED && order.status !== OrderStatus.IN_DELIVERY && !isOnSiteHandover) {
+      throw new BadRequestException('La commande doit être en cours de livraison ou livrée pour être confirmée')
     }
 
     if (isBuyer) {
@@ -897,23 +903,23 @@ export class OrdersService {
     const order = await this.findById(orderId)
 
     if (order.buyer.id !== buyerId) {
-      throw new ForbiddenException('Only the buyer can open a dispute')
+      throw new ForbiddenException('Seul l’acheteur peut ouvrir un litige')
     }
 
     if (order.status !== OrderStatus.DELIVERED) {
-      throw new BadRequestException('Disputes can only be opened on delivered orders')
+      throw new BadRequestException('Un litige ne peut être ouvert que sur une commande livrée')
     }
 
     if (order.deliveredAt) {
       const hoursSinceDelivery = (Date.now() - order.deliveredAt.getTime()) / (1000 * 60 * 60)
       if (hoursSinceDelivery > 48) {
-        throw new BadRequestException('Disputes must be opened within 48 hours of delivery')
+        throw new BadRequestException('Un litige doit être ouvert dans les 48 heures suivant la livraison')
       }
     }
 
     const existingDispute = await this.em.findOne(Dispute, { order: { id: orderId } })
     if (existingDispute) {
-      throw new ConflictException('A dispute already exists for this order')
+      throw new ConflictException('Un litige existe déjà pour cette commande')
     }
 
     order.status = OrderStatus.DISPUTED
@@ -978,7 +984,7 @@ export class OrdersService {
     const buyer = await this.em.findOneOrFail(User, { id: buyerId })
     const supplier = await this.em.findOne(Supplier, { id: data.supplierId })
     if (!supplier) {
-      throw new NotFoundException('Supplier not found')
+      throw new NotFoundException('Fournisseur introuvable')
     }
     const products = await this.validateAndLoadItems(data.items)
     const pricing = await this.priceBasket(buyer, supplier, products, { ...data, promoCodeSoft: true })
@@ -1033,7 +1039,7 @@ export class OrdersService {
       if (itemInput.variantId) {
         variant = await this.em.findOne(ProductVariant, { id: itemInput.variantId, product: { id: product.id } }) ?? undefined
         if (!variant) {
-          throw new NotFoundException(`Variant ${itemInput.variantId} not found for product ${product.name}`)
+          throw new NotFoundException(`Format introuvable pour ${product.name}`)
         }
         unitPrice = variant.pricePerUnit
       }
@@ -1153,7 +1159,7 @@ export class OrdersService {
     for (const item of items) {
       const product = productMap.get(item.productId)
       if (!product) {
-        throw new NotFoundException(`Product ${item.productId} not found`)
+        throw new NotFoundException('Produit introuvable')
       }
       // Off the apps for buyers — withdrawn by its shop or by eBio, or still
       // waiting for review — so not orderable from an old basket either.
@@ -1164,7 +1170,7 @@ export class OrdersService {
         ? await this.em.findOne(ProductVariant, { id: item.variantId, product: { id: product.id } })
         : null
       if (item.variantId && !variant) {
-        throw new NotFoundException(`Format ${item.variantId} not found for ${product.name}`)
+        throw new NotFoundException(`Format introuvable pour ${product.name}`)
       }
       const draw = stockDraw({ quantity: item.quantity, product, variant })
       needed.set(draw.holder, (needed.get(draw.holder) ?? 0) + draw.units)
@@ -1175,7 +1181,7 @@ export class OrdersService {
       const draw = stockDraw(line)
       if (draw.holder.stock < (needed.get(draw.holder) ?? 0)) {
         const available = availableQuantity(line.product.stock, line.variant)
-        throw new BadRequestException(`Insufficient stock for ${line.product.name}: available ${available}, requested ${line.quantity}`)
+        throw new BadRequestException(`Stock insuffisant pour ${line.product.name} : ${available} disponible(s), ${line.quantity} demandé(s)`)
       }
     }
 
@@ -1209,7 +1215,7 @@ export class OrdersService {
 
       if (isMatch) {
         throw new ConflictException(
-          `A duplicate order was placed less than 2 minutes ago (${recent.orderNumber})`,
+          `Une commande identique a été passée il y a moins de 2 minutes (${recent.orderNumber})`,
         )
       }
     }
@@ -1281,7 +1287,7 @@ export class OrdersService {
 
   private verifySupplierOwnership(order: Order, supplierId: string): void {
     if (order.supplier.id !== supplierId) {
-      throw new ForbiddenException('This order does not belong to your shop')
+      throw new ForbiddenException('Cette commande n’appartient pas à votre boutique')
     }
   }
 

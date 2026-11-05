@@ -141,7 +141,7 @@ export class CourierFeedbackService {
       populate: ['order', 'order.buyer', 'courier', 'courier.user'],
     })
     if (!delivery) {
-      throw new NotFoundException('Delivery not found')
+      throw new NotFoundException('Livraison introuvable')
     }
     if (delivery.order.buyer.id !== buyerUserId) {
       throw new ForbiddenException('Seul le client de la commande peut noter le livreur')
