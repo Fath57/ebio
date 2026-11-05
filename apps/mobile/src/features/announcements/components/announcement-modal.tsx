@@ -18,6 +18,8 @@ import { useTheme } from '../../../theme/theme-context'
 interface AnnouncementModalProps {
   announcement: Announcement | null
   onDismiss: () => void
+  /** Called once the announcement is really on screen. */
+  onShown: (id: string) => void
   /** Follow what the announcement points at — a shop, a product, a link. */
   onOpenTarget: (announcement: Announcement) => void
 }
@@ -37,7 +39,7 @@ interface AnnouncementModalProps {
  * or button over it. Adding service copy would be writing on someone's
  * artwork.
  */
-export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: AnnouncementModalProps) {
+export function AnnouncementModal({ announcement, onDismiss, onShown, onOpenTarget }: AnnouncementModalProps) {
   const { semantic } = useTheme()
   const { width } = useWindowDimensions()
   const entrance = useRef(new Animated.Value(0)).current
@@ -97,20 +99,25 @@ export function AnnouncementModal({ announcement, onDismiss, onOpenTarget }: Ann
     }).start()
   }, [entrance, visible])
 
-  if (announcement === null) {
+  const hasText = (announcement?.title ?? '').trim().length > 0
+  const imageOnly = announcement !== null && !hasText && announcement.imageUrl !== null
+
+  // While the ratio is unknown we do not open: the card would jump from one
+  // shape to another in front of the reader.
+  const shownId = announcement !== null && !(imageOnly && imageRatio === null) ? announcement.id : null
+
+  useEffect(() => {
+    if (shownId !== null) {
+      onShown(shownId)
+    }
+  }, [shownId, onShown])
+
+  if (announcement === null || shownId === null) {
     return null
   }
 
   const cardWidth = Math.min(width - spacing[8], 420)
   const isTappable = announcement.targetType !== 'NONE'
-  const hasText = (announcement.title ?? '').trim().length > 0
-  const imageOnly = !hasText && announcement.imageUrl !== null
-
-  // While the ratio is unknown we do not open: the card would jump from one
-  // shape to another in front of the reader.
-  if (imageOnly && imageRatio === null) {
-    return null
-  }
 
   return (
     <Modal transparent animationType="fade" visible onRequestClose={onDismiss}>

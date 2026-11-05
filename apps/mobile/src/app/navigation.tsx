@@ -1272,7 +1272,7 @@ function BuyerTabs() {
  * external link that leaves the app.
  */
 function BuyerAnnouncement() {
-  const { announcement, dismiss } = useAnnouncement()
+  const { announcement, dismiss, markSeen } = useAnnouncement(canShowAnnouncement)
 
   const open = (item: Announcement): void => {
     dismiss()
@@ -1291,5 +1291,16 @@ function BuyerAnnouncement() {
     }
   }
 
-  return <AnnouncementModal announcement={announcement} onDismiss={dismiss} onOpenTarget={open} />
+  return <AnnouncementModal announcement={announcement} onDismiss={dismiss} onShown={markSeen} onOpenTarget={open} />
+}
+
+/**
+ * Screens where someone is in the middle of something. Login and Register are
+ * left out on purpose: signing in is one of the moments an announcement is
+ * asked for.
+ */
+const NO_ANNOUNCEMENT_ROUTES = new Set(['Assistant', 'LocationPicker', 'Checkout', 'OrderSuccess', 'ChatDetail'])
+
+function canShowAnnouncement(): boolean {
+  return !NO_ANNOUNCEMENT_ROUTES.has(buyerPlace.get().screen)
 }

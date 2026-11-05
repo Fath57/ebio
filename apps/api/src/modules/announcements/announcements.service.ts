@@ -42,6 +42,10 @@ export class AnnouncementsService {
    * priority among those running that the buyer has not seen within the
    * configured interval — an announcement that returns on every opening stops
    * being read after the second time.
+   *
+   * At equal priority, the one this buyer saw longest ago goes first, never-seen
+   * ones ahead of all others. Ordering by start date alone let the oldest return
+   * as soon as its interval passed, so a newer one almost never got its turn.
    */
   async currentFor(userId: string): Promise<Announcement | null> {
     const intervalHours = await this.settings.getAnnouncementIntervalHours()
@@ -55,7 +59,7 @@ export class AnnouncementsService {
          AND a.starts_at <= NOW()
          AND a.ends_at >= NOW()
          AND (v.seen_at IS NULL OR v.seen_at <= NOW() - (? * INTERVAL '1 hour'))
-       ORDER BY a.priority DESC, a.starts_at
+       ORDER BY a.priority DESC, v.seen_at ASC NULLS FIRST, a.starts_at
        LIMIT 1`,
       [userId, intervalHours],
     )
