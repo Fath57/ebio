@@ -50,7 +50,7 @@ import { LocationPickerScreen } from '../features/map/components/location-picker
 import { NotificationsScreen } from '../features/notifications/components/notifications-screen'
 import { PushConsentSheet } from '../features/notifications/components/push-consent-sheet'
 import { useNotifications } from '../features/notifications/hooks/use-notifications'
-import { LiveOrderToast } from '../features/orders/components/live-order-toast'
+import { LiveOrderFab } from '../features/orders/components/live-order-fab'
 import { OrderConfirmation } from '../features/orders/components/order-confirmation'
 import { OrderList } from '../features/orders/components/order-list'
 import { OrderTracking } from '../features/orders/components/order-tracking'
@@ -1054,12 +1054,24 @@ function createPlaceStore() {
 
 const buyerPlace = createPlaceStore()
 
-/** The live-order notice, silent on the orders tab and on screens without a tab bar. */
-function LiveOrderToastHost() {
+/** Screens where the basket bar floats in the same spot: it wins while the basket has items. */
+const CART_BAR_ROUTES = new Set(['SupplierProfile', 'ProductDetail'])
+
+/**
+ * The order-in-progress card, out of the way on the orders tab (it shows the
+ * order already), on screens without a tab bar, and under the basket bar.
+ */
+function LiveOrderFabHost() {
   const place = React.useSyncExternalStore(buyerPlace.subscribe, buyerPlace.get)
+  const insets = useSafeAreaInsets()
+  const hasBasket = useCart().getItemCount() > 0
   return (
-    <LiveOrderToast
-      hidden={place.tab === 'Commandes' || HIDE_TAB_BAR_ROUTES.has(place.screen)}
+    <LiveOrderFab
+      hidden={place.tab === 'Commandes'
+        || HIDE_TAB_BAR_ROUTES.has(place.screen)
+        || (hasBasket && CART_BAR_ROUTES.has(place.screen))}
+      // Same figure as the tab bar's own height below.
+      bottomOffset={64 + insets.bottom}
       onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
     />
   )
@@ -1249,11 +1261,11 @@ function BuyerTabs() {
         * navigateur, donc visible quel que soit l'onglet. */}
       <ConnectivityBanner />
 
-      {/* Where the order has got to, said in one line and put away. Silent
-        * on the orders tab (the screen says it already) and on the screens
-        * without a tab bar: a checkout or a conversation is no place to
-        * interrupt someone. */}
-      <LiveOrderToastHost />
+      {/* Where the order has got to, kept above the tabs while it moves.
+        * Out of the way on the orders tab (the screen says it already) and on
+        * the screens without a tab bar: a checkout or a conversation is no
+        * place for it. */}
+      <LiveOrderFabHost />
 
       <BuyerAnnouncement />
 

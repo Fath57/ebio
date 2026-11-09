@@ -13,6 +13,13 @@ import { apiFetch } from '../../utils/api-client'
  */
 const MOVING = new Set(['ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY'])
 
+/**
+ * Past this long without any change, an order is not moving: it is stuck
+ * (a courier who never closed the run). It stays in the orders tab, but it no
+ * longer pins the card above the tabs for weeks.
+ */
+const STALE_AFTER_MS = 24 * 60 * 60 * 1000
+
 /** Often enough to follow a courier, rare enough to leave the battery alone. */
 const LIVE_POLL_MS = 45_000
 
@@ -29,6 +36,8 @@ export interface LiveOrder {
   status: string
   deliveryStatus: string | null
   courierName: string | null
+  /** Collected at the shop: no courier step to show. */
+  isPickup: boolean
 }
 
 interface LiveOrderValue {
@@ -46,7 +55,18 @@ interface RawOrder {
   orderNumber: string
   supplierName: string
   status: string
-  delivery: { status: string, courierName: string | null } | null
+  pickupMode?: string
+  updatedAt?: string
+  delivery: { status: string, courierName: string | null, updatedAt?: string } | null
+}
+
+/** Last sign of life of an order: its own change, or its delivery's. */
+function lastActivity(order: RawOrder): number {
+  const times = [order.updatedAt, order.delivery?.updatedAt]
+    .map(value => (value ? new Date(value).getTime() : Number.NaN))
+    .filter(time => !Number.isNaN(time))
+  // Unknown (older API): treat as fresh rather than hide a real delivery.
+  return times.length > 0 ? Math.max(...times) : Date.now()
 }
 
 /** The one furthest along: it is the one about to need the buyer. */
@@ -78,7 +98,7 @@ export function LiveOrderProvider({ children }: { children: ReactNode }) {
       const raw = await res.json() as RawOrder[] | { orders?: RawOrder[], data?: RawOrder[] }
       const list = Array.isArray(raw) ? raw : raw.orders ?? raw.data ?? []
       const moving = list
-        .filter(item => MOVING.has(item.status))
+        .filter(item => MOVING.has(item.status) && Date.now() - lastActivity(item) < STALE_AFTER_MS)
         .sort((a, b) => (RANK[b.status] ?? 0) - (RANK[a.status] ?? 0))
       const first = moving[0]
       setCount(moving.length)
@@ -90,6 +110,7 @@ export function LiveOrderProvider({ children }: { children: ReactNode }) {
             status: first.status,
             deliveryStatus: first.delivery?.status ?? null,
             courierName: first.delivery?.courierName ?? null,
+            isPickup: first.pickupMode === 'ON_SITE',
           }
         : null)
     }
@@ -156,7 +177,14 @@ export function liveOrderLabel(order: LiveOrder): string {
     return 'Recherche d\'un livreur'
   }
   if (order.status === 'READY') {
-    return `Prête chez ${order.shopName}`
+    if (order.isPickup) {
+      return 'Prête : vous pouvez la retirer'
+    }
+    // A courier can be on the way to the shop before the order leaves it.
+    if (order.deliveryStatus === 'ACCEPTED') {
+      return order.courierName ? `${order.courierName} va chercher votre commande` : 'Un livreur va chercher votre commande'
+    }
+    return 'Prête, en attente d\'un livreur'
   }
   if (order.status === 'PREPARING') {
     return `En préparation chez ${order.shopName}`
