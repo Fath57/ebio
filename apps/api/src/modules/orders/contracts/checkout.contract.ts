@@ -107,6 +107,9 @@ export const createCheckoutSchema = z.object({
    * was refused.
    */
   deliverySlot: z.string().trim().max(200).optional(),
+  /** Window chosen in the app; without it the slot text is read as a fallback. */
+  deliveryWindowStart: z.string().datetime({ offset: true }).optional(),
+  deliveryWindowEnd: z.string().datetime({ offset: true }).optional(),
 }).meta({
   title: 'CreateCheckout',
   description: 'Valide un panier multi-boutiques en une seule opération',

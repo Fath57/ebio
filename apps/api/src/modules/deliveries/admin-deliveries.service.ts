@@ -188,7 +188,7 @@ export class AdminDeliveriesService {
     const updated = await this.em.transactional(async (em) => {
       const claimed = await em.getConnection().execute(
         `UPDATE deliveries
-         SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(),
+         SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(), pickup_warned_at = NULL,
              reassignment_count = reassignment_count + ?, "updatedAt" = NOW()
          WHERE id = ? AND status IN ('AWAITING_COURIER', 'ACCEPTED')
          RETURNING id`,

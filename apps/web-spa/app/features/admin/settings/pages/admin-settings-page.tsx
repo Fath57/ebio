@@ -2,6 +2,7 @@ import type { BannerOffers, DeliveryPricingConfig } from '@boilerstone/openapi-g
 import type { CommissionCategoryRate } from '../forms/commission-form'
 import type { EscrowReleaseFormData } from '../forms/escrow-release-form'
 import type { NewProductSettings } from '../forms/new-product-settings-form'
+import type { PickupPolicyFormData } from '../forms/pickup-policy-form'
 import type { ReferralRewardsFormData } from '../forms/referral-rewards-form'
 import { client } from '@boilerstone/openapi-generator'
 import {
@@ -13,6 +14,7 @@ import {
   adminControllerUpdateCommissions,
   adminControllerUpdateCourierDebtLimit,
   adminControllerUpdateCourierOfferTimeout,
+  adminControllerUpdateCourierPickupPolicy,
   adminControllerUpdateDeliveryCommission,
   adminDeliveryPricingControllerGet,
   adminDeliveryPricingControllerUpdate,
@@ -46,6 +48,7 @@ import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
 import { EscrowReleaseForm } from '../forms/escrow-release-form'
 import { NewProductSettingsForm } from '../forms/new-product-settings-form'
 import { OfferTimeoutForm } from '../forms/offer-timeout-form'
+import { PickupPolicyForm } from '../forms/pickup-policy-form'
 import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
 import { ReferralRewardsForm } from '../forms/referral-rewards-form'
 
@@ -58,7 +61,10 @@ interface AdminSettingsData {
   /** Deepest negative courier balance before runs are suspended (0 = no limit). */
   courierMaxDebt: number
   courierOfferTimeoutSeconds?: number
+  courierPickupPolicy?: PickupPolicyFormData
 }
+
+const DEFAULT_PICKUP_POLICY: PickupPolicyFormData = { timeoutMinutes: 25, warningMinutes: 10 }
 
 function fetchDeliveryPricingQueryOptions() {
   return {
@@ -184,6 +190,7 @@ export default function AdminSettingsPage() {
   const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [offerTimeoutFeedback, setOfferTimeoutFeedback] = useState<'saved' | 'error' | null>(null)
+  const [pickupPolicyFeedback, setPickupPolicyFeedback] = useState<'saved' | 'error' | null>(null)
   const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
   const [bannerOffersFeedback, setBannerOffersFeedback] = useState<'saved' | 'error' | null>(null)
   const [referralFeedback, setReferralFeedback] = useState<'saved' | 'error' | null>(null)
@@ -268,6 +275,25 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setOfferTimeoutFeedback('error')
+    },
+  })
+
+  const { mutate: updatePickupPolicy, isPending: isPickupPolicyPending } = useMutation({
+    mutationFn: async (policy: PickupPolicyFormData) => {
+      const response = await adminControllerUpdateCourierPickupPolicy({ body: policy })
+      if (response.error)
+        throw new Error('Failed to update courier pickup policy')
+      return response.data
+    },
+    onMutate: () => {
+      setPickupPolicyFeedback(null)
+    },
+    onSuccess: () => {
+      setPickupPolicyFeedback('saved')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
+    },
+    onError: () => {
+      setPickupPolicyFeedback('error')
     },
   })
 
@@ -849,6 +875,28 @@ export default function AdminSettingsPage() {
                 {offerTimeoutFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.offerTimeout.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.pickupPolicy.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.pickupPolicy.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <PickupPolicyForm
+                  policy={settings?.courierPickupPolicy ?? DEFAULT_PICKUP_POLICY}
+                  onSubmit={updatePickupPolicy}
+                  isPending={isPickupPolicyPending}
+                />
+                {pickupPolicyFeedback === 'saved' && (
+                  <p className="text-ebio-green-600 text-sm">{t('admin.settings.pickupPolicy.saved')}</p>
+                )}
+                {pickupPolicyFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.pickupPolicy.error')}
                   </p>
                 )}
               </CardContent>

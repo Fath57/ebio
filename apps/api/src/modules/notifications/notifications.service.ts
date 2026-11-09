@@ -41,6 +41,7 @@ const AUDIENCE_TYPES: Record<NotificationAudience, NotificationType[]> = {
     NotificationType.DELIVERY_ASSIGNED,
     NotificationType.DELIVERY_PICKED_UP,
     NotificationType.DELIVERY_FAILED,
+    NotificationType.DELIVERY_WINDOW_CHANGED,
   ],
   supplier: [
     ...SHARED_TYPES,
@@ -59,11 +60,14 @@ const AUDIENCE_TYPES: Record<NotificationAudience, NotificationType[]> = {
     NotificationType.ESCROW_REMINDER,
     NotificationType.DELIVERY_ASSIGNED,
     NotificationType.DELIVERY_FAILED,
+    NotificationType.DELIVERY_WINDOW_CHANGED,
   ],
   courier: [
     ...SHARED_TYPES,
     NotificationType.DELIVERY_OFFER,
     NotificationType.DELIVERY_REASSIGNED,
+    NotificationType.DELIVERY_PICKUP_REMINDER,
+    NotificationType.DELIVERY_WINDOW_CHANGED,
     NotificationType.COURIER_VALIDATED,
     NotificationType.COURIER_REJECTED,
     NotificationType.COURIER_SUSPENDED,

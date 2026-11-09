@@ -1044,6 +1044,25 @@
       "pickupModes": {
         "DELIVERY": "Delivery",
         "ON_SITE": "On-site pickup"
+      },
+      "window": {
+        "label": "Delivery window",
+        "asap": "As soon as the order is ready",
+        "window": "Within a window",
+        "edit": "Change the window",
+        "title": "Delivery window — {{number}}",
+        "description": "The courier search opens one hour before the window starts. The buyer is told about the change, and so is the courier if one is already assigned.",
+        "mode": "Delivery",
+        "date": "Date",
+        "from": "From",
+        "to": "To",
+        "timezone": "Benin time (UTC+1), whatever your computer's time zone.",
+        "endAfterStart": "The end time must come after the start time.",
+        "slotText": "Displayed text",
+        "slotTextHint": "Leave empty to write it from the window (« Aujourd'hui entre 14h00 et 16h00 »).",
+        "reason": "Reason",
+        "reasonPlaceholder": "E.g. the buyer called support",
+        "effect": "For a multi-shop cart, every order of the same checkout changes together."
       }
     },
     "products": {
@@ -1555,6 +1574,18 @@
         "tooMany": "20 addresses at most.",
         "saved": "Saved.",
         "error": "The change was not saved."
+      },
+      "pickupPolicy": {
+        "title": "Time to collect a run",
+        "description": "Once a run is accepted, the courier must collect the parcel within this delay, otherwise it is offered to another courier. The delay starts from the latest of: acceptance, the order being ready, and 30 minutes before the buyer's window. The courier is reminded before the run is taken back.",
+        "timeout": "Pickup delay",
+        "timeoutHint": "Between 10 and 180 minutes. 25 minutes by default.",
+        "warning": "Courier reminder",
+        "warningHint": "Minutes before the delay ends. 10 minutes by default.",
+        "warningBeforeTimeout": "The reminder must go out before the pickup delay ends.",
+        "unit": "minutes",
+        "saved": "Pickup delay saved",
+        "error": "The pickup delay could not be saved. Try again."
       }
     },
     "site": {
@@ -2372,7 +2403,9 @@
         "REASSIGNED": "Courier reassigned",
         "ORDER_CANCELLED": "Order cancelled",
         "SELF_DELIVERED": "Delivered by the supplier",
-        "ASSIGNED_BY_ADMIN": "Courier assigned by the team"
+        "ASSIGNED_BY_ADMIN": "Courier assigned by the team",
+        "PICKUP_REMINDER": "Pickup reminder sent",
+        "WINDOW_CHANGED": "Window changed"
       }
     },
     "team": {

@@ -172,6 +172,10 @@ export class Delivery {
   @Property({ fieldName: 'dispatch_at', type: 'Date', nullable: true })
   dispatchAt?: Date | null
 
+  /** Reminder sent to the courier before the run is taken back; cleared on release. */
+  @Property({ fieldName: 'pickup_warned_at', type: 'Date', nullable: true })
+  pickupWarnedAt?: Date | null
+
   @Property({ fieldName: 'dispatch_started_at', type: 'Date', nullable: true })
   dispatchStartedAt?: Date | null
 

@@ -14,6 +14,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { Cron, CronExpression } from '@nestjs/schedule'
+import { formatDeliveryWindow, parseDeliverySlot } from '../../common/delivery-window'
 import { User, UserRole } from '../auth/auth.entity'
 import { SingleInstance } from '../db/cron-lock'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
@@ -161,6 +162,21 @@ interface BasketPricing {
   platformPromoCompensation: number
 }
 
+/** Until the courier leaves with the parcel, the window can still move. */
+const WINDOW_EDITABLE_STATUSES = new Set<OrderStatus>([
+  OrderStatus.PENDING_PAYMENT,
+  OrderStatus.PLACED,
+  OrderStatus.ACCEPTED,
+  OrderStatus.PREPARING,
+  OrderStatus.READY,
+])
+
+export interface AdminDeliveryWindowInput {
+  start: string | null
+  end: string | null
+  slotText?: string
+}
+
 @Injectable()
 export class OrdersService {
   private readonly logger = new Logger(OrdersService.name)
@@ -182,6 +198,29 @@ export class OrdersService {
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
+
+  /**
+   * The window the app sent, or the one read from the slot text for app
+   * versions that still type it. A pickup on site has none.
+   */
+  private resolveDeliveryWindow(data: CreateOrder): { deliveryWindowStart: Date | null, deliveryWindowEnd: Date | null } {
+    if (data.pickupMode !== PickupMode.DELIVERY) {
+      return { deliveryWindowStart: null, deliveryWindowEnd: null }
+    }
+    if (data.deliveryWindowStart && data.deliveryWindowEnd) {
+      const start = new Date(data.deliveryWindowStart)
+      const end = new Date(data.deliveryWindowEnd)
+      if (end.getTime() <= start.getTime()) {
+        throw new BadRequestException('Le créneau de livraison doit finir après son début')
+      }
+      if (end.getTime() <= Date.now()) {
+        throw new BadRequestException('Ce créneau de livraison est déjà passé, choisissez-en un autre')
+      }
+      return { deliveryWindowStart: start, deliveryWindowEnd: end }
+    }
+    const parsed = parseDeliverySlot(data.deliverySlot, new Date())
+    return { deliveryWindowStart: parsed?.start ?? null, deliveryWindowEnd: parsed?.end ?? null }
+  }
 
   /**
    * What a unified checkout imposes on order creation.
@@ -254,6 +293,7 @@ export class OrdersService {
       paymentMethod: data.paymentMethod as PaymentMethod,
       deliveryAddress: data.deliveryAddress,
       deliverySlot: data.deliverySlot || undefined,
+      ...this.resolveDeliveryWindow(data),
       deliveryLatitude: data.deliveryLatitude,
       deliveryLongitude: data.deliveryLongitude,
       deliveryFee,
@@ -589,6 +629,56 @@ export class OrdersService {
     const order = await this.findById(orderId)
     await this.applyStatus(order, newStatus)
     return order
+  }
+
+  /**
+   * Back office (admin or support) sets the delivery window an order should
+   * follow — a buyer on the phone, a slot the app could not read. A unified
+   * cart shares one courier run, so every open order of the checkout moves
+   * together. A null window means « as soon as ready ».
+   */
+  async adminUpdateDeliveryWindow(orderId: string, input: AdminDeliveryWindowInput, actorUserId: string): Promise<Order[]> {
+    const order = await this.findById(orderId)
+    if (order.pickupMode !== PickupMode.DELIVERY) {
+      throw new BadRequestException('Cette commande est retirée sur place : elle n\'a pas de créneau de livraison')
+    }
+    if (!WINDOW_EDITABLE_STATUSES.has(order.status)) {
+      throw new BadRequestException('Le créneau ne peut plus changer : la commande est déjà partie ou close')
+    }
+    const window = input.start && input.end ? { start: new Date(input.start), end: new Date(input.end) } : null
+    if (window && window.end.getTime() <= window.start.getTime()) {
+      throw new BadRequestException('Le créneau doit finir après son début')
+    }
+    if (window && window.end.getTime() <= Date.now()) {
+      throw new BadRequestException('Ce créneau est déjà passé')
+    }
+    const slotText = input.slotText?.trim() || (window ? formatDeliveryWindow(window, new Date()) : 'Dès que possible')
+
+    const orders = order.checkout
+      ? (await this.em.find(Order, { checkout: { id: order.checkout.id }, pickupMode: PickupMode.DELIVERY }, { populate: ['buyer', 'supplier'] }))
+          .filter(sibling => WINDOW_EDITABLE_STATUSES.has(sibling.status))
+      : [order]
+    for (const target of orders) {
+      target.deliveryWindowStart = window?.start ?? null
+      target.deliveryWindowEnd = window?.end ?? null
+      target.deliverySlot = slotText
+    }
+    await this.em.flush()
+
+    for (const target of orders) {
+      await this.deliveriesService.applyWindowChange(target, actorUserId)
+    }
+
+    const numbers = orders.map(target => target.orderNumber).join(', ')
+    await this.notificationsService.send({
+      user: order.buyer,
+      type: NotificationType.DELIVERY_WINDOW_CHANGED,
+      title: 'Créneau de livraison modifié',
+      body: `Votre commande ${numbers} sera livrée : ${slotText}`,
+      data: { orderId: order.id },
+      channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+    })
+    return orders
   }
 
   /**

@@ -2,7 +2,7 @@ import { BadRequestException, ConflictException, ForbiddenException, GoneExcepti
 import { OrderStatus } from '../orders/entities/order.entity'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { DeliveriesService } from './deliveries.service'
-import { DeliveryStatus } from './entities/delivery.entity'
+import { DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 interface MockEm {
   findOne: ReturnType<typeof vi.fn>
@@ -320,6 +320,66 @@ describe('deliveriesService', () => {
       await service.cancelForOrder({ id: 'order-1', orderNumber: 'EB-1' } as never)
       expect(delivery.status).toBe(DeliveryStatus.DELIVERED)
       expect(notifications.send).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('delivery window', () => {
+    const inHours = (hours: number) => new Date(Date.now() + hours * 60 * 60 * 1000)
+
+    type WindowTestDelivery = ReturnType<typeof buildDelivery> & {
+      dispatchPhase?: DispatchPhase
+      dispatchAt?: Date
+      pickupWarnedAt?: Date | null
+    }
+
+    function buildScheduled(extra: Record<string, unknown> = {}): WindowTestDelivery {
+      return buildDelivery(DeliveryStatus.AWAITING_COURIER, {
+        courier: null,
+        dispatchPhase: DispatchPhase.SCHEDULED,
+        dispatchAt: inHours(-1),
+        pickupReadyAt: null,
+        deliveryRun: null,
+        ...extra,
+      })
+    }
+
+    it('keeps a ready parcel waiting until an hour before the buyer window', async () => {
+      const { service, em, dispatch } = buildService()
+      const delivery = buildScheduled()
+      em.findOne.mockResolvedValueOnce(delivery)
+      const windowStart = inHours(4)
+      await service.createForOrder({ id: 'order-1', deliveryWindowStart: windowStart } as never)
+      expect(delivery.dispatchPhase).toBe(DispatchPhase.SCHEDULED)
+      expect((delivery.dispatchAt as Date).getTime()).toBe(windowStart.getTime() - 60 * 60 * 1000)
+      expect(dispatch.startDispatch).not.toHaveBeenCalled()
+    })
+
+    it('searches at once without a window', async () => {
+      const { service, em, dispatch } = buildService()
+      em.findOne.mockResolvedValueOnce(buildScheduled())
+      await service.createForOrder({ id: 'order-1', deliveryWindowStart: null } as never)
+      expect(dispatch.startDispatch).toHaveBeenCalledWith('delivery-1')
+    })
+
+    it('puts an unclaimed run back to waiting when the window moves away', async () => {
+      const { service, em, dispatch } = buildService()
+      const delivery = buildScheduled({ dispatchPhase: DispatchPhase.BROADCAST, pickupReadyAt: inHours(-1) })
+      em.findOne.mockResolvedValueOnce(delivery)
+      const order = { id: 'order-1', orderNumber: 'EB-1', status: OrderStatus.READY, deliveryWindowStart: inHours(5), deliveryWindowEnd: inHours(7) }
+      await service.applyWindowChange(order as never, 'admin-1')
+      expect(delivery.dispatchPhase).toBe(DispatchPhase.SCHEDULED)
+      expect(dispatch.cancelPendingOffer).toHaveBeenCalledWith('delivery-1')
+    })
+
+    it('keeps the assigned courier and tells them the new window', async () => {
+      const { service, em, notifications } = buildService()
+      const delivery: WindowTestDelivery = buildDelivery(DeliveryStatus.ACCEPTED, { deliveryRun: null, pickupWarnedAt: new Date() })
+      em.findOne.mockResolvedValueOnce(delivery)
+      const order = { id: 'order-1', orderNumber: 'EB-1', status: OrderStatus.READY, deliverySlot: 'Demain entre 8h00 et 10h00', deliveryWindowStart: inHours(20) }
+      await service.applyWindowChange(order as never, 'admin-1')
+      expect(delivery.status).toBe(DeliveryStatus.ACCEPTED)
+      expect(delivery.pickupWarnedAt).toBeNull()
+      expect(notifications.send.mock.calls[0][0].type).toBe('DELIVERY_WINDOW_CHANGED')
     })
   })
 })

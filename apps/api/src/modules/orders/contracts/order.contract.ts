@@ -61,6 +61,9 @@ export const createOrderSchema = z.object({
   deliveryLatitude: z.number().min(-90).max(90).optional(),
   deliveryLongitude: z.number().min(-180).max(180).optional(),
   deliverySlot: z.string().max(200).optional(),
+  /** Window chosen in the app; without it the slot text is read as a fallback. */
+  deliveryWindowStart: z.string().datetime({ offset: true }).optional(),
+  deliveryWindowEnd: z.string().datetime({ offset: true }).optional(),
   promoCode: z.string().min(1).max(30).optional(),
   items: z.array(orderItemInputSchema).min(1),
 }).meta({
@@ -161,6 +164,8 @@ export const orderResponseSchema = z.object({
   deliveryLatitude: z.number().nullable(),
   deliveryLongitude: z.number().nullable(),
   deliverySlot: z.string().nullable(),
+  deliveryWindowStart: z.string().datetime().nullable(),
+  deliveryWindowEnd: z.string().datetime().nullable(),
   deliveryFee: z.number(),
   totalAmount: z.number(),
   discountAmount: z.number(),

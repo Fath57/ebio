@@ -24,6 +24,8 @@ const KNOWN_EVENT_TYPES = [
   'ORDER_CANCELLED',
   'SELF_DELIVERED',
   'ASSIGNED_BY_ADMIN',
+  'PICKUP_REMINDER',
+  'WINDOW_CHANGED',
 ]
 
 interface DeliveryTimelineProps {

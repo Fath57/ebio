@@ -1,5 +1,6 @@
 import type { SettlementStatus } from '../../payments/utils/await-settlement'
 import type { OrderPreview, OrderPreviewLine, PreviewDeliveryReason } from '../hooks/use-order-preview'
+import type { SlotChoice } from '../utils/delivery-slot'
 import * as Haptics from 'expo-haptics'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
@@ -43,7 +44,9 @@ import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
 import { useRecommendations } from '../hooks/use-recommendations'
 import { loadCheckoutDraft, saveCheckoutDraft } from '../utils/checkout-draft'
+import { ASAP_CHOICE, decodeSlotChoice, encodeSlotChoice, toSlotWindow } from '../utils/delivery-slot'
 import { BasketSuggestions } from './basket-suggestions'
+import { DeliverySlotPicker } from './delivery-slot-picker'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
@@ -252,6 +255,18 @@ function toLocalLines(items: OrderSummary['items']): OrderPreviewLine[] {
 /** Le bouton de caisse, capable de suivre un changement de disposition. */
 const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity)
 
+/**
+ * The window travels as instants, computed at submit time so that a checkout
+ * left open overnight does not send yesterday's « today ».
+ */
+function buildSlotPayload(choice: SlotChoice): { deliverySlot?: string, deliveryWindowStart?: string, deliveryWindowEnd?: string } {
+  const window = toSlotWindow(choice, new Date())
+  if (!window) {
+    return { deliverySlot: 'Dès que possible' }
+  }
+  return { deliverySlot: window.label, deliveryWindowStart: window.start, deliveryWindowEnd: window.end }
+}
+
 export function CheckoutFlow({
   orderSummary,
   customer,
@@ -294,7 +309,9 @@ export function CheckoutFlow({
   const upsellShownRef = useRef(false)
   const [upsellOpen, setUpsellOpen] = useState(false)
   const { latitude: currentLatitude, longitude: currentLongitude } = useLocation()
-  const [deliverySlot, setDeliverySlot] = useState('')
+  const [slotChoice, setSlotChoice] = useState<SlotChoice>(ASAP_CHOICE)
+  // Fixed per screen visit: the ranges offered must not shift under the finger.
+  const [slotNow] = useState(() => new Date())
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Whichever provider this build ships with; the name stays so the
   // payment-choice logic below reads as before.
@@ -337,7 +354,7 @@ export function CheckoutFlow({
       setDeliveryAddress(current => current || draft.address || '')
       setDeliveryPosition(current => current ?? draft.position ?? null)
       setDeliveryPlaceLabel(current => current ?? draft.placeLabel ?? null)
-      setDeliverySlot(current => current || draft.slot || '')
+      setSlotChoice(current => current.kind === 'asap' ? decodeSlotChoice(draft.slot, new Date()) : current)
       setPromoInput(current => current || draft.promoInput || '')
       if (draft.paymentChoice) {
         setPaymentChoice(draft.paymentChoice)
@@ -356,11 +373,11 @@ export function CheckoutFlow({
       address: deliveryAddress,
       position: deliveryPosition,
       placeLabel: deliveryPlaceLabel,
-      slot: deliverySlot,
+      slot: encodeSlotChoice(slotChoice),
       paymentChoice,
       promoInput,
     })
-  }, [deliveryAddress, deliveryPosition, deliveryPlaceLabel, deliverySlot, paymentChoice, promoInput])
+  }, [deliveryAddress, deliveryPosition, deliveryPlaceLabel, slotChoice, paymentChoice, promoInput])
 
   const isPickup = orderSummary.deliveryMode === 'PICKUP'
   // `orderSummary` is a snapshot taken when leaving the cart; the basket keeps
@@ -589,7 +606,7 @@ export function CheckoutFlow({
           deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? trimmedAddress : undefined,
           deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.latitude : undefined,
           deliveryLongitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.longitude : undefined,
-          deliverySlot: deliverySlot || undefined,
+          ...(orderSummary.deliveryMode === 'DELIVERY' ? buildSlotPayload(slotChoice) : {}),
           items: basketItems.map(item => ({
             productId: item.productId,
             ...(item.variantId ? { variantId: item.variantId } : {}),
@@ -698,7 +715,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, basketItems, deliveryAddress, deliveryPosition, deliverySlot, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems])
+  }, [orderSummary, basketItems, deliveryAddress, deliveryPosition, slotChoice, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems])
 
   /**
    * Confirms the collection once the payment screen says it is over.
@@ -896,15 +913,9 @@ export function CheckoutFlow({
                 </Text>
 
                 <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>
-                  Créneau souhaité (optionnel)
+                  Quand souhaitez-vous être livré ?
                 </Text>
-                <TextInput
-                  style={[styles.textInput, { color: semantic.textPrimary, backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}
-                  placeholder="Ex: Demain matin entre 8h et 12h"
-                  placeholderTextColor={semantic.textTertiary}
-                  value={deliverySlot}
-                  onChangeText={setDeliverySlot}
-                />
+                <DeliverySlotPicker value={slotChoice} onChange={setSlotChoice} now={slotNow} />
               </View>
             )}
           </View>

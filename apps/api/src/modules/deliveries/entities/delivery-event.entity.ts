@@ -28,6 +28,10 @@ export enum DeliveryEventType {
   OFFERED = 'OFFERED',
   OFFER_DECLINED = 'OFFER_DECLINED',
   OFFER_EXPIRED = 'OFFER_EXPIRED',
+  /** The courier was warned that the run will be taken back without a pickup. */
+  PICKUP_REMINDER = 'PICKUP_REMINDER',
+  /** The back office changed the buyer's delivery window. */
+  WINDOW_CHANGED = 'WINDOW_CHANGED',
 }
 
 /** Append-only transition log — the traceable per-step history (SC-002). */

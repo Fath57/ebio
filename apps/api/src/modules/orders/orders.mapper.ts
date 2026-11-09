@@ -21,6 +21,8 @@ export class OrderMapper {
       deliveryLatitude: order.deliveryLatitude ?? null,
       deliveryLongitude: order.deliveryLongitude ?? null,
       deliverySlot: order.deliverySlot ?? null,
+      deliveryWindowStart: order.deliveryWindowStart?.toISOString() ?? null,
+      deliveryWindowEnd: order.deliveryWindowEnd?.toISOString() ?? null,
       deliveryFee: order.deliveryFee,
       totalAmount: order.totalAmount,
       discountAmount: order.discountAmount ?? 0,

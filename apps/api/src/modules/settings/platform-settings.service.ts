@@ -14,6 +14,8 @@ export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
 export const CASH_ON_DELIVERY_MAX_AMOUNT_KEY = 'cash_on_delivery_max_amount'
 export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
 export const COURIER_OFFER_TIMEOUT_KEY = 'courier_offer_timeout_s'
+export const COURIER_PICKUP_TIMEOUT_KEY = 'courier_pickup_timeout_min'
+export const COURIER_PICKUP_WARNING_KEY = 'courier_pickup_warning_min'
 export const DELIVERY_PRICING_KEY = 'delivery_pricing'
 export const BANNER_OFFERS_KEY = 'banner_offers'
 export const ASSISTANT_ENABLED_KEY = 'assistant_enabled'
@@ -82,6 +84,23 @@ export const DEFAULT_COURIER_MAX_DEBT = 5_000
 export const DEFAULT_COURIER_OFFER_TIMEOUT_S = 90
 export const COURIER_OFFER_TIMEOUT_MIN_S = 20
 export const COURIER_OFFER_TIMEOUT_MAX_S = 600
+
+/**
+ * Minutes a courier has to pick a run up, counted from the latest of their
+ * acceptance, the parcel being ready and the buyer's window nearing. 15 min
+ * took runs away from couriers stuck in Cotonou traffic.
+ */
+export const DEFAULT_COURIER_PICKUP_TIMEOUT_MIN = 25
+export const COURIER_PICKUP_TIMEOUT_MIN_MIN = 10
+export const COURIER_PICKUP_TIMEOUT_MAX_MIN = 180
+/** How long before taking the run back the courier is reminded. */
+export const DEFAULT_COURIER_PICKUP_WARNING_MIN = 10
+export const COURIER_PICKUP_WARNING_MIN_MIN = 1
+
+export interface CourierPickupPolicy {
+  timeoutMinutes: number
+  warningMinutes: number
+}
 
 /**
  * The assistant stays off until someone turns it on.
@@ -238,6 +257,40 @@ export class PlatformSettingsService {
       `Le délai doit être un nombre de secondes entre ${COURIER_OFFER_TIMEOUT_MIN_S} et ${COURIER_OFFER_TIMEOUT_MAX_S}`,
     )
     await this.set(COURIER_OFFER_TIMEOUT_KEY, String(seconds))
+  }
+
+  /** The warning always lands before the release, whatever the stored rows say. */
+  async getCourierPickupPolicy(): Promise<CourierPickupPolicy> {
+    const timeoutMinutes = await this.readInteger(
+      COURIER_PICKUP_TIMEOUT_KEY,
+      DEFAULT_COURIER_PICKUP_TIMEOUT_MIN,
+      COURIER_PICKUP_TIMEOUT_MIN_MIN,
+      COURIER_PICKUP_TIMEOUT_MAX_MIN,
+    )
+    const warningMinutes = await this.readInteger(
+      COURIER_PICKUP_WARNING_KEY,
+      DEFAULT_COURIER_PICKUP_WARNING_MIN,
+      COURIER_PICKUP_WARNING_MIN_MIN,
+      COURIER_PICKUP_TIMEOUT_MAX_MIN,
+    )
+    return { timeoutMinutes, warningMinutes: Math.min(warningMinutes, timeoutMinutes - 1) }
+  }
+
+  async setCourierPickupPolicy(policy: CourierPickupPolicy): Promise<void> {
+    this.assertInteger(
+      policy.timeoutMinutes,
+      COURIER_PICKUP_TIMEOUT_MIN_MIN,
+      COURIER_PICKUP_TIMEOUT_MAX_MIN,
+      `Le délai de retrait doit être compris entre ${COURIER_PICKUP_TIMEOUT_MIN_MIN} et ${COURIER_PICKUP_TIMEOUT_MAX_MIN} minutes`,
+    )
+    this.assertInteger(
+      policy.warningMinutes,
+      COURIER_PICKUP_WARNING_MIN_MIN,
+      policy.timeoutMinutes - 1,
+      'Le rappel doit partir au moins une minute avant la fin du délai de retrait',
+    )
+    await this.set(COURIER_PICKUP_TIMEOUT_KEY, String(policy.timeoutMinutes))
+    await this.set(COURIER_PICKUP_WARNING_KEY, String(policy.warningMinutes))
   }
 
   /** Platform delivery pricing; an unreadable or missing row yields the defaults. */

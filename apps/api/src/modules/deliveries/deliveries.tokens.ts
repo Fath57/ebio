@@ -25,6 +25,8 @@ export interface OrderDeliveryHooks {
   createForOrder: (order: Order) => Promise<Delivery | null>
   /** PREPARING with a readiness estimate: create the run now, search later. */
   scheduleForOrder: (order: Order) => Promise<Delivery | null>
+  /** The back office moved the delivery window: the run follows it. */
+  applyWindowChange: (order: Order, actorUserId: string) => Promise<Delivery | null>
   cancelForOrder: (order: Order) => Promise<void>
   handleSupplierTakeover: (order: Order) => Promise<void>
   closeForOrder: (order: Order) => Promise<void>

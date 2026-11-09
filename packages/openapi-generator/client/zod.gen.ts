@@ -827,6 +827,32 @@ export const zAdminOrderStatus = z.object({
 });
 
 /**
+ * AdminOrderDeliveryWindow
+ *
+ * Delivery window set by the back office; the courier search and pickup clock follow it
+ */
+export const zAdminOrderDeliveryWindow = z.object({
+  start: z.union([
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+    z.null(),
+  ]),
+  end: z.union([
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+    z.null(),
+  ]),
+  slotText: z.optional(z.string().max(200)),
+  reason: z.optional(z.string().max(500)),
+});
+
+/**
  * CommissionRates
  *
  * Commission rates per product category, as fractions
@@ -874,6 +900,16 @@ export const zCourierDebtLimit = z.object({
  */
 export const zCourierOfferTimeout = z.object({
   seconds: z.int().gte(20).lte(600),
+});
+
+/**
+ * CourierPickupPolicy
+ *
+ * Time a courier has to pick a run up before it is offered again, and when they are reminded
+ */
+export const zCourierPickupPolicy = z.object({
+  timeoutMinutes: z.int().gte(10).lte(180),
+  warningMinutes: z.int().gte(1).lte(179),
 });
 
 /**
@@ -1150,6 +1186,27 @@ export const zApproveBannerRequest = z.object({
  */
 export const zRejectBannerRequest = z.object({
   reason: z.string().min(5).max(500),
+});
+
+/**
+ * GenerateBusinessCards
+ *
+ * The validated suppliers to print: a selection, or all of them
+ */
+export const zGenerateBusinessCards = z.object({
+  supplierIds: z.optional(
+    z
+      .array(
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+      )
+      .min(1)
+      .max(200),
+  ),
+  all: z.optional(z.boolean()),
 });
 
 /**
@@ -2856,6 +2913,20 @@ export const zCreateCheckout = z.object({
   paymentMethod: zPaymentMethod,
   promoCode: z.optional(z.string().max(50)),
   deliverySlot: z.optional(z.string().max(200)),
+  deliveryWindowStart: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+  ),
+  deliveryWindowEnd: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+  ),
 });
 
 /**
@@ -2875,6 +2946,20 @@ export const zCreateOrder = z.object({
   deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   deliverySlot: z.optional(z.string().max(200)),
+  deliveryWindowStart: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+  ),
+  deliveryWindowEnd: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+      ),
+  ),
   promoCode: z.optional(z.string().min(1).max(30)),
   items: z.array(zOrderItemInput).min(1),
 });
@@ -6036,6 +6121,20 @@ export const zOrdersControllerCreateCheckoutData = z.object({
     paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
     promoCode: z.optional(z.string().max(50)),
     deliverySlot: z.optional(z.string().max(200)),
+    deliveryWindowStart: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+        ),
+    ),
+    deliveryWindowEnd: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+        ),
+    ),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -6065,6 +6164,20 @@ export const zOrdersControllerCreateData = z.object({
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     deliverySlot: z.optional(z.string().max(200)),
+    deliveryWindowStart: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+        ),
+    ),
+    deliveryWindowEnd: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+        ),
+    ),
     promoCode: z.optional(z.string().min(1).max(30)),
     items: z
       .array(
@@ -8908,6 +9021,33 @@ export const zAdminControllerUpdateOrderStatusData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminControllerUpdateOrderDeliveryWindowData = z.object({
+  body: z.object({
+    start: z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+        ),
+      z.null(),
+    ]),
+    end: z.union([
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
+        ),
+      z.null(),
+    ]),
+    slotText: z.optional(z.string().max(200)),
+    reason: z.optional(z.string().max(500)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zAdminControllerGetSuppliersData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -9075,6 +9215,15 @@ export const zAdminControllerUpdateCourierOfferTimeoutData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminControllerUpdateCourierPickupPolicyData = z.object({
+  body: z.object({
+    timeoutMinutes: z.int().gte(10).lte(180),
+    warningMinutes: z.int().gte(1).lte(179),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zAdminControllerBroadcastNotificationData = z.object({
   body: z.object({
     title: z.string().min(1).max(200),
@@ -9138,4 +9287,24 @@ export const zAdminUsersControllerRecentAuditData = z.object({
   query: z.object({
     actorId: z.string(),
   }),
+});
+
+export const zBusinessCardsControllerGenerateData = z.object({
+  body: z.object({
+    supplierIds: z.optional(
+      z
+        .array(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        )
+        .min(1)
+        .max(200),
+    ),
+    all: z.optional(z.boolean()),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
 });

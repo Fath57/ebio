@@ -1,6 +1,14 @@
+import type { DeliveryWindowSubmit } from '../forms/delivery-window-form'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from '@boilerstone/ui/components/primitives/dialog'
 import {
   Select,
   SelectContent,
@@ -19,17 +27,21 @@ import {
   TableRow,
 } from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Star, Truck } from 'lucide-react'
+import { CalendarClock, Star, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { BackLink } from '@/features/admin/common/components/back-link'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
+import { Can } from '@/lib/casl/can'
 import { fetchAdminDeliveryQueryOptions } from '../../deliveries/utils/deliveries-queries'
+import { DeliveryWindowForm } from '../forms/delivery-window-form'
+import { formatBeninWindow, WINDOW_EDITABLE_ORDER_STATUSES } from '../utils/delivery-window'
 import { ORDER_STATUS_TONES } from '../utils/order-status'
 import {
   ADMIN_ORDER_STATUSES,
   fetchAdminOrderQueryOptions,
+  updateAdminOrderDeliveryWindow,
   updateAdminOrderStatus,
 } from '../utils/orders-queries'
 
@@ -75,6 +87,7 @@ export default function AdminOrderDetailPage() {
   const { orderId } = useParams()
   const queryClient = useQueryClient()
   const [pendingStatus, setPendingStatus] = useState<string | null>(null)
+  const [isWindowDialogOpen, setIsWindowDialogOpen] = useState(false)
   const { data: order, isLoading } = useQuery({
     ...fetchAdminOrderQueryOptions(orderId ?? ''),
     enabled: Boolean(orderId),
@@ -96,6 +109,15 @@ export default function AdminOrderDetailPage() {
     },
   })
 
+  const windowMutation = useMutation({
+    mutationFn: (input: DeliveryWindowSubmit) => updateAdminOrderDeliveryWindow(orderId ?? '', input),
+    onSuccess: () => {
+      setIsWindowDialogOpen(false)
+      queryClient.invalidateQueries({ queryKey: ['admin', 'orders'] })
+      queryClient.invalidateQueries({ queryKey: ['admin', 'deliveries'] })
+    },
+  })
+
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -111,6 +133,10 @@ export default function AdminOrderDetailPage() {
 
   const formatDate = (value: string | null) =>
     value ? new Date(value).toLocaleString(i18n.language) : null
+  const canEditWindow = order.pickupMode === 'DELIVERY' && WINDOW_EDITABLE_ORDER_STATUSES.has(order.status)
+  const windowLabel = order.deliveryWindowStart && order.deliveryWindowEnd
+    ? formatBeninWindow(order.deliveryWindowStart, order.deliveryWindowEnd)
+    : t('admin.orders.window.asap')
   const readyAround = order.status === 'PREPARING' && order.estimatedReadyAt
     ? new Date(order.estimatedReadyAt).toLocaleTimeString(i18n.language, { hour: '2-digit', minute: '2-digit' })
     : null
@@ -175,14 +201,25 @@ export default function AdminOrderDetailPage() {
         </Card>
 
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>{t('admin.orders.detail.logistics')}</CardTitle>
+            {canEditWindow && (
+              <Can action="manage" subject="Order">
+                <Button size="sm" variant="outline" onClick={() => setIsWindowDialogOpen(true)}>
+                  <CalendarClock className="mr-2 h-4 w-4" />
+                  {t('admin.orders.window.edit')}
+                </Button>
+              </Can>
+            )}
           </CardHeader>
           <CardContent>
             <InfoRow label={t('admin.orders.detail.pickupMode')} value={order.pickupMode} />
             <InfoRow label={t('admin.orders.detail.paymentMethod')} value={order.paymentMethod} />
             <InfoRow label={t('admin.orders.detail.address')} value={order.deliveryAddress} />
             <InfoRow label={t('admin.orders.detail.slot')} value={order.deliverySlot} />
+            {order.pickupMode === 'DELIVERY' && (
+              <InfoRow label={t('admin.orders.window.label')} value={windowLabel} />
+            )}
             <Separator className="my-2" />
             <InfoRow label={t('admin.orders.detail.createdAt')} value={formatDate(order.createdAt)} />
             <InfoRow label={t('admin.orders.detail.acceptedAt')} value={formatDate(order.acceptedAt)} />
@@ -239,6 +276,26 @@ export default function AdminOrderDetailPage() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={isWindowDialogOpen} onOpenChange={setIsWindowDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('admin.orders.window.title', { number: order.orderNumber })}</DialogTitle>
+            <DialogDescription>{t('admin.orders.window.description')}</DialogDescription>
+          </DialogHeader>
+          {windowMutation.error && (
+            <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+              {windowMutation.error.message}
+            </p>
+          )}
+          <DeliveryWindowForm
+            order={order}
+            isPending={windowMutation.isPending}
+            onSubmit={input => windowMutation.mutate(input)}
+            onCancel={() => setIsWindowDialogOpen(false)}
+          />
+        </DialogContent>
+      </Dialog>
 
       <Card>
         <CardHeader>

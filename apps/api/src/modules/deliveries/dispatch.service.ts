@@ -3,10 +3,12 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable, Logger } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { computeCourierFee, orderPickups } from '../../common/delivery-fee'
+import { computePickupDeadlines, formatBeninClock } from '../../common/delivery-window'
 import { User } from '../auth/auth.entity'
 import { SingleInstance } from '../db/cron-lock'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
+import { OrderStatus } from '../orders/entities/order.entity'
 import { Checkout } from '../payments/entities/checkout.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { CourierProfile } from './entities/courier-profile.entity'
@@ -16,7 +18,7 @@ import { DeliveryRun, DeliveryRunOutcome, DeliveryRunStatus } from './entities/d
 import { Delivery, DeliveryStatus, DispatchPhase } from './entities/delivery.entity'
 
 const TEN_MINUTES_MS = 10 * 60 * 1000
-const FIFTEEN_MINUTES_MS = 15 * 60 * 1000
+const MINUTE_MS = 60 * 1000
 /** Unclaimed past this delay, the back-office is alerted (FR-022). */
 const ESCALATE_AFTER_MS = 15 * 60 * 1000
 /** Unclaimed past this delay, the run ungroups itself (FR-022a). */
@@ -979,43 +981,96 @@ export class DispatchService {
     }
   }
 
-  /** Accepted but never picked up within 15 min: release and re-offer. */
+  /**
+   * Accepted but not picked up in time: the courier is reminded first, then
+   * the run is released and offered again. The clock starts at the latest of
+   * acceptance, readiness and the buyer's window nearing, and both delays come
+   * from the back office.
+   *
+   * A delivery of a grouped run is left out: releasing one shop would leave
+   * the courier holding half a run whose single fee covers the whole trip.
+   */
   async reassignStuck(): Promise<void> {
-    const cutoff = new Date(Date.now() - FIFTEEN_MINUTES_MS)
-    const stuck = await this.em.find(Delivery, {
+    const policy = await this.platformSettings.getCourierPickupPolicy()
+    // No deadline can fall earlier than acceptance + timeout: a cheap first cut.
+    const acceptedBefore = new Date(Date.now() - (policy.timeoutMinutes - policy.warningMinutes) * MINUTE_MS)
+    const candidates = await this.em.find(Delivery, {
       status: DeliveryStatus.ACCEPTED,
-      acceptedAt: { $lt: cutoff },
-    }, { populate: ['courier', 'courier.user', 'order'] })
+      deliveryRun: null,
+      acceptedAt: { $lt: acceptedBefore },
+    }, { populate: ['courier', 'courier.user', 'order', 'order.supplier'] })
 
-    for (const delivery of stuck) {
-      const releasedCourier = delivery.courier
-      delivery.courier = null
-      delivery.status = DeliveryStatus.AWAITING_COURIER
-      delivery.acceptedAt = undefined
-      delivery.reassignmentCount += 1
-      delivery.offeredAt = new Date()
-
-      this.em.create(DeliveryEvent, {
-        delivery,
-        type: DeliveryEventType.REASSIGNED,
-        payload: { releasedCourierId: releasedCourier?.id ?? null },
-      })
-      await this.em.flush()
-
-      if (releasedCourier) {
-        await this.notificationsService.send({
-          user: releasedCourier.user,
-          type: NotificationType.DELIVERY_REASSIGNED,
-          title: 'Course réattribuée',
-          body: `La course ${delivery.order.orderNumber} a été réattribuée : le retrait n'a pas été effectué à temps.`,
-          data: { deliveryId: delivery.id },
-          channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
-        })
+    for (const delivery of candidates) {
+      // The parcel is not ready yet: the courier cannot be blamed for waiting.
+      if (!delivery.acceptedAt || delivery.order.status !== OrderStatus.READY) {
+        continue
       }
-
-      await this.startDispatch(delivery.id)
-      this.logger.log(`Reassigned delivery ${delivery.id} (courier never picked up)`)
+      const { warnAt, releaseAt } = computePickupDeadlines({
+        acceptedAt: delivery.acceptedAt,
+        readyAt: delivery.pickupReadyAt ?? delivery.createdAt,
+        windowStart: delivery.order.deliveryWindowStart ?? null,
+        ...policy,
+      })
+      const now = Date.now()
+      if (now >= releaseAt.getTime()) {
+        await this.releaseStuck(delivery)
+      }
+      else if (now >= warnAt.getTime() && !delivery.pickupWarnedAt) {
+        await this.remindPickup(delivery, releaseAt)
+      }
     }
+  }
+
+  private async remindPickup(delivery: Delivery, releaseAt: Date): Promise<void> {
+    delivery.pickupWarnedAt = new Date()
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.PICKUP_REMINDER,
+      payload: { courierId: delivery.courier?.id ?? null, releaseAt: releaseAt.toISOString() },
+    })
+    await this.em.flush()
+    if (!delivery.courier) {
+      return
+    }
+    await this.notificationsService.send({
+      user: delivery.courier.user,
+      type: NotificationType.DELIVERY_PICKUP_REMINDER,
+      title: 'Retrait attendu',
+      body: `Récupérez la commande ${delivery.order.orderNumber} chez ${delivery.order.supplier.shopName} avant ${formatBeninClock(releaseAt)}, sinon elle sera proposée à un autre livreur.`,
+      data: { deliveryId: delivery.id },
+      channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+    })
+  }
+
+  private async releaseStuck(delivery: Delivery): Promise<void> {
+    const releasedCourier = delivery.courier
+    delivery.courier = null
+    delivery.status = DeliveryStatus.AWAITING_COURIER
+    delivery.acceptedAt = undefined
+    delivery.pickupWarnedAt = null
+    delivery.reassignmentCount += 1
+    delivery.offeredAt = new Date()
+
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.REASSIGNED,
+      payload: { releasedCourierId: releasedCourier?.id ?? null },
+    })
+    await this.em.flush()
+
+    if (releasedCourier) {
+      await this.notificationsService.send({
+        user: releasedCourier.user,
+        type: NotificationType.DELIVERY_REASSIGNED,
+        title: 'Course réattribuée',
+        body: `La course ${delivery.order.orderNumber} a été réattribuée : le retrait n'a pas été effectué à temps.`,
+        data: { deliveryId: delivery.id },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+
+    await this.startDispatch(delivery.id)
+    this.logger.log(`Reassigned delivery ${delivery.id} (courier never picked up)`)
   }
 }
 

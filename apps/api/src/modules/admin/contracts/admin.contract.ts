@@ -288,6 +288,20 @@ export const courierOfferTimeoutSchema = z.object({
   description: 'Exclusive window of a run offered to one courier, in seconds',
 })
 export type CourierOfferTimeoutInput = z.infer<typeof courierOfferTimeoutSchema>
+
+export const courierPickupPolicySchema = z.object({
+  /** Minutes to pick the run up, from the latest of acceptance, readiness and window. */
+  timeoutMinutes: z.number().int().min(10).max(180),
+  /** Minutes before the release at which the courier is reminded. */
+  warningMinutes: z.number().int().min(1).max(179),
+}).refine(policy => policy.warningMinutes < policy.timeoutMinutes, {
+  message: 'Le rappel doit partir avant la fin du délai de retrait',
+  path: ['warningMinutes'],
+}).meta({
+  title: 'CourierPickupPolicy',
+  description: 'Time a courier has to pick a run up before it is offered again, and when they are reminded',
+})
+export type CourierPickupPolicyInput = z.infer<typeof courierPickupPolicySchema>
 export type SupplierCommissionRateInput = z.infer<typeof supplierCommissionRateSchema>
 export type CommissionSummary = z.infer<typeof commissionSummarySchema>
 export type CommissionOrderList = z.infer<typeof commissionOrderListSchema>
@@ -302,3 +316,21 @@ export const adminOrderStatusSchema = z.object({
 })
 
 export type AdminOrderStatusInput = z.infer<typeof adminOrderStatusSchema>
+
+export const adminOrderDeliveryWindowSchema = z.object({
+  /** Null with `end` null: delivered as soon as the parcel is ready. */
+  start: z.string().datetime({ offset: true }).nullable(),
+  end: z.string().datetime({ offset: true }).nullable(),
+  /** Text shown to the buyer, shop and courier; generated from the window when empty. */
+  slotText: z.string().trim().max(200).optional(),
+  /** Why the window moved — kept in the audit trail. */
+  reason: z.string().trim().max(500).optional(),
+}).refine(input => (input.start === null) === (input.end === null), {
+  message: 'Indiquez le début et la fin du créneau, ou aucun des deux',
+  path: ['end'],
+}).meta({
+  title: 'AdminOrderDeliveryWindow',
+  description: 'Delivery window set by the back office; the courier search and pickup clock follow it',
+})
+
+export type AdminOrderDeliveryWindowInput = z.infer<typeof adminOrderDeliveryWindowSchema>

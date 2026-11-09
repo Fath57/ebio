@@ -1,5 +1,6 @@
 import type { StatusCounts } from '../../common/status-counts'
 import type { TemplateName } from '../email/email-template.service'
+import type { CourierPickupPolicy } from '../settings/platform-settings.service'
 import type {
   BroadcastNotification,
   CommissionOrderList,
@@ -558,11 +559,16 @@ export class AdminService {
     const cashOnDeliveryMaxAmount = await this.platformSettings.getCashOnDeliveryMaxAmount()
     const courierMaxDebt = await this.platformSettings.getCourierMaxDebt()
     const courierOfferTimeoutSeconds = await this.platformSettings.getCourierOfferTimeoutSeconds()
-    return { commissions, deliveryCommissionRate, cashOnDeliveryMaxAmount, courierMaxDebt, courierOfferTimeoutSeconds }
+    const courierPickupPolicy = await this.platformSettings.getCourierPickupPolicy()
+    return { commissions, deliveryCommissionRate, cashOnDeliveryMaxAmount, courierMaxDebt, courierOfferTimeoutSeconds, courierPickupPolicy }
   }
 
   async updateCourierOfferTimeout(seconds: number): Promise<void> {
     await this.platformSettings.setCourierOfferTimeoutSeconds(seconds)
+  }
+
+  async updateCourierPickupPolicy(policy: CourierPickupPolicy): Promise<void> {
+    await this.platformSettings.setCourierPickupPolicy(policy)
   }
 
   async updateCourierMaxDebt(amount: number): Promise<void> {
@@ -941,7 +947,7 @@ export class AdminService {
     const rows = await this.em.getConnection().execute(
       `SELECT o.id, o.order_number, o.status, o.total_amount, o.commission_amount,
               o.commission_rate, o."createdAt" as created_at, o.pickup_mode,
-              o.payment_method, o.delivery_address, o.delivery_slot,
+              o.payment_method, o.delivery_address, o.delivery_slot, o.delivery_window_start, o.delivery_window_end,
               o.accepted_at, o.delivered_at, o.estimated_ready_at,
               o.delivery_sponsor, o.sponsored_delivery_fee, o.platform_promo_compensation,
               bu.id as buyer_id, bu.name as buyer_name, bu.email as buyer_email,
@@ -996,6 +1002,8 @@ export class AdminService {
       paymentMethod: row.payment_method as string,
       deliveryAddress: (row.delivery_address as string) ?? null,
       deliverySlot: (row.delivery_slot as string) ?? null,
+      deliveryWindowStart: this.toIso(row.delivery_window_start),
+      deliveryWindowEnd: this.toIso(row.delivery_window_end),
       acceptedAt: this.toIso(row.accepted_at),
       deliveredAt: this.toIso(row.delivered_at),
       estimatedReadyAt: this.toIso(row.estimated_ready_at),

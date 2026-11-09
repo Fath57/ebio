@@ -935,6 +935,8 @@ export type CreateCheckout = {
   paymentMethod: PaymentMethod;
   promoCode?: string;
   deliverySlot?: string;
+  deliveryWindowStart?: Date;
+  deliveryWindowEnd?: Date;
 };
 
 /**
@@ -950,6 +952,8 @@ export type CreateOrder = {
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   deliverySlot?: string;
+  deliveryWindowStart?: Date;
+  deliveryWindowEnd?: Date;
   promoCode?: string;
   items: Array<OrderItemInput>;
 };
@@ -1090,6 +1094,18 @@ export type AdminOrderStatus = {
 };
 
 /**
+ * AdminOrderDeliveryWindow
+ *
+ * Delivery window set by the back office; the courier search and pickup clock follow it
+ */
+export type AdminOrderDeliveryWindow = {
+  start: Date | null;
+  end: Date | null;
+  slotText?: string;
+  reason?: string;
+};
+
+/**
  * CommissionRates
  *
  * Commission rates per product category, as fractions
@@ -1135,6 +1151,16 @@ export type CourierDebtLimit = {
  */
 export type CourierOfferTimeout = {
   seconds: number;
+};
+
+/**
+ * CourierPickupPolicy
+ *
+ * Time a courier has to pick a run up before it is offered again, and when they are reminded
+ */
+export type CourierPickupPolicy = {
+  timeoutMinutes: number;
+  warningMinutes: number;
 };
 
 /**
@@ -1394,6 +1420,16 @@ export type UpdateBanner = {
   position?: number;
   startsAt?: Date | null;
   endsAt?: Date | null;
+};
+
+/**
+ * GenerateBusinessCards
+ *
+ * The validated suppliers to print: a selection, or all of them
+ */
+export type GenerateBusinessCards = {
+  supplierIds?: Array<string>;
+  all?: boolean;
 };
 
 /**
@@ -6975,6 +7011,8 @@ export type OrdersControllerCreateCheckoutData = {
     paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
     promoCode?: string;
     deliverySlot?: string;
+    deliveryWindowStart?: Date;
+    deliveryWindowEnd?: Date;
   };
   path?: never;
   query?: never;
@@ -7025,6 +7063,8 @@ export type OrdersControllerCreateData = {
     deliveryLatitude?: number;
     deliveryLongitude?: number;
     deliverySlot?: string;
+    deliveryWindowStart?: Date;
+    deliveryWindowEnd?: Date;
     promoCode?: string;
     items: Array<{
       productId: string;
@@ -10887,6 +10927,29 @@ export type AdminControllerUpdateOrderStatusResponses = {
   200: unknown;
 };
 
+export type AdminControllerUpdateOrderDeliveryWindowData = {
+  /**
+   * AdminOrderDeliveryWindow
+   *
+   * Delivery window set by the back office; the courier search and pickup clock follow it
+   */
+  body: {
+    start: Date | null;
+    end: Date | null;
+    slotText?: string;
+    reason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/orders/{id}/delivery-window";
+};
+
+export type AdminControllerUpdateOrderDeliveryWindowResponses = {
+  200: unknown;
+};
+
 export type AdminControllerGetSuppliersData = {
   body?: never;
   path?: never;
@@ -11147,6 +11210,25 @@ export type AdminControllerUpdateCourierOfferTimeoutResponses = {
   200: unknown;
 };
 
+export type AdminControllerUpdateCourierPickupPolicyData = {
+  /**
+   * CourierPickupPolicy
+   *
+   * Time a courier has to pick a run up before it is offered again, and when they are reminded
+   */
+  body: {
+    timeoutMinutes: number;
+    warningMinutes: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings/courier-pickup-policy";
+};
+
+export type AdminControllerUpdateCourierPickupPolicyResponses = {
+  200: unknown;
+};
+
 export type AdminControllerBroadcastNotificationData = {
   /**
    * BroadcastNotification
@@ -11252,4 +11334,23 @@ export type AdminUsersControllerRecentAuditData = {
 
 export type AdminUsersControllerRecentAuditResponses = {
   200: unknown;
+};
+
+export type BusinessCardsControllerGenerateData = {
+  /**
+   * GenerateBusinessCards
+   *
+   * The validated suppliers to print: a selection, or all of them
+   */
+  body: {
+    supplierIds?: Array<string>;
+    all?: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/business-cards";
+};
+
+export type BusinessCardsControllerGenerateResponses = {
+  201: unknown;
 };

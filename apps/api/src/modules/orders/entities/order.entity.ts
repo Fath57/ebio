@@ -80,6 +80,16 @@ export class Order {
   deliverySlot?: string
 
   /**
+   * The buyer's window as instants: the courier search and the pickup clock
+   * follow it. Null means « as soon as ready ». `deliverySlot` keeps the text.
+   */
+  @Property({ fieldName: 'delivery_window_start', type: 'Date', nullable: true })
+  deliveryWindowStart?: Date | null
+
+  @Property({ fieldName: 'delivery_window_end', type: 'Date', nullable: true })
+  deliveryWindowEnd?: Date | null
+
+  /**
    * Delivery fee as it stood when the order was placed. Copied rather than read
    * back from the shop: a later price change must not rewrite past orders.
    * Included in `totalAmount`, and excluded from the commission base.

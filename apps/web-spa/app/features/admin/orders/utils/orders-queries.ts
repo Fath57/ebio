@@ -2,6 +2,7 @@ import { client } from '@boilerstone/openapi-generator'
 import {
   adminControllerGetOrderById,
   adminControllerGetOrders,
+  adminControllerUpdateOrderDeliveryWindow,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export interface AdminOrderParty {
@@ -51,6 +52,9 @@ export interface AdminOrderDetail extends AdminOrderListItem {
   commissionRate: number
   deliveryAddress: string | null
   deliverySlot: string | null
+  /** Window the courier search follows, ISO; null = as soon as ready. */
+  deliveryWindowStart: string | null
+  deliveryWindowEnd: string | null
   acceptedAt: string | null
   deliveredAt: string | null
   /** Shop estimate of when the parcel is ready, set when preparation starts. */
@@ -180,4 +184,27 @@ export async function updateAdminOrderStatus(orderId: string, status: string): P
   })
   if (response.error)
     throw new Error('Failed to update order status')
+}
+
+export interface AdminDeliveryWindowInput {
+  start: string | null
+  end: string | null
+  slotText?: string
+  reason?: string
+}
+
+/** The API's message is French and precise (« Ce créneau est déjà passé »): pass it through. */
+export async function updateAdminOrderDeliveryWindow(orderId: string, body: AdminDeliveryWindowInput): Promise<void> {
+  const response = await adminControllerUpdateOrderDeliveryWindow({
+    path: { id: orderId },
+    body: {
+      ...body,
+      start: body.start ? new Date(body.start) : null,
+      end: body.end ? new Date(body.end) : null,
+    },
+  })
+  if (response.error) {
+    const message = (response.error as { message?: unknown }).message
+    throw new Error(typeof message === 'string' ? message : 'Failed to update delivery window')
+  }
 }

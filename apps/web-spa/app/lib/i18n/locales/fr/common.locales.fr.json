@@ -1044,6 +1044,25 @@
       "pickupModes": {
         "DELIVERY": "Livraison",
         "ON_SITE": "Retrait sur place"
+      },
+      "window": {
+        "label": "Fenêtre de livraison",
+        "asap": "Dès que la commande est prête",
+        "window": "Sur un créneau",
+        "edit": "Modifier le créneau",
+        "title": "Créneau de livraison — {{number}}",
+        "description": "La recherche du livreur s'ouvre une heure avant le début du créneau. L'acheteur est prévenu du changement, ainsi que le livreur s'il y en a déjà un.",
+        "mode": "Livraison",
+        "date": "Date",
+        "from": "De",
+        "to": "À",
+        "timezone": "Heure du Bénin (UTC+1), quel que soit le fuseau de votre ordinateur.",
+        "endAfterStart": "L'heure de fin doit suivre l'heure de début.",
+        "slotText": "Texte affiché",
+        "slotTextHint": "Laissez vide pour l'écrire à partir du créneau (« Aujourd'hui entre 14h00 et 16h00 »).",
+        "reason": "Motif",
+        "reasonPlaceholder": "Ex. : l'acheteur a appelé le support",
+        "effect": "Pour un panier multi-boutiques, toutes les commandes du même passage en caisse changent ensemble."
       }
     },
     "products": {
@@ -1555,6 +1574,18 @@
         "tooMany": "20 adresses au plus.",
         "saved": "Enregistré.",
         "error": "Le changement n'a pas été enregistré."
+      },
+      "pickupPolicy": {
+        "title": "Délai de retrait d'une course",
+        "description": "Une fois la course acceptée, le livreur doit récupérer le colis dans ce délai, sinon elle est proposée à un autre livreur. Le délai part du moment le plus tardif parmi : l'acceptation, la commande prête, et 30 minutes avant le début du créneau choisi par le client. Le livreur reçoit un rappel avant le retrait.",
+        "timeout": "Délai de retrait",
+        "timeoutHint": "Entre 10 et 180 minutes. 25 minutes par défaut.",
+        "warning": "Rappel au livreur",
+        "warningHint": "Minutes avant la fin du délai. 10 minutes par défaut.",
+        "warningBeforeTimeout": "Le rappel doit partir avant la fin du délai de retrait.",
+        "unit": "minutes",
+        "saved": "Délai de retrait enregistré",
+        "error": "Impossible d'enregistrer le délai de retrait. Réessayez."
       }
     },
     "site": {
@@ -2372,7 +2403,9 @@
         "REASSIGNED": "Livreur réattribué",
         "ORDER_CANCELLED": "Commande annulée",
         "SELF_DELIVERED": "Livrée par le fournisseur",
-        "ASSIGNED_BY_ADMIN": "Livreur attribué par l'équipe"
+        "ASSIGNED_BY_ADMIN": "Livreur attribué par l'équipe",
+        "PICKUP_REMINDER": "Rappel de retrait envoyé",
+        "WINDOW_CHANGED": "Créneau modifié"
       }
     },
     "team": {

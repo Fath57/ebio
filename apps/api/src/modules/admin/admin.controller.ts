@@ -2,12 +2,14 @@ import type { Response } from 'express'
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import type { OrderStatus } from '../orders/entities/order.entity'
 import type {
+  AdminOrderDeliveryWindowInput,
   AdminOrderStatusInput,
   BroadcastNotification,
   CashOnDeliveryLimitInput,
   CommissionRates,
   CourierDebtLimitInput,
   CourierOfferTimeoutInput,
+  CourierPickupPolicyInput,
   DeliveryCommissionRateInput,
   DisputeResolutionInput,
   ResolveReportInput,
@@ -39,13 +41,16 @@ import { AdminDashboardService, parseDashboardPeriod } from './admin-dashboard.s
 import { AdminPaymentDetailService } from './admin-payment-detail.service'
 import { AdminProductDetailService } from './admin-product-detail.service'
 import { AdminService } from './admin.service'
+import { AuditService } from './audit.service'
 import {
+  adminOrderDeliveryWindowSchema,
   adminOrderStatusSchema,
   broadcastNotificationSchema,
   cashOnDeliveryLimitSchema,
   commissionRateSchema,
   courierDebtLimitSchema,
   courierOfferTimeoutSchema,
+  courierPickupPolicySchema,
   deliveryCommissionSchema,
   disputeResolutionSchema,
   resolveReportSchema,
@@ -66,6 +71,7 @@ export class AdminController {
     private readonly paymentDetailService: AdminPaymentDetailService,
     private readonly productDetailService: AdminProductDetailService,
     private readonly ordersService: OrdersService,
+    private readonly auditService: AuditService,
   ) {}
 
   /** Back-office home: the period's figures against the period before, a daily series, the top shops. */
@@ -312,6 +318,26 @@ export class AdminController {
     return { success: true }
   }
 
+  /** Admin or support sets the delivery window; a unified cart moves as one. */
+  @CanManage('Order')
+  @Patch('orders/:id/delivery-window')
+  async updateOrderDeliveryWindow(
+    @Param('id') id: string,
+    @TypedBody(adminOrderDeliveryWindowSchema) body: AdminOrderDeliveryWindowInput,
+    @Session() session: LoggedInBetterAuthSession,
+  ) {
+    const orders = await this.ordersService.adminUpdateDeliveryWindow(id, body, session.user.id)
+    await Promise.all(orders.map(order => this.auditService.record({
+      actorUserId: session.user.id,
+      action: 'ORDER_DELIVERY_WINDOW_CHANGED',
+      targetType: 'order',
+      targetId: order.id,
+      reason: body.reason,
+      payload: { orderNumber: order.orderNumber, start: body.start, end: body.end, slot: order.deliverySlot ?? null },
+    })))
+    return { success: true }
+  }
+
   @CanRead('Supplier')
   @Get('suppliers')
   async getSuppliers(
@@ -550,6 +576,15 @@ export class AdminController {
     @TypedBody(courierOfferTimeoutSchema) body: CourierOfferTimeoutInput,
   ) {
     await this.adminService.updateCourierOfferTimeout(body.seconds)
+    return { success: true }
+  }
+
+  @CanManage('Settings')
+  @Put('settings/courier-pickup-policy')
+  async updateCourierPickupPolicy(
+    @TypedBody(courierPickupPolicySchema) body: CourierPickupPolicyInput,
+  ) {
+    await this.adminService.updateCourierPickupPolicy(body)
     return { success: true }
   }
 

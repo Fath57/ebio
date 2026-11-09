@@ -102,8 +102,12 @@ import type {
   AdminControllerUpdateCourierDebtLimitResponses,
   AdminControllerUpdateCourierOfferTimeoutData,
   AdminControllerUpdateCourierOfferTimeoutResponses,
+  AdminControllerUpdateCourierPickupPolicyData,
+  AdminControllerUpdateCourierPickupPolicyResponses,
   AdminControllerUpdateDeliveryCommissionData,
   AdminControllerUpdateDeliveryCommissionResponses,
+  AdminControllerUpdateOrderDeliveryWindowData,
+  AdminControllerUpdateOrderDeliveryWindowResponses,
   AdminControllerUpdateOrderStatusData,
   AdminControllerUpdateOrderStatusResponses,
   AdminControllerUpdateSupplierCommissionRateData,
@@ -258,6 +262,8 @@ import type {
   BiometricControllerRevokeResponses,
   BiometricControllerVerifyData,
   BiometricControllerVerifyResponses,
+  BusinessCardsControllerGenerateData,
+  BusinessCardsControllerGenerateResponses,
   CampaignFeedbackControllerOpenedData,
   CampaignFeedbackControllerOpenedResponses,
   CampaignsControllerCancelData,
@@ -6206,6 +6212,24 @@ export const adminControllerUpdateOrderStatus = <
     },
   });
 
+export const adminControllerUpdateOrderDeliveryWindow = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerUpdateOrderDeliveryWindowData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminControllerUpdateOrderDeliveryWindowResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/orders/{id}/delivery-window",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const adminControllerGetSuppliers = <
   ThrowOnError extends boolean = false,
 >(
@@ -6393,6 +6417,24 @@ export const adminControllerUpdateCourierOfferTimeout = <
     },
   });
 
+export const adminControllerUpdateCourierPickupPolicy = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerUpdateCourierPickupPolicyData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminControllerUpdateCourierPickupPolicyResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/settings/courier-pickup-policy",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const adminControllerBroadcastNotification = <
   ThrowOnError extends boolean = false,
 >(
@@ -6484,3 +6526,21 @@ export const adminUsersControllerRecentAudit = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/users/audit/recent", ...options });
+
+export const businessCardsControllerGenerate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<BusinessCardsControllerGenerateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    BusinessCardsControllerGenerateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/business-cards",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });

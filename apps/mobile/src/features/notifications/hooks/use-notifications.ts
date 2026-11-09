@@ -262,6 +262,7 @@ export function handleNotificationTap(data: Record<string, unknown>) {
     case 'DELIVERY_ASSIGNED':
     case 'DELIVERY_PICKED_UP':
     case 'DELIVERY_FAILED':
+    case 'DELIVERY_WINDOW_CHANGED':
       // OrderTracking lives in the Commandes stack: order statuses and
       // delivery progress (assigned courier, confirmation code) land there.
       if (data.orderId) {
@@ -363,6 +364,8 @@ function handleCourierTap(type: string, data: Record<string, unknown>) {
   switch (type) {
     case 'DELIVERY_OFFER':
     case 'DELIVERY_REASSIGNED':
+    case 'DELIVERY_PICKUP_REMINDER':
+    case 'DELIVERY_WINDOW_CHANGED':
     case 'ORDER_CANCELLED':
       navigationRef.navigate('Courses')
       break

@@ -306,6 +306,8 @@ export class CheckoutService {
             deliveryLatitude: data.deliveryLatitude,
             deliveryLongitude: data.deliveryLongitude,
             deliverySlot: data.deliverySlot,
+            deliveryWindowStart: data.deliveryWindowStart,
+            deliveryWindowEnd: data.deliveryWindowEnd,
             promoCode: data.promoCode,
           } as Parameters<OrdersService['create']>[1],
           {

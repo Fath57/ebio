@@ -12,7 +12,11 @@ function buildService() {
   }
   const notifications = { send: vi.fn().mockResolvedValue(undefined) }
   // No debt limit by default: the eligibility SQL stays exactly as before.
-  const settings = { getCourierMaxDebt: vi.fn().mockResolvedValue(0), getCourierOfferTimeoutSeconds: vi.fn().mockResolvedValue(90) }
+  const settings = {
+    getCourierMaxDebt: vi.fn().mockResolvedValue(0),
+    getCourierOfferTimeoutSeconds: vi.fn().mockResolvedValue(90),
+    getCourierPickupPolicy: vi.fn().mockResolvedValue({ timeoutMinutes: 25, warningMinutes: 10 }),
+  }
   const service = new DispatchService(em as never, notifications as never, settings as never)
   return { service, em, execute, notifications, settings }
 }
@@ -24,9 +28,12 @@ interface TestDelivery {
   reassignmentCount: number
   offeredAt: Date
   acceptedAt?: Date
+  createdAt?: Date
+  pickupReadyAt?: Date | null
+  pickupWarnedAt?: Date | null
   pickupAddress: string
   courier: { id: string, user: { id: string } } | null
-  order: { id: string, orderNumber: string, supplier: { shopName: string } }
+  order: { id: string, orderNumber: string, status?: string, deliveryWindowStart?: Date | null, supplier: { shopName: string } }
 }
 
 function buildDelivery(extra: Partial<TestDelivery> = {}): TestDelivery {
@@ -144,22 +151,70 @@ describe('dispatchService', () => {
   })
 
   describe('reassignStuck', () => {
-    it('releases the courier, notifies them and re-offers the delivery', async () => {
-      const { service, em, notifications } = buildService()
-      const stuck = buildDelivery({
+    const minutesAgo = (minutes: number) => new Date(Date.now() - minutes * 60 * 1000)
+
+    function buildAccepted(extra: Partial<TestDelivery> = {}) {
+      return buildDelivery({
         status: DeliveryStatus.ACCEPTED,
-        acceptedAt: new Date(Date.now() - 16 * 60 * 1000),
+        acceptedAt: minutesAgo(26),
+        createdAt: minutesAgo(40),
+        pickupReadyAt: null,
+        pickupWarnedAt: null,
         courier: { id: 'c1', user: { id: 'u1' } },
+        order: { id: 'order-1', orderNumber: 'EB-20260824-001', status: 'READY', deliveryWindowStart: null, supplier: { shopName: 'Bio Shop' } },
+        ...extra,
       })
+    }
+
+    it('releases the courier past the configured delay and re-offers the delivery', async () => {
+      const { service, em, notifications } = buildService()
+      const stuck = buildAccepted()
       em.find.mockResolvedValueOnce([stuck])
       // A released run re-enters the targeted rounds, not the plain broadcast.
-      const broadcastSpy = vi.spyOn(service, 'startDispatch').mockResolvedValue(undefined)
+      const dispatchSpy = vi.spyOn(service, 'startDispatch').mockResolvedValue(undefined)
       await service.reassignStuck()
       expect(stuck.courier).toBeNull()
       expect(stuck.status).toBe(DeliveryStatus.AWAITING_COURIER)
       expect(stuck.reassignmentCount).toBe(1)
       expect(notifications.send).toHaveBeenCalledOnce()
-      expect(broadcastSpy).toHaveBeenCalledWith('delivery-1')
+      expect(notifications.send.mock.calls[0][0].type).toBe('DELIVERY_REASSIGNED')
+      expect(dispatchSpy).toHaveBeenCalledWith('delivery-1')
+    })
+
+    it('reminds the courier once before releasing', async () => {
+      const { service, em, notifications } = buildService()
+      const late = buildAccepted({ acceptedAt: minutesAgo(16) })
+      em.find.mockResolvedValueOnce([late])
+      const dispatchSpy = vi.spyOn(service, 'startDispatch').mockResolvedValue(undefined)
+      await service.reassignStuck()
+      expect(late.status).toBe(DeliveryStatus.ACCEPTED)
+      expect(late.pickupWarnedAt).toBeInstanceOf(Date)
+      expect(notifications.send.mock.calls[0][0].type).toBe('DELIVERY_PICKUP_REMINDER')
+      expect(dispatchSpy).not.toHaveBeenCalled()
+
+      em.find.mockResolvedValueOnce([late])
+      await service.reassignStuck()
+      expect(notifications.send).toHaveBeenCalledOnce()
+    })
+
+    it('leaves the courier alone while the parcel is not ready', async () => {
+      const { service, em, notifications } = buildService()
+      const waiting = buildAccepted({ acceptedAt: minutesAgo(60) })
+      waiting.order.status = 'PREPARING'
+      em.find.mockResolvedValueOnce([waiting])
+      await service.reassignStuck()
+      expect(waiting.courier).not.toBeNull()
+      expect(notifications.send).not.toHaveBeenCalled()
+    })
+
+    it('waits for the buyer window before counting', async () => {
+      const { service, em, notifications } = buildService()
+      const early = buildAccepted({ acceptedAt: minutesAgo(60) })
+      early.order.deliveryWindowStart = new Date(Date.now() + 2 * 60 * 60 * 1000)
+      em.find.mockResolvedValueOnce([early])
+      await service.reassignStuck()
+      expect(early.courier).not.toBeNull()
+      expect(notifications.send).not.toHaveBeenCalled()
     })
   })
 

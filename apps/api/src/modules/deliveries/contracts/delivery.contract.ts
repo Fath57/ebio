@@ -54,6 +54,8 @@ export const deliveryEventTypeEnum = z.enum([
   'OFFERED',
   'OFFER_DECLINED',
   'OFFER_EXPIRED',
+  'PICKUP_REMINDER',
+  'WINDOW_CHANGED',
 ]).meta({
   title: 'DeliveryEventType',
   description: 'Type of a delivery timeline event',

@@ -21,6 +21,7 @@ import {
   UnprocessableEntityException,
 } from '@nestjs/common'
 import { computeCourierFee, orderPickups } from '../../common/delivery-fee'
+import { computeWindowDispatchAt } from '../../common/delivery-window'
 import { User, UserRole } from '../auth/auth.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
@@ -218,24 +219,35 @@ export class DeliveriesService {
     return run
   }
 
+  /**
+   * The parcel is ready. The search starts now — unless the buyer's window is
+   * still far: then the run waits, SCHEDULED, until the window nears. A courier
+   * found at 9 h for a 14 h delivery had nothing to do but lose the run.
+   */
   async createForOrder(order: Order): Promise<Delivery | null> {
+    const now = new Date()
+    const windowDispatchAt = computeWindowDispatchAt(order.deliveryWindowStart)
+    const waitsForWindow = windowDispatchAt !== null && windowDispatchAt.getTime() > now.getTime()
     const existing = await this.em.findOne(Delivery, { order: { id: order.id } })
     if (existing) {
-      // Scheduled during preparation and the parcel is ready early: search now.
       if (existing.status === DeliveryStatus.AWAITING_COURIER && existing.dispatchPhase === DispatchPhase.SCHEDULED) {
-        existing.pickupReadyAt = new Date()
+        existing.pickupReadyAt = now
+        existing.dispatchAt = waitsForWindow ? windowDispatchAt : now
         await this.em.flush()
-        await this.dispatchService.startDispatch(existing.id)
+        if (!waitsForWindow) {
+          await this.dispatchService.startDispatch(existing.id)
+        }
       }
       return existing
     }
-    return this.createDelivery(order, null)
+    return this.createDelivery(order, waitsForWindow ? { readyAt: now, dispatchAt: windowDispatchAt } : null)
   }
 
   /**
    * PREPARING with a readiness estimate: the run exists at once (visible to
    * the back-office, assignable by hand) but stays SCHEDULED until
-   * DISPATCH_LEAD_MINUTES before the estimate, when the search starts.
+   * DISPATCH_LEAD_MINUTES before the estimate — or until the buyer's window
+   * nears, whichever is later.
    */
   async scheduleForOrder(order: Order): Promise<Delivery | null> {
     const existing = await this.em.findOne(Delivery, { order: { id: order.id } })
@@ -243,8 +255,81 @@ export class DeliveriesService {
       return existing
     }
     const readyAt = order.estimatedReadyAt ?? new Date()
-    const dispatchAt = new Date(Math.max(Date.now(), readyAt.getTime() - DISPATCH_LEAD_MINUTES * 60_000))
-    return this.createDelivery(order, { readyAt, dispatchAt })
+    return this.createDelivery(order, { readyAt, dispatchAt: this.computeDispatchAt(order, readyAt) })
+  }
+
+  /**
+   * The back office moved the buyer's window. An unclaimed run follows it: back
+   * to waiting if the window moved away, searched now if it came closer. A
+   * claimed run keeps its courier — the pickup clock reads the window live —
+   * but the reminder may fire again.
+   */
+  async applyWindowChange(order: Order, actorUserId: string): Promise<Delivery | null> {
+    const delivery = await this.em.findOne(Delivery, { order: { id: order.id } }, { populate: ['deliveryRun', 'courier', 'courier.user'] })
+    if (!delivery) {
+      return null
+    }
+    delivery.pickupWarnedAt = null
+    this.em.create(DeliveryEvent, {
+      delivery,
+      type: DeliveryEventType.WINDOW_CHANGED,
+      actorUserId,
+      payload: {
+        windowStart: order.deliveryWindowStart?.toISOString() ?? null,
+        windowEnd: order.deliveryWindowEnd?.toISOString() ?? null,
+        slot: order.deliverySlot ?? null,
+      },
+    })
+    if (delivery.courier) {
+      await this.notificationsService.send({
+        user: delivery.courier.user,
+        type: NotificationType.DELIVERY_WINDOW_CHANGED,
+        title: 'Créneau de livraison modifié',
+        body: `Commande ${order.orderNumber} : livraison ${order.deliverySlot ?? 'dès que possible'}`,
+        data: { deliveryId: delivery.id },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+    // A run already searched as a whole is not taken apart for one shop.
+    const isLockedInRun = Boolean(delivery.deliveryRun?.dispatchStartedAt)
+    if (delivery.status !== DeliveryStatus.AWAITING_COURIER || isLockedInRun) {
+      await this.em.flush()
+      return delivery
+    }
+
+    const now = Date.now()
+    const isReady = order.status === OrderStatus.READY
+    const readyAt = isReady ? (delivery.pickupReadyAt ?? delivery.createdAt) : (delivery.pickupReadyAt ?? order.estimatedReadyAt ?? new Date())
+    const dispatchAt = this.computeDispatchAt(order, readyAt)
+    if (dispatchAt.getTime() > now) {
+      if (delivery.dispatchPhase !== DispatchPhase.SCHEDULED) {
+        await this.dispatchService.cancelPendingOffer(delivery.id)
+        delivery.offeredToCourier = null
+        delivery.offerExpiresAt = null
+        delivery.dispatchPhase = DispatchPhase.SCHEDULED
+      }
+      delivery.pickupReadyAt = readyAt
+      delivery.dispatchAt = dispatchAt
+      await this.em.flush()
+      return delivery
+    }
+
+    delivery.dispatchAt = new Date(now)
+    await this.em.flush()
+    if (delivery.dispatchPhase === DispatchPhase.SCHEDULED && isReady) {
+      await this.dispatchService.startDispatch(delivery.id)
+    }
+    return delivery
+  }
+
+  /** The search opens before the parcel is ready, and no earlier than the window allows. */
+  private computeDispatchAt(order: Order, readyAt: Date): Date {
+    const windowDispatchAt = computeWindowDispatchAt(order.deliveryWindowStart)
+    return new Date(Math.max(
+      Date.now(),
+      readyAt.getTime() - DISPATCH_LEAD_MINUTES * 60_000,
+      windowDispatchAt?.getTime() ?? 0,
+    ))
   }
 
   private async createDelivery(order: Order, schedule: { readyAt: Date, dispatchAt: Date } | null): Promise<Delivery | null> {
@@ -428,7 +513,7 @@ export class DeliveriesService {
     // Targeted phase: only the courier holding the open offer may claim.
     const claimed = await this.em.getConnection().execute(
       `UPDATE deliveries
-       SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(),
+       SET courier_id = ?, status = 'ACCEPTED', accepted_at = NOW(), pickup_warned_at = NULL,
            offered_to_courier_id = NULL, offer_expires_at = NULL, "updatedAt" = NOW()
        WHERE id = ? AND courier_id IS NULL AND status = 'AWAITING_COURIER'
          AND (dispatch_phase = 'BROADCAST' OR (offered_to_courier_id = ? AND offer_expires_at > NOW()))
@@ -669,6 +754,7 @@ export class DeliveriesService {
       delivery.courier = profile
       delivery.status = DeliveryStatus.ACCEPTED
       delivery.acceptedAt = new Date()
+      delivery.pickupWarnedAt = null
       delivery.offeredToCourier = null
       delivery.offerExpiresAt = null
       this.em.create(DeliveryEvent, {
