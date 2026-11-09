@@ -1,12 +1,12 @@
-# Voix off — « Fournisseur : traiter une commande ».
-# Une ligne par phrase : « minute:seconde | texte ». Le temps est celui de la
-# vidéo où la phrase commence ; à recaler sur la prise faite au téléphone.
+# Voix off — « Fournisseur : traiter une commande » (montage de la prise au
+# téléphone : accueil, connexion accélérée ×4, commande à vitesse réelle,
+# 3 s de fin figée). Une ligne par phrase : « minute:seconde | texte ».
 # Vocabulaire eBio : fournisseur, acheteur, commander.
-00:00 | Bienvenue dans eBio Fournisseur. Voyons comment traiter une commande, de sa réception jusqu'au livreur.
-00:08 | Connectez-vous avec votre numéro de téléphone et votre mot de passe.
-00:18 | Sur le tableau de bord, une nouvelle commande vous attend. Vous êtes aussi prévenu par une notification dès qu'un acheteur commande.
-00:28 | Dans l'onglet Commandes, vous voyez l'acheteur, les articles et le montant. Touchez Accepter.
-00:38 | La commande passe dans « En cours ». Ouvrez-la : vous y retrouvez les articles, les frais de livraison et la commission eBio.
-00:48 | Lancez la préparation et indiquez dans combien de temps elle sera prête. eBio commence à chercher un livreur dix minutes avant.
-00:58 | Quand le colis est prêt, touchez « Marquer comme prête ». Un livreur vient le récupérer à votre boutique.
-01:06 | Et voilà : votre commande est en route vers l'acheteur.
+00:00 | Voici comment traiter une commande avec eBio Fournisseur.
+00:05 | Connectez-vous avec votre numéro de téléphone et votre mot de passe.
+00:15 | Sur le tableau de bord, une nouvelle commande vous attend.
+00:19 | Dans Commandes, vérifiez les articles et le montant, puis touchez Accepter.
+00:26 | Retrouvez-la dans « En cours », et lancez la préparation.
+00:33 | Indiquez quand elle sera prête : eBio cherche un livreur dix minutes avant.
+00:39 | Une fois le colis prêt, touchez « Marquer comme prête ».
+00:45 | Un livreur vient le récupérer à votre boutique. Et voilà !

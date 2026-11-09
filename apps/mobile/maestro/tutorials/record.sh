@@ -14,6 +14,22 @@ out_dir="$HOME/Vidéos/ebio-tutos"
 mkdir -p "$out_dir"
 out="$out_dir/${flow%.yaml}-$(date +%Y%m%d-%H%M%S).mp4"
 
+# A personal phone is set for filming — light theme, Do not disturb, no
+# password autofill (it filled a saved password into the demo login) — and
+# put back exactly as it was afterwards, even when the take fails.
+night_before="$(adb -s "$device" shell cmd uimode night | awk '{print $3}')"
+zen_before="$(adb -s "$device" shell settings get global zen_mode)"
+autofill_before="$(adb -s "$device" shell settings get secure autofill_service)"
+restore_device() {
+  adb -s "$device" shell cmd uimode night "$night_before" >/dev/null
+  if [ "$zen_before" = 0 ]; then adb -s "$device" shell cmd notification set_dnd off >/dev/null; fi
+  adb -s "$device" shell settings put secure autofill_service "$autofill_before"
+}
+trap restore_device EXIT
+adb -s "$device" shell cmd uimode night no >/dev/null
+adb -s "$device" shell cmd notification set_dnd priority >/dev/null
+adb -s "$device" shell settings put secure autofill_service null
+
 "$api_dir/scripts/demo/reset-demo.sh"
 systemctl --user restart ebio-api-demo
 until curl -sf http://localhost:3020/api/search/categories >/dev/null; do sleep 2; done
@@ -21,13 +37,17 @@ if [ "$scenario" != none ]; then
   (cd "$api_dir" && DATABASE_NAME=ebio_demo npx dotenvx run -q -- npx tsx scripts/demo/scenario.ts "$scenario")
 fi
 
+# The app is opened first and filming starts once it is on screen: started
+# earlier, the take began on the phone's home screen — apps, wallpaper.
+LAUNCH_ONLY=1 ./run.sh "$variant" "$flow"
+sleep 2
 # screenrecord stops by itself after 3 minutes, Android's limit.
 adb -s "$device" shell rm -f /sdcard/take.mp4
 adb -s "$device" shell screenrecord --bit-rate 8000000 /sdcard/take.mp4 &
 recorder=$!
 sleep 1
 status=0
-./run.sh "$variant" "$flow" || status=$?
+SKIP_LAUNCH=1 ./run.sh "$variant" "$flow" || status=$?
 sleep 2
 adb -s "$device" shell pkill -INT screenrecord || true
 wait "$recorder" || true

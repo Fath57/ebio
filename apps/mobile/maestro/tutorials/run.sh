@@ -15,6 +15,9 @@ case "$variant" in
   supplier) package=com.ebio.supplier; port=8083 ;;
   *) echo "Variante inconnue : $variant" >&2; exit 1 ;;
 esac
+if [ "${SKIP_LAUNCH:-0}" = 1 ]; then
+  exec "$HOME/.maestro/bin/maestro" --device "$device" test "$flow"
+fi
 adb -s "$device" reverse "tcp:$port" "tcp:$port" >/dev/null
 adb -s "$device" reverse tcp:3010 tcp:3020 >/dev/null
 adb -s "$device" shell am force-stop "$package"
@@ -29,5 +32,10 @@ if [ "${MODE:-release}" = dev ]; then
     -d "exp+ebio-mobile://expo-development-client/?url=http%3A%2F%2Flocalhost%3A$port" >/dev/null
 else
   adb -s "$device" shell monkey -p "$package" -c android.intent.category.LAUNCHER 1 >/dev/null 2>&1
+fi
+# LAUNCH_ONLY: open the app and stop there — record.sh starts filming only
+# once the app is on screen, so no take shows the phone's home screen.
+if [ "${LAUNCH_ONLY:-0}" = 1 ]; then
+  exit 0
 fi
 exec "$HOME/.maestro/bin/maestro" --device "$device" test "$flow"
