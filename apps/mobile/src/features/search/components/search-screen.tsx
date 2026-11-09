@@ -1,7 +1,8 @@
 import type { NativeSyntheticEvent, TextInputSubmitEditingEventData } from 'react-native'
-import type { SearchResult } from '../hooks/use-search'
+import type { SearchResult, Suggestion } from '../hooks/use-search'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
+import LayoutGrid from 'lucide-react-native/dist/esm/icons/layout-grid'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Search from 'lucide-react-native/dist/esm/icons/search'
@@ -42,6 +43,18 @@ interface SearchFilterValues {
   categories: string[]
   maxPrice: number | undefined
   inStockOnly: boolean
+  /** Chosen by the buyer; undefined keeps the default order. */
+  sortBy?: 'price' | 'rating'
+}
+
+/** Past this, the recent searches push the keyboard's suggestions off screen. */
+const MAX_HISTORY_SHOWN = 6
+
+const DEFAULT_FILTER_VALUES: SearchFilterValues = {
+  radius: undefined,
+  categories: [],
+  maxPrice: undefined,
+  inStockOnly: true,
 }
 
 /** The API names the kind of suggestion in English; the buyer reads French. */
@@ -115,10 +128,8 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   const { searchHistory, addTerm, clearHistory } = useOfflineSearch()
 
   const [appliedFilters, setAppliedFilters] = useState<SearchFilterValues>({
-    radius: undefined,
-    categories: [],
-    maxPrice: undefined,
-    inStockOnly: true,
+    ...DEFAULT_FILTER_VALUES,
+    categories: initialCategory ? [initialCategory] : [],
   })
 
   const { latitude, longitude, label: locationLabel, source: locationSource } = useLocation()
@@ -155,7 +166,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         newerThanDays: initialNewerThanDays,
         supplierId: initialSupplierId,
         productIds: initialProductIds,
-        sortBy: initialSortBy,
+        sortBy: filters.sortBy ?? initialSortBy,
         validatedOnly: initialValidatedOnly || undefined,
         promoOnly: initialPromoOnly || undefined,
       })
@@ -182,18 +193,56 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
     performSearch({ q: text })
   }
 
-  function handleSelectCategory(slug: string) {
-    const newCategory
-      = selectedCategory === slug ? undefined : slug
-    setSelectedCategory(newCategory)
-    performSearch({ category: newCategory })
+  /** Chips and filter panel share one category: each shows what the other set. */
+  function applyCategory(slug: string | undefined, overrides: { q?: string } = {}) {
+    const filters = { ...appliedFilters, categories: slug ? [slug] : [] }
+    setSelectedCategory(slug)
+    setAppliedFilters(filters)
+    performSearch({ ...overrides, category: slug, filters })
   }
 
-  function handleSelectSuggestion(text: string) {
+  function handleSelectCategory(slug: string) {
+    applyCategory(selectedCategory === slug ? undefined : slug)
+  }
+
+  function handleSearchText(text: string) {
     setQuery(text)
     setIsSearchFocused(false)
     addTerm(text)
     performSearch({ q: text })
+  }
+
+  /**
+   * Each kind of suggestion goes where it names: a product opens its page, a
+   * shop its profile, a category filters the list. A category used to be
+   * searched as text, which every word had to match in a product's name —
+   * « Fruits et légumes » found almost nothing.
+   */
+  function handleSelectSuggestion(suggestion: Suggestion) {
+    setIsSearchFocused(false)
+    if (suggestion.type === 'product' && suggestion.id && onNavigateToProduct) {
+      onNavigateToProduct(suggestion.id)
+      return
+    }
+    if (suggestion.type === 'supplier' && suggestion.id && onNavigateToSupplier) {
+      onNavigateToSupplier(suggestion.id)
+      return
+    }
+    const category = suggestion.type === 'category'
+      ? categories.find(item => item.id === suggestion.id || item.label === suggestion.text)
+      : undefined
+    if (category) {
+      setQuery('')
+      applyCategory(category.slug, { q: '' })
+      return
+    }
+    handleSearchText(suggestion.text)
+  }
+
+  function handleClearFilters() {
+    setSelectedCategory(undefined)
+    setAppliedFilters(DEFAULT_FILTER_VALUES)
+    performSearch({ category: undefined, filters: DEFAULT_FILTER_VALUES })
   }
 
   function handleSelectHistoryTerm(term: string) {
@@ -216,10 +265,10 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
     // En mode carte, les filtres alimentent directement `MapScreen` via ses props.
     if (viewMode === 'map')
       return
-    const category = filters.categories.length > 0 ? filters.categories[0] : selectedCategory
-    if (filters.categories.length > 0) {
-      setSelectedCategory(filters.categories[0])
-    }
+    // Deselecting the category in the panel clears it: it used to fall back
+    // to the one already selected, so it could never be removed from there.
+    const category = filters.categories[0]
+    setSelectedCategory(category)
     // Filters passed explicitly: the state set above is not readable yet.
     performSearch({ category, filters })
   }
@@ -231,11 +280,13 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
   // Un filtre est « actif » dès qu'il s'écarte de la valeur neutre. `inStockOnly`
   // vaut true par défaut : c'est le décocher qui constitue un filtre.
+  // The category shows in its own chip row: only what is hidden counts here.
   const hasActiveFilters
     = appliedFilters.radius !== undefined
-      || appliedFilters.categories.length > 0
       || appliedFilters.maxPrice !== undefined
       || !appliedFilters.inStockOnly
+      || appliedFilters.sortBy !== undefined
+  const canClearFilters = hasActiveFilters || selectedCategory !== undefined
 
   function renderSearchResultItem({ item, index }: { item: SearchResult, index: number }) {
     return (
@@ -283,7 +334,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         {didYouMean && (
           <TouchableOpacity
             style={styles.didYouMean}
-            onPress={() => handleSelectSuggestion(didYouMean)}
+            onPress={() => handleSearchText(didYouMean)}
             accessibilityRole="button"
             accessibilityLabel={`Rechercher ${didYouMean}`}
           >
@@ -310,6 +361,16 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
             accessibilityRole="button"
           >
             <Text style={styles.emptyActionText}>Choisir ma ville</Text>
+          </TouchableOpacity>
+        )}
+        {/* A filter is the likeliest reason for an empty page: undo it in one tap. */}
+        {canClearFilters && (
+          <TouchableOpacity
+            style={[styles.emptySecondaryAction, { borderColor: semantic.borderNormal }]}
+            onPress={handleClearFilters}
+            accessibilityRole="button"
+          >
+            <Text style={[styles.emptySecondaryActionText, { color: semantic.textPrimary }]}>Effacer les filtres</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -519,11 +580,12 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
                   <Text style={styles.clearHistoryText}>Effacer</Text>
                 </TouchableOpacity>
               </View>
-              {searchHistory.map(term => (
+              {searchHistory.slice(0, MAX_HISTORY_SHOWN).map(term => (
                 <TouchableOpacity
                   key={term}
                   style={styles.suggestionItem}
                   onPress={() => handleSelectHistoryTerm(term)}
+                  accessibilityRole="button"
                   accessibilityLabel={`Rechercher ${term}`}
                 >
                   <Clock size={14} color={semantic.textTertiary} />
@@ -539,12 +601,15 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
                 <TouchableOpacity
                   key={`${s.text}-${i}`}
                   style={styles.suggestionItem}
-                  onPress={() => handleSelectSuggestion(s.text)}
-                  accessibilityLabel={s.text}
+                  onPress={() => handleSelectSuggestion(s)}
+                  accessibilityRole="button"
+                  accessibilityLabel={`${SUGGESTION_TYPE_LABELS[s.type] ?? ''} ${s.text}`}
                 >
-                  {s.type === 'product'
-                    ? <Package size={14} color={semantic.textSecondary} />
-                    : <Store size={14} color={semantic.textSecondary} />}
+                  {s.type === 'supplier'
+                    ? <Store size={14} color={semantic.textSecondary} />
+                    : s.type === 'category'
+                      ? <LayoutGrid size={14} color={semantic.textSecondary} />
+                      : <Package size={14} color={semantic.textSecondary} />}
                   <Text style={[styles.suggestionText, { color: semantic.textPrimary }]}>{s.text}</Text>
                   <Text style={[styles.suggestionType, { color: semantic.textTertiary }]}>{SUGGESTION_TYPE_LABELS[s.type] ?? ''}</Text>
                 </TouchableOpacity>
@@ -608,6 +673,8 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         onApply={handleApplyFilters}
         initialValues={appliedFilters}
         categoryOptions={categories}
+        isSingleCategory={viewMode === 'list'}
+        showSort={viewMode === 'list'}
       />
     </View>
   )
@@ -810,6 +877,17 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSb,
     color: colors.green[600],
     textDecorationLine: 'underline',
+  },
+  emptySecondaryAction: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[6],
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  emptySecondaryActionText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
   },
   emptyAction: {
     minHeight: 44,

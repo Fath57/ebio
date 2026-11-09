@@ -9,11 +9,15 @@ import { useTheme } from '../../../theme/theme-context'
 import { FALLBACK_CATEGORIES } from '../../../utils/category-icons'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 
+type SortOption = 'price' | 'rating'
+
 interface FilterValues {
   radius: number | undefined
   categories: string[]
   maxPrice: number | undefined
   inStockOnly: boolean
+  /** Undefined keeps the default order (relevance, then distance). */
+  sortBy?: SortOption
 }
 
 interface FilterSheetProps {
@@ -22,7 +26,20 @@ interface FilterSheetProps {
   onApply: (filters: FilterValues) => void
   initialValues?: Partial<FilterValues>
   categoryOptions?: CategoryItem[]
+  /**
+   * The product list filters on one category at a time, like its chips; the
+   * map can show several. Toggling several here used to keep only the first.
+   */
+  isSingleCategory?: boolean
+  /** The map draws shops, not a ranked list: no sort there. */
+  showSort?: boolean
 }
+
+const SORT_OPTIONS: Array<{ value: SortOption | undefined, label: string }> = [
+  { value: undefined, label: 'Recommandé' },
+  { value: 'price', label: 'Prix croissant' },
+  { value: 'rating', label: 'Mieux notés' },
+]
 
 const DEFAULT_FILTERS: FilterValues = {
   radius: undefined,
@@ -157,6 +174,8 @@ export function FilterSheet({
   onApply,
   initialValues,
   categoryOptions = FALLBACK_CATEGORIES,
+  isSingleCategory = false,
+  showSort = false,
 }: FilterSheetProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
@@ -203,6 +222,18 @@ export function FilterSheet({
       onClose()
     })
   }, [translateY, backdropOpacity, onClose])
+
+  // The sheet stays mounted: without this it showed the values of its first
+  // opening, not a category picked since through the chips. Read through a
+  // ref and only when `visible` turns true, so that a parent re-render while
+  // the sheet is open never wipes what the buyer is ticking.
+  const initialValuesRef = useRef(initialValues)
+  initialValuesRef.current = initialValues
+  React.useEffect(() => {
+    if (visible) {
+      setFilters({ ...DEFAULT_FILTERS, ...initialValuesRef.current })
+    }
+  }, [visible])
 
   React.useEffect(() => {
     if (visible) {
@@ -253,6 +284,9 @@ export function FilterSheet({
   function handleToggleCategory(slug: string) {
     setFilters((prev) => {
       const isSelected = prev.categories.includes(slug)
+      if (isSingleCategory) {
+        return { ...prev, categories: isSelected ? [] : [slug] }
+      }
       return {
         ...prev,
         categories: isSelected
@@ -311,6 +345,40 @@ export function FilterSheet({
             showsVerticalScrollIndicator={false}
             bounces={false}
           >
+            {showSort && (
+              <View style={styles.section}>
+                <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Trier par</Text>
+                <View style={styles.distanceButtons} accessibilityRole="radiogroup">
+                  {SORT_OPTIONS.map((option) => {
+                    const isSelected = filters.sortBy === option.value
+                    return (
+                      <TouchableOpacity
+                        key={option.label}
+                        style={[
+                          styles.distanceChip,
+                          { borderColor: semantic.borderNormal },
+                          isSelected && styles.distanceChipActive,
+                        ]}
+                        onPress={() => setFilters(p => ({ ...p, sortBy: option.value }))}
+                        accessibilityRole="radio"
+                        accessibilityState={{ selected: isSelected }}
+                      >
+                        <Text
+                          style={[
+                            styles.distanceChipText,
+                            { color: semantic.textSecondary },
+                            isSelected && styles.distanceChipTextActive,
+                          ]}
+                        >
+                          {option.label}
+                        </Text>
+                      </TouchableOpacity>
+                    )
+                  })}
+                </View>
+              </View>
+            )}
+
             {/* Distance */}
             <View style={styles.section}>
               <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
@@ -376,7 +444,9 @@ export function FilterSheet({
 
             {/* Categories */}
             <View style={styles.section}>
-              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>Catégories</Text>
+              <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
+                {isSingleCategory ? 'Catégorie' : 'Catégories'}
+              </Text>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
@@ -393,8 +463,8 @@ export function FilterSheet({
                         isSelected && styles.categoryChipActive,
                       ]}
                       onPress={() => handleToggleCategory(cat.slug)}
-                      accessibilityRole="checkbox"
-                      accessibilityState={{ checked: isSelected }}
+                      accessibilityRole={isSingleCategory ? 'radio' : 'checkbox'}
+                      accessibilityState={isSingleCategory ? { selected: isSelected } : { checked: isSelected }}
                       accessibilityLabel={cat.label}
                     >
                       {cat.imageUrl

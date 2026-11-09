@@ -11,7 +11,9 @@ export const OfflineCache = {
 
   async addSearchTerm(term: string): Promise<void> {
     const history = await this.getSearchHistory()
-    const updated = [term, ...history.filter(t => t !== term)].slice(0, 20)
+    // « Tomate » and « tomate » are the same search: keep the latest spelling.
+    const key = term.trim().toLowerCase()
+    const updated = [term.trim(), ...history.filter(t => t.trim().toLowerCase() !== key)].slice(0, 20)
     await AsyncStorage.setItem('search_history', JSON.stringify(updated))
   },
 

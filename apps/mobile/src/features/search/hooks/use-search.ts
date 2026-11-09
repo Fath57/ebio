@@ -182,29 +182,46 @@ export function useSearchProducts() {
   return { results, loading, loadingMore, total, hasMore, hasError, didYouMean, search, loadMore }
 }
 
+/** Waiting this long after the last keystroke spares one request per letter. */
+const AUTOCOMPLETE_DELAY_MS = 250
+
+export interface Suggestion {
+  text: string
+  type: 'product' | 'category' | 'supplier'
+  id?: string
+}
+
 export function useAutocomplete() {
-  const [suggestions, setSuggestions] = useState<
-    Array<{ text: string, type: string, id?: string }>
-  >([])
+  const [suggestions, setSuggestions] = useState<Suggestion[]>([])
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // A slow answer for « to » must not replace the one for « tomate ».
+  const requestIdRef = useRef(0)
 
   const autocomplete = useCallback(
-    async (q: string, latitude: number, longitude: number) => {
+    (q: string, latitude: number, longitude: number) => {
+      if (timerRef.current) {
+        clearTimeout(timerRef.current)
+      }
+      requestIdRef.current += 1
+      const requestId = requestIdRef.current
       if (q.length < 2) {
         setSuggestions([])
         return
       }
-      try {
-        const res = await apiFetch(
-          `/api/search/autocomplete?q=${encodeURIComponent(q)}&latitude=${latitude}&longitude=${longitude}`,
-        )
-        if (res.ok) {
-          const data = await res.json()
-          setSuggestions(data.suggestions)
+      timerRef.current = setTimeout(async () => {
+        try {
+          const res = await apiFetch(
+            `/api/search/autocomplete?q=${encodeURIComponent(q)}&latitude=${latitude}&longitude=${longitude}`,
+          )
+          if (res.ok && requestId === requestIdRef.current) {
+            const data = await res.json() as { suggestions: Suggestion[] }
+            setSuggestions(data.suggestions)
+          }
         }
-      }
-      catch {
-        // Silent fail on autocomplete
-      }
+        catch {
+          // Silent fail on autocomplete
+        }
+      }, AUTOCOMPLETE_DELAY_MS)
     },
     [],
   )
