@@ -1,0 +1,39 @@
+# Tutorial « Fournisseur : traiter une commande ».
+# Start state: scenario.ts supplier-order (Afi Dossou's order waiting).
+#   ./run.sh supplier supplier-orders.yaml
+appId: com.ebio.supplier
+---
+- runFlow: supplier-login.yaml
+- extendedWaitUntil:
+    visible: Tableau de bord
+    timeout: 30000
+- waitForAnimationToEnd
+# Bottom tab « Commandes » (the dashboard also has a « Commandes » shortcut).
+- tapOn:
+    point: 37%,93%
+- extendedWaitUntil:
+    visible: Afi Dossou
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Accepter
+- waitForAnimationToEnd
+- tapOn: En cours
+- tapOn: Afi Dossou
+- extendedWaitUntil:
+    visible: Passer en préparation
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Passer en préparation
+- tapOn: 20 min
+- extendedWaitUntil:
+    visible: Marquer comme prête
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Marquer comme prête
+- extendedWaitUntil:
+    visible: Prête
+    timeout: 15000
+- scrollUntilVisible:
+    element: LIVRAISON & PAIEMENT
+    direction: DOWN
+- waitForAnimationToEnd

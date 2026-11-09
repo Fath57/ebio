@@ -1,0 +1,33 @@
+# Signs in as Mine d'or délice, the app just opened by run.sh.
+# Shared by the supplier tutorial flows. Demo kit: apps/api/scripts/demo/README.md
+appId: com.ebio.supplier
+---
+- extendedWaitUntil:
+    visible: Bon retour !|Continue|Passer|Tableau de bord
+    timeout: 60000
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+- runFlow:
+    when:
+      visible: Passer
+    commands:
+      - tapOn: Passer
+- runFlow:
+    when:
+      visible: Bon retour !
+    commands:
+      # Each field waits for the keyboard to settle: typed while it slides in,
+      # the text went nowhere.
+      - tapOn: '\+229'
+      - waitForAnimationToEnd
+      - inputText: '0100000302'
+      - assertVisible: '\+2290100000302'
+      - tapOn: Mot de passe
+      - waitForAnimationToEnd
+      - inputText: Demo2026!
+      - assertVisible: '•+'
+      - hideKeyboard
+      - tapOn: Se connecter
