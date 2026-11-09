@@ -40,12 +40,12 @@ export const NEW_PRODUCT_ALERT_EMAILS_KEY = 'new_product_alert_emails'
 export const DEFAULT_PRODUCT_APPROVAL_REQUIRED = false
 
 /**
- * Two days once both sides confirmed delivery — time for a late complaint —
- * and a week at most, so a forgotten confirmation never holds a shop's money.
+ * A day after delivery at most — time for a complaint about the parcel — and
+ * at once when buyer and shop both confirmed it: nothing is left to wait for.
  */
 export const DEFAULT_ESCROW_RELEASE: EscrowReleaseInput = {
-  heuresApresConfirmation: 48,
-  joursMaximum: 7,
+  heuresApresConfirmation: 0,
+  heuresMaximum: 24,
 }
 
 /**

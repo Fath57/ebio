@@ -116,6 +116,13 @@ export class Supplier {
   @Property({ fieldName: 'commission_rate', type: 'float', nullable: true })
   commissionRate?: number | null
 
+  /**
+   * Hours between delivery and payment of this shop's online sales, set by
+   * eBio for one shop (0 = at delivery); null follows the platform delay.
+   */
+  @Property({ fieldName: 'escrow_release_hours', type: 'integer', nullable: true })
+  escrowReleaseHours?: number | null
+
   @Property({ fieldName: 'identity_document', nullable: true })
   identityDocument?: string
 

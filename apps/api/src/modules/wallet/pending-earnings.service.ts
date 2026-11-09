@@ -2,12 +2,11 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { Injectable } from '@nestjs/common'
 import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
 import { OrderStatus, PickupMode } from '../orders/entities/order.entity'
+import { effectiveDelays, escrowReleaseAt } from '../payments/escrow-release-policy'
 import { Payment, PaymentStatus } from '../payments/payment.entity'
 import { supplierShare } from '../payments/supplier-share'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
-
-const HOUR_MS = 60 * 60 * 1000
-const DAY_MS = 24 * HOUR_MS
+import { Supplier } from '../suppliers/supplier.entity'
 
 /** Statuses of a paid order still on its way: the money will come, later. */
 const IN_PROGRESS = [OrderStatus.PLACED, OrderStatus.ACCEPTED, OrderStatus.PREPARING, OrderStatus.READY, OrderStatus.IN_DELIVERY]
@@ -23,8 +22,12 @@ export interface PendingEarnings {
   inProgressCount: number
   /** When the next delivered order will be credited, if any. */
   nextReleaseAt: string | null
-  /** The delays in force, so the app can say them instead of hard-coding them. */
-  delays: { heuresApresConfirmation: number, joursMaximum: number }
+  /**
+   * The delays in force for this shop, in hours, so the app can say them
+   * instead of hard-coding them. `joursMaximum` is the ceiling rounded up to
+   * days, for app versions that still read it.
+   */
+  delays: { heuresApresConfirmation: number, heuresMaximum: number, joursMaximum: number }
 }
 
 /**
@@ -45,7 +48,9 @@ export class PendingEarningsService {
   ) {}
 
   async forSupplier(supplierId: string, now = new Date()): Promise<PendingEarnings> {
-    const delays = await this.platformSettings.getEscrowRelease()
+    const platform = await this.platformSettings.getEscrowRelease()
+    const supplier = await this.em.findOneOrFail(Supplier, { id: supplierId }, { fields: ['escrowReleaseHours'] })
+    const shopDelays = effectiveDelays(platform, supplier.escrowReleaseHours)
     const payments = await this.em.find(Payment, {
       status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
       order: {
@@ -73,7 +78,7 @@ export class PendingEarningsService {
       inProgressAmount: 0,
       inProgressCount: 0,
       nextReleaseAt: null,
-      delays,
+      delays: { ...shopDelays, joursMaximum: Math.ceil(shopDelays.heuresMaximum / 24) },
     }
     let nextRelease: number | null = null
 
@@ -93,12 +98,11 @@ export class PendingEarningsService {
       if (isDelivered) {
         result.deliveredAmount += share.total
         result.deliveredCount += 1
-        const deliveredAt = order.deliveredAt?.getTime() ?? now.getTime()
-        const bothConfirmed = order.deliveryConfirmedByBuyer && order.deliveryConfirmedBySupplier
-        const releaseAt = Math.min(
-          deliveredAt + delays.joursMaximum * DAY_MS,
-          bothConfirmed ? deliveredAt + delays.heuresApresConfirmation * HOUR_MS : Number.POSITIVE_INFINITY,
-        )
+        const releaseAt = escrowReleaseAt(platform, {
+          deliveredAt: order.deliveredAt ?? null,
+          bothConfirmed: order.deliveryConfirmedByBuyer && order.deliveryConfirmedBySupplier,
+          supplierHours: supplier.escrowReleaseHours,
+        }, now).getTime()
         nextRelease = nextRelease === null ? releaseAt : Math.min(nextRelease, releaseAt)
       }
       else {

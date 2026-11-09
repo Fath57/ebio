@@ -99,11 +99,11 @@ export const zProductReviewTiming = z.object({
 /**
  * EscrowRelease
  *
- * Délais de versement des ventes payées en ligne au portefeuille de la boutique
+ * Délais de versement des ventes payées en ligne au portefeuille de la boutique, en heures (0 = immédiat)
  */
 export const zEscrowRelease = z.object({
   heuresApresConfirmation: z.int().gte(0).lte(720),
-  joursMaximum: z.int().gte(1).lte(60),
+  heuresMaximum: z.int().gte(0).lte(1440),
 });
 
 /**
@@ -805,6 +805,15 @@ export const zSuspendSupplier = z.object({
  */
 export const zSupplierCommissionRate = z.object({
   rate: z.union([z.number().gte(0).lte(0.5), z.null()]),
+});
+
+/**
+ * SupplierEscrowRelease
+ *
+ * Hours between delivery and payment of one shop's online sales (0 = at delivery); null follows the platform delay
+ */
+export const zSupplierEscrowRelease = z.object({
+  hours: z.union([z.int().gte(0).lte(1440), z.null()]),
 });
 
 /**
@@ -1781,6 +1790,7 @@ export const zSearchResponse = z.object({
   total: z.number(),
   page: z.number(),
   hasMore: z.boolean(),
+  didYouMean: z.optional(z.union([z.string(), z.null()])),
 });
 
 /**
@@ -4970,7 +4980,7 @@ export const zAdminEscrowReleaseControllerGetData = z.object({
 export const zAdminEscrowReleaseControllerUpdateData = z.object({
   body: z.object({
     heuresApresConfirmation: z.int().gte(0).lte(720),
-    joursMaximum: z.int().gte(1).lte(60),
+    heuresMaximum: z.int().gte(0).lte(1440),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -6474,6 +6484,14 @@ export const zPaymentsWebhookControllerHandleFedaPayWebhookData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
+});
+
+export const zPaymentsWebhookControllerReturnFromIntramData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    transaction_id: z.string(),
+  }),
 });
 
 export const zPaymentsWebhookControllerHandleIntramWebhookData = z.object({
@@ -8926,6 +8944,16 @@ export const zAdminControllerSuspendSupplierData = z.object({
 export const zAdminControllerUpdateSupplierCommissionRateData = z.object({
   body: z.object({
     rate: z.union([z.number().gte(0).lte(0.5), z.null()]),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminControllerUpdateSupplierEscrowReleaseData = z.object({
+  body: z.object({
+    hours: z.union([z.int().gte(0).lte(1440), z.null()]),
   }),
   path: z.object({
     id: z.string(),

@@ -145,11 +145,11 @@ export type ProductReviewTiming = {
 /**
  * EscrowRelease
  *
- * Délais de versement des ventes payées en ligne au portefeuille de la boutique
+ * Délais de versement des ventes payées en ligne au portefeuille de la boutique, en heures (0 = immédiat)
  */
 export type EscrowRelease = {
   heuresApresConfirmation: number;
-  joursMaximum: number;
+  heuresMaximum: number;
 };
 
 /**
@@ -1073,6 +1073,15 @@ export type SuspendSupplier = {
  */
 export type SupplierCommissionRate = {
   rate: number | null;
+};
+
+/**
+ * SupplierEscrowRelease
+ *
+ * Hours between delivery and payment of one shop's online sales (0 = at delivery); null follows the platform delay
+ */
+export type SupplierEscrowRelease = {
+  hours: number | null;
 };
 
 /**
@@ -2041,6 +2050,7 @@ export type SearchResponse = {
   total: number;
   page: number;
   hasMore: boolean;
+  didYouMean?: string | null;
 };
 
 /**
@@ -5215,11 +5225,11 @@ export type AdminEscrowReleaseControllerUpdateData = {
   /**
    * EscrowRelease
    *
-   * Délais de versement des ventes payées en ligne au portefeuille de la boutique
+   * Délais de versement des ventes payées en ligne au portefeuille de la boutique, en heures (0 = immédiat)
    */
   body: {
     heuresApresConfirmation: number;
-    joursMaximum: number;
+    heuresMaximum: number;
   };
   path?: never;
   query?: never;
@@ -7441,6 +7451,19 @@ export type PaymentsWebhookControllerHandleFedaPayWebhookData = {
 
 export type PaymentsWebhookControllerHandleFedaPayWebhookResponses = {
   201: unknown;
+};
+
+export type PaymentsWebhookControllerReturnFromIntramData = {
+  body?: never;
+  path?: never;
+  query: {
+    transaction_id: string;
+  };
+  url: "/api/payments/webhook/intram";
+};
+
+export type PaymentsWebhookControllerReturnFromIntramResponses = {
+  200: unknown;
 };
 
 export type PaymentsWebhookControllerHandleIntramWebhookData = {
@@ -10797,6 +10820,26 @@ export type AdminControllerUpdateSupplierCommissionRateData = {
 };
 
 export type AdminControllerUpdateSupplierCommissionRateResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateSupplierEscrowReleaseData = {
+  /**
+   * SupplierEscrowRelease
+   *
+   * Hours between delivery and payment of one shop's online sales (0 = at delivery); null follows the platform delay
+   */
+  body: {
+    hours: number | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/suppliers/{id}/escrow-release";
+};
+
+export type AdminControllerUpdateSupplierEscrowReleaseResponses = {
   200: unknown;
 };
 

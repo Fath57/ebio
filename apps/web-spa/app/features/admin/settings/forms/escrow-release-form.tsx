@@ -18,9 +18,9 @@ import { z } from 'zod'
 
 const escrowReleaseSchema = z.object({
   heuresApresConfirmation: z.coerce.number().int().min(0).max(720),
-  joursMaximum: z.coerce.number().int().min(1).max(60),
+  heuresMaximum: z.coerce.number().int().min(0).max(1440),
 }).refine(
-  value => value.heuresApresConfirmation <= value.joursMaximum * 24,
+  value => value.heuresApresConfirmation <= value.heuresMaximum,
   { message: 'admin.settings.escrowRelease.invalid', path: ['heuresApresConfirmation'] },
 )
 
@@ -35,9 +35,10 @@ interface EscrowReleaseFormProps {
 /**
  * When a shop is paid for an order settled online.
  *
- * Two delays, both counted from the delivery: a short one once buyer and shop
- * both confirmed it, and a ceiling so a forgotten confirmation never holds the
- * money. The same rule as the API: the first cannot exceed the second.
+ * Two delays in hours, both counted from the delivery: a short one once buyer
+ * and shop both confirmed it, and a ceiling so a forgotten confirmation never
+ * holds the money. Zero pays at delivery. The same rule as the API: the first
+ * cannot exceed the second. A shop may carry its own delay (shop page).
  */
 export function EscrowReleaseForm({ delays, onSubmit, isPending }: EscrowReleaseFormProps) {
   const { t } = useTranslation()
@@ -74,12 +75,12 @@ export function EscrowReleaseForm({ delays, onSubmit, isPending }: EscrowRelease
 
           <FormField
             control={form.control}
-            name="joursMaximum"
+            name="heuresMaximum"
             render={({ field }) => (
               <FormItem>
                 <FormLabel htmlFor="escrow-maximum">{t('admin.settings.escrowRelease.maximum')}</FormLabel>
                 <FormControl>
-                  <Input id="escrow-maximum" type="number" min={1} max={60} {...field} />
+                  <Input id="escrow-maximum" type="number" min={0} max={1440} {...field} />
                 </FormControl>
                 <FormDescription>{t('admin.settings.escrowRelease.maximumHint')}</FormDescription>
                 <FormMessage />

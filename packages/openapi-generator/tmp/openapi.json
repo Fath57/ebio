@@ -4257,7 +4257,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique",
+          "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique, en heures (0 = immédiat)",
           "content": {
             "application/json": {
               "schema": {
@@ -4268,19 +4268,19 @@
                     "minimum": 0,
                     "maximum": 720
                   },
-                  "joursMaximum": {
+                  "heuresMaximum": {
                     "type": "integer",
-                    "minimum": 1,
-                    "maximum": 60
+                    "minimum": 0,
+                    "maximum": 1440
                   }
                 },
                 "required": [
                   "heuresApresConfirmation",
-                  "joursMaximum"
+                  "heuresMaximum"
                 ],
                 "additionalProperties": false,
                 "title": "EscrowRelease",
-                "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique"
+                "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique, en heures (0 = immédiat)"
               }
             }
           }
@@ -9248,6 +9248,27 @@
       }
     },
     "/api/payments/webhook/intram": {
+      "get": {
+        "operationId": "PaymentsWebhookController_returnFromIntram",
+        "tags": [
+          "PaymentsWebhook"
+        ],
+        "parameters": [
+          {
+            "name": "transaction_id",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
       "post": {
         "operationId": "PaymentsWebhookController_handleIntramWebhook",
         "tags": [
@@ -17099,6 +17120,60 @@
         }
       }
     },
+    "/api/admin/suppliers/{id}/escrow-release": {
+      "patch": {
+        "operationId": "AdminController_updateSupplierEscrowRelease",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Hours between delivery and payment of one shop's online sales (0 = at delivery); null follows the platform delay",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "hours": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 1440
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "hours"
+                ],
+                "additionalProperties": false,
+                "title": "SupplierEscrowRelease",
+                "description": "Hours between delivery and payment of one shop's online sales (0 = at delivery); null follows the platform delay"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/suppliers/{id}/reinstate": {
       "patch": {
         "operationId": "AdminController_reinstateSupplier",
@@ -19256,19 +19331,19 @@
             "minimum": 0,
             "maximum": 720
           },
-          "joursMaximum": {
+          "heuresMaximum": {
             "type": "integer",
-            "minimum": 1,
-            "maximum": 60
+            "minimum": 0,
+            "maximum": 1440
           }
         },
         "required": [
           "heuresApresConfirmation",
-          "joursMaximum"
+          "heuresMaximum"
         ],
         "additionalProperties": false,
         "title": "EscrowRelease",
-        "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique"
+        "description": "Délais de versement des ventes payées en ligne au portefeuille de la boutique, en heures (0 = immédiat)"
       },
       "NewProductSettings": {
         "type": "object",
@@ -21853,6 +21928,29 @@
         "title": "SupplierCommissionRate",
         "description": "Negotiated commission rate for one supplier; null falls back to the category grid"
       },
+      "SupplierEscrowRelease": {
+        "type": "object",
+        "properties": {
+          "hours": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 1440
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "hours"
+        ],
+        "additionalProperties": false,
+        "title": "SupplierEscrowRelease",
+        "description": "Hours between delivery and payment of one shop's online sales (0 = at delivery); null follows the platform delay"
+      },
       "AdminOrderStatus": {
         "type": "object",
         "properties": {
@@ -24313,6 +24411,16 @@
           },
           "hasMore": {
             "type": "boolean"
+          },
+          "didYouMean": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [

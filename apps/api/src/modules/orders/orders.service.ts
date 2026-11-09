@@ -27,6 +27,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
 import { CompensationService } from '../payments/compensation.service'
 import { Checkout } from '../payments/entities/checkout.entity'
+import { EscrowSchedulerService } from '../payments/escrow-scheduler.service'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { ProductPromotion, PromotionType } from '../products/entities/product-promotion.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
@@ -197,6 +198,7 @@ export class OrdersService {
     private readonly compensationService: CompensationService,
     private readonly referralsService: ReferralsService,
     private readonly supplierCashBlock: SupplierCashBlockService,
+    private readonly escrowScheduler: EscrowSchedulerService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -743,6 +745,13 @@ export class OrdersService {
       await this.deliveriesService.closeForOrder(order)
     }
 
+    // A shop paid at delivery (its delay, or the platform's, is zero) gets its
+    // money now rather than at the next hourly run. After the run closure:
+    // the release reads whether a courier delivered.
+    if (becomesDelivered) {
+      await this.escrowScheduler.releaseIfDue(order.id)
+    }
+
     if (newStatus === OrderStatus.CANCELLED) {
       await this.onOrderCancelled(order)
       await this.deliveriesService.cancelForOrder(order)
@@ -1025,6 +1034,8 @@ export class OrdersService {
     }
     else {
       await this.em.flush()
+      // The second confirmation may make the money due at once.
+      await this.escrowScheduler.releaseIfDue(order.id)
     }
 
     return order

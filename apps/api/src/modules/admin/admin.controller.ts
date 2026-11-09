@@ -15,6 +15,7 @@ import type {
   ResolveReportInput,
   SupplierCommissionRateInput,
   SupplierDebtLimitInput,
+  SupplierEscrowReleaseInput,
   SuspendSupplierInput,
   ValidationActionInput,
 } from './contracts/admin.contract'
@@ -57,6 +58,7 @@ import {
   resolveReportSchema,
   supplierCommissionRateSchema,
   supplierDebtLimitSchema,
+  supplierEscrowReleaseSchema,
   suspendSupplierSchema,
   validationActionSchema,
 } from './contracts/admin.contract'
@@ -178,6 +180,17 @@ export class AdminController {
     @TypedBody(supplierCommissionRateSchema) body: SupplierCommissionRateInput,
   ) {
     await this.adminService.updateSupplierCommissionRate(id, body.rate)
+    return { success: true }
+  }
+
+  /** The shop's own payment delay in hours (0 = at delivery); null follows the platform. */
+  @CanManage('Supplier')
+  @Patch('suppliers/:id/escrow-release')
+  async updateSupplierEscrowRelease(
+    @Param('id') id: string,
+    @TypedBody(supplierEscrowReleaseSchema) body: SupplierEscrowReleaseInput,
+  ) {
+    await this.adminService.updateSupplierEscrowRelease(id, body.hours)
     return { success: true }
   }
 

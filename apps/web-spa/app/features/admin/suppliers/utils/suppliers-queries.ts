@@ -1,9 +1,12 @@
+import type { EscrowRelease } from '@boilerstone/openapi-generator/client/types.gen'
 import {
   adminControllerGetSupplierById,
   adminControllerGetSuppliers,
   adminControllerReinstateSupplier,
   adminControllerSuspendSupplier,
   adminControllerUpdateSupplierCommissionRate,
+  adminControllerUpdateSupplierEscrowRelease,
+  adminEscrowReleaseControllerGet,
   productsControllerFindBySupplier,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
@@ -47,6 +50,8 @@ export interface AdminSupplierDetail extends AdminSupplierListItem {
   coverPhoto: string | null
   mobileMoneyNumber: string | null
   commissionRate: number | null
+  /** The shop's own payout delay in hours (0 = on delivery); null follows the platform. */
+  escrowReleaseHours: number | null
   revenue: number
 }
 
@@ -141,6 +146,30 @@ export async function updateSupplierCommissionRate(supplierId: string, rate: num
   })
   if (response.error)
     throw new Error('Failed to update commission rate')
+}
+
+/** The shop's own payout delay in hours (0 = on delivery); null follows the platform. */
+export async function updateSupplierEscrowRelease(supplierId: string, hours: number | null): Promise<void> {
+  const response = await adminControllerUpdateSupplierEscrowRelease({
+    path: { id: supplierId },
+    body: { hours },
+  })
+  if (response.error)
+    throw new Error('Failed to update the payout delay')
+}
+
+/** The platform payout delays, shown next to a shop's own. */
+export function fetchPlatformEscrowReleaseQueryOptions() {
+  return {
+    queryKey: ['admin', 'escrow-release'],
+    queryFn: async () => {
+      const response = await adminEscrowReleaseControllerGet()
+      if (response.error || !response.data)
+        throw new Error('Failed to fetch escrow release delays')
+      // The controller declares no response schema: the body is the setting.
+      return response.data as EscrowRelease
+    },
+  }
 }
 
 export type SupplierProductPromotionType = 'PRICE' | 'BOGO' | 'FREE_DELIVERY'

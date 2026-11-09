@@ -179,19 +179,20 @@ export const productReviewTimingSchema = z.object({
 export type ProductReviewTimingInput = z.infer<typeof productReviewTimingSchema>
 
 /**
- * When a shop is paid for an order settled online: so long after delivery
- * once both sides confirmed it, and at the latest so many days after delivery
- * whatever happens.
+ * When a shop is paid for an order settled online, in hours after delivery:
+ * so long once both sides confirmed it, and at the latest so long whatever
+ * happens. Zero pays the shop the moment the order is delivered. A shop may
+ * carry its own ceiling (`suppliers.escrow_release_hours`), which wins.
  */
 export const escrowReleaseSchema = z.object({
   heuresApresConfirmation: z.coerce.number().int().min(0).max(720),
-  joursMaximum: z.coerce.number().int().min(1).max(60),
+  heuresMaximum: z.coerce.number().int().min(0).max(1440),
 }).refine(
-  value => value.heuresApresConfirmation <= value.joursMaximum * 24,
+  value => value.heuresApresConfirmation <= value.heuresMaximum,
   { message: 'Le délai après confirmation ne peut pas dépasser le délai maximum', path: ['heuresApresConfirmation'] },
 ).meta({
   title: 'EscrowRelease',
-  description: 'Délais de versement des ventes payées en ligne au portefeuille de la boutique',
+  description: 'Délais de versement des ventes payées en ligne au portefeuille de la boutique, en heures (0 = immédiat)',
 })
 
 export type EscrowReleaseInput = z.infer<typeof escrowReleaseSchema>

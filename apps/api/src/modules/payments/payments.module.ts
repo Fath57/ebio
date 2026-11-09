@@ -48,6 +48,6 @@ import { ReceiptService } from './receipt.service'
     EscrowSchedulerService,
     CompensationService,
   ],
-  exports: [PaymentsService, PaymentMethodService, CommissionService, ReceiptService, CompensationService],
+  exports: [PaymentsService, EscrowSchedulerService, PaymentMethodService, CommissionService, ReceiptService, CompensationService],
 })
 export class PaymentsModule {}

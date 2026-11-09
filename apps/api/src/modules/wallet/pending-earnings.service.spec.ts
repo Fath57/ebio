@@ -21,13 +21,14 @@ function order(overrides: Record<string, unknown>) {
   }
 }
 
-function build(payments: unknown[], courierDeliveredOrderIds: string[]) {
+function build(payments: unknown[], courierDeliveredOrderIds: string[], escrowReleaseHours: number | null = null) {
   const em = {
+    findOneOrFail: vi.fn().mockResolvedValue({ escrowReleaseHours }),
     find: vi.fn()
       .mockResolvedValueOnce(payments)
       .mockResolvedValueOnce(courierDeliveredOrderIds.map(id => ({ order: { id } }))),
   }
-  const settings = { getEscrowRelease: vi.fn().mockResolvedValue({ heuresApresConfirmation: 48, joursMaximum: 7 }) }
+  const settings = { getEscrowRelease: vi.fn().mockResolvedValue({ heuresApresConfirmation: 48, heuresMaximum: 168 }) }
   return new PendingEarningsService(em as never, settings as never)
 }
 
@@ -66,6 +67,15 @@ describe('montant en attente de crédit', () => {
     const pending = await service.forSupplier('shop', now)
 
     expect(pending.nextReleaseAt).toBe('2026-10-05T12:00:00.000Z')
+  })
+
+  it('suit le délai propre à la boutique, qui borne aussi le délai après confirmation', async () => {
+    const service = build([{ amount: 10_500, order: order({ id: 'a' }) }], ['a'], 6)
+
+    const pending = await service.forSupplier('shop', now)
+
+    expect(pending.nextReleaseAt).toBe(now.toISOString())
+    expect(pending.delays).toEqual({ heuresApresConfirmation: 6, heuresMaximum: 6, joursMaximum: 1 })
   })
 
   it('ne promet jamais un moment déjà passé', async () => {

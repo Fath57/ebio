@@ -46,7 +46,8 @@ interface PendingEarnings {
   inProgressAmount: number
   inProgressCount: number
   nextReleaseAt: string | null
-  delays: { heuresApresConfirmation: number, joursMaximum: number }
+  /** Hours; `heuresMaximum` is absent from an API older than the hourly delays. */
+  delays: { heuresApresConfirmation: number, heuresMaximum?: number, joursMaximum: number }
 }
 
 /** Shop debt past the platform limit: cash orders are refused until a top-up. */
@@ -137,6 +138,22 @@ function formatDelayHours(hours: number): string {
     return `${days} jour${days > 1 ? 's' : ''}`
   }
   return `${hours} h`
+}
+
+/** When online sales reach the wallet, in the shop's own words. */
+function describeReleaseDelays(delays: PendingEarnings['delays']): string {
+  const maximum = delays.heuresMaximum ?? delays.joursMaximum * 24
+  const afterConfirmation = Math.min(delays.heuresApresConfirmation, maximum)
+  if (maximum === 0) {
+    return 'Les ventes payées en ligne arrivent sur votre portefeuille dès la livraison.'
+  }
+  if (afterConfirmation === maximum) {
+    return `Les ventes payées en ligne arrivent ${formatDelayHours(maximum)} après la livraison.`
+  }
+  const confirmed = afterConfirmation === 0
+    ? 'dès que vous et l\'acheteur avez confirmé la livraison'
+    : `${formatDelayHours(afterConfirmation)} après que vous et l'acheteur avez confirmé la livraison`
+  return `Les ventes payées en ligne arrivent ${confirmed}, et au plus tard ${formatDelayHours(maximum)} après la livraison.`
 }
 
 /** « dimanche 5 octobre vers 12 h » — the release runs hourly, hence « vers ». */
@@ -479,7 +496,7 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
                     </Text>
                   )}
                   <Text style={[styles.pendingHint, { color: colors.earth[600] }]}>
-                    {`Les ventes payées en ligne arrivent ${formatDelayHours(pending.delays.heuresApresConfirmation)} après que vous et le client avez confirmé la livraison, et au plus tard ${pending.delays.joursMaximum} jour${pending.delays.joursMaximum > 1 ? 's' : ''} après la livraison.`}
+                    {describeReleaseDelays(pending.delays)}
                   </Text>
                 </View>
               )}

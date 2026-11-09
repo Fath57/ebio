@@ -187,6 +187,13 @@ export const supplierCommissionRateSchema = z.object({
   description: 'Negotiated commission rate for one supplier; null falls back to the category grid',
 })
 
+export const supplierEscrowReleaseSchema = z.object({
+  hours: z.number().int().min(0).max(1440).nullable(),
+}).meta({
+  title: 'SupplierEscrowRelease',
+  description: 'Hours between delivery and payment of one shop\'s online sales (0 = at delivery); null follows the platform delay',
+})
+
 export const commissionSummarySchema = z.object({
   totals: z.object({
     realizedCommission: z.number(),
@@ -312,6 +319,7 @@ export const courierPickupPolicySchema = z.object({
 })
 export type CourierPickupPolicyInput = z.infer<typeof courierPickupPolicySchema>
 export type SupplierCommissionRateInput = z.infer<typeof supplierCommissionRateSchema>
+export type SupplierEscrowReleaseInput = z.infer<typeof supplierEscrowReleaseSchema>
 export type CommissionSummary = z.infer<typeof commissionSummarySchema>
 export type CommissionOrderList = z.infer<typeof commissionOrderListSchema>
 export type SuspendSupplierInput = z.infer<typeof suspendSupplierSchema>

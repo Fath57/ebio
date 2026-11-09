@@ -1534,9 +1534,9 @@
         "title": "Sales payout",
         "description": "When a shop receives the money of an order paid online in its wallet. Until then it stays with eBio, giving time for a complaint to come in.",
         "afterConfirmation": "After confirmation (hours)",
-        "afterConfirmationHint": "Delay after delivery once both the buyer and the shop have confirmed it.",
-        "maximum": "Maximum delay (days)",
-        "maximumHint": "Automatic payout after delivery, even when a confirmation is missing.",
+        "afterConfirmationHint": "Delay after delivery once both the buyer and the shop have confirmed it. 0 = right away.",
+        "maximum": "Maximum delay (hours)",
+        "maximumHint": "Automatic payout after delivery, even when a confirmation is missing. 0 = on delivery. A shop can have its own delay, on its page.",
         "invalid": "The delay after confirmation cannot exceed the maximum delay.",
         "saved": "Saved.",
         "error": "The change was not saved."
@@ -1781,6 +1781,20 @@
           "edit": "Negotiate a rate",
           "reset": "Back to the grid",
           "hint": "This rate replaces the category grid for every order of this shop."
+        },
+        "escrowRelease": {
+          "title": "Sales payout",
+          "current": "Delay in force",
+          "platform": "The platform's ({{delay}})",
+          "instant": "On delivery",
+          "hours_one": "{{count}} hour after delivery",
+          "hours_other": "{{count}} hours after delivery",
+          "edit": "Set a delay",
+          "instantAction": "Pay on delivery",
+          "reset": "Back to the platform delay",
+          "label": "Hours after delivery",
+          "hint": "Replaces the platform delay for this shop's online sales, including those already delivered. 0 = paid on delivery.",
+          "invalid": "Between 0 and 1440 hours."
         }
       },
       "empty": "No suppliers.",

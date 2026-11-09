@@ -23,6 +23,7 @@ import { BusinessCardDownloadButton } from '@/features/admin/business-cards/comp
 import { BackLink } from '@/features/admin/common/components/back-link'
 import { Can } from '@/lib/casl/can'
 import { ProductPromotionsDialog } from '../../promotions/components/product-promotions-dialog'
+import { SupplierEscrowReleaseCard } from '../components/supplier-escrow-release-card'
 import {
   fetchAdminSupplierQueryOptions,
   fetchSupplierProductsQueryOptions,
@@ -364,6 +365,8 @@ export default function AdminSupplierDetailPage() {
                 )}
           </CardContent>
         </Card>
+
+        <SupplierEscrowReleaseCard supplierId={supplier.id} hours={supplier.escrowReleaseHours ?? null} />
 
         <Card>
           <CardHeader>

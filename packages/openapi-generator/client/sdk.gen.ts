@@ -114,6 +114,8 @@ import type {
   AdminControllerUpdateSupplierCommissionRateResponses,
   AdminControllerUpdateSupplierDebtLimitData,
   AdminControllerUpdateSupplierDebtLimitResponses,
+  AdminControllerUpdateSupplierEscrowReleaseData,
+  AdminControllerUpdateSupplierEscrowReleaseResponses,
   AdminControllerValidateSupplierData,
   AdminControllerValidateSupplierResponses,
   AdminCouriersControllerApproveData,
@@ -560,6 +562,8 @@ import type {
   PaymentsWebhookControllerHandlePawerPayerWebhookResponses,
   PaymentsWebhookControllerHandleStripeWebhookData,
   PaymentsWebhookControllerHandleStripeWebhookResponses,
+  PaymentsWebhookControllerReturnFromIntramData,
+  PaymentsWebhookControllerReturnFromIntramResponses,
   PostControllerCreatePostData,
   PostControllerCreatePostResponses,
   PostControllerGetUserPostData,
@@ -3632,6 +3636,17 @@ export const paymentsWebhookControllerHandleFedaPayWebhook = <
     ThrowOnError
   >({ url: "/api/payments/webhook/fedapay", ...options });
 
+export const paymentsWebhookControllerReturnFromIntram = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<PaymentsWebhookControllerReturnFromIntramData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    PaymentsWebhookControllerReturnFromIntramResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/payments/webhook/intram", ...options });
+
 export const paymentsWebhookControllerHandleIntramWebhook = <
   ThrowOnError extends boolean = false,
 >(
@@ -6125,6 +6140,27 @@ export const adminControllerUpdateSupplierCommissionRate = <
     ThrowOnError
   >({
     url: "/api/admin/suppliers/{id}/commission-rate",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminControllerUpdateSupplierEscrowRelease = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    AdminControllerUpdateSupplierEscrowReleaseData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).patch<
+    AdminControllerUpdateSupplierEscrowReleaseResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/suppliers/{id}/escrow-release",
     ...options,
     headers: {
       "Content-Type": "application/json",

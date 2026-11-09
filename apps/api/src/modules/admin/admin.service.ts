@@ -609,6 +609,19 @@ export class AdminService {
     await this.em.flush()
   }
 
+  /**
+   * Sets the shop's own payment delay. Orders already delivered follow it
+   * from the next hourly run; a delay of zero pays them at that run.
+   */
+  async updateSupplierEscrowRelease(supplierId: string, hours: number | null): Promise<void> {
+    const supplier = await this.em.findOne(Supplier, { id: supplierId })
+    if (!supplier) {
+      throw new NotFoundException('Fournisseur introuvable')
+    }
+    supplier.escrowReleaseHours = hours
+    await this.em.flush()
+  }
+
   /** WHERE fragment + params shared by the commission queries. */
   private commissionFilter(filters: { from?: string, to?: string, supplierId?: string }) {
     const conditions: string[] = [`o.status NOT IN ('CANCELLED', 'PENDING_PAYMENT')`]
@@ -1318,7 +1331,7 @@ export class AdminService {
       `SELECT s.id, s.shop_name, s.type, s.mode, s.validation_status, s.timezone,
               s.address, s.neighborhood, s.global_rating, s.total_reviews,
               s.opening_hours, s.cover_photo, s.profile_photo,
-              s.mobile_money_number, s.commission_rate, s."createdAt" as created_at,
+              s.mobile_money_number, s.commission_rate, s.escrow_release_hours, s."createdAt" as created_at,
               ST_Y(s.location::geometry) as latitude,
               ST_X(s.location::geometry) as longitude,
               u.id as user_id, u.name as owner_name, u.email as owner_email,
@@ -1344,6 +1357,7 @@ export class AdminService {
       profilePhoto: (row.profile_photo as string) ?? null,
       mobileMoneyNumber: (row.mobile_money_number as string) ?? null,
       commissionRate: row.commission_rate !== null ? Number(row.commission_rate) : null,
+      escrowReleaseHours: row.escrow_release_hours !== null ? Number(row.escrow_release_hours) : null,
       revenue: Number(row.revenue ?? 0),
     }
   }

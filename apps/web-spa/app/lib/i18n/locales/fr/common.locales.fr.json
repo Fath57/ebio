@@ -1534,9 +1534,9 @@
         "title": "Versement des ventes",
         "description": "Quand une boutique reçoit sur son portefeuille l’argent d’une commande payée en ligne. D’ici là, il reste chez eBio, le temps qu’une réclamation puisse arriver.",
         "afterConfirmation": "Après confirmation (heures)",
-        "afterConfirmationHint": "Délai après la livraison, une fois que l’acheteur et la boutique l’ont tous deux confirmée.",
-        "maximum": "Délai maximum (jours)",
-        "maximumHint": "Versement automatique après la livraison, même si une confirmation manque.",
+        "afterConfirmationHint": "Délai après la livraison, une fois que l’acheteur et la boutique l’ont tous deux confirmée. 0 = aussitôt.",
+        "maximum": "Délai maximum (heures)",
+        "maximumHint": "Versement automatique après la livraison, même si une confirmation manque. 0 = dès la livraison. Une boutique peut avoir son propre délai, sur sa fiche.",
         "invalid": "Le délai après confirmation ne peut pas dépasser le délai maximum.",
         "saved": "Enregistré.",
         "error": "Le changement n’a pas été enregistré."
@@ -1781,6 +1781,20 @@
           "edit": "Négocier un taux",
           "reset": "Revenir à la grille",
           "hint": "Ce taux remplace la grille par catégorie pour toutes les commandes de cette boutique."
+        },
+        "escrowRelease": {
+          "title": "Versement des ventes",
+          "current": "Délai appliqué",
+          "platform": "Celui de la plateforme ({{delay}})",
+          "instant": "Dès la livraison",
+          "hours_one": "{{count}} heure après la livraison",
+          "hours_other": "{{count}} heures après la livraison",
+          "edit": "Définir un délai",
+          "instantAction": "Verser dès la livraison",
+          "reset": "Revenir au délai de la plateforme",
+          "label": "Heures après la livraison",
+          "hint": "Remplace le délai de la plateforme pour les ventes payées en ligne de cette boutique, y compris celles déjà livrées. 0 = versement dès la livraison.",
+          "invalid": "Entre 0 et 1440 heures."
         }
       },
       "empty": "Aucun fournisseur.",

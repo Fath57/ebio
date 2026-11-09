@@ -7,12 +7,20 @@ import { NotificationChannel, NotificationType } from '../notifications/notifica
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
+import { escrowReleaseAt } from './escrow-release-policy'
 import { Payment, PaymentStatus } from './payment.entity'
 import { PaymentsService } from './payments.service'
 
 const HOUR_MS = 60 * 60 * 1000
-const DAY_MS = 24 * HOUR_MS
 
+/**
+ * Pays shops for the orders settled online, once the delay is over.
+ *
+ * The delay is the platform's (back-office setting) unless eBio set one on
+ * the shop itself; zero pays at delivery. The hourly run covers every delay,
+ * `releaseIfDue` covers the moments that can make an order due at once: its
+ * delivery and the last of the two confirmations.
+ */
 @Injectable()
 export class EscrowSchedulerService {
   private readonly logger = new Logger(EscrowSchedulerService.name)
@@ -30,80 +38,94 @@ export class EscrowSchedulerService {
   async processEscrowReleases(): Promise<void> {
     // Read on every run: a delay changed in the back-office applies from the
     // next hour, to orders already delivered as well.
-    const { heuresApresConfirmation, joursMaximum } = await this.platformSettings.getEscrowRelease()
-    await this.releaseBothConfirmedOrders(heuresApresConfirmation * HOUR_MS)
-    await this.autoReleaseExpiredOrders(joursMaximum * DAY_MS)
-    await this.sendReminders(joursMaximum)
-  }
-
-  private async releaseBothConfirmedOrders(delayMs: number): Promise<void> {
-    const cutoff = new Date(Date.now() - delayMs)
+    const delays = await this.platformSettings.getEscrowRelease()
+    const now = new Date()
 
     const payments = await this.em.find(Payment, {
       status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
-      order: {
-        status: OrderStatus.DELIVERED,
-        deliveryConfirmedByBuyer: true,
-        deliveryConfirmedBySupplier: true,
-        deliveredAt: { $lt: cutoff },
-        escrowReleasedAt: null,
-      },
-    }, { populate: ['order'] })
+      order: { status: OrderStatus.DELIVERED, escrowReleasedAt: null },
+    }, { populate: ['order', 'order.supplier'] })
 
     for (const payment of payments) {
-      try {
-        await this.paymentsService.releaseEscrow(payment.id)
-        this.logger.log(`Escrow released for order ${payment.order.orderNumber} (both parties confirmed + 48h)`)
+      const order = payment.order
+      const due = escrowReleaseAt(delays, {
+        deliveredAt: order.deliveredAt ?? null,
+        bothConfirmed: order.deliveryConfirmedByBuyer && order.deliveryConfirmedBySupplier,
+        supplierHours: order.supplier.escrowReleaseHours,
+      }, now)
+      if (due > now) {
+        continue
       }
-      catch (error) {
-        this.logger.error(`Failed to release escrow for payment ${payment.id}`, error)
+      await this.release(payment)
+    }
+
+    await this.sendReminders(delays.heuresMaximum)
+  }
+
+  /**
+   * Releases the order's money now if its delay is already over: a shop paid
+   * at once, or both sides having confirmed with no delay after confirmation.
+   * Never throws: the delivery or the confirmation that called it stands
+   * whatever happens here, and the hourly run retries.
+   */
+  async releaseIfDue(orderId: string): Promise<void> {
+    try {
+      const payment = await this.em.findOne(Payment, {
+        status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
+        order: { id: orderId, status: OrderStatus.DELIVERED, escrowReleasedAt: null },
+      }, { populate: ['order', 'order.supplier'] })
+      if (!payment) {
+        return
       }
+      const order = payment.order
+      const delays = await this.platformSettings.getEscrowRelease()
+      const due = escrowReleaseAt(delays, {
+        deliveredAt: order.deliveredAt ?? null,
+        bothConfirmed: order.deliveryConfirmedByBuyer && order.deliveryConfirmedBySupplier,
+        supplierHours: order.supplier.escrowReleaseHours,
+      })
+      if (due.getTime() <= Date.now()) {
+        await this.release(payment)
+      }
+    }
+    catch (error) {
+      this.logger.error(`Immediate escrow release failed for order ${orderId}`, error instanceof Error ? error.stack : String(error))
     }
   }
 
-  private async autoReleaseExpiredOrders(delayMs: number): Promise<void> {
-    const cutoff = new Date(Date.now() - delayMs)
-
-    const payments = await this.em.find(Payment, {
-      status: { $in: [PaymentStatus.CAPTURED, PaymentStatus.ESCROW] },
-      order: {
-        status: OrderStatus.DELIVERED,
-        deliveredAt: { $lt: cutoff },
-        escrowReleasedAt: null,
-      },
-    }, { populate: ['order'] })
-
-    for (const payment of payments) {
-      try {
-        await this.paymentsService.releaseEscrow(payment.id)
-        this.logger.log(`Escrow auto-released for order ${payment.order.orderNumber} (7 days since delivery, no dispute)`)
-      }
-      catch (error) {
-        this.logger.error(`Failed to auto-release escrow for payment ${payment.id}`, error)
-      }
+  private async release(payment: Payment): Promise<void> {
+    try {
+      await this.paymentsService.releaseEscrow(payment.id)
+      this.logger.log(`Escrow released for order ${payment.order.orderNumber}`)
+    }
+    catch (error) {
+      this.logger.error(`Failed to release escrow for payment ${payment.id}`, error instanceof Error ? error.stack : String(error))
     }
   }
 
   /**
    * Two reminders to confirm, four days and one day before the automatic
-   * release — the same moments as before with the default week, and still
-   * meaningful when the week is shortened.
+   * release, when the ceiling leaves room for them. Shops with their own
+   * delay are left out: the reminder would announce the platform's.
    */
-  private async sendReminders(maxDays: number): Promise<void> {
+  private async sendReminders(maxHours: number): Promise<void> {
+    const maxDays = Math.floor(maxHours / 24)
     const days = [...new Set([maxDays - 4, maxDays - 1])].filter(day => day >= 1)
     for (const day of days) {
-      await this.sendReminderAtDay(day * DAY_MS, day, maxDays)
+      await this.sendReminderAtDay(day, maxDays)
     }
   }
 
-  private async sendReminderAtDay(millisSinceDelivery: number, dayNumber: number, maxDays: number): Promise<void> {
-    const windowStart = new Date(Date.now() - millisSinceDelivery - 60 * 60 * 1000)
+  private async sendReminderAtDay(dayNumber: number, maxDays: number): Promise<void> {
+    const millisSinceDelivery = dayNumber * 24 * HOUR_MS
+    const windowStart = new Date(Date.now() - millisSinceDelivery - HOUR_MS)
     const windowEnd = new Date(Date.now() - millisSinceDelivery)
 
     const orders = await this.em.find(Order, {
       status: OrderStatus.DELIVERED,
       deliveredAt: { $gte: windowStart, $lt: windowEnd },
       escrowReleasedAt: null,
+      supplier: { escrowReleaseHours: null },
       $or: [
         { deliveryConfirmedByBuyer: false },
         { deliveryConfirmedBySupplier: false },
@@ -111,12 +133,13 @@ export class EscrowSchedulerService {
     }, { populate: ['buyer', 'supplier', 'supplier.user'] })
 
     for (const order of orders) {
+      const daysLeft = maxDays - dayNumber
       if (!order.deliveryConfirmedByBuyer) {
         await this.notificationsService.send({
           user: order.buyer,
           type: NotificationType.ESCROW_REMINDER,
           title: 'Confirmez votre livraison',
-          body: `Veuillez confirmer la réception de la commande ${order.orderNumber}. Sans confirmation, les fonds seront libérés automatiquement dans ${maxDays - dayNumber} jour${maxDays - dayNumber > 1 ? 's' : ''}.`,
+          body: `Veuillez confirmer la réception de la commande ${order.orderNumber}. Sans confirmation, les fonds seront libérés automatiquement dans ${daysLeft} jour${daysLeft > 1 ? 's' : ''}.`,
           data: { orderId: order.id, dayNumber },
           channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
         })
