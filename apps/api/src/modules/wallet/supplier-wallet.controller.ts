@@ -5,9 +5,11 @@ import { Controller, Delete, Get, Param, Patch, Post, Query, UseGuards } from '@
 import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
+import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { SuppliersService } from '../suppliers/suppliers.service'
 import { createPayoutNumberSchema, createWithdrawalSchema, topupSchema, verifyTopupSchema } from './contracts/wallet.contract'
 import { PendingEarningsService } from './pending-earnings.service'
+import { SupplierCashBlockService } from './supplier-cash-block.service'
 import { TopupService } from './topup.service'
 import { WalletService } from './wallet.service'
 import { WithdrawalsService } from './withdrawals.service'
@@ -22,6 +24,8 @@ export class SupplierWalletController {
     private readonly suppliersService: SuppliersService,
     private readonly topupService: TopupService,
     private readonly pendingEarnings: PendingEarningsService,
+    private readonly cashBlock: SupplierCashBlockService,
+    private readonly platformSettings: PlatformSettingsService,
   ) {}
 
   /** FedaPay top-up of the shop wallet (to pay a banner, or clear a cash debt). */
@@ -65,6 +69,9 @@ export class SupplierWalletController {
       balance: Number(wallet.balance),
       // Paid online, not yet released: the shop sees it is coming.
       pending: await this.pendingEarnings.forSupplier(supplier.id),
+      // Past this debt cash orders stop (0 = no limit): the app warns before.
+      debtLimit: await this.platformSettings.getSupplierMaxDebt(),
+      cashBlock: await this.cashBlock.getSupplierCashBlock(supplier.id),
       transactions,
     }
   }

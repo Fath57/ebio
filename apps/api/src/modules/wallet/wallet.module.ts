@@ -14,6 +14,7 @@ import { Wallet } from './entities/wallet.entity'
 import { WithdrawalRequest } from './entities/withdrawal-request.entity'
 import { PendingEarningsService } from './pending-earnings.service'
 import { PlatformAccountsService } from './platform-accounts.service'
+import { SupplierCashBlockService } from './supplier-cash-block.service'
 import { SupplierWalletController } from './supplier-wallet.controller'
 import { TopupService } from './topup.service'
 import { WalletAdminController } from './wallet-admin.controller'
@@ -36,7 +37,7 @@ import { WithdrawalsService } from './withdrawals.service'
    * instance of a stateless factory costs nothing — far less than a circular
    * import held together by `forwardRef`.
    */
-  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PendingEarningsService, PaymentGatewayFactory, AdminWalletsService],
-  exports: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService],
+  providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PendingEarningsService, PaymentGatewayFactory, AdminWalletsService, SupplierCashBlockService],
+  exports: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, SupplierCashBlockService],
 })
 export class WalletModule {}

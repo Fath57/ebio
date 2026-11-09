@@ -112,6 +112,8 @@ import type {
   AdminControllerUpdateOrderStatusResponses,
   AdminControllerUpdateSupplierCommissionRateData,
   AdminControllerUpdateSupplierCommissionRateResponses,
+  AdminControllerUpdateSupplierDebtLimitData,
+  AdminControllerUpdateSupplierDebtLimitResponses,
   AdminControllerValidateSupplierData,
   AdminControllerValidateSupplierResponses,
   AdminCouriersControllerApproveData,
@@ -6392,6 +6394,24 @@ export const adminControllerUpdateCourierDebtLimit = <
     ThrowOnError
   >({
     url: "/api/admin/settings/courier-debt-limit",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminControllerUpdateSupplierDebtLimit = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminControllerUpdateSupplierDebtLimitData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminControllerUpdateSupplierDebtLimitResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/settings/supplier-debt-limit",
     ...options,
     headers: {
       "Content-Type": "application/json",

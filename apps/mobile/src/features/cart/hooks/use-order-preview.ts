@@ -52,6 +52,11 @@ export interface OrderPreview {
    * possible, but no longer unknowingly.
    */
   closedShop: { shopName: string, opensAt: string | null } | null
+  /**
+   * Name of a shop that cannot be paid in cash right now (its eBio debt is
+   * past the limit), or `null`. Online and wallet stay open.
+   */
+  cashBlockedShop: string | null
   total: number
 }
 
@@ -125,6 +130,7 @@ function parsePreview(data: Record<string, unknown>): OrderPreview {
     deliveryDistanceKm: typeof data.deliveryDistanceKm === 'number' ? data.deliveryDistanceKm : null,
     deliveryRunCount: Array.isArray(data.runs) ? data.runs.length : 1,
     closedShop: parseClosedShop(data.closedShop),
+    cashBlockedShop: typeof data.cashBlockedShop === 'string' ? data.cashBlockedShop : null,
     total: readNumber(data.total),
   }
 }

@@ -14,6 +14,7 @@ import type {
   DisputeResolutionInput,
   ResolveReportInput,
   SupplierCommissionRateInput,
+  SupplierDebtLimitInput,
   SuspendSupplierInput,
   ValidationActionInput,
 } from './contracts/admin.contract'
@@ -55,6 +56,7 @@ import {
   disputeResolutionSchema,
   resolveReportSchema,
   supplierCommissionRateSchema,
+  supplierDebtLimitSchema,
   suspendSupplierSchema,
   validationActionSchema,
 } from './contracts/admin.contract'
@@ -567,6 +569,15 @@ export class AdminController {
     @TypedBody(courierDebtLimitSchema) body: CourierDebtLimitInput,
   ) {
     await this.adminService.updateCourierMaxDebt(body.amount)
+    return { success: true }
+  }
+
+  @CanManage('Settings')
+  @Put('settings/supplier-debt-limit')
+  async updateSupplierDebtLimit(
+    @TypedBody(supplierDebtLimitSchema) body: SupplierDebtLimitInput,
+  ) {
+    await this.adminService.updateSupplierMaxDebt(body.amount)
     return { success: true }
   }
 

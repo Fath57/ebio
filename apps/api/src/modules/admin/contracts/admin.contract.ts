@@ -280,6 +280,15 @@ export const courierDebtLimitSchema = z.object({
 })
 export type CourierDebtLimitInput = z.infer<typeof courierDebtLimitSchema>
 
+export const supplierDebtLimitSchema = z.object({
+  /** Integer FCFA of negative balance tolerated; 0 disables the block. */
+  amount: z.number().int().min(0).max(10_000_000),
+}).meta({
+  title: 'SupplierDebtLimit',
+  description: 'Deepest negative shop wallet balance before cash orders are refused',
+})
+export type SupplierDebtLimitInput = z.infer<typeof supplierDebtLimitSchema>
+
 export const courierOfferTimeoutSchema = z.object({
   /** Seconds a targeted courier has to accept before the run moves on. */
   seconds: z.number().int().min(20).max(600),

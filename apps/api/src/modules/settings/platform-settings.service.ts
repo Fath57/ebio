@@ -13,6 +13,7 @@ import { PlatformSetting } from './platform-setting.entity'
 export const DELIVERY_COMMISSION_RATE_KEY = 'delivery_commission_rate'
 export const CASH_ON_DELIVERY_MAX_AMOUNT_KEY = 'cash_on_delivery_max_amount'
 export const COURIER_MAX_DEBT_KEY = 'courier_max_debt'
+export const SUPPLIER_MAX_DEBT_KEY = 'supplier_max_debt'
 export const COURIER_OFFER_TIMEOUT_KEY = 'courier_offer_timeout_s'
 export const COURIER_PICKUP_TIMEOUT_KEY = 'courier_pickup_timeout_min'
 export const COURIER_PICKUP_WARNING_KEY = 'courier_pickup_warning_min'
@@ -77,6 +78,8 @@ export const DEFAULT_CASH_ON_DELIVERY_MAX_AMOUNT = 25_000
 const CASH_LIMIT_CEILING = 10_000_000
 /** Deepest negative courier balance (FCFA) before offers stop; 0 = no limit. */
 export const DEFAULT_COURIER_MAX_DEBT = 5_000
+/** Deepest negative shop balance (FCFA) before cash orders stop; 0 = no limit. */
+export const DEFAULT_SUPPLIER_MAX_DEBT = 10_000
 /**
  * Seconds a courier has to take a run offered to them alone before it moves
  * to the next one. 40 s turned out too short on the road.
@@ -242,6 +245,26 @@ export class PlatformSettingsService {
       throw new BadRequestException('La dette maximale doit être un montant entier entre 0 et 10 000 000 FCFA')
     }
     await this.set(COURIER_MAX_DEBT_KEY, String(amount))
+  }
+
+  /**
+   * Cash commissions push a shop balance negative; past this debt the shop
+   * stops receiving cash orders until online sales or a top-up bring it back.
+   */
+  async getSupplierMaxDebt(): Promise<number> {
+    const raw = await this.get(SUPPLIER_MAX_DEBT_KEY)
+    const amount = raw === null ? Number.NaN : Number(raw)
+    if (!Number.isInteger(amount) || amount < 0 || amount > CASH_LIMIT_CEILING) {
+      return DEFAULT_SUPPLIER_MAX_DEBT
+    }
+    return amount
+  }
+
+  async setSupplierMaxDebt(amount: number): Promise<void> {
+    if (!Number.isInteger(amount) || amount < 0 || amount > CASH_LIMIT_CEILING) {
+      throw new BadRequestException('La dette maximale doit être un montant entier entre 0 et 10 000 000 FCFA')
+    }
+    await this.set(SUPPLIER_MAX_DEBT_KEY, String(amount))
   }
 
   /** Exclusive window of a targeted offer, in seconds. */

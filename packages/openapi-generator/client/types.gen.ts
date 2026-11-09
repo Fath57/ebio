@@ -1145,6 +1145,15 @@ export type CourierDebtLimit = {
 };
 
 /**
+ * SupplierDebtLimit
+ *
+ * Deepest negative shop wallet balance before cash orders are refused
+ */
+export type SupplierDebtLimit = {
+  amount: number;
+};
+
+/**
  * CourierOfferTimeout
  *
  * Exclusive window of a run offered to one courier, in seconds
@@ -11189,6 +11198,24 @@ export type AdminControllerUpdateCourierDebtLimitData = {
 };
 
 export type AdminControllerUpdateCourierDebtLimitResponses = {
+  200: unknown;
+};
+
+export type AdminControllerUpdateSupplierDebtLimitData = {
+  /**
+   * SupplierDebtLimit
+   *
+   * Deepest negative shop wallet balance before cash orders are refused
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/settings/supplier-debt-limit";
+};
+
+export type AdminControllerUpdateSupplierDebtLimitResponses = {
   200: unknown;
 };
 

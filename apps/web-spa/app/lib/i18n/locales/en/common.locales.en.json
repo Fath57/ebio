@@ -1411,6 +1411,14 @@
         "saved": "Maximum debt saved",
         "error": "Could not save the maximum debt. Try again."
       },
+      "supplierDebtLimit": {
+        "title": "Shop maximum debt",
+        "description": "On a cash order (delivery or on-site pickup), eBio's commission is debited from the shop's wallet, which may go negative. Past this debt the shop no longer receives cash orders until it tops up its wallet; online and wallet payments stay open and pay the debt down. Set 0 for no limit.",
+        "amount": "Maximum debt (FCFA)",
+        "amountHint": "Integer between 0 and 10,000,000 FCFA. Applied immediately.",
+        "saved": "Shop maximum debt saved",
+        "error": "Could not save the shop maximum debt. Try again."
+      },
       "deliveryPricing": {
         "title": "Delivery pricing",
         "description": "One rule for every shop: the fee shown to the buyer is computed by eBio from the distance between the shop and the delivery address. Applies to upcoming orders only.",

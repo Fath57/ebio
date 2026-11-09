@@ -1,5 +1,6 @@
 import { useFocusEffect } from '@react-navigation/native'
 import ArrowDownToLine from 'lucide-react-native/dist/esm/icons/arrow-down-to-line'
+import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
@@ -48,11 +49,20 @@ interface PendingEarnings {
   delays: { heuresApresConfirmation: number, joursMaximum: number }
 }
 
+/** Shop debt past the platform limit: cash orders are refused until a top-up. */
+interface CashBlock {
+  balance: number
+  limit: number
+}
+
 interface WalletData {
   id: string
   balance: number
   /** Absent from APIs older than this screen. */
   pending?: PendingEarnings
+  /** Debt tolerated before cash orders stop; 0 = no limit. Absent from older APIs. */
+  debtLimit?: number
+  cashBlock?: CashBlock | null
   transactions: {
     items: Movement[]
     total: number
@@ -188,6 +198,42 @@ function MovementRow({ movement, isFirst, isLast }: MovementRowProps) {
   )
 }
 
+interface CashBlockedBannerProps {
+  block: CashBlock
+  onTopup: () => void
+}
+
+/**
+ * eBio's cash commissions put the shop past the tolerated debt: buyers can no
+ * longer pick cash for it. Earth tones on purpose — a business state, not an
+ * error — with the way out right there.
+ */
+function CashBlockedBanner({ block, onTopup }: CashBlockedBannerProps) {
+  return (
+    <View style={styles.blockCard} accessibilityRole="alert">
+      <View style={styles.blockHeader}>
+        <View style={styles.blockIcon}>
+          <Banknote size={20} color={colors.earth[800]} strokeWidth={2} />
+        </View>
+        <Text style={styles.blockTitle}>Paiement en espèces suspendu</Text>
+      </View>
+      <Text style={styles.blockBody}>
+        {`Votre portefeuille est à ${formatAmount(block.balance)}, au-delà de la dette autorisée de ${formatAmount(block.limit)}. Vos clients ne peuvent plus vous payer en espèces : le paiement en ligne et par portefeuille reste ouvert, et chaque vente en ligne réduit votre dette. Rechargez votre portefeuille pour rouvrir les espèces.`}
+      </Text>
+      <TouchableOpacity
+        style={styles.blockButton}
+        onPress={onTopup}
+        activeOpacity={0.8}
+        accessibilityRole="button"
+        accessibilityLabel="Recharger le portefeuille pour rouvrir les espèces"
+      >
+        <Plus size={16} color={colors.neutral[0]} strokeWidth={2.5} />
+        <Text style={styles.topupButtonText}>Recharger</Text>
+      </TouchableOpacity>
+    </View>
+  )
+}
+
 interface SupplierWalletScreenProps {
   onGoBack: () => void
 }
@@ -197,6 +243,8 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
   const tabBarClearance = useTabBarClearance()
   const [balance, setBalance] = useState(0)
   const [pending, setPending] = useState<PendingEarnings | null>(null)
+  const [debtLimit, setDebtLimit] = useState(0)
+  const [cashBlock, setCashBlock] = useState<CashBlock | null>(null)
   const [numbers, setNumbers] = useState<PayoutNumber[]>([])
   const [withdrawals, setWithdrawals] = useState<Withdrawal[]>([])
   const [topups, setTopups] = useState<Topup[]>([])
@@ -232,6 +280,8 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
     if (page === 1) {
       setBalance(data.balance)
       setPending(data.pending ?? null)
+      setDebtLimit(data.debtLimit ?? 0)
+      setCashBlock(data.cashBlock ?? null)
       const [numbersRes, withdrawalsRes, topupsRes] = await Promise.all([
         apiFetch('/api/suppliers/me/wallet/payout-numbers'),
         // The latest requests and topups only: a pending one is always among
@@ -385,11 +435,14 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
               <Text style={[styles.balanceValue, { color: balance < 0 ? colors.coral[600] : semantic.textPrimary }]}>
                 {formatAmount(balance)}
               </Text>
-              {balance < 0 && (
+              {balance < 0 && !cashBlock && (
                 <Text style={[styles.balanceHint, { color: semantic.textSecondary }]}>
-                  Solde négatif : commissions sur ventes en espèces, absorbées par vos prochaines ventes en ligne.
+                  {debtLimit > 0
+                    ? `Solde négatif : commissions sur ventes en espèces, absorbées par vos prochaines ventes en ligne. Au-delà de ${formatAmount(debtLimit)} de dette, le paiement en espèces sera suspendu.`
+                    : 'Solde négatif : commissions sur ventes en espèces, absorbées par vos prochaines ventes en ligne.'}
                 </Text>
               )}
+              {cashBlock && <CashBlockedBanner block={cashBlock} onTopup={() => setIsToppingUp(true)} />}
               {/* Money already paid by buyers but not released yet: without it a
                   delivered sale looked lost while the balance stayed still. */}
               {pending && pending.amount > 0 && (
@@ -677,6 +730,8 @@ export function SupplierWalletScreen({ onGoBack }: SupplierWalletScreenProps) {
 
       <SupplierTopupSheet
         visible={isToppingUp}
+        // Blocked: what brings the balance back within the tolerated debt.
+        suggestedAmount={cashBlock ? Math.ceil(-cashBlock.balance - cashBlock.limit) : 0}
         onClose={() => {
           setIsToppingUp(false)
           void load()
@@ -705,6 +760,36 @@ const styles = StyleSheet.create({
   balanceLabel: { ...typography.bodyS },
   balanceValue: { ...typography.display, fontFamily: fonts.sansBd, fontSize: 30, lineHeight: 36 },
   balanceHint: { ...typography.caption },
+  blockCard: {
+    backgroundColor: colors.earth[50],
+    borderWidth: 1,
+    borderColor: colors.earth[100],
+    borderRadius: radius.md,
+    padding: spacing[3],
+    gap: spacing[2],
+    marginTop: spacing[1],
+  },
+  blockHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing[2] },
+  blockIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: colors.earth[100],
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  blockTitle: { ...typography.h3, color: colors.earth[800], flex: 1 },
+  blockBody: { ...typography.bodyS, color: colors.earth[800] },
+  blockButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing[2],
+    backgroundColor: colors.green[400],
+    borderRadius: radius.md,
+    paddingVertical: spacing[3],
+    minHeight: 44,
+  },
   pendingBox: { borderRadius: radius.md, padding: spacing[3], gap: spacing[1], marginTop: spacing[1] },
   pendingHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'baseline', gap: spacing[2] },
   pendingLabel: { ...typography.bodyS, fontFamily: fonts.sansSb },

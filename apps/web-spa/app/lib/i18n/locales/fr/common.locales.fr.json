@@ -1411,6 +1411,14 @@
         "saved": "Dette maximale enregistrée",
         "error": "Impossible d’enregistrer la dette maximale. Réessayez."
       },
+      "supplierDebtLimit": {
+        "title": "Dette maximale d'une boutique",
+        "description": "Sur une commande payée en espèces (livraison ou retrait sur place), la commission eBio est prélevée sur le portefeuille de la boutique, qui peut passer en négatif. Au-delà de cette dette, la boutique ne reçoit plus de commandes payées en espèces tant qu'elle n'a pas rechargé son portefeuille ; le paiement en ligne et par portefeuille reste ouvert et rembourse la dette. Mettre 0 pour ne pas limiter.",
+        "amount": "Dette maximale (FCFA)",
+        "amountHint": "Entier entre 0 et 10 000 000 FCFA. Appliqué immédiatement.",
+        "saved": "Dette maximale des boutiques enregistrée",
+        "error": "Impossible d’enregistrer la dette maximale des boutiques. Réessayez."
+      },
       "deliveryPricing": {
         "title": "Tarification de la livraison",
         "description": "Règle unique, valable pour toutes les boutiques : les frais affichés à l'acheteur sont calculés par eBio à partir de la distance entre la boutique et l'adresse de livraison. Appliquée aux commandes à venir uniquement.",

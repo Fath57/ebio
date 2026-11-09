@@ -76,6 +76,11 @@ export const checkoutPreviewResponseSchema = z.object({
    */
   cashLimitExceededBy: z.number().nullable(),
   /**
+   * Name of a shop that cannot be paid in cash right now — its eBio debt is
+   * past the platform limit — or `null`. Online and wallet stay open.
+   */
+  cashBlockedShop: z.string().nullable(),
+  /**
    * The shop is closed right now — `null` when it is open.
    *
    * Read by the checkout screen above the button: the order is still

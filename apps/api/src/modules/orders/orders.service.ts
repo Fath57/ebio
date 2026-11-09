@@ -40,6 +40,7 @@ import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
+import { SupplierCashBlockService } from '../wallet/supplier-cash-block.service'
 import { WalletService } from '../wallet/wallet.service'
 import { Dispute } from './entities/dispute.entity'
 import { OrderItem } from './entities/order-item.entity'
@@ -195,6 +196,7 @@ export class OrdersService {
     private readonly orderEmails: OrderEmailsService,
     private readonly compensationService: CompensationService,
     private readonly referralsService: ReferralsService,
+    private readonly supplierCashBlock: SupplierCashBlockService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -261,6 +263,13 @@ export class OrdersService {
         throw new BadRequestException(`Adresse hors zone de livraison (${km} km, maximum ${pricing.deliveryMaxKm} km). Choisissez le retrait sur place ou une autre adresse.`)
       }
       throw new BadRequestException('Choisissez votre point de livraison sur la carte pour calculer les frais de livraison')
+    }
+
+    // Cash: eBio's commission becomes a debt on the shop wallet. Past the
+    // platform limit the shop is paid online only — on every route, lone
+    // order or checkout alike.
+    if (data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
+      await this.supplierCashBlock.assertCashAllowed(supplier.id, supplier.shopName)
     }
 
     // Cash: the courier fronts the goods and collects the total at the door,
@@ -632,6 +641,32 @@ export class OrdersService {
   }
 
   /**
+   * Warns the shop the moment its eBio debt crosses the limit: from now on it
+   * is paid online only, until sales or a top-up bring the wallet back. Never
+   * throws — a missed push must not fail a delivered order.
+   */
+  private async notifyIfCashBlocked(supplierId: string): Promise<void> {
+    try {
+      const block = await this.supplierCashBlock.getSupplierCashBlock(supplierId)
+      if (!block) {
+        return
+      }
+      const supplier = await this.em.findOneOrFail(Supplier, { id: supplierId }, { populate: ['user'] })
+      await this.notificationsService.send({
+        user: supplier.user,
+        type: NotificationType.SYSTEM,
+        title: 'Paiement en espèces suspendu',
+        body: `Votre portefeuille est à ${block.balance.toLocaleString('fr-FR')} FCFA, au-delà de la dette autorisée (${block.limit.toLocaleString('fr-FR')} FCFA). Rechargez-le pour recevoir à nouveau des commandes payées en espèces.`,
+        data: { reason: 'SUPPLIER_CASH_BLOCKED' },
+        channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
+      })
+    }
+    catch (error) {
+      this.logger.error(`Cash block notification failed for supplier ${supplierId}`, error instanceof Error ? error.stack : String(error))
+    }
+  }
+
+  /**
    * Back office (admin or support) sets the delivery window an order should
    * follow — a buyer on the phone, a slot the app could not read. A unified
    * cart shares one courier run, so every open order of the checkout moves
@@ -731,6 +766,7 @@ export class OrdersService {
         [order.id],
       )
       if (alreadyDebited.length === 0) {
+        const blockedBefore = await this.supplierCashBlock.getSupplierCashBlock(order.supplier.id)
         const wallet = await this.walletService.getOrCreate({ supplierId: order.supplier.id })
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.COMMISSION_DEBIT,
@@ -772,6 +808,10 @@ export class OrdersService {
           description: `Promotions eBio — commande ${order.orderNumber}`,
           orderId: order.id,
         })
+
+        if (!blockedBefore) {
+          await this.notifyIfCashBlocked(order.supplier.id)
+        }
       }
     }
 

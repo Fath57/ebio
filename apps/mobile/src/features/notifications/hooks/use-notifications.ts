@@ -474,6 +474,13 @@ function handleSupplierTap(type: string, data: Record<string, unknown>) {
     case 'ESCROW_REMINDER':
       navigationRef.navigate('Accueil', { screen: 'SupplierWallet', initial: false })
       break
+    case 'SYSTEM':
+      // Cash payment suspended over the eBio debt: the wallet is where the
+      // shop tops up.
+      if (data.reason === 'SUPPLIER_CASH_BLOCKED') {
+        navigationRef.navigate('Accueil', { screen: 'SupplierWallet', initial: false })
+      }
+      break
     case 'NEW_REVIEW':
       navigationRef.navigate('Accueil', { screen: 'SupplierReviews', initial: false })
       break

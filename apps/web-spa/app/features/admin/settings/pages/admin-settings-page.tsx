@@ -16,6 +16,7 @@ import {
   adminControllerUpdateCourierOfferTimeout,
   adminControllerUpdateCourierPickupPolicy,
   adminControllerUpdateDeliveryCommission,
+  adminControllerUpdateSupplierDebtLimit,
   adminDeliveryPricingControllerGet,
   adminDeliveryPricingControllerUpdate,
   adminNewProductSettingsControllerGet,
@@ -60,6 +61,8 @@ interface AdminSettingsData {
   cashOnDeliveryMaxAmount: number
   /** Deepest negative courier balance before runs are suspended (0 = no limit). */
   courierMaxDebt: number
+  /** Deepest negative shop balance before cash orders are refused (0 = no limit). */
+  supplierMaxDebt?: number
   courierOfferTimeoutSeconds?: number
   courierPickupPolicy?: PickupPolicyFormData
 }
@@ -189,6 +192,7 @@ export default function AdminSettingsPage() {
   const [deliveryFeedback, setDeliveryFeedback] = useState<'saved' | 'error' | null>(null)
   const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
+  const [supplierDebtLimitFeedback, setSupplierDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
   const [offerTimeoutFeedback, setOfferTimeoutFeedback] = useState<'saved' | 'error' | null>(null)
   const [pickupPolicyFeedback, setPickupPolicyFeedback] = useState<'saved' | 'error' | null>(null)
   const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
@@ -313,6 +317,25 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setDebtLimitFeedback('error')
+    },
+  })
+
+  const { mutate: updateSupplierDebtLimit, isPending: isSupplierDebtLimitPending } = useMutation({
+    mutationFn: async (amount: number) => {
+      const response = await adminControllerUpdateSupplierDebtLimit({ body: { amount } })
+      if (response.error)
+        throw new Error('Failed to update supplier debt limit')
+      return response.data
+    },
+    onMutate: () => {
+      setSupplierDebtLimitFeedback(null)
+    },
+    onSuccess: () => {
+      setSupplierDebtLimitFeedback('saved')
+      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
+    },
+    onError: () => {
+      setSupplierDebtLimitFeedback('error')
     },
   })
 
@@ -853,6 +876,30 @@ export default function AdminSettingsPage() {
                 {debtLimitFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.debtLimit.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.supplierDebtLimit.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.supplierDebtLimit.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <CashLimitForm
+                  amount={settings?.supplierMaxDebt ?? 10000}
+                  onSubmit={updateSupplierDebtLimit}
+                  isPending={isSupplierDebtLimitPending}
+                  i18nPrefix="admin.settings.supplierDebtLimit"
+                  fieldId="supplier-debt-limit-amount"
+                />
+                {supplierDebtLimitFeedback === 'saved' && (
+                  <p className="text-sm text-green-600">{t('admin.settings.supplierDebtLimit.saved')}</p>
+                )}
+                {supplierDebtLimitFeedback === 'error' && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t('admin.settings.supplierDebtLimit.error')}
                   </p>
                 )}
               </CardContent>

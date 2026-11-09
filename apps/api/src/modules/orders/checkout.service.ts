@@ -14,6 +14,7 @@ import { DeliveryPricingService } from '../settings/delivery-pricing.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
+import { cashBlockedMessage, SupplierCashBlockService } from '../wallet/supplier-cash-block.service'
 import { WalletService } from '../wallet/wallet.service'
 import { Order } from './entities/order.entity'
 import { OrdersService } from './orders.service'
@@ -42,6 +43,7 @@ export class CheckoutService {
     private readonly deliveryPricing: DeliveryPricingService,
     private readonly platformSettings: PlatformSettingsService,
     private readonly walletService: WalletService,
+    private readonly supplierCashBlock: SupplierCashBlockService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
   ) {}
@@ -176,6 +178,7 @@ export class CheckoutService {
         : [],
       total,
       cashLimitExceededBy: data.pickupMode === 'DELIVERY' ? await this.cashOverflow(total) : null,
+      cashBlockedShop: await this.cashBlockedShop(baskets),
       // Said before the checkout, never after: a closed shop will handle the
       // order when it opens, and that is something one accepts knowingly,
       // not something one discovers while waiting.
@@ -204,6 +207,16 @@ export class CheckoutService {
       shopName: supplier.shopName,
       opensAt: nextOpening(hours, new Date(), supplier.timezone),
     }
+  }
+
+  /** The first shop of the cart whose eBio debt bars cash payment, or `null`. */
+  private async cashBlockedShop(baskets: SupplierBasket[]): Promise<string | null> {
+    for (const basket of baskets) {
+      if (await this.supplierCashBlock.getSupplierCashBlock(basket.supplier.id)) {
+        return basket.supplier.shopName
+      }
+    }
+    return null
   }
 
   /**
@@ -264,6 +277,9 @@ export class CheckoutService {
           ? 'Adresse hors zone de livraison. Choisissez le retrait sur place ou une autre adresse.'
           : 'Placez votre position sur la carte pour calculer les frais de livraison',
       )
+    }
+    if (data.paymentMethod === 'CASH_ON_DELIVERY' && quote.cashBlockedShop !== null) {
+      throw new BadRequestException(cashBlockedMessage(quote.cashBlockedShop))
     }
     if (data.paymentMethod === 'CASH_ON_DELIVERY' && quote.cashLimitExceededBy !== null) {
       throw new BadRequestException(

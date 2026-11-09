@@ -516,7 +516,9 @@ export function CheckoutFlow({
     () => new Map(basketItems.map(item => [item.productId, item.unit])),
     [basketItems],
   )
-  const cashAvailable = cashMaxAmount > 0 && orderTotal <= cashMaxAmount
+  // The shop's eBio debt is past the platform limit: it is paid online only.
+  const cashBlocked = Boolean(preview?.cashBlockedShop)
+  const cashAvailable = cashMaxAmount > 0 && orderTotal <= cashMaxAmount && !cashBlocked
   const walletAvailable = walletBalance !== null && walletBalance >= orderTotal
   // A choice that stops being affordable (promo removed, fee changed) falls back to online payment.
   const effectiveChoice: PaymentChoice = (paymentChoice === 'CASH' && !cashAvailable) || (paymentChoice === 'WALLET' && !walletAvailable)
@@ -1089,11 +1091,13 @@ export function CheckoutFlow({
                   {isPickup ? 'Espèces au retrait' : 'Espèces à la livraison'}
                 </Text>
                 <Text style={[styles.walletOptionHint, { color: semantic.textSecondary }]}>
-                  {!cashAvailable
-                    ? `Disponible jusqu'à ${formatPrice(cashMaxAmount)} FCFA par commande`
-                    : isPickup
-                      ? 'Vous payez la boutique en retirant votre commande'
-                      : 'Vous payez le livreur à la réception, montant exact de préférence'}
+                  {cashBlocked
+                    ? 'Cette boutique n\'accepte pas les espèces pour le moment'
+                    : !cashAvailable
+                        ? `Disponible jusqu'à ${formatPrice(cashMaxAmount)} FCFA par commande`
+                        : isPickup
+                          ? 'Vous payez la boutique en retirant votre commande'
+                          : 'Vous payez le livreur à la réception, montant exact de préférence'}
                 </Text>
               </View>
               {effectiveChoice === 'CASH' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}

@@ -18382,6 +18382,44 @@
         }
       }
     },
+    "/api/admin/settings/supplier-debt-limit": {
+      "put": {
+        "operationId": "AdminController_updateSupplierDebtLimit",
+        "tags": [
+          "Admin"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Deepest negative shop wallet balance before cash orders are refused",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000000
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "SupplierDebtLimit",
+                "description": "Deepest negative shop wallet balance before cash orders are refused"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/settings/courier-offer-timeout": {
       "put": {
         "operationId": "AdminController_updateCourierOfferTimeout",
@@ -21963,6 +22001,22 @@
         "additionalProperties": false,
         "title": "CourierDebtLimit",
         "description": "Deepest negative courier wallet balance before offers and acceptance are suspended"
+      },
+      "SupplierDebtLimit": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "SupplierDebtLimit",
+        "description": "Deepest negative shop wallet balance before cash orders are refused"
       },
       "CourierOfferTimeout": {
         "type": "object",

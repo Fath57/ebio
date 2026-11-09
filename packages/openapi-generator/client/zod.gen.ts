@@ -894,6 +894,15 @@ export const zCourierDebtLimit = z.object({
 });
 
 /**
+ * SupplierDebtLimit
+ *
+ * Deepest negative shop wallet balance before cash orders are refused
+ */
+export const zSupplierDebtLimit = z.object({
+  amount: z.int().gte(0).lte(10000000),
+});
+
+/**
  * CourierOfferTimeout
  *
  * Exclusive window of a run offered to one courier, in seconds
@@ -9200,6 +9209,14 @@ export const zAdminControllerUpdateCashOnDeliveryLimitData = z.object({
 });
 
 export const zAdminControllerUpdateCourierDebtLimitData = z.object({
+  body: z.object({
+    amount: z.int().gte(0).lte(10000000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminControllerUpdateSupplierDebtLimitData = z.object({
   body: z.object({
     amount: z.int().gte(0).lte(10000000),
   }),
