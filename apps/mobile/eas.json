@@ -252,6 +252,13 @@
         "ascAppId": "6830140874",
         "metadataPath": "./store/ios/supplier.config.json"
       }
+    },
+    "store-courier": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "production",
+        "releaseStatus": "completed"
+      }
     }
   }
 }
