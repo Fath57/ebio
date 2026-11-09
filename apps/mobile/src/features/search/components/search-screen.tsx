@@ -105,6 +105,8 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   const viewMode: ViewMode = initialViewMode ?? 'list'
   const [isFilterVisible, setIsFilterVisible] = useState(false)
   const [isSearchFocused, setIsSearchFocused] = useState(false)
+  // Height of the header block: the suggestions open right under it.
+  const [topHeight, setTopHeight] = useState(0)
   const searchInputRef = useRef<TextInput>(null)
 
   const { results, loading, loadingMore, total, hasError, didYouMean, search, loadMore } = useSearchProducts()
@@ -325,8 +327,8 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
             accessibilityLabel={`Position non détectée, recherche autour de ${locationLabel}. Choisir ma ville`}
           >
             <MapPin size={16} color={colors.blue[600]} />
-            <Text style={[styles.locationBannerText, { color: colors.blue[800] }]}>
-              {`Position non détectée : résultats autour de ${locationLabel}.`}
+            <Text style={[styles.locationBannerText, { color: colors.blue[800] }]} numberOfLines={1}>
+              {`Position inconnue : ${locationLabel}`}
             </Text>
             <Text style={[styles.locationBannerAction, { color: colors.blue[600] }]}>Changer</Text>
           </TouchableOpacity>
@@ -416,31 +418,75 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
     )
   }
 
+  // Pushed from the search bar, the field lives in the header itself: a
+  // title, a field block, a banner and the chips stacked up to half the screen
+  // and left room for a single row of products.
+  const isSearchMode = viewMode === 'list' && !isListing
+  const isFieldInHeader = Boolean(onGoBack) && isSearchMode
+
+  const searchField = (
+    <View
+      style={[
+        styles.searchInputContainer,
+        isFieldInHeader && styles.searchInputInHeader,
+        { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal },
+      ]}
+    >
+      <Search size={16} color={semantic.textTertiary} style={styles.searchIcon} />
+      <TextInput
+        ref={searchInputRef}
+        style={[styles.searchInput, { color: semantic.textPrimary }]}
+        placeholder="Produit, fournisseur…"
+        placeholderTextColor={semantic.textTertiary}
+        value={query}
+        onChangeText={handleQueryChange}
+        onFocus={() => setIsSearchFocused(true)}
+        onSubmitEditing={handleSubmitSearch}
+        returnKeyType="search"
+        accessibilityLabel="Rechercher un produit ou un fournisseur"
+        autoFocus={Boolean(initialAutoFocus)}
+      />
+      {query.length > 0 && (
+        <TouchableOpacity
+          style={styles.clearButton}
+          onPress={() => {
+            setQuery('')
+            performSearch({ q: '' })
+          }}
+          accessibilityLabel="Effacer la recherche"
+        >
+          <X size={16} color={semantic.textTertiary} />
+        </TouchableOpacity>
+      )}
+    </View>
+  )
+
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       {/* Back header — shown when used as a pushed results screen.
           Les filtres vivent dans son rightSlot : action de niveau écran, comme
           « Tout marquer lu » sur les notifications. Les mêmes critères produit
           (distance, catégories, prix, stock) valent en liste comme sur la carte. */}
-      {onGoBack && (
-        <ScreenHeader
-          title={headerTitle ?? 'Recherche'}
-          onBack={onGoBack}
-          rightSlot={(
-            <FilterButton
-              onPress={() => setIsFilterVisible(true)}
-              isActive={hasActiveFilters}
-              color={semantic.textSecondary}
-            />
-          )}
-        />
-      )}
+      <View onLayout={event => setTopHeight(event.nativeEvent.layout.height)}>
+        {onGoBack && (
+          <ScreenHeader
+            title={isFieldInHeader ? undefined : headerTitle ?? 'Recherche'}
+            onBack={onGoBack}
+            leadingSlot={isFieldInHeader ? searchField : undefined}
+            rightSlot={(
+              <FilterButton
+                onPress={() => setIsFilterVisible(true)}
+                isActive={hasActiveFilters}
+                color={semantic.textSecondary}
+                isCompact={isFieldInHeader}
+              />
+            )}
+          />
+        )}
 
-      {/* Bloc recherche — inutile en listing (pas de champ) et en mode carte. */}
-      {viewMode === 'list' && !isListing && (
-        <View style={[styles.searchHeader, { backgroundColor: semantic.bgCard }]}>
-          {/* Greeting — only on the standalone screen, not the pushed results view */}
-          {!onGoBack && (
+        {/* Standalone screen (no back): greeting and field in their own block. */}
+        {isSearchMode && !onGoBack && (
+          <View style={[styles.searchHeader, { backgroundColor: semantic.bgCard }]}>
             <View style={styles.greetingSection}>
               <View>
                 <Text style={[styles.greetingText, { color: semantic.textTertiary }]}>
@@ -451,43 +497,14 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
                 </Text>
               </View>
             </View>
-          )}
-          <View style={styles.searchRow}>
-            <View style={[styles.searchInputContainer, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderNormal }]}>
-              <Search size={16} color={semantic.textTertiary} style={styles.searchIcon} />
-              <TextInput
-                ref={searchInputRef}
-                style={[styles.searchInput, { color: semantic.textPrimary }]}
-                placeholder="Rechercher un produit, fournisseur..."
-                placeholderTextColor={semantic.textTertiary}
-                value={query}
-                onChangeText={handleQueryChange}
-                onFocus={() => setIsSearchFocused(true)}
-                onSubmitEditing={handleSubmitSearch}
-                returnKeyType="search"
-                accessibilityLabel="Rechercher"
-                autoFocus={Boolean(initialAutoFocus)}
-              />
-              {query.length > 0 && (
-                <TouchableOpacity
-                  style={styles.clearButton}
-                  onPress={() => {
-                    setQuery('')
-                    performSearch({ q: '' })
-                  }}
-                  accessibilityLabel="Effacer la recherche"
-                >
-                  <X size={14} color={semantic.textTertiary} />
-                </TouchableOpacity>
-              )}
-            </View>
+            <View style={styles.searchRow}>{searchField}</View>
           </View>
-        </View>
-      )}
+        )}
+      </View>
 
       {/* Autocomplete / History overlay */}
       {isSearchFocused && (
-        <View style={styles.suggestionsOverlay}>
+        <View style={[styles.suggestionsOverlay, { top: topHeight }]}>
           {query.length < 2 && searchHistory.length > 0 && (
             <View style={[styles.suggestionsSection, { backgroundColor: semantic.bgCard, borderBottomColor: semantic.borderNormal }]}>
               <View style={styles.suggestionsHeader}>
@@ -601,10 +618,12 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
  * signale qu'au moins un filtre est appliqué — sans quoi rien ne distingue une
  * liste filtrée d'une liste complète.
  */
-function FilterButton({ onPress, isActive, color }: {
+function FilterButton({ onPress, isActive, color, isCompact = false }: {
   onPress: () => void
   isActive: boolean
   color: string
+  /** Icon only, when the search field shares the header row. */
+  isCompact?: boolean
 }) {
   return (
     <TouchableOpacity
@@ -618,7 +637,7 @@ function FilterButton({ onPress, isActive, color }: {
         <SlidersHorizontal size={18} color={color} strokeWidth={2.2} />
         {isActive && <View style={styles.filterDot} />}
       </View>
-      <Text style={[styles.filterText, { color }]}>Filtres</Text>
+      {!isCompact && <Text style={[styles.filterText, { color }]}>Filtres</Text>}
     </TouchableOpacity>
   )
 }
@@ -667,6 +686,11 @@ const styles = StyleSheet.create({
   searchIcon: {
     marginRight: spacing[2],
   },
+  searchInputInHeader: {
+    marginHorizontal: spacing[2],
+    paddingHorizontal: spacing[3],
+    borderWidth: 1,
+  },
   searchInput: {
     flex: 1,
     fontFamily: fonts.sans,
@@ -684,8 +708,10 @@ const styles = StyleSheet.create({
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     gap: spacing[1],
-    minHeight: 40,
+    minHeight: 44,
+    minWidth: 44,
   },
   filterDot: {
     position: 'absolute',
@@ -705,7 +731,7 @@ const styles = StyleSheet.create({
     color: colors.neutral[600],
   },
   catGridScroll: {
-    marginTop: spacing[3],
+    marginTop: spacing[2],
   },
   catGridContainer: {
     paddingHorizontal: spacing[4],
@@ -804,9 +830,8 @@ const styles = StyleSheet.create({
     gap: spacing[2],
     minHeight: 44,
     marginHorizontal: spacing[4],
-    marginTop: spacing[3],
+    marginTop: spacing[2],
     paddingHorizontal: spacing[3],
-    paddingVertical: spacing[2],
     borderRadius: radius.md,
   },
   locationBannerText: {
@@ -837,7 +862,6 @@ const styles = StyleSheet.create({
   },
   suggestionsOverlay: {
     position: 'absolute',
-    top: 140,
     left: 0,
     right: 0,
     bottom: 0,
