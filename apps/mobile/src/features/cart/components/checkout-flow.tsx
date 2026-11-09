@@ -44,7 +44,7 @@ import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
 import { useRecommendations } from '../hooks/use-recommendations'
 import { loadCheckoutDraft, saveCheckoutDraft } from '../utils/checkout-draft'
-import { ASAP_CHOICE, decodeSlotChoice, encodeSlotChoice, toSlotWindow } from '../utils/delivery-slot'
+import { ASAP_CHOICE, availableStartHours, decodeSlotChoice, encodeSlotChoice, toSlotWindow } from '../utils/delivery-slot'
 import { BasketSuggestions } from './basket-suggestions'
 import { DeliverySlotPicker } from './delivery-slot-picker'
 
@@ -259,6 +259,8 @@ const AnimatedTouchable = Animated.createAnimatedComponent(TouchableOpacity)
  * The window travels as instants, computed at submit time so that a checkout
  * left open overnight does not send yesterday's « today ».
  */
+const SLOT_REFRESH_MS = 60_000
+
 function buildSlotPayload(choice: SlotChoice): { deliverySlot?: string, deliveryWindowStart?: string, deliveryWindowEnd?: string } {
   const window = toSlotWindow(choice, new Date())
   if (!window) {
@@ -310,8 +312,24 @@ export function CheckoutFlow({
   const [upsellOpen, setUpsellOpen] = useState(false)
   const { latitude: currentLatitude, longitude: currentLongitude } = useLocation()
   const [slotChoice, setSlotChoice] = useState<SlotChoice>(ASAP_CHOICE)
-  // Fixed per screen visit: the ranges offered must not shift under the finger.
-  const [slotNow] = useState(() => new Date())
+  // Refreshed every minute: a basket left open must not offer a range that
+  // has closed in the meantime.
+  const [slotNow, setSlotNow] = useState(() => new Date())
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSlotNow(new Date())
+    }, SLOT_REFRESH_MS)
+    return () => {
+      clearInterval(timer)
+    }
+  }, [])
+  // The chosen range closed while the basket was open: fall back rather than
+  // send a window nobody can honour.
+  useEffect(() => {
+    if (slotChoice.kind === 'window' && !availableStartHours(slotChoice.day, slotNow).includes(slotChoice.startHour)) {
+      setSlotChoice(ASAP_CHOICE)
+    }
+  }, [slotChoice, slotNow])
   const [isSubmitting, setIsSubmitting] = useState(false)
   // Whichever provider this build ships with; the name stays so the
   // payment-choice logic below reads as before.

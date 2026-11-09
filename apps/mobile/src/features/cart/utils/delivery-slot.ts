@@ -11,8 +11,12 @@ const HOUR_MS = 60 * 60 * 1000
 /** Couriers work from 8 h to 20 h; one range per two hours. */
 export const SLOT_START_HOURS = [8, 10, 12, 14, 16, 18] as const
 const SLOT_LENGTH_HOURS = 2
-/** A range is offered today only if it starts at least this far ahead. */
-const MIN_LEAD_HOURS = 1
+/**
+ * A range stays offered today while at least this much of it remains: enough
+ * for the shop to prepare and a courier to ride. Counting from the end rather
+ * than the start keeps 8h–10h open at 7h30, when it is still easily reachable.
+ */
+const MIN_REMAINING_HOURS = 1.5
 
 export type SlotDay = 0 | 1
 
@@ -36,8 +40,8 @@ export function availableStartHours(day: SlotDay, now: Date): number[] {
   if (day === 1) {
     return [...SLOT_START_HOURS]
   }
-  const earliest = beninHour(now) + MIN_LEAD_HOURS
-  return SLOT_START_HOURS.filter(hour => hour >= earliest)
+  const currentHour = beninHour(now)
+  return SLOT_START_HOURS.filter(hour => hour + SLOT_LENGTH_HOURS - currentHour >= MIN_REMAINING_HOURS)
 }
 
 export function formatSlotLabel(choice: SlotChoice): string {

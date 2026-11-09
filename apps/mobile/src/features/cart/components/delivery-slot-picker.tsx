@@ -91,7 +91,7 @@ export function DeliverySlotPicker({ value, onChange, now }: DeliverySlotPickerP
       <Text style={[styles.hint, { color: semantic.textTertiary }]}>
         {value.kind === 'asap'
           ? 'Un livreur part dès que la boutique a préparé votre commande.'
-          : 'Le livreur est recherché une heure avant le début du créneau. Heure du Bénin.'}
+          : 'Votre commande vous sera livrée dans ce créneau (heure du Bénin).'}
       </Text>
     </View>
   )
