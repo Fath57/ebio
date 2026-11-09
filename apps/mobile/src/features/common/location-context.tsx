@@ -26,8 +26,10 @@ interface LocationContextValue extends LocationState {
   useDeviceLocation: () => Promise<void>
 }
 
-// Repli quand la permission est refusée ou la position indisponible.
-const DEFAULT_LOCATION = { latitude: 14.6928, longitude: -17.4467, label: 'Dakar' }
+// Fallback when permission is refused or no fix is available. Cotonou, where
+// the shops are: Dakar (the original placeholder) is 1,800 km away, so a buyer
+// who declined location saw no product at all within the 50 km search radius.
+const DEFAULT_LOCATION = { latitude: 6.3703, longitude: 2.3912, label: 'Cotonou' }
 const STORAGE_KEY = 'user_location'
 
 const LocationContext = createContext<LocationContextValue | null>(null)

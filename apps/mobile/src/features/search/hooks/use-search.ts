@@ -71,11 +71,18 @@ export function useSearchProducts() {
   const [loadingMore, setLoadingMore] = useState(false)
   const [total, setTotal] = useState(0)
   const [hasMore, setHasMore] = useState(false)
+  /** The first page could not be loaded and no cached copy exists. */
+  const [hasError, setHasError] = useState(false)
   // Filtres + page courants, mémorisés pour que loadMore réutilise la même requête.
   const filtersRef = useRef<SearchFilters | null>(null)
   const pageRef = useRef(1)
+  // Only the latest search may write the results: a slow answer to an earlier
+  // query (a category tapped then another) must not overwrite a newer one.
+  const requestIdRef = useRef(0)
 
   const fetchPage = useCallback(async (filters: SearchFilters, page: number, append: boolean) => {
+    const requestId = requestIdRef.current
+    const isCurrent = () => requestId === requestIdRef.current
     const params = new URLSearchParams()
     Object.entries({ ...filters, page, limit: PAGE_SIZE }).forEach(([key, value]) => {
       if (value === undefined || value === null) {
@@ -93,19 +100,28 @@ export function useSearchProducts() {
 
     const cacheKey = `search:${params.toString()}`
 
+    /**
+     * Without a cached copy, the list is emptied and the error shown: keeping
+     * the previous query's results made « mangue » display tomatoes.
+     */
     async function fallbackToCache() {
       const cached = await OfflineCache.getCachedResults(cacheKey) as SearchResponse | null
-      if (cached) {
-        setResults(cached.results)
-        setTotal(cached.total)
-        setHasMore(cached.hasMore)
+      if (!isCurrent()) {
+        return
       }
+      setResults(cached?.results ?? [])
+      setTotal(cached?.total ?? 0)
+      setHasMore(cached?.hasMore ?? false)
+      setHasError(!cached)
     }
 
     try {
       const res = await apiFetch(`/api/search/products?${params.toString()}`)
       if (res.ok) {
         const data: SearchResponse = await res.json()
+        if (!isCurrent()) {
+          return
+        }
         if (page === 1 && filters.q) {
           // A search that returns nothing is the catalogue's shopping list —
           // the one measurement here that names something to go and fix.
@@ -114,6 +130,7 @@ export function useSearchProducts() {
         setResults(prev => (append ? [...prev, ...data.results] : data.results))
         setTotal(data.total)
         setHasMore(data.hasMore)
+        setHasError(false)
         if (!append) {
           await OfflineCache.setCachedResults(cacheKey, data)
         }
@@ -130,11 +147,15 @@ export function useSearchProducts() {
   }, [])
 
   const search = useCallback(async (filters: SearchFilters) => {
+    requestIdRef.current += 1
+    const requestId = requestIdRef.current
     filtersRef.current = filters
     pageRef.current = 1
     setLoading(true)
     await fetchPage(filters, 1, false)
-    setLoading(false)
+    if (requestId === requestIdRef.current) {
+      setLoading(false)
+    }
   }, [fetchPage])
 
   const loadMore = useCallback(async () => {
@@ -148,7 +169,7 @@ export function useSearchProducts() {
     setLoadingMore(false)
   }, [hasMore, loading, loadingMore, fetchPage])
 
-  return { results, loading, loadingMore, total, hasMore, search, loadMore }
+  return { results, loading, loadingMore, total, hasMore, hasError, search, loadMore }
 }
 
 export function useAutocomplete() {

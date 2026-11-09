@@ -1,11 +1,13 @@
 import type { SearchResult } from '../hooks/use-search'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
+import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Package from 'lucide-react-native/dist/esm/icons/package'
 import Search from 'lucide-react-native/dist/esm/icons/search'
 import SearchX from 'lucide-react-native/dist/esm/icons/search-x'
 import SlidersHorizontal from 'lucide-react-native/dist/esm/icons/sliders-horizontal'
 import Store from 'lucide-react-native/dist/esm/icons/store'
+import WifiOff from 'lucide-react-native/dist/esm/icons/wifi-off'
 import X from 'lucide-react-native/dist/esm/icons/x'
 import * as React from 'react'
 import { useCallback, useEffect, useRef, useState } from 'react'
@@ -34,10 +36,26 @@ import { SearchResultCard } from './search-result-card'
 
 type ViewMode = 'list' | 'map'
 
+interface SearchFilterValues {
+  radius: number | undefined
+  categories: string[]
+  maxPrice: number | undefined
+  inStockOnly: boolean
+}
+
+/** The API names the kind of suggestion in English; the buyer reads French. */
+const SUGGESTION_TYPE_LABELS: Record<string, string> = {
+  product: 'Produit',
+  category: 'Catégorie',
+  supplier: 'Fournisseur',
+}
+
 interface SearchScreenProps {
   onNavigateToSupplier?: (supplierId: string) => void
   onNavigateToProduct?: (productId: string) => void
   onGoBack?: () => void
+  /** Opens the city picker, offered when the position could not be detected. */
+  onPickLocation?: () => void
   initialQuery?: string
   initialCategory?: string
   initialValidatedOnly?: boolean
@@ -68,7 +86,7 @@ interface SearchScreenProps {
   initialAutoFocus?: boolean
 }
 
-export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialProductIds, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
+export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBack, onPickLocation, initialQuery, initialCategory, initialValidatedOnly, initialPromoOnly, initialSupplierId, initialProductIds, initialMaxPrice, initialMinRating, initialNewerThanDays, initialRadius, initialSortBy, initialViewMode, headerTitle, initialAutoFocus }: SearchScreenProps = {}) {
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
@@ -88,28 +106,37 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const searchInputRef = useRef<TextInput>(null)
 
-  const { results, loading, loadingMore, total, search, loadMore } = useSearchProducts()
+  const { results, loading, loadingMore, total, hasError, search, loadMore } = useSearchProducts()
   const { suggestions, autocomplete } = useAutocomplete()
   const { categories, loadCategories } = useCategories()
   const { searchHistory, addTerm, clearHistory } = useOfflineSearch()
 
-  const [appliedFilters, setAppliedFilters] = useState({
-    radius: undefined as number | undefined,
-    categories: [] as string[],
-    maxPrice: undefined as number | undefined,
+  const [appliedFilters, setAppliedFilters] = useState<SearchFilterValues>({
+    radius: undefined,
+    categories: [],
+    maxPrice: undefined,
     inStockOnly: true,
   })
 
-  const { latitude, longitude } = useLocation()
+  const { latitude, longitude, label: locationLabel, source: locationSource } = useLocation()
+  // Neither GPS nor a chosen city: the results are around the fallback city,
+  // and the buyer must be told so, or a shop next door looks absent.
+  const isApproximateLocation = locationSource === 'default'
 
   useEffect(() => {
     loadCategories()
   }, [loadCategories])
 
+  /**
+   * One request for every path — typing, a chip, the filter panel — so that a
+   * home section's criteria (shop, hand-picked products, sort…) survive the
+   * buyer touching a filter. They used to be dropped by the filter panel.
+   */
   const performSearch = useCallback(
-    (overrides?: { q?: string, category?: string }) => {
+    (overrides?: { q?: string, category?: string, filters?: SearchFilterValues }) => {
       const q = overrides?.q ?? query
-      const category = overrides?.category ?? selectedCategory
+      const category = overrides && 'category' in overrides ? overrides.category : selectedCategory
+      const filters = overrides?.filters ?? appliedFilters
 
       search({
         q: q || undefined,
@@ -117,10 +144,10 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         longitude,
         // What the buyer set themselves wins over what the section proposed:
         // they just opened the filter panel for exactly that.
-        radius: appliedFilters.radius !== undefined ? appliedFilters.radius * 1000 : initialRadius,
+        radius: filters.radius !== undefined ? filters.radius * 1000 : initialRadius,
         category,
-        maxPrice: appliedFilters.maxPrice ?? initialMaxPrice,
-        inStockOnly: appliedFilters.inStockOnly,
+        maxPrice: filters.maxPrice ?? initialMaxPrice,
+        inStockOnly: filters.inStockOnly,
         minRating: initialMinRating,
         newerThanDays: initialNewerThanDays,
         supplierId: initialSupplierId,
@@ -174,12 +201,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
     onNavigateToProduct?.(productId)
   }
 
-  function handleApplyFilters(filters: {
-    radius: number | undefined
-    categories: string[]
-    maxPrice: number | undefined
-    inStockOnly: boolean
-  }) {
+  function handleApplyFilters(filters: SearchFilterValues) {
     setAppliedFilters(filters)
     // En mode carte, les filtres alimentent directement `MapScreen` via ses props.
     if (viewMode === 'map')
@@ -188,18 +210,8 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
     if (filters.categories.length > 0) {
       setSelectedCategory(filters.categories[0])
     }
-    // Pass filters directly to avoid stale closure
-    search({
-      q: query || undefined,
-      latitude,
-      longitude,
-      radius: filters.radius !== undefined ? filters.radius * 1000 : undefined,
-      category,
-      maxPrice: filters.maxPrice,
-      inStockOnly: filters.inStockOnly,
-      validatedOnly: initialValidatedOnly || undefined,
-      promoOnly: initialPromoOnly || undefined,
-    })
+    // Filters passed explicitly: the state set above is not readable yet.
+    performSearch({ category, filters })
   }
 
   function handleQueryChange(text: string) {
@@ -226,6 +238,28 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   function renderEmptyState() {
     if (loading)
       return null
+    if (hasError) {
+      return (
+        <View style={styles.emptyContainer}>
+          <View style={[styles.emptyIconCircle, { backgroundColor: colors.neutral[100] }]}>
+            <WifiOff size={44} color={colors.neutral[600]} />
+          </View>
+          <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
+            Impossible de charger les produits
+          </Text>
+          <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
+            Vérifiez votre connexion internet, puis réessayez.
+          </Text>
+          <TouchableOpacity
+            style={styles.emptyAction}
+            onPress={() => performSearch()}
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyActionText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      )
+    }
     return (
       <View style={styles.emptyContainer}>
         <View style={[styles.emptyIconCircle, { backgroundColor: colors.green[50] }]}>
@@ -235,9 +269,19 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
           Aucun résultat
         </Text>
         <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
-          Aucun fournisseur trouvé à proximité. Essayez d&apos;élargir votre
-          rayon de recherche.
+          {isApproximateLocation
+            ? `Nous n'avons pas pu détecter votre position : la recherche se fait autour de ${locationLabel}. Choisissez votre ville pour voir les fournisseurs proches de vous.`
+            : 'Aucun fournisseur trouvé à proximité. Essayez d\'élargir votre rayon de recherche.'}
         </Text>
+        {isApproximateLocation && onPickLocation && (
+          <TouchableOpacity
+            style={styles.emptyAction}
+            onPress={onPickLocation}
+            accessibilityRole="button"
+          >
+            <Text style={styles.emptyActionText}>Choisir ma ville</Text>
+          </TouchableOpacity>
+        )}
       </View>
     )
   }
@@ -245,6 +289,21 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   function renderHeader() {
     return (
       <View>
+        {isApproximateLocation && onPickLocation && (
+          <TouchableOpacity
+            style={[styles.locationBanner, { backgroundColor: colors.blue[50] }]}
+            onPress={onPickLocation}
+            accessibilityRole="button"
+            accessibilityLabel={`Position non détectée, recherche autour de ${locationLabel}. Choisir ma ville`}
+          >
+            <MapPin size={16} color={colors.blue[600]} />
+            <Text style={[styles.locationBannerText, { color: colors.blue[800] }]}>
+              {`Position non détectée : résultats autour de ${locationLabel}.`}
+            </Text>
+            <Text style={[styles.locationBannerAction, { color: colors.blue[600] }]}>Changer</Text>
+          </TouchableOpacity>
+        )}
+
         {/* Category grid */}
         <ScrollView
           horizontal
@@ -442,7 +501,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
                     ? <Package size={14} color={semantic.textSecondary} />
                     : <Store size={14} color={semantic.textSecondary} />}
                   <Text style={[styles.suggestionText, { color: semantic.textPrimary }]}>{s.text}</Text>
-                  <Text style={[styles.suggestionType, { color: semantic.textTertiary }]}>{s.type}</Text>
+                  <Text style={[styles.suggestionType, { color: semantic.textTertiary }]}>{SUGGESTION_TYPE_LABELS[s.type] ?? ''}</Text>
                 </TouchableOpacity>
               ))}
             </View>
@@ -678,6 +737,38 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[8],
     paddingTop: spacing[10],
     gap: spacing[3],
+  },
+  emptyAction: {
+    minHeight: 44,
+    justifyContent: 'center',
+    paddingHorizontal: spacing[6],
+    borderRadius: radius.md,
+    backgroundColor: colors.green[400],
+    marginTop: spacing[2],
+  },
+  emptyActionText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
+    color: colors.neutral[0],
+  },
+  locationBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[2],
+    minHeight: 44,
+    marginHorizontal: spacing[4],
+    marginTop: spacing[3],
+    paddingHorizontal: spacing[3],
+    paddingVertical: spacing[2],
+    borderRadius: radius.md,
+  },
+  locationBannerText: {
+    flex: 1,
+    ...typography.bodyS,
+  },
+  locationBannerAction: {
+    fontFamily: fonts.sansSb,
+    fontSize: 13,
   },
   emptyIconCircle: {
     width: 100,

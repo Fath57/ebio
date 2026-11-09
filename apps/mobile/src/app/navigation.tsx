@@ -212,6 +212,7 @@ function SearchResultsWrapper({ route, navigation }: any) {
         onGoBack={() => navigation.goBack()}
         onNavigateToSupplier={(id: string) => navigation.navigate('SupplierProfile', { supplierId: id })}
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
+        onPickLocation={() => navigation.navigate('LocationPicker')}
         initialQuery={params.query}
         initialCategory={params.category}
         initialValidatedOnly={params.validatedOnly}

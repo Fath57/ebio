@@ -1,5 +1,4 @@
 import type { SearchResult } from '../hooks/use-search'
-import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import * as React from 'react'
@@ -13,6 +12,7 @@ import { colors, fonts, radius, shadows, spacing } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { ScalePressable } from '../../../utils/animations'
 import { PromotionChips } from '../../catalog/components/promotion-chips'
+import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { promotionChipLabels } from '../../catalog/promotions'
 
 interface SearchResultCardProps {
@@ -86,13 +86,6 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
           </View>
         )}
 
-        {/* Delivery time badge — top right */}
-        {supplier.isOpen && (
-          <View style={styles.timeBadge}>
-            <Clock size={10} color={colors.neutral[800]} strokeWidth={2.5} />
-            <Text style={styles.timeBadgeText}>15-30 min</Text>
-          </View>
-        )}
       </View>
 
       {/* Content */}
@@ -131,9 +124,7 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
           </Text>
           <Text style={[styles.metaDot, { color: semantic.textTertiary }]}> · </Text>
           <Text style={[styles.priceText, hasPromo && styles.pricePromo]}>
-            {formatPrice(displayPrice)}
-            {' '}
-            FCFA
+            {`${formatPrice(displayPrice)} FCFA / ${unitShortLabel(product.unit)}`}
           </Text>
           {hasPromo && (
             <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
@@ -240,23 +231,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.neutral[0],
   },
-  timeBadge: {
-    position: 'absolute',
-    top: spacing[2],
-    right: spacing[2],
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: colors.neutral[0],
-    paddingHorizontal: spacing[2],
-    paddingVertical: 4,
-    borderRadius: radius.pill,
-  },
-  timeBadgeText: {
-    fontFamily: fonts.sansSb,
-    fontSize: 10,
-    color: colors.neutral[800],
-  },
 
   // Body
   body: {
@@ -310,6 +284,7 @@ const styles = StyleSheet.create({
   // Meta
   metaRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     alignItems: 'center',
   },
   metaText: {
