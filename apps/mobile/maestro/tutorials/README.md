@@ -7,6 +7,7 @@ tutorial videos, against the demo database (see
 | Video | Command |
 |---|---|
 | Fournisseur : traiter une commande | `./record.sh supplier supplier-orders.yaml supplier-order` |
+| Livreur : livrer une course | `./record.sh courier courier-run.yaml courier-run` |
 
 Three steps per video:
 
@@ -16,8 +17,9 @@ Three steps per video:
    phone (`DEVICE=<serial>`) it sets light theme, Do not disturb and no
    password autofill for the take, and restores them afterwards.
 2. `python3 produce.py <take>.mp4` marks every tap with a ring at its exact
-   pixel and moment, cuts the start-up wait, speeds up the login typing and
-   holds the last frame. It prints each tap's time in the montage.
+   pixel and moment, cuts the start-up wait and the status bar (it shows the
+   phone owner's notification icons), compresses long stretches between
+   taps, and holds the last frame. It prints each tap's time in the montage.
 3. `./narrate.sh <take>-montage.mp4 narration/<video>.txt` lays the voice-over
    (`gpt-4o-mini-tts`, voice `coral`, `SPEED=1.15`), each sentence at its
    mark, never over the previous one.

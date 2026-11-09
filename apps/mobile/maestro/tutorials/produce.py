@@ -8,8 +8,8 @@ recording started) and take.mp4.maestro.log (the flow's log). From them:
 
 - every tap Maestro made is marked with a green ring that grows and fades,
   at the exact pixel and moment, so the viewer sees where to touch;
-- the login typing — slow on a real phone, Maestro types key by key — is
-  sped up, from the tap on the phone field to « Se connecter »;
+- long stretches between two taps — typing key by key on a real phone, a
+  slow scroll, a screen loading — are compressed, the taps kept at speed;
 - the last frame is held a few seconds, room for the closing sentence.
 
 Output: take-montage.mp4. The voice-over is laid afterwards by narrate.sh.
@@ -26,14 +26,18 @@ BRAND_GREEN = (42, 157, 78)  # colors.green[400]
 RING_SIZE = 280
 RING_FRAMES = 21  # 0.7 s at 30 fps
 FPS = 30
-TYPING_SPEEDUP = 4
-TYPING_FROM = r'\+229'
-TYPING_TO = 'Se connecter'
 END_HOLD_SECONDS = 3
+# The status bar is cut off: on a personal phone it shows the owner's
+# notification icons, which Android's demo mode does not hide on every model.
+STATUS_BAR_PX = 152
 # Kept of the splash screen; the wait for Maestro to start is cut, up to
 # this long before the first tap.
 INTRO_SECONDS = 1.5
 LEAD_IN_SECONDS = 2.5
+# Longest stretch kept between two taps, once compressed; and what is kept
+# after the last tap.
+IDLE_TARGET_SECONDS = 6
+TAIL_SECONDS = 5
 
 TIME = r'(\d{2}):(\d{2}):(\d{2})\.(\d{3})'
 TAP_COMMAND = re.compile(TIME + r'.*Tap on (?:"(.*)"|point .*) RUNNING')
@@ -153,8 +157,6 @@ def main() -> None:
     print(f'démarrage réel de l\'enregistrement : {shift:.2f} s après l\'heure notée')
     total = duration_of(take)
 
-    typing_from = next((tap['time'] for tap in taps if tap['label'] == TYPING_FROM), None)
-    typing_to = next((tap['time'] for tap in taps if tap['label'] == TYPING_TO), None)
 
     with tempfile.TemporaryDirectory() as tmp:
         ring = make_ring(Path(tmp))
@@ -174,23 +176,31 @@ def main() -> None:
             last = out
             print(f"anneau à {tap['time']:5.1f} s sur « {tap['label']} » ({tap['x']}, {tap['y']})")
 
-        # Kept spans of the take, each with its speed: the splash, then from
-        # just before the first tap; the login typing sped up.
-        spans = []
+        # Kept spans of the take, each with its speed. The start-up wait is
+        # cut; any long stretch between two taps — typing key by key on a real
+        # phone, a slow scroll, a screen loading — is compressed: its first
+        # second plays as is, so the app's reaction shows, the rest is brought
+        # down to IDLE_TARGET_SECONDS. Every tap itself plays at normal speed.
+        spans: list[tuple[float, float, float]] = []
         first_tap = taps[0]['time'] if taps else 0.0
         resume = max(INTRO_SECONDS, first_tap - LEAD_IN_SECONDS)
         if resume > INTRO_SECONDS:
             spans.append((0.0, INTRO_SECONDS, 1))
-        if typing_from is not None and typing_to is not None and typing_to > typing_from:
-            # From just after the phone field opens to just before the
-            # « Se connecter » ring, so that ring plays at normal speed.
-            a, b = typing_from + 1.0, typing_to - 0.3
-            spans += [(resume, a, 1), (a, b, TYPING_SPEEDUP), (b, total, 1)]
-            print(f'saisie accélérée ×{TYPING_SPEEDUP} de {a:.1f} s à {b:.1f} s')
-        else:
-            spans.append((resume, total, 1))
-        if resume > INTRO_SECONDS:
             print(f'attente de démarrage coupée de {INTRO_SECONDS} s à {resume:.1f} s')
+        cursor = resume
+        for tap in taps:
+            approach = tap['time'] - 0.3
+            if approach <= cursor:
+                continue
+            length = approach - cursor
+            if length > IDLE_TARGET_SECONDS + 1:
+                speed = (length - 1) / IDLE_TARGET_SECONDS
+                spans += [(cursor, cursor + 1, 1), (cursor + 1, approach, speed)]
+                print(f'avant « {tap["label"]} » : {length:.1f} s ramenés à {1 + IDLE_TARGET_SECONDS:.0f} s')
+            else:
+                spans.append((cursor, approach, 1))
+            cursor = approach
+        spans.append((cursor, min(total, cursor + TAIL_SECONDS), 1))
         def edited_time(t: float) -> float | None:
             """Where a moment of the take lands in the montage (None if cut)."""
             elapsed = 0.0
@@ -210,7 +220,10 @@ def main() -> None:
             graph.append(f'[p{i}]trim={begin:.3f}:{finish:.3f},setpts=(PTS-STARTPTS)/{speed}[s{i}]')
         graph.append(''.join(f'[s{i}]' for i in range(len(spans))) + f'concat=n={len(spans)}:v=1:a=0[cut]')
         last = 'cut'
-        graph.append(f'[{last}]tpad=stop_mode=clone:stop_duration={END_HOLD_SECONDS}[final]')
+        graph.append(
+            f'[{last}]crop=iw:ih-{STATUS_BAR_PX}:0:{STATUS_BAR_PX},'
+            f'tpad=stop_mode=clone:stop_duration={END_HOLD_SECONDS}[final]',
+        )
 
         output = take.with_name(f'{take.stem}-montage.mp4')
         subprocess.run([

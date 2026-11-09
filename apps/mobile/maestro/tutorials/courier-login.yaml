@@ -1,0 +1,33 @@
+# Signs in as Rodrigue Houngbo, the courier, in the app just opened by run.sh.
+# Shared by the courier tutorial flows. Demo kit: apps/api/scripts/demo/README.md
+appId: com.ebio.courier
+---
+- extendedWaitUntil:
+    visible: Bon retour !|Continue|Passer|Courses
+    timeout: 60000
+- runFlow:
+    when:
+      visible: Continue
+    commands:
+      - tapOn: Continue
+- runFlow:
+    when:
+      visible: Passer
+    commands:
+      - tapOn: Passer
+- runFlow:
+    when:
+      visible: Bon retour !
+    commands:
+      # Each field waits for the keyboard to settle: typed while it slides in,
+      # the text went nowhere.
+      - tapOn: '\+229'
+      - waitForAnimationToEnd
+      - inputText: '0100000201'
+      - assertVisible: '\+2290100000201'
+      - tapOn: Mot de passe
+      - waitForAnimationToEnd
+      - inputText: Demo2026!
+      - assertVisible: '•+'
+      - hideKeyboard
+      - tapOn: Se connecter

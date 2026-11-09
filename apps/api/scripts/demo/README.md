@@ -56,6 +56,12 @@ DATABASE_NAME=ebio_demo npx dotenvx run -q -- npx tsx scripts/demo/scenario.ts c
 
 Every demo account uses the password in `demo-accounts.ts`.
 
+Demo-only triggers, so that a take filmed anywhere plays like one in
+Abomey-Calavi: a courier's position stays in their zone whatever the phone
+reports, and every delivery code drawn becomes `DEMO_DELIVERY_CODE` (2468), so
+a scripted take can type it. The couriers' zone has no radius: the app would
+otherwise warn « X km from your zone » from the phone's real position.
+
 | Who | E-mail |
 |---|---|
 | Mine d'or délice (shop) | `mine-d-or-delice@demo.e-bio.org` |

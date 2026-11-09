@@ -22,7 +22,7 @@ import { createMikroOrmOptions } from '../../src/config/mikro-orm.config'
 import { Account, User, UserRole } from '../../src/modules/auth/auth.entity'
 import { CourierProfile, VehicleType } from '../../src/modules/deliveries/entities/courier-profile.entity'
 import { ValidationStatus } from '../../src/modules/suppliers/supplier.entity'
-import { DEMO_PASSWORD } from './demo-accounts'
+import { DEMO_DELIVERY_CODE, DEMO_PASSWORD } from './demo-accounts'
 
 const TERMS_VERSION = '2026-09'
 const SNAPSHOT_DIR = join(__dirname, 'snapshot')
@@ -101,6 +101,34 @@ async function createPerson(em: EntityManager, spec: PersonSpec, passwordHash: s
   return user
 }
 
+interface HistoryLine {
+  daysAgo: number
+  type: 'DELIVERY_EARNING' | 'TIP_EARNING'
+  amount: number
+  description: string
+}
+
+/** A wallet with past movements, its balance the running sum. */
+async function seedCourierHistory(em: EntityManager, fullName: string, lines: HistoryLine[]): Promise<void> {
+  const connection = em.getConnection()
+  const [wallet] = await connection.execute(
+    `INSERT INTO wallets (courier_profile_id, balance, "createdAt", "updatedAt")
+     SELECT id, 0, NOW() - INTERVAL '10 days', NOW() FROM courier_profiles WHERE full_name = ?
+     RETURNING id`,
+    [fullName],
+  ) as Array<{ id: string }>
+  let balance = 0
+  for (const line of lines) {
+    balance += line.amount
+    await connection.execute(
+      `INSERT INTO wallet_transactions (wallet_id, type, amount, balance_after, description, "createdAt")
+       VALUES (?, ?, ?, ?, ?, NOW() - (? * INTERVAL '1 day'))`,
+      [wallet.id, line.type, line.amount, balance, line.description, line.daysAgo],
+    )
+  }
+  await connection.execute(`UPDATE wallets SET balance = ? WHERE id = ?`, [balance, wallet.id])
+}
+
 function slug(text: string): string {
   return text
     .normalize('NFD')
@@ -166,7 +194,9 @@ async function seed(em: EntityManager): Promise<void> {
       zone: spec.zone,
       zoneLatitude: spec.latitude,
       zoneLongitude: spec.longitude,
-      zoneRadiusKm: 10,
+      // No radius: the app compares it with the phone's real position and,
+      // filmed far from Abomey-Calavi, warned « 4 548 km from your zone ».
+      // Dispatch does not need it, the position is pinned (trigger below).
       validationStatus: ValidationStatus.VALIDATED,
       validatedAt: new Date(),
       isAvailable: spec.isAvailable,
@@ -181,6 +211,56 @@ async function seed(em: EntityManager): Promise<void> {
       [spec.longitude, spec.latitude, profile.id],
     )
   }
+  // The filmed courier has a few runs behind him: the wallet that closes the
+  // video shows earnings, not the lone cash commission of a first run (a
+  // red « solde négatif »). Same descriptions as the API writes.
+  await seedCourierHistory(em, 'Rodrigue Houngbo', [
+    { daysAgo: 4, type: 'DELIVERY_EARNING', amount: 720, description: 'Gain de la course — commande #EB-20261105-002' },
+    { daysAgo: 3, type: 'DELIVERY_EARNING', amount: 810, description: 'Gain de la course — commande #EB-20261106-004' },
+    { daysAgo: 3, type: 'TIP_EARNING', amount: 200, description: 'Pourboire reçu — commande #EB-20261106-004' },
+    { daysAgo: 1, type: 'DELIVERY_EARNING', amount: 640, description: 'Gain de la course — commande #EB-20261108-001' },
+  ])
+
+  // Demo only: a courier's position stays in their zone, whatever the phone
+  // sends. Filming happens far from Abomey-Calavi, and a courier located
+  // 4 500 km away is offered nothing. The position the app reports never
+  // matters here; the run's dispatch does.
+  await em.getConnection().execute(`
+    CREATE OR REPLACE FUNCTION demo_pin_courier_location() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.zone_latitude IS NOT NULL AND NEW.zone_longitude IS NOT NULL THEN
+        NEW.last_latitude := NEW.zone_latitude;
+        NEW.last_longitude := NEW.zone_longitude;
+        NEW.last_known_location := ST_SetSRID(ST_MakePoint(NEW.zone_longitude, NEW.zone_latitude), 4326)::geography;
+      END IF;
+      RETURN NEW;
+    END $$ LANGUAGE plpgsql`)
+  await em.getConnection().execute(`DROP TRIGGER IF EXISTS demo_pin_courier_location ON courier_profiles`)
+  await em.getConnection().execute(`
+    CREATE TRIGGER demo_pin_courier_location BEFORE INSERT OR UPDATE ON courier_profiles
+    FOR EACH ROW EXECUTE FUNCTION demo_pin_courier_location()`)
+  // Demo only: the delivery code is drawn at random at pickup, which a
+  // scripted take cannot know in advance. Every code drawn is replaced by
+  // DEMO_DELIVERY_CODE, so the flow types it like the buyer would say it.
+  await em.getConnection().execute(`
+    CREATE OR REPLACE FUNCTION demo_fixed_delivery_code() RETURNS trigger AS $$
+    BEGIN
+      IF NEW.confirmation_code IS NOT NULL THEN
+        NEW.confirmation_code := '${DEMO_DELIVERY_CODE}';
+      END IF;
+      RETURN NEW;
+    END $$ LANGUAGE plpgsql`)
+  for (const table of ['deliveries', 'delivery_runs']) {
+    await em.getConnection().execute(`DROP TRIGGER IF EXISTS demo_fixed_delivery_code ON ${table}`)
+    await em.getConnection().execute(`
+      CREATE TRIGGER demo_fixed_delivery_code BEFORE INSERT OR UPDATE ON ${table}
+      FOR EACH ROW EXECUTE FUNCTION demo_fixed_delivery_code()`)
+  }
+  // The offer stays the filmed courier's for ten minutes: time to film it.
+  await em.getConnection().execute(
+    `INSERT INTO platform_settings (key, value) VALUES ('courier_offer_timeout_s', '600')
+     ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+  )
   console.info(`buyers: ${BUYERS.length}, couriers: ${COURIERS.length}, admin: 1`)
   console.info(`Password for every demo account: ${DEMO_PASSWORD}`)
 }

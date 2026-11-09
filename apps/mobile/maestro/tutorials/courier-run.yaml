@@ -1,0 +1,49 @@
+# Tutorial « Livreur : livrer une course ».
+# Start state: scenario.ts courier-run (Mandagbe's order ready, offered to
+# Rodrigue). The demo delivery code is 2468 (apps/api/scripts/demo).
+#   ./record.sh courier courier-run.yaml courier-run
+appId: com.ebio.courier
+---
+- runFlow: courier-login.yaml
+- extendedWaitUntil:
+    visible: Vous gagnez
+    timeout: 30000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: Vous gardez
+    direction: DOWN
+- waitForAnimationToEnd
+- tapOn: Accepter la course
+- extendedWaitUntil:
+    visible: Course en cours
+    timeout: 15000
+- waitForAnimationToEnd
+- scrollUntilVisible:
+    element: Commande récupérée
+    direction: DOWN
+- waitForAnimationToEnd
+- tapOn: Commande récupérée
+- extendedWaitUntil:
+    visible: En route vers le client
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: En route vers le client
+- extendedWaitUntil:
+    visible: Confirmer la livraison
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Confirmer la livraison
+- extendedWaitUntil:
+    visible: Valider le code
+    timeout: 15000
+- tapOn: Code de confirmation.*
+- waitForAnimationToEnd
+- inputText: '2468'
+- hideKeyboard
+- tapOn: Valider le code
+- extendedWaitUntil:
+    visible: Aucune course pour le moment
+    timeout: 15000
+- waitForAnimationToEnd
+- tapOn: Portefeuille
+- waitForAnimationToEnd
