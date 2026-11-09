@@ -1,13 +1,14 @@
 # Voix off — « Fournisseur : traiter une commande ».
 # Calée sur les repères que produce.py affiche pour le montage (toucher par
-# toucher). Une ligne par phrase : « minute:seconde | texte ».
+# toucher). Une ligne par phrase : « minute:seconde | texte », ou
+# « minute:seconde [Titre d'étape] | texte » pour ouvrir une étape (dress.py).
 # Vocabulaire eBio : fournisseur, acheteur, commander.
 00:00 | Voici comment traiter une commande avec eBio Fournisseur.
-00:04 | Connectez-vous avec votre numéro de téléphone et votre mot de passe.
-00:13 | Une nouvelle commande vous attend sur le tableau de bord.
-00:17 | Ouvrez Commandes, vérifiez le détail, puis touchez Accepter.
-00:23 | La commande passe dans « En cours ». Ouvrez-la.
-00:29 | Lancez la préparation, et indiquez quand elle sera prête.
-00:34 | eBio cherche un livreur dix minutes avant l'heure annoncée.
-00:38 | Quand le colis est prêt, touchez « Marquer comme prête ».
-00:43 | Un livreur vient le récupérer à votre boutique. C'est tout !
+00:04 [Se connecter] | Connectez-vous avec votre numéro de téléphone et votre mot de passe.
+00:18 | Une nouvelle commande vous attend sur le tableau de bord.
+00:22 [Accepter la commande] | Ouvrez Commandes, vérifiez le détail, puis touchez Accepter.
+00:29 [Préparer la commande] | La commande passe dans « En cours ». Ouvrez-la.
+00:35 | Lancez la préparation, et indiquez quand elle sera prête.
+00:40 | eBio cherche un livreur dix minutes avant l'heure annoncée.
+00:44 [Marquer comme prête] | Quand le colis est prêt, touchez « Marquer comme prête ».
+00:49 | Un livreur vient le récupérer à votre boutique. C'est tout !

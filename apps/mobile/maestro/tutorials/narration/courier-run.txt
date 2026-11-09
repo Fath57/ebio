@@ -1,14 +1,15 @@
 # Voix off — « Livreur : livrer une course ».
 # Calée sur les repères que produce.py affiche pour le montage (toucher par
-# toucher). Une ligne par phrase : « minute:seconde | texte ».
+# toucher). Une ligne par phrase : « minute:seconde | texte », ou
+# « minute:seconde [Titre d'étape] | texte » pour ouvrir une étape (dress.py).
 # Vocabulaire eBio : livreur, acheteur, boutique (fournisseur).
 00:00 | Voici comment livrer une course avec eBio Livreur.
-00:05 | Connectez-vous avec votre numéro de téléphone et votre mot de passe.
-00:21 | Une course vous est proposée : vous voyez votre gain, le trajet et les articles.
+00:05 [Se connecter] | Connectez-vous avec votre numéro de téléphone et votre mot de passe.
+00:21 [Accepter la course] | Une course vous est proposée : vous voyez votre gain, le trajet et les articles.
 00:26 | Touchez « Accepter la course ».
-00:30 | Rendez-vous à la boutique, récupérez la commande, puis touchez « Commande récupérée ».
-00:36 | Partez ensuite vers l'acheteur.
+00:30 [Récupérer la commande] | Rendez-vous à la boutique, récupérez la commande, puis touchez « Commande récupérée ».
+00:36 [Partir vers l'acheteur] | Partez ensuite vers l'acheteur.
 00:41 | Une fois arrivé, confirmez la livraison.
-00:46 | Encaissez le paiement, puis saisissez le code à quatre chiffres que l'acheteur vous donne.
+00:46 [Encaisser et saisir le code] | Encaissez le paiement, puis saisissez le code à quatre chiffres que l'acheteur vous donne.
 00:55 | Validez : la course est terminée.
-00:59 | Votre gain apparaît dans votre portefeuille. C'est tout !
+00:59 [Voir son gain] | Votre gain apparaît dans votre portefeuille. C'est tout !

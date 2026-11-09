@@ -25,6 +25,8 @@ next_free_ms=0
 while IFS= read -r line; do
   case "$line" in ''|'#'*) continue ;; esac
   timecode="${line%%|*}"
+  # « MM:SS [Step title] | text »: the title is for dress.py.
+  timecode="${timecode%%[*}"
   text="${line#*|}"
   text="$(echo "$text" | sed 's/^ *//')"
   minutes="${timecode%%:*}"

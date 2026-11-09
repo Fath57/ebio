@@ -23,6 +23,11 @@ Three steps per video:
 3. `./narrate.sh <take>-montage.mp4 narration/<video>.txt` lays the voice-over
    (`gpt-4o-mini-tts`, voice `coral`, `SPEED=1.15`), each sentence at its
    mark, never over the previous one.
+4. `python3 dress.py <take>-montage-voix.mp4 narration/<video>.txt <app> "<Titre>"`
+   dresses it for publishing, vertical 1080×1920: the capture in a phone
+   frame on an eBio background, the step titles of the narration file
+   (`MM:SS [Titre] | phrase`) numbered above it, an opening and a closing
+   card. Output: `<take>-final.mp4`.
 
 `run.sh` alone plays a flow without filming.
 
