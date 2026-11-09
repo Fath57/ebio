@@ -59,6 +59,8 @@ interface SearchResponse {
   results: SearchResult[]
   total: number
   hasMore: boolean
+  /** A spelling that finds products, when the query as typed found none. */
+  didYouMean?: string | null
 }
 
 export type { SearchFilters, SearchResult }
@@ -73,6 +75,7 @@ export function useSearchProducts() {
   const [hasMore, setHasMore] = useState(false)
   /** The first page could not be loaded and no cached copy exists. */
   const [hasError, setHasError] = useState(false)
+  const [didYouMean, setDidYouMean] = useState<string | null>(null)
   // Filtres + page courants, mémorisés pour que loadMore réutilise la même requête.
   const filtersRef = useRef<SearchFilters | null>(null)
   const pageRef = useRef(1)
@@ -112,6 +115,7 @@ export function useSearchProducts() {
       setResults(cached?.results ?? [])
       setTotal(cached?.total ?? 0)
       setHasMore(cached?.hasMore ?? false)
+      setDidYouMean(cached?.didYouMean ?? null)
       setHasError(!cached)
     }
 
@@ -131,6 +135,9 @@ export function useSearchProducts() {
         setTotal(data.total)
         setHasMore(data.hasMore)
         setHasError(false)
+        if (!append) {
+          setDidYouMean(data.didYouMean ?? null)
+        }
         if (!append) {
           await OfflineCache.setCachedResults(cacheKey, data)
         }
@@ -169,7 +176,7 @@ export function useSearchProducts() {
     setLoadingMore(false)
   }, [hasMore, loading, loadingMore, fetchPage])
 
-  return { results, loading, loadingMore, total, hasMore, hasError, search, loadMore }
+  return { results, loading, loadingMore, total, hasMore, hasError, didYouMean, search, loadMore }
 }
 
 export function useAutocomplete() {

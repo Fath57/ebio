@@ -106,7 +106,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const searchInputRef = useRef<TextInput>(null)
 
-  const { results, loading, loadingMore, total, hasError, search, loadMore } = useSearchProducts()
+  const { results, loading, loadingMore, total, hasError, didYouMean, search, loadMore } = useSearchProducts()
   const { suggestions, autocomplete } = useAutocomplete()
   const { categories, loadCategories } = useCategories()
   const { searchHistory, addTerm, clearHistory } = useOfflineSearch()
@@ -268,6 +268,22 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
           Aucun résultat
         </Text>
+        {didYouMean && (
+          <TouchableOpacity
+            style={styles.didYouMean}
+            onPress={() => handleSelectSuggestion(didYouMean)}
+            accessibilityRole="button"
+            accessibilityLabel={`Rechercher ${didYouMean}`}
+          >
+            <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
+              Vouliez-vous dire
+              {' '}
+              <Text style={styles.didYouMeanTerm}>{`« ${didYouMean} »`}</Text>
+              {' '}
+              ?
+            </Text>
+          </TouchableOpacity>
+        )}
         <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
           {isApproximateLocation
             ? `Nous n'avons pas pu détecter votre position : la recherche se fait autour de ${locationLabel}. Choisissez votre ville pour voir les fournisseurs proches de vous.`
@@ -737,6 +753,15 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[8],
     paddingTop: spacing[10],
     gap: spacing[3],
+  },
+  didYouMean: {
+    minHeight: 44,
+    justifyContent: 'center',
+  },
+  didYouMeanTerm: {
+    fontFamily: fonts.sansSb,
+    color: colors.green[600],
+    textDecorationLine: 'underline',
   },
   emptyAction: {
     minHeight: 44,

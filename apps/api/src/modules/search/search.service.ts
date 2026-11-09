@@ -148,6 +148,13 @@ function isQuantity(term: string): boolean {
   return /^\d+(?:[.,]\d+)?$/.test(term) || QUANTITY_WORDS.has(term.toLowerCase())
 }
 
+/**
+ * How close a catalogue word must be to a typed one to be offered instead.
+ * 0.3 is pg_trgm's own default: « tomatte » reaches « tomate », « mangue »
+ * does not reach « orange ».
+ */
+const MIN_WORD_SIMILARITY = 0.3
+
 /** Au-delà, la requête n'est plus une recherche mais une phrase. */
 const MAX_SEARCH_TERMS = 6
 
@@ -191,11 +198,52 @@ function singularize(term: string): string {
   return /[sx]$/i.test(term) ? term.slice(0, -1) : term
 }
 
+/**
+ * How well a product answers the query, highest first.
+ *
+ * Results used to be ordered by distance alone: a product named exactly
+ * « Tomate » came after any product of a closer shop called « Tomate & Co ».
+ * Distance stays the tie-breaker within a level.
+ *
+ * 4 — the product's name is the query
+ * 3 — the name starts with the first word
+ * 2 — every word is in the product's name
+ * 1 — some word is in the product's name
+ * 0 — matched through the shop's name only
+ */
+export function buildRelevanceSelect(q: string, terms: string[]): { sql: string, params: string[] } {
+  if (terms.length === 0) {
+    return { sql: '0 AS relevance', params: [] }
+  }
+  const inName = 'unaccent(p.name) ILIKE unaccent(?)'
+  const all = terms.map(() => inName).join(' AND ')
+  const some = terms.map(() => inName).join(' OR ')
+  return {
+    sql: `CASE
+        WHEN lower(unaccent(p.name)) = lower(unaccent(?)) THEN 4
+        WHEN ${inName} THEN 3
+        WHEN ${all} THEN 2
+        WHEN ${some} THEN 1
+        ELSE 0
+      END AS relevance`,
+    params: [
+      q.trim(),
+      `${terms[0]}%`,
+      ...terms.map(term => `%${term}%`),
+      ...terms.map(term => `%${term}%`),
+    ],
+  }
+}
+
 @Injectable()
 export class SearchService {
   constructor(private readonly em: EntityManager) {}
 
-  async searchProducts(query: SearchProductsQuery): Promise<SearchResponse> {
+  /**
+   * `allowSpellingHint` is false for the search a hint triggers itself: one
+   * correction, never a chain of them.
+   */
+  async searchProducts(query: SearchProductsQuery, allowSpellingHint = true): Promise<SearchResponse> {
     const {
       q,
       latitude,
@@ -253,13 +301,14 @@ export class SearchService {
       // they live — otherwise the section showed none of them.
       whereClause += `  AND (${LIVE_LEGACY_PROMO} OR EXISTS (${LIVE_PROMOTION_ROW}))\n`
     }
+    const terms = q ? searchTerms(q) : []
     if (q) {
       // Mot à mot, et tous exigés. Une seule sous-chaîne sur la phrase
       // entière rendait « huile arachide » muet alors que « huile » et
       // « arachide » trouvaient chacun quelque chose : personne n'écrit le
       // nom exact d'un produit, et l'apostrophe de « huile d'arachide »
       // suffisait à tout faire échouer.
-      for (const term of searchTerms(q)) {
+      for (const term of terms) {
         // unaccent on both sides: the catalogue is typed "Tomates fraiches"
         // while speech dictation gives "tomates fraîches". Without it the
         // assistant announces a shortage that does not exist.
@@ -306,7 +355,7 @@ export class SearchService {
     // last product was removed must return nothing.
     if (productIds !== undefined) {
       if (productIds.length === 0) {
-        return { results: [], total: 0, page, hasMore: false }
+        return { results: [], total: 0, page, hasMore: false, didYouMean: null }
       }
       // One placeholder per id: the driver cannot bind a JavaScript array
       // behind `ANY(?::uuid[])` — it flattens it and the SQL stops parsing.
@@ -321,7 +370,13 @@ export class SearchService {
       baseParams.push(...excludeProductIds)
     }
 
-    const orderClause = hasLocation ? this.buildOrderClause(sortBy) : this.buildOrderClause(sortBy === 'distance' ? 'rating' : sortBy)
+    // A typed query under the default order is ranked by relevance first; a
+    // sort the buyer or a section chose (price, rating, newest) is left alone.
+    const rankByRelevance = terms.length > 0 && sortBy === 'distance'
+    const orderClause = rankByRelevance
+      ? `ORDER BY relevance DESC, ${hasLocation ? 'distance ASC' : 'p.rating_avg DESC NULLS LAST'}, p.id`
+      : hasLocation ? this.buildOrderClause(sortBy) : this.buildOrderClause(sortBy === 'distance' ? 'rating' : sortBy)
+    const relevance = buildRelevanceSelect(q ?? '', rankByRelevance ? terms : [])
 
     const countSql = `
       SELECT COUNT(*) as count
@@ -359,7 +414,8 @@ export class SearchService {
         s.validation_status,
         s.opening_hours,
         s.timezone,
-        ${distanceSelect}
+        ${distanceSelect},
+        ${relevance.sql}
       FROM products p
       JOIN suppliers s ON p.supplier_id = s.id
       JOIN categories c ON p.category_id = c.id
@@ -369,7 +425,7 @@ export class SearchService {
     `
 
     const countParams = [...baseParams]
-    const selectParams = hasLocation ? [longitude, latitude] : []
+    const selectParams = [...(hasLocation ? [longitude, latitude] : []), ...relevance.params]
     const dataParams = [...selectParams, ...baseParams, limit, offset]
 
     const connection = this.em.getConnection()
@@ -380,13 +436,60 @@ export class SearchService {
 
     const total = Number.parseInt(countResult[0].count, 10)
     const results: SearchResult[] = dataResult.map(row => this.mapRowToSearchResult(row))
+    const didYouMean = total === 0 && page === 1 && q && allowSpellingHint
+      ? await this.suggestSpelling(query, terms)
+      : null
 
     return {
       results,
       total,
       page,
       hasMore: offset + limit < total,
+      didYouMean,
     }
+  }
+
+  /**
+   * A spelling that finds something, or null.
+   *
+   * Each word missing from the catalogue is swapped for its closest catalogue
+   * word; the hint is offered only if that query, with the same filters,
+   * returns products — a correction leading to another empty page helps no one.
+   */
+  private async suggestSpelling(query: SearchProductsQuery, terms: string[]): Promise<string | null> {
+    const connection = this.em.getConnection()
+    let changed = false
+    const corrected: string[] = []
+    for (const term of terms) {
+      // A word the catalogue already contains (« tomate » in « tomates ») is
+      // kept as typed: the empty page comes from another word, or a filter.
+      const rows = await connection.execute(
+        `SELECT word, strpos(word, lower(unaccent(?))) > 0 AS contains FROM (
+           SELECT DISTINCT regexp_split_to_table(lower(unaccent(p.name)), '[^a-z0-9]+') AS word
+           FROM products p
+           WHERE p.status = 'ACTIVE' AND p.moderation_status = 'APPROVED'
+         ) vocabulary
+         WHERE length(word) > 2
+           AND (strpos(word, lower(unaccent(?))) > 0 OR similarity(word, lower(unaccent(?))) >= ?)
+         ORDER BY strpos(word, lower(unaccent(?))) > 0 DESC, similarity(word, lower(unaccent(?))) DESC, word
+         LIMIT 1`,
+        [term, term, term, MIN_WORD_SIMILARITY, term, term],
+      ) as Array<{ word: string, contains: boolean }>
+      const closest = rows[0]
+      if (closest && !closest.contains) {
+        changed = true
+        corrected.push(closest.word)
+      }
+      else {
+        corrected.push(term)
+      }
+    }
+    if (!changed) {
+      return null
+    }
+    const hint = corrected.join(' ')
+    const check = await this.searchProducts({ ...query, q: hint, page: 1, limit: 1 }, false)
+    return check.total > 0 ? hint : null
   }
 
   async autocomplete(query: { q: string, latitude: number, longitude: number }): Promise<{

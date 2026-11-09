@@ -83,6 +83,11 @@ export const searchResponseSchema = z.object({
   total: z.number(),
   page: z.number(),
   hasMore: z.boolean(),
+  /**
+   * A spelling that finds products, when the query as typed found none
+   * (« tomatte » → « tomate »). Absent otherwise.
+   */
+  didYouMean: z.string().nullable().optional(),
 }).meta({ title: 'SearchResponse' })
 
 export const autocompleteQuerySchema = z.object({
