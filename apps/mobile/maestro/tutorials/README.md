@@ -28,6 +28,10 @@ Three steps per video:
    frame on an eBio background, the step titles of the narration file
    (`MM:SS [Titre] | phrase`) numbered above it, an opening and a closing
    card. Output: `<take>-final.mp4`.
+   `MUSIC=track.mp3` adds a background track, ducked under the voice; the
+   voice is brought to -16 LUFS. Tracks used: Mixkit Stock Music Free
+   License (social video and ads allowed, no credit; no remix, no TV/radio),
+   kept in `~/Vidéos/ebio-tutos/musique/`, not in git.
 
 `run.sh` alone plays a flow without filming.
 

@@ -7,10 +7,12 @@
 - each step title of the narration file (« MM:SS [Titre] | phrase ») shows
   above the phone, numbered, from its mark to the next one;
 - an opening card (logo, title) and a closing card (logo, site) frame it,
-  the voice shifted by the opening card.
+  the voice shifted by the opening card;
+- MUSIC=track.mp3 lays a quiet background track, ducked under the voice.
 
 Nothing generated: the capture stays the app as it is. Output: take-final.mp4.
 """
+import os
 import re
 import subprocess
 import sys
@@ -55,6 +57,9 @@ FPS = 30
 INTRO_SECONDS = 2.5
 OUTRO_SECONDS = 3.0
 FADE = 0.4
+VOICE_LUFS = -16
+# Loudness of the background music before ducking: well under the voice.
+MUSIC_LUFS = -29
 
 STEP_LINE = re.compile(r'^\s*(\d+):(\d+)\s*\[([^\]]+)\]')
 
@@ -171,6 +176,8 @@ def main() -> None:
         ['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', str(video)],
         check=True, capture_output=True, text=True,
     ).stdout.strip())
+    total = INTRO_SECONDS + duration + OUTRO_SECONDS
+    music = Path(os.environ['MUSIC']) if os.environ.get('MUSIC') else None
     screen_w = round(width * SCREEN_H / height / 2) * 2
     left, top, _, _ = phone_geometry(screen_w)
 
@@ -216,13 +223,28 @@ def main() -> None:
             # The voice starts after the opening card and runs into the closing one.
             # Padded to the exact length: -shortest over an endless apad made
             # ffmpeg 6 fill its sync queue and fail with « No space left ».
-            f'[1:a]adelay={round(INTRO_SECONDS * 1000)}:all=1,'
-            f'apad=whole_dur={INTRO_SECONDS + duration + OUTRO_SECONDS:.3f}[voice]',
+            # The TTS comes out near -28 LUFS: brought to the -16 of social video.
+            f'[1:a]loudnorm=I={VOICE_LUFS}:TP=-1.5,aresample=48000,adelay={round(INTRO_SECONDS * 1000)}:all=1,'
+            f'apad=whole_dur={total:.3f},asetpts=N/SR/TB[voice]',
         ]
+        audio_out = '[voice]'
+        if music:
+            # Background music, brought to a quiet level whatever the track,
+            # and ducked further while the voice speaks; it fades at both ends.
+            inputs += ['-stream_loop', '-1', '-i', str(music)]
+            graph += [
+                '[voice]asplit=2[speech][key]',
+                f'[{card_in + 2}:a]atrim=0:{total:.3f},asetpts=PTS-STARTPTS,'
+                f'loudnorm=I={MUSIC_LUFS}:TP=-3,aresample=48000,'
+                f'afade=t=in:d=1,afade=t=out:st={total - 2.5:.3f}:d=2.5,asetpts=N/SR/TB[bed]',
+                '[bed][key]sidechaincompress=threshold=0.02:ratio=6:attack=30:release=600[ducked]',
+                '[speech][ducked]amix=inputs=2:duration=first:normalize=0,asetpts=N/SR/TB[mix]',
+            ]
+            audio_out = '[mix]'
         output = video.with_name(video.stem.replace('-montage-voix', '') + '-final.mp4')
         subprocess.run([
             'ffmpeg', '-v', 'warning', '-y', *inputs, '-filter_complex', ';'.join(graph),
-            '-map', '[video]', '-map', '[voice]',
+            '-map', '[video]', '-map', audio_out,
             '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p',
             '-c:a', 'aac', '-b:a', '160k', '-movflags', '+faststart', str(output),
         ], check=True)
