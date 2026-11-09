@@ -8,6 +8,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { FALLBACK_CATEGORIES } from '../../../utils/category-icons'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { useScrollToSelected } from '../../common/hooks/use-scroll-to-selected'
 
 type SortOption = 'price' | 'rating'
 
@@ -269,6 +270,9 @@ export function FilterSheet({
     }),
   ).current
 
+  // The ticked category stays in view, even far down the row.
+  const categoryRow = useScrollToSelected(filters.categories[0])
+
   function handleReset() {
     // Réinitialise ET applique immédiatement (pas besoin d'un second tap sur « Appliquer »).
     setFilters({ ...DEFAULT_FILTERS })
@@ -448,6 +452,7 @@ export function FilterSheet({
                 {isSingleCategory ? 'Catégorie' : 'Catégories'}
               </Text>
               <ScrollView
+                ref={categoryRow.scrollRef}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 contentContainerStyle={styles.chipsRow}
@@ -457,6 +462,7 @@ export function FilterSheet({
                   return (
                     <TouchableOpacity
                       key={cat.id}
+                      onLayout={categoryRow.onItemLayout(cat.slug)}
                       style={[
                         styles.categoryChip,
                         { backgroundColor: semantic.bgCard, borderColor: semantic.borderNormal },

@@ -29,6 +29,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { SlideIn, StaggerItem } from '../../../utils/animations'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useScrollToSelected } from '../../common/hooks/use-scroll-to-selected'
 import { useLocation } from '../../common/location-context'
 import { MapScreen } from '../../map/components/map-screen'
 import { useOfflineSearch } from '../hooks/use-offline-search'
@@ -46,6 +47,9 @@ interface SearchFilterValues {
   /** Chosen by the buyer; undefined keeps the default order. */
   sortBy?: 'price' | 'rating'
 }
+
+/** Key of the « Tout » chip in the category row. */
+const ALL_CATEGORIES_KEY = '__all__'
 
 /** Past this, the recent searches push the keyboard's suggestions off screen. */
 const MAX_HISTORY_SHOWN = 6
@@ -280,6 +284,9 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
   // Un filtre est « actif » dès qu'il s'écarte de la valeur neutre. `inStockOnly`
   // vaut true par défaut : c'est le décocher qui constitue un filtre.
+  // The active chip scrolls into view, whoever selected it (« Tout » when none).
+  const categoryRow = useScrollToSelected(selectedCategory ?? ALL_CATEGORIES_KEY)
+
   // The category shows in its own chip row: only what is hidden counts here.
   const hasActiveFilters
     = appliedFilters.radius !== undefined
@@ -397,6 +404,7 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
         {/* Category grid */}
         <ScrollView
+          ref={categoryRow.scrollRef}
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.catGridContainer}
@@ -404,63 +412,67 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
         >
           <View style={styles.catGrid}>
             {/* "All" chip */}
-            <SlideIn from="left" delay={0}>
-              <TouchableOpacity
-                style={[
-                  styles.catItem,
-                  { backgroundColor: semantic.bgCard },
-                  selectedCategory === undefined && styles.catItemActive,
-                ]}
-                onPress={() => {
-                  setSelectedCategory(undefined)
-                  performSearch({ category: undefined })
-                }}
-                accessibilityRole="button"
-                accessibilityState={{ selected: selectedCategory === undefined }}
-                accessibilityLabel="Toutes les catégories"
-              >
-                <Package size={16} color={selectedCategory === undefined ? colors.green[600] : colors.neutral[400]} />
-                <Text
+            <View onLayout={categoryRow.onItemLayout(ALL_CATEGORIES_KEY)}>
+              <SlideIn from="left" delay={0}>
+                <TouchableOpacity
                   style={[
-                    styles.catLabel,
-                    selectedCategory === undefined && styles.catLabelActive,
+                    styles.catItem,
+                    { backgroundColor: semantic.bgCard },
+                    selectedCategory === undefined && styles.catItemActive,
                   ]}
-                  numberOfLines={1}
+                  onPress={() => {
+                    setSelectedCategory(undefined)
+                    performSearch({ category: undefined })
+                  }}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: selectedCategory === undefined }}
+                  accessibilityLabel="Toutes les catégories"
                 >
-                  Tout
-                </Text>
-              </TouchableOpacity>
-            </SlideIn>
+                  <Package size={16} color={selectedCategory === undefined ? colors.green[600] : colors.neutral[400]} />
+                  <Text
+                    style={[
+                      styles.catLabel,
+                      selectedCategory === undefined && styles.catLabelActive,
+                    ]}
+                    numberOfLines={1}
+                  >
+                    Tout
+                  </Text>
+                </TouchableOpacity>
+              </SlideIn>
+            </View>
 
             {categories.map((cat, index) => {
               const isActive = selectedCategory === cat.slug
               return (
-                <SlideIn key={cat.id} from="left" delay={(index + 1) * 60}>
-                  <TouchableOpacity
-                    style={[
-                      styles.catItem,
-                      { backgroundColor: semantic.bgCard },
-                      isActive && styles.catItemActive,
-                    ]}
-                    onPress={() => handleSelectCategory(cat.slug)}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: isActive }}
-                    accessibilityLabel={cat.label}
-                  >
-                    {cat.imageUrl
-                      ? <Image source={{ uri: cat.imageUrl }} style={styles.catImage} />
-                      : <cat.fallbackIcon size={16} color={isActive ? colors.green[600] : colors.neutral[400]} />}
-                    <Text
+                <View key={cat.id} onLayout={categoryRow.onItemLayout(cat.slug)}>
+                  <SlideIn from="left" delay={(index + 1) * 60}>
+                    <TouchableOpacity
                       style={[
-                        styles.catLabel,
-                        isActive && styles.catLabelActive,
+                        styles.catItem,
+                        { backgroundColor: semantic.bgCard },
+                        isActive && styles.catItemActive,
                       ]}
-                      numberOfLines={1}
+                      onPress={() => handleSelectCategory(cat.slug)}
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: isActive }}
+                      accessibilityLabel={cat.label}
                     >
-                      {cat.label}
-                    </Text>
-                  </TouchableOpacity>
-                </SlideIn>
+                      {cat.imageUrl
+                        ? <Image source={{ uri: cat.imageUrl }} style={styles.catImage} />
+                        : <cat.fallbackIcon size={16} color={isActive ? colors.green[600] : colors.neutral[400]} />}
+                      <Text
+                        style={[
+                          styles.catLabel,
+                          isActive && styles.catLabelActive,
+                        ]}
+                        numberOfLines={1}
+                      >
+                        {cat.label}
+                      </Text>
+                    </TouchableOpacity>
+                  </SlideIn>
+                </View>
               )
             })}
           </View>
@@ -634,7 +646,9 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
               renderItem={renderSearchResultItem}
               numColumns={2}
               columnWrapperStyle={styles.gridRow}
-              ListHeaderComponent={renderHeader}
+              // An element, not a function: a component recreated at each render
+              // remounted the chip row and threw its scroll position away.
+              ListHeaderComponent={renderHeader()}
               ListEmptyComponent={renderEmptyState}
               ListFooterComponent={loadingMore
                 ? (
