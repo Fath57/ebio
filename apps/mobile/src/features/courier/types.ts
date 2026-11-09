@@ -49,6 +49,8 @@ export interface DeliveryOffer {
   dropoffPosition: { latitude: number, longitude: number } | null
   supplierShopName: string
   itemsCount: number
+  /** The lines to collect, with a thumbnail; empty with an older API. */
+  items?: DeliveryItem[]
   totalAmount: number
   /** What the buyer paid for delivery. */
   deliveryFee: number
@@ -94,6 +96,8 @@ export interface Delivery {
   dropoffAddress: string
   supplierShopName: string
   buyerContact: DeliveryContact | null
+  /** The shop to call about the pickup; absent with an older API. */
+  supplierContact?: DeliveryContact | null
   courier: DeliveryContact | null
   courierVehicleType: VehicleType | null
   courierPosition: { latitude: number, longitude: number, updatedAt: string | null } | null

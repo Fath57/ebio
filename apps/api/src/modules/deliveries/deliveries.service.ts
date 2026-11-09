@@ -46,6 +46,8 @@ const DELIVERY_POPULATE = [
   'order',
   'order.buyer',
   'order.supplier',
+  // The shop owner's phone: the courier calls when the parcel is late or missing.
+  'order.supplier.user',
   'order.items',
   'order.items.product',
   'order.items.variant',
@@ -441,7 +443,7 @@ export class DeliveriesService {
   async getOffers(userId: string): Promise<OfferRow[]> {
     const profile = await this.getMyProfile(userId)
     if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
-      throw new ForbiddenException('Passez disponible pour voir les courses proposées')
+      throw new ForbiddenException({ statusCode: 403, code: 'COURIER_UNAVAILABLE', message: 'Passez disponible pour voir les courses proposées' })
     }
     await this.assertNotBlocked(profile.id)
 
@@ -466,6 +468,19 @@ export class DeliveriesService {
               CASE WHEN d.offered_to_courier_id = ? THEN d.offer_expires_at END AS offer_expires_at,
               o.delivery_latitude AS dropoff_latitude, o.delivery_longitude AS dropoff_longitude,
               (SELECT COUNT(*) FROM order_items oi WHERE oi.order_id = o.id) AS items_count,
+              -- What the courier will carry: they decide on the load too, not
+              -- only on the fee (does it fit the bike, is it fragile).
+              (SELECT COALESCE(jsonb_agg(jsonb_build_object(
+                        'name', p.name,
+                        'variantLabel', v.label,
+                        'quantity', oi.quantity,
+                        'isGift', oi.is_gift,
+                        'photo', p.photos->>0
+                      ) ORDER BY oi.is_gift, p.name), '[]'::jsonb)
+               FROM order_items oi
+               JOIN products p ON p.id = oi.product_id
+               LEFT JOIN product_variants v ON v.id = oi.variant_id
+               WHERE oi.order_id = o.id) AS items,
               CASE WHEN d.pickup_location IS NOT NULL AND me.loc IS NOT NULL
                 THEN ROUND((ST_Distance(d.pickup_location, me.loc) / 1000)::numeric, 2)
               END AS distance_km,
@@ -501,7 +516,7 @@ export class DeliveriesService {
   async accept(deliveryId: string, userId: string): Promise<Delivery> {
     const profile = await this.getMyProfile(userId)
     if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
-      throw new ForbiddenException('Passez disponible pour accepter une course')
+      throw new ForbiddenException({ statusCode: 403, code: 'COURIER_UNAVAILABLE', message: 'Passez disponible pour accepter une course' })
     }
     await this.assertNotBlocked(profile.id)
 
@@ -582,7 +597,7 @@ export class DeliveriesService {
   async getRunOffers(userId: string): Promise<RunOfferRow[]> {
     const profile = await this.getMyProfile(userId)
     if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
-      throw new ForbiddenException('Passez disponible pour voir les tournées proposées')
+      throw new ForbiddenException({ statusCode: 403, code: 'COURIER_UNAVAILABLE', message: 'Passez disponible pour voir les tournées proposées' })
     }
     await this.assertNotBlocked(profile.id)
 
@@ -703,7 +718,7 @@ export class DeliveriesService {
   async acceptRun(runId: string, userId: string): Promise<DeliveryRun> {
     const profile = await this.getMyProfile(userId)
     if (profile.validationStatus !== ValidationStatus.VALIDATED || !profile.isAvailable) {
-      throw new ForbiddenException('Passez disponible pour accepter une tournée')
+      throw new ForbiddenException({ statusCode: 403, code: 'COURIER_UNAVAILABLE', message: 'Passez disponible pour accepter une tournée' })
     }
     await this.assertNotBlocked(profile.id)
 

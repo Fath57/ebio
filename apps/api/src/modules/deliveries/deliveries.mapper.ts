@@ -11,6 +11,15 @@ import { DeliveryStatus } from './entities/delivery.entity'
 /** Who is looking at the delivery — shapes contacts and the confirmation code. */
 export type DeliveryAudience = 'courier' | 'supplier' | 'buyer' | 'admin'
 
+/** One order line of an offer, as aggregated by the offers query. */
+export interface OfferItemRow {
+  name: string
+  variantLabel: string | null
+  quantity: number
+  isGift: boolean
+  photo: string | null
+}
+
 export interface OfferRow {
   id: string
   order_number: string
@@ -26,6 +35,7 @@ export interface OfferRow {
   courier_fee: number | null
   shop_name: string
   items_count: string | number
+  items: OfferItemRow[] | null
   total_amount: number
   payment_method: string
   offered_at: Date
@@ -211,6 +221,13 @@ export class DeliveriesMapper {
       courierFee: Number(row.courier_fee ?? 0),
       supplierShopName: row.shop_name,
       itemsCount: Number(row.items_count),
+      items: (row.items ?? []).map(item => ({
+        name: item.name,
+        variantLabel: item.variantLabel ?? null,
+        quantity: Number(item.quantity),
+        isGift: item.isGift === true,
+        photo: thumbnailUrlFor(item.photo) ?? item.photo ?? null,
+      })),
       totalAmount: row.total_amount,
       paymentMethod: row.payment_method,
       ...cashAmounts(row.payment_method, Number(row.total_amount), Number(row.buyer_delivery_fee ?? 0)),
@@ -256,6 +273,13 @@ export class DeliveriesMapper {
       run,
       buyerContact: showBuyerContact
         ? { name: order.buyer.name, phone: order.buyer.phone ?? null }
+        : null,
+      // Same audience as the buyer contact: the assigned courier (and support).
+      supplierContact: showBuyerContact
+        ? {
+            name: order.supplier.shopName,
+            phone: wrap(order.supplier.user).isInitialized() ? order.supplier.user.phone ?? null : null,
+          }
         : null,
       courier: courier
         ? {

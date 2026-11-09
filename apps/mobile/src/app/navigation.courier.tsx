@@ -310,6 +310,7 @@ function CoursesHomeWrapper({ navigation }: any) {
         offers={offers.offers}
         refreshing={offers.refreshing}
         unavailable={offers.unavailable}
+        notAllowed={offers.notAllowed}
         debtBlock={offers.debtBlock}
         outOfZoneKm={outOfZoneKm}
         onRefresh={offers.refresh}

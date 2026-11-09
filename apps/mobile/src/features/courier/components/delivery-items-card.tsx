@@ -29,7 +29,7 @@ export function DeliveryItemsCard({ items, itemsCount }: DeliveryItemsCardProps)
           : `${itemsCount} article${itemsCount > 1 ? 's' : ''}`}
       </Text>
       {items.map((item, index) => (
-        <ItemRow
+        <DeliveryItemRow
           // eslint-disable-next-line react/no-array-index-key -- lines have no id of their own; a gift repeats its product
           key={`${item.name}-${item.variantLabel ?? ''}-${index}`}
           item={item}
@@ -39,7 +39,8 @@ export function DeliveryItemsCard({ items, itemsCount }: DeliveryItemsCardProps)
   )
 }
 
-function ItemRow({ item }: { item: DeliveryItem }) {
+/** One line of the load: thumbnail, name, format, quantity. */
+export function DeliveryItemRow({ item }: { item: DeliveryItem }) {
   const { semantic } = useTheme()
   const [broken, setBroken] = useState(false)
 

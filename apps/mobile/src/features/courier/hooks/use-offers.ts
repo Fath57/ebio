@@ -6,7 +6,8 @@ export interface AcceptResult {
   ok: boolean
   conflict: boolean
   gone: boolean
-  forbidden: boolean
+  /** Why a 403 was returned, null for any other outcome. */
+  forbidden: ForbiddenReason | null
   /** Server explanation when the 403 is a wallet-debt block, null otherwise. */
   debtMessage: string | null
   /** Server `message` of a 409 (e.g. run held by another courier), null otherwise. */
@@ -37,22 +38,43 @@ interface ForbiddenBody {
   limit?: number
 }
 
-/** Reads a 403 body and returns the debt block it describes, null for a plain 403. */
-async function readDebtBlock(res: Response): Promise<DebtBlock | null> {
+/**
+ * Why the server refused (403). Each cause has its own answer: going online,
+ * topping up the wallet, or calling support — telling a courier whose account
+ * lacks the rights to « go online » sent them chasing the wrong fix.
+ */
+export type ForbiddenReason = 'UNAVAILABLE' | 'DEBT' | 'NOT_ALLOWED'
+
+interface Forbidden {
+  reason: ForbiddenReason
+  /** Set when the reason is DEBT. */
+  block: DebtBlock | null
+}
+
+/** Reads a 403 body and tells which of the three refusals it is. */
+async function readForbidden(res: Response): Promise<Forbidden> {
+  let body: ForbiddenBody = {}
   try {
-    const body = await res.json() as ForbiddenBody
-    if (body.code !== 'COURIER_DEBT') {
-      return null
-    }
-    return {
-      balance: typeof body.balance === 'number' ? body.balance : 0,
-      limit: typeof body.limit === 'number' ? body.limit : 0,
-      message: body.message ?? 'Votre portefeuille dépasse la dette autorisée. Rechargez-le pour reprendre les courses.',
-    }
+    body = await res.json() as ForbiddenBody
   }
   catch {
-    return null
+    // Unreadable body: nothing says it is about availability or debt.
   }
+  if (body.code === 'COURIER_DEBT') {
+    return {
+      reason: 'DEBT',
+      block: {
+        balance: typeof body.balance === 'number' ? body.balance : 0,
+        limit: typeof body.limit === 'number' ? body.limit : 0,
+        message: body.message ?? 'Votre portefeuille dépasse la dette autorisée. Rechargez-le pour reprendre les courses.',
+      },
+    }
+  }
+  // Older API builds send the availability refusal without a code.
+  if (body.code === 'COURIER_UNAVAILABLE' || body.message?.startsWith('Passez disponible') === true) {
+    return { reason: 'UNAVAILABLE', block: null }
+  }
+  return { reason: 'NOT_ALLOWED', block: null }
 }
 
 /** Reads the `message` of an error body, null when absent or unparsable. */
@@ -111,15 +133,18 @@ export function useOffers() {
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [unavailable, setUnavailable] = useState(false)
+  // The account itself lacks the courier rights: going online would not help.
+  const [notAllowed, setNotAllowed] = useState(false)
   const [debtBlock, setDebtBlock] = useState<DebtBlock | null>(null)
 
   const load = useCallback(async () => {
     try {
       const deliveryRes = await apiFetch('/api/deliveries/offers')
       if (deliveryRes.status === 403) {
-        const block = await readDebtBlock(deliveryRes)
-        setDebtBlock(block)
-        setUnavailable(block === null)
+        const refusal = await readForbidden(deliveryRes)
+        setDebtBlock(refusal.block)
+        setUnavailable(refusal.reason === 'UNAVAILABLE')
+        setNotAllowed(refusal.reason === 'NOT_ALLOWED')
         setOffers([])
         return
       }
@@ -127,6 +152,7 @@ export function useOffers() {
         return
       }
       setUnavailable(false)
+      setNotAllowed(false)
       setDebtBlock(null)
       setOffers(sortOffers(await deliveryRes.json() as DeliveryOffer[]))
     }
@@ -170,22 +196,22 @@ export function useOffers() {
       const res = await apiFetch(`${base}/${offer.id}/accept`, { method: 'POST' })
       if (res.ok) {
         const delivery = await res.json().catch(() => null) as Delivery | null
-        return { ok: true, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null, delivery }
+        return { ok: true, conflict: false, gone: false, forbidden: null, debtMessage: null, message: null, delivery }
       }
-      const block = res.status === 403 ? await readDebtBlock(res) : null
+      const refusal = res.status === 403 ? await readForbidden(res) : null
       const message = res.status === 409 ? await readMessage(res) : null
       return {
         ok: false,
         conflict: res.status === 409,
         gone: res.status === 410,
-        forbidden: res.status === 403,
-        debtMessage: block?.message ?? null,
+        forbidden: refusal?.reason ?? null,
+        debtMessage: refusal?.block?.message ?? null,
         message,
         delivery: null,
       }
     }
     catch {
-      return { ok: false, conflict: false, gone: false, forbidden: false, debtMessage: null, message: null, delivery: null }
+      return { ok: false, conflict: false, gone: false, forbidden: null, debtMessage: null, message: null, delivery: null }
     }
     finally {
       await load()
@@ -209,5 +235,5 @@ export function useOffers() {
     }
   }, [load])
 
-  return { offers, loading, refreshing, unavailable, debtBlock, refresh, accept, decline }
+  return { offers, loading, refreshing, unavailable, notAllowed, debtBlock, refresh, accept, decline }
 }

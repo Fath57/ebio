@@ -11,8 +11,10 @@ import { Linking, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'r
 import { colors, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { formatTime, isFutureIso } from '../../../utils/format-time'
+import { openWhatsApp } from '../../../utils/whatsapp'
 import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
+import { WhatsAppIcon } from '../../common/components/whatsapp-icon'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { useLiveLocation } from '../hooks/use-live-location'
 import { FAIL_REASON_LABELS } from '../types'
@@ -220,14 +222,43 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
               </Text>
             )}
           </View>
-          <Pressable
-            style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
-            onPress={() => openItinerary(delivery.pickupAddress, delivery.pickupPosition)}
-            accessibilityRole="button"
-            accessibilityLabel="Itinéraire vers le point de retrait"
-          >
-            <Navigation size={18} color={colors.green[600]} strokeWidth={2} />
-          </Pressable>
+          <View style={styles.actionColumn}>
+            <Pressable
+              style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+              onPress={() => openItinerary(delivery.pickupAddress, delivery.pickupPosition)}
+              accessibilityRole="button"
+              accessibilityLabel="Itinéraire vers le point de retrait"
+            >
+              <Navigation size={18} color={colors.green[600]} strokeWidth={2} />
+            </Pressable>
+            {delivery.supplierContact?.phone
+              ? (
+                  <Pressable
+                    style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                    onPress={() => callNumber(delivery.supplierContact?.phone ?? null)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Appeler la boutique ${delivery.supplierShopName}`}
+                  >
+                    <Phone size={18} color={colors.green[600]} strokeWidth={2} />
+                  </Pressable>
+                )
+              : null}
+            {delivery.supplierContact?.phone
+              ? (
+                  <Pressable
+                    style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                    onPress={() => openWhatsApp(
+                      delivery.supplierContact?.phone ?? '',
+                      `Bonjour, je suis le livreur eBio de la commande ${delivery.orderNumber}.`,
+                    )}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Écrire à la boutique ${delivery.supplierShopName} sur WhatsApp`}
+                  >
+                    <WhatsAppIcon size={18} color={colors.green[600]} />
+                  </Pressable>
+                )
+              : null}
+          </View>
         </View>
 
         <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
@@ -259,6 +290,21 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
                     accessibilityLabel="Appeler le client"
                   >
                     <Phone size={18} color={colors.green[600]} strokeWidth={2} />
+                  </Pressable>
+                )
+              : null}
+            {delivery.buyerContact?.phone
+              ? (
+                  <Pressable
+                    style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
+                    onPress={() => openWhatsApp(
+                      delivery.buyerContact?.phone ?? '',
+                      `Bonjour, je suis votre livreur eBio pour la commande ${delivery.orderNumber}.`,
+                    )}
+                    accessibilityRole="button"
+                    accessibilityLabel="Écrire à l'acheteur sur WhatsApp"
+                  >
+                    <WhatsAppIcon size={18} color={colors.green[600]} />
                   </Pressable>
                 )
               : null}
@@ -386,7 +432,8 @@ const styles = StyleSheet.create({
   },
   addressRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    flexWrap: 'wrap',
+    alignItems: 'flex-start',
     gap: spacing[3],
   },
   addressText: {
@@ -407,8 +454,15 @@ const styles = StyleSheet.create({
     ...typography.caption,
     marginTop: 2,
   },
+  /**
+   * Itinerary, call, WhatsApp, chat: four 44 px targets would make a 200 px
+   * column beside the address, so they line up under it, aligned on the text.
+   */
   actionColumn: {
+    flexBasis: '100%',
+    flexDirection: 'row',
     gap: spacing[2],
+    paddingLeft: 18 + spacing[3],
   },
   itineraryButton: {
     width: 44,

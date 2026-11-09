@@ -175,6 +175,17 @@ export const failDeliverySchema = z.object({
 
 // ===== Responses =====
 
+/** One line of what the courier carries: enough to check the bag at the shop counter. */
+export const deliveryItemSchema = z.object({
+  name: z.string(),
+  /** Format bought (« Pack de 6 »…), null for the plain product. */
+  variantLabel: z.string().nullable(),
+  quantity: z.number().int(),
+  /** Free unit of a « 1 acheté = 1 offert » promotion: carried, not charged. */
+  isGift: z.boolean(),
+  photo: z.string().nullable(),
+})
+
 export const deliveryOfferSchema = z.object({
   id: z.string().uuid(),
   orderNumber: z.string(),
@@ -189,6 +200,8 @@ export const deliveryOfferSchema = z.object({
   courierFee: z.number(),
   supplierShopName: z.string(),
   itemsCount: z.number(),
+  /** The lines to collect, with a thumbnail: the load weighs in the decision. */
+  items: z.array(deliveryItemSchema),
   totalAmount: z.number(),
   paymentMethod: z.string(),
   /** Cash order: what the courier collects from the buyer at the door (null otherwise). */
@@ -257,17 +270,6 @@ export const courierRatingResponseSchema = z.object({
   description: 'The rating the buyer left on a delivery',
 })
 
-/** One line of what the courier carries: enough to check the bag at the shop counter. */
-export const deliveryItemSchema = z.object({
-  name: z.string(),
-  /** Format bought (« Pack de 6 »…), null for the plain product. */
-  variantLabel: z.string().nullable(),
-  quantity: z.number().int(),
-  /** Free unit of a « 1 acheté = 1 offert » promotion: carried, not charged. */
-  isGift: z.boolean(),
-  photo: z.string().nullable(),
-})
-
 export const deliveryResponseSchema = z.object({
   id: z.string().uuid(),
   orderId: z.string().uuid(),
@@ -289,6 +291,8 @@ export const deliveryResponseSchema = z.object({
   }).nullable(),
   /** Buyer contact — only present for the assigned courier. */
   buyerContact: deliveryContactSchema.nullable(),
+  /** The shop to call at pickup; courier and admin only. */
+  supplierContact: deliveryContactSchema.nullable(),
   /** Courier identity — present for supplier/buyer once assigned. */
   courier: deliveryCourierSchema.nullable(),
   courierVehicleType: vehicleTypeEnum.nullable(),
