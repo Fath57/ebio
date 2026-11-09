@@ -45,9 +45,14 @@ sleep 2
 adb -s "$device" shell rm -f /sdcard/take.mp4
 adb -s "$device" shell screenrecord --bit-rate 8000000 /sdcard/take.mp4 &
 recorder=$!
-sleep 1
+# Wall-clock start of the video: produce.py lines Maestro's taps up with it.
+sleep 0.5
+date +%H:%M:%S.%3N > "$out.start"
+sleep 0.5
 status=0
 SKIP_LAUNCH=1 ./run.sh "$variant" "$flow" || status=$?
+latest_log="$(ls -td "$HOME"/.maestro/tests/*/ | head -1)maestro.log"
+cp "$latest_log" "$out.maestro.log"
 sleep 2
 adb -s "$device" shell pkill -INT screenrecord || true
 wait "$recorder" || true

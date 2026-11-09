@@ -7,7 +7,8 @@
 set -euo pipefail
 video="$1"
 script="$2"
-voice="${3:-sage}"
+voice="${3:-coral}"
+speed="${SPEED:-1.15}"
 here="$(cd "$(dirname "$0")" && pwd)"
 api_dir="$(cd "$here/../../../api" && pwd)"
 work="$(mktemp -d)"
@@ -16,7 +17,7 @@ trap 'rm -rf "$work"' EXIT
 key="$(cd "$api_dir" && npx dotenvx get OPENAI_API_KEY -q 2>/dev/null)"
 [ -n "$key" ] || { echo "OPENAI_API_KEY absente de apps/api/.env" >&2; exit 1; }
 
-instructions="Parle en français, voix de tutoriel claire et chaleureuse. Débit posé mais vivant, articulation nette, sans emphase publicitaire."
+instructions="Voix off de démo d'application, en français. Ton assuré, souriant et professionnel, rythme soutenu et fluide, comme une présentation produit. Phrases enchaînées sans pauses inutiles, fins de phrase nettes."
 inputs=()
 filters=""
 index=0
@@ -30,8 +31,8 @@ while IFS= read -r line; do
   seconds="${timecode#*:}"
   delay_ms=$(( (10#${minutes// /} * 60 + 10#${seconds// /}) * 1000 ))
   segment="$work/segment-$index.mp3"
-  python3 -c 'import json,sys; print(json.dumps({"model":"gpt-4o-mini-tts","voice":sys.argv[1],"input":sys.argv[2],"instructions":sys.argv[3],"response_format":"mp3"}))' \
-    "$voice" "$text" "$instructions" > "$work/request.json"
+  python3 -c 'import json,sys; print(json.dumps({"model":"gpt-4o-mini-tts","voice":sys.argv[1],"input":sys.argv[2],"instructions":sys.argv[3],"speed":float(sys.argv[4]),"response_format":"mp3"}))' \
+    "$voice" "$text" "$instructions" "$speed" > "$work/request.json"
   curl -sf https://api.openai.com/v1/audio/speech \
     -H "Authorization: Bearer $key" -H "Content-Type: application/json" \
     --data @"$work/request.json" -o "$segment"
