@@ -19,10 +19,14 @@ interface SearchResultCardProps {
   item: SearchResult
   /**
    * La carte montre un produit : elle annonce les deux identifiants et laisse
-   * l'écran appelant décider où il emmène. L'accueil ouvre la fiche produit,
-   * les résultats de recherche ouvrent la boutique.
+   * l'écran appelant décider où il emmène.
    */
   onPress: (productId: string, supplierId: string) => void
+  /**
+   * `grid` is the half-width card of the search results: one full-width card
+   * per screen left room for a single product, which is no way to compare.
+   */
+  variant?: 'full' | 'grid'
 }
 
 export function formatPrice(value: number): string {
@@ -33,24 +37,28 @@ export function formatDistance(meters: number): string {
   const km = meters / 1000
   if (km < 1)
     return `${Math.round(meters)} m`
-  return `${km.toFixed(1)} km`
+  return `${km.toFixed(1).replace('.', ',')} km`
 }
 
-export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
+export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResultCardProps) {
   const { semantic } = useTheme()
   const { supplier, product } = item
+  const isGrid = variant === 'grid'
   const hasPromo = product.promotionalPrice !== null
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
   const chipLabels = promotionChipLabels(product.promotionTypes ?? [])
+  // The product's own rating, published from three reviews. The shop's rating
+  // used to stand here, read as if it were the product's.
+  const rating = product.ratingAvg ?? null
+  const isValidated = supplier.badges.includes('VALIDATED')
 
   return (
     <ScalePressable
       style={[styles.card, { backgroundColor: semantic.bgCard }]}
       onPress={() => onPress(product.id, supplier.id)}
       accessibilityRole="button"
-      accessibilityLabel={`${product.name} chez ${supplier.shopName}`}
+      accessibilityLabel={`${product.name} chez ${supplier.shopName}, ${formatPrice(displayPrice)} francs CFA par ${unitShortLabel(product.unit)}`}
     >
-      {/* Image 16:10 */}
       <View style={styles.imageContainer}>
         {product.photo
           ? (
@@ -68,107 +76,88 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
               </View>
             )}
 
-        {/* Promo banner — bottom of image */}
         {hasPromo && (
           <View style={styles.promoBanner}>
             <Text style={styles.promoBannerText}>
-              -
-              {Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100)}
-              %
+              {`-${Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100)} %`}
             </Text>
           </View>
         )}
 
-        {/* Out of stock overlay */}
         {!product.inStock && (
           <View style={styles.outOfStockOverlay}>
             <Text style={styles.outOfStockText}>Indisponible</Text>
           </View>
         )}
-
       </View>
 
-      {/* Content */}
-      <View style={styles.body}>
-        {/* Row 1: Product name + rating — the product is what the buyer scans for */}
-        <View style={styles.titleRow}>
-          <Text
-            style={[styles.productName, { color: semantic.textPrimary }]}
-            numberOfLines={1}
-          >
-            {product.name}
-          </Text>
-          {supplier.rating !== null && (
-            <View style={styles.ratingPill}>
-              <Star size={10} color={colors.earth[400]} fill={colors.earth[400]} strokeWidth={0} />
-              <Text style={styles.ratingText}>{supplier.rating.toFixed(1)}</Text>
-            </View>
-          )}
-        </View>
+      <View style={[styles.body, isGrid && styles.bodyGrid]}>
+        <Text
+          style={[styles.productName, isGrid && styles.productNameGrid, { color: semantic.textPrimary }]}
+          numberOfLines={isGrid ? 2 : 1}
+        >
+          {product.name}
+        </Text>
 
-        {/* Row 2: Shop name */}
         <View style={styles.shopRow}>
           <Store size={12} color={semantic.textTertiary} strokeWidth={2.2} />
-          <Text
-            style={[styles.shopName, { color: semantic.textSecondary }]}
-            numberOfLines={1}
-          >
+          <Text style={[styles.shopName, { color: semantic.textSecondary }]} numberOfLines={1}>
             {supplier.shopName}
           </Text>
         </View>
 
-        {/* Row 3: Meta line — distance · price · mode */}
-        <View style={styles.metaRow}>
-          <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
-            {formatDistance(supplier.distance)}
+        <View style={styles.priceRow}>
+          <Text style={[styles.priceText, isGrid && styles.priceTextGrid, hasPromo && styles.pricePromo]}>
+            {`${formatPrice(displayPrice)} FCFA`}
           </Text>
-          <Text style={[styles.metaDot, { color: semantic.textTertiary }]}> · </Text>
-          <Text style={[styles.priceText, hasPromo && styles.pricePromo]}>
-            {`${formatPrice(displayPrice)} FCFA / ${unitShortLabel(product.unit)}`}
+          <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
+            {` / ${unitShortLabel(product.unit)}`}
           </Text>
           {hasPromo && (
             <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
               {formatPrice(product.pricePerUnit)}
             </Text>
           )}
-          <Text style={[styles.metaDot, { color: semantic.textTertiary }]}> · </Text>
-          {supplier.mode === 'ORDER'
-            ? <Text style={styles.modeOrder}>Commander</Text>
-            : <Text style={[styles.modeContact, { color: semantic.textTertiary }]}>Contacter</Text>}
         </View>
 
-        {/* Row 4: Badges / note — toujours rendue (hauteur réservée) pour des cartes de hauteur égale */}
-        <View style={styles.badgeRow}>
-          {supplier.badges.includes('VALIDATED') && (
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>Validé eBio</Text>
-            </View>
-          )}
-          {supplier.badges.includes('TOP_SELLER') && (
-            <View style={[styles.badge, { backgroundColor: colors.earth[50] }]}>
-              <Text style={[styles.badgeText, { color: colors.earth[600] }]}>Top vendeur</Text>
-            </View>
-          )}
-          <PromotionChips labels={chipLabels} maxVisible={2} />
-          {supplier.rating !== null && (
-            <View style={styles.starsRow}>
-              {Array.from({ length: 5 }, (_, i) => (
-                <Star
-                  key={i}
-                  size={10}
-                  color={i < Math.round(supplier.rating!) ? colors.earth[400] : colors.neutral[200]}
-                  fill={i < Math.round(supplier.rating!) ? colors.earth[400] : 'none'}
-                  strokeWidth={0}
-                />
-              ))}
-              <Text style={[styles.reviewCount, { color: semantic.textTertiary }]}>
-                (
-                {supplier.reviewCount}
-                )
+        <View style={styles.metaRow}>
+          <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
+            {formatDistance(supplier.distance)}
+          </Text>
+          {rating !== null && (
+            <View style={styles.ratingRow} accessibilityLabel={`Noté ${rating.toFixed(1)} sur 5`}>
+              <Star size={12} color={colors.earth[400]} fill={colors.earth[400]} strokeWidth={0} />
+              <Text style={[styles.metaText, { color: semantic.textPrimary }]}>
+                {rating.toFixed(1).replace('.', ',')}
               </Text>
+              {!isGrid && (
+                <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
+                  {`(${product.ratingCount ?? 0})`}
+                </Text>
+              )}
             </View>
+          )}
+          {/* Ordering online is the rule; only the exception is worth a word. */}
+          {supplier.mode === 'CONTACT' && (
+            <Text style={[styles.metaText, { color: semantic.textSecondary }]}>Sur contact</Text>
           )}
         </View>
+
+        {(isValidated || chipLabels.length > 0 || (!isGrid && supplier.badges.includes('TOP_SELLER'))) && (
+          <View style={styles.badgeRow}>
+            {isValidated && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>Validé eBio</Text>
+              </View>
+            )}
+            {!isGrid && supplier.badges.includes('TOP_SELLER') && (
+              <View style={[styles.badge, { backgroundColor: colors.earth[50] }]}>
+                <Text style={[styles.badgeText, { color: colors.earth[800] }]}>Top vendeur</Text>
+              </View>
+            )}
+            <PromotionChips labels={chipLabels} maxVisible={isGrid ? 1 : 2} />
+          </View>
+        )}
       </View>
     </ScalePressable>
   )
@@ -176,23 +165,19 @@ export function SearchResultCard({ item, onPress }: SearchResultCardProps) {
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     overflow: 'hidden',
-    marginBottom: spacing[4],
     ...shadows.sm,
   },
-
-  // Image
+  // The charter's product image: 4:3, whole photo shown on white.
   imageContainer: {
     position: 'relative',
     width: '100%',
-    aspectRatio: 16 / 9,
+    aspectRatio: 4 / 3,
   },
   image: {
     width: '100%',
     height: '100%',
-    // The whole photo is shown (contain): white fills the margins, as
-    // most product shots are on white.
     backgroundColor: colors.neutral[0],
   },
   imagePlaceholder: {
@@ -203,22 +188,20 @@ const styles = StyleSheet.create({
     fontFamily: fonts.display,
     fontSize: 40,
   },
-
-  // Image overlays
+  // Promotions in earth, the charter's secondary: coral is for errors only.
   promoBanner: {
     position: 'absolute',
     bottom: 0,
     left: 0,
-    backgroundColor: colors.coral[400],
-    paddingHorizontal: spacing[3],
-    paddingVertical: 4,
-    borderTopRightRadius: radius.md,
+    backgroundColor: colors.earth[600],
+    paddingHorizontal: spacing[2],
+    paddingVertical: spacing[1],
+    borderTopRightRadius: radius.sm,
   },
   promoBannerText: {
     fontFamily: fonts.sansBd,
     fontSize: 12,
     color: colors.neutral[0],
-    letterSpacing: 0.3,
   },
   outOfStockOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -231,48 +214,30 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: colors.neutral[0],
   },
-
-  // Body
   body: {
     paddingHorizontal: spacing[4],
     paddingTop: spacing[3],
     paddingBottom: spacing[4],
     gap: spacing[1],
   },
-
-  // Title row
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing[2],
+  bodyGrid: {
+    paddingHorizontal: spacing[3],
+    paddingBottom: spacing[3],
   },
   productName: {
     fontFamily: fonts.sansBd,
     fontSize: 17,
     lineHeight: 17 * 1.3,
-    flex: 1,
   },
-  ratingPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 3,
-    backgroundColor: colors.earth[50],
-    borderRadius: radius.pill,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
+  productNameGrid: {
+    fontSize: 15,
+    lineHeight: 15 * 1.3,
+    minHeight: 15 * 1.3 * 2,
   },
-  ratingText: {
-    fontFamily: fonts.sansSb,
-    fontSize: 12,
-    color: colors.neutral[800],
-  },
-
-  // Product
   shopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
+    gap: spacing[1],
   },
   shopName: {
     fontFamily: fonts.sans,
@@ -280,73 +245,65 @@ const styles = StyleSheet.create({
     lineHeight: 13 * 1.4,
     flexShrink: 1,
   },
-
-  // Meta
+  priceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'baseline',
+  },
+  priceText: {
+    fontFamily: fonts.mono,
+    fontSize: 15,
+    color: colors.green[600],
+  },
+  priceTextGrid: {
+    fontSize: 14,
+  },
+  pricePromo: {
+    color: colors.earth[600],
+  },
+  priceUnit: {
+    fontFamily: fonts.sans,
+    fontSize: 12,
+  },
+  priceOld: {
+    fontFamily: fonts.mono,
+    fontSize: 12,
+    textDecorationLine: 'line-through',
+    marginLeft: spacing[2],
+  },
   metaRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
+    columnGap: spacing[3],
   },
   metaText: {
-    fontFamily: fonts.sans,
+    fontFamily: fonts.sansMd,
     fontSize: 12,
     lineHeight: 12 * 1.4,
   },
-  metaDot: {
-    fontFamily: fonts.sans,
-    fontSize: 12,
-  },
-  priceText: {
-    fontFamily: fonts.mono,
-    fontSize: 12,
-    color: colors.green[600],
-  },
-  pricePromo: {
-    color: colors.coral[400],
-  },
-  priceOld: {
-    fontFamily: fonts.mono,
-    fontSize: 10,
-    textDecorationLine: 'line-through',
-    marginLeft: 4,
-  },
-  modeOrder: {
-    fontFamily: fonts.sansSb,
-    fontSize: 11,
-    color: colors.green[400],
-  },
-  modeContact: {
-    fontFamily: fonts.sans,
-    fontSize: 11,
-  },
-
-  // Badges
-  badgeRow: {
+  ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing[2],
-    marginTop: 2,
-    minHeight: 18, // Hauteur réservée même sans badge/note → cartes alignées
+    gap: spacing[1],
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    gap: spacing[1],
+    marginTop: spacing[1],
   },
   badge: {
     backgroundColor: colors.green[50],
     borderRadius: radius.pill,
     paddingHorizontal: spacing[2],
-    paddingVertical: 2,
+    minHeight: 22,
+    justifyContent: 'center',
   },
   badgeText: {
     fontFamily: fonts.sansSb,
-    fontSize: 9,
+    fontSize: 11,
     color: colors.green[800],
-  },
-  starsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 1,
-  },
-  reviewCount: {
-    fontFamily: fonts.sans,
-    fontSize: 10,
-    marginLeft: 3,
   },
 })

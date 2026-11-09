@@ -50,6 +50,9 @@ interface SearchResult {
     unit: string
     inStock: boolean
     promotionalPrice: number | null
+    /** The product's own rating, null below three reviews; not every endpoint sends it. */
+    ratingAvg?: number | null
+    ratingCount?: number
     /** Live promotion types; not every endpoint sends them. */
     promotionTypes?: string[]
   }

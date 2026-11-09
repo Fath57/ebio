@@ -1,3 +1,4 @@
+import type { NativeSyntheticEvent, TextInputSubmitEditingEventData } from 'react-native'
 import type { SearchResult } from '../hooks/use-search'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
@@ -164,12 +165,19 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
     performSearch()
   }, [latitude, longitude]) // Initial search + re-run when geolocation resolves
 
-  function handleSubmitSearch() {
-    if (query.trim()) {
-      addTerm(query.trim())
+  /**
+   * The text comes from the submit event, not from state: typed fast, the
+   * Enter key can arrive before the last keystroke re-rendered the screen,
+   * and the search then ran with the previous text (or none).
+   */
+  function handleSubmitSearch(event: NativeSyntheticEvent<TextInputSubmitEditingEventData>) {
+    const text = event.nativeEvent.text.trim()
+    setQuery(event.nativeEvent.text)
+    if (text) {
+      addTerm(text)
     }
     setIsSearchFocused(false)
-    performSearch()
+    performSearch({ q: text })
   }
 
   function handleSelectCategory(slug: string) {
@@ -229,9 +237,11 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
 
   function renderSearchResultItem({ item, index }: { item: SearchResult, index: number }) {
     return (
-      <StaggerItem index={index}>
-        <SearchResultCard item={item} onPress={handleCardPress} />
-      </StaggerItem>
+      <View style={styles.gridCell}>
+        <StaggerItem index={index}>
+          <SearchResultCard item={item} onPress={handleCardPress} variant="grid" />
+        </StaggerItem>
+      </View>
     )
   }
 
@@ -284,12 +294,14 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
             </Text>
           </TouchableOpacity>
         )}
-        <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
-          {isApproximateLocation
-            ? `Nous n'avons pas pu détecter votre position : la recherche se fait autour de ${locationLabel}. Choisissez votre ville pour voir les fournisseurs proches de vous.`
-            : 'Aucun fournisseur trouvé à proximité. Essayez d\'élargir votre rayon de recherche.'}
-        </Text>
-        {isApproximateLocation && onPickLocation && (
+        {!didYouMean && (
+          <Text style={[styles.emptyText, { color: semantic.textSecondary }]}>
+            {isApproximateLocation
+              ? `Votre position n'est pas détectée : choisissez votre ville pour voir les fournisseurs proches de vous.`
+              : 'Aucun fournisseur trouvé à proximité. Essayez d\'élargir votre rayon de recherche.'}
+          </Text>
+        )}
+        {!didYouMean && isApproximateLocation && onPickLocation && (
           <TouchableOpacity
             style={styles.emptyAction}
             onPress={onPickLocation}
@@ -538,6 +550,8 @@ export function SearchScreen({ onNavigateToSupplier, onNavigateToProduct, onGoBa
               data={results}
               keyExtractor={item => `${item.supplier.id}-${item.product.id}`}
               renderItem={renderSearchResultItem}
+              numColumns={2}
+              columnWrapperStyle={styles.gridRow}
               ListHeaderComponent={renderHeader}
               ListEmptyComponent={renderEmptyState}
               ListFooterComponent={loadingMore
@@ -740,6 +754,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing[4],
     paddingTop: spacing[3],
   },
+  gridRow: {
+    gap: spacing[3],
+  },
+  gridCell: {
+    flex: 1,
+    maxWidth: '50%',
+    marginBottom: spacing[3],
+  },
   listContent: {
     paddingTop: spacing[2],
     paddingHorizontal: spacing[4],
@@ -844,8 +866,8 @@ const styles = StyleSheet.create({
   },
   clearHistoryText: {
     fontFamily: fonts.sansMd,
-    fontSize: 12,
-    color: colors.green[400],
+    fontSize: 13,
+    color: colors.green[600],
   },
   suggestionItem: {
     flexDirection: 'row',

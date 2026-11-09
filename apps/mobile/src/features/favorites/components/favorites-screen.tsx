@@ -28,6 +28,12 @@ interface FavoritesScreenProps {
  * on the shelf — it is often the very reason one comes back — and its card
  * says so on its own.
  */
+
+/** Cards no longer carry their own bottom margin: each list spaces them. */
+function FavoriteSeparator() {
+  return <View style={styles.separator} />
+}
+
 export function FavoritesScreen({ onGoBack, onOpenProduct, onExplore }: FavoritesScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
@@ -95,6 +101,7 @@ export function FavoritesScreen({ onGoBack, onOpenProduct, onExplore }: Favorite
             tintColor={colors.green[400]}
           />
         )}
+        ItemSeparatorComponent={FavoriteSeparator}
         renderItem={({ item, index }) => (
           // Les cartes se posent l'une après l'autre plutôt que d'apparaître
           // d'un bloc : l'œil suit une arrivée, il subit une apparition.
@@ -131,6 +138,9 @@ export function FavoritesScreen({ onGoBack, onOpenProduct, onExplore }: Favorite
 }
 
 const styles = StyleSheet.create({
+  separator: {
+    height: spacing[4],
+  },
   screen: {
     flex: 1,
   },
