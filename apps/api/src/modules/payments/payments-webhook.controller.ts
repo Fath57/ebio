@@ -1,5 +1,6 @@
 import { Buffer } from 'node:buffer'
-import { BadRequestException, Body, Controller, Headers, Post, RawBody } from '@nestjs/common'
+import { BadRequestException, Body, Controller, Get, Headers, Post, Query, RawBody, Redirect } from '@nestjs/common'
+import { config } from '../../config/env.config'
 import { Public } from '../auth/auth.decorator'
 import { TopupService } from '../wallet/topup.service'
 import { WithdrawalsService } from '../wallet/withdrawals.service'
@@ -41,6 +42,27 @@ export class PaymentsWebhookController {
       body,
     )
     return { received: true }
+  }
+
+  /**
+   * INTRAM's hosted page ends by sending the *browser* here, as a GET with
+   * `?transaction_id=…&status=SUCCESS`, rather than to the return URL. The
+   * payment WebView then showed our 404 as raw JSON and never learnt that
+   * the page was done.
+   *
+   * Nothing in that query is signed, so nothing is done with it: the browser
+   * is only forwarded to the return URL, which the app watches for and
+   * answers by asking our server, which asks INTRAM.
+   */
+  @Get('intram')
+  @Public()
+  @Redirect()
+  returnFromIntram(@Query('transaction_id') transactionId?: string) {
+    const target = new URL(config.payments.returnUrl)
+    if (transactionId) {
+      target.searchParams.set('transaction_id', transactionId)
+    }
+    return { url: target.toString(), statusCode: 302 }
   }
 
   /**

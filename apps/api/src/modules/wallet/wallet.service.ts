@@ -133,7 +133,10 @@ export class WalletService {
       const balance = Number(row.balance)
       const next = Math.round((balance + sign * amount) * 100) / 100
 
-      if (next < 0 && !movement.allowNegative) {
+      // Only a debit can overdraw. A credit always raises the balance: refusing
+      // it because the wallet stays negative left a top-up paid at INTRAM
+      // stuck PENDING whenever it was smaller than the debt it was paying.
+      if (sign < 0 && next < 0 && !movement.allowNegative) {
         throw new BadRequestException('Solde insuffisant')
       }
 

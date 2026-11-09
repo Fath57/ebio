@@ -285,6 +285,18 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
     }
     const status = INTRAM_STATUS_MAP[transaction.status] ?? 'pending'
 
+    // v1 lags: a payment INTRAM already reported as SUCCESS (to the browser,
+    // and through the older API) was still read as pending here for minutes,
+    // long enough for the buyer to give up on the screen. While v1 says
+    // pending, the older API gets a say; only a final answer from it counts.
+    if (status === 'pending') {
+      const legacy = await this.checkLegacyStatus(providerTransactionId)
+      if (legacy && legacy.status !== 'pending') {
+        this.logger.warn(`INTRAM v1 en retard pour ${providerTransactionId} (pending), l'ancienne API dit : ${legacy.status}`)
+        return legacy
+      }
+    }
+
     return {
       status,
       paidAt: status === 'completed' ? (transaction.date ? new Date(transaction.date) : new Date()) : undefined,
