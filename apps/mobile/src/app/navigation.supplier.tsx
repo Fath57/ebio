@@ -242,7 +242,9 @@ function DashboardWrapper({ navigation }: any) {
     <SafeScreen>
       <DashboardScreen
         onNavigateToProducts={() => navigation.navigate('SupplierProducts')}
-        onNavigateToOrders={() => navigation.navigate('Commandes')}
+        onNavigateToOrders={tab => navigation.navigate('Commandes', tab
+          ? { screen: 'SupplierOrders', params: { tab, requestedAt: Date.now() } }
+          : undefined)}
         onNavigateToSettings={() => navigation.navigate('SupplierSettings')}
         onNavigateToReviews={() => navigation.navigate('SupplierReviews')}
         onNavigateToWallet={() => navigation.navigate('SupplierWallet')}
@@ -486,12 +488,14 @@ function HomeStackScreen() {
 
 const OrdersStack = createNativeStackNavigator()
 
-function SupplierOrdersWrapper({ navigation }: any) {
+function SupplierOrdersWrapper({ navigation, route }: any) {
   return (
     <SafeScreen>
       <OrderManagement
         supplierId="me"
         onOpenOrder={id => navigation.navigate('SupplierOrderDetail', { orderId: id })}
+        requestedTab={route.params?.tab}
+        tabRequestKey={route.params?.requestedAt}
       />
     </SafeScreen>
   )

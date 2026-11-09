@@ -2,7 +2,7 @@ import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
 import * as React from 'react'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   FlatList,
@@ -43,13 +43,18 @@ interface SupplierOrder {
   createdAt: string
 }
 
+export type OrderTab = 'all' | 'pending' | 'active' | 'done'
+
 interface OrderManagementProps {
   supplierId: string
   onOpenOrder?: (orderId: string) => void
   onGoBack?: () => void
+  /** Tab asked for by the caller (dashboard figures); applied each time `tabRequestKey` changes. */
+  requestedTab?: OrderTab
+  tabRequestKey?: number
 }
 
-type Tab = 'all' | 'pending' | 'active' | 'done'
+type Tab = OrderTab
 
 // `all` keeps an empty status list: it means « no filter » (see `filtered`).
 const TABS: Array<{ key: Tab, label: string, statuses: OrderStatus[] }> = [
@@ -138,9 +143,17 @@ async function fetchSupplierOrdersPage(page: number, statuses: OrderStatus[]): P
 
 const REJECT_REASONS = ['Rupture de stock', 'Boutique fermée', 'Zone non desservie', 'Autre'] as const
 
-export function OrderManagement({ supplierId, onOpenOrder, onGoBack }: OrderManagementProps) {
+export function OrderManagement({ supplierId, onOpenOrder, onGoBack, requestedTab, tabRequestKey }: OrderManagementProps) {
   const tabBarHeight = useBottomTabBarHeight()
-  const [tab, setTab] = useState<Tab>('pending')
+  const [tab, setTab] = useState<Tab>(requestedTab ?? 'pending')
+
+  // The tab screen stays mounted: a second tap on a dashboard figure must
+  // still switch tabs, hence a key rather than the bare initial value.
+  useEffect(() => {
+    if (requestedTab) {
+      setTab(requestedTab)
+    }
+  }, [requestedTab, tabRequestKey])
   const [processingId, setProcessingId] = useState<string | null>(null)
   const [modal, setModal] = useState<{ visible: boolean, title: string, message: string, type: 'success' | 'error' | 'confirm', onConfirm?: () => void }>({ visible: false, title: '', message: '', type: 'error' })
 

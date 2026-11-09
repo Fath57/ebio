@@ -140,6 +140,7 @@ export const supplierSummarySchema = z.object({
 
 export const supplierDashboardSchema = z.object({
   pendingOrders: z.number().int(),
+  activeOrders: z.number().int(),
   unreadMessages: z.number().int(),
   criticalStockProducts: z.number().int(),
   revenue: z.number(),

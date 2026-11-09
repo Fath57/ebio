@@ -297,6 +297,8 @@ export class SuppliersService {
 
   async getDashboard(supplierId: string): Promise<{
     pendingOrders: number
+    /** Accepted and not yet delivered: the « En cours » tab of the orders screen. */
+    activeOrders: number
     unreadMessages: number
     criticalStockProducts: number
     revenue: number
@@ -315,14 +317,22 @@ export class SuppliersService {
     const db = this.em.getConnection()
     const monthStart = new Date(Date.now() - 30 * 86_400_000)
 
-    const [criticalStockResult, [pending], [sales], [escrow], [unread]] = await Promise.all([
+    const [criticalStockResult, [pending], [active], [sales], [escrow], [unread]] = await Promise.all([
       db.execute(
         `SELECT COUNT(*) as count FROM products WHERE supplier_id = ? AND stock <= stock_alert_threshold AND status = 'ACTIVE'`,
         [supplierId],
       ),
+      // Orders awaiting the shop's answer, and only those: the same set as the
+      // orders tab badge and its « En attente » tab, which the dashboard opens.
+      // Counting READY too announced an order the shop could not find there.
       db.execute(
         `SELECT COUNT(*) AS count FROM orders
-         WHERE supplier_id = ? AND status IN ('PLACED', 'ACCEPTED', 'PREPARING', 'READY')`,
+         WHERE supplier_id = ? AND status = 'PLACED'`,
+        [supplierId],
+      ),
+      db.execute(
+        `SELECT COUNT(*) AS count FROM orders
+         WHERE supplier_id = ? AND status IN ('ACCEPTED', 'PREPARING', 'READY', 'IN_DELIVERY')`,
         [supplierId],
       ),
       // Rolling 30 days of delivered sales, items only, with the commission
@@ -355,6 +365,7 @@ export class SuppliersService {
 
     return {
       pendingOrders: Number(pending.count),
+      activeOrders: Number(active.count),
       unreadMessages: Number(unread.count),
       criticalStockProducts: Number(criticalStockResult[0]?.count ?? 0),
       revenue,

@@ -8,6 +8,7 @@ import ShoppingCart from 'lucide-react-native/dist/esm/icons/shopping-cart'
 import Star from 'lucide-react-native/dist/esm/icons/star'
 import TrendingUp from 'lucide-react-native/dist/esm/icons/trending-up'
 import TriangleAlert from 'lucide-react-native/dist/esm/icons/triangle-alert'
+import Truck from 'lucide-react-native/dist/esm/icons/truck'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import { useCallback, useEffect, useState } from 'react'
 import {
@@ -27,6 +28,8 @@ import { NotificationBell } from '../../notifications/components/notification-be
 
 interface DashboardData {
   pendingOrders: number
+  /** Accepted, not yet delivered; absent with an older API. */
+  activeOrders?: number
   revenue: number
   commission: number
   netRevenue: number
@@ -41,7 +44,8 @@ interface DashboardScreenProps {
   /** Absent in the dedicated supplier app: the dashboard is the root screen. */
   onGoBack?: () => void
   onNavigateToProducts: () => void
-  onNavigateToOrders: () => void
+  /** `tab` opens the orders screen on that tab; without it, where it stands. */
+  onNavigateToOrders: (tab?: 'pending' | 'active') => void
   onNavigateToSettings: () => void
   onNavigateToReviews: () => void
   onNavigateToWallet: () => void
@@ -164,27 +168,10 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
       <View style={styles.kpiRow}>
         <TouchableOpacity
           style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
-          onPress={onNavigateToWallet}
+          onPress={() => onNavigateToOrders('pending')}
           activeOpacity={0.7}
           accessibilityRole="button"
-          accessibilityLabel="Revenus : ouvrir le portefeuille"
-        >
-          <TrendingUp size={20} color={colors.green[400]} />
-          <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
-            {((data?.revenue ?? 0) / 1000).toFixed(0)}
-            k
-          </Text>
-          <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
-            Revenus (FCFA)
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
-          onPress={onNavigateToOrders}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="Commandes en attente : ouvrir les commandes"
+          accessibilityLabel="Commandes en attente : ouvrir les commandes en attente"
         >
           <ShoppingCart size={20} color={colors.blue[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
@@ -192,6 +179,22 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           </Text>
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             En attente
+          </Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
+          onPress={() => onNavigateToOrders('active')}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Commandes en cours : ouvrir les commandes en cours"
+        >
+          <Truck size={20} color={colors.green[400]} />
+          <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
+            {data?.activeOrders ?? 0}
+          </Text>
+          <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
+            En cours
           </Text>
         </TouchableOpacity>
 
@@ -214,6 +217,23 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
 
       {/* Secondary metrics */}
       <View style={styles.kpiRow}>
+        <TouchableOpacity
+          style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
+          onPress={onNavigateToWallet}
+          activeOpacity={0.7}
+          accessibilityRole="button"
+          accessibilityLabel="Revenus : ouvrir le portefeuille"
+        >
+          <TrendingUp size={20} color={colors.green[400]} />
+          <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
+            {((data?.revenue ?? 0) / 1000).toFixed(0)}
+            k
+          </Text>
+          <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
+            Revenus (FCFA)
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.kpiCard, { backgroundColor: semantic.bgCard }]}
           onPress={onNavigateToReviews}
@@ -293,7 +313,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
       {(data?.pendingOrders ?? 0) > 0 && (
         <TouchableOpacity
           style={[styles.alertCard, { backgroundColor: colors.earth[50] }]}
-          onPress={onNavigateToOrders}
+          onPress={() => onNavigateToOrders('pending')}
           activeOpacity={0.7}
         >
           <ShoppingCart size={20} color={colors.earth[600]} />
@@ -335,7 +355,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
 
         <View style={styles.actionDivider} />
 
-        <TouchableOpacity style={styles.actionItem} onPress={onNavigateToOrders} activeOpacity={0.6}>
+        <TouchableOpacity style={styles.actionItem} onPress={() => onNavigateToOrders()} activeOpacity={0.6}>
           <View style={[styles.actionIcon, { backgroundColor: colors.blue[50] }]}>
             <ShoppingCart size={18} color={colors.blue[600]} />
           </View>
