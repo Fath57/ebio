@@ -1,6 +1,6 @@
 import { createLocalJWKSet, exportJWK, generateKeyPair, SignJWT } from 'jose'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { createGoogleIdTokenVerifier } from '../google-id-token'
+import { createGoogleIdTokenVerifier } from '../better-auth.config'
 
 const WEB = 'web-client.apps.googleusercontent.com'
 const IOS = 'ios-client.apps.googleusercontent.com'
