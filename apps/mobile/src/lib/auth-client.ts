@@ -201,7 +201,10 @@ export async function signInWithGoogle(): Promise<AuthResponse> {
     if (code === statusCodes.IN_PROGRESS) {
       return { user: null, error: null }
     }
-    return { user: null, error: 'Connexion Google impossible. Réessayez.' }
+    // The native code is shown: on a store build it is the only trace of the
+    // cause (the console is out of reach), and the user can read it out.
+    const detail = code ?? message?.slice(0, 80) ?? 'inconnu'
+    return { user: null, error: `Connexion Google impossible (${detail}). Réessayez.` }
   }
 }
 
