@@ -53,6 +53,9 @@ export const configValidationSchema = z.object({
   GOOGLE_OAUTH_CLIENT_SECRET: z.string().optional(),
   // Sign in with Apple: comma-separated bundle ids of the iOS apps.
   APPLE_BUNDLE_IDS: z.string().default('com.ebio.mobile,com.ebio.supplier'),
+  // Public identifiers, one per iOS app (com.ebio.mobile, com.ebio.supplier),
+  // the same values the EAS profiles hand the apps.
+  GOOGLE_IOS_CLIENT_IDS: z.string().default('800553989525-e5nv1fjmckuc6utr99r495878dqe0nhj.apps.googleusercontent.com,800553989525-6tm5vc91tlann7iqgjob0t26lnvhb4ac.apps.googleusercontent.com'),
   GOOGLE_MAPS_API_KEY: z.string().optional(), // Places : suggestions de villes
 
   // Clients
@@ -263,6 +266,7 @@ export const config = {
     google: {
       clientId: configParsed.data.GOOGLE_OAUTH_CLIENT_ID,
       clientSecret: configParsed.data.GOOGLE_OAUTH_CLIENT_SECRET,
+      iosClientIds: configParsed.data.GOOGLE_IOS_CLIENT_IDS.split(',').map(id => id.trim()).filter(Boolean),
     },
     appleBundleIds: configParsed.data.APPLE_BUNDLE_IDS.split(',').map(id => id.trim()).filter(Boolean),
   },

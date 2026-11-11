@@ -1,6 +1,7 @@
 import { betterAuth, BetterAuthOptions, MiddlewareInputContext, MiddlewareOptions, User } from 'better-auth'
 import { bearer, openAPI } from 'better-auth/plugins'
 import { Pool } from 'pg'
+import { createGoogleIdTokenVerifier } from './google-id-token'
 
 interface BetterAuthOptionsDynamic {
   secret: string
@@ -20,6 +21,8 @@ interface BetterAuthOptionsDynamic {
   baseUrl: string
   googleClientId?: string
   googleClientSecret?: string
+  /** iOS OAuth clients: an iPhone's Google token is issued for these, not the web client. */
+  googleIosClientIds: string[]
   /** Bundle identifiers of the iOS apps allowed to sign in with Apple. */
   appleBundleIds: string[]
 }
@@ -73,6 +76,7 @@ export function createBetterAuth(options: BetterAuthOptionsDynamic) {
             google: {
               clientId: options.googleClientId,
               clientSecret: options.googleClientSecret,
+              verifyIdToken: createGoogleIdTokenVerifier([options.googleClientId, ...options.googleIosClientIds]),
             },
           }
         : {}),
