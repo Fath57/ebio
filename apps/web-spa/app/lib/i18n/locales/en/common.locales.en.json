@@ -2558,6 +2558,30 @@
         "create": "Create label",
         "update": "Update"
       }
+    },
+    "salesStatement": {
+      "open": "Sales statement",
+      "title": "Sales statement — {{shop}}",
+      "description": "Every order of the period in an Excel file: summary, per-order and per-product detail. Days are read in the shop's time zone.",
+      "period": "Period",
+      "presets": {
+        "today": "Today",
+        "week": "This week",
+        "month": "This month",
+        "lastMonth": "Last month",
+        "custom": "Custom range"
+      },
+      "from": "From",
+      "to": "To",
+      "periodOrder": "The start date must come before the end date.",
+      "summary": "Statement from {{from}} to {{to}}",
+      "email": "Send to",
+      "emailHint": "Prefilled with the shop account's address.",
+      "invalidEmail": "Invalid e-mail address.",
+      "send": "Send by e-mail",
+      "download": "Download as Excel",
+      "sent": "Statement sent to {{email}}.",
+      "failed": "The statement could not be generated."
     }
   },
   "errorCodes": {

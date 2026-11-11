@@ -20,6 +20,7 @@ export type TemplateName
     | 'supplier-suspended'
     | 'supplier-reinstated'
     | 'contact-message'
+    | 'sales-statement'
     | 'order-invoice'
     | 'order-confirmation'
     | 'order-new-supplier'

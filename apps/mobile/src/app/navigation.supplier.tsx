@@ -42,6 +42,7 @@ import { ProductForm } from '../features/supplier-dashboard/components/product-f
 import { ProductList } from '../features/supplier-dashboard/components/product-list'
 import { PromoCodesScreen } from '../features/supplier-dashboard/components/promo-codes-screen'
 import { SalesPointsScreen } from '../features/supplier-dashboard/components/sales-points-screen'
+import { SalesStatementScreen } from '../features/supplier-dashboard/components/sales-statement-screen'
 import { ShopProfileEditor } from '../features/supplier-dashboard/components/shop-profile-editor'
 import { SupplierGateScreen } from '../features/supplier-dashboard/components/supplier-gate-screen'
 import { SupplierReviewsScreen } from '../features/supplier-dashboard/components/supplier-reviews-screen'
@@ -248,6 +249,7 @@ function DashboardWrapper({ navigation }: any) {
         onNavigateToSettings={() => navigation.navigate('SupplierSettings')}
         onNavigateToReviews={() => navigation.navigate('SupplierReviews')}
         onNavigateToWallet={() => navigation.navigate('SupplierWallet')}
+        onNavigateToSalesStatement={() => navigation.navigate('SupplierSalesStatement')}
         onNavigateToMessages={() => navigation.navigate('Chat')}
         onNavigateToNotifications={() => navigation.navigate('Profil', { screen: 'SupplierNotifications', initial: false })}
       />
@@ -416,6 +418,14 @@ function SupplierWalletWrapper({ navigation }: any) {
   )
 }
 
+function SupplierSalesStatementWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <SalesStatementScreen onGoBack={() => navigation.goBack()} />
+    </SafeScreen>
+  )
+}
+
 function SupplierPromoCodesWrapper({ navigation }: any) {
   return (
     <SafeScreen>
@@ -476,6 +486,7 @@ function HomeStackScreen() {
       <HomeStack.Screen name="SupplierOpeningHours" component={SupplierOpeningHoursWrapper} />
       <HomeStack.Screen name="SupplierSalesPoints" component={SupplierSalesPointsWrapper} />
       <HomeStack.Screen name="SupplierWallet" component={SupplierWalletWrapper} />
+      <HomeStack.Screen name="SupplierSalesStatement" component={SupplierSalesStatementWrapper} />
       <HomeStack.Screen name="SupplierPromoCodes" component={SupplierPromoCodesWrapper} />
       <HomeStack.Screen name="SupplierBannerRequests" component={SupplierBannerRequestsWrapper} />
       <HomeStack.Screen name="SupplierBannerRequestForm" component={SupplierBannerRequestFormWrapper} />

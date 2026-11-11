@@ -23,6 +23,7 @@ import { BusinessCardDownloadButton } from '@/features/admin/business-cards/comp
 import { BackLink } from '@/features/admin/common/components/back-link'
 import { Can } from '@/lib/casl/can'
 import { ProductPromotionsDialog } from '../../promotions/components/product-promotions-dialog'
+import { SalesStatementDialog } from '../components/sales-statement-dialog'
 import { SupplierEscrowReleaseCard } from '../components/supplier-escrow-release-card'
 import {
   fetchAdminSupplierQueryOptions,
@@ -254,11 +255,12 @@ export default function AdminSupplierDetailPage() {
         <BackLink fallback="/admin/fournisseurs" />
         <h2 className="text-2xl font-bold">{supplier.shopName}</h2>
         <Badge>{t(`admin.suppliers.status.${supplier.validationStatus}`)}</Badge>
-        {supplier.validationStatus === 'VALIDATED' && (
-          <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          <SalesStatementDialog supplierId={supplier.id} shopName={supplier.shopName} ownerEmail={supplier.owner?.email} />
+          {supplier.validationStatus === 'VALIDATED' && (
             <BusinessCardDownloadButton supplierId={supplier.id} shopName={supplier.shopName} label={t('admin.businessCards.downloadOne')} />
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
       <div className="grid gap-6 md:grid-cols-3">

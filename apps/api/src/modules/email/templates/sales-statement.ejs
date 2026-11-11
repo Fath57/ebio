@@ -1,0 +1,39 @@
+<!--
+  Sales statement — the Excel file is attached; the body only restates the
+  headline figures. Variables: shopName, periodLabel, deliveredCount,
+  deliveredAmount, commissionAmount, shopShare, inProgressCount.
+-->
+<% const font = "'Plus Jakarta Sans', Arial, sans-serif" %>
+<% const cell = `font-family: ${font}; font-size: 14px; color: #2A2924; line-height: 1.5;` %>
+<% const muted = `font-family: ${font}; font-size: 12px; color: #9B9890; line-height: 1.5;` %>
+<% const row = (index) => index > 0 ? 'border-top: 1px solid #EDECEA;' : '' %>
+
+<%- include('partials/heading', { text: 'Relevé des ventes', level: 1 }) %>
+
+<p style="<%= cell %>">
+  Voici le relevé des ventes de <strong><%= shopName %></strong> <%= periodLabel %>,
+  en pièce jointe au format Excel.
+</p>
+
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="margin-top: 20px;">
+  <% [
+    ['Commandes livrées', deliveredCount],
+    ['Payé par les clients', deliveredAmount],
+    ['Commissions eBio', commissionAmount],
+    ['Part de la boutique', shopShare],
+  ].forEach(([label, value], index) => { %>
+    <tr>
+      <td style="padding: 10px 0; <%= row(index) %> <%= cell %>"><%= label %></td>
+      <td align="right" style="padding: 10px 0; <%= row(index) %> <%= cell %>">
+        <% if (label === 'Part de la boutique') { %><strong><%= value %></strong><% } else { %><%= value %><% } %>
+      </td>
+    </tr>
+  <% }) %>
+</table>
+
+<% if (inProgressCount > 0) { %>
+  <p style="<%= muted %> margin-top: 16px;">
+    <%= inProgressCount %> commande<%= inProgressCount > 1 ? 's' : '' %> encore en cours sur la période
+    <%= inProgressCount > 1 ? 'figurent' : 'figure' %> dans le fichier, sans être comptée<%= inProgressCount > 1 ? 's' : '' %> dans ces montants.
+  </p>
+<% } %>

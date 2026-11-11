@@ -2558,6 +2558,30 @@
         "create": "Créer le label",
         "update": "Mettre à jour"
       }
+    },
+    "salesStatement": {
+      "open": "Relevé des ventes",
+      "title": "Relevé des ventes — {{shop}}",
+      "description": "Toutes les commandes de la période dans un fichier Excel : résumé, détail par commande et par produit. Les jours sont lus à l'heure de la boutique.",
+      "period": "Période",
+      "presets": {
+        "today": "Aujourd'hui",
+        "week": "Cette semaine",
+        "month": "Ce mois",
+        "lastMonth": "Mois dernier",
+        "custom": "Période précise"
+      },
+      "from": "Du",
+      "to": "Au",
+      "periodOrder": "La date de début doit précéder la date de fin.",
+      "summary": "Relevé du {{from}} au {{to}}",
+      "email": "Envoyer à",
+      "emailHint": "Prérempli avec l'adresse du compte de la boutique.",
+      "invalidEmail": "Adresse e-mail invalide.",
+      "send": "Envoyer par e-mail",
+      "download": "Télécharger en Excel",
+      "sent": "Relevé envoyé à {{email}}.",
+      "failed": "Le relevé n'a pas pu être généré."
     }
   },
   "errorCodes": {

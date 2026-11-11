@@ -1,5 +1,6 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
+import FileSpreadsheet from 'lucide-react-native/dist/esm/icons/file-spreadsheet'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
@@ -49,11 +50,12 @@ interface DashboardScreenProps {
   onNavigateToSettings: () => void
   onNavigateToReviews: () => void
   onNavigateToWallet: () => void
+  onNavigateToSalesStatement: () => void
   onNavigateToMessages: () => void
   onNavigateToNotifications?: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToMessages, onNavigateToNotifications }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToSalesStatement, onNavigateToMessages, onNavigateToNotifications }: DashboardScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
@@ -360,6 +362,15 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
             <ShoppingCart size={18} color={colors.blue[600]} />
           </View>
           <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Commandes</Text>
+        </TouchableOpacity>
+
+        <View style={styles.actionDivider} />
+
+        <TouchableOpacity style={styles.actionItem} onPress={onNavigateToSalesStatement} activeOpacity={0.6}>
+          <View style={[styles.actionIcon, { backgroundColor: colors.green[50] }]}>
+            <FileSpreadsheet size={18} color={colors.green[600]} />
+          </View>
+          <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Relevé des ventes</Text>
         </TouchableOpacity>
 
         <View style={styles.actionDivider} />

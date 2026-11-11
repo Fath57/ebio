@@ -68,6 +68,7 @@
     "better-auth-mikro-orm": "^0.4.3",
     "date-fns": "^4.1.0",
     "ejs": "^5.0.1",
+    "exceljs": "4.4.0",
     "fedapay": "^1.2.5",
     "firebase-admin": "^13.7.0",
     "graphql": "16.12.0",
