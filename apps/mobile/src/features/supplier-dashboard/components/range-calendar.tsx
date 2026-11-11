@@ -33,7 +33,20 @@ function monthCells(year: number, month: number): Array<{ key: string, day: stri
     const day = toDayString(new Date(year, month, date))
     cells.push({ key: day, day })
   }
+  while (cells.length % 7 !== 0)
+    cells.push({ key: `trailing-${cells.length}`, day: null })
   return cells
+}
+
+/**
+ * One row per week. Rows of flexed cells, not one wrapping grid of 1/7
+ * widths: seven times 14.2857 % rounds past the row and Sunday wrapped.
+ */
+function toWeeks<T>(cells: T[]): T[][] {
+  const weeks: T[][] = []
+  for (let start = 0; start < cells.length; start += 7)
+    weeks.push(cells.slice(start, start + 7))
+  return weeks
 }
 
 /**
@@ -47,7 +60,7 @@ export function RangeCalendar({ value, onChange }: RangeCalendarProps) {
     const anchor = value.from ? fromDayString(value.from) : new Date()
     return { year: anchor.getFullYear(), month: anchor.getMonth() }
   })
-  const cells = useMemo(() => monthCells(visible.year, visible.month), [visible])
+  const weeks = useMemo(() => toWeeks(monthCells(visible.year, visible.month)), [visible])
   const isCurrentMonth = toDayString(new Date(visible.year, visible.month, 1)).slice(0, 7) === today.slice(0, 7)
 
   const shiftMonth = (delta: number) => {
@@ -91,45 +104,51 @@ export function RangeCalendar({ value, onChange }: RangeCalendarProps) {
         </TouchableOpacity>
       </View>
 
-      <View style={styles.grid}>
-        {WEEKDAYS.map(weekday => (
-          <Text key={weekday.key} style={[styles.weekday, { color: semantic.textTertiary }]}>{weekday.label}</Text>
-        ))}
-        {cells.map(({ key, day }) => {
-          if (!day)
-            return <View key={key} style={styles.cell} />
-          const isFuture = day > today
-          const isEdge = day === value.from || day === value.to
-          const isInside = !!value.from && !!value.to && day > value.from && day < value.to
-          return (
-            <TouchableOpacity
-              key={day}
-              onPress={() => pick(day)}
-              disabled={isFuture}
-              style={styles.cell}
-              accessibilityRole="button"
-              accessibilityLabel={DAY_LABEL.format(fromDayString(day))}
-              accessibilityState={{ selected: isEdge || isInside, disabled: isFuture }}
-            >
-              <View style={[
-                styles.dayBubble,
-                isInside && { backgroundColor: colors.green[50] },
-                isEdge && { backgroundColor: colors.green[400] },
-              ]}
-              >
-                <Text style={[
-                  styles.dayText,
-                  { color: isFuture ? semantic.textTertiary : semantic.textPrimary },
-                  isEdge && styles.dayTextEdge,
-                  day === today && !isEdge && styles.dayTextToday,
-                ]}
+      <View>
+        <View style={styles.row}>
+          {WEEKDAYS.map(weekday => (
+            <Text key={weekday.key} style={[styles.weekday, { color: semantic.textTertiary }]}>{weekday.label}</Text>
+          ))}
+        </View>
+        {weeks.map(week => (
+          <View key={week[0].key} style={styles.row}>
+            {week.map(({ key, day }) => {
+              if (!day)
+                return <View key={key} style={styles.cell} />
+              const isFuture = day > today
+              const isEdge = day === value.from || day === value.to
+              const isInside = !!value.from && !!value.to && day > value.from && day < value.to
+              return (
+                <TouchableOpacity
+                  key={day}
+                  onPress={() => pick(day)}
+                  disabled={isFuture}
+                  style={styles.cell}
+                  accessibilityRole="button"
+                  accessibilityLabel={DAY_LABEL.format(fromDayString(day))}
+                  accessibilityState={{ selected: isEdge || isInside, disabled: isFuture }}
                 >
-                  {Number(day.slice(8))}
-                </Text>
-              </View>
-            </TouchableOpacity>
-          )
-        })}
+                  <View style={[
+                    styles.dayBubble,
+                    isInside && { backgroundColor: colors.green[50] },
+                    isEdge && { backgroundColor: colors.green[400] },
+                  ]}
+                  >
+                    <Text style={[
+                      styles.dayText,
+                      { color: isFuture ? semantic.textTertiary : semantic.textPrimary },
+                      isEdge && styles.dayTextEdge,
+                      day === today && !isEdge && styles.dayTextToday,
+                    ]}
+                    >
+                      {Number(day.slice(8))}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )
+            })}
+          </View>
+        ))}
       </View>
     </View>
   )
@@ -138,9 +157,9 @@ export function RangeCalendar({ value, onChange }: RangeCalendarProps) {
 const styles = StyleSheet.create({
   cell: {
     alignItems: 'center',
+    flex: 1,
     height: 44,
     justifyContent: 'center',
-    width: `${100 / 7}%`,
   },
   container: {
     borderRadius: radius.lg,
@@ -149,7 +168,8 @@ const styles = StyleSheet.create({
   },
   dayBubble: {
     alignItems: 'center',
-    borderRadius: radius.pill,
+    // Half the side: Android draws a square when the radius exceeds it.
+    borderRadius: 18,
     height: 36,
     justifyContent: 'center',
     width: 36,
@@ -169,9 +189,8 @@ const styles = StyleSheet.create({
   disabled: {
     opacity: 0.3,
   },
-  grid: {
+  row: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
   },
   header: {
     alignItems: 'center',
@@ -191,7 +210,7 @@ const styles = StyleSheet.create({
   },
   weekday: {
     ...typography.caption,
+    flex: 1,
     textAlign: 'center',
-    width: `${100 / 7}%`,
   },
 })
