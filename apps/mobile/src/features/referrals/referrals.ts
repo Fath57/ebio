@@ -26,21 +26,25 @@ export async function fetchReferralSummary(): Promise<ReferralSummary | null> {
   }
 }
 
-/** Returns the server's message: it is the one that knows why it refused. */
-export async function claimReferralCode(code: string): Promise<{ ok: true, sponsorName: string } | { ok: false, message: string }> {
+/**
+ * Returns the server's message: it is the one that knows why it refused.
+ * `retry` tells a network failure apart from a refusal — only the first is
+ * worth trying again later.
+ */
+export async function claimReferralCode(code: string): Promise<{ ok: true, sponsorName: string } | { ok: false, message: string, retry: boolean }> {
   try {
     const res = await apiFetch('/api/referrals/claim', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ code }),
     })
-    const data = await res.json() as { sponsorName?: string, message?: string }
+    const data = await res.json().catch(() => ({})) as { sponsorName?: string, message?: string }
     if (!res.ok) {
-      return { ok: false, message: data.message ?? 'Ce code n\'a pas pu être utilisé.' }
+      return { ok: false, message: data.message ?? 'Ce code n\'a pas pu être utilisé.', retry: res.status >= 500 || res.status === 401 }
     }
     return { ok: true, sponsorName: data.sponsorName ?? '' }
   }
   catch {
-    return { ok: false, message: 'Pas de réseau. Réessayez dans un instant.' }
+    return { ok: false, message: 'Pas de réseau. Réessayez dans un instant.', retry: true }
   }
 }

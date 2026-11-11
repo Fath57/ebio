@@ -197,6 +197,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
                   host: 'e-bio.org',
                   pathPrefix: '/produit',
                 },
+                {
+                  scheme: 'https',
+                  host: 'e-bio.org',
+                  pathPrefix: '/parrainage',
+                },
               ],
               category: ['BROWSABLE', 'DEFAULT'],
             },

@@ -63,6 +63,7 @@ import { RateOrderFlow } from '../features/ratings/components/rate-order-flow'
 import { RateProductsScreen } from '../features/ratings/components/rate-products-screen'
 import { ReviewsList } from '../features/ratings/components/reviews-list'
 import { ReferralScreen } from '../features/referrals/components/referral-screen'
+import { usePendingReferralClaim } from '../features/referrals/hooks/use-pending-referral-claim'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
@@ -784,10 +785,15 @@ function ProfileHomeWrapper({ navigation }: any) {
   )
 }
 
-function ReferralWrapper({ navigation }: any) {
+function ReferralWrapper({ navigation, route }: any) {
   return (
     <SafeScreen>
-      <ReferralScreen onGoBack={() => navigation.goBack()} />
+      <ReferralScreen
+        invitedCode={route.params?.code}
+        onGoBack={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('ProfileHome'))}
+        onSignUp={() => navigation.navigate('ProfileRegister')}
+        onLogin={() => navigation.navigate('ProfileLogin')}
+      />
     </SafeScreen>
   )
 }
@@ -1106,6 +1112,7 @@ function BuyerTabs() {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   useNotifications()
+  usePendingReferralClaim()
   // Un panier non vide : la première intention visible, et le moment où la
   // question « on vous prévient ? » veut dire quelque chose.
   const hasBasket = useCart().getItemCount() > 0
@@ -1162,6 +1169,13 @@ function BuyerTabs() {
                 // Shared product links: the wrapper fills in the product and
                 // its shop from the id alone.
                 ProductDetail: 'produit/:productId',
+              },
+            },
+            Profil: {
+              screens: {
+                // Shared referral links: the code is kept until an account
+                // exists, then claimed (see usePendingReferralClaim).
+                Referral: 'parrainage/:code',
               },
             },
           },

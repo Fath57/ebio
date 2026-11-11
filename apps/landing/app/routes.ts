@@ -5,6 +5,7 @@ export default [
   index('routes/home.tsx'),
   route('boutique/:id', 'routes/boutique.tsx'),
   route('produit/:id', 'routes/produit.tsx'),
+  route('parrainage/:code', 'routes/parrainage.tsx'),
   route('cgu', 'routes/cgu.tsx'),
   route('confidentialite', 'routes/confidentialite.tsx'),
   route('suppression-donnees', 'routes/suppression-donnees.tsx'),

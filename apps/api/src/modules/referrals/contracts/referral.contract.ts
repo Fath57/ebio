@@ -57,6 +57,16 @@ export const referralRewardsSchema = z.object({
   active: z.boolean(),
 }).meta({ title: 'ReferralRewards', description: 'Referral rewards and thresholds' })
 
+export const referralInvitationSchema = z.object({
+  /** First name only: the page is public, the full name is not its business. */
+  sponsorFirstName: z.string(),
+  refereeReward: z.number().int(),
+  minOrderAmount: z.number().int(),
+  active: z.boolean(),
+}).meta({ title: 'ReferralInvitation', description: 'What a shared referral link shows before sign-up' })
+
+export type ReferralInvitation = z.infer<typeof referralInvitationSchema>
+
 export type ClaimReferral = z.infer<typeof claimReferralSchema>
 export type ReferralSummary = z.infer<typeof referralSummarySchema>
 export type ReferralRewards = z.infer<typeof referralRewardsSchema>

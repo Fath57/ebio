@@ -14,11 +14,13 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native'
+import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { normalizeReferralCode, setPendingReferralCode } from '../pending-referral'
 import { claimReferralCode, fetchReferralSummary } from '../referrals'
 
 function money(value: number): string {
@@ -32,11 +34,22 @@ function money(value: number): string {
  * "when they receive their first order" — because a sponsor expecting a
  * payout the day their referee signs up feels cheated.
  */
-export function ReferralScreen({ onGoBack }: { onGoBack: () => void }) {
+interface ReferralScreenProps {
+  onGoBack: () => void
+  /** The code of a shared `/parrainage/CODE` link that opened this screen. */
+  invitedCode?: string
+  onSignUp?: () => void
+  onLogin?: () => void
+}
+
+export function ReferralScreen({ onGoBack, invitedCode, onSignUp, onLogin }: ReferralScreenProps) {
   const { semantic } = useTheme()
+  const { data: session, isPending: sessionPending } = useSession()
+  const isSignedIn = !!session?.user
+  const linkCode = normalizeReferralCode(invitedCode)
   const [summary, setSummary] = useState<ReferralSummary | null>(null)
   const [loading, setLoading] = useState(true)
-  const [draft, setDraft] = useState('')
+  const [draft, setDraft] = useState(linkCode ?? '')
   const [claiming, setClaiming] = useState(false)
 
   const load = useCallback(async () => {
@@ -45,9 +58,22 @@ export function ReferralScreen({ onGoBack }: { onGoBack: () => void }) {
     setLoading(false)
   }, [])
 
+  // A link's code waits on the phone until an account claims it.
   useEffect(() => {
+    if (linkCode)
+      void setPendingReferralCode(linkCode)
+  }, [linkCode])
+
+  useEffect(() => {
+    if (sessionPending)
+      return
+    if (!isSignedIn) {
+      setLoading(false)
+      return
+    }
+    setLoading(true)
     load()
-  }, [load])
+  }, [load, isSignedIn, sessionPending])
 
   const share = useCallback(async () => {
     if (!summary) {
@@ -80,7 +106,45 @@ export function ReferralScreen({ onGoBack }: { onGoBack: () => void }) {
     appAlert('Code refusé', result.message)
   }, [draft, load])
 
-  if (loading) {
+  if (!sessionPending && !isSignedIn) {
+    return (
+      <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+        <ScreenHeader title="Parrainage" onBack={onGoBack} />
+        <ScrollView contentContainerStyle={styles.content}>
+          <View style={styles.hero}>
+            <View style={styles.heroIcon}>
+              <Gift size={22} color={colors.neutral[0]} strokeWidth={2.2} />
+            </View>
+            <Text style={styles.heroTitle}>
+              {linkCode ? 'Vous êtes invité sur eBio' : 'Parrainage'}
+            </Text>
+            <Text style={styles.heroBody}>
+              {linkCode
+                ? 'Créez votre compte : ce code de parrainage sera appliqué automatiquement, et vous recevrez votre récompense avec votre première commande livrée.'
+                : 'Connectez-vous pour retrouver votre code et inviter vos proches.'}
+            </Text>
+            {linkCode && (
+              <View style={styles.codeBox}>
+                <Text style={styles.code} selectable>{linkCode}</Text>
+              </View>
+            )}
+            {onSignUp && (
+              <TouchableOpacity style={styles.shareButton} onPress={onSignUp} activeOpacity={0.85} accessibilityRole="button">
+                <Text style={styles.shareText}>Créer mon compte</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+          {onLogin && (
+            <TouchableOpacity onPress={onLogin} style={styles.loginLink} accessibilityRole="button">
+              <Text style={[styles.loginLinkText, { color: semantic.textPrimaryColor }]}>J'ai déjà un compte</Text>
+            </TouchableOpacity>
+          )}
+        </ScrollView>
+      </View>
+    )
+  }
+
+  if (loading || sessionPending) {
     return (
       <View style={[styles.screen, styles.centered, { backgroundColor: semantic.bgPage }]}>
         <ActivityIndicator size="large" color={colors.green[400]} />
@@ -289,6 +353,15 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: radius.pill,
     backgroundColor: colors.neutral[0],
+  },
+  loginLink: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
+  },
+  loginLinkText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
   },
   shareText: {
     fontFamily: fonts.sansBd,

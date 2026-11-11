@@ -58,6 +58,13 @@ export const configValidationSchema = z.object({
   // Clients
   CLIENTS_WEB_APP_URL: z.string(),
   CLIENTS_WEB_SSR_URL: z.string(),
+  /**
+   * The address people see in a link shared to WhatsApp or SMS. Not the SSR
+   * app's own URL: that one is the server's technical host. Same domain the
+   * apps hard-code for shop and product links, and the one the Android app
+   * claims (intent filters).
+   */
+  PUBLIC_SITE_URL: z.url().default('https://e-bio.org'),
 
   // Email
   EMAIL_HOST: z.string().default('localhost'),
@@ -282,6 +289,9 @@ export const config = {
     },
     webSsr: {
       url: configParsed.data.CLIENTS_WEB_SSR_URL,
+    },
+    publicSite: {
+      url: configParsed.data.PUBLIC_SITE_URL.replace(/\/+$/, ''),
     },
   },
   langfuse: {

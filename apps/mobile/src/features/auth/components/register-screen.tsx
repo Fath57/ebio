@@ -1,11 +1,12 @@
 import Check from 'lucide-react-native/dist/esm/icons/check'
 import Eye from 'lucide-react-native/dist/esm/icons/eye'
 import EyeOff from 'lucide-react-native/dist/esm/icons/eye-off'
+import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import Mail from 'lucide-react-native/dist/esm/icons/mail'
 import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -32,9 +33,13 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { APP_VARIANT, BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { clearPendingReferralCode, getPendingReferralCode, normalizeReferralCode, setPendingReferralCode } from '../../referrals/pending-referral'
 import { AppleSignInButton } from './apple-sign-in-button'
 import { GoogleSignInButton } from './google-sign-in-button'
 import { OtpInput, ResendTimer } from './otp-input'
+
+/** Only buyers are referred: the shop and courier apps have no sponsor. */
+const ASKS_REFERRAL = APP_VARIANT === 'client'
 
 type Step = 'phone-input' | 'otp' | 'name' | 'email-form' | 'email-otp'
 
@@ -59,6 +64,31 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
   const [resendKey, setResendKey] = useState(0)
   // Store requirement: no account without explicit terms acceptance.
   const [acceptedTerms, setAcceptedTerms] = useState(false)
+  const [referralCode, setReferralCode] = useState('')
+
+  // A code from a shared link or the Play Store install fills the field.
+  useEffect(() => {
+    if (!ASKS_REFERRAL)
+      return
+    void getPendingReferralCode().then((code) => {
+      if (code)
+        setReferralCode(current => current || code)
+    })
+  }, [])
+
+  /**
+   * The field is saved as it is typed, not on submit: a Google or Apple sign-up
+   * signs the account in before this screen hears back, and the claim runs as
+   * soon as someone is signed in (usePendingReferralClaim).
+   */
+  function handleReferralChange(text: string) {
+    const value = text.toUpperCase().replace(/[^A-Z0-9]/g, '')
+    setReferralCode(value)
+    if (normalizeReferralCode(value))
+      void setPendingReferralCode(value)
+    else if (value.length === 0)
+      void clearPendingReferralCode()
+  }
 
   /**
    * Close the sign-up, and leave a record of the agreement.
@@ -314,6 +344,24 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 />
               </View>
 
+              {ASKS_REFERRAL && (
+                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <Gift size={20} color={iconColor} strokeWidth={1.8} />
+                  <TextInput
+                    style={[styles.input, { color: semantic.textPrimary, fontFamily: fonts.sans }]}
+                    placeholder="Code parrain (facultatif)"
+                    placeholderTextColor={placeholderColor}
+                    value={referralCode}
+                    onChangeText={handleReferralChange}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    maxLength={16}
+                    accessibilityLabel="Code parrain, facultatif"
+                  />
+                </View>
+              )}
+
               <Pressable
                 style={({ pressed }) => [
                   styles.submitButton,
@@ -493,6 +541,24 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                     : <Eye size={20} color={iconColor} strokeWidth={1.8} />}
                 </Pressable>
               </View>
+
+              {ASKS_REFERRAL && (
+                <View style={[styles.inputContainer, { backgroundColor: inputBg, borderColor: inputBorder }]}>
+                  <Gift size={20} color={iconColor} strokeWidth={1.8} />
+                  <TextInput
+                    style={[styles.input, { color: semantic.textPrimary, fontFamily: fonts.sans }]}
+                    placeholder="Code parrain (facultatif)"
+                    placeholderTextColor={placeholderColor}
+                    value={referralCode}
+                    onChangeText={handleReferralChange}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                    autoComplete="off"
+                    maxLength={16}
+                    accessibilityLabel="Code parrain, facultatif"
+                  />
+                </View>
+              )}
 
               <Pressable
                 style={({ pressed }) => [

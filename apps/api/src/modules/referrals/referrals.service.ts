@@ -1,4 +1,4 @@
-import type { ReferralSummary } from './contracts/referral.contract'
+import type { ReferralInvitation, ReferralSummary } from './contracts/referral.contract'
 import { randomInt } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
@@ -61,6 +61,26 @@ export class ReferralsService {
     throw new BadRequestException('Impossible de créer votre code pour le moment')
   }
 
+  /**
+   * What the public `/parrainage/CODE` page shows. Null for an unknown code:
+   * the page then says so instead of promising a reward nobody will pay.
+   */
+  async invitation(rawCode: string): Promise<ReferralInvitation | null> {
+    const code = rawCode.trim().toUpperCase()
+    if (!/^[A-Z0-9]{4,16}$/.test(code))
+      return null
+    const sponsor = await this.em.findOne(User, { referralCode: code }, { fields: ['name'] })
+    if (!sponsor)
+      return null
+    const rewards = await this.settings.getReferralRewards()
+    return {
+      sponsorFirstName: sponsor.name.trim().split(/\s+/)[0] ?? '',
+      refereeReward: rewards.refereeAmount,
+      minOrderAmount: rewards.minOrderAmount,
+      active: rewards.active,
+    }
+  }
+
   /** A buyer's dashboard: their code, their referees, their earnings. */
   async summary(userId: string): Promise<ReferralSummary> {
     const code = await this.codeFor(userId)
@@ -75,10 +95,9 @@ export class ReferralsService {
 
     return {
       code,
-      // The public site, not the back-office: it already carries the shared
-      // links to a shop or a product, and knows how to hand over to the
-      // installed app.
-      link: `${config.clients.webSsr.url}/parrainage/${code}`,
+      // The public domain, like the shop and product links: it opens the
+      // installed app on Android and the invitation page everywhere else.
+      link: `${config.clients.publicSite.url}/parrainage/${code}`,
       pending: given.filter(item => item.status === ReferralStatus.PENDING).length,
       rewarded: given.filter(item => item.status === ReferralStatus.REWARDED).length,
       earned: given.reduce((total, item) => total + item.sponsorAmount, 0),
