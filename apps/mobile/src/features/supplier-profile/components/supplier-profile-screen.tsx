@@ -57,6 +57,9 @@ interface Product {
   isInStock: boolean
 }
 
+/** Points shown before the « Voir N autres » toggle on the shop page. */
+const SALES_POINTS_PREVIEW = 2
+
 interface SalesPointItem {
   id: string
   name: string
@@ -325,6 +328,7 @@ export function SupplierProfileScreen({
   const [isHoursExpanded, setIsHoursExpanded] = useState(false)
   const [salesPoints, setSalesPoints] = useState<SalesPointItem[]>([])
   const [showAllProducts, setShowAllProducts] = useState(false)
+  const [showAllSalesPoints, setShowAllSalesPoints] = useState(false)
 
   useEffect(() => {
     async function fetchProfile(): Promise<void> {
@@ -797,7 +801,7 @@ export function SupplierProfileScreen({
               <Text style={[styles.sectionTitle, { color: semantic.textPrimary }]}>
                 Points de vente
               </Text>
-              {salesPoints.map(point => (
+              {(showAllSalesPoints ? salesPoints : salesPoints.slice(0, SALES_POINTS_PREVIEW)).map(point => (
                 <View
                   key={point.id}
                   style={[styles.salesPointRow, { backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}
@@ -835,6 +839,24 @@ export function SupplierProfileScreen({
                   )}
                 </View>
               ))}
+              {salesPoints.length > SALES_POINTS_PREVIEW && (
+                <TouchableOpacity
+                  onPress={() => setShowAllSalesPoints(prev => !prev)}
+                  activeOpacity={0.7}
+                  accessibilityRole="button"
+                  accessibilityState={{ expanded: showAllSalesPoints }}
+                  style={styles.salesPointsToggle}
+                >
+                  <Text style={[styles.salesPointsToggleText, { color: semantic.colorPrimary }]}>
+                    {showAllSalesPoints
+                      ? 'Masquer'
+                      : `Voir ${salesPoints.length - SALES_POINTS_PREVIEW} autre${salesPoints.length - SALES_POINTS_PREVIEW > 1 ? 's' : ''} point${salesPoints.length - SALES_POINTS_PREVIEW > 1 ? 's' : ''} de vente`}
+                  </Text>
+                  {showAllSalesPoints
+                    ? <ChevronUp size={16} color={semantic.colorPrimary} strokeWidth={2} />
+                    : <ChevronDown size={16} color={semantic.colorPrimary} strokeWidth={2} />}
+                </TouchableOpacity>
+              )}
             </View>
 
             <View style={[styles.divider, { backgroundColor: semantic.borderLight }]} />
@@ -1081,6 +1103,17 @@ const styles = StyleSheet.create({
   },
   salesPointText: {
     flex: 1,
+  },
+  salesPointsToggle: {
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    gap: spacing[1],
+    minHeight: 44,
+  },
+  salesPointsToggleText: {
+    fontFamily: fonts.sansSb,
+    fontSize: 14,
   },
   sectionTitle: {
     ...typography.h2,
