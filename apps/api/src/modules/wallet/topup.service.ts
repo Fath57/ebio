@@ -208,24 +208,30 @@ export class TopupService {
    * `walletId` narrows to one wallet, for its page in the back office.
    */
   async adminList(filters: { status?: string, q?: string, walletId?: string, page: number, limit: number }) {
-    const where: FilterQuery<WalletTopup> = {}
-    if (filters.status && Object.values(TopupStatus).includes(filters.status as TopupStatus))
-      where.status = filters.status as TopupStatus
+    // Counts per status ignore the status filter, so every tab keeps its number.
+    const scope: FilterQuery<WalletTopup> = {}
     if (filters.walletId)
-      where.wallet = filters.walletId
+      scope.wallet = filters.walletId
     if (filters.q) {
       const pattern = `%${filters.q}%`
-      where.user = { $or: [{ name: { $ilike: pattern } }, { email: { $ilike: pattern } }] }
+      scope.user = { $or: [{ name: { $ilike: pattern } }, { email: { $ilike: pattern } }] }
     }
+    const where: FilterQuery<WalletTopup> = filters.status && Object.values(TopupStatus).includes(filters.status as TopupStatus)
+      ? { ...scope, status: filters.status as TopupStatus }
+      : scope
     const limit = Math.min(Math.max(filters.limit, 1), 100)
     const page = Math.max(filters.page, 1)
-    const [rows, total] = await this.em.findAndCount(WalletTopup, where, {
-      populate: ['user'],
-      orderBy: { createdAt: 'DESC' },
-      limit,
-      offset: (page - 1) * limit,
-    })
+    const [[rows, total], ...counts] = await Promise.all([
+      this.em.findAndCount(WalletTopup, where, {
+        populate: ['user'],
+        orderBy: { createdAt: 'DESC' },
+        limit,
+        offset: (page - 1) * limit,
+      }),
+      ...Object.values(TopupStatus).map(status => this.em.fork().count(WalletTopup, { ...scope, status })),
+    ])
     return {
+      statusCounts: Object.fromEntries(Object.values(TopupStatus).map((status, index) => [status, counts[index]])),
       items: rows.map(topup => ({
         id: topup.id,
         walletId: topup.wallet.id,

@@ -212,9 +212,11 @@ export default function AdminCourierDetailPage() {
                   </>
                 )
               : <p className="text-muted-foreground text-sm">{t('admin.couriers.detail.walletEmpty')}</p>}
-            <Button variant="outline" size="sm" asChild>
-              <Link to="/admin/reversements">{t('admin.couriers.detail.walletLink')}</Link>
-            </Button>
+            {courier.wallet && (
+              <Button variant="outline" size="sm" asChild>
+                <Link to={`/admin/portefeuilles/${courier.wallet.id}`}>{t('admin.couriers.detail.walletLink')}</Link>
+              </Button>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -161,7 +161,8 @@
       "catalog": "Catalog",
       "suppliers": "Suppliers",
       "community": "Community",
-      "config": "Settings"
+      "config": "Settings",
+      "money": "Money"
     },
     "logout": "Log out",
     "moderation": "Moderation",
@@ -188,7 +189,9 @@
     "couriers": "Couriers",
     "deliveries": "Deliveries",
     "team": "Team",
-    "certifications": "Labels & certifications"
+    "certifications": "Labels & certifications",
+    "wallets": "Wallets",
+    "topups": "Top-ups"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -2169,11 +2172,7 @@
     },
     "withdrawals": {
       "title": "Payouts",
-      "description": "Shop and courier money: numbers to validate, payout requests, balances",
-      "totalOwed": "Owed to shops and couriers",
-      "totalOwedHint": "Sum of all positive wallet balances",
-      "totalDebt": "Debts to eBio",
-      "totalDebtHint": "Commissions on cash sales and cash deliveries not yet absorbed",
+      "description": "Money going out: payout requests from shops and couriers, and the Mobile Money numbers to validate.",
       "numbersTitle": "Numbers to validate",
       "numbersHint": "Check the Mobile Money number really belongs to the account holder (shop or courier) before validating. A validated number can receive payouts.",
       "numbersEmpty": "No number awaiting validation",
@@ -2201,26 +2200,9 @@
         "date": "Date",
         "amount": "Amount",
         "status": "Status",
-        "user": "User",
         "reference": "Provider ref.",
-        "beneficiary": "Beneficiary",
-        "balance": "Balance",
-        "updatedAt": "Updated",
-        "type": "Type",
-        "description": "Label",
-        "balanceAfter": "Balance after"
+        "beneficiary": "Beneficiary"
       },
-      "topupsTitle": "Wallet topups",
-      "topupsHint": "Wallet top-ups paid online. A pending top-up has not been confirmed by the provider yet; a failed one credited nothing.",
-      "topupsEmpty": "No topup yet",
-      "topupStatus": {
-        "PENDING": "Pending",
-        "COMPLETED": "Credited",
-        "FAILED": "Failed"
-      },
-      "walletsTitle": "Wallet balances",
-      "walletsHint": "A positive balance is owed to the beneficiary; a negative one is a commission the beneficiary owes eBio (cash sales or cash deliveries).",
-      "walletsEmpty": "No wallet yet",
       "ownerTypes": {
         "SUPPLIER": "Supplier",
         "COURIER": "Courier",
@@ -2231,68 +2213,9 @@
       "approveBody": "{{amount}} will be sent to {{name}} on {{number}}. The payment leaves at once and cannot be undone.",
       "sections": {
         "demandes": "Payout requests",
-        "numeros": "Numbers to validate",
-        "portefeuilles": "Wallets",
-        "recharges": "Top-ups"
+        "numeros": "Numbers to validate"
       },
-      "walletsSearch": "Search an owner…",
-      "allOwners": "All owners",
-      "allBalances": "All balances",
-      "balances": {
-        "positive": "Positive balance",
-        "negative": "In debt",
-        "zero": "Zero balance"
-      },
-      "sortLabel": "Sort",
-      "sorts": {
-        "balance_desc": "Balance, highest first",
-        "balance_asc": "Balance, lowest first",
-        "updated_desc": "Latest movement"
-      },
-      "filteredTotals": "On this selection: {{owed}} owed to owners, {{debt}} of debt.",
-      "debit": {
-        "action": "Debit",
-        "title": "Debit the wallet",
-        "body": "Wallet of {{name}}, current balance {{balance}}. The debit shows in their history with its reason.",
-        "amount": "Amount to debit",
-        "tooMuch": "The amount exceeds the wallet balance.",
-        "reason": "Reason",
-        "reasonPlaceholder": "E.g. correction of a refund credited by mistake",
-        "reasonHint": "The owner reads this reason in their history and in the notification.",
-        "notify": "Tell the owner (push and in-app notification)",
-        "confirm": "Debit {{amount}}",
-        "done": "{{amount}} debited. New balance: {{balance}}."
-      },
-      "providerFailure": "Provider: {{reason}}",
-      "history": "History",
-      "topupsSearch": "Payer name or e-mail…",
-      "topupsEmptyFiltered": "No top-up matches these filters",
-      "walletPage": {
-        "back": "Wallets",
-        "notFound": "This wallet cannot be found.",
-        "updatedAt": "Last movement on {{date}}",
-        "movements": "Movements",
-        "movementsEmpty": "No movement on this wallet"
-      },
-      "movementTypes": {
-        "TOPUP": "Top-up",
-        "ORDER_PAYMENT": "Order payment",
-        "SALE_CREDIT": "Sale",
-        "COMMISSION_DEBIT": "Commission",
-        "WITHDRAWAL": "Payout",
-        "WITHDRAWAL_REFUND": "Payout cancelled",
-        "REFUND": "Refund",
-        "ADJUSTMENT": "Adjustment",
-        "PROMO_COMPENSATION": "Promotion compensation",
-        "DELIVERY_EARNING": "Delivery earning",
-        "DELIVERY_COMMISSION": "Delivery commission",
-        "TIP_PAYMENT": "Tip paid",
-        "TIP_EARNING": "Tip received",
-        "DELIVERY_SPONSORSHIP": "Free delivery",
-        "BANNER_PAYMENT": "Sponsored banner",
-        "BANNER_REFUND": "Banner refunded",
-        "REFERRAL_REWARD": "Referral"
-      }
+      "providerFailure": "Provider: {{reason}}"
     },
     "couriers": {
       "title": "Couriers",
@@ -2344,7 +2267,7 @@
         "walletDebtHint": "The courier owes this commission to eBio (cash-paid deliveries)",
         "walletOwedHint": "Amount owed to the courier",
         "walletEmpty": "No wallet yet: the courier has not completed a delivery.",
-        "walletLink": "View payouts"
+        "walletLink": "See the wallet history"
       },
       "actions": {
         "approve": "Approve",
@@ -2614,6 +2537,96 @@
       "download": "Download as Excel",
       "sent": "Statement sent to {{email}}.",
       "failed": "The statement could not be generated."
+    },
+    "wallets": {
+      "title": "Wallets",
+      "description": "What every account holds: shops, couriers and buyers. Open a wallet to see its full history.",
+      "search": "Search an owner…",
+      "empty": "No wallet yet",
+      "totalOwed": "Owed to shops and couriers",
+      "totalOwedHint": "Sum of positive balances: what eBio owes the owners",
+      "totalDebt": "Debts to eBio",
+      "totalDebtHint": "Commissions on cash sales and cash deliveries not yet absorbed",
+      "allOwners": "All owners",
+      "allBalances": "All balances",
+      "sortLabel": "Sort",
+      "filteredTotals": "On this selection: {{owed}} owed to owners, {{debt}} of debt.",
+      "balances": {
+        "positive": "Positive balance",
+        "negative": "In debt",
+        "zero": "Zero balance"
+      },
+      "sorts": {
+        "balance_desc": "Balance, highest first",
+        "balance_asc": "Balance, lowest first",
+        "updated_desc": "Latest movement"
+      },
+      "history": "History",
+      "movementTypes": {
+        "TOPUP": "Top-up",
+        "ORDER_PAYMENT": "Order payment",
+        "SALE_CREDIT": "Sale",
+        "COMMISSION_DEBIT": "Commission",
+        "WITHDRAWAL": "Payout",
+        "WITHDRAWAL_REFUND": "Payout cancelled",
+        "REFUND": "Refund",
+        "ADJUSTMENT": "Adjustment",
+        "PROMO_COMPENSATION": "Promotion compensation",
+        "DELIVERY_EARNING": "Delivery earning",
+        "DELIVERY_COMMISSION": "Delivery commission",
+        "TIP_PAYMENT": "Tip paid",
+        "TIP_EARNING": "Tip received",
+        "DELIVERY_SPONSORSHIP": "Free delivery",
+        "BANNER_PAYMENT": "Sponsored banner",
+        "BANNER_REFUND": "Banner refunded",
+        "REFERRAL_REWARD": "Referral"
+      },
+      "debit": {
+        "action": "Debit",
+        "title": "Debit the wallet",
+        "body": "Wallet of {{name}}, current balance {{balance}}. The debit shows in their history with its reason.",
+        "amount": "Amount to debit",
+        "tooMuch": "The amount exceeds the wallet balance.",
+        "reason": "Reason",
+        "reasonPlaceholder": "E.g. correction of a refund credited by mistake",
+        "reasonHint": "The owner reads this reason in their history and in the notification.",
+        "notify": "Tell the owner (push and in-app notification)",
+        "confirm": "Debit {{amount}}",
+        "done": "{{amount}} debited. New balance: {{balance}}."
+      },
+      "topupStatus": {
+        "PENDING": "Pending",
+        "COMPLETED": "Credited",
+        "FAILED": "Failed"
+      },
+      "columns": {
+        "owner": "Owner",
+        "payer": "Payer",
+        "date": "Date",
+        "amount": "Amount",
+        "status": "Status",
+        "reference": "Provider ref.",
+        "balance": "Balance",
+        "updatedAt": "Updated",
+        "type": "Type",
+        "description": "Label",
+        "balanceAfter": "Balance after"
+      },
+      "detail": {
+        "notFound": "This wallet cannot be found.",
+        "updatedAt": "Last movement on {{date}}",
+        "movements": "Movements",
+        "movementsEmpty": "No movement on this wallet",
+        "topups": "Top-ups",
+        "topupsEmpty": "No top-up on this wallet"
+      },
+      "topups": {
+        "title": "Top-ups",
+        "description": "Money coming in: every wallet top-up paid online, by a buyer, a shop or a courier. Pending: not yet confirmed by the provider; failed: nothing was credited.",
+        "search": "Payer name or e-mail…",
+        "empty": "No topup yet",
+        "emptyFiltered": "No top-up matches these filters"
+      }
     }
   },
   "errorCodes": {

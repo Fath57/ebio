@@ -5,8 +5,9 @@ import { Navigation } from '@boilerstone/ui/components/layout/Navigation'
 import { Badge } from '@boilerstone/ui/components/primitives/badge'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import {
+  ArrowDownToLine,
+  ArrowUpFromLine,
   Award,
-  Banknote,
   BarChart3,
   Bell,
   Bike,
@@ -153,11 +154,18 @@ export default function AppLayout() {
         { to: '/admin/paniers', label: 'Paniers', icon: <ShoppingBasket className="h-4 w-4" />, permission: { action: 'read', subject: 'Settings' } },
         { to: '/admin/entonnoir', label: 'Entonnoir', icon: <Filter className="h-4 w-4" />, permission: { action: 'read', subject: 'Order' } },
         { to: '/admin/livraisons', label: t('nav.deliveries'), icon: <Truck className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
+        { to: '/admin/codes-promo', label: t('nav.promoCodes'), icon: <TicketPercent className="h-4 w-4" />, permission: { action: 'manage', subject: 'PromoCode' } },
+      ],
+    },
+    {
+      group: { label: t('nav.groups.money'), icon: <Wallet className="h-4 w-4" /> },
+      items: [
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
+        { to: '/admin/portefeuilles', label: t('nav.wallets'), icon: <Wallet className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
+        { to: '/admin/recharges', label: t('nav.topups'), icon: <ArrowDownToLine className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
+        { to: '/admin/reversements', label: t('nav.withdrawals'), icon: <ArrowUpFromLine className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/comptes', label: t('nav.platformAccounts'), icon: <Landmark className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
-        { to: '/admin/reversements', label: t('nav.withdrawals'), icon: <Banknote className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
-        { to: '/admin/codes-promo', label: t('nav.promoCodes'), icon: <TicketPercent className="h-4 w-4" />, permission: { action: 'manage', subject: 'PromoCode' } },
       ],
     },
     {

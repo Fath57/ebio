@@ -1,9 +1,8 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { ReactNode } from 'react'
-import type { AdminPayoutNumber, AdminWalletListItem, AdminWithdrawal } from '../utils/withdrawals-queries'
+import type { AdminPayoutNumber, AdminWithdrawal } from '../utils/withdrawals-queries'
 import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
 import { DataTable } from '@boilerstone/ui/components/primitives/data-table'
 import {
   Dialog,
@@ -13,15 +12,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@boilerstone/ui/components/primitives/dialog'
-import { Input } from '@boilerstone/ui/components/primitives/input'
-import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, History, MinusCircle, XCircle } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
+import { Navigate } from 'react-router'
 import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog'
 import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
@@ -29,24 +26,26 @@ import { StatusTabs } from '@/features/admin/common/components/status-tabs'
 import { useDataTableLabels } from '@/features/admin/common/utils/use-data-table-labels'
 import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { useReturnFocus } from '@/features/admin/common/utils/use-return-focus'
+import { formatAmount } from '@/features/admin/wallets/utils/format-amount'
 import { Can } from '@/lib/casl/can'
 import { BeneficiaryCell } from '../components/beneficiary-cell'
-import { DebitDialog } from '../components/debit-dialog'
-import { TOPUP_STATUSES, TopupsTable } from '../components/topups-table'
-import { formatAmount } from '../utils/format-amount'
 import {
   actOnPayoutNumber,
   actOnWithdrawal,
   fetchAdminWithdrawalsQueryOptions,
   fetchPayoutNumbersQueryOptions,
-  fetchWalletsListQueryOptions,
-  WALLETS_PAGE_SIZE,
 } from '../utils/withdrawals-queries'
 
 const PAGE_SIZE = 20
 
-/** The four jobs of the page, one tab each, in the order money flows. */
-const SECTIONS = ['demandes', 'numeros', 'portefeuilles', 'recharges'] as const
+/** The two jobs of the page: pay what is asked, trust the numbers it goes to. */
+const SECTIONS = ['demandes', 'numeros'] as const
+
+/** Tabs that became pages of their own; old links still land on them. */
+const MOVED_SECTIONS: Record<string, string> = {
+  portefeuilles: '/admin/portefeuilles',
+  recharges: '/admin/recharges',
+}
 type Section = typeof SECTIONS[number]
 
 const WITHDRAWAL_STATUSES = ['PENDING', 'PROCESSING', 'PAID', 'FAILED', 'REJECTED', 'CANCELLED']
@@ -63,7 +62,7 @@ const WITHDRAWAL_TONES: Record<string, StatusTone> = {
 function useWithdrawalsParams() {
   return useListParams({
     defaultSort: 'createdAt',
-    filters: ['onglet', 'statutDemande', 'statutRecharge', 'type', 'solde', 'ordre'],
+    filters: ['onglet', 'statutDemande'],
     defaults: { onglet: 'demandes', statutDemande: 'PENDING' },
   })
 }
@@ -71,23 +70,25 @@ function useWithdrawalsParams() {
 type ListParams = ReturnType<typeof useWithdrawalsParams>
 
 /**
- * Money leaving or owed by eBio, in four separate tabs: requests to pay,
- * numbers to trust, every wallet (with the staff debit), and buyer topups.
- * Each tab pages on its own and keeps its place in the URL.
+ * Money leaving eBio: payout requests to approve and the Mobile Money numbers
+ * they go to. Wallets and topups have their own pages.
  */
 export default function AdminWithdrawalsPage() {
   const { t } = useTranslation()
   const list = useWithdrawalsParams()
   const section: Section = (SECTIONS as readonly string[]).includes(list.values.onglet) ? list.values.onglet as Section : 'demandes'
 
-  // Counts for the tabs and the cards: cheap first pages, whatever tab is open.
+  // Counts for the tabs: cheap first pages, whatever tab is open.
   const pendingRequests = useQuery(fetchAdminWithdrawalsQueryOptions('PENDING', 1))
   const pendingNumbers = useQuery(fetchPayoutNumbersQueryOptions('PENDING', 1))
-  const allWallets = useQuery(fetchWalletsListQueryOptions({ page: 1 }))
 
   const changeSection = (next: string) => {
-    list.setFilters({ onglet: next, statutRecharge: '', type: '', solde: '', ordre: '' })
+    list.setFilters({ onglet: next })
   }
+
+  const moved = MOVED_SECTIONS[list.values.onglet]
+  if (moved)
+    return <Navigate to={moved} replace />
 
   return (
     <div className="space-y-6">
@@ -96,29 +97,11 @@ export default function AdminWithdrawalsPage() {
         <p className="text-muted-foreground">{t('admin.withdrawals.description')}</p>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <BalanceCard
-          label={t('admin.withdrawals.totalOwed')}
-          hint={t('admin.withdrawals.totalOwedHint')}
-          value={formatAmount(allWallets.data?.totalOwed ?? 0)}
-          isLoading={allWallets.isLoading}
-          highlight
-        />
-        <BalanceCard
-          label={t('admin.withdrawals.totalDebt')}
-          hint={t('admin.withdrawals.totalDebtHint')}
-          value={formatAmount(allWallets.data?.totalDebt ?? 0)}
-          isLoading={allWallets.isLoading}
-        />
-      </div>
-
       <StatusTabs
         allTab={false}
         tabs={[
           { value: 'demandes', label: t('admin.withdrawals.sections.demandes'), tone: 'action' },
           { value: 'numeros', label: t('admin.withdrawals.sections.numeros'), tone: 'action' },
-          { value: 'portefeuilles', label: t('admin.withdrawals.sections.portefeuilles') },
-          { value: 'recharges', label: t('admin.withdrawals.sections.recharges') },
         ]}
         value={section}
         onChange={changeSection}
@@ -130,8 +113,6 @@ export default function AdminWithdrawalsPage() {
 
       {section === 'demandes' && <RequestsSection list={list} />}
       {section === 'numeros' && <NumbersSection list={list} />}
-      {section === 'portefeuilles' && <WalletsSection list={list} />}
-      {section === 'recharges' && <TopupsSection list={list} />}
     </div>
   )
 }
@@ -406,180 +387,6 @@ function NumbersSection({ list }: { list: ListParams }) {
   )
 }
 
-function WalletsSection({ list }: { list: ListParams }) {
-  const { t, i18n } = useTranslation()
-  const labels = useDataTableLabels(t('admin.withdrawals.walletsEmpty'))
-  const [debitTarget, setDebitTarget] = useState<AdminWalletListItem | null>(null)
-  const [search, setSearch] = useState(list.q)
-
-  const query = useQuery({
-    ...fetchWalletsListQueryOptions({
-      q: list.q || undefined,
-      ownerType: list.values.type || undefined,
-      balance: list.values.solde || undefined,
-      sort: list.values.ordre || undefined,
-      page: list.page,
-    }),
-    placeholderData: keepPreviousData,
-  })
-
-  const columns = useMemo<Array<ColumnDef<AdminWalletListItem, unknown>>>(() => [
-    {
-      id: 'beneficiary',
-      header: t('admin.withdrawals.columns.beneficiary'),
-      cell: ({ row }) => <BeneficiaryCell {...row.original} />,
-    },
-    {
-      id: 'balance',
-      header: t('admin.withdrawals.columns.balance'),
-      meta: { numeric: true },
-      cell: ({ row }) => (
-        <span className={row.original.balance < 0 ? 'text-ebio-coral-600 font-medium' : 'font-medium'}>{formatAmount(row.original.balance)}</span>
-      ),
-    },
-    {
-      id: 'updatedAt',
-      header: t('admin.withdrawals.columns.updatedAt'),
-      meta: { hideBelow: 'md' },
-      cell: ({ row }) => <span className="text-muted-foreground">{new Date(row.original.updatedAt).toLocaleDateString(i18n.language)}</span>,
-    },
-    {
-      id: 'actions',
-      header: '',
-      meta: { align: 'right' },
-      cell: ({ row }) => (
-        <div className="flex justify-end gap-2">
-          <Button asChild variant="ghost" size="sm">
-            <Link to={`/admin/reversements/portefeuilles/${row.original.id}`}>
-              <History className="mr-1 h-4 w-4" />
-              {t('admin.withdrawals.history')}
-            </Link>
-          </Button>
-          {row.original.balance > 0 && (
-            <Can action="manage" subject="Withdrawal">
-              <Button variant="outline" size="sm" onClick={() => setDebitTarget(row.original)}>
-                <MinusCircle className="mr-1 h-4 w-4" />
-                {t('admin.withdrawals.debit.action')}
-              </Button>
-            </Can>
-          )}
-        </div>
-      ),
-    },
-  ], [t, i18n.language])
-
-  return (
-    <section className="space-y-4">
-      <SectionToolbar hint={t('admin.withdrawals.walletsHint')}>
-        <SearchBox
-          value={search}
-          onChange={setSearch}
-          onSubmit={() => list.setSearch(search)}
-          placeholder={t('admin.withdrawals.walletsSearch')}
-        />
-        <FilterSelect
-          value={list.values.type}
-          onValueChange={value => list.setFilter('type', value)}
-          allLabel={t('admin.withdrawals.allOwners')}
-          ariaLabel={t('admin.withdrawals.columns.beneficiary')}
-          options={['SUPPLIER', 'COURIER', 'USER'].map(value => ({ value, label: t(`admin.withdrawals.ownerTypes.${value}`) }))}
-        />
-        <FilterSelect
-          value={list.values.solde}
-          onValueChange={value => list.setFilter('solde', value)}
-          allLabel={t('admin.withdrawals.allBalances')}
-          ariaLabel={t('admin.withdrawals.columns.balance')}
-          options={['positive', 'negative', 'zero'].map(value => ({ value, label: t(`admin.withdrawals.balances.${value}`) }))}
-        />
-        <FilterSelect
-          value={list.values.ordre}
-          onValueChange={value => list.setFilter('ordre', value)}
-          allLabel={t('admin.withdrawals.sorts.balance_desc')}
-          ariaLabel={t('admin.withdrawals.sortLabel')}
-          options={['balance_asc', 'updated_desc'].map(value => ({ value, label: t(`admin.withdrawals.sorts.${value}`) }))}
-        />
-      </SectionToolbar>
-      {query.data && (list.q || list.values.type || list.values.solde) && (
-        <p className="text-muted-foreground text-sm">
-          {t('admin.withdrawals.filteredTotals', { owed: formatAmount(query.data.totalOwed), debt: formatAmount(query.data.totalDebt) })}
-        </p>
-      )}
-      <DataTable
-        columns={columns}
-        data={query.data?.items ?? []}
-        total={query.data?.total ?? 0}
-        page={list.page}
-        pageSize={WALLETS_PAGE_SIZE}
-        onPageChange={list.setPage}
-        isLoading={query.isLoading}
-        isFetching={query.isFetching}
-        isError={query.isError}
-        onRetry={() => query.refetch()}
-        labels={labels}
-      />
-      <DebitDialog wallet={debitTarget} onClose={() => setDebitTarget(null)} />
-    </section>
-  )
-}
-
-function TopupsSection({ list }: { list: ListParams }) {
-  const { t } = useTranslation()
-  const [search, setSearch] = useState(list.q)
-
-  return (
-    <section className="space-y-4">
-      <SectionToolbar hint={t('admin.withdrawals.topupsHint')}>
-        <SearchBox
-          value={search}
-          onChange={setSearch}
-          onSubmit={() => list.setSearch(search)}
-          placeholder={t('admin.withdrawals.topupsSearch')}
-        />
-        <FilterSelect
-          value={list.values.statutRecharge}
-          onValueChange={value => list.setFilter('statutRecharge', value)}
-          allLabel={t('admin.withdrawals.allStatuses')}
-          ariaLabel={t('admin.withdrawals.columns.status')}
-          options={TOPUP_STATUSES.map(value => ({ value, label: t(`admin.withdrawals.topupStatus.${value}`) }))}
-        />
-      </SectionToolbar>
-      <TopupsTable
-        status={list.values.statutRecharge || undefined}
-        q={list.q || undefined}
-        page={list.page}
-        onPageChange={list.setPage}
-      />
-    </section>
-  )
-}
-
-/** Search on submit or on leaving the field, not on every keystroke. */
-function SearchBox({ value, onChange, onSubmit, placeholder }: {
-  value: string
-  onChange: (value: string) => void
-  onSubmit: () => void
-  placeholder: string
-}) {
-  return (
-    <form
-      onSubmit={(event) => {
-        event.preventDefault()
-        onSubmit()
-      }}
-    >
-      <Input
-        type="search"
-        className="h-10 min-w-56"
-        value={value}
-        placeholder={placeholder}
-        aria-label={placeholder}
-        onChange={event => onChange(event.target.value)}
-        onBlur={onSubmit}
-      />
-    </form>
-  )
-}
-
 function SectionToolbar({ hint, children }: { hint: string, children?: ReactNode }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3">
@@ -623,21 +430,5 @@ function RejectDialog({ target, onClose, onSubmit, isPending }: {
         </DialogFooter>
       </DialogContent>
     </Dialog>
-  )
-}
-
-function BalanceCard({ label, hint, value, isLoading, highlight = false }: { label: string, hint: string, value: string, isLoading: boolean, highlight?: boolean }) {
-  return (
-    <Card>
-      <CardHeader className="pb-2">
-        <CardTitle className="text-muted-foreground text-sm font-medium">{label}</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {isLoading
-          ? <Skeleton className="h-8 w-32" />
-          : <p className={`font-mono text-2xl font-bold ${highlight ? 'text-primary' : ''}`}>{value}</p>}
-        <p className="text-muted-foreground mt-1 text-xs">{hint}</p>
-      </CardContent>
-    </Card>
   )
 }

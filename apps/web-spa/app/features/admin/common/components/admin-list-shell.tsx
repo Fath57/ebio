@@ -27,6 +27,8 @@ interface AdminListShellProps<T> {
   description: string
   /** Main actions of the page (create, export), top right. */
   actions?: ReactNode
+  /** Key figures (totals, balances), between the header and the tabs. */
+  summary?: ReactNode
   /** Status tabs with their counts, between the header and the toolbar. */
   statusTabs?: {
     tabs: StatusTab[]
@@ -69,6 +71,7 @@ export function AdminListShell<T>({
   title,
   description,
   actions,
+  summary,
   statusTabs,
   searchValue = '',
   onSearchChange,
@@ -104,6 +107,8 @@ export function AdminListShell<T>({
         </div>
         {actions && <div className="flex items-center gap-2">{actions}</div>}
       </div>
+
+      {summary}
 
       {statusTabs && <StatusTabs {...statusTabs} />}
 

@@ -161,7 +161,8 @@
       "catalog": "Catalogue",
       "suppliers": "Fournisseurs",
       "community": "Communauté",
-      "config": "Configuration"
+      "config": "Configuration",
+      "money": "Argent"
     },
     "logout": "Déconnexion",
     "moderation": "Modération",
@@ -188,7 +189,9 @@
     "couriers": "Livreurs",
     "deliveries": "Livraisons",
     "team": "Équipe",
-    "certifications": "Labels et certifications"
+    "certifications": "Labels et certifications",
+    "wallets": "Portefeuilles",
+    "topups": "Recharges"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -2169,11 +2172,7 @@
     },
     "withdrawals": {
       "title": "Reversements",
-      "description": "L’argent des boutiques et des livreurs : numéros à valider, demandes de reversement, soldes",
-      "totalOwed": "Dû aux boutiques et livreurs",
-      "totalOwedHint": "Somme des soldes positifs de tous les portefeuilles",
-      "totalDebt": "Dettes envers eBio",
-      "totalDebtHint": "Commissions sur ventes et courses en espèces non encore absorbées",
+      "description": "L’argent qui sort : les demandes de reversement des boutiques et des livreurs, et les numéros Mobile Money à valider.",
       "numbersTitle": "Numéros à valider",
       "numbersHint": "Vérifiez que le numéro Mobile Money appartient bien au titulaire du compte (boutique ou livreur) avant de valider. Un numéro validé peut recevoir des reversements.",
       "numbersEmpty": "Aucun numéro en attente de validation",
@@ -2201,26 +2200,9 @@
         "date": "Date",
         "amount": "Montant",
         "status": "Statut",
-        "user": "Utilisateur",
         "reference": "Réf. prestataire",
-        "beneficiary": "Bénéficiaire",
-        "balance": "Solde",
-        "updatedAt": "Mis à jour",
-        "type": "Type",
-        "description": "Libellé",
-        "balanceAfter": "Solde après"
+        "beneficiary": "Bénéficiaire"
       },
-      "topupsTitle": "Recharges des portefeuilles",
-      "topupsHint": "Les recharges de portefeuille par paiement en ligne. Une recharge en attente n’a pas encore été confirmée par le prestataire ; une recharge échouée n’a rien crédité.",
-      "topupsEmpty": "Aucune recharge pour le moment",
-      "topupStatus": {
-        "PENDING": "En attente",
-        "COMPLETED": "Créditée",
-        "FAILED": "Échouée"
-      },
-      "walletsTitle": "Soldes des portefeuilles",
-      "walletsHint": "Un solde positif est dû au bénéficiaire ; un solde négatif est une commission que le bénéficiaire doit à eBio (ventes ou courses payées en espèces).",
-      "walletsEmpty": "Aucun portefeuille pour le moment",
       "ownerTypes": {
         "SUPPLIER": "Fournisseur",
         "COURIER": "Livreur",
@@ -2231,68 +2213,9 @@
       "approveBody": "{{amount}} seront envoyés à {{name}} sur le {{number}}. Le paiement part immédiatement et ne peut pas être annulé.",
       "sections": {
         "demandes": "Demandes de reversement",
-        "numeros": "Numéros à valider",
-        "portefeuilles": "Portefeuilles",
-        "recharges": "Recharges"
+        "numeros": "Numéros à valider"
       },
-      "walletsSearch": "Rechercher un titulaire…",
-      "allOwners": "Tous les titulaires",
-      "allBalances": "Tous les soldes",
-      "balances": {
-        "positive": "Solde positif",
-        "negative": "En dette",
-        "zero": "Solde nul"
-      },
-      "sortLabel": "Tri",
-      "sorts": {
-        "balance_desc": "Solde décroissant",
-        "balance_asc": "Solde croissant",
-        "updated_desc": "Dernier mouvement"
-      },
-      "filteredTotals": "Sur cette sélection : {{owed}} dus aux titulaires, {{debt}} de dettes.",
-      "debit": {
-        "action": "Débiter",
-        "title": "Débiter le portefeuille",
-        "body": "Portefeuille de {{name}}, solde actuel {{balance}}. Le débit apparaît dans son historique avec le motif.",
-        "amount": "Montant à débiter",
-        "tooMuch": "Le montant dépasse le solde du portefeuille.",
-        "reason": "Motif",
-        "reasonPlaceholder": "Ex : correction d’un remboursement crédité par erreur",
-        "reasonHint": "Le titulaire lit ce motif dans son historique et dans la notification.",
-        "notify": "Prévenir le titulaire (notification push et dans l’app)",
-        "confirm": "Débiter {{amount}}",
-        "done": "{{amount}} débités. Nouveau solde : {{balance}}."
-      },
-      "providerFailure": "Prestataire : {{reason}}",
-      "history": "Historique",
-      "topupsSearch": "Nom ou e-mail du payeur…",
-      "topupsEmptyFiltered": "Aucune recharge ne correspond à ces filtres",
-      "walletPage": {
-        "back": "Portefeuilles",
-        "notFound": "Ce portefeuille est introuvable.",
-        "updatedAt": "Dernier mouvement le {{date}}",
-        "movements": "Mouvements",
-        "movementsEmpty": "Aucun mouvement sur ce portefeuille"
-      },
-      "movementTypes": {
-        "TOPUP": "Recharge",
-        "ORDER_PAYMENT": "Paiement de commande",
-        "SALE_CREDIT": "Vente",
-        "COMMISSION_DEBIT": "Commission",
-        "WITHDRAWAL": "Reversement",
-        "WITHDRAWAL_REFUND": "Reversement annulé",
-        "REFUND": "Remboursement",
-        "ADJUSTMENT": "Ajustement",
-        "PROMO_COMPENSATION": "Compensation promotion",
-        "DELIVERY_EARNING": "Gain de course",
-        "DELIVERY_COMMISSION": "Commission livraison",
-        "TIP_PAYMENT": "Pourboire versé",
-        "TIP_EARNING": "Pourboire reçu",
-        "DELIVERY_SPONSORSHIP": "Livraison offerte",
-        "BANNER_PAYMENT": "Bannière sponsorisée",
-        "BANNER_REFUND": "Bannière remboursée",
-        "REFERRAL_REWARD": "Parrainage"
-      }
+      "providerFailure": "Prestataire : {{reason}}"
     },
     "couriers": {
       "title": "Livreurs",
@@ -2344,7 +2267,7 @@
         "walletDebtHint": "Le livreur doit cette commission à eBio (courses payées en espèces)",
         "walletOwedHint": "Montant dû au livreur",
         "walletEmpty": "Aucun portefeuille : le livreur n’a pas encore effectué de course.",
-        "walletLink": "Voir les reversements"
+        "walletLink": "Voir l’historique du portefeuille"
       },
       "actions": {
         "approve": "Approuver",
@@ -2614,6 +2537,96 @@
       "download": "Télécharger en Excel",
       "sent": "Relevé envoyé à {{email}}.",
       "failed": "Le relevé n'a pas pu être généré."
+    },
+    "wallets": {
+      "title": "Portefeuilles",
+      "description": "Ce que détient chaque compte : boutiques, livreurs et acheteurs. Ouvrez un portefeuille pour voir tout son historique.",
+      "search": "Rechercher un titulaire…",
+      "empty": "Aucun portefeuille pour le moment",
+      "totalOwed": "Dû aux boutiques et livreurs",
+      "totalOwedHint": "Somme des soldes positifs : ce que eBio doit aux titulaires",
+      "totalDebt": "Dettes envers eBio",
+      "totalDebtHint": "Commissions sur ventes et courses en espèces non encore absorbées",
+      "allOwners": "Tous les titulaires",
+      "allBalances": "Tous les soldes",
+      "sortLabel": "Tri",
+      "filteredTotals": "Sur cette sélection : {{owed}} dus aux titulaires, {{debt}} de dettes.",
+      "balances": {
+        "positive": "Solde positif",
+        "negative": "En dette",
+        "zero": "Solde nul"
+      },
+      "sorts": {
+        "balance_desc": "Solde décroissant",
+        "balance_asc": "Solde croissant",
+        "updated_desc": "Dernier mouvement"
+      },
+      "history": "Historique",
+      "movementTypes": {
+        "TOPUP": "Recharge",
+        "ORDER_PAYMENT": "Paiement de commande",
+        "SALE_CREDIT": "Vente",
+        "COMMISSION_DEBIT": "Commission",
+        "WITHDRAWAL": "Reversement",
+        "WITHDRAWAL_REFUND": "Reversement annulé",
+        "REFUND": "Remboursement",
+        "ADJUSTMENT": "Ajustement",
+        "PROMO_COMPENSATION": "Compensation promotion",
+        "DELIVERY_EARNING": "Gain de course",
+        "DELIVERY_COMMISSION": "Commission livraison",
+        "TIP_PAYMENT": "Pourboire versé",
+        "TIP_EARNING": "Pourboire reçu",
+        "DELIVERY_SPONSORSHIP": "Livraison offerte",
+        "BANNER_PAYMENT": "Bannière sponsorisée",
+        "BANNER_REFUND": "Bannière remboursée",
+        "REFERRAL_REWARD": "Parrainage"
+      },
+      "debit": {
+        "action": "Débiter",
+        "title": "Débiter le portefeuille",
+        "body": "Portefeuille de {{name}}, solde actuel {{balance}}. Le débit apparaît dans son historique avec le motif.",
+        "amount": "Montant à débiter",
+        "tooMuch": "Le montant dépasse le solde du portefeuille.",
+        "reason": "Motif",
+        "reasonPlaceholder": "Ex : correction d’un remboursement crédité par erreur",
+        "reasonHint": "Le titulaire lit ce motif dans son historique et dans la notification.",
+        "notify": "Prévenir le titulaire (notification push et dans l’app)",
+        "confirm": "Débiter {{amount}}",
+        "done": "{{amount}} débités. Nouveau solde : {{balance}}."
+      },
+      "topupStatus": {
+        "PENDING": "En attente",
+        "COMPLETED": "Créditée",
+        "FAILED": "Échouée"
+      },
+      "columns": {
+        "owner": "Titulaire",
+        "payer": "Payeur",
+        "date": "Date",
+        "amount": "Montant",
+        "status": "Statut",
+        "reference": "Réf. prestataire",
+        "balance": "Solde",
+        "updatedAt": "Mis à jour",
+        "type": "Type",
+        "description": "Libellé",
+        "balanceAfter": "Solde après"
+      },
+      "detail": {
+        "notFound": "Ce portefeuille est introuvable.",
+        "updatedAt": "Dernier mouvement le {{date}}",
+        "movements": "Mouvements",
+        "movementsEmpty": "Aucun mouvement sur ce portefeuille",
+        "topups": "Recharges",
+        "topupsEmpty": "Aucune recharge sur ce portefeuille"
+      },
+      "topups": {
+        "title": "Recharges",
+        "description": "L’argent qui entre : chaque recharge de portefeuille payée en ligne, par un acheteur, une boutique ou un livreur. En attente : pas encore confirmée par le prestataire ; échouée : rien n’a été crédité.",
+        "search": "Nom ou e-mail du payeur…",
+        "empty": "Aucune recharge pour le moment",
+        "emptyFiltered": "Aucune recharge ne correspond à ces filtres"
+      }
     }
   },
   "errorCodes": {
