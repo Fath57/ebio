@@ -93,6 +93,7 @@ export default [
       route('admin/commissions', 'features/admin/commissions/pages/admin-commissions-page.tsx'),
       route('admin/comptes', 'features/admin/platform-accounts/pages/platform-accounts-page.tsx'),
       route('admin/reversements', 'features/admin/withdrawals/pages/admin-withdrawals-page.tsx'),
+      route('admin/reversements/portefeuilles/:walletId', 'features/admin/withdrawals/pages/admin-wallet-detail-page.tsx'),
       route('admin/codes-promo', 'features/admin/promo-codes/pages/admin-promo-codes-page.tsx'),
       route('admin/avis-signales', 'features/admin/review-moderation/pages/review-moderation-page.tsx'),
       route('admin/support', 'features/admin/support/pages/support-inbox-page.tsx'),

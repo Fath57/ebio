@@ -1544,6 +1544,33 @@ export const zCreateReview = z.object({
 });
 
 /**
+ * Sales Statement Period
+ *
+ * Calendar days, both included, read in the shop's own time zone
+ */
+export const zSalesStatementPeriod = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+});
+
+/**
+ * Send Sales Statement
+ *
+ * Sends the Excel statement of the period as an e-mail attachment
+ */
+export const zSendSalesStatement = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  email: z.optional(
+    z
+      .email()
+      .regex(
+        /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+      ),
+  ),
+});
+
+/**
  * CompleteModule
  *
  * Answers submitted to complete a training module quiz
@@ -5789,6 +5816,8 @@ export const zWalletAdminControllerListTopupsData = z.object({
   path: z.optional(z.never()),
   query: z.object({
     status: z.string(),
+    q: z.string(),
+    walletId: z.string(),
     page: z.string(),
     limit: z.string(),
   }),
@@ -5808,6 +5837,25 @@ export const zWalletAdminControllerListWalletsData = z.object({
     ownerType: z.string(),
     balance: z.string(),
     sort: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zWalletAdminControllerGetWalletData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zWalletAdminControllerWalletTransactionsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.object({
     page: z.string(),
     limit: z.string(),
   }),
@@ -7841,6 +7889,14 @@ export const zReferralsControllerMeData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zReferralsControllerInvitationData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    code: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zReferralsControllerClaimData = z.object({
   body: z.object({
     code: z
@@ -9351,5 +9407,67 @@ export const zBusinessCardsControllerGenerateData = z.object({
     all: z.optional(z.boolean()),
   }),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierSalesStatementsControllerCreateLinkData = z.object({
+  body: z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSupplierSalesStatementsControllerSendByEmailData = z.object({
+  body: z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    email: z.optional(
+      z
+        .email()
+        .regex(
+          /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+        ),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zSalesStatementDownloadControllerDownloadData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    token: z.string(),
+  }),
+});
+
+export const zAdminSalesStatementsControllerDownloadData = z.object({
+  body: z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  }),
+  path: z.object({
+    supplierId: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminSalesStatementsControllerSendByEmailData = z.object({
+  body: z.object({
+    from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+    email: z.optional(
+      z
+        .email()
+        .regex(
+          /^(?!\.)(?!.*\.\.)([A-Za-z0-9_'+\-\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\-]*\.)+[A-Za-z]{2,}$/,
+        ),
+    ),
+  }),
+  path: z.object({
+    supplierId: z.string(),
+  }),
   query: z.optional(z.never()),
 });

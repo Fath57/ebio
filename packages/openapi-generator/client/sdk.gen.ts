@@ -186,6 +186,10 @@ import type {
   AdminReferralRewardsControllerGetResponses,
   AdminReferralRewardsControllerUpdateData,
   AdminReferralRewardsControllerUpdateResponses,
+  AdminSalesStatementsControllerDownloadData,
+  AdminSalesStatementsControllerDownloadResponses,
+  AdminSalesStatementsControllerSendByEmailData,
+  AdminSalesStatementsControllerSendByEmailResponses,
   AdminUsersControllerBanData,
   AdminUsersControllerBanResponses,
   AdminUsersControllerGetByIdData,
@@ -650,6 +654,8 @@ import type {
   RecommendationsControllerListResponses,
   ReferralsControllerClaimData,
   ReferralsControllerClaimResponses,
+  ReferralsControllerInvitationData,
+  ReferralsControllerInvitationResponses,
   ReferralsControllerMeData,
   ReferralsControllerMeResponses,
   RolesControllerAssignRoleData,
@@ -686,6 +692,8 @@ import type {
   SalesPointsControllerRemoveResponses,
   SalesPointsControllerUpdateData,
   SalesPointsControllerUpdateResponses,
+  SalesStatementDownloadControllerDownloadData,
+  SalesStatementDownloadControllerDownloadResponses,
   SearchControllerAutocompleteData,
   SearchControllerAutocompleteResponses,
   SearchControllerGetCategoriesData,
@@ -734,6 +742,10 @@ import type {
   SupplierPromotionsControllerListResponses,
   SupplierPromotionsControllerRemoveData,
   SupplierPromotionsControllerRemoveResponses,
+  SupplierSalesStatementsControllerCreateLinkData,
+  SupplierSalesStatementsControllerCreateLinkResponses,
+  SupplierSalesStatementsControllerSendByEmailData,
+  SupplierSalesStatementsControllerSendByEmailResponses,
   SuppliersControllerCreateDeliveryZoneData,
   SuppliersControllerCreateDeliveryZoneResponses,
   SuppliersControllerDeleteDeliveryZoneData,
@@ -816,6 +828,8 @@ import type {
   WalletAdminControllerActOnWithdrawalResponses,
   WalletAdminControllerDebitWalletData,
   WalletAdminControllerDebitWalletResponses,
+  WalletAdminControllerGetWalletData,
+  WalletAdminControllerGetWalletResponses,
   WalletAdminControllerListNumbersData,
   WalletAdminControllerListNumbersResponses,
   WalletAdminControllerListTopupsData,
@@ -830,6 +844,8 @@ import type {
   WalletAdminControllerPlatformTransactionsResponses,
   WalletAdminControllerWalletsOverviewData,
   WalletAdminControllerWalletsOverviewResponses,
+  WalletAdminControllerWalletTransactionsData,
+  WalletAdminControllerWalletTransactionsResponses,
   WalletControllerGetMyTopupsData,
   WalletControllerGetMyTopupsResponses,
   WalletControllerGetMyWalletData,
@@ -2959,6 +2975,28 @@ export const walletAdminControllerListWallets = <
     ThrowOnError
   >({ url: "/api/admin/wallets/list", ...options });
 
+export const walletAdminControllerGetWallet = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerGetWalletData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerGetWalletResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/wallets/{id}", ...options });
+
+export const walletAdminControllerWalletTransactions = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<WalletAdminControllerWalletTransactionsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    WalletAdminControllerWalletTransactionsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/wallets/{id}/transactions", ...options });
+
 export const walletAdminControllerDebitWallet = <
   ThrowOnError extends boolean = false,
 >(
@@ -4931,6 +4969,17 @@ export const referralsControllerMe = <ThrowOnError extends boolean = false>(
     ThrowOnError
   >({ url: "/api/referrals/me", ...options });
 
+export const referralsControllerInvitation = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<ReferralsControllerInvitationData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    ReferralsControllerInvitationResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/referrals/codes/{code}", ...options });
+
 export const referralsControllerClaim = <ThrowOnError extends boolean = false>(
   options: Options<ReferralsControllerClaimData, ThrowOnError>,
 ) =>
@@ -6594,6 +6643,95 @@ export const businessCardsControllerGenerate = <
     ThrowOnError
   >({
     url: "/api/admin/business-cards",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierSalesStatementsControllerCreateLink = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    SupplierSalesStatementsControllerCreateLinkData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    SupplierSalesStatementsControllerCreateLinkResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/sales-statement/link",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const supplierSalesStatementsControllerSendByEmail = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<
+    SupplierSalesStatementsControllerSendByEmailData,
+    ThrowOnError
+  >,
+) =>
+  (options.client ?? client).post<
+    SupplierSalesStatementsControllerSendByEmailResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/suppliers/me/sales-statement/email",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const salesStatementDownloadControllerDownload = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<SalesStatementDownloadControllerDownloadData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    SalesStatementDownloadControllerDownloadResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/sales-statements/download", ...options });
+
+export const adminSalesStatementsControllerDownload = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminSalesStatementsControllerDownloadData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminSalesStatementsControllerDownloadResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/suppliers/{supplierId}/sales-statement",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminSalesStatementsControllerSendByEmail = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminSalesStatementsControllerSendByEmailData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminSalesStatementsControllerSendByEmailResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/suppliers/{supplierId}/sales-statement/email",
     ...options,
     headers: {
       "Content-Type": "application/json",

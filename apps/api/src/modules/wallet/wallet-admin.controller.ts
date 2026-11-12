@@ -16,6 +16,8 @@ import { PlatformAccountsService } from './platform-accounts.service'
 import { TopupService } from './topup.service'
 import { WithdrawalsService } from './withdrawals.service'
 
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
 @Controller('admin')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
 @Roles('ADMIN')
@@ -105,10 +107,18 @@ export class WalletAdminController {
   @Get('wallet-topups')
   async listTopups(
     @Query('status') status?: string,
+    @Query('q') q?: string,
+    @Query('walletId') walletId?: string,
     @Query('page') page: string = '1',
     @Query('limit') limit: string = '20',
   ) {
-    return this.topupService.adminList(status, Number(page), Number(limit))
+    return this.topupService.adminList({
+      status: status || undefined,
+      q: q?.trim() || undefined,
+      walletId: walletId && UUID.test(walletId) ? walletId : undefined,
+      page: Number(page) || 1,
+      limit: Number(limit) || 20,
+    })
   }
 
   @CanRead('Payment')
@@ -136,6 +146,22 @@ export class WalletAdminController {
       page: Number(page) || 1,
       limit: Number(limit) || 20,
     })
+  }
+
+  @CanRead('Payment')
+  @Get('wallets/:id')
+  async getWallet(@Param('id', new ParseUUIDPipe()) id: string) {
+    return this.adminWallets.get(id)
+  }
+
+  @CanRead('Payment')
+  @Get('wallets/:id/transactions')
+  async walletTransactions(
+    @Param('id', new ParseUUIDPipe()) id: string,
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+  ) {
+    return this.adminWallets.transactions(id, Number(page) || 1, Number(limit) || 20)
   }
 
   /** Staff debit of a wallet: written in the owner's history, the audit trail, and told to the owner. */

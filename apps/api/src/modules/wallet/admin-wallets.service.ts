@@ -33,6 +33,23 @@ const FROM = `FROM wallets w
   LEFT JOIN courier_profiles cp ON cp.id = w.courier_profile_id
   LEFT JOIN users u ON u.id = w.user_id`
 
+const ROW_COLUMNS = `w.id, w.balance, w."updatedAt" AS updated_at,
+  s.id AS supplier_id, cp.id AS courier_id, u.id AS user_id,
+  ${OWNER_NAME} AS owner_name`
+
+function toWalletRow(row: Record<string, unknown>) {
+  return {
+    id: row.id as string,
+    balance: Number(row.balance ?? 0),
+    ownerType: (row.supplier_id ? 'SUPPLIER' : row.courier_id ? 'COURIER' : 'USER') as WalletOwnerType,
+    ownerName: (row.owner_name as string) || '—',
+    supplierId: (row.supplier_id as string | null) ?? null,
+    courierId: (row.courier_id as string | null) ?? null,
+    userId: (row.user_id as string | null) ?? null,
+    updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
+  }
+}
+
 /** The SQL condition and values for the wallet list; eBio's own accounts are never in it. */
 export function buildWalletConditions(filters: Omit<AdminWalletFilters, 'page' | 'limit' | 'sort'>): { where: string, values: unknown[] } {
   const conditions = ['w.platform_account IS NULL']
@@ -85,9 +102,7 @@ export class AdminWalletsService {
         values,
       ) as Promise<Array<Record<string, unknown>>>,
       connection.execute(
-        `SELECT w.id, w.balance, w."updatedAt" AS updated_at,
-                s.id AS supplier_id, cp.id AS courier_id, u.id AS user_id,
-                ${OWNER_NAME} AS owner_name
+        `SELECT ${ROW_COLUMNS}
          ${FROM} WHERE ${where}
          ORDER BY ${SORTS[filters.sort ?? 'balance_desc']}, w.id
          LIMIT ? OFFSET ?`,
@@ -96,22 +111,31 @@ export class AdminWalletsService {
     ])
 
     return {
-      items: rows.map(row => ({
-        id: row.id as string,
-        balance: Number(row.balance ?? 0),
-        ownerType: (row.supplier_id ? 'SUPPLIER' : row.courier_id ? 'COURIER' : 'USER') as WalletOwnerType,
-        ownerName: (row.owner_name as string) || '—',
-        supplierId: (row.supplier_id as string | null) ?? null,
-        courierId: (row.courier_id as string | null) ?? null,
-        userId: (row.user_id as string | null) ?? null,
-        updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
-      })),
+      items: rows.map(toWalletRow),
       total: Number(totals?.count ?? 0),
       page,
       limit,
       totalOwed: Number(totals?.owed ?? 0),
       totalDebt: Number(totals?.debt ?? 0),
     }
+  }
+
+  /** One wallet, as a row of the list; eBio's own accounts are not reachable here. */
+  async get(walletId: string) {
+    const [row] = await this.em.getConnection().execute(
+      `SELECT ${ROW_COLUMNS} ${FROM} WHERE w.id = ? AND w.platform_account IS NULL`,
+      [walletId],
+    ) as Array<Record<string, unknown>>
+    if (!row) {
+      throw new NotFoundException('Portefeuille introuvable')
+    }
+    return toWalletRow(row)
+  }
+
+  /** The wallet's ledger, newest first: every credit and debit with the balance after it. */
+  async transactions(walletId: string, page: number, limit: number) {
+    await this.get(walletId)
+    return this.walletService.getTransactions(walletId, Math.max(page, 1), Math.min(Math.max(limit, 1), 100))
   }
 
   /**

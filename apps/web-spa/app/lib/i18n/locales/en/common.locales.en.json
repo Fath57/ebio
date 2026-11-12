@@ -2205,10 +2205,13 @@
         "reference": "Provider ref.",
         "beneficiary": "Beneficiary",
         "balance": "Balance",
-        "updatedAt": "Updated"
+        "updatedAt": "Updated",
+        "type": "Type",
+        "description": "Label",
+        "balanceAfter": "Balance after"
       },
       "topupsTitle": "Wallet topups",
-      "topupsHint": "Buyer topups by online payment. A pending topup has not been confirmed by the provider yet; a failed one credited nothing.",
+      "topupsHint": "Wallet top-ups paid online. A pending top-up has not been confirmed by the provider yet; a failed one credited nothing.",
       "topupsEmpty": "No topup yet",
       "topupStatus": {
         "PENDING": "Pending",
@@ -2260,7 +2263,36 @@
         "confirm": "Debit {{amount}}",
         "done": "{{amount}} debited. New balance: {{balance}}."
       },
-      "providerFailure": "Provider: {{reason}}"
+      "providerFailure": "Provider: {{reason}}",
+      "history": "History",
+      "topupsSearch": "Payer name or e-mail…",
+      "topupsEmptyFiltered": "No top-up matches these filters",
+      "walletPage": {
+        "back": "Wallets",
+        "notFound": "This wallet cannot be found.",
+        "updatedAt": "Last movement on {{date}}",
+        "movements": "Movements",
+        "movementsEmpty": "No movement on this wallet"
+      },
+      "movementTypes": {
+        "TOPUP": "Top-up",
+        "ORDER_PAYMENT": "Order payment",
+        "SALE_CREDIT": "Sale",
+        "COMMISSION_DEBIT": "Commission",
+        "WITHDRAWAL": "Payout",
+        "WITHDRAWAL_REFUND": "Payout cancelled",
+        "REFUND": "Refund",
+        "ADJUSTMENT": "Adjustment",
+        "PROMO_COMPENSATION": "Promotion compensation",
+        "DELIVERY_EARNING": "Delivery earning",
+        "DELIVERY_COMMISSION": "Delivery commission",
+        "TIP_PAYMENT": "Tip paid",
+        "TIP_EARNING": "Tip received",
+        "DELIVERY_SPONSORSHIP": "Free delivery",
+        "BANNER_PAYMENT": "Sponsored banner",
+        "BANNER_REFUND": "Banner refunded",
+        "REFERRAL_REWARD": "Referral"
+      }
     },
     "couriers": {
       "title": "Couriers",

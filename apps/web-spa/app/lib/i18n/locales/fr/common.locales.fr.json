@@ -2205,10 +2205,13 @@
         "reference": "Réf. prestataire",
         "beneficiary": "Bénéficiaire",
         "balance": "Solde",
-        "updatedAt": "Mis à jour"
+        "updatedAt": "Mis à jour",
+        "type": "Type",
+        "description": "Libellé",
+        "balanceAfter": "Solde après"
       },
       "topupsTitle": "Recharges des portefeuilles",
-      "topupsHint": "Les recharges des acheteurs par paiement en ligne. Une recharge en attente n’a pas encore été confirmée par le prestataire ; une recharge échouée n’a rien crédité.",
+      "topupsHint": "Les recharges de portefeuille par paiement en ligne. Une recharge en attente n’a pas encore été confirmée par le prestataire ; une recharge échouée n’a rien crédité.",
       "topupsEmpty": "Aucune recharge pour le moment",
       "topupStatus": {
         "PENDING": "En attente",
@@ -2260,7 +2263,36 @@
         "confirm": "Débiter {{amount}}",
         "done": "{{amount}} débités. Nouveau solde : {{balance}}."
       },
-      "providerFailure": "Prestataire : {{reason}}"
+      "providerFailure": "Prestataire : {{reason}}",
+      "history": "Historique",
+      "topupsSearch": "Nom ou e-mail du payeur…",
+      "topupsEmptyFiltered": "Aucune recharge ne correspond à ces filtres",
+      "walletPage": {
+        "back": "Portefeuilles",
+        "notFound": "Ce portefeuille est introuvable.",
+        "updatedAt": "Dernier mouvement le {{date}}",
+        "movements": "Mouvements",
+        "movementsEmpty": "Aucun mouvement sur ce portefeuille"
+      },
+      "movementTypes": {
+        "TOPUP": "Recharge",
+        "ORDER_PAYMENT": "Paiement de commande",
+        "SALE_CREDIT": "Vente",
+        "COMMISSION_DEBIT": "Commission",
+        "WITHDRAWAL": "Reversement",
+        "WITHDRAWAL_REFUND": "Reversement annulé",
+        "REFUND": "Remboursement",
+        "ADJUSTMENT": "Ajustement",
+        "PROMO_COMPENSATION": "Compensation promotion",
+        "DELIVERY_EARNING": "Gain de course",
+        "DELIVERY_COMMISSION": "Commission livraison",
+        "TIP_PAYMENT": "Pourboire versé",
+        "TIP_EARNING": "Pourboire reçu",
+        "DELIVERY_SPONSORSHIP": "Livraison offerte",
+        "BANNER_PAYMENT": "Bannière sponsorisée",
+        "BANNER_REFUND": "Bannière remboursée",
+        "REFERRAL_REWARD": "Parrainage"
+      }
     },
     "couriers": {
       "title": "Livreurs",

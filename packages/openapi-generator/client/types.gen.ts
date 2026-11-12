@@ -1856,6 +1856,27 @@ export type CreateReview = {
 };
 
 /**
+ * Sales Statement Period
+ *
+ * Calendar days, both included, read in the shop's own time zone
+ */
+export type SalesStatementPeriod = {
+  from: string;
+  to: string;
+};
+
+/**
+ * Send Sales Statement
+ *
+ * Sends the Excel statement of the period as an e-mail attachment
+ */
+export type SendSalesStatement = {
+  from: string;
+  to: string;
+  email?: string;
+};
+
+/**
  * CompleteModule
  *
  * Answers submitted to complete a training module quiz
@@ -6487,6 +6508,8 @@ export type WalletAdminControllerListTopupsData = {
   path?: never;
   query: {
     status: string;
+    q: string;
+    walletId: string;
     page: string;
     limit: string;
   };
@@ -6523,6 +6546,35 @@ export type WalletAdminControllerListWalletsData = {
 };
 
 export type WalletAdminControllerListWalletsResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerGetWalletData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/wallets/{id}";
+};
+
+export type WalletAdminControllerGetWalletResponses = {
+  200: unknown;
+};
+
+export type WalletAdminControllerWalletTransactionsData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/wallets/{id}/transactions";
+};
+
+export type WalletAdminControllerWalletTransactionsResponses = {
   200: unknown;
 };
 
@@ -9308,6 +9360,19 @@ export type ReferralsControllerMeResponses = {
   200: unknown;
 };
 
+export type ReferralsControllerInvitationData = {
+  body?: never;
+  path: {
+    code: string;
+  };
+  query?: never;
+  url: "/api/referrals/codes/{code}";
+};
+
+export type ReferralsControllerInvitationResponses = {
+  200: unknown;
+};
+
 export type ReferralsControllerClaimData = {
   /**
    * ClaimReferral
@@ -11422,5 +11487,100 @@ export type BusinessCardsControllerGenerateData = {
 };
 
 export type BusinessCardsControllerGenerateResponses = {
+  201: unknown;
+};
+
+export type SupplierSalesStatementsControllerCreateLinkData = {
+  /**
+   * Sales Statement Period
+   *
+   * Calendar days, both included, read in the shop's own time zone
+   */
+  body: {
+    from: string;
+    to: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/sales-statement/link";
+};
+
+export type SupplierSalesStatementsControllerCreateLinkResponses = {
+  201: unknown;
+};
+
+export type SupplierSalesStatementsControllerSendByEmailData = {
+  /**
+   * Send Sales Statement
+   *
+   * Sends the Excel statement of the period as an e-mail attachment
+   */
+  body: {
+    from: string;
+    to: string;
+    email?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/suppliers/me/sales-statement/email";
+};
+
+export type SupplierSalesStatementsControllerSendByEmailResponses = {
+  201: unknown;
+};
+
+export type SalesStatementDownloadControllerDownloadData = {
+  body?: never;
+  path?: never;
+  query: {
+    token: string;
+  };
+  url: "/api/sales-statements/download";
+};
+
+export type SalesStatementDownloadControllerDownloadResponses = {
+  200: unknown;
+};
+
+export type AdminSalesStatementsControllerDownloadData = {
+  /**
+   * Sales Statement Period
+   *
+   * Calendar days, both included, read in the shop's own time zone
+   */
+  body: {
+    from: string;
+    to: string;
+  };
+  path: {
+    supplierId: string;
+  };
+  query?: never;
+  url: "/api/admin/suppliers/{supplierId}/sales-statement";
+};
+
+export type AdminSalesStatementsControllerDownloadResponses = {
+  201: unknown;
+};
+
+export type AdminSalesStatementsControllerSendByEmailData = {
+  /**
+   * Send Sales Statement
+   *
+   * Sends the Excel statement of the period as an e-mail attachment
+   */
+  body: {
+    from: string;
+    to: string;
+    email?: string;
+  };
+  path: {
+    supplierId: string;
+  };
+  query?: never;
+  url: "/api/admin/suppliers/{supplierId}/sales-statement/email";
+};
+
+export type AdminSalesStatementsControllerSendByEmailResponses = {
   201: unknown;
 };

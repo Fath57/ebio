@@ -7087,6 +7087,22 @@
             }
           },
           {
+            "name": "q",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "walletId",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
             "name": "page",
             "required": true,
             "in": "query",
@@ -7159,6 +7175,68 @@
             "name": "sort",
             "required": true,
             "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/wallets/{id}": {
+      "get": {
+        "operationId": "WalletAdminController_getWallet",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/wallets/{id}/transactions": {
+      "get": {
+        "operationId": "WalletAdminController_walletTransactions",
+        "tags": [
+          "WalletAdmin"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
             "schema": {
               "type": "string"
             }
@@ -13662,6 +13740,29 @@
         }
       }
     },
+    "/api/referrals/codes/{code}": {
+      "get": {
+        "operationId": "ReferralsController_invitation",
+        "tags": [
+          "Referrals"
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/referrals/claim": {
       "post": {
         "operationId": "ReferralsController_claim",
@@ -18870,6 +18971,251 @@
           }
         }
       }
+    },
+    "/api/suppliers/me/sales-statement/link": {
+      "post": {
+        "operationId": "SupplierSalesStatementsController_createLink",
+        "tags": [
+          "SupplierSalesStatements"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Calendar days, both included, read in the shop's own time zone",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false,
+                "title": "Sales Statement Period",
+                "description": "Calendar days, both included, read in the shop's own time zone",
+                "examples": [
+                  {
+                    "from": "2026-11-01",
+                    "to": "2026-11-30"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/me/sales-statement/email": {
+      "post": {
+        "operationId": "SupplierSalesStatementsController_sendByEmail",
+        "tags": [
+          "SupplierSalesStatements"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Sends the Excel statement of the period as an e-mail attachment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false,
+                "title": "Send Sales Statement",
+                "description": "Sends the Excel statement of the period as an e-mail attachment",
+                "examples": [
+                  {
+                    "from": "2026-11-01",
+                    "to": "2026-11-30",
+                    "email": "comptable@example.com"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/sales-statements/download": {
+      "get": {
+        "operationId": "SalesStatementDownloadController_download",
+        "tags": [
+          "SalesStatementDownload"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/suppliers/{supplierId}/sales-statement": {
+      "post": {
+        "operationId": "AdminSalesStatementsController_download",
+        "tags": [
+          "AdminSalesStatements"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Calendar days, both included, read in the shop's own time zone",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false,
+                "title": "Sales Statement Period",
+                "description": "Calendar days, both included, read in the shop's own time zone",
+                "examples": [
+                  {
+                    "from": "2026-11-01",
+                    "to": "2026-11-30"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/suppliers/{supplierId}/sales-statement/email": {
+      "post": {
+        "operationId": "AdminSalesStatementsController_sendByEmail",
+        "tags": [
+          "AdminSalesStatements"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Sends the Excel statement of the period as an e-mail attachment",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "to": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                  }
+                },
+                "required": [
+                  "from",
+                  "to"
+                ],
+                "additionalProperties": false,
+                "title": "Send Sales Statement",
+                "description": "Sends the Excel statement of the period as an e-mail attachment",
+                "examples": [
+                  {
+                    "from": "2026-11-01",
+                    "to": "2026-11-30",
+                    "email": "comptable@example.com"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
     }
   },
   "components": {
@@ -23954,6 +24300,64 @@
         "additionalProperties": false,
         "title": "CreateReview",
         "description": "Submit a review for a supplier"
+      },
+      "Sales Statement Period": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false,
+        "title": "Sales Statement Period",
+        "description": "Calendar days, both included, read in the shop's own time zone",
+        "examples": [
+          {
+            "from": "2026-11-01",
+            "to": "2026-11-30"
+          }
+        ]
+      },
+      "Send Sales Statement": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "to": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "email": {
+            "type": "string",
+            "format": "email",
+            "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ],
+        "additionalProperties": false,
+        "title": "Send Sales Statement",
+        "description": "Sends the Excel statement of the period as an e-mail attachment",
+        "examples": [
+          {
+            "from": "2026-11-01",
+            "to": "2026-11-30",
+            "email": "comptable@example.com"
+          }
+        ]
       },
       "CompleteModule": {
         "type": "object",

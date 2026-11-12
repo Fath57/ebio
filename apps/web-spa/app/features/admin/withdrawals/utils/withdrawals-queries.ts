@@ -2,11 +2,13 @@ import {
   walletAdminControllerActOnNumber,
   walletAdminControllerActOnWithdrawal,
   walletAdminControllerDebitWallet,
+  walletAdminControllerGetWallet,
   walletAdminControllerListNumbers,
   walletAdminControllerListTopups,
   walletAdminControllerListWallets,
   walletAdminControllerListWithdrawals,
   walletAdminControllerWalletsOverview,
+  walletAdminControllerWalletTransactions,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
 export type WalletOwnerType = 'SUPPLIER' | 'COURIER' | 'USER'
@@ -112,20 +114,37 @@ export function fetchWalletsOverviewQueryOptions() {
 
 export interface AdminTopup {
   id: string
+  walletId: string
   amount: number
   status: 'PENDING' | 'COMPLETED' | 'FAILED'
   createdAt: string
+  /** Who paid; for a shop or courier wallet, the account behind it. */
+  userId: string
   userName: string
   userEmail: string | null
   fedapayTransactionId: string | null
 }
 
-export function fetchAdminTopupsQueryOptions(status: string | undefined, page: number) {
+export interface AdminTopupFilters {
+  status?: string
+  /** Payer's name or e-mail. */
+  q?: string
+  walletId?: string
+  page: number
+}
+
+export function fetchAdminTopupsQueryOptions(filters: AdminTopupFilters) {
   return {
-    queryKey: ['admin', 'wallet-topups', status, page],
+    queryKey: ['admin', 'wallet-topups', filters],
     queryFn: async () => {
       const response = await walletAdminControllerListTopups({
-        query: { status: status ?? '', page: String(page), limit: '20' },
+        query: {
+          status: filters.status ?? '',
+          q: filters.q ?? '',
+          walletId: filters.walletId ?? '',
+          page: String(filters.page),
+          limit: '20',
+        },
       })
       if (response.error)
         throw new Error('Failed to load topups')
@@ -214,4 +233,43 @@ export async function debitWallet(walletId: string, body: { amount: number, reas
     throw new Error(typeof message === 'string' ? message : 'Le débit a échoué')
   }
   return response.data as { balanceAfter: number }
+}
+
+export function fetchAdminWalletQueryOptions(walletId: string) {
+  return {
+    queryKey: ['admin', 'wallets', 'detail', walletId],
+    queryFn: async () => {
+      const response = await walletAdminControllerGetWallet({ path: { id: walletId } })
+      if (response.error)
+        throw new Error('Failed to load wallet')
+      return response.data as unknown as AdminWalletListItem
+    },
+  }
+}
+
+export interface AdminWalletTransaction {
+  id: string
+  type: string
+  /** Signed: a credit is positive, a debit negative. */
+  amount: number
+  balanceAfter: number
+  description: string
+  orderId: string | null
+  deliveryId: string | null
+  createdAt: string
+}
+
+export function fetchAdminWalletTransactionsQueryOptions(walletId: string, page: number) {
+  return {
+    queryKey: ['admin', 'wallets', 'detail', walletId, 'transactions', page],
+    queryFn: async () => {
+      const response = await walletAdminControllerWalletTransactions({
+        path: { id: walletId },
+        query: { page: String(page), limit: '20' },
+      })
+      if (response.error)
+        throw new Error('Failed to load wallet transactions')
+      return response.data as unknown as Paged<AdminWalletTransaction>
+    },
+  }
 }

@@ -1,6 +1,6 @@
 import type { ColumnDef } from '@boilerstone/ui/components/primitives/data-table'
 import type { ReactNode } from 'react'
-import type { AdminPayoutNumber, AdminTopup, AdminWalletListItem, AdminWithdrawal } from '../utils/withdrawals-queries'
+import type { AdminPayoutNumber, AdminWalletListItem, AdminWithdrawal } from '../utils/withdrawals-queries'
 import type { StatusTone } from '@/features/admin/common/components/status-badge'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
@@ -14,14 +14,14 @@ import {
   DialogTitle,
 } from '@boilerstone/ui/components/primitives/dialog'
 import { Input } from '@boilerstone/ui/components/primitives/input'
-import { Label } from '@boilerstone/ui/components/primitives/label'
 import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, MinusCircle, XCircle } from 'lucide-react'
+import { CheckCircle2, History, MinusCircle, XCircle } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router'
 import { ConfirmDialog } from '@/features/admin/common/components/confirm-dialog'
 import { FilterSelect } from '@/features/admin/common/components/filter-select'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
@@ -31,11 +31,12 @@ import { useListParams } from '@/features/admin/common/utils/use-list-params'
 import { useReturnFocus } from '@/features/admin/common/utils/use-return-focus'
 import { Can } from '@/lib/casl/can'
 import { BeneficiaryCell } from '../components/beneficiary-cell'
+import { DebitDialog } from '../components/debit-dialog'
+import { TOPUP_STATUSES, TopupsTable } from '../components/topups-table'
+import { formatAmount } from '../utils/format-amount'
 import {
   actOnPayoutNumber,
   actOnWithdrawal,
-  debitWallet,
-  fetchAdminTopupsQueryOptions,
   fetchAdminWithdrawalsQueryOptions,
   fetchPayoutNumbersQueryOptions,
   fetchWalletsListQueryOptions,
@@ -49,7 +50,6 @@ const SECTIONS = ['demandes', 'numeros', 'portefeuilles', 'recharges'] as const
 type Section = typeof SECTIONS[number]
 
 const WITHDRAWAL_STATUSES = ['PENDING', 'PROCESSING', 'PAID', 'FAILED', 'REJECTED', 'CANCELLED']
-const TOPUP_STATUSES = ['PENDING', 'COMPLETED', 'FAILED']
 
 const WITHDRAWAL_TONES: Record<string, StatusTone> = {
   PENDING: 'action',
@@ -58,16 +58,6 @@ const WITHDRAWAL_TONES: Record<string, StatusTone> = {
   FAILED: 'problem',
   REJECTED: 'idle',
   CANCELLED: 'idle',
-}
-
-const TOPUP_TONES: Record<string, StatusTone> = {
-  PENDING: 'progress',
-  COMPLETED: 'done',
-  FAILED: 'problem',
-}
-
-function formatAmount(value: number): string {
-  return `${value.toLocaleString('fr-FR').replace(/\u202F/g, '\u00A0')}\u00A0FCFA`
 }
 
 function useWithdrawalsParams() {
@@ -457,13 +447,23 @@ function WalletsSection({ list }: { list: ListParams }) {
       id: 'actions',
       header: '',
       meta: { align: 'right' },
-      cell: ({ row }) => row.original.balance > 0 && (
-        <Can action="manage" subject="Withdrawal">
-          <Button variant="outline" size="sm" onClick={() => setDebitTarget(row.original)}>
-            <MinusCircle className="mr-1 h-4 w-4" />
-            {t('admin.withdrawals.debit.action')}
+      cell: ({ row }) => (
+        <div className="flex justify-end gap-2">
+          <Button asChild variant="ghost" size="sm">
+            <Link to={`/admin/reversements/portefeuilles/${row.original.id}`}>
+              <History className="mr-1 h-4 w-4" />
+              {t('admin.withdrawals.history')}
+            </Link>
           </Button>
-        </Can>
+          {row.original.balance > 0 && (
+            <Can action="manage" subject="Withdrawal">
+              <Button variant="outline" size="sm" onClick={() => setDebitTarget(row.original)}>
+                <MinusCircle className="mr-1 h-4 w-4" />
+                {t('admin.withdrawals.debit.action')}
+              </Button>
+            </Can>
+          )}
+        </div>
       ),
     },
   ], [t, i18n.language])
@@ -471,22 +471,12 @@ function WalletsSection({ list }: { list: ListParams }) {
   return (
     <section className="space-y-4">
       <SectionToolbar hint={t('admin.withdrawals.walletsHint')}>
-        <form
-          onSubmit={(event) => {
-            event.preventDefault()
-            list.setSearch(search)
-          }}
-        >
-          <Input
-            type="search"
-            className="h-10 min-w-56"
-            value={search}
-            placeholder={t('admin.withdrawals.walletsSearch')}
-            aria-label={t('admin.withdrawals.walletsSearch')}
-            onChange={event => setSearch(event.target.value)}
-            onBlur={() => list.setSearch(search)}
-          />
-        </form>
+        <SearchBox
+          value={search}
+          onChange={setSearch}
+          onSubmit={() => list.setSearch(search)}
+          placeholder={t('admin.withdrawals.walletsSearch')}
+        />
         <FilterSelect
           value={list.values.type}
           onValueChange={value => list.setFilter('type', value)}
@@ -533,78 +523,60 @@ function WalletsSection({ list }: { list: ListParams }) {
 }
 
 function TopupsSection({ list }: { list: ListParams }) {
-  const { t, i18n } = useTranslation()
-  const status = list.values.statutRecharge
-  const labels = useDataTableLabels(t('admin.withdrawals.topupsEmpty'))
-  const query = useQuery({
-    ...fetchAdminTopupsQueryOptions(status || undefined, list.page),
-    placeholderData: keepPreviousData,
-  })
-
-  const columns = useMemo<Array<ColumnDef<AdminTopup, unknown>>>(() => [
-    {
-      id: 'createdAt',
-      header: t('admin.withdrawals.columns.date'),
-      cell: ({ row }) => new Date(row.original.createdAt).toLocaleString(i18n.language),
-    },
-    {
-      id: 'user',
-      header: t('admin.withdrawals.columns.user'),
-      cell: ({ row }) => (
-        <span className="flex flex-col">
-          <span className="font-medium">{row.original.userName}</span>
-          {row.original.userEmail && <span className="text-muted-foreground text-xs">{row.original.userEmail}</span>}
-        </span>
-      ),
-    },
-    {
-      id: 'reference',
-      header: t('admin.withdrawals.columns.reference'),
-      meta: { hideBelow: 'md' },
-      cell: ({ row }) => <span className="text-muted-foreground font-mono text-xs">{row.original.fedapayTransactionId ?? '—'}</span>,
-    },
-    {
-      id: 'amount',
-      header: t('admin.withdrawals.columns.amount'),
-      meta: { numeric: true },
-      cell: ({ row }) => <span className="font-medium">{formatAmount(row.original.amount)}</span>,
-    },
-    {
-      id: 'status',
-      header: t('admin.withdrawals.columns.status'),
-      cell: ({ row }) => (
-        <StatusBadge tone={TOPUP_TONES[row.original.status] ?? 'idle'}>
-          {t(`admin.withdrawals.topupStatus.${row.original.status}`)}
-        </StatusBadge>
-      ),
-    },
-  ], [t, i18n.language])
+  const { t } = useTranslation()
+  const [search, setSearch] = useState(list.q)
 
   return (
     <section className="space-y-4">
       <SectionToolbar hint={t('admin.withdrawals.topupsHint')}>
+        <SearchBox
+          value={search}
+          onChange={setSearch}
+          onSubmit={() => list.setSearch(search)}
+          placeholder={t('admin.withdrawals.topupsSearch')}
+        />
         <FilterSelect
-          value={status}
+          value={list.values.statutRecharge}
           onValueChange={value => list.setFilter('statutRecharge', value)}
           allLabel={t('admin.withdrawals.allStatuses')}
           ariaLabel={t('admin.withdrawals.columns.status')}
           options={TOPUP_STATUSES.map(value => ({ value, label: t(`admin.withdrawals.topupStatus.${value}`) }))}
         />
       </SectionToolbar>
-      <DataTable
-        columns={columns}
-        data={query.data?.items ?? []}
-        total={query.data?.total ?? 0}
+      <TopupsTable
+        status={list.values.statutRecharge || undefined}
+        q={list.q || undefined}
         page={list.page}
-        pageSize={query.data?.limit ?? PAGE_SIZE}
         onPageChange={list.setPage}
-        isLoading={query.isLoading}
-        isFetching={query.isFetching}
-        isError={query.isError}
-        onRetry={() => query.refetch()}
-        labels={labels}
       />
     </section>
+  )
+}
+
+/** Search on submit or on leaving the field, not on every keystroke. */
+function SearchBox({ value, onChange, onSubmit, placeholder }: {
+  value: string
+  onChange: (value: string) => void
+  onSubmit: () => void
+  placeholder: string
+}) {
+  return (
+    <form
+      onSubmit={(event) => {
+        event.preventDefault()
+        onSubmit()
+      }}
+    >
+      <Input
+        type="search"
+        className="h-10 min-w-56"
+        value={value}
+        placeholder={placeholder}
+        aria-label={placeholder}
+        onChange={event => onChange(event.target.value)}
+        onBlur={onSubmit}
+      />
+    </form>
   )
 }
 
@@ -647,90 +619,6 @@ function RejectDialog({ target, onClose, onSubmit, isPending }: {
           <Button variant="ghost" onClick={onClose}>{t('common.cancel')}</Button>
           <Button variant="destructive" disabled={isPending || reason.trim().length < 3} onClick={() => onSubmit(reason.trim())}>
             {t('admin.withdrawals.reject')}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
-  )
-}
-
-/**
- * The staff debit: an amount up to the balance, a reason the owner will read,
- * and — on by default — a notification to them. Nothing is debited without
- * a reason; nothing goes below zero.
- */
-function DebitDialog({ wallet, onClose }: { wallet: AdminWalletListItem | null, onClose: () => void }) {
-  const { t } = useTranslation()
-  const invalidate = useInvalidateMoney()
-  const [amount, setAmount] = useState('')
-  const [reason, setReason] = useState('')
-  const [notify, setNotify] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const returnFocus = useReturnFocus(wallet !== null)
-
-  const reset = () => {
-    setAmount('')
-    setReason('')
-    setNotify(true)
-    setError(null)
-  }
-
-  const debit = useMutation({
-    mutationFn: () => debitWallet(wallet!.id, { amount: Number(amount), reason: reason.trim(), notify }),
-    onSuccess: (result) => {
-      toast.success(t('admin.withdrawals.debit.done', { amount: formatAmount(Number(amount)), balance: formatAmount(result.balanceAfter) }))
-      invalidate()
-      reset()
-      onClose()
-    },
-    onError: (mutationError: Error) => setError(mutationError.message),
-  })
-
-  const value = Number(amount)
-  const tooMuch = wallet !== null && value > wallet.balance
-  const valid = value > 0 && !tooMuch && reason.trim().length >= 3
-
-  return (
-    <Dialog
-      open={wallet !== null}
-      onOpenChange={(open) => {
-        if (!open) {
-          reset()
-          onClose()
-        }
-      }}
-    >
-      <DialogContent className="max-w-md" onCloseAutoFocus={returnFocus}>
-        <DialogHeader>
-          <DialogTitle>{t('admin.withdrawals.debit.title')}</DialogTitle>
-          <DialogDescription>
-            {t('admin.withdrawals.debit.body', { name: wallet?.ownerName ?? '', balance: formatAmount(wallet?.balance ?? 0) })}
-          </DialogDescription>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div className="space-y-1.5">
-            <Label htmlFor="debit-amount">{t('admin.withdrawals.debit.amount')}</Label>
-            <div className="relative">
-              <Input id="debit-amount" type="number" min={1} step={100} inputMode="numeric" className="pr-16" value={amount} onChange={event => setAmount(event.target.value)} />
-              <span className="text-muted-foreground pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-xs">FCFA</span>
-            </div>
-            {tooMuch && <p className="text-destructive text-sm">{t('admin.withdrawals.debit.tooMuch')}</p>}
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="debit-reason">{t('admin.withdrawals.debit.reason')}</Label>
-            <Textarea id="debit-reason" value={reason} rows={3} placeholder={t('admin.withdrawals.debit.reasonPlaceholder')} onChange={event => setReason(event.target.value)} />
-            <p className="text-muted-foreground text-xs">{t('admin.withdrawals.debit.reasonHint')}</p>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input type="checkbox" className="accent-primary h-4 w-4" checked={notify} onChange={event => setNotify(event.target.checked)} />
-            {t('admin.withdrawals.debit.notify')}
-          </label>
-          {error && <p className="text-destructive text-sm" role="alert">{error}</p>}
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={debit.isPending}>{t('common.cancel')}</Button>
-          <Button variant="destructive" disabled={!valid || debit.isPending} onClick={() => debit.mutate()}>
-            {debit.isPending ? t('common.saving') : t('admin.withdrawals.debit.confirm', { amount: value > 0 ? formatAmount(value) : '' })}
           </Button>
         </DialogFooter>
       </DialogContent>

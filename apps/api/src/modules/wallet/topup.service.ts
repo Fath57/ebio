@@ -1,3 +1,4 @@
+import type { FilterQuery } from '@mikro-orm/core'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
@@ -202,8 +203,22 @@ export class TopupService {
     }
   }
 
-  async adminList(status: string | undefined, page: number, limit: number) {
-    const where = status ? { status: status as TopupStatus } : {}
+  /**
+   * Every topup, newest first. `q` matches the payer's name or e-mail;
+   * `walletId` narrows to one wallet, for its page in the back office.
+   */
+  async adminList(filters: { status?: string, q?: string, walletId?: string, page: number, limit: number }) {
+    const where: FilterQuery<WalletTopup> = {}
+    if (filters.status && Object.values(TopupStatus).includes(filters.status as TopupStatus))
+      where.status = filters.status as TopupStatus
+    if (filters.walletId)
+      where.wallet = filters.walletId
+    if (filters.q) {
+      const pattern = `%${filters.q}%`
+      where.user = { $or: [{ name: { $ilike: pattern } }, { email: { $ilike: pattern } }] }
+    }
+    const limit = Math.min(Math.max(filters.limit, 1), 100)
+    const page = Math.max(filters.page, 1)
     const [rows, total] = await this.em.findAndCount(WalletTopup, where, {
       populate: ['user'],
       orderBy: { createdAt: 'DESC' },
@@ -213,9 +228,11 @@ export class TopupService {
     return {
       items: rows.map(topup => ({
         id: topup.id,
+        walletId: topup.wallet.id,
         amount: Number(topup.amount),
         status: topup.status,
         createdAt: topup.createdAt.toISOString(),
+        userId: topup.user.id,
         userName: topup.user.name ?? '',
         userEmail: topup.user.email ?? null,
         fedapayTransactionId: topup.fedapayTransactionId ?? null,
