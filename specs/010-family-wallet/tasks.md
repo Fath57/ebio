@@ -135,11 +135,11 @@ Tests e2e dans des sous-dossiers `tests/` (testcontainers). Avant un
 
 - [X] T053 `wallet/admin-wallets.service.ts` : type `FAMILY` (jointure `family_wallets` → nom du payeur) et filtre `ownerType=FAMILY`
 - [X] T054 `admin-family-wallets.controller.ts` : liste, détail, suspension / réactivation du portefeuille ou d'un membre avec motif, trace d'audit (`AuditModule`), `suspended_by_admin`
-- [ ] T055 `pnpm generate` (API temporaire sur un port libre si l'API locale est ancienne, cf. mémoire)
-- [ ] T056 [P] `apps/web-spa/app/features/admin/family-wallets/pages/admin-family-wallets-page.tsx` et `admin-family-wallet-detail-page.tsx` ; type « Famille » dans `wallets/pages/admin-wallets-page.tsx` ; entrée de menu sous « Argent » ; i18n fr/en
-- [ ] T057 [P] Interrupteur `family_wallet_enabled` dans la page Réglages du back-office
+- [X] T055 `pnpm generate` (API temporaire sur un port libre si l'API locale est ancienne, cf. mémoire)
+- [X] T056 [P] `apps/web-spa/app/features/admin/family-wallets/pages/admin-family-wallets-page.tsx` et `admin-family-wallet-detail-page.tsx` ; type « Famille » dans `wallets/pages/admin-wallets-page.tsx` ; entrée de menu sous « Argent » ; i18n fr/en
+- [X] T057 [P] Interrupteur `family_wallet_enabled` dans la page Réglages du back-office
 - [X] T058 CGU et confidentialité (`apps/landing/app/routes/cgu.tsx`, `confidentialite.tsx`) : portefeuille famille, argent récupérable par le payeur, aucun retrait d'espèces
-- [ ] T059 `./node_modules/.bin/eslint` sur les fichiers touchés, `pnpm --filter api test`, `pnpm build`, `npx tsc --noEmit` dans `apps/mobile`
+- [X] T059 `./node_modules/.bin/eslint` sur les fichiers touchés, `pnpm --filter api test`, `pnpm build`, `npx tsc --noEmit` dans `apps/mobile`
 - [ ] T060 Dérouler `quickstart.md` sur le téléphone de test ; `/design-review` des pages back-office
 
 ---

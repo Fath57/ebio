@@ -39,6 +39,7 @@ import { Can } from '@/lib/casl/can'
 import { AnnouncementsManager } from '../../announcements/components/announcements-manager'
 import { AppVersionForm } from '../../app-version/components/app-version-form'
 import { HomeSectionsManager } from '../../home-sections/components/home-sections-manager'
+import { FamilyWalletSettingCard } from '../components/family-wallet-setting-card'
 import { PaymentMethodsManager } from '../components/payment-methods-manager'
 import { AssistantIdentity } from '../forms/assistant-identity'
 import { AssistantToggle } from '../forms/assistant-toggle'
@@ -1033,6 +1034,9 @@ export default function AdminSettingsPage() {
               <PaymentMethodsManager />
             </CardContent>
           </Card>
+          <Can action="manage" subject="all">
+            <FamilyWalletSettingCard />
+          </Can>
         </TabsContent>
       </Tabs>
     </div>

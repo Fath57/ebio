@@ -191,6 +191,7 @@
     "team": "Équipe",
     "certifications": "Labels et certifications",
     "wallets": "Portefeuilles",
+    "familyWallets": "Portefeuilles famille",
     "topups": "Recharges",
     "farProofs": "Preuves éloignées"
   },
@@ -1648,6 +1649,16 @@
         "refreshed": "Taux actualisés.",
         "notRefreshed": "Le service des taux n’a pas répondu : les taux précédents sont conservés. Réessayez plus tard ou saisissez-les à la main.",
         "refreshError": "L’actualisation a échoué."
+      },
+      "familyWallet": {
+        "title": "Portefeuille famille",
+        "description": "Permet à un acheteur d'ouvrir un portefeuille, de le recharger et d'y ajouter des proches qui font leurs courses avec. Fermé, la fonction disparaît des applications et aucun nouveau paiement famille n'est accepté ; les portefeuilles existants restent consultables ici.",
+        "legalWarning": "Validation juridique en attente : n'ouvrez pas le portefeuille famille en production avant l'accord écrit sur les CGU et la conformité (monnaie électronique, argent récupérable par le payeur).",
+        "toggleLabel": "Ouvrir le portefeuille famille aux acheteurs",
+        "stateOpen": "Ouvert : les applications affichent le portefeuille famille et acceptent les paiements famille.",
+        "stateClosed": "Fermé : les applications masquent le portefeuille famille et refusent tout paiement famille.",
+        "saved": "Enregistré. Le changement s'applique dans la minute.",
+        "error": "Le changement n'a pas été enregistré."
       }
     },
     "site": {
@@ -2257,7 +2268,8 @@
       "ownerTypes": {
         "SUPPLIER": "Fournisseur",
         "COURIER": "Livreur",
-        "USER": "Acheteur"
+        "USER": "Acheteur",
+        "FAMILY": "Famille"
       },
       "allStatuses": "Tous les statuts",
       "approveTitle": "Payer ce reversement ?",
@@ -2642,7 +2654,11 @@
         "DELIVERY_SPONSORSHIP": "Livraison offerte",
         "BANNER_PAYMENT": "Bannière sponsorisée",
         "BANNER_REFUND": "Bannière remboursée",
-        "REFERRAL_REWARD": "Parrainage"
+        "REFERRAL_REWARD": "Parrainage",
+        "FAMILY_TRANSFER_OUT": "Recharge du portefeuille famille",
+        "FAMILY_TRANSFER_IN": "Recharge famille reçue",
+        "FAMILY_CLOSURE_OUT": "Clôture du portefeuille famille",
+        "FAMILY_CLOSURE_IN": "Solde famille restitué"
       },
       "debit": {
         "action": "Débiter",
@@ -2689,6 +2705,96 @@
         "search": "Nom ou e-mail du payeur…",
         "empty": "Aucune recharge pour le moment",
         "emptyFiltered": "Aucune recharge ne correspond à ces filtres"
+      }
+    },
+    "familyWallets": {
+      "title": "Portefeuilles famille",
+      "description": "Un payeur alimente le portefeuille, ses proches font leurs courses avec, chacun sous ses plafonds. Ouvrez un portefeuille pour voir ses membres et ses derniers mouvements.",
+      "search": "Rechercher un payeur (nom, téléphone, e-mail)…",
+      "empty": "Aucun portefeuille famille pour le moment",
+      "memberCount_one": "{{count}} membre",
+      "memberCount_other": "{{count}} membres",
+      "status": {
+        "ACTIVE": "Actif",
+        "SUSPENDED": "Suspendu",
+        "SUSPENDED_BY_EBIO": "Suspendu par eBio",
+        "CLOSED": "Fermé"
+      },
+      "memberStatus": {
+        "PENDING": "Invitation en attente",
+        "ACTIVE": "Actif",
+        "SUSPENDED": "Suspendu",
+        "SUSPENDED_BY_EBIO": "Suspendu par eBio",
+        "REMOVED": "Retiré"
+      },
+      "columns": {
+        "payer": "Payeur",
+        "members": "Membres",
+        "balance": "Solde",
+        "status": "Statut",
+        "createdAt": "Ouvert le",
+        "member": "Membre",
+        "limits": "Limites appliquées",
+        "spentThisMonth": "Dépensé ce mois-ci",
+        "addedAt": "Ajouté le",
+        "order": "Commande"
+      },
+      "limits": {
+        "monthlyCap": "Plafond mensuel",
+        "orderMax": "Maximum par commande",
+        "categories": "Catégories autorisées",
+        "none": "Aucun",
+        "allCategories": "Toutes les catégories",
+        "categoryCount_one": "{{count}} catégorie",
+        "categoryCount_other": "{{count}} catégories",
+        "monthlyShort": "Par mois : {{amount}}",
+        "orderShort": "Par commande : {{amount}}"
+      },
+      "detail": {
+        "notFound": "Ce portefeuille famille est introuvable.",
+        "createdAt": "Ouvert le {{date}}",
+        "closedAt": "Fermé le {{date}}",
+        "lowBalance": "Alerte de solde bas sous {{amount}}",
+        "ledger": "Grand livre",
+        "defaults": "Limites par défaut",
+        "defaultsHint": "Celles que le payeur a fixées pour tous ses proches. Un membre peut avoir ses propres limites, visibles dans le tableau des membres.",
+        "members": "Membres",
+        "membersEmpty": "Aucun proche ajouté à ce portefeuille",
+        "transactions": "Derniers mouvements",
+        "transactionsEmpty": "Aucun mouvement pour le moment",
+        "allTransactions_one": "Voir le mouvement",
+        "allTransactions_other": "Voir les {{count}} mouvements"
+      },
+      "actions": {
+        "wallet": {
+          "suspend": "Suspendre le portefeuille",
+          "suspendConfirm": "Plus aucun proche de {{name}} ne pourra payer avec ce portefeuille. Le payeur ne pourra pas lever cette suspension : seule l'équipe eBio le peut.",
+          "resume": "Réactiver le portefeuille",
+          "resumeConfirm": "Les proches de {{name}} pourront de nouveau payer avec ce portefeuille, dans leurs limites."
+        },
+        "member": {
+          "suspend": "Suspendre",
+          "suspendConfirm": "{{name}} ne pourra plus payer avec ce portefeuille ; les autres membres continuent. Le payeur ne pourra pas lever cette suspension.",
+          "resume": "Réactiver",
+          "resumeConfirm": "{{name}} pourra de nouveau payer avec ce portefeuille, dans ses limites."
+        }
+      },
+      "dialog": {
+        "reason": "Motif (obligatoire)",
+        "note": "Note (facultative)",
+        "reasonPlaceholder": "Ex. : litige en cours, suspicion de fraude…",
+        "reasonHint": "Au moins 3 caractères. Le motif est conservé dans le journal d'audit."
+      },
+      "done": {
+        "wallet": {
+          "suspend": "Portefeuille suspendu.",
+          "resume": "Portefeuille réactivé."
+        },
+        "member": {
+          "suspend": "Membre suspendu.",
+          "resume": "Membre réactivé."
+        },
+        "error": "Le changement n'a pas été enregistré."
       }
     }
   },

@@ -4351,6 +4351,54 @@
         }
       }
     },
+    "/api/admin/family-wallet-setting": {
+      "get": {
+        "operationId": "AdminFamilyWalletSettingController_get",
+        "tags": [
+          "AdminFamilyWalletSetting"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminFamilyWalletSettingController_update",
+        "tags": [
+          "AdminFamilyWalletSetting"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Ouvre ou ferme le portefeuille famille aux clients",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "enabled"
+                ],
+                "additionalProperties": false,
+                "title": "FamilyWalletSetting",
+                "description": "Ouvre ou ferme le portefeuille famille aux clients"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/register": {
       "post": {
         "operationId": "SuppliersController_register",
@@ -8414,10 +8462,16 @@
                     "enum": [
                       "FEDAPAY",
                       "CASH_ON_DELIVERY",
-                      "WALLET"
+                      "WALLET",
+                      "FAMILY_WALLET"
                     ],
                     "title": "PaymentMethod",
                     "description": "Payment method for the order"
+                  },
+                  "familyMemberId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
                   },
                   "promoCode": {
                     "type": "string",
@@ -8534,7 +8588,8 @@
                     "enum": [
                       "FEDAPAY",
                       "CASH_ON_DELIVERY",
-                      "WALLET"
+                      "WALLET",
+                      "FAMILY_WALLET"
                     ],
                     "title": "PaymentMethod",
                     "description": "Payment method for the order"
@@ -9067,6 +9122,1238 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet": {
+      "get": {
+        "operationId": "FamilyWalletController_get",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "FamilyWalletController_open",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "operationId": "FamilyWalletController_update",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Limites par défaut et seuil d'alerte du portefeuille famille",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "defaults": {
+                    "type": "object",
+                    "properties": {
+                      "monthlyCap": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 10000000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "orderMax": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 10000000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "categoryIds": {
+                        "anyOf": [
+                          {
+                            "minItems": 1,
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  },
+                  "lowBalanceThreshold": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000000
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateFamilyWallet",
+                "description": "Limites par défaut et seuil d'alerte du portefeuille famille"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/suspend": {
+      "post": {
+        "operationId": "FamilyWalletController_suspend",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/resume": {
+      "post": {
+        "operationId": "FamilyWalletController_resume",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/close": {
+      "post": {
+        "operationId": "FamilyWalletController_close",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/transactions": {
+      "get": {
+        "operationId": "FamilyWalletController_transactions",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/members": {
+      "post": {
+        "operationId": "FamilyWalletController_addMember",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Ajouter un proche au portefeuille famille, depuis le carnet ou en le créant",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "savedRelativeId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "relative": {
+                    "type": "object",
+                    "properties": {
+                      "nickname": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 40
+                      },
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "phone": {
+                        "type": "string",
+                        "pattern": "^\\+229\\d{10}$"
+                      },
+                      "address": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "minLength": 10,
+                            "maxLength": 500
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "latitude": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": -90,
+                            "maximum": 90
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "longitude": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": -180,
+                            "maximum": 180
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "nickname",
+                      "name",
+                      "phone"
+                    ],
+                    "additionalProperties": false,
+                    "title": "CreateRelative",
+                    "description": "Ajouter un proche au carnet"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "AddFamilyMember",
+                "description": "Ajouter un proche au portefeuille famille, depuis le carnet ou en le créant"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/members/{id}": {
+      "patch": {
+        "operationId": "FamilyWalletController_updateMember",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Limites propres d'un membre",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "limits": {
+                    "type": "object",
+                    "properties": {
+                      "monthlyCap": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 10000000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "orderMax": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 10000000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "categoryIds": {
+                        "anyOf": [
+                          {
+                            "minItems": 1,
+                            "maxItems": 100,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            }
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "additionalProperties": false
+                  }
+                },
+                "required": [
+                  "limits"
+                ],
+                "additionalProperties": false,
+                "title": "UpdateFamilyMember",
+                "description": "Limites propres d'un membre"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "FamilyWalletController_removeMember",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/members/{id}/suspend": {
+      "post": {
+        "operationId": "FamilyWalletController_suspendMember",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/members/{id}/resume": {
+      "post": {
+        "operationId": "FamilyWalletController_resumeMember",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/members/{id}/invite": {
+      "post": {
+        "operationId": "FamilyWalletController_invite",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/topups": {
+      "post": {
+        "operationId": "FamilyWalletController_topup",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Montant en FCFA, de 1000 à 500000",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "FamilyAmount",
+                "description": "Montant en FCFA, de 1000 à 500000"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/topups/{id}/verify": {
+      "post": {
+        "operationId": "FamilyWalletController_verifyTopup",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "fedapayTransactionId": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 64
+                  }
+                },
+                "required": [
+                  "fedapayTransactionId"
+                ],
+                "additionalProperties": false,
+                "title": "VerifyTopup",
+                "description": "FedaPay transaction id reported by the checkout widget; the server re-checks it"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallet/transfer": {
+      "post": {
+        "operationId": "FamilyWalletController_transfer",
+        "tags": [
+          "FamilyWallet"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Montant en FCFA, de 1000 à 500000",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "amount": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                  }
+                },
+                "required": [
+                  "amount"
+                ],
+                "additionalProperties": false,
+                "title": "FamilyAmount",
+                "description": "Montant en FCFA, de 1000 à 500000"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallets/mine": {
+      "get": {
+        "operationId": "FamilyMemberViewController_mine",
+        "tags": [
+          "FamilyMemberView"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/family-wallets/mine/{memberId}/transactions": {
+      "get": {
+        "operationId": "FamilyMemberViewController_transactions",
+        "tags": [
+          "FamilyMemberView"
+        ],
+        "parameters": [
+          {
+            "name": "memberId",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/family-wallets": {
+      "get": {
+        "operationId": "AdminFamilyWalletsController_list",
+        "tags": [
+          "AdminFamilyWallets"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ACTIVE",
+                "SUSPENDED",
+                "CLOSED"
+              ],
+              "title": "FamilyWalletStatus",
+              "description": "Statut du portefeuille famille"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 9007199254740991
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 20,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/family-wallets/members/{id}/suspend": {
+      "post": {
+        "operationId": "AdminFamilyWalletsController_suspendMember",
+        "tags": [
+          "AdminFamilyWallets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Motif d'une suspension décidée par eBio",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "AdminFamilyReason",
+                "description": "Motif d'une suspension décidée par eBio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/family-wallets/members/{id}/resume": {
+      "post": {
+        "operationId": "AdminFamilyWalletsController_resumeMember",
+        "tags": [
+          "AdminFamilyWallets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false,
+                "title": "AdminFamilyResume"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/family-wallets/{id}": {
+      "get": {
+        "operationId": "AdminFamilyWalletsController_detail",
+        "tags": [
+          "AdminFamilyWallets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/family-wallets/{id}/suspend": {
+      "post": {
+        "operationId": "AdminFamilyWalletsController_suspend",
+        "tags": [
+          "AdminFamilyWallets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Motif d'une suspension décidée par eBio",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 500
+                  }
+                },
+                "required": [
+                  "reason"
+                ],
+                "additionalProperties": false,
+                "title": "AdminFamilyReason",
+                "description": "Motif d'une suspension décidée par eBio"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/family-wallets/{id}/resume": {
+      "post": {
+        "operationId": "AdminFamilyWalletsController_resume",
+        "tags": [
+          "AdminFamilyWallets"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reason": {
+                    "type": "string",
+                    "maxLength": 500
+                  }
+                },
+                "additionalProperties": false,
+                "title": "AdminFamilyResume"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/exchange-rates": {
+      "get": {
+        "operationId": "AdminExchangeRatesController_get",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminExchangeRatesController_update",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Taux saisis à la main, en FCFA pour une unité",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "EUR": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  },
+                  "USD": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  },
+                  "CAD": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  }
+                },
+                "additionalProperties": false,
+                "title": "AdminExchangeRatesInput",
+                "description": "Taux saisis à la main, en FCFA pour une unité"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/fx-margin": {
+      "put": {
+        "operationId": "AdminExchangeRatesController_updateMargin",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Marge de change en points de base (200 = 2 %)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bps": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  }
+                },
+                "required": [
+                  "bps"
+                ],
+                "additionalProperties": false,
+                "title": "AdminFxMarginInput",
+                "description": "Marge de change en points de base (200 = 2 %)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/exchange-rates/refresh": {
+      "post": {
+        "operationId": "AdminExchangeRatesController_refresh",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/relatives": {
+      "get": {
+        "operationId": "RelativesController_list",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "RelativesController_create",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Ajouter un proche au carnet",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nickname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  },
+                  "address": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "nickname",
+                  "name",
+                  "phone"
+                ],
+                "additionalProperties": false,
+                "title": "CreateRelative",
+                "description": "Ajouter un proche au carnet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/relatives/{id}": {
+      "patch": {
+        "operationId": "RelativesController_update",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Modifier un proche du carnet ; seuls les champs envoyés changent",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nickname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  },
+                  "address": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "latitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "longitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateRelative",
+                "description": "Modifier un proche du carnet ; seuls les champs envoyés changent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "RelativesController_remove",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
             "description": ""
           }
         }
@@ -14067,115 +15354,6 @@
         }
       }
     },
-    "/api/admin/exchange-rates": {
-      "get": {
-        "operationId": "AdminExchangeRatesController_get",
-        "tags": [
-          "AdminExchangeRates"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
-      "put": {
-        "operationId": "AdminExchangeRatesController_update",
-        "tags": [
-          "AdminExchangeRates"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Taux saisis à la main, en FCFA pour une unité",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "EUR": {
-                    "type": "number",
-                    "exclusiveMinimum": 0,
-                    "maximum": 100000
-                  },
-                  "USD": {
-                    "type": "number",
-                    "exclusiveMinimum": 0,
-                    "maximum": 100000
-                  },
-                  "CAD": {
-                    "type": "number",
-                    "exclusiveMinimum": 0,
-                    "maximum": 100000
-                  }
-                },
-                "additionalProperties": false,
-                "title": "AdminExchangeRatesInput",
-                "description": "Taux saisis à la main, en FCFA pour une unité"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/fx-margin": {
-      "put": {
-        "operationId": "AdminExchangeRatesController_updateMargin",
-        "tags": [
-          "AdminExchangeRates"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Marge de change en points de base (200 = 2 %)",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "bps": {
-                    "type": "integer",
-                    "minimum": 0,
-                    "maximum": 1000
-                  }
-                },
-                "required": [
-                  "bps"
-                ],
-                "additionalProperties": false,
-                "title": "AdminFxMarginInput",
-                "description": "Marge de change en points de base (200 = 2 %)"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/admin/exchange-rates/refresh": {
-      "post": {
-        "operationId": "AdminExchangeRatesController_refresh",
-        "tags": [
-          "AdminExchangeRates"
-        ],
-        "parameters": [],
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
     "/api/gift-tracking/{token}": {
       "get": {
         "operationId": "GiftTrackingController_get",
@@ -17054,174 +18232,6 @@
         ],
         "responses": {
           "200": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/relatives": {
-      "get": {
-        "operationId": "RelativesController_list",
-        "tags": [
-          "Relatives"
-        ],
-        "parameters": [],
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
-      "post": {
-        "operationId": "RelativesController_create",
-        "tags": [
-          "Relatives"
-        ],
-        "parameters": [],
-        "requestBody": {
-          "required": true,
-          "description": "Ajouter un proche au carnet",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "nickname": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 40
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
-                  },
-                  "phone": {
-                    "type": "string",
-                    "pattern": "^\\+229\\d{10}$"
-                  },
-                  "address": {
-                    "type": "string",
-                    "minLength": 10,
-                    "maxLength": 500
-                  },
-                  "latitude": {
-                    "type": "number",
-                    "minimum": -90,
-                    "maximum": 90
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "minimum": -180,
-                    "maximum": 180
-                  }
-                },
-                "required": [
-                  "nickname",
-                  "name",
-                  "phone",
-                  "address",
-                  "latitude",
-                  "longitude"
-                ],
-                "additionalProperties": false,
-                "title": "CreateRelative",
-                "description": "Ajouter un proche au carnet"
-              }
-            }
-          }
-        },
-        "responses": {
-          "201": {
-            "description": ""
-          }
-        }
-      }
-    },
-    "/api/relatives/{id}": {
-      "patch": {
-        "operationId": "RelativesController_update",
-        "tags": [
-          "Relatives"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "description": "Modifier un proche du carnet ; seuls les champs envoyés changent",
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "nickname": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 40
-                  },
-                  "name": {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 120
-                  },
-                  "phone": {
-                    "type": "string",
-                    "pattern": "^\\+229\\d{10}$"
-                  },
-                  "address": {
-                    "type": "string",
-                    "minLength": 10,
-                    "maxLength": 500
-                  },
-                  "latitude": {
-                    "type": "number",
-                    "minimum": -90,
-                    "maximum": 90
-                  },
-                  "longitude": {
-                    "type": "number",
-                    "minimum": -180,
-                    "maximum": 180
-                  }
-                },
-                "additionalProperties": false,
-                "title": "UpdateRelative",
-                "description": "Modifier un proche du carnet ; seuls les champs envoyés changent"
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": ""
-          }
-        }
-      },
-      "delete": {
-        "operationId": "RelativesController_remove",
-        "tags": [
-          "Relatives"
-        ],
-        "parameters": [
-          {
-            "name": "id",
-            "required": true,
-            "in": "path",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "204": {
             "description": ""
           }
         }
@@ -20289,6 +21299,20 @@
         "title": "NewProductSettings",
         "description": "Validation préalable des nouveaux produits et adresses prévenues par e-mail"
       },
+      "FamilyWalletSetting": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "enabled"
+        ],
+        "additionalProperties": false,
+        "title": "FamilyWalletSetting",
+        "description": "Ouvre ou ferme le portefeuille famille aux clients"
+      },
       "CartSync": {
         "type": "object",
         "properties": {
@@ -21589,6 +22613,304 @@
         "title": "BuyerDecision",
         "description": "Attendre encore, ou annuler et être recrédité"
       },
+      "CreateRelative": {
+        "type": "object",
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "nickname",
+          "name",
+          "phone"
+        ],
+        "additionalProperties": false,
+        "title": "CreateRelative",
+        "description": "Ajouter un proche au carnet"
+      },
+      "UpdateRelative": {
+        "type": "object",
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "address": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "longitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateRelative",
+        "description": "Modifier un proche du carnet ; seuls les champs envoyés changent"
+      },
+      "AdminFamilyReason": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "AdminFamilyReason",
+        "description": "Motif d'une suspension décidée par eBio"
+      },
+      "AdminFamilyResume": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "additionalProperties": false,
+        "title": "AdminFamilyResume"
+      },
+      "UpdateFamilyWallet": {
+        "type": "object",
+        "properties": {
+          "defaults": {
+            "type": "object",
+            "properties": {
+              "monthlyCap": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "orderMax": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "categoryIds": {
+                "anyOf": [
+                  {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          },
+          "lowBalanceThreshold": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000000
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateFamilyWallet",
+        "description": "Limites par défaut et seuil d'alerte du portefeuille famille"
+      },
+      "AddFamilyMember": {
+        "type": "object",
+        "properties": {
+          "savedRelativeId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "relative": {
+            "$ref": "#/components/schemas/CreateRelative"
+          }
+        },
+        "additionalProperties": false,
+        "title": "AddFamilyMember",
+        "description": "Ajouter un proche au portefeuille famille, depuis le carnet ou en le créant"
+      },
+      "UpdateFamilyMember": {
+        "type": "object",
+        "properties": {
+          "limits": {
+            "type": "object",
+            "properties": {
+              "monthlyCap": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "orderMax": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "categoryIds": {
+                "anyOf": [
+                  {
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "limits"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateFamilyMember",
+        "description": "Limites propres d'un membre"
+      },
+      "FamilyAmount": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "FamilyAmount",
+        "description": "Montant en FCFA, de 1000 à 500000"
+      },
       "CreateCategory": {
         "type": "object",
         "properties": {
@@ -22594,6 +23916,11 @@
           },
           "paymentMethod": {
             "$ref": "#/components/schemas/PaymentMethod"
+          },
+          "familyMemberId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
           },
           "promoCode": {
             "type": "string",
@@ -24980,88 +26307,6 @@
         "title": "CreateReview",
         "description": "Submit a review for a supplier"
       },
-      "CreateRelative": {
-        "type": "object",
-        "properties": {
-          "nickname": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 40
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
-          },
-          "phone": {
-            "type": "string",
-            "pattern": "^\\+229\\d{10}$"
-          },
-          "address": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 500
-          },
-          "latitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "longitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          }
-        },
-        "required": [
-          "nickname",
-          "name",
-          "phone",
-          "address",
-          "latitude",
-          "longitude"
-        ],
-        "additionalProperties": false,
-        "title": "CreateRelative",
-        "description": "Ajouter un proche au carnet"
-      },
-      "UpdateRelative": {
-        "type": "object",
-        "properties": {
-          "nickname": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 40
-          },
-          "name": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 120
-          },
-          "phone": {
-            "type": "string",
-            "pattern": "^\\+229\\d{10}$"
-          },
-          "address": {
-            "type": "string",
-            "minLength": 10,
-            "maxLength": 500
-          },
-          "latitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "longitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateRelative",
-        "description": "Modifier un proche du carnet ; seuls les champs envoyés changent"
-      },
       "Sales Statement Period": {
         "type": "object",
         "properties": {
@@ -26864,6 +28109,71 @@
         "title": "DeliveryFailReason",
         "description": "Why a delivery could not be completed"
       },
+      "AdminFamilyWalletsQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "ACTIVE",
+              "SUSPENDED",
+              "CLOSED"
+            ],
+            "title": "FamilyWalletStatus",
+            "description": "Statut du portefeuille famille"
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "page": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "default": 20,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "page",
+          "limit"
+        ],
+        "additionalProperties": false,
+        "title": "AdminFamilyWalletsQuery"
+      },
+      "FamilyTransactionsQuery": {
+        "type": "object",
+        "properties": {
+          "memberId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "page": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 9007199254740991
+          },
+          "limit": {
+            "default": 20,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "page",
+          "limit"
+        ],
+        "additionalProperties": false,
+        "title": "FamilyTransactionsQuery"
+      },
       "PhotoAdjustments": {
         "type": "object",
         "properties": {
@@ -27113,7 +28423,8 @@
         "enum": [
           "FEDAPAY",
           "CASH_ON_DELIVERY",
-          "WALLET"
+          "WALLET",
+          "FAMILY_WALLET"
         ],
         "title": "PaymentMethod",
         "description": "Payment method for the order"

@@ -191,6 +191,7 @@
     "team": "Team",
     "certifications": "Labels & certifications",
     "wallets": "Wallets",
+    "familyWallets": "Family wallets",
     "topups": "Top-ups",
     "farProofs": "Far proofs"
   },
@@ -1648,6 +1649,16 @@
         "refreshed": "Rates refreshed.",
         "notRefreshed": "The rate service did not answer: the previous rates are kept. Try again later or enter them manually.",
         "refreshError": "The refresh failed."
+      },
+      "familyWallet": {
+        "title": "Family wallet",
+        "description": "Lets a buyer open a wallet, top it up and add relatives who shop with it. Closed, the feature disappears from the apps and no new family payment is accepted; existing wallets stay viewable here.",
+        "legalWarning": "Legal validation pending: do not open the family wallet in production before written approval of the terms and compliance (e-money, money recoverable by the payer).",
+        "toggleLabel": "Open the family wallet to buyers",
+        "stateOpen": "Open: the apps show the family wallet and accept family payments.",
+        "stateClosed": "Closed: the apps hide the family wallet and refuse every family payment.",
+        "saved": "Saved. The change applies within a minute.",
+        "error": "The change was not saved."
       }
     },
     "site": {
@@ -2257,7 +2268,8 @@
       "ownerTypes": {
         "SUPPLIER": "Supplier",
         "COURIER": "Courier",
-        "USER": "Buyer"
+        "USER": "Buyer",
+        "FAMILY": "Family"
       },
       "allStatuses": "All statuses",
       "approveTitle": "Pay this withdrawal?",
@@ -2642,7 +2654,11 @@
         "DELIVERY_SPONSORSHIP": "Free delivery",
         "BANNER_PAYMENT": "Sponsored banner",
         "BANNER_REFUND": "Banner refunded",
-        "REFERRAL_REWARD": "Referral"
+        "REFERRAL_REWARD": "Referral",
+        "FAMILY_TRANSFER_OUT": "Family wallet top-up",
+        "FAMILY_TRANSFER_IN": "Family top-up received",
+        "FAMILY_CLOSURE_OUT": "Family wallet closure",
+        "FAMILY_CLOSURE_IN": "Family balance returned"
       },
       "debit": {
         "action": "Debit",
@@ -2689,6 +2705,96 @@
         "search": "Payer name or e-mail…",
         "empty": "No topup yet",
         "emptyFiltered": "No top-up matches these filters"
+      }
+    },
+    "familyWallets": {
+      "title": "Family wallets",
+      "description": "A payer funds the wallet and their relatives shop with it, each within their own limits. Open a wallet to see its members and latest movements.",
+      "search": "Search a payer (name, phone, email)…",
+      "empty": "No family wallet yet",
+      "memberCount_one": "{{count}} member",
+      "memberCount_other": "{{count}} members",
+      "status": {
+        "ACTIVE": "Active",
+        "SUSPENDED": "Suspended",
+        "SUSPENDED_BY_EBIO": "Suspended by eBio",
+        "CLOSED": "Closed"
+      },
+      "memberStatus": {
+        "PENDING": "Invitation pending",
+        "ACTIVE": "Active",
+        "SUSPENDED": "Suspended",
+        "SUSPENDED_BY_EBIO": "Suspended by eBio",
+        "REMOVED": "Removed"
+      },
+      "columns": {
+        "payer": "Payer",
+        "members": "Members",
+        "balance": "Balance",
+        "status": "Status",
+        "createdAt": "Opened on",
+        "member": "Member",
+        "limits": "Applied limits",
+        "spentThisMonth": "Spent this month",
+        "addedAt": "Added on",
+        "order": "Order"
+      },
+      "limits": {
+        "monthlyCap": "Monthly cap",
+        "orderMax": "Maximum per order",
+        "categories": "Allowed categories",
+        "none": "None",
+        "allCategories": "All categories",
+        "categoryCount_one": "{{count}} category",
+        "categoryCount_other": "{{count}} categories",
+        "monthlyShort": "Per month: {{amount}}",
+        "orderShort": "Per order: {{amount}}"
+      },
+      "detail": {
+        "notFound": "This family wallet cannot be found.",
+        "createdAt": "Opened on {{date}}",
+        "closedAt": "Closed on {{date}}",
+        "lowBalance": "Low balance alert under {{amount}}",
+        "ledger": "Ledger",
+        "defaults": "Default limits",
+        "defaultsHint": "The ones the payer set for all relatives. A member may have their own limits, shown in the members table.",
+        "members": "Members",
+        "membersEmpty": "No relative added to this wallet",
+        "transactions": "Latest movements",
+        "transactionsEmpty": "No movement yet",
+        "allTransactions_one": "See the movement",
+        "allTransactions_other": "See all {{count}} movements"
+      },
+      "actions": {
+        "wallet": {
+          "suspend": "Suspend the wallet",
+          "suspendConfirm": "None of {{name}}'s relatives will be able to pay with this wallet. The payer cannot lift this suspension: only the eBio team can.",
+          "resume": "Resume the wallet",
+          "resumeConfirm": "{{name}}'s relatives will be able to pay with this wallet again, within their limits."
+        },
+        "member": {
+          "suspend": "Suspend",
+          "suspendConfirm": "{{name}} will no longer be able to pay with this wallet; the other members carry on. The payer cannot lift this suspension.",
+          "resume": "Resume",
+          "resumeConfirm": "{{name}} will be able to pay with this wallet again, within their limits."
+        }
+      },
+      "dialog": {
+        "reason": "Reason (required)",
+        "note": "Note (optional)",
+        "reasonPlaceholder": "E.g.: ongoing dispute, suspected fraud…",
+        "reasonHint": "At least 3 characters. The reason is kept in the audit log."
+      },
+      "done": {
+        "wallet": {
+          "suspend": "Wallet suspended.",
+          "resume": "Wallet resumed."
+        },
+        "member": {
+          "suspend": "Member suspended.",
+          "resume": "Member resumed."
+        },
+        "error": "The change was not saved."
       }
     }
   },

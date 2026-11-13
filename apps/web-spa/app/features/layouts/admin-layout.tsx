@@ -28,6 +28,7 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: '/admin/comptes', action: 'read', subject: 'Payment' },
   { prefix: '/admin/reversements', action: 'read', subject: 'Payment' },
   { prefix: '/admin/portefeuilles', action: 'read', subject: 'Payment' },
+  { prefix: '/admin/portefeuilles-famille', action: 'read', subject: 'Payment' },
   { prefix: '/admin/recharges', action: 'read', subject: 'Payment' },
   { prefix: '/admin/codes-promo', action: 'manage', subject: 'PromoCode' },
   { prefix: '/admin/categories', action: 'manage', subject: 'Category' },

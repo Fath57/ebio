@@ -5,11 +5,11 @@ import {
   walletAdminControllerListWithdrawals,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
-export type WalletOwnerType = 'SUPPLIER' | 'COURIER' | 'USER'
+export type WalletOwnerType = 'SUPPLIER' | 'COURIER' | 'USER' | 'FAMILY'
 
 /** Fields shared by payout numbers and withdrawals: who the money goes to. */
 export interface PayoutOwner {
-  ownerType: Exclude<WalletOwnerType, 'USER'>
+  ownerType: Exclude<WalletOwnerType, 'USER' | 'FAMILY'>
   ownerName: string
   /** Null for courier rows. */
   supplierId: string | null

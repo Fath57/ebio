@@ -22,6 +22,9 @@ export interface AdminWalletListItem {
   supplierId: string | null
   courierId: string | null
   userId: string | null
+  /** Family wallets only: the family wallet and its payer. */
+  familyWalletId?: string | null
+  familyPayerId?: string | null
   updatedAt: string
 }
 

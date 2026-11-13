@@ -126,6 +126,15 @@ export const zNewProductSettings = z.object({
 });
 
 /**
+ * FamilyWalletSetting
+ *
+ * Ouvre ou ferme le portefeuille famille aux clients
+ */
+export const zFamilyWalletSetting = z.object({
+  enabled: z.boolean(),
+});
+
+/**
  * CartSync
  *
  * Le panier tel que l'application le détient
@@ -569,6 +578,132 @@ export const zTipCourier = z.object({
  */
 export const zBuyerDecision = z.object({
   decision: z.enum(["WAIT", "CANCEL"]),
+});
+
+/**
+ * CreateRelative
+ *
+ * Ajouter un proche au carnet
+ */
+export const zCreateRelative = z.object({
+  nickname: z.string().min(1).max(40),
+  name: z.string().min(1).max(120),
+  phone: z.string().regex(/^\+229\d{10}$/),
+  address: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+  longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+});
+
+/**
+ * UpdateRelative
+ *
+ * Modifier un proche du carnet ; seuls les champs envoyés changent
+ */
+export const zUpdateRelative = z.object({
+  nickname: z.optional(z.string().min(1).max(40)),
+  name: z.optional(z.string().min(1).max(120)),
+  phone: z.optional(z.string().regex(/^\+229\d{10}$/)),
+  address: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+  latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+  longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+});
+
+/**
+ * AdminFamilyReason
+ *
+ * Motif d'une suspension décidée par eBio
+ */
+export const zAdminFamilyReason = z.object({
+  reason: z.string().min(3).max(500),
+});
+
+/**
+ * AdminFamilyResume
+ */
+export const zAdminFamilyResume = z.object({
+  reason: z.optional(z.string().max(500)),
+});
+
+/**
+ * UpdateFamilyWallet
+ *
+ * Limites par défaut et seuil d'alerte du portefeuille famille
+ */
+export const zUpdateFamilyWallet = z.object({
+  defaults: z.optional(
+    z.object({
+      monthlyCap: z.optional(z.union([z.int().gt(0).lte(10000000), z.null()])),
+      orderMax: z.optional(z.union([z.int().gt(0).lte(10000000), z.null()])),
+      categoryIds: z.optional(
+        z.union([
+          z
+            .array(
+              z
+                .uuid()
+                .regex(
+                  /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                ),
+            )
+            .min(1)
+            .max(100),
+          z.null(),
+        ]),
+      ),
+    }),
+  ),
+  lowBalanceThreshold: z.optional(z.int().gte(0).lte(10000000)),
+});
+
+/**
+ * AddFamilyMember
+ *
+ * Ajouter un proche au portefeuille famille, depuis le carnet ou en le créant
+ */
+export const zAddFamilyMember = z.object({
+  savedRelativeId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  relative: z.optional(zCreateRelative),
+});
+
+/**
+ * UpdateFamilyMember
+ *
+ * Limites propres d'un membre
+ */
+export const zUpdateFamilyMember = z.object({
+  limits: z.object({
+    monthlyCap: z.optional(z.union([z.int().gt(0).lte(10000000), z.null()])),
+    orderMax: z.optional(z.union([z.int().gt(0).lte(10000000), z.null()])),
+    categoryIds: z.optional(
+      z.union([
+        z
+          .array(
+            z
+              .uuid()
+              .regex(
+                /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+              ),
+          )
+          .min(1)
+          .max(100),
+        z.null(),
+      ]),
+    ),
+  }),
+});
+
+/**
+ * FamilyAmount
+ *
+ * Montant en FCFA, de 1000 à 500000
+ */
+export const zFamilyAmount = z.object({
+  amount: z.int().gt(0).lte(9007199254740991),
 });
 
 /**
@@ -1567,34 +1702,6 @@ export const zCreateReview = z.object({
   communicationRating: z.int().gte(1).lte(5),
   conformityRating: z.int().gte(1).lte(5),
   comment: z.optional(z.string().max(500)),
-});
-
-/**
- * CreateRelative
- *
- * Ajouter un proche au carnet
- */
-export const zCreateRelative = z.object({
-  nickname: z.string().min(1).max(40),
-  name: z.string().min(1).max(120),
-  phone: z.string().regex(/^\+229\d{10}$/),
-  address: z.string().min(10).max(500),
-  latitude: z.number().gte(-90).lte(90),
-  longitude: z.number().gte(-180).lte(180),
-});
-
-/**
- * UpdateRelative
- *
- * Modifier un proche du carnet ; seuls les champs envoyés changent
- */
-export const zUpdateRelative = z.object({
-  nickname: z.optional(z.string().min(1).max(40)),
-  name: z.optional(z.string().min(1).max(120)),
-  phone: z.optional(z.string().regex(/^\+229\d{10}$/)),
-  address: z.optional(z.string().min(10).max(500)),
-  latitude: z.optional(z.number().gte(-90).lte(90)),
-  longitude: z.optional(z.number().gte(-180).lte(180)),
 });
 
 /**
@@ -2636,6 +2743,31 @@ export const zFailDelivery = z.object({
 });
 
 /**
+ * AdminFamilyWalletsQuery
+ */
+export const zAdminFamilyWalletsQuery = z.object({
+  status: z.optional(z.enum(["ACTIVE", "SUSPENDED", "CLOSED"])),
+  search: z.optional(z.string().max(100)),
+  page: z.int().gte(1).lte(9007199254740991).default(1),
+  limit: z.int().gte(1).lte(100).default(20),
+});
+
+/**
+ * FamilyTransactionsQuery
+ */
+export const zFamilyTransactionsQuery = z.object({
+  memberId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+  page: z.int().gte(1).lte(9007199254740991).default(1),
+  limit: z.int().gte(1).lte(100).default(20),
+});
+
+/**
  * PhotoAdjustments
  *
  * Retouches déterministes appliquées à une photo de produit
@@ -3037,7 +3169,12 @@ export const zCheckoutPreview = z.object({
  *
  * Payment method for the order
  */
-export const zPaymentMethod = z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]);
+export const zPaymentMethod = z.enum([
+  "FEDAPAY",
+  "CASH_ON_DELIVERY",
+  "WALLET",
+  "FAMILY_WALLET",
+]);
 
 /**
  * CreateCheckout
@@ -3051,6 +3188,13 @@ export const zCreateCheckout = z.object({
   deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   paymentMethod: zPaymentMethod,
+  familyMemberId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
   promoCode: z.optional(z.string().max(50)),
   deliverySlot: z.optional(z.string().max(200)),
   deliveryWindowStart: z.optional(
@@ -5134,6 +5278,20 @@ export const zAdminNewProductSettingsControllerUpdateData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminFamilyWalletSettingControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminFamilyWalletSettingControllerUpdateData = z.object({
+  body: z.object({
+    enabled: z.boolean(),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
 export const zSuppliersControllerRegisterData = z.object({
   body: z.object({
     shopName: z.string().min(2).max(100),
@@ -6298,7 +6456,19 @@ export const zOrdersControllerCreateCheckoutData = z.object({
     deliveryAddress: z.optional(z.string().min(10).max(500)),
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
-    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
+    paymentMethod: z.enum([
+      "FEDAPAY",
+      "CASH_ON_DELIVERY",
+      "WALLET",
+      "FAMILY_WALLET",
+    ]),
+    familyMemberId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
     promoCode: z.optional(z.string().max(50)),
     deliverySlot: z.optional(z.string().max(200)),
     deliveryWindowStart: z.optional(
@@ -6354,7 +6524,12 @@ export const zOrdersControllerCreateData = z.object({
         /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
       ),
     pickupMode: z.enum(["ON_SITE", "DELIVERY"]),
-    paymentMethod: z.enum(["FEDAPAY", "CASH_ON_DELIVERY", "WALLET"]),
+    paymentMethod: z.enum([
+      "FEDAPAY",
+      "CASH_ON_DELIVERY",
+      "WALLET",
+      "FAMILY_WALLET",
+    ]),
     deliveryAddress: z.optional(z.string().min(10).max(500)),
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
@@ -6506,6 +6681,352 @@ export const zOrdersControllerConfirmDeliveryPostData = z.object({
 export const zOrdersControllerCreateDisputeData = z.object({
   body: z.object({
     reason: z.string().min(10).max(2000),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerUpdateData = z.object({
+  body: z.object({
+    defaults: z.optional(
+      z.object({
+        monthlyCap: z.optional(
+          z.union([z.int().gt(0).lte(10000000), z.null()]),
+        ),
+        orderMax: z.optional(z.union([z.int().gt(0).lte(10000000), z.null()])),
+        categoryIds: z.optional(
+          z.union([
+            z
+              .array(
+                z
+                  .uuid()
+                  .regex(
+                    /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                  ),
+              )
+              .min(1)
+              .max(100),
+            z.null(),
+          ]),
+        ),
+      }),
+    ),
+    lowBalanceThreshold: z.optional(z.int().gte(0).lte(10000000)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerOpenData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerSuspendData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerResumeData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerCloseData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerTransactionsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    memberId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    page: z.int().gte(1).lte(9007199254740991).default(1),
+    limit: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+export const zFamilyWalletControllerAddMemberData = z.object({
+  body: z.object({
+    savedRelativeId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    relative: z.optional(
+      z.object({
+        nickname: z.string().min(1).max(40),
+        name: z.string().min(1).max(120),
+        phone: z.string().regex(/^\+229\d{10}$/),
+        address: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+        latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+        longitude: z.optional(
+          z.union([z.number().gte(-180).lte(180), z.null()]),
+        ),
+      }),
+    ),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerRemoveMemberData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerRemoveMemberResponse = z.void();
+
+export const zFamilyWalletControllerUpdateMemberData = z.object({
+  body: z.object({
+    limits: z.object({
+      monthlyCap: z.optional(z.union([z.int().gt(0).lte(10000000), z.null()])),
+      orderMax: z.optional(z.union([z.int().gt(0).lte(10000000), z.null()])),
+      categoryIds: z.optional(
+        z.union([
+          z
+            .array(
+              z
+                .uuid()
+                .regex(
+                  /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+                ),
+            )
+            .min(1)
+            .max(100),
+          z.null(),
+        ]),
+      ),
+    }),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerSuspendMemberData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerResumeMemberData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerInviteData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerTopupData = z.object({
+  body: z.object({
+    amount: z.int().gt(0).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerVerifyTopupData = z.object({
+  body: z.object({
+    fedapayTransactionId: z.string().min(1).max(64),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyWalletControllerTransferData = z.object({
+  body: z.object({
+    amount: z.int().gt(0).lte(9007199254740991),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyMemberViewControllerMineData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zFamilyMemberViewControllerTransactionsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    memberId: z.optional(
+      z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+    ),
+    page: z.int().gte(1).lte(9007199254740991).default(1),
+    limit: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+export const zAdminFamilyWalletsControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    status: z.optional(z.enum(["ACTIVE", "SUSPENDED", "CLOSED"])),
+    search: z.optional(z.string().max(100)),
+    page: z.int().gte(1).lte(9007199254740991).default(1),
+    limit: z.int().gte(1).lte(100).default(20),
+  }),
+});
+
+export const zAdminFamilyWalletsControllerSuspendMemberData = z.object({
+  body: z.object({
+    reason: z.string().min(3).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminFamilyWalletsControllerResumeMemberData = z.object({
+  body: z.object({
+    reason: z.optional(z.string().max(500)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminFamilyWalletsControllerDetailData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminFamilyWalletsControllerSuspendData = z.object({
+  body: z.object({
+    reason: z.string().min(3).max(500),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminFamilyWalletsControllerResumeData = z.object({
+  body: z.object({
+    reason: z.optional(z.string().max(500)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerUpdateData = z.object({
+  body: z.object({
+    EUR: z.optional(z.number().gt(0).lte(100000)),
+    USD: z.optional(z.number().gt(0).lte(100000)),
+    CAD: z.optional(z.number().gt(0).lte(100000)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerUpdateMarginData = z.object({
+  body: z.object({
+    bps: z.int().gte(0).lte(1000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerRefreshData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRelativesControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRelativesControllerCreateData = z.object({
+  body: z.object({
+    nickname: z.string().min(1).max(40),
+    name: z.string().min(1).max(120),
+    phone: z.string().regex(/^\+229\d{10}$/),
+    address: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+    latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+    longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRelativesControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zRelativesControllerRemoveResponse = z.void();
+
+export const zRelativesControllerUpdateData = z.object({
+  body: z.object({
+    nickname: z.optional(z.string().min(1).max(40)),
+    name: z.optional(z.string().min(1).max(120)),
+    phone: z.optional(z.string().regex(/^\+229\d{10}$/)),
+    address: z.optional(z.union([z.string().min(10).max(500), z.null()])),
+    latitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+    longitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
   }),
   path: z.object({
     id: z.string(),
@@ -8101,36 +8622,6 @@ export const zReferralsControllerClaimData = z.object({
   query: z.optional(z.never()),
 });
 
-export const zAdminExchangeRatesControllerGetData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminExchangeRatesControllerUpdateData = z.object({
-  body: z.object({
-    EUR: z.optional(z.number().gt(0).lte(100000)),
-    USD: z.optional(z.number().gt(0).lte(100000)),
-    CAD: z.optional(z.number().gt(0).lte(100000)),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminExchangeRatesControllerUpdateMarginData = z.object({
-  body: z.object({
-    bps: z.int().gte(0).lte(1000),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zAdminExchangeRatesControllerRefreshData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
 export const zGiftTrackingControllerGetData = z.object({
   body: z.optional(z.never()),
   path: z.object({
@@ -9097,50 +9588,6 @@ export const zCommunityControllerReportPublicationData = z.object({
 
 export const zCommunityControllerGetShareUrlData = z.object({
   body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zRelativesControllerListData = z.object({
-  body: z.optional(z.never()),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zRelativesControllerCreateData = z.object({
-  body: z.object({
-    nickname: z.string().min(1).max(40),
-    name: z.string().min(1).max(120),
-    phone: z.string().regex(/^\+229\d{10}$/),
-    address: z.string().min(10).max(500),
-    latitude: z.number().gte(-90).lte(90),
-    longitude: z.number().gte(-180).lte(180),
-  }),
-  path: z.optional(z.never()),
-  query: z.optional(z.never()),
-});
-
-export const zRelativesControllerRemoveData = z.object({
-  body: z.optional(z.never()),
-  path: z.object({
-    id: z.string(),
-  }),
-  query: z.optional(z.never()),
-});
-
-export const zRelativesControllerRemoveResponse = z.void();
-
-export const zRelativesControllerUpdateData = z.object({
-  body: z.object({
-    nickname: z.optional(z.string().min(1).max(40)),
-    name: z.optional(z.string().min(1).max(120)),
-    phone: z.optional(z.string().regex(/^\+229\d{10}$/)),
-    address: z.optional(z.string().min(10).max(500)),
-    latitude: z.optional(z.number().gte(-90).lte(90)),
-    longitude: z.optional(z.number().gte(-180).lte(180)),
-  }),
   path: z.object({
     id: z.string(),
   }),

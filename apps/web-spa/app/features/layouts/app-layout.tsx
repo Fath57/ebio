@@ -164,6 +164,7 @@ export default function AppLayout() {
       items: [
         { to: '/admin/transactions', label: t('nav.transactions'), icon: <CreditCard className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/portefeuilles', label: t('nav.wallets'), icon: <Wallet className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
+        { to: '/admin/portefeuilles-famille', label: t('nav.familyWallets'), icon: <Users className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/recharges', label: t('nav.topups'), icon: <ArrowDownToLine className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/reversements', label: t('nav.withdrawals'), icon: <ArrowUpFromLine className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },
         { to: '/admin/commissions', label: t('nav.commissions'), icon: <Percent className="h-4 w-4" />, permission: { action: 'read', subject: 'Payment' } },

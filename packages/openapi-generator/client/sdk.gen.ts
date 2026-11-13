@@ -158,6 +158,22 @@ import type {
   AdminExchangeRatesControllerUpdateMarginData,
   AdminExchangeRatesControllerUpdateMarginResponses,
   AdminExchangeRatesControllerUpdateResponses,
+  AdminFamilyWalletsControllerDetailData,
+  AdminFamilyWalletsControllerDetailResponses,
+  AdminFamilyWalletsControllerListData,
+  AdminFamilyWalletsControllerListResponses,
+  AdminFamilyWalletsControllerResumeData,
+  AdminFamilyWalletsControllerResumeMemberData,
+  AdminFamilyWalletsControllerResumeMemberResponses,
+  AdminFamilyWalletsControllerResumeResponses,
+  AdminFamilyWalletsControllerSuspendData,
+  AdminFamilyWalletsControllerSuspendMemberData,
+  AdminFamilyWalletsControllerSuspendMemberResponses,
+  AdminFamilyWalletsControllerSuspendResponses,
+  AdminFamilyWalletSettingControllerGetData,
+  AdminFamilyWalletSettingControllerGetResponses,
+  AdminFamilyWalletSettingControllerUpdateData,
+  AdminFamilyWalletSettingControllerUpdateResponses,
   AdminHomeSectionsControllerCreateData,
   AdminHomeSectionsControllerCreateResponses,
   AdminHomeSectionsControllerListData,
@@ -424,6 +440,42 @@ import type {
   DeliveriesControllerTipResponses,
   DeliveryPricingControllerQuoteData,
   DeliveryPricingControllerQuoteResponses,
+  FamilyMemberViewControllerMineData,
+  FamilyMemberViewControllerMineResponses,
+  FamilyMemberViewControllerTransactionsData,
+  FamilyMemberViewControllerTransactionsResponses,
+  FamilyWalletControllerAddMemberData,
+  FamilyWalletControllerAddMemberResponses,
+  FamilyWalletControllerCloseData,
+  FamilyWalletControllerCloseResponses,
+  FamilyWalletControllerGetData,
+  FamilyWalletControllerGetResponses,
+  FamilyWalletControllerInviteData,
+  FamilyWalletControllerInviteResponses,
+  FamilyWalletControllerOpenData,
+  FamilyWalletControllerOpenResponses,
+  FamilyWalletControllerRemoveMemberData,
+  FamilyWalletControllerRemoveMemberResponses,
+  FamilyWalletControllerResumeData,
+  FamilyWalletControllerResumeMemberData,
+  FamilyWalletControllerResumeMemberResponses,
+  FamilyWalletControllerResumeResponses,
+  FamilyWalletControllerSuspendData,
+  FamilyWalletControllerSuspendMemberData,
+  FamilyWalletControllerSuspendMemberResponses,
+  FamilyWalletControllerSuspendResponses,
+  FamilyWalletControllerTopupData,
+  FamilyWalletControllerTopupResponses,
+  FamilyWalletControllerTransactionsData,
+  FamilyWalletControllerTransactionsResponses,
+  FamilyWalletControllerTransferData,
+  FamilyWalletControllerTransferResponses,
+  FamilyWalletControllerUpdateData,
+  FamilyWalletControllerUpdateMemberData,
+  FamilyWalletControllerUpdateMemberResponses,
+  FamilyWalletControllerUpdateResponses,
+  FamilyWalletControllerVerifyTopupData,
+  FamilyWalletControllerVerifyTopupResponses,
   FavoritesControllerAddData,
   FavoritesControllerAddResponses,
   FavoritesControllerListData,
@@ -2043,6 +2095,35 @@ export const adminNewProductSettingsControllerUpdate = <
     },
   });
 
+export const adminFamilyWalletSettingControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminFamilyWalletSettingControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminFamilyWalletSettingControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/family-wallet-setting", ...options });
+
+export const adminFamilyWalletSettingControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminFamilyWalletSettingControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminFamilyWalletSettingControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/family-wallet-setting",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const suppliersControllerRegister = <
   ThrowOnError extends boolean = false,
 >(
@@ -3562,6 +3643,446 @@ export const ordersControllerCreateDispute = <
     },
   });
 
+export const familyWalletControllerGet = <ThrowOnError extends boolean = false>(
+  options?: Options<FamilyWalletControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    FamilyWalletControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet", ...options });
+
+export const familyWalletControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    FamilyWalletControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/family-wallet",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const familyWalletControllerOpen = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<FamilyWalletControllerOpenData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    FamilyWalletControllerOpenResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet", ...options });
+
+export const familyWalletControllerSuspend = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<FamilyWalletControllerSuspendData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    FamilyWalletControllerSuspendResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/suspend", ...options });
+
+export const familyWalletControllerResume = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<FamilyWalletControllerResumeData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    FamilyWalletControllerResumeResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/resume", ...options });
+
+export const familyWalletControllerClose = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<FamilyWalletControllerCloseData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    FamilyWalletControllerCloseResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/close", ...options });
+
+export const familyWalletControllerTransactions = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerTransactionsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    FamilyWalletControllerTransactionsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/transactions", ...options });
+
+export const familyWalletControllerAddMember = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerAddMemberData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FamilyWalletControllerAddMemberResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/family-wallet/members",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const familyWalletControllerRemoveMember = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerRemoveMemberData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    FamilyWalletControllerRemoveMemberResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/members/{id}", ...options });
+
+export const familyWalletControllerUpdateMember = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerUpdateMemberData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    FamilyWalletControllerUpdateMemberResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/family-wallet/members/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const familyWalletControllerSuspendMember = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerSuspendMemberData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FamilyWalletControllerSuspendMemberResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/members/{id}/suspend", ...options });
+
+export const familyWalletControllerResumeMember = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerResumeMemberData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FamilyWalletControllerResumeMemberResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/members/{id}/resume", ...options });
+
+export const familyWalletControllerInvite = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerInviteData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FamilyWalletControllerInviteResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallet/members/{id}/invite", ...options });
+
+export const familyWalletControllerTopup = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerTopupData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FamilyWalletControllerTopupResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/family-wallet/topups",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const familyWalletControllerVerifyTopup = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerVerifyTopupData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FamilyWalletControllerVerifyTopupResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/family-wallet/topups/{id}/verify",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const familyWalletControllerTransfer = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyWalletControllerTransferData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    FamilyWalletControllerTransferResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/family-wallet/transfer",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const familyMemberViewControllerMine = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<FamilyMemberViewControllerMineData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    FamilyMemberViewControllerMineResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallets/mine", ...options });
+
+export const familyMemberViewControllerTransactions = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<FamilyMemberViewControllerTransactionsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    FamilyMemberViewControllerTransactionsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/family-wallets/mine/{memberId}/transactions", ...options });
+
+export const adminFamilyWalletsControllerList = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminFamilyWalletsControllerListData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminFamilyWalletsControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/family-wallets", ...options });
+
+export const adminFamilyWalletsControllerSuspendMember = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminFamilyWalletsControllerSuspendMemberData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminFamilyWalletsControllerSuspendMemberResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/family-wallets/members/{id}/suspend",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminFamilyWalletsControllerResumeMember = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminFamilyWalletsControllerResumeMemberData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminFamilyWalletsControllerResumeMemberResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/family-wallets/members/{id}/resume",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminFamilyWalletsControllerDetail = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminFamilyWalletsControllerDetailData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminFamilyWalletsControllerDetailResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/family-wallets/{id}", ...options });
+
+export const adminFamilyWalletsControllerSuspend = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminFamilyWalletsControllerSuspendData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminFamilyWalletsControllerSuspendResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/family-wallets/{id}/suspend",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminFamilyWalletsControllerResume = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminFamilyWalletsControllerResumeData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminFamilyWalletsControllerResumeResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/family-wallets/{id}/resume",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminExchangeRatesControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminExchangeRatesControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminExchangeRatesControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/exchange-rates", ...options });
+
+export const adminExchangeRatesControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExchangeRatesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminExchangeRatesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/exchange-rates",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminExchangeRatesControllerUpdateMargin = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExchangeRatesControllerUpdateMarginData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminExchangeRatesControllerUpdateMarginResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/fx-margin",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminExchangeRatesControllerRefresh = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminExchangeRatesControllerRefreshData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    AdminExchangeRatesControllerRefreshResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/exchange-rates/refresh", ...options });
+
+export const relativesControllerList = <ThrowOnError extends boolean = false>(
+  options?: Options<RelativesControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    RelativesControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/relatives", ...options });
+
+export const relativesControllerCreate = <ThrowOnError extends boolean = false>(
+  options: Options<RelativesControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RelativesControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/relatives",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const relativesControllerRemove = <ThrowOnError extends boolean = false>(
+  options: Options<RelativesControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    RelativesControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/relatives/{id}", ...options });
+
+export const relativesControllerUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<RelativesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    RelativesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/relatives/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const paymentsControllerGetPaymentInfo = <
   ThrowOnError extends boolean = false,
 >(
@@ -5053,64 +5574,6 @@ export const referralsControllerClaim = <ThrowOnError extends boolean = false>(
     },
   });
 
-export const adminExchangeRatesControllerGet = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<AdminExchangeRatesControllerGetData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    AdminExchangeRatesControllerGetResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/exchange-rates", ...options });
-
-export const adminExchangeRatesControllerUpdate = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<AdminExchangeRatesControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    AdminExchangeRatesControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/exchange-rates",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const adminExchangeRatesControllerUpdateMargin = <
-  ThrowOnError extends boolean = false,
->(
-  options: Options<AdminExchangeRatesControllerUpdateMarginData, ThrowOnError>,
-) =>
-  (options.client ?? client).put<
-    AdminExchangeRatesControllerUpdateMarginResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/admin/fx-margin",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const adminExchangeRatesControllerRefresh = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<AdminExchangeRatesControllerRefreshData, ThrowOnError>,
-) =>
-  (options?.client ?? client).post<
-    AdminExchangeRatesControllerRefreshResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/admin/exchange-rates/refresh", ...options });
-
 export const giftTrackingControllerGet = <ThrowOnError extends boolean = false>(
   options: Options<GiftTrackingControllerGetData, ThrowOnError>,
 ) =>
@@ -6122,56 +6585,6 @@ export const communityControllerGetShareUrl = <
     unknown,
     ThrowOnError
   >({ url: "/api/groups/publications/{id}/share-url", ...options });
-
-export const relativesControllerList = <ThrowOnError extends boolean = false>(
-  options?: Options<RelativesControllerListData, ThrowOnError>,
-) =>
-  (options?.client ?? client).get<
-    RelativesControllerListResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/relatives", ...options });
-
-export const relativesControllerCreate = <ThrowOnError extends boolean = false>(
-  options: Options<RelativesControllerCreateData, ThrowOnError>,
-) =>
-  (options.client ?? client).post<
-    RelativesControllerCreateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/relatives",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
-
-export const relativesControllerRemove = <ThrowOnError extends boolean = false>(
-  options: Options<RelativesControllerRemoveData, ThrowOnError>,
-) =>
-  (options.client ?? client).delete<
-    RelativesControllerRemoveResponses,
-    unknown,
-    ThrowOnError
-  >({ url: "/api/relatives/{id}", ...options });
-
-export const relativesControllerUpdate = <ThrowOnError extends boolean = false>(
-  options: Options<RelativesControllerUpdateData, ThrowOnError>,
-) =>
-  (options.client ?? client).patch<
-    RelativesControllerUpdateResponses,
-    unknown,
-    ThrowOnError
-  >({
-    url: "/api/relatives/{id}",
-    ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options.headers,
-    },
-  });
 
 export const trainingControllerGetModules = <
   ThrowOnError extends boolean = false,

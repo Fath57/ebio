@@ -17,12 +17,13 @@ import { DebitDialog } from '../components/debit-dialog'
 import { formatAmount } from '../utils/format-amount'
 import { fetchWalletsListQueryOptions, WALLETS_PAGE_SIZE } from '../utils/wallets-queries'
 
-const OWNER_TYPES = ['SUPPLIER', 'COURIER', 'USER'] as const
+const OWNER_TYPES = ['SUPPLIER', 'COURIER', 'USER', 'FAMILY'] as const
 const BALANCES = ['positive', 'negative', 'zero'] as const
 
 /**
- * What every account holds: shops, couriers and buyers, the biggest balance
- * first. A row opens the wallet's history; staff with the right can debit it.
+ * What every account holds: shops, couriers, buyers and family wallets, the
+ * biggest balance first. A row opens the wallet's history — a family wallet
+ * opens its own page, with members and limits; staff with the right can debit it.
  */
 export default function AdminWalletsPage() {
   const { t, i18n } = useTranslation()
@@ -147,7 +148,9 @@ export default function AdminWalletsPage() {
         page={list.page}
         pageSize={WALLETS_PAGE_SIZE}
         onPageChange={list.setPage}
-        onRowClick={wallet => navigate(`/admin/portefeuilles/${wallet.id}`)}
+        onRowClick={wallet => navigate(wallet.ownerType === 'FAMILY' && wallet.familyWalletId
+          ? `/admin/portefeuilles-famille/${wallet.familyWalletId}`
+          : `/admin/portefeuilles/${wallet.id}`)}
         isLoading={isLoading}
         isFetching={isFetching}
         isError={isError}

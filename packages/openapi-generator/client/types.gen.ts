@@ -163,6 +163,15 @@ export type NewProductSettings = {
 };
 
 /**
+ * FamilyWalletSetting
+ *
+ * Ouvre ou ferme le portefeuille famille aux clients
+ */
+export type FamilyWalletSetting = {
+  enabled: boolean;
+};
+
+/**
  * CartSync
  *
  * Le panier tel que l'application le détient
@@ -657,6 +666,96 @@ export type BuyerDecision = {
 };
 
 /**
+ * CreateRelative
+ *
+ * Ajouter un proche au carnet
+ */
+export type CreateRelative = {
+  nickname: string;
+  name: string;
+  phone: string;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+};
+
+/**
+ * UpdateRelative
+ *
+ * Modifier un proche du carnet ; seuls les champs envoyés changent
+ */
+export type UpdateRelative = {
+  nickname?: string;
+  name?: string;
+  phone?: string;
+  address?: string | null;
+  latitude?: number | null;
+  longitude?: number | null;
+};
+
+/**
+ * AdminFamilyReason
+ *
+ * Motif d'une suspension décidée par eBio
+ */
+export type AdminFamilyReason = {
+  reason: string;
+};
+
+/**
+ * AdminFamilyResume
+ */
+export type AdminFamilyResume = {
+  reason?: string;
+};
+
+/**
+ * UpdateFamilyWallet
+ *
+ * Limites par défaut et seuil d'alerte du portefeuille famille
+ */
+export type UpdateFamilyWallet = {
+  defaults?: {
+    monthlyCap?: number | null;
+    orderMax?: number | null;
+    categoryIds?: Array<string> | null;
+  };
+  lowBalanceThreshold?: number;
+};
+
+/**
+ * AddFamilyMember
+ *
+ * Ajouter un proche au portefeuille famille, depuis le carnet ou en le créant
+ */
+export type AddFamilyMember = {
+  savedRelativeId?: string;
+  relative?: CreateRelative;
+};
+
+/**
+ * UpdateFamilyMember
+ *
+ * Limites propres d'un membre
+ */
+export type UpdateFamilyMember = {
+  limits: {
+    monthlyCap?: number | null;
+    orderMax?: number | null;
+    categoryIds?: Array<string> | null;
+  };
+};
+
+/**
+ * FamilyAmount
+ *
+ * Montant en FCFA, de 1000 à 500000
+ */
+export type FamilyAmount = {
+  amount: number;
+};
+
+/**
  * CreateCategory
  *
  * Data required to create a new category
@@ -965,6 +1064,7 @@ export type CreateCheckout = {
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   paymentMethod: PaymentMethod;
+  familyMemberId?: string;
   promoCode?: string;
   deliverySlot?: string;
   deliveryWindowStart?: Date;
@@ -1891,34 +1991,6 @@ export type CreateReview = {
 };
 
 /**
- * CreateRelative
- *
- * Ajouter un proche au carnet
- */
-export type CreateRelative = {
-  nickname: string;
-  name: string;
-  phone: string;
-  address: string;
-  latitude: number;
-  longitude: number;
-};
-
-/**
- * UpdateRelative
- *
- * Modifier un proche du carnet ; seuls les champs envoyés changent
- */
-export type UpdateRelative = {
-  nickname?: string;
-  name?: string;
-  phone?: string;
-  address?: string;
-  latitude?: number;
-  longitude?: number;
-};
-
-/**
  * Sales Statement Period
  *
  * Calendar days, both included, read in the shop's own time zone
@@ -2664,6 +2736,30 @@ export type DeliveryFailReason =
   (typeof DeliveryFailReason)[keyof typeof DeliveryFailReason];
 
 /**
+ * AdminFamilyWalletsQuery
+ */
+export type AdminFamilyWalletsQuery = {
+  /**
+   * FamilyWalletStatus
+   *
+   * Statut du portefeuille famille
+   */
+  status?: "ACTIVE" | "SUSPENDED" | "CLOSED";
+  search?: string;
+  page: number;
+  limit: number;
+};
+
+/**
+ * FamilyTransactionsQuery
+ */
+export type FamilyTransactionsQuery = {
+  memberId?: string;
+  page: number;
+  limit: number;
+};
+
+/**
  * PhotoAdjustments
  *
  * Retouches déterministes appliquées à une photo de produit
@@ -2845,6 +2941,7 @@ export const PaymentMethod = {
   FEDAPAY: "FEDAPAY",
   CASH_ON_DELIVERY: "CASH_ON_DELIVERY",
   WALLET: "WALLET",
+  FAMILY_WALLET: "FAMILY_WALLET",
 } as const;
 
 /**
@@ -5385,6 +5482,35 @@ export type AdminNewProductSettingsControllerUpdateResponses = {
   200: unknown;
 };
 
+export type AdminFamilyWalletSettingControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/family-wallet-setting";
+};
+
+export type AdminFamilyWalletSettingControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminFamilyWalletSettingControllerUpdateData = {
+  /**
+   * FamilyWalletSetting
+   *
+   * Ouvre ou ferme le portefeuille famille aux clients
+   */
+  body: {
+    enabled: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/family-wallet-setting";
+};
+
+export type AdminFamilyWalletSettingControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -7196,7 +7322,8 @@ export type OrdersControllerCreateCheckoutData = {
      *
      * Payment method for the order
      */
-    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
+    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET" | "FAMILY_WALLET";
+    familyMemberId?: string;
     promoCode?: string;
     deliverySlot?: string;
     deliveryWindowStart?: Date;
@@ -7263,7 +7390,7 @@ export type OrdersControllerCreateData = {
      *
      * Payment method for the order
      */
-    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET";
+    paymentMethod: "FEDAPAY" | "CASH_ON_DELIVERY" | "WALLET" | "FAMILY_WALLET";
     deliveryAddress?: string;
     deliveryLatitude?: number;
     deliveryLongitude?: number;
@@ -7456,6 +7583,536 @@ export type OrdersControllerCreateDisputeData = {
 
 export type OrdersControllerCreateDisputeResponses = {
   201: unknown;
+};
+
+export type FamilyWalletControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet";
+};
+
+export type FamilyWalletControllerGetResponses = {
+  200: unknown;
+};
+
+export type FamilyWalletControllerUpdateData = {
+  /**
+   * UpdateFamilyWallet
+   *
+   * Limites par défaut et seuil d'alerte du portefeuille famille
+   */
+  body: {
+    defaults?: {
+      monthlyCap?: number | null;
+      orderMax?: number | null;
+      categoryIds?: Array<string> | null;
+    };
+    lowBalanceThreshold?: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet";
+};
+
+export type FamilyWalletControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type FamilyWalletControllerOpenData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet";
+};
+
+export type FamilyWalletControllerOpenResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerSuspendData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet/suspend";
+};
+
+export type FamilyWalletControllerSuspendResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerResumeData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet/resume";
+};
+
+export type FamilyWalletControllerResumeResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerCloseData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet/close";
+};
+
+export type FamilyWalletControllerCloseResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerTransactionsData = {
+  body?: never;
+  path?: never;
+  query: {
+    memberId?: string;
+    page: number;
+    limit: number;
+  };
+  url: "/api/family-wallet/transactions";
+};
+
+export type FamilyWalletControllerTransactionsResponses = {
+  200: unknown;
+};
+
+export type FamilyWalletControllerAddMemberData = {
+  /**
+   * AddFamilyMember
+   *
+   * Ajouter un proche au portefeuille famille, depuis le carnet ou en le créant
+   */
+  body: {
+    savedRelativeId?: string;
+    /**
+     * CreateRelative
+     *
+     * Ajouter un proche au carnet
+     */
+    relative?: {
+      nickname: string;
+      name: string;
+      phone: string;
+      address?: string | null;
+      latitude?: number | null;
+      longitude?: number | null;
+    };
+  };
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet/members";
+};
+
+export type FamilyWalletControllerAddMemberResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerRemoveMemberData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/family-wallet/members/{id}";
+};
+
+export type FamilyWalletControllerRemoveMemberResponses = {
+  204: void;
+};
+
+export type FamilyWalletControllerRemoveMemberResponse =
+  FamilyWalletControllerRemoveMemberResponses[keyof FamilyWalletControllerRemoveMemberResponses];
+
+export type FamilyWalletControllerUpdateMemberData = {
+  /**
+   * UpdateFamilyMember
+   *
+   * Limites propres d'un membre
+   */
+  body: {
+    limits: {
+      monthlyCap?: number | null;
+      orderMax?: number | null;
+      categoryIds?: Array<string> | null;
+    };
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/family-wallet/members/{id}";
+};
+
+export type FamilyWalletControllerUpdateMemberResponses = {
+  200: unknown;
+};
+
+export type FamilyWalletControllerSuspendMemberData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/family-wallet/members/{id}/suspend";
+};
+
+export type FamilyWalletControllerSuspendMemberResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerResumeMemberData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/family-wallet/members/{id}/resume";
+};
+
+export type FamilyWalletControllerResumeMemberResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerInviteData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/family-wallet/members/{id}/invite";
+};
+
+export type FamilyWalletControllerInviteResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerTopupData = {
+  /**
+   * FamilyAmount
+   *
+   * Montant en FCFA, de 1000 à 500000
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet/topups";
+};
+
+export type FamilyWalletControllerTopupResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerVerifyTopupData = {
+  /**
+   * VerifyTopup
+   *
+   * FedaPay transaction id reported by the checkout widget; the server re-checks it
+   */
+  body: {
+    fedapayTransactionId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/family-wallet/topups/{id}/verify";
+};
+
+export type FamilyWalletControllerVerifyTopupResponses = {
+  201: unknown;
+};
+
+export type FamilyWalletControllerTransferData = {
+  /**
+   * FamilyAmount
+   *
+   * Montant en FCFA, de 1000 à 500000
+   */
+  body: {
+    amount: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/family-wallet/transfer";
+};
+
+export type FamilyWalletControllerTransferResponses = {
+  201: unknown;
+};
+
+export type FamilyMemberViewControllerMineData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/family-wallets/mine";
+};
+
+export type FamilyMemberViewControllerMineResponses = {
+  200: unknown;
+};
+
+export type FamilyMemberViewControllerTransactionsData = {
+  body?: never;
+  path?: never;
+  query: {
+    memberId?: string;
+    page: number;
+    limit: number;
+  };
+  url: "/api/family-wallets/mine/{memberId}/transactions";
+};
+
+export type FamilyMemberViewControllerTransactionsResponses = {
+  200: unknown;
+};
+
+export type AdminFamilyWalletsControllerListData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * FamilyWalletStatus
+     *
+     * Statut du portefeuille famille
+     */
+    status?: "ACTIVE" | "SUSPENDED" | "CLOSED";
+    search?: string;
+    page: number;
+    limit: number;
+  };
+  url: "/api/admin/family-wallets";
+};
+
+export type AdminFamilyWalletsControllerListResponses = {
+  200: unknown;
+};
+
+export type AdminFamilyWalletsControllerSuspendMemberData = {
+  /**
+   * AdminFamilyReason
+   *
+   * Motif d'une suspension décidée par eBio
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/family-wallets/members/{id}/suspend";
+};
+
+export type AdminFamilyWalletsControllerSuspendMemberResponses = {
+  201: unknown;
+};
+
+export type AdminFamilyWalletsControllerResumeMemberData = {
+  /**
+   * AdminFamilyResume
+   */
+  body: {
+    reason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/family-wallets/members/{id}/resume";
+};
+
+export type AdminFamilyWalletsControllerResumeMemberResponses = {
+  201: unknown;
+};
+
+export type AdminFamilyWalletsControllerDetailData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/family-wallets/{id}";
+};
+
+export type AdminFamilyWalletsControllerDetailResponses = {
+  200: unknown;
+};
+
+export type AdminFamilyWalletsControllerSuspendData = {
+  /**
+   * AdminFamilyReason
+   *
+   * Motif d'une suspension décidée par eBio
+   */
+  body: {
+    reason: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/family-wallets/{id}/suspend";
+};
+
+export type AdminFamilyWalletsControllerSuspendResponses = {
+  201: unknown;
+};
+
+export type AdminFamilyWalletsControllerResumeData = {
+  /**
+   * AdminFamilyResume
+   */
+  body: {
+    reason?: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/family-wallets/{id}/resume";
+};
+
+export type AdminFamilyWalletsControllerResumeResponses = {
+  201: unknown;
+};
+
+export type AdminExchangeRatesControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/exchange-rates";
+};
+
+export type AdminExchangeRatesControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminExchangeRatesControllerUpdateData = {
+  /**
+   * AdminExchangeRatesInput
+   *
+   * Taux saisis à la main, en FCFA pour une unité
+   */
+  body: {
+    EUR?: number;
+    USD?: number;
+    CAD?: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/exchange-rates";
+};
+
+export type AdminExchangeRatesControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type AdminExchangeRatesControllerUpdateMarginData = {
+  /**
+   * AdminFxMarginInput
+   *
+   * Marge de change en points de base (200 = 2 %)
+   */
+  body: {
+    bps: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/fx-margin";
+};
+
+export type AdminExchangeRatesControllerUpdateMarginResponses = {
+  200: unknown;
+};
+
+export type AdminExchangeRatesControllerRefreshData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/exchange-rates/refresh";
+};
+
+export type AdminExchangeRatesControllerRefreshResponses = {
+  201: unknown;
+};
+
+export type RelativesControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/relatives";
+};
+
+export type RelativesControllerListResponses = {
+  200: unknown;
+};
+
+export type RelativesControllerCreateData = {
+  /**
+   * CreateRelative
+   *
+   * Ajouter un proche au carnet
+   */
+  body: {
+    nickname: string;
+    name: string;
+    phone: string;
+    address?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/relatives";
+};
+
+export type RelativesControllerCreateResponses = {
+  201: unknown;
+};
+
+export type RelativesControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/relatives/{id}";
+};
+
+export type RelativesControllerRemoveResponses = {
+  204: void;
+};
+
+export type RelativesControllerRemoveResponse =
+  RelativesControllerRemoveResponses[keyof RelativesControllerRemoveResponses];
+
+export type RelativesControllerUpdateData = {
+  /**
+   * UpdateRelative
+   *
+   * Modifier un proche du carnet ; seuls les champs envoyés changent
+   */
+  body: {
+    nickname?: string;
+    name?: string;
+    phone?: string;
+    address?: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/relatives/{id}";
+};
+
+export type RelativesControllerUpdateResponses = {
+  200: unknown;
 };
 
 export type PaymentsControllerGetPaymentInfoData = {
@@ -9585,66 +10242,6 @@ export type ReferralsControllerClaimResponses = {
   201: unknown;
 };
 
-export type AdminExchangeRatesControllerGetData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/exchange-rates";
-};
-
-export type AdminExchangeRatesControllerGetResponses = {
-  200: unknown;
-};
-
-export type AdminExchangeRatesControllerUpdateData = {
-  /**
-   * AdminExchangeRatesInput
-   *
-   * Taux saisis à la main, en FCFA pour une unité
-   */
-  body: {
-    EUR?: number;
-    USD?: number;
-    CAD?: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/exchange-rates";
-};
-
-export type AdminExchangeRatesControllerUpdateResponses = {
-  200: unknown;
-};
-
-export type AdminExchangeRatesControllerUpdateMarginData = {
-  /**
-   * AdminFxMarginInput
-   *
-   * Marge de change en points de base (200 = 2 %)
-   */
-  body: {
-    bps: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/admin/fx-margin";
-};
-
-export type AdminExchangeRatesControllerUpdateMarginResponses = {
-  200: unknown;
-};
-
-export type AdminExchangeRatesControllerRefreshData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/admin/exchange-rates/refresh";
-};
-
-export type AdminExchangeRatesControllerRefreshResponses = {
-  201: unknown;
-};
-
 export type GiftTrackingControllerGetData = {
   body?: never;
   path: {
@@ -10901,81 +11498,6 @@ export type CommunityControllerGetShareUrlData = {
 };
 
 export type CommunityControllerGetShareUrlResponses = {
-  200: unknown;
-};
-
-export type RelativesControllerListData = {
-  body?: never;
-  path?: never;
-  query?: never;
-  url: "/api/relatives";
-};
-
-export type RelativesControllerListResponses = {
-  200: unknown;
-};
-
-export type RelativesControllerCreateData = {
-  /**
-   * CreateRelative
-   *
-   * Ajouter un proche au carnet
-   */
-  body: {
-    nickname: string;
-    name: string;
-    phone: string;
-    address: string;
-    latitude: number;
-    longitude: number;
-  };
-  path?: never;
-  query?: never;
-  url: "/api/relatives";
-};
-
-export type RelativesControllerCreateResponses = {
-  201: unknown;
-};
-
-export type RelativesControllerRemoveData = {
-  body?: never;
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/relatives/{id}";
-};
-
-export type RelativesControllerRemoveResponses = {
-  204: void;
-};
-
-export type RelativesControllerRemoveResponse =
-  RelativesControllerRemoveResponses[keyof RelativesControllerRemoveResponses];
-
-export type RelativesControllerUpdateData = {
-  /**
-   * UpdateRelative
-   *
-   * Modifier un proche du carnet ; seuls les champs envoyés changent
-   */
-  body: {
-    nickname?: string;
-    name?: string;
-    phone?: string;
-    address?: string;
-    latitude?: number;
-    longitude?: number;
-  };
-  path: {
-    id: string;
-  };
-  query?: never;
-  url: "/api/relatives/{id}";
-};
-
-export type RelativesControllerUpdateResponses = {
   200: unknown;
 };
 

@@ -96,6 +96,8 @@ export default [
       route('admin/reversements', 'features/admin/withdrawals/pages/admin-withdrawals-page.tsx'),
       route('admin/portefeuilles', 'features/admin/wallets/pages/admin-wallets-page.tsx'),
       route('admin/portefeuilles/:walletId', 'features/admin/wallets/pages/admin-wallet-detail-page.tsx'),
+      route('admin/portefeuilles-famille', 'features/admin/family-wallets/pages/admin-family-wallets-page.tsx'),
+      route('admin/portefeuilles-famille/:familyWalletId', 'features/admin/family-wallets/pages/admin-family-wallet-detail-page.tsx'),
       route('admin/recharges', 'features/admin/wallets/pages/admin-topups-page.tsx'),
       route('admin/codes-promo', 'features/admin/promo-codes/pages/admin-promo-codes-page.tsx'),
       route('admin/avis-signales', 'features/admin/review-moderation/pages/review-moderation-page.tsx'),
