@@ -10,6 +10,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
+import { ContactPickButton } from '../../relatives/components/contact-pick-button'
 
 export type DeliveryTarget = 'SELF' | 'RELATIVE'
 
@@ -167,6 +168,8 @@ export function RecipientStep({ target, onTargetChange, recipient, onRecipientCh
       {target === 'RELATIVE' && (
         <View style={styles.form}>
           {savedRelativesSlot}
+
+          <ContactPickButton onPicked={(name, phone) => update({ name, phone })} />
 
           <Text style={[styles.label, { color: semantic.textSecondary }]}>Nom du proche *</Text>
           <TextInput

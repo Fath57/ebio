@@ -19,6 +19,7 @@ import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
 import { saveRelative } from '../relatives-api'
+import { ContactPickButton } from './contact-pick-button'
 
 const NICKNAME_MAX = 40
 const NAME_MAX = 120
@@ -116,6 +117,13 @@ export function RelativeFormScreen({ relative, onSaved, onBack }: RelativeFormSc
             maxLength={NICKNAME_MAX}
             autoCapitalize="words"
             accessibilityLabel="Surnom"
+          />
+
+          <ContactPickButton
+            onPicked={(pickedName, pickedPhone) => {
+              setName(pickedName)
+              setPhone(pickedPhone)
+            }}
           />
 
           <Text style={[styles.label, { color: semantic.textSecondary }]}>Nom du proche *</Text>
