@@ -6,7 +6,6 @@ import * as Haptics from 'expo-haptics'
 import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import Heart from 'lucide-react-native/dist/esm/icons/heart'
-import Info from 'lucide-react-native/dist/esm/icons/info'
 import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
@@ -632,16 +631,6 @@ export function ProductDetailScreen({
           </TouchableOpacity>
         </View>
 
-        {/* ============================================================== */}
-        {/* INFO NOTICE — discrète                                          */}
-        {/* ============================================================== */}
-        <View style={styles.noticeRow}>
-          <Info size={12} color={semantic.textTertiary} strokeWidth={2} />
-          <Text style={[styles.noticeText, { color: semantic.textTertiary }]}>
-            Prix et disponibilité indicatifs. Contactez le fournisseur pour tout détail.
-          </Text>
-        </View>
-
         {/* Out of stock CTA */}
         {!product.isInStock && (
           <View style={styles.ctaSection}>
@@ -1102,21 +1091,6 @@ const styles = StyleSheet.create({
   modeChipContactText: {
     fontFamily: fonts.sansSb,
     fontSize: 10,
-  },
-
-  // Info notice — inline discrète
-  noticeRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: spacing[5],
-    paddingTop: spacing[5],
-  },
-  noticeText: {
-    flex: 1,
-    fontFamily: fonts.sans,
-    fontSize: 11,
-    lineHeight: 11 * 1.5,
   },
 
   // CTA section — premium
