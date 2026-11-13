@@ -22,6 +22,7 @@ import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useMoney } from '../../common/hooks/use-money'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { announceTopupOutcome, awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-settlement'
@@ -133,6 +134,7 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
   const { semantic } = useTheme()
+  const { formatMoney, currency } = useMoney()
   const [balance, setBalance] = useState(0)
   const [topups, setTopups] = useState<Topup[]>([])
   const [isToppingUp, setIsToppingUp] = useState(false)
@@ -362,8 +364,13 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
             <View style={[styles.balanceCard, { backgroundColor: semantic.bgCard }]}>
               <Text style={[styles.balanceLabel, { color: semantic.textSecondary }]}>Solde disponible</Text>
               <Text style={[styles.balanceValue, { color: semantic.textPrimary }]}>
-                {formatAmount(balance)}
+                {formatMoney(balance).primary}
               </Text>
+              {currency !== 'XOF' && (
+                <Text style={[styles.balanceSecondary, { color: semantic.textSecondary }]}>
+                  {`soit ${formatAmount(balance)}`}
+                </Text>
+              )}
               <TouchableOpacity
                 style={[styles.topupButton, !fedapayPublicKey && styles.buttonDisabled]}
                 disabled={!fedapayPublicKey}
@@ -436,6 +443,11 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
                   <Text style={[styles.presetText, { color: semantic.textPrimary }]}>
                     {preset.toLocaleString('fr-FR')}
                   </Text>
+                  {currency !== 'XOF' && (
+                    <Text style={[styles.presetSecondary, { color: semantic.textSecondary }]}>
+                      {`≈ ${formatMoney(preset).primary}`}
+                    </Text>
+                  )}
                 </TouchableOpacity>
               ))}
             </View>
@@ -447,6 +459,11 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
               value={topupAmount}
               onChangeText={setTopupAmount}
             />
+            {currency !== 'XOF' && Number(topupAmount) > 0 && (
+              <Text style={[styles.modalHint, { color: semantic.textSecondary }]}>
+                {`Soit environ ${formatMoney(Number(topupAmount)).primary}. Votre banque convertit au taux du jour : le montant prélevé peut différer légèrement.`}
+              </Text>
+            )}
             <View style={styles.modalActions}>
               <TouchableOpacity style={styles.modalCancel} onPress={() => setIsToppingUp(false)}>
                 <Text style={[styles.modalCancelText, { color: semantic.textSecondary }]}>Annuler</Text>
@@ -573,6 +590,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   presetText: { ...typography.bodyS, fontFamily: fonts.sansSb },
+  presetSecondary: { ...typography.caption, fontFamily: fonts.mono },
+  balanceSecondary: { ...typography.bodyS, fontFamily: fonts.mono },
   input: {
     borderWidth: 1,
     borderRadius: radius.md,
