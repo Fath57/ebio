@@ -59,10 +59,9 @@ export default function Cgu({ loaderData }: Route.ComponentProps) {
       <ul>
         <li>Les prix sont affichés en francs CFA (FCFA), toutes taxes comprises.</li>
         <li>Le total, frais de livraison compris, est affiché avant la confirmation de commande.</li>
-        <li>Le paiement se fait par Mobile Money (MTN, Moov) via un prestataire de paiement, ou en espèces à la remise selon la boutique.</li>
-        <li>Les frais de livraison sont fixés par chaque boutique et lui sont reversés en intégralité.</li>
+        <li>Le paiement se fait par Mobile Money (MTN, Moov) ou par carte bancaire via un prestataire de paiement, par votre portefeuille eBio, ou en espèces à la remise selon la boutique (sauf pour une commande destinée à un proche).</li>
+        <li>Les frais de livraison sont calculés par eBio selon la distance entre la boutique et le point de livraison. Ils rémunèrent le livreur ; eBio en conserve une part.</li>
         <li>Vous pouvez choisir d’afficher les prix en euros, en dollars américains ou en dollars canadiens. Ce montant est indicatif : il est calculé au taux en vigueur au moment de la commande, puis figé. Le montant réellement encaissé est toujours celui en FCFA ; s’il est réglé par carte bancaire, votre banque le convertit à son propre taux.</li>
-        <li>Le paiement par carte bancaire est également accepté.</li>
       </ul>
 
       <h2>6. Livraison et retrait</h2>

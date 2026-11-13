@@ -89,10 +89,16 @@ export default function Confidentialite({ loaderData }: Route.ComponentProps) {
       <h2>3. Avec qui elles sont partagées</h2>
       <ul>
         <li>Les fournisseurs voient les informations nécessaires à vos commandes : votre nom, votre commande et l’adresse de livraison si vous choisissez la livraison.</li>
-        <li>Nos prestataires techniques : hébergement des serveurs et des images, prestataire de paiement Mobile Money, service d’envoi de notifications. Ils traitent les données pour notre compte et ne peuvent pas les utiliser à d’autres fins.</li>
+        <li>Nos prestataires techniques : hébergement des serveurs et des images, prestataire de paiement (Mobile Money et carte bancaire), service d’envoi de notifications. Ils traitent les données pour notre compte et ne peuvent pas les utiliser à d’autres fins.</li>
         <li>Quand vous commandez pour un proche : le nom et le numéro de téléphone que vous indiquez sont transmis au livreur et utilisés pour envoyer des SMS à votre proche. Votre proche voit votre prénom, jamais le montant payé.</li>
         <li>Les autorités, uniquement lorsque la loi nous y oblige.</li>
       </ul>
+      <p>
+        Si vous choisissez votre proche dans les contacts de votre téléphone,
+        l’app vous demande l’accès à vos contacts. Seuls le nom et le numéro du
+        contact que vous choisissez sont repris dans le formulaire ; le reste de
+        votre répertoire n’est ni lu, ni envoyé, ni conservé par eBio.
+      </p>
       <p>Nous ne vendons jamais vos données personnelles.</p>
 
       <h2>4. Où elles sont hébergées</h2>
