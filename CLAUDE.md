@@ -37,6 +37,8 @@ against the same checklist.
 - PostgreSQL — une table `product_reviews`, deux colonnes sur `products` (007-product-reviews)
 - TypeScript strict, Node.js 24.13.0 (API, landing, back-office) ; React Native 0.81.5 / Expo SDK 54, React 19.1 (mobile) + NestJS, MikroORM 6, Zod + nzoth (`@TypedBody`), Better Auth, CASL, `@nestjs/schedule` (API) ; React Navigation 7, `expo-location`, `expo-image-picker`, `expo-localization` (déjà installé, première utilisation) (mobile) ; React Router 7 SSR (landing) ; React 19 + SDK OpenAPI généré (back-office). **Aucune dépendance nouvelle.** Service externe : taux BCE via `api.frankfurter.dev` (gratuit, sans clé). (009-diaspora-gift-order)
 - PostgreSQL + PostGIS — table `saved_relatives` ; colonnes sur `checkouts`, `deliveries`, `user` ; deux clés `platform_settings` ; médias de preuve dans le préfixe privé `delivery_proof/` (009-diaspora-gift-order)
+- TypeScript strict, Node.js 24.13.0 (API, back-office) ; React Native 0.81.5 / Expo SDK 54, React 19.1 (mobile) + NestJS, MikroORM 6, Zod + nzoth (`@TypedBody`), Better Auth, CASL, `@nestjs/schedule` (API) ; React Navigation 7, `expo-contacts` (déjà ajouté en 009) (mobile) ; React 19 + SDK OpenAPI généré (back-office). Aucune dépendance nouvelle. (010-family-wallet)
+- PostgreSQL — tables `family_wallets`, `family_wallet_members` ; colonnes `wallets.family_wallet_id`, `wallet_transactions.family_member_id`, `checkouts.family_member_id` ; `saved_relatives` à adresse facultative (010-family-wallet)
 
 ## Lint rules — avoid these 8 repeat offenders
 
@@ -54,6 +56,6 @@ Project uses `@antfu/eslint-config` strict. Run `pnpm lint` before declaring wor
 React Compiler rules (`react-hooks/refs`, `react-hooks/set-state-in-effect`, `react-hooks-extra/no-direct-set-state-in-use-effect`, etc.) are **intentionally disabled** — they produce false positives on legitimate patterns (RN Animated API, initial-data-fetch effects). Don't try to refactor around them.
 
 ## Recent Changes
+- 010-family-wallet: Added TypeScript strict, Node.js 24.13.0 (API, back-office) ; React Native 0.81.5 / Expo SDK 54, React 19.1 (mobile) + NestJS, MikroORM 6, Zod + nzoth (`@TypedBody`), Better Auth, CASL, `@nestjs/schedule` (API) ; React Navigation 7, `expo-contacts` (déjà ajouté en 009) (mobile) ; React 19 + SDK OpenAPI généré (back-office). Aucune dépendance nouvelle.
 - 009-diaspora-gift-order: Added TypeScript strict, Node.js 24.13.0 (API, landing, back-office) ; React Native 0.81.5 / Expo SDK 54, React 19.1 (mobile) + NestJS, MikroORM 6, Zod + nzoth (`@TypedBody`), Better Auth, CASL, `@nestjs/schedule` (API) ; React Navigation 7, `expo-location`, `expo-image-picker`, `expo-localization` (déjà installé, première utilisation) (mobile) ; React Router 7 SSR (landing) ; React 19 + SDK OpenAPI généré (back-office). **Aucune dépendance nouvelle.** Service externe : taux BCE via `api.frankfurter.dev` (gratuit, sans clé).
 - 007-product-reviews: Added TypeScript strict, Node.js 24.13.0 (API) ; React Native 0.81.5 / Expo SDK 54, React 19.1 (mobile) + NestJS, MikroORM 6, Zod + nzoth (`@TypedBody`), Better Auth, CASL (API) ; React Navigation 7 (mobile) ; React 19 + SDK OpenAPI généré (back-office)
-- 006-unified-cart: panier unifié multi-boutiques — un passage en caisse crée N commandes ; regroupement par `checkouts` et `delivery_runs`, sans toucher aux entités par commande.
