@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger, UnauthorizedException } from '@nestjs/common'
+import { ModuleRef } from '@nestjs/core'
 import { hashPassword, verifyPassword } from 'better-auth/crypto'
+import { FamilyMembersService } from '../family-wallet/family-members.service'
 import { Account, Session, User, UserRole } from './auth.entity'
 import { signSessionToken } from './session-token'
 
@@ -9,7 +11,10 @@ import { signSessionToken } from './session-token'
 export class OtpAuthService {
   private readonly logger = new Logger(OtpAuthService.name)
 
-  constructor(private readonly em: EntityManager) {}
+  constructor(
+    private readonly em: EntityManager,
+    private readonly moduleRef: ModuleRef,
+  ) {}
 
   async findByPhone(phone: string): Promise<User | null> {
     return this.em.fork().findOne(User, { phone })
@@ -85,6 +90,9 @@ export class OtpAuthService {
 
     await fork.flush()
 
+    // The number is proven: family wallets waiting for it open to this account.
+    await this.linkFamilyMembers(user.id, phone)
+
     return {
       accessToken: signSessionToken(session.token),
       user: {
@@ -94,6 +102,20 @@ export class OtpAuthService {
         role: user.role,
       },
       isNewUser: true,
+    }
+  }
+
+  /**
+   * Resolved at call time rather than injected: the auth module is global
+   * and imported everywhere, the family wallet module is not. Never throws.
+   */
+  private async linkFamilyMembers(userId: string, phone: string): Promise<void> {
+    try {
+      const members = this.moduleRef.get(FamilyMembersService, { strict: false })
+      await members.linkPendingByPhone(userId, phone)
+    }
+    catch (error) {
+      this.logger.warn(`Rattachement au portefeuille famille ignoré : ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 

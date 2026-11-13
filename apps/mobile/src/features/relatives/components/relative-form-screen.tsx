@@ -18,7 +18,7 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { useLocation } from '../../common/location-context'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
-import { saveRelative } from '../relatives-api'
+import { relativePosition, saveRelative } from '../relatives-api'
 import { ContactPickButton } from './contact-pick-button'
 
 const NICKNAME_MAX = 40
@@ -31,7 +31,11 @@ interface RelativeFormScreenProps {
   onBack: () => void
 }
 
-/** First blocking problem of the form, or null when it can be saved. */
+/**
+ * First blocking problem of the form, or null when it can be saved. The
+ * address is optional (a family wallet member needs none), but an address
+ * and a door point go together: one without the other is no use to a courier.
+ */
 function formProblem(nickname: string, name: string, phone: string, address: string, position: unknown): string | null {
   if (nickname.trim().length === 0)
     return 'Donnez un surnom à votre proche (ex. Maman).'
@@ -39,6 +43,9 @@ function formProblem(nickname: string, name: string, phone: string, address: str
     return 'Indiquez le nom de votre proche.'
   if (!RECIPIENT_PHONE_PATTERN.test(normalizeRecipientPhone(phone)))
     return 'Le numéro doit être béninois : +229 suivi de 10 chiffres.'
+  const hasAddress = address.trim().length > 0
+  if (!hasAddress && !position)
+    return null
   if (address.trim().length < RECIPIENT_MIN_ADDRESS_LENGTH)
     return 'Ajoutez le quartier et un repère pour que le livreur trouve votre proche.'
   if (!position)
@@ -55,7 +62,7 @@ export function RelativeFormScreen({ relative, onSaved, onBack }: RelativeFormSc
   const [phone, setPhone] = useState(relative?.phone ?? RECIPIENT_PHONE_PREFIX)
   const [address, setAddress] = useState(relative?.address ?? '')
   const [position, setPosition] = useState<{ latitude: number, longitude: number } | null>(
-    relative ? { latitude: relative.latitude, longitude: relative.longitude } : null,
+    () => (relative ? relativePosition(relative) : null),
   )
   const [placeLabel, setPlaceLabel] = useState<string | null>(null)
   const [pickerOpen, setPickerOpen] = useState(false)
@@ -79,8 +86,8 @@ export function RelativeFormScreen({ relative, onSaved, onBack }: RelativeFormSc
 
   const handleSave = useCallback(async () => {
     const problem = formProblem(nickname, name, phone, address, position)
-    if (problem || !position) {
-      appAlert('Informations incomplètes', problem ?? undefined)
+    if (problem) {
+      appAlert('Informations incomplètes', problem)
       return
     }
     setSaving(true)
@@ -88,9 +95,9 @@ export function RelativeFormScreen({ relative, onSaved, onBack }: RelativeFormSc
       nickname: nickname.trim(),
       name: name.trim(),
       phone: normalizedPhone,
-      address: address.trim(),
-      latitude: position.latitude,
-      longitude: position.longitude,
+      address: position ? address.trim() : null,
+      latitude: position?.latitude ?? null,
+      longitude: position?.longitude ?? null,
     }, relative?.id)
     setSaving(false)
     if (result.error !== null) {
@@ -156,7 +163,10 @@ export function RelativeFormScreen({ relative, onSaved, onBack }: RelativeFormSc
               : 'Votre proche reçoit par SMS le suivi et le code à donner au livreur.'}
           </Text>
 
-          <Text style={[styles.label, { color: semantic.textSecondary }]}>Position de livraison *</Text>
+          <Text style={[styles.label, { color: semantic.textSecondary }]}>Position de livraison</Text>
+          <Text style={[styles.hint, { color: semantic.textTertiary }]}>
+            La position et l’adresse sont facultatives pour un proche du portefeuille famille, mais nécessaires pour lui faire livrer une commande.
+          </Text>
           <TouchableOpacity
             style={[
               styles.positionCard,
@@ -188,7 +198,7 @@ export function RelativeFormScreen({ relative, onSaved, onBack }: RelativeFormSc
             </View>
           </TouchableOpacity>
 
-          <Text style={[styles.label, { color: semantic.textSecondary }]}>Adresse du proche *</Text>
+          <Text style={[styles.label, { color: semantic.textSecondary }]}>Adresse du proche</Text>
           <TextInput
             style={[...inputStyle, styles.multiline]}
             placeholder="Quartier, rue, repère (ex. portail bleu après la pharmacie)"

@@ -45,6 +45,7 @@ import { TabBarIcon } from '../features/common/components/tab-bar-icon'
 import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
 import { useLocation } from '../features/common/location-context'
 import { AddFamilyMemberScreen } from '../features/family-wallet/components/add-family-member-screen'
+import { FamilyHistoryScreen } from '../features/family-wallet/components/family-history-screen'
 import { FamilyLimitsScreen } from '../features/family-wallet/components/family-limits-screen'
 import { FamilyWalletScreen } from '../features/family-wallet/components/family-wallet-screen'
 import { FavoritesScreen } from '../features/favorites/components/favorites-screen'
@@ -127,6 +128,7 @@ function SearchStackScreen() {
         * onglet y avait mis. */}
       <SearchStack.Screen name="Notifications" component={NotificationsWrapper} />
       <SearchStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
+      <SearchStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
       {/* Writing to a shop needs an account: a visitor signs in here and
         * comes straight back to the shop rather than to another tab. */}
       <SearchStack.Screen name="Login" component={LoginWrapper} />
@@ -732,6 +734,7 @@ function OrdersStackScreen() {
       <OrdersStack.Screen name="RateOrder" component={RateOrderWrapper} />
       <OrdersStack.Screen name="RateProducts" component={RateProductsWrapper} />
       <OrdersStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
+      <OrdersStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -746,6 +749,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="HelpCenter" component={HelpCenterWrapper} />
       <ProfileStack.Screen name="Terms" component={TermsWrapper} />
       <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
+      <ProfileStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
       <ProfileStack.Screen name="Favorites" component={FavoritesWrapper} />
       <ProfileStack.Screen name="Referral" component={ReferralWrapper} />
       <ProfileStack.Screen name="Relatives" component={RelativesWrapper} />
@@ -753,6 +757,7 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="FamilyWallet" component={FamilyWalletWrapper} />
       <ProfileStack.Screen name="AddFamilyMember" component={AddFamilyMemberWrapper} />
       <ProfileStack.Screen name="FamilyLimits" component={FamilyLimitsWrapper} />
+      <ProfileStack.Screen name="FamilyHistory" component={FamilyHistoryWrapper} />
       {/* Ouvrir un favori doit rester dans l'onglet Profil : sans cet écran
         * ici, la navigation remonte jusqu'à l'onglet Accueil et y dépose
         * l'acheteur, qui l'y retrouve plus tard sans comprendre. */}
@@ -816,9 +821,16 @@ function FamilyWalletWrapper({ navigation }: any) {
         onBack={() => navigation.goBack()}
         onAddMember={() => navigation.navigate('AddFamilyMember')}
         onOpenLimits={() => navigation.navigate('FamilyLimits')}
-        // FamilyHistory lands with the history screen (T042).
         onOpenHistory={() => navigation.navigate('FamilyHistory')}
       />
+    </SafeScreen>
+  )
+}
+
+function FamilyHistoryWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <FamilyHistoryScreen onBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }
@@ -914,7 +926,21 @@ function ChangePasswordWrapper({ navigation }: any) {
 function BuyerWalletWrapper({ navigation }: any) {
   return (
     <SafeScreen>
-      <WalletScreen onGoBack={() => navigation.goBack()} />
+      <WalletScreen
+        onGoBack={() => navigation.goBack()}
+        onOpenFamilyPurchases={(memberId, payerFirstName) => navigation.navigate('FamilyPurchases', { memberId, payerFirstName })}
+      />
+    </SafeScreen>
+  )
+}
+
+function FamilyPurchasesWrapper({ navigation, route }: any) {
+  return (
+    <SafeScreen>
+      <FamilyHistoryScreen
+        onBack={() => navigation.goBack()}
+        memberScope={{ memberId: route.params.memberId, payerFirstName: route.params.payerFirstName }}
+      />
     </SafeScreen>
   )
 }

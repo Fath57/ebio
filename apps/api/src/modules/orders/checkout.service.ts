@@ -1,6 +1,7 @@
 import type { OpeningHours } from '../../common/opening-hours'
 import type { DisplayCurrency } from '../currency/contracts/currency.contract'
 import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
+import type { FamilyCartLine } from '../family-wallet/family-payment.service'
 import type { CheckoutDisplay, CheckoutPreview, CheckoutPreviewResponse, CheckoutRecipient, CreateCheckout, CreateCheckoutResponse } from './contracts/checkout.contract'
 import { randomBytes } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
@@ -10,6 +11,9 @@ import { User } from '../auth/auth.entity'
 import { ExchangeRatesService } from '../currency/exchange-rates.service'
 import { toDisplayAmount } from '../currency/fx-math'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
+import { FamilyWalletMember } from '../family-wallet/entities/family-wallet-member.entity'
+import { FamilyNotifierService } from '../family-wallet/family-notifier.service'
+import { FamilyPaymentService } from '../family-wallet/family-payment.service'
 import { GiftNotifierService } from '../gift/gift-notifier.service'
 import { giftBadRequest } from '../gift/gift-texts'
 import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from '../payments/entities/checkout.entity'
@@ -32,6 +36,8 @@ import { OrdersService } from './orders.service'
 interface SupplierBasket {
   supplier: Supplier
   items: CheckoutPreview['items']
+  /** Each product of this shop with its category, for the family wallet's category limit. */
+  lines: FamilyCartLine[]
 }
 
 /** Amounts of a cart that get converted for display. */
@@ -76,6 +82,8 @@ export class CheckoutService {
     @Inject(forwardRef(() => GiftNotifierService))
     private readonly giftNotifier: GiftNotifierService,
     private readonly orderEmails: OrderEmailsService,
+    private readonly familyPayment: FamilyPaymentService,
+    private readonly familyNotifier: FamilyNotifierService,
   ) {}
 
   /**
@@ -106,7 +114,7 @@ export class CheckoutService {
     const products = await this.em.find(
       Product,
       { id: { $in: items.map(item => item.productId) } },
-      { populate: ['supplier'] },
+      { populate: ['supplier', 'category'] },
     )
     const bySupplier = new Map<string, SupplierBasket>()
     for (const item of items) {
@@ -118,12 +126,14 @@ export class CheckoutService {
       if (supplier.mode !== SupplierMode.ORDER) {
         throw new BadRequestException(`${supplier.shopName} ne prend pas de commande en ligne`)
       }
+      const line = { productId: product.id, categoryId: product.category?.id ?? null }
       const existing = bySupplier.get(supplier.id)
       if (existing) {
         existing.items.push(item)
+        existing.lines.push(line)
       }
       else {
-        bySupplier.set(supplier.id, { supplier, items: [item] })
+        bySupplier.set(supplier.id, { supplier, items: [item], lines: [line] })
       }
     }
     return [...bySupplier.values()]
@@ -245,6 +255,9 @@ export class CheckoutService {
         : this.displayBlock(currency, rate, { total, itemsTotal, deliveryFee: quote.fee, discount }),
       // Said before paying: the card gateway would refuse the payment anyway.
       cardMinimumNotMet: recipient !== null && total < GIFT_MINIMUM_TOTAL,
+      // What each family wallet the buyer belongs to could pay of this cart,
+      // and why not when it cannot: said before the tap, re-checked at payment.
+      familyWallets: await this.familyPayment.optionsFor(buyerId, total, baskets.flatMap(basket => basket.lines)),
     }
   }
 
@@ -312,13 +325,18 @@ export class CheckoutService {
         : `Commande ${orders[0].orderNumber}`,
       orderId: orders[0].id,
     })
+    this.escrowPayments(checkout, orders, 'WALLET')
+  }
+
+  /** Paid already: one escrowed payment per order, released at each shop's pace. */
+  private escrowPayments(checkout: Checkout, orders: Order[], paymentMethod: 'WALLET' | 'FAMILY_WALLET'): void {
     for (const { order, amount } of splitCheckoutAmount(checkout.totalAmount, orders)) {
       this.em.create(Payment, {
         checkout,
         order,
         amount,
         provider: PaymentProvider.FEDAPAY,
-        paymentMethod: 'WALLET',
+        paymentMethod,
         status: PaymentStatus.ESCROW,
         paidAt: new Date(),
       })
@@ -329,16 +347,15 @@ export class CheckoutService {
   async create(buyerId: string, data: CreateCheckout): Promise<CreateCheckoutResponse> {
     const buyer = await this.em.findOneOrFail(User, { id: buyerId })
     assertBuyerVerified(buyer)
-    // Placeholder until the family wallet payment lands (010, T029-T030): the
-    // method is in the contract already, and without a member the checkout
-    // would only hit its CHECK constraint.
-    if (data.paymentMethod === 'FAMILY_WALLET') {
-      throw giftBadRequest('FAMILY_WALLET_REFUSED', 'Le paiement par portefeuille famille n\'est pas encore disponible.')
-    }
     const recipient = this.effectiveRecipient(buyer, data.recipient)
     if (recipient) {
       this.assertGiftAllowed(data)
     }
+    // The member pays, not the family wallet's payer. Checked before the
+    // checkout row exists: its CHECK ties the method to a member.
+    const familyMemberId = data.paymentMethod === 'FAMILY_WALLET'
+      ? await this.familyPayment.assertMemberOf(buyer.id, data.familyMemberId)
+      : null
     const savedRelative = recipient?.savedRelativeId
       ? await this.ownedRelative(buyer.id, recipient.savedRelativeId)
       : null
@@ -397,6 +414,7 @@ export class CheckoutService {
       fxRate: frozen?.fxRate ?? null,
       fxMarginBps: frozen?.fxMarginBps ?? null,
       displayTotal: frozen?.displayTotal ?? null,
+      familyMember: familyMemberId ? this.em.getReference(FamilyWalletMember, familyMemberId) : null,
     })
 
     // Either everything exists or nothing does. An insufficient balance found
@@ -404,7 +422,7 @@ export class CheckoutService {
     // buyer facing a half-placed cart.
     const orderNumbers = await this.ordersService.allocateOrderNumbers(baskets.length)
 
-    const { orders, createdOrders } = await this.em.transactional(async () => {
+    const { orders, createdOrders } = await this.em.transactional(async (em) => {
       const summaries = []
       const entities = []
       for (const [index, basket] of baskets.entries()) {
@@ -445,6 +463,10 @@ export class CheckoutService {
       if (data.paymentMethod === 'WALLET') {
         await this.payFromWallet(buyer, checkout, entities)
       }
+      if (familyMemberId) {
+        await this.familyPayment.pay(em, buyer, checkout, entities, familyMemberId, baskets.flatMap(basket => basket.lines))
+        this.escrowPayments(checkout, entities, 'FAMILY_WALLET')
+      }
 
       await this.em.flush()
       return { orders: summaries, createdOrders: entities }
@@ -455,6 +477,11 @@ export class CheckoutService {
     if (data.paymentMethod !== 'FEDAPAY') {
       for (const order of createdOrders)
         void this.orderEmails.sendOrderPlaced(order.id)
+    }
+
+    // The payer hears what their relative bought, and of a balance running low.
+    if (familyMemberId) {
+      await this.familyNotifier.onFamilyPurchase(checkout.id)
     }
 
     // Paid from the wallet, the cart is paid already: the relative hears of
@@ -484,6 +511,14 @@ export class CheckoutService {
    * learns it without waiting for a quote that would be refused anyway.
    */
   private assertGiftAllowed(data: CreateCheckout): void {
+    // A family wallet is spent by its members on their own orders; buying
+    // for someone else is the payer's business, from their own means.
+    if (data.paymentMethod === 'FAMILY_WALLET') {
+      throw giftBadRequest(
+        'FAMILY_WALLET_WITH_RECIPIENT',
+        'Une commande pour un proche ne peut pas être payée avec un portefeuille famille.',
+      )
+    }
     // The relative would hand over money the payer meant to give (FR-006).
     if (data.paymentMethod === 'CASH_ON_DELIVERY') {
       throw giftBadRequest(

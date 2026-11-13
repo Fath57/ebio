@@ -5,7 +5,7 @@ import { AuditLog } from './entities/audit-log.entity'
 export interface AuditEntry {
   actorUserId: string
   action: string
-  targetType: 'user' | 'staff' | 'role' | 'delivery' | 'supplier' | 'courier' | 'order' | 'settings' | 'product' | 'wallet'
+  targetType: 'user' | 'staff' | 'role' | 'delivery' | 'supplier' | 'courier' | 'order' | 'settings' | 'product' | 'wallet' | 'family_wallet' | 'family_member'
   targetId: string
   reason?: string
   payload?: Record<string, unknown>

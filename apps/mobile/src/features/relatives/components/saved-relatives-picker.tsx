@@ -47,10 +47,14 @@ export function SavedRelativesPicker({ selectedId, onPick }: SavedRelativesPicke
               onPress={() => onPick(relative)}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
-              accessibilityLabel={`${relative.nickname}, ${relative.name}`}
+              accessibilityLabel={`${relative.nickname}, ${relative.name}${relative.address ? '' : ', adresse à compléter'}`}
             >
               <Text style={[styles.nickname, { color: semantic.textPrimary }]} numberOfLines={1}>{relative.nickname}</Text>
               <Text style={[styles.name, { color: semantic.textSecondary }]} numberOfLines={1}>{relative.name}</Text>
+              {/* Saved for the family wallet without an address: the form opens with it empty. */}
+              {!relative.address && (
+                <Text style={[styles.name, { color: colors.earth[600] }]} numberOfLines={1}>Adresse à compléter</Text>
+              )}
             </TouchableOpacity>
           )
         })}

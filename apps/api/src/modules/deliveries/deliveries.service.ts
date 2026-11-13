@@ -23,6 +23,7 @@ import {
 import { computeCourierFee, orderPickups } from '../../common/delivery-fee'
 import { computeWindowDispatchAt } from '../../common/delivery-window'
 import { User, UserRole } from '../auth/auth.entity'
+import { clearLowBalanceAlert, refundTargetWallet } from '../family-wallet/family-payment.service'
 import { GiftFailureService } from '../gift/gift-failure.service'
 import { GiftNotifierService } from '../gift/gift-notifier.service'
 import { GIFT_PROOF_FAR_METRES, giftBadRequest } from '../gift/gift-texts'
@@ -1052,13 +1053,18 @@ export class DeliveriesService {
     // orders' refund.
     const fee = Math.round(run.deliveryFee)
     if (fee > 0 && cancelled > 0) {
-      const wallet = await this.walletService.getOrCreate({ userId })
-      await this.walletService.credit(wallet.id, {
+      // Back where the cart was paid from: a family wallet, or its payer once closed.
+      const target = await refundTargetWallet(this.em, this.walletService, run.checkout, userId)
+      await this.walletService.credit(target.walletId, {
         type: WalletTransactionType.REFUND,
         amount: fee,
         description: 'Remboursement des frais de livraison — aucun livreur disponible',
         deliveryRunId: run.id,
+        familyMemberId: target.familyMemberId,
       })
+      if (target.familyWalletId) {
+        await clearLowBalanceAlert(this.em, target.familyWalletId)
+      }
       run.deliveryFee = 0
       await this.em.flush()
     }

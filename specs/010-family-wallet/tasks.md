@@ -84,16 +84,16 @@ Tests e2e dans des sous-dossiers `tests/` (testcontainers). Avant un
 
 ### API
 
-- [ ] T027 [US2] `family-payment.service.ts` `optionsFor(buyerId, total, productCategoryIds)` : pour chaque membre actif d'un portefeuille actif dont l'acheteur est le compte, `{ memberId, payerFirstName, spendable, usable, reason, blockedProductIds }`
-- [ ] T028 [US2] `CheckoutService.preview` (`orders/checkout.service.ts`) : charger `category` des produits (`groupBySupplier`), renvoyer `familyWallets`
-- [ ] T029 [US2] `family-payment.service.ts` `pay(em, buyer, checkout, orders, memberId)` : dans la transaction du passage en caisse, verrouiller le portefeuille (`WalletService` débit), recalculer limites et dépense **après** le verrou, refuser `FAMILY_WALLET_REFUSED` + `reason`, débiter `ORDER_PAYMENT` avec `familyMemberId`, écrire les `Payment` en `ESCROW` comme `payFromWallet`, poser `checkout.familyMember`
-- [ ] T030 [US2] `CheckoutService.create` : branche `FAMILY_WALLET` (refus `FAMILY_WALLET_WITH_RECIPIENT` pour une commande destinée à un proche) ; e-mail et notifications comme pour le portefeuille personnel
-- [ ] T031 [US2] `family-payment.service.ts` `refundTargetWallet(checkout)` : portefeuille famille non fermé, sinon portefeuille personnel du payeur ; l'utiliser dans `payments/compensation.service.ts` (L111, L132) et `deliveries/deliveries.service.ts` (L1054-1061), en portant `familyMemberId` sur la ligne `REFUND` quand la cible est le portefeuille famille
-- [ ] T032 [US2] Après un achat : push `FAMILY_WALLET_PURCHASE` au payeur ; alerte `FAMILY_WALLET_LOW_BALANCE` au franchissement du seuil (drapeau `low_balance_alerted`, remis à faux quand le solde repasse au-dessus)
-- [ ] T033 [P] [US2] Test e2e `tests/family-wallet-payment.e2e-spec.ts` : paiement complet, solde insuffisant refusé, commande annulée → solde et dépense du mois rétablis, fermeture puis annulation → personnel du payeur, commande pour un proche refusée
-- [ ] T034 [P] [US2] Test e2e `tests/family-wallet-concurrency.e2e-spec.ts` : deux membres paient 3 000 en parallèle sur 5 000 → un seul succès, solde 2 000 ; même membre, deux commandes simultanées sous plafond de 4 000 → une seule
-- [ ] T035 [US3] `family-members.service.ts` `updateLimits(memberId, limits)` ; `PATCH /family-wallet/members/:id` ; `family-wallets.service.ts` `updateDefaults` valide (montants > 0, liste de catégories non vide ou null)
-- [ ] T036 [P] [US3] Test e2e `tests/family-wallet-limits.e2e-spec.ts` : défaut 2 000 / propre 4 000, refus mensuel puis réussite le mois suivant (horloge simulée), maximum par commande, catégorie interdite avec produits signalés, modification de limites sans effet sur une commande passée
+- [X] T027 [US2] `family-payment.service.ts` `optionsFor(buyerId, total, productCategoryIds)` : pour chaque membre actif d'un portefeuille actif dont l'acheteur est le compte, `{ memberId, payerFirstName, spendable, usable, reason, blockedProductIds }`
+- [X] T028 [US2] `CheckoutService.preview` (`orders/checkout.service.ts`) : charger `category` des produits (`groupBySupplier`), renvoyer `familyWallets`
+- [X] T029 [US2] `family-payment.service.ts` `pay(em, buyer, checkout, orders, memberId)` : dans la transaction du passage en caisse, verrouiller le portefeuille (`WalletService` débit), recalculer limites et dépense **après** le verrou, refuser `FAMILY_WALLET_REFUSED` + `reason`, débiter `ORDER_PAYMENT` avec `familyMemberId`, écrire les `Payment` en `ESCROW` comme `payFromWallet`, poser `checkout.familyMember`
+- [X] T030 [US2] `CheckoutService.create` : branche `FAMILY_WALLET` (refus `FAMILY_WALLET_WITH_RECIPIENT` pour une commande destinée à un proche) ; e-mail et notifications comme pour le portefeuille personnel
+- [X] T031 [US2] `family-payment.service.ts` `refundTargetWallet(checkout)` : portefeuille famille non fermé, sinon portefeuille personnel du payeur ; l'utiliser dans `payments/compensation.service.ts` (L111, L132) et `deliveries/deliveries.service.ts` (L1054-1061), en portant `familyMemberId` sur la ligne `REFUND` quand la cible est le portefeuille famille
+- [X] T032 [US2] Après un achat : push `FAMILY_WALLET_PURCHASE` au payeur ; alerte `FAMILY_WALLET_LOW_BALANCE` au franchissement du seuil (drapeau `low_balance_alerted`, remis à faux quand le solde repasse au-dessus)
+- [X] T033 [P] [US2] Test e2e `tests/family-wallet-payment.e2e-spec.ts` : paiement complet, solde insuffisant refusé, commande annulée → solde et dépense du mois rétablis, fermeture puis annulation → personnel du payeur, commande pour un proche refusée
+- [X] T034 [P] [US2] Test e2e `tests/family-wallet-concurrency.e2e-spec.ts` : deux membres paient 3 000 en parallèle sur 5 000 → un seul succès, solde 2 000 ; même membre, deux commandes simultanées sous plafond de 4 000 → une seule
+- [X] T035 [US3] `family-members.service.ts` `updateLimits(memberId, limits)` ; `PATCH /family-wallet/members/:id` ; `family-wallets.service.ts` `updateDefaults` valide (montants > 0, liste de catégories non vide ou null)
+- [X] T036 [P] [US3] Test e2e `tests/family-wallet-limits.e2e-spec.ts` : défaut 2 000 / propre 4 000, refus mensuel puis réussite le mois suivant (horloge simulée), maximum par commande, catégorie interdite avec produits signalés, modification de limites sans effet sur une commande passée
 
 ### Mobile (membre et passage en caisse)
 
@@ -104,37 +104,37 @@ Tests e2e dans des sous-dossiers `tests/` (testcontainers). Avant un
 
 ## Phase 5 — US4 : suivi (P1)
 
-- [ ] T039 [US4] `family-wallets.service.ts` `transactions(payerId, memberId?, page)` : contrat §3, produits et boutique de l'achat, jamais d'adresse ni de message ; `GET /family-wallet/transactions`
-- [ ] T040 [US4] `family-member-view.controller.ts` : `GET /family-wallets/mine` et `GET /family-wallets/mine/:memberId/transactions` (ses achats seulement, jamais le solde total)
-- [ ] T041 [P] [US4] Test e2e `tests/family-wallet-privacy.e2e-spec.ts` : la réponse membre ne contient pas `balance` ; l'historique payeur ne contient aucune clé `address`, `latitude`, `message` ; filtre par membre exact
-- [ ] T042 [US4] `components/family-history-screen.tsx` (payeur, filtre par proche) et `components/member-wallets-section.tsx` dans `wallet/components/wallet-screen.tsx` (membre : dépensable, limites, ses achats)
+- [X] T039 [US4] `family-wallets.service.ts` `transactions(payerId, memberId?, page)` : contrat §3, produits et boutique de l'achat, jamais d'adresse ni de message ; `GET /family-wallet/transactions`
+- [X] T040 [US4] `family-member-view.controller.ts` : `GET /family-wallets/mine` et `GET /family-wallets/mine/:memberId/transactions` (ses achats seulement, jamais le solde total)
+- [X] T041 [P] [US4] Test e2e `tests/family-wallet-privacy.e2e-spec.ts` : la réponse membre ne contient pas `balance` ; l'historique payeur ne contient aucune clé `address`, `latitude`, `message` ; filtre par membre exact
+- [X] T042 [US4] `components/family-history-screen.tsx` (payeur, filtre par proche) et `components/member-wallets-section.tsx` dans `wallet/components/wallet-screen.tsx` (membre : dépensable, limites, ses achats)
 
 ---
 
 ## Phase 6 — US5 : contrôle (P2)
 
-- [ ] T043 [US5] `family-members.service.ts` : `suspend`, `resume`, `remove` (reste dans le carnet, historique conservé) ; routes `POST …/suspend|resume`, `DELETE …/:id`
-- [ ] T044 [US5] `family-wallets.service.ts` : `suspend`, `resume` (refus si suspendu par le back-office), `close` (débit `FAMILY_CLOSURE_OUT` du solde entier, crédit `FAMILY_CLOSURE_IN` du personnel, une transaction, statut `CLOSED`)
-- [ ] T045 [US5] Notifications `FAMILY_WALLET_STATUS` aux membres concernés
-- [ ] T046 [US5] `users/account-deletion.service.ts` `assertNothingPending` : `409 FAMILY_WALLET_OPEN` pour un payeur au portefeuille non fermé ; un membre qui supprime son compte passe `REMOVED`
-- [ ] T047 [P] [US5] Test e2e `tests/family-wallet-control.e2e-spec.ts` : membre suspendu sans option, les autres oui ; fermeture → personnel crédité une seule fois même rejouée ; suppression de compte refusée puis acceptée après fermeture
-- [ ] T048 [US5] Mobile : actions sur un membre (suspendre, réactiver, retirer avec confirmation) et sur le portefeuille (suspendre, fermer avec le montant restitué affiché) dans `family-wallet-screen.tsx`
+- [X] T043 [US5] `family-members.service.ts` : `suspend`, `resume`, `remove` (reste dans le carnet, historique conservé) ; routes `POST …/suspend|resume`, `DELETE …/:id`
+- [X] T044 [US5] `family-wallets.service.ts` : `suspend`, `resume` (refus si suspendu par le back-office), `close` (débit `FAMILY_CLOSURE_OUT` du solde entier, crédit `FAMILY_CLOSURE_IN` du personnel, une transaction, statut `CLOSED`)
+- [X] T045 [US5] Notifications `FAMILY_WALLET_STATUS` aux membres concernés
+- [X] T046 [US5] `users/account-deletion.service.ts` `assertNothingPending` : `409 FAMILY_WALLET_OPEN` pour un payeur au portefeuille non fermé ; un membre qui supprime son compte passe `REMOVED`
+- [X] T047 [P] [US5] Test e2e `tests/family-wallet-control.e2e-spec.ts` : membre suspendu sans option, les autres oui ; fermeture → personnel crédité une seule fois même rejouée ; suppression de compte refusée puis acceptée après fermeture
+- [X] T048 [US5] Mobile : actions sur un membre (suspendre, réactiver, retirer avec confirmation) et sur le portefeuille (suspendre, fermer avec le montant restitué affiché) dans `family-wallet-screen.tsx`
 
 ---
 
 ## Phase 7 — US6 : invitation (P2)
 
-- [ ] T049 [US6] `auth/otp-auth.service.ts` `registerWithPhone` : appeler `FamilyMembersService.linkPendingByPhone(userId, phone)` (membres `PENDING` de ce numéro → `ACTIVE`), push `FAMILY_WALLET_MEMBER_JOINED` au payeur
-- [ ] T050 [US6] `POST /family-wallet/members/:id/invite` (une fois par 24 h) ; `family-pending.scheduler.ts` : cron quotidien `@SingleInstance`, membres en attente depuis 30 jours sans rappel → push au payeur, `pending_reminded_at`
-- [ ] T051 [P] [US6] Test e2e `tests/family-wallet-invite.e2e-spec.ts` : inscription par SMS rattache, numéro saisi au profil ne rattache pas, rappel une seule fois
-- [ ] T052 [US6] Mobile : membre en attente avec « Renvoyer l'invitation » dans `family-wallet-screen.tsx`
+- [X] T049 [US6] `auth/otp-auth.service.ts` `registerWithPhone` : appeler `FamilyMembersService.linkPendingByPhone(userId, phone)` (membres `PENDING` de ce numéro → `ACTIVE`), push `FAMILY_WALLET_MEMBER_JOINED` au payeur
+- [X] T050 [US6] `POST /family-wallet/members/:id/invite` (une fois par 24 h) ; `family-pending.scheduler.ts` : cron quotidien `@SingleInstance`, membres en attente depuis 30 jours sans rappel → push au payeur, `pending_reminded_at`
+- [X] T051 [P] [US6] Test e2e `tests/family-wallet-invite.e2e-spec.ts` : inscription par SMS rattache, numéro saisi au profil ne rattache pas, rappel une seule fois
+- [X] T052 [US6] Mobile : membre en attente avec « Renvoyer l'invitation » dans `family-wallet-screen.tsx`
 
 ---
 
 ## Phase 8 — Back-office et finitions
 
-- [ ] T053 `wallet/admin-wallets.service.ts` : type `FAMILY` (jointure `family_wallets` → nom du payeur) et filtre `ownerType=FAMILY`
-- [ ] T054 `admin-family-wallets.controller.ts` : liste, détail, suspension / réactivation du portefeuille ou d'un membre avec motif, trace d'audit (`AuditModule`), `suspended_by_admin`
+- [X] T053 `wallet/admin-wallets.service.ts` : type `FAMILY` (jointure `family_wallets` → nom du payeur) et filtre `ownerType=FAMILY`
+- [X] T054 `admin-family-wallets.controller.ts` : liste, détail, suspension / réactivation du portefeuille ou d'un membre avec motif, trace d'audit (`AuditModule`), `suspended_by_admin`
 - [ ] T055 `pnpm generate` (API temporaire sur un port libre si l'API locale est ancienne, cf. mémoire)
 - [ ] T056 [P] `apps/web-spa/app/features/admin/family-wallets/pages/admin-family-wallets-page.tsx` et `admin-family-wallet-detail-page.tsx` ; type « Famille » dans `wallets/pages/admin-wallets-page.tsx` ; entrée de menu sous « Argent » ; i18n fr/en
 - [ ] T057 [P] Interrupteur `family_wallet_enabled` dans la page Réglages du back-office

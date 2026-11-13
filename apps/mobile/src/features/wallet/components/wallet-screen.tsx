@@ -24,6 +24,7 @@ import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useMoney } from '../../common/hooks/use-money'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
+import { MemberWalletsSection } from '../../family-wallet/components/member-wallets-section'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { announceTopupOutcome, awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-settlement'
 import { buildTopupCheckoutHtml, TOPUP_PRESETS } from '../utils/topup-checkout'
@@ -127,9 +128,11 @@ function MovementRow({ movement, isFirst, isLast }: MovementRowProps) {
 
 interface WalletScreenProps {
   onGoBack: () => void
+  /** A member's own purchases on a family wallet (« Portefeuilles famille »). */
+  onOpenFamilyPurchases?: (memberId: string, payerFirstName: string) => void
 }
 
-export function WalletScreen({ onGoBack }: WalletScreenProps) {
+export function WalletScreen({ onGoBack, onOpenFamilyPurchases }: WalletScreenProps) {
   // The tab bar floats over the content: without its height the last
   // row sits underneath it.
   const tabBarHeight = useBottomTabBarHeight()
@@ -384,6 +387,8 @@ export function WalletScreen({ onGoBack }: WalletScreenProps) {
                 Rechargez par Mobile Money et payez vos commandes en un geste, sans frais.
               </Text>
             </View>
+
+            <MemberWalletsSection onOpenPurchases={onOpenFamilyPurchases} />
 
             {topups.length > 0 && (
               <>

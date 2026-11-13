@@ -1,5 +1,5 @@
 import { EntityManager } from '@mikro-orm/postgresql'
-import { ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { ConflictException, HttpStatus, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { AuditService } from '../admin/audit.service'
 import { User } from '../auth/auth.entity'
 
@@ -39,6 +39,13 @@ export class AccountDeletionService {
       // catalogue and refused at checkout, like a suspended one.
       await conn.execute(
         `UPDATE suppliers SET validation_status = 'SUSPENDED' WHERE user_id = ?`,
+        [userId],
+      )
+
+      // A member leaves the family wallets they belonged to; their purchases
+      // stay in the payer's history.
+      await conn.execute(
+        `UPDATE family_wallet_members SET status = 'REMOVED', updated_at = NOW() WHERE user_id = ? AND status <> 'REMOVED'`,
         [userId],
       )
 
@@ -94,6 +101,20 @@ export class AccountDeletionService {
       throw new ConflictException(
         'Des commandes sont encore en cours sur ce compte. Attendez qu\'elles soient terminées avant de le supprimer.',
       )
+    }
+
+    // A payer closes their family wallet first: its balance then lands on the
+    // personal wallet, checked just below (FR-031).
+    const [familyWallets] = await conn.execute<Array<{ count: string }>>(
+      `SELECT COUNT(*)::text AS count FROM family_wallets WHERE payer_id = ? AND status <> 'CLOSED'`,
+      [userId],
+    )
+    if (Number(familyWallets?.count ?? 0) > 0) {
+      throw new ConflictException({
+        statusCode: HttpStatus.CONFLICT,
+        code: 'FAMILY_WALLET_OPEN',
+        message: 'Votre portefeuille famille est encore ouvert. Fermez-le d\'abord : son solde rejoindra votre portefeuille eBio.',
+      })
     }
 
     const [wallets] = await conn.execute<Array<{ count: string }>>(

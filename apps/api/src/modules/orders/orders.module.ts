@@ -3,6 +3,7 @@ import { CartModule } from '../cart/cart.module'
 import { CurrencyModule } from '../currency/currency.module'
 import { DeliveriesModule } from '../deliveries/deliveries.module'
 import { EmailModule } from '../email/email.module'
+import { FamilyWalletModule } from '../family-wallet/family-wallet.module'
 import { GiftModule } from '../gift/gift.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { PaymentsModule } from '../payments/payments.module'
@@ -18,7 +19,7 @@ import { OrdersController } from './orders.controller'
 import { OrdersService } from './orders.service'
 
 @Module({
-  imports: [CartModule, OrderEmailsModule, EmailModule, NotificationsModule, PaymentsModule, PromoCodesModule, ProductsModule, ReferralsModule, SuppliersModule, WalletModule, PlatformSettingsModule, CurrencyModule, forwardRef(() => DeliveriesModule), forwardRef(() => GiftModule)],
+  imports: [CartModule, OrderEmailsModule, EmailModule, FamilyWalletModule, NotificationsModule, PaymentsModule, PromoCodesModule, ProductsModule, ReferralsModule, SuppliersModule, WalletModule, PlatformSettingsModule, CurrencyModule, forwardRef(() => DeliveriesModule), forwardRef(() => GiftModule)],
   controllers: [OrdersController],
   providers: [OrdersService, CheckoutService],
   exports: [OrdersService, CheckoutService],

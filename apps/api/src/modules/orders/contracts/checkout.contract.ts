@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { displayCurrencyEnum } from '../../currency/contracts/currency.contract'
+import { familyWalletOptionSchema } from '../../family-wallet/contracts/family-wallet.contract'
 import { deliveryReasonEnum } from '../../settings/contracts/delivery-pricing.contract'
 import { deliveryAddressSchema, orderItemInputSchema, paymentMethodEnum, pickupModeEnum } from './order.contract'
 
@@ -142,6 +143,11 @@ export const checkoutPreviewResponseSchema = z.object({
   display: checkoutDisplaySchema.nullable(),
   /** A cart for a relative below the card minimum (1 000 FCFA): it cannot be paid. */
   cardMinimumNotMet: z.boolean(),
+  /**
+   * The family wallets the buyer may spend as a member, each with what is
+   * left to them and, when it cannot pay this cart, why (010).
+   */
+  familyWallets: z.array(familyWalletOptionSchema),
 }).meta({
   title: 'CheckoutPreviewResponse',
   description: 'Chiffrage d\'un panier multi-boutiques, avant paiement',
@@ -154,6 +160,8 @@ export const createCheckoutSchema = z.object({
   deliveryLatitude: z.number().min(-90).max(90).optional(),
   deliveryLongitude: z.number().min(-180).max(180).optional(),
   paymentMethod: paymentMethodEnum,
+  /** The buyer's membership that pays, with `paymentMethod: 'FAMILY_WALLET'`. */
+  familyMemberId: z.string().uuid().optional(),
   promoCode: z.string().trim().max(50).optional(),
   /**
    * What the buyer types, in their own words — « Demain matin entre 8h et

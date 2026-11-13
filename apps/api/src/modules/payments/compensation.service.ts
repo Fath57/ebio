@@ -2,6 +2,7 @@ import type { DeliveryRunHooks } from '../deliveries/deliveries.tokens'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { DELIVERY_RUN_HOOKS } from '../deliveries/deliveries.tokens'
+import { clearLowBalanceAlert, refundDestination, refundTargetWallet } from '../family-wallet/family-payment.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, OrderStatus, PaymentMethod } from '../orders/entities/order.entity'
@@ -108,10 +109,12 @@ export class CompensationService {
 
     const withheld = options.withholdDeliveryFee ? Math.round(Math.max(0, order.deliveryFee ?? 0)) : 0
     const amount = Math.max(0, Math.round(order.totalAmount) - withheld)
-    const wallet = await this.walletService.getOrCreate({ userId: order.buyer.id })
+    // A cart paid from a family wallet goes back there (the member's month
+    // with it), or to its payer once it is closed — never to the member.
+    const target = await refundTargetWallet(this.em, this.walletService, checkout, order.buyer.id)
 
     if (amount > 0) {
-      await this.walletService.credit(wallet.id, {
+      await this.walletService.credit(target.walletId, {
         type: WalletTransactionType.REFUND,
         amount,
         description: withheld > 0
@@ -119,6 +122,7 @@ export class CompensationService {
           : `Remboursement — commande ${order.orderNumber} : ${reason}`,
         orderId: order.id,
         paymentId: payment.id,
+        familyMemberId: target.familyMemberId,
       })
     }
     payment.status = PaymentStatus.REFUNDED
@@ -129,8 +133,11 @@ export class CompensationService {
     // the buyer overpaid comes back to them.
     // With the fee withheld the ride did happen: nothing to re-price.
     const deliveryRefund = checkout && !options.withholdDeliveryFee
-      ? await this.settleRunAfterRemoval(checkout, order, wallet.id)
+      ? await this.settleRunAfterRemoval(checkout, order, target.walletId, target.familyMemberId)
       : 0
+    if (target.familyWalletId) {
+      await clearLowBalanceAlert(this.em, target.familyWalletId)
+    }
 
     const checkoutStatus = checkout ? await this.refreshCheckoutStatus(checkout) : null
 
@@ -143,7 +150,7 @@ export class CompensationService {
       type: NotificationType.ORDER_REJECTED,
       title: 'Montant recrédité',
       body: amount + deliveryRefund > 0
-        ? `${(amount + deliveryRefund).toLocaleString('fr-FR')} FCFA ont été recrédités sur votre portefeuille eBio — commande ${order.orderNumber} : ${reason}`
+        ? `${(amount + deliveryRefund).toLocaleString('fr-FR')} FCFA ont été recrédités ${refundDestination(target)} — commande ${order.orderNumber} : ${reason}`
         : `Votre commande ${order.orderNumber} n'a pas pu être honorée : ${reason}`,
       data: { orderId: order.id, amount: amount + deliveryRefund, reason },
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
@@ -159,7 +166,7 @@ export class CompensationService {
    * less to ride. Keeping the difference would amount to charging for a trip
    * that will not happen.
    */
-  private async settleRunAfterRemoval(checkout: Checkout, order: Order, walletId: string): Promise<number> {
+  private async settleRunAfterRemoval(checkout: Checkout, order: Order, walletId: string, familyMemberId: string | undefined): Promise<number> {
     try {
       const outcome = await this.runHooks.removeSupplierFromRun({
         checkoutId: checkout.id,
@@ -177,6 +184,7 @@ export class CompensationService {
         // it, an adjustment written first would look like the money had already
         // been given back, and would block the real refund forever.
         deliveryRunId: outcome.runId,
+        familyMemberId,
       })
       checkout.deliveryFee = Math.max(0, checkout.deliveryFee - outcome.refund)
       checkout.totalAmount = Math.max(0, checkout.totalAmount - outcome.refund)

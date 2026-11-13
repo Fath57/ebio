@@ -13,4 +13,8 @@ describe('buildWalletConditions', () => {
     expect(where).not.toContain('koffi')
     expect(values).toEqual(['%koffi%'])
   })
+
+  it('filters family wallets', () => {
+    expect(buildWalletConditions({ ownerType: 'FAMILY' }).where).toContain('w.family_wallet_id IS NOT NULL')
+  })
 })

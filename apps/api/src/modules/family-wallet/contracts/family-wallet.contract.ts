@@ -211,3 +211,124 @@ export type FamilyTransferResponse = z.infer<typeof familyTransferResponseSchema
 export type FamilyTransaction = z.infer<typeof familyTransactionSchema>
 export type MemberFamilyWallet = z.infer<typeof memberFamilyWalletSchema>
 export type FamilyWalletOption = z.infer<typeof familyWalletOptionSchema>
+
+// ===== §3 HISTORY QUERY, §4 MEMBER HISTORY =====
+
+export const familyTransactionsQuerySchema = z.object({
+  /** One member exactly; every line of the wallet otherwise. */
+  memberId: z.string().uuid().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+}).meta({ title: 'FamilyTransactionsQuery' })
+
+/** A member's own purchase or refund: no balance after it, which would give the total away (FR-025). */
+export const memberFamilyTransactionSchema = familyTransactionSchema.omit({ balanceAfter: true, member: true }).meta({
+  title: 'MemberFamilyTransaction',
+  description: 'Un achat ou un remboursement du membre ; jamais le solde du portefeuille',
+})
+
+export const memberFamilyTransactionListSchema = z.object({
+  items: z.array(memberFamilyTransactionSchema),
+  total: z.number().int(),
+}).meta({ title: 'MemberFamilyTransactionList' })
+
+// ===== §1 PAYER — CLOSURE =====
+
+export const familyClosureResponseSchema = z.object({
+  /** FCFA credited to the payer's personal wallet; 0 when it was already closed or empty. */
+  refunded: z.number(),
+  /** Personal wallet balance afterwards. */
+  personalBalance: z.number(),
+}).meta({
+  title: 'FamilyClosure',
+  description: 'Fermeture du portefeuille famille : montant rendu au portefeuille personnel',
+})
+
+// ===== §7 BACK OFFICE =====
+
+export const adminFamilyReasonSchema = z.object({
+  reason: z.string().trim().min(3, 'Indiquez le motif').max(500),
+}).meta({
+  title: 'AdminFamilyReason',
+  description: 'Motif d\'une suspension décidée par eBio',
+})
+
+/** Lifting a suspension: the reason is welcome, not required. */
+export const adminFamilyResumeSchema = z.object({
+  reason: z.string().trim().max(500).optional(),
+}).meta({ title: 'AdminFamilyResume' })
+
+export const adminFamilyWalletsQuerySchema = z.object({
+  status: familyWalletStatusEnum.optional(),
+  /** Payer name, email or phone. */
+  search: z.string().trim().max(100).optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+}).meta({ title: 'AdminFamilyWalletsQuery' })
+
+export const adminFamilyWalletRowSchema = z.object({
+  id: z.string().uuid(),
+  status: familyWalletStatusEnum,
+  suspendedByAdmin: z.boolean(),
+  balance: z.number(),
+  /** The `wallets` row holding the balance, for the ledger page. */
+  walletId: z.string().uuid(),
+  payer: z.object({
+    id: z.string().uuid(),
+    name: z.string(),
+    phone: z.string().nullable(),
+    email: z.string(),
+  }),
+  /** Members not removed. */
+  memberCount: z.number().int(),
+  createdAt: z.string().datetime(),
+  closedAt: z.string().datetime().nullable(),
+}).meta({
+  title: 'AdminFamilyWalletRow',
+  description: 'Un portefeuille famille dans la liste du back-office',
+})
+
+export const adminFamilyWalletListSchema = z.object({
+  items: z.array(adminFamilyWalletRowSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  limit: z.number().int(),
+}).meta({ title: 'AdminFamilyWalletList' })
+
+export const adminFamilyMemberSchema = z.object({
+  id: z.string().uuid(),
+  nickname: z.string(),
+  phone: z.string(),
+  status: familyMemberStatusEnum,
+  userId: z.string().uuid().nullable(),
+  /** Suspended by eBio rather than by the payer: only eBio lifts it. */
+  suspendedByAdmin: z.boolean(),
+  effective: familyLimitsSchema,
+  spentThisMonth: z.number(),
+  createdAt: z.string().datetime(),
+}).meta({ title: 'AdminFamilyMember' })
+
+export const adminFamilyWalletDetailSchema = adminFamilyWalletRowSchema.extend({
+  lowBalanceThreshold: z.number(),
+  defaults: familyLimitsSchema,
+  /** Every member, removed ones included. */
+  members: z.array(adminFamilyMemberSchema),
+  /** The first page of the ledger; the rest through `/admin/wallets/:walletId/transactions`. */
+  transactions: familyTransactionListSchema,
+}).meta({
+  title: 'AdminFamilyWalletDetail',
+  description: 'Détail d\'un portefeuille famille : membres et historique',
+})
+
+export type FamilyTransactionsQuery = z.infer<typeof familyTransactionsQuerySchema>
+export type FamilyTransactionList = z.infer<typeof familyTransactionListSchema>
+export type MemberFamilyTransaction = z.infer<typeof memberFamilyTransactionSchema>
+export type MemberFamilyTransactionList = z.infer<typeof memberFamilyTransactionListSchema>
+export type FamilyClosureResponse = z.infer<typeof familyClosureResponseSchema>
+export type AdminFamilyReason = z.infer<typeof adminFamilyReasonSchema>
+export type AdminFamilyResume = z.infer<typeof adminFamilyResumeSchema>
+export type AdminFamilyWalletsQuery = z.infer<typeof adminFamilyWalletsQuerySchema>
+export type AdminFamilyWalletRow = z.infer<typeof adminFamilyWalletRowSchema>
+export type AdminFamilyWalletList = z.infer<typeof adminFamilyWalletListSchema>
+export type AdminFamilyMember = z.infer<typeof adminFamilyMemberSchema>
+export type AdminFamilyWalletDetail = z.infer<typeof adminFamilyWalletDetailSchema>

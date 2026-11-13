@@ -182,13 +182,17 @@ async function readBody(res: Response): Promise<Record<string, unknown> | null> 
   return await res.json().catch(() => null) as Record<string, unknown> | null
 }
 
-/** Sends a write and turns the answer into data or a French error. */
+/**
+ * Sends a write and turns the answer into data or a French error. A named
+ * code wins; `byStatus` covers refusals the contract only gives a status for.
+ */
 async function write<T>(
   path: string,
-  method: 'POST' | 'PATCH',
+  method: 'POST' | 'PATCH' | 'DELETE',
   body: unknown,
   parse: (raw: Record<string, unknown>) => T,
   fallback: string,
+  byStatus: Record<number, string> = {},
 ): Promise<FamilyWriteResult<T>> {
   try {
     const res = await apiFetch(path, {
@@ -196,8 +200,11 @@ async function write<T>(
       ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     })
     const data = await readBody(res)
-    if (!res.ok)
-      return { data: null, error: familyErrorMessage(data, fallback) }
+    if (!res.ok) {
+      const code = typeof data?.code === 'string' ? data.code : null
+      const known = code !== null && (code === 'FAMILY_WALLET_REFUSED' || Boolean(FAMILY_ERROR_MESSAGES[code]))
+      return { data: null, error: !known && byStatus[res.status] ? byStatus[res.status] : familyErrorMessage(data, fallback) }
+    }
     return { data: parse(data ?? {}), error: null }
   }
   catch {
@@ -341,4 +348,204 @@ export function useFamilyWalletEnabled(): boolean {
   }, [])
 
   return enabled
+}
+
+// ---------------------------------------------------------------------------
+// Control (contract §1-§2): suspend, resume, remove, close, invite again.
+
+const MEMBER_NOT_PENDING = 'Ce proche n’est plus en attente : il a déjà rejoint votre portefeuille famille.'
+const INVITE_TOO_SOON = 'Une invitation a déjà été envoyée à ce numéro il y a moins de 24 heures. Vous pourrez la renvoyer demain.'
+const BLOCKED_BY_EBIO = 'Votre portefeuille famille a été suspendu par eBio. Contactez le support pour le réactiver.'
+
+export function suspendFamilyMember(memberId: string): Promise<FamilyWriteResult<true>> {
+  return write(`/api/family-wallet/members/${memberId}/suspend`, 'POST', undefined, () => true as const, 'Impossible de suspendre ce proche.')
+}
+
+export function resumeFamilyMember(memberId: string): Promise<FamilyWriteResult<true>> {
+  return write(`/api/family-wallet/members/${memberId}/resume`, 'POST', undefined, () => true as const, 'Impossible de réactiver ce proche.')
+}
+
+/** Removes the member (204): past purchases stay in the history, the relative stays in the address book. */
+export function removeFamilyMember(memberId: string): Promise<FamilyWriteResult<true>> {
+  return write(`/api/family-wallet/members/${memberId}`, 'DELETE', undefined, () => true as const, 'Impossible de retirer ce proche.')
+}
+
+/** Sends the invitation SMS again: pending members only, once per 24 hours. */
+export function inviteFamilyMember(memberId: string): Promise<FamilyWriteResult<true>> {
+  return write(
+    `/api/family-wallet/members/${memberId}/invite`,
+    'POST',
+    undefined,
+    () => true as const,
+    'Impossible de renvoyer l’invitation.',
+    { 400: MEMBER_NOT_PENDING, 409: MEMBER_NOT_PENDING, 429: INVITE_TOO_SOON },
+  )
+}
+
+export function suspendFamilyWallet(): Promise<FamilyWriteResult<true>> {
+  return write('/api/family-wallet/suspend', 'POST', undefined, () => true as const, 'Impossible de suspendre le portefeuille famille.')
+}
+
+export function resumeFamilyWallet(): Promise<FamilyWriteResult<true>> {
+  return write(
+    '/api/family-wallet/resume',
+    'POST',
+    undefined,
+    () => true as const,
+    'Impossible de réactiver le portefeuille famille.',
+    { 403: BLOCKED_BY_EBIO },
+  )
+}
+
+/** Closes the wallet; what was left goes back to the payer's personal eBio wallet. */
+/** What closing moved back to the payer's personal wallet. */
+export interface FamilyClosure {
+  refunded: number
+  personalBalance: number
+}
+
+function parseClosure(raw: Record<string, unknown>): FamilyClosure {
+  return { refunded: readAmount(raw.refunded) ?? 0, personalBalance: readAmount(raw.personalBalance) ?? 0 }
+}
+
+export function closeFamilyWallet(): Promise<FamilyWriteResult<FamilyClosure>> {
+  return write('/api/family-wallet/close', 'POST', undefined, parseClosure, 'Impossible de fermer le portefeuille famille.')
+}
+
+// ---------------------------------------------------------------------------
+// History (contract §3) and the member's view (contract §4).
+
+export type FamilyTransactionType = 'TOPUP' | 'ORDER_PAYMENT' | 'REFUND' | 'FAMILY_TRANSFER_IN' | 'FAMILY_CLOSURE_OUT'
+
+export interface FamilyOrderLine {
+  name: string
+  quantity: number
+  imageUrl: string | null
+}
+
+export interface FamilyTransaction {
+  id: string
+  type: FamilyTransactionType
+  /** Signed, in FCFA: positive credits the wallet. */
+  amount: number
+  /** Null on the member's view, which never shows the wallet balance. */
+  balanceAfter: number | null
+  createdAt: string
+  member: { id: string, nickname: string } | null
+  order: { id: string, orderNumber: string, shopName: string, lines: FamilyOrderLine[] } | null
+}
+
+export interface FamilyTransactionPage {
+  items: FamilyTransaction[]
+  total: number
+}
+
+/** One family wallet the current user can spend from, as a member. */
+export interface MemberFamilyWallet {
+  memberId: string
+  payerFirstName: string
+  /** Combined status of the wallet and of the membership. */
+  status: FamilyMemberStatus
+  spendable: number
+  limits: { monthlyCap: number | null, orderMax: number | null, categoryNames: string[] | null }
+  spentThisMonth: number
+}
+
+const TRANSACTION_TYPES: FamilyTransactionType[] = ['TOPUP', 'ORDER_PAYMENT', 'REFUND', 'FAMILY_TRANSFER_IN', 'FAMILY_CLOSURE_OUT']
+
+function parseOrderLine(raw: Record<string, unknown>): FamilyOrderLine {
+  return {
+    name: typeof raw.name === 'string' ? raw.name : '',
+    quantity: readAmount(raw.quantity) ?? 1,
+    imageUrl: typeof raw.imageUrl === 'string' && raw.imageUrl.length > 0 ? raw.imageUrl : null,
+  }
+}
+
+function parseTransaction(raw: Record<string, unknown>): FamilyTransaction | null {
+  const type = TRANSACTION_TYPES.find(known => known === raw.type)
+  if (!type || raw.id === undefined)
+    return null
+  const member = raw.member as Record<string, unknown> | null | undefined
+  const order = raw.order as Record<string, unknown> | null | undefined
+  return {
+    id: String(raw.id),
+    type,
+    amount: readAmount(raw.amount) ?? 0,
+    balanceAfter: readAmount(raw.balanceAfter),
+    createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : '',
+    member: member && typeof member.id === 'string'
+      ? { id: member.id, nickname: typeof member.nickname === 'string' ? member.nickname : '' }
+      : null,
+    order: order && typeof order.id === 'string'
+      ? {
+          id: order.id,
+          orderNumber: typeof order.orderNumber === 'string' ? order.orderNumber : '',
+          shopName: typeof order.shopName === 'string' ? order.shopName : '',
+          lines: Array.isArray(order.lines)
+            ? (order.lines as Array<Record<string, unknown>>).map(parseOrderLine)
+            : [],
+        }
+      : null,
+  }
+}
+
+async function readTransactionPage(path: string): Promise<FamilyTransactionPage> {
+  const res = await apiFetch(path)
+  if (!res.ok)
+    throw new Error(familyErrorMessage(await readBody(res), 'Impossible de charger l’historique.'))
+  const data = await res.json() as Record<string, unknown>
+  const items = Array.isArray(data.items)
+    ? (data.items as Array<Record<string, unknown>>)
+        .map(parseTransaction)
+        .filter((item): item is FamilyTransaction => item !== null)
+    : []
+  return { items, total: readAmount(data.total) ?? items.length }
+}
+
+/** The payer's history, optionally narrowed to one member. */
+export function fetchFamilyTransactions(page: number, limit: number, memberId: string | null): Promise<FamilyTransactionPage> {
+  const filter = memberId ? `&memberId=${encodeURIComponent(memberId)}` : ''
+  return readTransactionPage(`/api/family-wallet/transactions?page=${page}&limit=${limit}${filter}`)
+}
+
+/** A member's own purchases on one family wallet; never the balance. */
+export async function fetchMyFamilyPurchases(memberId: string, page: number, limit: number): Promise<FamilyTransactionPage> {
+  const result = await readTransactionPage(`/api/family-wallets/mine/${memberId}/transactions?page=${page}&limit=${limit}`)
+  return { ...result, items: result.items.map(item => ({ ...item, balanceAfter: null })) }
+}
+
+function parseMemberWallet(raw: Record<string, unknown>): MemberFamilyWallet | null {
+  if (typeof raw.memberId !== 'string')
+    return null
+  const limits = (raw.limits && typeof raw.limits === 'object' ? raw.limits : {}) as Record<string, unknown>
+  return {
+    memberId: raw.memberId,
+    payerFirstName: typeof raw.payerFirstName === 'string' ? raw.payerFirstName : '',
+    status: parseMemberStatus(raw.status),
+    spendable: readAmount(raw.spendable) ?? 0,
+    limits: {
+      monthlyCap: readAmount(limits.monthlyCap),
+      orderMax: readAmount(limits.orderMax),
+      categoryNames: Array.isArray(limits.categoryNames) ? limits.categoryNames.map(String) : null,
+    },
+    spentThisMonth: readAmount(raw.spentThisMonth) ?? 0,
+  }
+}
+
+/** The family wallets the current user is a member of; empty on any failure. */
+export async function fetchMyFamilyWallets(): Promise<MemberFamilyWallet[]> {
+  try {
+    const res = await apiFetch('/api/family-wallets/mine')
+    if (!res.ok)
+      return []
+    const data = await res.json() as unknown
+    return Array.isArray(data)
+      ? (data as Array<Record<string, unknown>>)
+          .map(parseMemberWallet)
+          .filter((wallet): wallet is MemberFamilyWallet => wallet !== null)
+      : []
+  }
+  catch {
+    return []
+  }
 }

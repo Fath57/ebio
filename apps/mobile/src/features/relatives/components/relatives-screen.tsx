@@ -59,7 +59,9 @@ function RelativeCard({ relative, onEdit, onDelete }: RelativeCardProps) {
       </View>
       <View style={styles.detailRow}>
         <MapPin size={14} color={semantic.textTertiary} strokeWidth={2} />
-        <Text style={[styles.detail, { color: semantic.textSecondary }]} numberOfLines={2}>{relative.address}</Text>
+        <Text style={[styles.detail, { color: relative.address ? semantic.textSecondary : semantic.textTertiary }]} numberOfLines={2}>
+          {relative.address ?? 'Pas encore d’adresse : à compléter pour lui faire livrer une commande.'}
+        </Text>
       </View>
     </View>
   )

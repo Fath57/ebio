@@ -1,12 +1,16 @@
 import type { SettlementStatus } from '../../payments/utils/await-settlement'
-import type { FamilyMember, FamilyMemberStatus, FamilyTopupStart, FamilyWallet } from '../family-wallet-api'
+import type { FamilyMember, FamilyMemberStatus, FamilyTopupStart, FamilyWallet, FamilyWriteResult } from '../family-wallet-api'
 import { useFocusEffect } from '@react-navigation/native'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import CirclePause from 'lucide-react-native/dist/esm/icons/circle-pause'
+import CirclePlay from 'lucide-react-native/dist/esm/icons/circle-play'
 import History from 'lucide-react-native/dist/esm/icons/history'
 import Hourglass from 'lucide-react-native/dist/esm/icons/hourglass'
+import Lock from 'lucide-react-native/dist/esm/icons/lock'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
+import Send from 'lucide-react-native/dist/esm/icons/send'
 import SlidersHorizontal from 'lucide-react-native/dist/esm/icons/sliders-horizontal'
+import UserMinus from 'lucide-react-native/dist/esm/icons/user-minus'
 import UserPlus from 'lucide-react-native/dist/esm/icons/user-plus'
 import UsersRound from 'lucide-react-native/dist/esm/icons/users-round'
 import * as React from 'react'
@@ -19,7 +23,18 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { formatXof, useMoney } from '../../common/hooks/use-money'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { awaitSettlement } from '../../payments/utils/await-settlement'
-import { fetchFamilyWallet, openFamilyWallet, verifyFamilyTopup } from '../family-wallet-api'
+import {
+  closeFamilyWallet,
+  fetchFamilyWallet,
+  inviteFamilyMember,
+  openFamilyWallet,
+  removeFamilyMember,
+  resumeFamilyMember,
+  resumeFamilyWallet,
+  suspendFamilyMember,
+  suspendFamilyWallet,
+  verifyFamilyTopup,
+} from '../family-wallet-api'
 import { FamilyTopupSheet } from './family-topup-sheet'
 
 interface FamilyWalletScreenProps {
@@ -47,13 +62,50 @@ function announceFamilyTopup(status: SettlementStatus, afterWaiting: boolean): v
   }
 }
 
+type MemberAction = 'suspend' | 'resume' | 'remove' | 'invite'
+
 interface MemberRowProps {
   member: FamilyMember
   isFirst: boolean
+  /** No action on a closed wallet: the row is history only. */
+  readOnly: boolean
+  /** An action on this member is in flight. */
+  busy: boolean
+  /** Another action is in flight somewhere on the screen. */
+  locked: boolean
+  onAction: (member: FamilyMember, action: MemberAction) => void
 }
 
-/** One member: nickname, status (icon + word), spending of the month against the cap. */
-function MemberRow({ member, isFirst }: MemberRowProps) {
+interface RowButtonProps {
+  label: string
+  Icon: typeof Plus
+  onPress: () => void
+  disabled: boolean
+  danger?: boolean
+  accessibilityLabel: string
+}
+
+/** A small text button under a member: icon + word, 44 px tall. */
+function RowButton({ label, Icon, onPress, disabled, danger = false, accessibilityLabel }: RowButtonProps) {
+  const { semantic } = useTheme()
+  const color = danger ? colors.coral[600] : colors.green[600]
+  return (
+    <TouchableOpacity
+      style={[styles.rowButton, { borderColor: semantic.borderNormal }, disabled && styles.disabled]}
+      onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
+    >
+      <Icon size={16} color={color} strokeWidth={2.2} />
+      <Text style={[styles.rowButtonText, { color }]}>{label}</Text>
+    </TouchableOpacity>
+  )
+}
+
+/** One member: nickname, status (icon + word), spending of the month against the cap, and what the payer can do. */
+function MemberRow({ member, isFirst, readOnly, busy, locked, onAction }: MemberRowProps) {
   const { semantic } = useTheme()
   const status = MEMBER_STATUS[member.status]
   const cap = member.effective.monthlyCap
@@ -89,7 +141,53 @@ function MemberRow({ member, isFirst }: MemberRowProps) {
           />
         </View>
       )}
-      <Text style={[styles.memberSpent, { color: semantic.textSecondary }]}>{spentText}</Text>
+      {member.status === 'PENDING'
+        ? (
+            <Text style={[styles.memberSpent, { color: semantic.textSecondary }]}>
+              {`Un SMS d’invitation a été envoyé au ${member.phone}. ${member.nickname} pourra payer dès son inscription sur eBio avec ce numéro.`}
+            </Text>
+          )
+        : <Text style={[styles.memberSpent, { color: semantic.textSecondary }]}>{spentText}</Text>}
+      {!readOnly && (
+        <View style={styles.rowActions}>
+          {busy && <ActivityIndicator size="small" color={colors.green[400]} />}
+          {member.status === 'PENDING' && (
+            <RowButton
+              label="Renvoyer l’invitation"
+              Icon={Send}
+              onPress={() => onAction(member, 'invite')}
+              disabled={locked}
+              accessibilityLabel={`Renvoyer l’invitation à ${member.nickname}`}
+            />
+          )}
+          {member.status === 'ACTIVE' && (
+            <RowButton
+              label="Suspendre"
+              Icon={CirclePause}
+              onPress={() => onAction(member, 'suspend')}
+              disabled={locked}
+              accessibilityLabel={`Suspendre ${member.nickname}`}
+            />
+          )}
+          {member.status === 'SUSPENDED' && (
+            <RowButton
+              label="Réactiver"
+              Icon={CirclePlay}
+              onPress={() => onAction(member, 'resume')}
+              disabled={locked}
+              accessibilityLabel={`Réactiver ${member.nickname}`}
+            />
+          )}
+          <RowButton
+            label="Retirer"
+            Icon={UserMinus}
+            onPress={() => onAction(member, 'remove')}
+            disabled={locked}
+            danger
+            accessibilityLabel={`Retirer ${member.nickname} du portefeuille famille`}
+          />
+        </View>
+      )}
     </View>
   )
 }
@@ -100,11 +198,13 @@ interface ActionButtonProps {
   onPress: () => void
   primary?: boolean
   disabled?: boolean
+  danger?: boolean
+  accessibilityLabel?: string
 }
 
-function ActionButton({ label, Icon, onPress, primary = false, disabled = false }: ActionButtonProps) {
+function ActionButton({ label, Icon, onPress, primary = false, disabled = false, danger = false, accessibilityLabel }: ActionButtonProps) {
   const { semantic } = useTheme()
-  const color = primary ? colors.neutral[0] : colors.green[600]
+  const color = primary ? colors.neutral[0] : danger ? colors.coral[600] : colors.green[600]
   return (
     <TouchableOpacity
       style={[
@@ -118,6 +218,7 @@ function ActionButton({ label, Icon, onPress, primary = false, disabled = false 
       disabled={disabled}
       activeOpacity={0.8}
       accessibilityRole="button"
+      accessibilityLabel={accessibilityLabel}
       accessibilityState={{ disabled }}
     >
       <Icon size={16} color={color} strokeWidth={2.2} />
@@ -140,6 +241,8 @@ export function FamilyWalletScreen({ onBack, onAddMember, onOpenLimits, onOpenHi
   const [confirming, setConfirming] = useState(false)
   // What the payment page's own polling last saw, so a failure is not announced twice.
   const lastPolledRef = useRef<SettlementStatus>('pending')
+  /** `wallet`, or the id of the member an action is running on. */
+  const [busyKey, setBusyKey] = useState<string | null>(null)
 
   const load = useCallback(async (): Promise<void> => {
     try {
@@ -171,6 +274,111 @@ export function FamilyWalletScreen({ onBack, onAddMember, onOpenLimits, onOpenHi
     }
     void load()
   }, [load])
+
+  /** Runs one control action, says what happened, and reads the wallet again. */
+  const runAction = useCallback(async (
+    key: string,
+    action: () => Promise<FamilyWriteResult<unknown>>,
+    success: { title: string, message: string } | null,
+  ): Promise<void> => {
+    setBusyKey(key)
+    const result = await action()
+    setBusyKey(null)
+    if (result.error !== null)
+      appAlert('Action impossible', result.error)
+    else if (success)
+      appAlert(success.title, success.message)
+    void load()
+  }, [load])
+
+  const handleMemberAction = useCallback((member: FamilyMember, action: MemberAction) => {
+    const name = member.nickname
+    if (action === 'resume') {
+      void runAction(member.id, () => resumeFamilyMember(member.id), {
+        title: `${name} est réactivé(e)`,
+        message: `${name} peut de nouveau payer avec le portefeuille famille.`,
+      })
+      return
+    }
+    if (action === 'invite') {
+      void runAction(member.id, () => inviteFamilyMember(member.id), {
+        title: 'Invitation renvoyée',
+        message: `Un nouveau SMS a été envoyé au ${member.phone}.`,
+      })
+      return
+    }
+    if (action === 'suspend') {
+      appAlert(
+        `Suspendre ${name} ?`,
+        `${name} ne pourra plus payer avec le portefeuille famille jusqu’à ce que vous le réactiviez. Vos autres proches ne sont pas concernés.`,
+        [
+          { text: 'Annuler', style: 'cancel' },
+          {
+            text: 'Suspendre',
+            onPress: () => {
+              void runAction(member.id, () => suspendFamilyMember(member.id), null)
+            },
+          },
+        ],
+      )
+      return
+    }
+    appAlert(
+      `Retirer ${name} du portefeuille ?`,
+      `${name} ne pourra plus payer avec. Ses achats passés restent dans l’historique, et ${name} reste dans vos proches.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Retirer',
+          style: 'destructive',
+          onPress: () => {
+            void runAction(member.id, () => removeFamilyMember(member.id), null)
+          },
+        },
+      ],
+    )
+  }, [runAction])
+
+  const confirmSuspendWallet = useCallback(() => {
+    appAlert(
+      'Suspendre le portefeuille famille ?',
+      'Aucun de vos proches ne pourra payer avec jusqu’à sa réactivation. Le solde reste intact.',
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Suspendre',
+          onPress: () => {
+            void runAction('wallet', suspendFamilyWallet, null)
+          },
+        },
+      ],
+    )
+  }, [runAction])
+
+  const confirmCloseWallet = useCallback((balance: number) => {
+    const refund = balance > 0
+      ? `${formatXof(balance)} reviendront sur votre portefeuille eBio.`
+      : 'Le portefeuille est vide : aucun montant ne reviendra sur votre portefeuille eBio.'
+    appAlert(
+      'Fermer le portefeuille famille ?',
+      `${refund} Il ne pourra plus être rechargé ni utilisé, et vos proches en perdront l’accès. Une commande encore en cours qui serait remboursée le sera sur votre portefeuille eBio.`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        {
+          text: 'Fermer le portefeuille',
+          style: 'destructive',
+          onPress: () => {
+            void runAction('wallet', closeFamilyWallet, {
+              title: 'Portefeuille famille fermé',
+              message: balance > 0
+                ? `${formatXof(balance)} ont été versés sur votre portefeuille eBio.`
+                : 'Vos proches n’ont plus accès au portefeuille famille.',
+            })
+          },
+        },
+      ],
+    )
+  }, [runAction])
 
   const pollStatus = useCallback(async (): Promise<SettlementStatus> => {
     if (!checkout?.providerTransactionId)
@@ -237,6 +445,8 @@ export function FamilyWalletScreen({ onBack, onAddMember, onOpenLimits, onOpenHi
   }
 
   const suspended = wallet?.status === 'SUSPENDED'
+  const closed = wallet?.status === 'CLOSED'
+  const locked = busyKey !== null
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
@@ -317,6 +527,15 @@ export function FamilyWalletScreen({ onBack, onAddMember, onOpenLimits, onOpenHi
               </View>
             )}
 
+            {closed && (
+              <View style={[styles.banner, { backgroundColor: semantic.bgSurface }]}>
+                <Lock size={18} color={semantic.textSecondary} strokeWidth={2} />
+                <Text style={[styles.body, styles.flex, { color: semantic.textSecondary }]}>
+                  Portefeuille fermé : son solde a été rendu à votre portefeuille eBio. Son historique reste consultable.
+                </Text>
+              </View>
+            )}
+
             <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
               <Text style={[styles.overline, { color: semantic.textTertiary }]}>Solde du portefeuille famille</Text>
               <Text style={[styles.balance, { color: semantic.textPrimary }]}>{formatMoney(wallet.balance).primary}</Text>
@@ -325,14 +544,24 @@ export function FamilyWalletScreen({ onBack, onAddMember, onOpenLimits, onOpenHi
                   {`soit ${formatXof(wallet.balance)}`}
                 </Text>
               )}
-              <View style={styles.actionsRow}>
-                <ActionButton label="Recharger" Icon={Plus} onPress={() => setTopupOpen(true)} primary />
-                <ActionButton label="Ajouter un proche" Icon={UserPlus} onPress={onAddMember} />
-              </View>
-              <View style={styles.actionsRow}>
-                <ActionButton label="Limites" Icon={SlidersHorizontal} onPress={onOpenLimits} />
-                <ActionButton label="Historique" Icon={History} onPress={onOpenHistory} />
-              </View>
+              {closed
+                ? (
+                    <View style={styles.actionsRow}>
+                      <ActionButton label="Historique" Icon={History} onPress={onOpenHistory} />
+                    </View>
+                  )
+                : (
+                    <>
+                      <View style={styles.actionsRow}>
+                        <ActionButton label="Recharger" Icon={Plus} onPress={() => setTopupOpen(true)} primary />
+                        <ActionButton label="Ajouter un proche" Icon={UserPlus} onPress={onAddMember} />
+                      </View>
+                      <View style={styles.actionsRow}>
+                        <ActionButton label="Limites" Icon={SlidersHorizontal} onPress={onOpenLimits} />
+                        <ActionButton label="Historique" Icon={History} onPress={onOpenHistory} />
+                      </View>
+                    </>
+                  )}
             </View>
 
             <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>Mes proches</Text>
@@ -344,9 +573,44 @@ export function FamilyWalletScreen({ onBack, onAddMember, onOpenLimits, onOpenHi
                     </Text>
                   )
                 : wallet.members.map((member, index) => (
-                    <MemberRow key={member.id} member={member} isFirst={index === 0} />
+                    <MemberRow
+                      key={member.id}
+                      member={member}
+                      isFirst={index === 0}
+                      readOnly={closed}
+                      busy={busyKey === member.id}
+                      locked={locked}
+                      onAction={handleMemberAction}
+                    />
                   ))}
             </View>
+
+            {!closed && (
+              <>
+                <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>Gérer le portefeuille</Text>
+                <View style={[styles.card, { backgroundColor: semantic.bgCard }]}>
+                  <Text style={[styles.body, { color: semantic.textSecondary }]}>
+                    {suspended
+                      ? 'Réactivez le portefeuille pour que vos proches puissent de nouveau payer avec.'
+                      : 'Suspendez-le pour bloquer tous les paiements sans toucher au solde, ou fermez-le pour récupérer le solde sur votre portefeuille eBio.'}
+                  </Text>
+                  {busyKey === 'wallet' && <ActivityIndicator size="small" color={colors.green[400]} />}
+                  <View style={styles.actionsRow}>
+                    {suspended
+                      ? <ActionButton label="Réactiver" Icon={CirclePlay} onPress={() => void runAction('wallet', resumeFamilyWallet, null)} disabled={locked} />
+                      : <ActionButton label="Suspendre" Icon={CirclePause} onPress={confirmSuspendWallet} disabled={locked} />}
+                    <ActionButton
+                      label="Fermer"
+                      Icon={Lock}
+                      onPress={() => confirmCloseWallet(wallet.balance)}
+                      disabled={locked}
+                      danger
+                      accessibilityLabel="Fermer le portefeuille famille"
+                    />
+                  </View>
+                </View>
+              </>
+            )}
           </>
         )}
       </ScrollView>
@@ -431,4 +695,15 @@ const styles = StyleSheet.create({
   gaugeTrack: { height: 8, borderRadius: radius.pill, overflow: 'hidden' },
   gaugeFill: { height: 8, borderRadius: radius.pill },
   memberSpent: { ...typography.caption },
+  rowActions: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing[2] },
+  rowButton: {
+    minHeight: 44,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[1],
+    paddingHorizontal: spacing[3],
+    borderRadius: radius.md,
+    borderWidth: 1,
+  },
+  rowButtonText: { ...typography.caption, fontFamily: fonts.sansSb },
 })

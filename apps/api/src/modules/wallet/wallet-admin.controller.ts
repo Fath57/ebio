@@ -140,7 +140,7 @@ export class WalletAdminController {
   ) {
     return this.adminWallets.list({
       q: q?.trim() || undefined,
-      ownerType: ['SUPPLIER', 'COURIER', 'USER'].includes(ownerType ?? '') ? ownerType as WalletOwnerType : undefined,
+      ownerType: ['SUPPLIER', 'COURIER', 'USER', 'FAMILY'].includes(ownerType ?? '') ? ownerType as WalletOwnerType : undefined,
       balance: ['positive', 'negative', 'zero'].includes(balance ?? '') ? balance as AdminWalletFilters['balance'] : undefined,
       sort: ['balance_desc', 'balance_asc', 'updated_desc'].includes(sort ?? '') ? sort as AdminWalletFilters['sort'] : undefined,
       page: Number(page) || 1,

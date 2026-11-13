@@ -1,15 +1,19 @@
 import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../utils/api-client'
 
-/** A saved recipient of the payer's address book (contracts/diaspora.md §1). */
+/**
+ * A saved recipient of the payer's address book (contracts/diaspora.md §1).
+ * Address and position may be null: a relative added for the family wallet
+ * does not need one (contracts/family-wallet.md §2). A gift order still does.
+ */
 export interface Relative {
   id: string
   nickname: string
   name: string
   phone: string
-  address: string
-  latitude: number
-  longitude: number
+  address: string | null
+  latitude: number | null
+  longitude: number | null
   createdAt: string
 }
 
@@ -17,9 +21,9 @@ export interface RelativeInput {
   nickname: string
   name: string
   phone: string
-  address: string
-  latitude: number
-  longitude: number
+  address: string | null
+  latitude: number | null
+  longitude: number | null
 }
 
 /** The API caps the address book (`422 RELATIVES_LIMIT_REACHED`). */
@@ -30,15 +34,30 @@ const ERROR_MESSAGES: Record<string, string> = {
   RELATIVES_LIMIT_REACHED: `Vous avez atteint la limite de ${MAX_RELATIVES} proches. Supprimez-en un pour en ajouter un autre.`,
 }
 
+/** A coordinate, or null when absent: `Number(null)` would read as 0. */
+function readCoordinate(value: unknown): number | null {
+  if (value === null || value === undefined || value === '')
+    return null
+  const parsed = Number(value)
+  return Number.isFinite(parsed) ? parsed : null
+}
+
+/** The door point, only when both coordinates are there. */
+export function relativePosition(relative: Relative): { latitude: number, longitude: number } | null {
+  return relative.latitude !== null && relative.longitude !== null
+    ? { latitude: relative.latitude, longitude: relative.longitude }
+    : null
+}
+
 function toRelative(raw: Record<string, unknown>): Relative {
   return {
     id: String(raw.id),
     nickname: typeof raw.nickname === 'string' ? raw.nickname : '',
     name: typeof raw.name === 'string' ? raw.name : '',
     phone: typeof raw.phone === 'string' ? raw.phone : '',
-    address: typeof raw.address === 'string' ? raw.address : '',
-    latitude: Number(raw.latitude),
-    longitude: Number(raw.longitude),
+    address: typeof raw.address === 'string' && raw.address.trim().length > 0 ? raw.address : null,
+    latitude: readCoordinate(raw.latitude),
+    longitude: readCoordinate(raw.longitude),
     createdAt: typeof raw.createdAt === 'string' ? raw.createdAt : '',
   }
 }

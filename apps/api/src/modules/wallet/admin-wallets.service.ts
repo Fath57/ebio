@@ -7,7 +7,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { WalletTransactionType } from './entities/wallet-transaction.entity'
 import { WalletService } from './wallet.service'
 
-export type WalletOwnerType = 'SUPPLIER' | 'COURIER' | 'USER'
+export type WalletOwnerType = 'SUPPLIER' | 'COURIER' | 'USER' | 'FAMILY'
 
 export interface AdminWalletFilters {
   q?: string
@@ -25,27 +25,33 @@ const SORTS: Record<NonNullable<AdminWalletFilters['sort']>, string> = {
   updated_desc: 'w."updatedAt" DESC',
 }
 
-/** Whose wallet, in one expression shared by the filter and the sort. */
-const OWNER_NAME = `COALESCE(s.shop_name, cp.full_name, u.name, '')`
+/** Whose wallet, in one expression shared by the filter and the sort; a family wallet goes by its payer. */
+const OWNER_NAME = `COALESCE(s.shop_name, cp.full_name, u.name, fu.name, '')`
 
 const FROM = `FROM wallets w
   LEFT JOIN suppliers s ON s.id = w.supplier_id
   LEFT JOIN courier_profiles cp ON cp.id = w.courier_profile_id
-  LEFT JOIN users u ON u.id = w.user_id`
+  LEFT JOIN users u ON u.id = w.user_id
+  LEFT JOIN family_wallets fw ON fw.id = w.family_wallet_id
+  LEFT JOIN users fu ON fu.id = fw.payer_id`
 
 const ROW_COLUMNS = `w.id, w.balance, w."updatedAt" AS updated_at,
   s.id AS supplier_id, cp.id AS courier_id, u.id AS user_id,
+  fw.id AS family_wallet_id, fw.payer_id AS family_payer_id,
   ${OWNER_NAME} AS owner_name`
 
 function toWalletRow(row: Record<string, unknown>) {
   return {
     id: row.id as string,
     balance: Number(row.balance ?? 0),
-    ownerType: (row.supplier_id ? 'SUPPLIER' : row.courier_id ? 'COURIER' : 'USER') as WalletOwnerType,
+    ownerType: (row.supplier_id ? 'SUPPLIER' : row.courier_id ? 'COURIER' : row.family_wallet_id ? 'FAMILY' : 'USER') as WalletOwnerType,
     ownerName: (row.owner_name as string) || '—',
     supplierId: (row.supplier_id as string | null) ?? null,
     courierId: (row.courier_id as string | null) ?? null,
     userId: (row.user_id as string | null) ?? null,
+    /** The family wallet, for its back-office page; its payer in `familyPayerId`. */
+    familyWalletId: (row.family_wallet_id as string | null) ?? null,
+    familyPayerId: (row.family_payer_id as string | null) ?? null,
     updatedAt: row.updated_at instanceof Date ? row.updated_at.toISOString() : String(row.updated_at),
   }
 }
@@ -64,6 +70,8 @@ export function buildWalletConditions(filters: Omit<AdminWalletFilters, 'page' |
     conditions.push('w.courier_profile_id IS NOT NULL')
   if (filters.ownerType === 'USER')
     conditions.push('w.user_id IS NOT NULL')
+  if (filters.ownerType === 'FAMILY')
+    conditions.push('w.family_wallet_id IS NOT NULL')
   if (filters.balance === 'positive')
     conditions.push('w.balance > 0')
   if (filters.balance === 'negative')
@@ -150,7 +158,7 @@ export class AdminWalletsService {
     }
     const [owner] = await this.em.getConnection().execute(
       `SELECT w.id, w.platform_account,
-              COALESCE(s.user_id, cp.user_id, w.user_id) AS owner_user_id,
+              COALESCE(s.user_id, cp.user_id, w.user_id, fw.payer_id) AS owner_user_id,
               CASE WHEN w.supplier_id IS NOT NULL THEN 'supplier' WHEN w.courier_profile_id IS NOT NULL THEN 'courier' ELSE 'client' END AS app
        ${FROM} WHERE w.id = ?`,
       [walletId],

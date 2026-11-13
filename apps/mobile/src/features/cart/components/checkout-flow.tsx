@@ -50,6 +50,7 @@ import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-settlement'
 import { buildCheckoutHtml, paymentPublicKey } from '../../payments/utils/checkout-widget'
 import { SavedRelativesPicker } from '../../relatives/components/saved-relatives-picker'
+import { relativePosition } from '../../relatives/relatives-api'
 import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
 import { useRecommendations } from '../hooks/use-recommendations'
@@ -371,10 +372,10 @@ export function CheckoutFlow({
     setRecipient({
       name: relative.name,
       phone: relative.phone,
-      address: relative.address,
-      position: Number.isFinite(relative.latitude) && Number.isFinite(relative.longitude)
-        ? { latitude: relative.latitude, longitude: relative.longitude }
-        : null,
+      // A relative saved for the family wallet may have no address yet:
+      // the fields stay empty for the payer to fill.
+      address: relative.address ?? '',
+      position: relativePosition(relative),
       placeLabel: null,
       savedRelativeId: relative.id,
     })
