@@ -37,6 +37,7 @@ import { MAX_ITEM_QUANTITY, useCart } from '../../cart/cart-context'
 import { BasketSuggestions } from '../../cart/components/basket-suggestions'
 import { CART_CTA_BAR_CLEARANCE } from '../../cart/components/cart-cta-bar'
 import { HeaderIcon, ScrollFadeHeader, useHeaderTint } from '../../common/components/scroll-fade-header'
+import { useMoney } from '../../common/hooks/use-money'
 import { useFavorite } from '../../favorites/hooks/use-favorite'
 import { formatDistance, formatPrice } from '../../search/components/search-result-card'
 import { useProductUnits } from '../hooks/use-product-units'
@@ -112,6 +113,7 @@ export function ProductDetailScreen({
   detail,
 }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
+  const { formatMoney } = useMoney()
   const { shortLabel } = useProductUnits()
   const insets = useSafeAreaInsets()
   const { getItemCount, groups, addItem, updateQuantity } = useCart()
@@ -188,6 +190,8 @@ export function ProductDetailScreen({
   // A promotional price is the unit's; a pack keeps the price its shop set.
   const hasPromo = unitHasPromo && !selectedFormat
   const displayPrice = selectedFormat ? selectedFormat.price : unitPrice
+  const money = formatMoney(displayPrice)
+  const oldMoney = formatMoney(product.pricePerUnit)
   const isInStock = selectedFormat ? selectedFormat.stock > 0 : product.isInStock
   const discount = hasPromo ? Math.round((1 - product.promotionalPrice! / product.pricePerUnit) * 100) : 0
   const unitShort = shortLabel(product.unit)
@@ -433,10 +437,17 @@ export function ProductDetailScreen({
               <View style={styles.priceTexts}>
                 <View style={styles.priceMainRow}>
                   <Text style={[styles.priceAmount, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>
-                    {formatPrice(displayPrice)}
+                    {money.amount}
                   </Text>
-                  <Text style={[styles.priceCurrency, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>FCFA</Text>
+                  <Text style={[styles.priceCurrency, { color: hasPromo ? colors.coral[400] : colors.green[600] }]}>{money.symbol}</Text>
                 </View>
+                {money.secondary && (
+                  <Text style={[styles.priceSecondary, { color: semantic.textSecondary }]}>
+                    soit
+                    {' '}
+                    {money.secondary}
+                  </Text>
+                )}
                 <View style={styles.priceMetaRow}>
                   <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
                     /
@@ -447,9 +458,7 @@ export function ProductDetailScreen({
                     <>
                       <View style={[styles.priceDot, { backgroundColor: semantic.textTertiary }]} />
                       <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
-                        {formatPrice(product.pricePerUnit)}
-                        {' '}
-                        FCFA
+                        {oldMoney.primary}
                       </Text>
                       <View style={styles.discountPill}>
                         <Text style={styles.discountPillText}>
@@ -499,7 +508,7 @@ export function ProductDetailScreen({
                 <View key={`${promotion.type}-${index}`} style={styles.promotionRow}>
                   <Percent size={13} color={colors.green[600]} strokeWidth={2.2} />
                   <Text style={[styles.promotionText, { color: colors.green[800] }]}>
-                    {describePromotion(promotion, formatPrice)}
+                    {describePromotion(promotion, value => formatMoney(value).primary, true)}
                   </Text>
                 </View>
               ))}
@@ -929,6 +938,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSb,
     fontSize: 15,
     letterSpacing: 0.5,
+  },
+  priceSecondary: {
+    fontFamily: fonts.mono,
+    fontSize: 13,
   },
   priceMetaRow: {
     flexDirection: 'row',
