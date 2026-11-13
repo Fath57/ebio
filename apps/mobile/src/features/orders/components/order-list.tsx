@@ -1,3 +1,4 @@
+import type { FrozenDisplay } from '../../common/hooks/use-money'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Bike from 'lucide-react-native/dist/esm/icons/bike'
@@ -26,8 +27,10 @@ import { appAlert } from '../../common/components/app-alert'
 import { ListFooterLoader } from '../../common/components/list-footer-loader'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { ProductCardSkeletonList } from '../../common/components/skeleton'
+import { formatFrozenMoney, parseFrozenDisplay } from '../../common/hooks/use-money'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
 import { useReorder } from '../hooks/use-reorder'
+import { ReceivedOrders, useReceivedOrders } from './received-orders'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type FilterTab = 'ALL' | 'ACTIVE' | 'COMPLETED' | 'CANCELLED'
@@ -116,13 +119,20 @@ interface OrderListItem {
   createdAt: string
   items: OrderItem[]
   delivery: DeliveryRun | null
+  /** Currency frozen at checkout; null when paid in FCFA. */
+  display: FrozenDisplay | null
 }
 
 interface OrderListProps {
   onOpenOrder: (orderId: string) => void
   /** Where « Commander à nouveau » leaves the buyer once the basket is filled. */
   onGoToCart?: () => void
+  /** Rating of a basket received from a relative: its products, then its courier. */
+  onRateReceivedProducts?: (orderId: string) => void
+  onRateReceivedCourier?: (orderId: string, supplierId: string | null) => void
 }
+
+type Segment = 'MINE' | 'RECEIVED'
 
 const STATUS_LABELS: Record<OrderStatus, string> = {
   PENDING_PAYMENT: 'En attente de paiement',
@@ -163,10 +173,6 @@ const FILTER_TABS: Array<{ key: FilterTab, label: string }> = [
   { key: 'CANCELLED', label: 'Annulées' },
 ]
 
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
-}
-
 function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('fr-FR', {
     day: 'numeric',
@@ -200,6 +206,7 @@ function toOrderListItem(o: Record<string, unknown>): OrderListItem {
       isGift: Boolean(item.isGift),
     })),
     delivery: (o.delivery ?? null) as DeliveryRun | null,
+    display: parseFrozenDisplay(o.display),
   }
 }
 
@@ -222,9 +229,22 @@ function getFirstPhoto(items: OrderItem[]): string | null {
   return items.find(i => i.productPhoto)?.productPhoto ?? null
 }
 
-export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
+export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onRateReceivedCourier }: OrderListProps) {
   const tabBarHeight = useBottomTabBarHeight()
   const [activeFilter, setActiveFilter] = useState<FilterTab>('ALL')
+  const [segment, setSegment] = useState<Segment>('MINE')
+  const received = useReceivedOrders()
+  const [isRefreshingReceived, setIsRefreshingReceived] = useState(false)
+  // Most accounts never receive a basket: the segment exists only once one has.
+  const hasReceived = received.total > 0
+  const showReceived = hasReceived && segment === 'RECEIVED'
+  const reloadReceived = received.reload
+  const handleRefreshReceived = useCallback(async () => {
+    setIsRefreshingReceived(true)
+    await reloadReceived()
+    setIsRefreshingReceived(false)
+  }, [reloadReceived])
+  const noop = useCallback(() => {}, [])
   const { semantic } = useTheme()
   const { isPending: isReordering, reorder } = useReorder()
 
@@ -318,6 +338,7 @@ export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
       const statusColor = STATUS_COLORS[item.status]
       const photo = getFirstPhoto(item.items)
       const summary = buildItemsSummary(item.items)
+      const money = formatFrozenMoney(item.total, item.display)
 
       return (
         <ScalePressable
@@ -400,11 +421,16 @@ export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
 
                 {/* Bottom: price + date + chevron */}
                 <View style={styles.cardBottomRow}>
-                  <Text style={[styles.totalPrice, { color: semantic.textPrimaryColor }]}>
-                    {formatPrice(item.total)}
-                    {' '}
-                    FCFA
-                  </Text>
+                  <View>
+                    <Text style={[styles.totalPrice, { color: semantic.textPrimaryColor }]}>
+                      {money.primary}
+                    </Text>
+                    {money.secondary && (
+                      <Text style={[styles.totalSecondary, { color: semantic.textTertiary }]}>
+                        {money.secondary}
+                      </Text>
+                    )}
+                  </View>
                   <View style={styles.dateChevron}>
                     <Text style={[styles.date, { color: semantic.textTertiary }]}>
                       {formatDate(item.createdAt)}
@@ -450,84 +476,134 @@ export function OrderList({ onOpenOrder, onGoToCart }: OrderListProps) {
           : undefined}
       />
 
-      {/* Filter tabs */}
-      <View style={styles.filterRow}>
-        {FILTER_TABS.map((tab) => {
-          const isActive = activeFilter === tab.key
-          return (
-            <TouchableOpacity
-              key={tab.key}
-              style={[
-                styles.filterTab,
-                { backgroundColor: isActive ? semantic.bgPrimaryLight : 'transparent' },
-              ]}
-              onPress={() => setActiveFilter(tab.key)}
-              activeOpacity={0.7}
-              accessibilityRole="tab"
-              accessibilityState={{ selected: isActive }}
-            >
-              <Text
-                style={[
-                  styles.filterTabText,
-                  { color: isActive ? semantic.textPrimaryColor : semantic.textTertiary },
-                  isActive && styles.filterTabTextActive,
-                ]}
+      {hasReceived && (
+        <View style={styles.segmentRow} accessibilityRole="tablist">
+          {([['MINE', 'Mes commandes'], ['RECEIVED', 'Paniers reçus']] as const).map(([key, label]) => {
+            const isActive = segment === key
+            return (
+              <TouchableOpacity
+                key={key}
+                style={[styles.segmentTab, { borderBottomColor: isActive ? colors.green[600] : 'transparent' }]}
+                onPress={() => setSegment(key)}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
               >
-                {tab.label}
-              </Text>
-            </TouchableOpacity>
-          )
-        })}
-      </View>
+                <Text style={[styles.segmentText, { color: isActive ? semantic.textPrimaryColor : semantic.textSecondary }, isActive && styles.filterTabTextActive]}>
+                  {key === 'RECEIVED' ? `${label} (${received.total})` : label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      )}
+
+      {showReceived && (
+        <ReceivedOrders
+          items={received.items}
+          isRefreshing={isRefreshingReceived}
+          onRefresh={handleRefreshReceived}
+          onRateProducts={onRateReceivedProducts ?? noop}
+          onRateCourier={onRateReceivedCourier ?? noop}
+          bottomInset={tabBarHeight + spacing[6]}
+        />
+      )}
+
+      {/* Filter tabs */}
+      {!showReceived && (
+        <View style={styles.filterRow}>
+          {FILTER_TABS.map((tab) => {
+            const isActive = activeFilter === tab.key
+            return (
+              <TouchableOpacity
+                key={tab.key}
+                style={[
+                  styles.filterTab,
+                  { backgroundColor: isActive ? semantic.bgPrimaryLight : 'transparent' },
+                ]}
+                onPress={() => setActiveFilter(tab.key)}
+                activeOpacity={0.7}
+                accessibilityRole="tab"
+                accessibilityState={{ selected: isActive }}
+              >
+                <Text
+                  style={[
+                    styles.filterTabText,
+                    { color: isActive ? semantic.textPrimaryColor : semantic.textTertiary },
+                    isActive && styles.filterTabTextActive,
+                  ]}
+                >
+                  {tab.label}
+                </Text>
+              </TouchableOpacity>
+            )
+          })}
+        </View>
+      )}
 
       {/* Content */}
-      {isLoading
-        ? (
-            <View style={styles.skeletonContainer}>
-              <ProductCardSkeletonList count={3} />
-            </View>
-          )
-        : (
-            <FlatList
-              data={filteredOrders}
-              renderItem={renderItem}
-              keyExtractor={keyExtractor}
-              contentContainerStyle={[
-                styles.listContent,
-                // The tab bar floats over the list: without its height the
-                // last card sits underneath it.
-                { paddingBottom: tabBarHeight + spacing[6] },
-                filteredOrders.length === 0 && styles.listContentEmpty,
-              ]}
-              refreshing={isRefreshing}
-              onRefresh={handleRefresh}
-              onEndReached={loadMore}
-              onEndReachedThreshold={0.5}
-              ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
-              showsVerticalScrollIndicator={false}
-              // Rendered inside the list rather than beside it: an empty state
-              // laid out as a sibling cannot be pulled, and waiting for a first
-              // order is exactly when one reaches for a refresh.
-              ListEmptyComponent={(
-                <View style={styles.centeredContainer}>
-                  <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
-                    <ShoppingBag size={32} color={colors.green[400]} />
+      {showReceived
+        ? null
+        : isLoading
+          ? (
+              <View style={styles.skeletonContainer}>
+                <ProductCardSkeletonList count={3} />
+              </View>
+            )
+          : (
+              <FlatList
+                data={filteredOrders}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                contentContainerStyle={[
+                  styles.listContent,
+                  // The tab bar floats over the list: without its height the
+                  // last card sits underneath it.
+                  { paddingBottom: tabBarHeight + spacing[6] },
+                  filteredOrders.length === 0 && styles.listContentEmpty,
+                ]}
+                refreshing={isRefreshing}
+                onRefresh={handleRefresh}
+                onEndReached={loadMore}
+                onEndReachedThreshold={0.5}
+                ListFooterComponent={<ListFooterLoader isLoading={isLoadingMore} />}
+                showsVerticalScrollIndicator={false}
+                // Rendered inside the list rather than beside it: an empty state
+                // laid out as a sibling cannot be pulled, and waiting for a first
+                // order is exactly when one reaches for a refresh.
+                ListEmptyComponent={(
+                  <View style={styles.centeredContainer}>
+                    <View style={[styles.emptyIconCircle, { backgroundColor: semantic.bgPrimaryLight }]}>
+                      <ShoppingBag size={32} color={colors.green[400]} />
+                    </View>
+                    <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
+                      Aucune commande
+                    </Text>
+                    <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
+                      Vos commandes apparaîtront ici
+                    </Text>
                   </View>
-                  <Text style={[styles.emptyTitle, { color: semantic.textPrimary }]}>
-                    Aucune commande
-                  </Text>
-                  <Text style={[styles.emptySubtitle, { color: semantic.textTertiary }]}>
-                    Vos commandes apparaîtront ici
-                  </Text>
-                </View>
-              )}
-            />
-          )}
+                )}
+              />
+            )}
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  segmentRow: {
+    flexDirection: 'row',
+    paddingHorizontal: spacing[4],
+    gap: spacing[4],
+  },
+  segmentTab: {
+    minHeight: 44,
+    justifyContent: 'center',
+    borderBottomWidth: 2,
+  },
+  segmentText: {
+    fontFamily: fonts.sansMd,
+    fontSize: 14,
+  },
   reorderButton: {
     marginTop: spacing[3],
     flexDirection: 'row',
@@ -719,6 +795,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 14,
     lineHeight: 18,
+  },
+  totalSecondary: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
   },
   dateChevron: {
     flexDirection: 'row',

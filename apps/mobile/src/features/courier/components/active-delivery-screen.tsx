@@ -17,7 +17,7 @@ import { appAlert } from '../../common/components/app-alert'
 import { WhatsAppIcon } from '../../common/components/whatsapp-icon'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { useLiveLocation } from '../hooks/use-live-location'
-import { FAIL_REASON_LABELS } from '../types'
+import { FAIL_REASON_LABELS, giftContactLine } from '../types'
 import { DeliveryItemsCard } from './delivery-items-card'
 
 interface ActiveDeliveryScreenProps {
@@ -99,6 +99,9 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
   const isCancelled = delivery.status === 'CANCELLED'
   const courierFee = delivery.courierFee ?? 0
   const isCash = delivery.paymentMethod === 'CASH_ON_DELIVERY'
+  // Gift delivery: the contact is the recipient, not the payer (who is often abroad).
+  const giftLine = giftContactLine(delivery.buyerContact)
+  const contactCallLabel = giftLine && delivery.buyerContact ? `Appeler ${delivery.buyerContact.name}` : 'Appeler le client'
   // Cash orders: eBio's share of the delivery fee is debited from the wallet.
   const cashCommission = isCash
     ? Math.max(0, (delivery.deliveryFee ?? 0) - courierFee)
@@ -269,7 +272,11 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
             <Text style={[styles.addressLabel, { color: semantic.textTertiary }]}>Livraison</Text>
             <Text style={[styles.addressValue, { color: semantic.textPrimary }]}>{delivery.dropoffAddress}</Text>
             {delivery.buyerContact
-              ? <Text style={[styles.contactName, { color: semantic.textSecondary }]}>{delivery.buyerContact.name}</Text>
+              ? (
+                  <Text style={[styles.contactName, { color: giftLine ? semantic.textPrimaryColor : semantic.textSecondary }]}>
+                    {giftLine ?? delivery.buyerContact.name}
+                  </Text>
+                )
               : null}
           </View>
           <View style={styles.actionColumn}>
@@ -287,7 +294,7 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
                     style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
                     onPress={() => callNumber(delivery.buyerContact?.phone ?? null)}
                     accessibilityRole="button"
-                    accessibilityLabel="Appeler le client"
+                    accessibilityLabel={contactCallLabel}
                   >
                     <Phone size={18} color={colors.green[600]} strokeWidth={2} />
                   </Pressable>
@@ -299,10 +306,12 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
                     style={[styles.itineraryButton, { backgroundColor: semantic.bgPrimaryLight }]}
                     onPress={() => openWhatsApp(
                       delivery.buyerContact?.phone ?? '',
-                      `Bonjour, je suis votre livreur eBio pour la commande ${delivery.orderNumber}.`,
+                      giftLine
+                        ? `Bonjour, je suis votre livreur eBio : j'apporte le panier envoyé par ${delivery.buyerContact?.payerFirstName ?? 'un proche'}.`
+                        : `Bonjour, je suis votre livreur eBio pour la commande ${delivery.orderNumber}.`,
                     )}
                     accessibilityRole="button"
-                    accessibilityLabel="Écrire à l'acheteur sur WhatsApp"
+                    accessibilityLabel={giftLine && delivery.buyerContact ? `Écrire à ${delivery.buyerContact.name} sur WhatsApp` : 'Écrire à l\'acheteur sur WhatsApp'}
                   >
                     <WhatsAppIcon size={18} color={colors.green[600]} />
                   </Pressable>

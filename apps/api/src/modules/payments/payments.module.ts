@@ -1,6 +1,7 @@
 import { MikroOrmModule } from '@mikro-orm/nestjs'
 import { forwardRef, Module } from '@nestjs/common'
 import { DeliveriesModule } from '../deliveries/deliveries.module'
+import { GiftModule } from '../gift/gift.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { Order } from '../orders/entities/order.entity'
 import { OrderEmailsModule } from '../orders/order-emails.module'
@@ -31,6 +32,7 @@ import { ReceiptService } from './receipt.service'
     ProviderTransactionsModule,
     PlatformSettingsModule,
     forwardRef(() => DeliveriesModule),
+    forwardRef(() => GiftModule),
   ],
   controllers: [
     PaymentsController,

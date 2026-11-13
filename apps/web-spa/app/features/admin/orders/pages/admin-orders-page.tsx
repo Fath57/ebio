@@ -22,6 +22,9 @@ import { adminOrdersExportPath, fetchAdminOrdersQueryOptions } from '../utils/or
 
 const PAGE_SIZE = 20
 
+/** `?proche=` values: orders sent to a relative, or ordinary ones only. */
+const GIFT_FILTERS = ['true', 'false']
+
 function formatAmount(value: number): string {
   return `${value.toLocaleString('fr-FR')} FCFA`
 }
@@ -31,11 +34,12 @@ export default function AdminOrdersPage() {
   const navigate = useNavigate()
   const list = useListParams({
     defaultSort: 'createdAt',
-    filters: ['statut', 'boutique', 'boutiqueNom', 'paiement', 'mode', ...ORDER_ADVANCED_FILTER_KEYS],
+    filters: ['statut', 'boutique', 'boutiqueNom', 'paiement', 'mode', 'proche', ...ORDER_ADVANCED_FILTER_KEYS],
   })
   const { statut: status, boutique, boutiqueNom } = list.values
   const paymentMethod = PAYMENT_METHODS.includes(list.values.paiement) ? list.values.paiement : ''
   const pickupMode = PICKUP_MODES.includes(list.values.mode) ? list.values.mode : ''
+  const gift = GIFT_FILTERS.includes(list.values.proche) ? list.values.proche : ''
   const advanced = Object.fromEntries(ORDER_ADVANCED_FILTER_KEYS.map(key => [key, list.values[key]])) as Record<OrderAdvancedFilterKey, string>
   // Only the id narrows the query; the name rides along so the picker and the chip read well after a reload.
   const shop: PickerOption | null = boutique ? { id: boutique, label: boutiqueNom || boutique } : null
@@ -54,6 +58,7 @@ export default function AdminOrdersPage() {
     promo: advanced.promo || undefined,
     sponsor: advanced.offerte || undefined,
     courier: advanced.livreur || undefined,
+    gift: gift || undefined,
     sortBy: list.sortBy,
     sortDir: list.sortDir,
   }
@@ -72,7 +77,16 @@ export default function AdminOrdersPage() {
     {
       id: 'orderNumber',
       header: t('admin.orders.columns.number'),
-      cell: ({ row }) => <span className="font-mono font-medium">{row.original.orderNumber}</span>,
+      cell: ({ row }) => (
+        <span className="flex flex-wrap items-center gap-2">
+          <span className="font-mono font-medium">{row.original.orderNumber}</span>
+          {row.original.isGift && (
+            <StatusBadge tone="action">
+              {t('admin.orders.gift.badge')}
+            </StatusBadge>
+          )}
+        </span>
+      ),
     },
     {
       id: 'createdAt',
@@ -188,6 +202,14 @@ export default function AdminOrdersPage() {
       onRemove: () => list.setFilter('mode', ''),
     })
   }
+  if (gift) {
+    activeFilters.push({
+      key: 'proche',
+      group: t('admin.orders.gift.filter'),
+      value: t(`admin.orders.gift.filter_${gift}`),
+      onRemove: () => list.setFilter('proche', ''),
+    })
+  }
   activeFilters.push(...advancedFilterChips(advancedFields, advanced, key => list.setFilter(key as OrderAdvancedFilterKey, ''), i18n.language))
 
   return (
@@ -236,6 +258,14 @@ export default function AdminOrdersPage() {
             allLabel={t('admin.orders.filters.allModes')}
             ariaLabel={t('admin.orders.filters.mode')}
             options={PICKUP_MODES.map(mode => ({ value: mode, label: t(`admin.orders.pickupModes.${mode}`) }))}
+          />
+
+          <FilterSelect
+            value={gift}
+            onValueChange={value => list.setFilter('proche', value)}
+            allLabel={t('admin.orders.gift.filterAll')}
+            ariaLabel={t('admin.orders.gift.filter')}
+            options={GIFT_FILTERS.map(value => ({ value, label: t(`admin.orders.gift.filter_${value}`) }))}
           />
 
           <AdvancedFilters fields={advancedFields} values={advanced} onChange={(key, value) => list.setFilter(key as OrderAdvancedFilterKey, value)} />

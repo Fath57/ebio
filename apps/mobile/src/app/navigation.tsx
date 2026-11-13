@@ -64,6 +64,8 @@ import { RateProductsScreen } from '../features/ratings/components/rate-products
 import { ReviewsList } from '../features/ratings/components/reviews-list'
 import { ReferralScreen } from '../features/referrals/components/referral-screen'
 import { usePendingReferralClaim } from '../features/referrals/hooks/use-pending-referral-claim'
+import { RelativeFormScreen } from '../features/relatives/components/relative-form-screen'
+import { RelativesScreen } from '../features/relatives/components/relatives-screen'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
@@ -703,6 +705,7 @@ function OrderSuccessWrapper({ route, navigation }: any) {
     <SafeScreen>
       <OrderConfirmation
         orderNumber={orderNumber}
+        orderId={orderId}
         onTrackOrder={() => {
           navigation.popToTop()
           navigation.navigate('Commandes', {
@@ -742,6 +745,8 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <ProfileStack.Screen name="Favorites" component={FavoritesWrapper} />
       <ProfileStack.Screen name="Referral" component={ReferralWrapper} />
+      <ProfileStack.Screen name="Relatives" component={RelativesWrapper} />
+      <ProfileStack.Screen name="RelativeForm" component={RelativeFormWrapper} />
       {/* Ouvrir un favori doit rester dans l'onglet Profil : sans cet écran
         * ici, la navigation remonte jusqu'à l'onglet Accueil et y dépose
         * l'acheteur, qui l'y retrouve plus tard sans comprendre. */}
@@ -772,6 +777,7 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToWallet={() => navigation.navigate('BuyerWallet')}
         onNavigateToFavorites={() => navigation.navigate('Favorites')}
         onNavigateToReferral={() => navigation.navigate('Referral')}
+        onNavigateToRelatives={() => navigation.navigate('Relatives')}
         onNavigateToNotifications={() => navigation.navigate('Notifications')}
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
@@ -780,6 +786,29 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToTerms={() => navigation.navigate('Terms')}
         onNavigateToSupplierRegistration={() => navigation.navigate('SupplierRegistration')}
         refreshTrigger={refreshTrigger}
+      />
+    </SafeScreen>
+  )
+}
+
+function RelativesWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <RelativesScreen
+        onBack={() => navigation.goBack()}
+        onEdit={relative => navigation.navigate('RelativeForm', { relative })}
+      />
+    </SafeScreen>
+  )
+}
+
+function RelativeFormWrapper({ navigation, route }: any) {
+  return (
+    <SafeScreen>
+      <RelativeFormScreen
+        relative={route.params?.relative ?? null}
+        onSaved={() => navigation.goBack()}
+        onBack={() => navigation.goBack()}
       />
     </SafeScreen>
   )
@@ -895,6 +924,9 @@ function MyOrdersWrapper({ navigation }: any) {
       <OrderList
         onOpenOrder={orderId => navigation.navigate('OrderTracking', { orderId })}
         onGoToCart={() => navigation.navigate('Panier', { screen: 'CartHome' })}
+        onRateReceivedProducts={orderId => navigation.navigate('RateProducts', { orderId })}
+        // A received basket names no shop: the flow starts at the courier.
+        onRateReceivedCourier={(orderId, supplierId) => navigation.navigate('RateOrder', { orderId, supplierId: supplierId ?? '', hasReview: supplierId === null })}
       />
     </SafeScreen>
   )

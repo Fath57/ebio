@@ -4,6 +4,7 @@ import * as React from 'react'
 import { useEffect, useRef } from 'react'
 import {
   Animated,
+  ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
@@ -12,15 +13,19 @@ import {
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { Confetti } from '../../common/components/confetti'
+import { SaveRelativePrompt } from '../../relatives/components/save-relative-prompt'
 
 interface OrderConfirmationProps {
   orderNumber: string
+  /** When given, a basket for a relative not yet saved offers to save them. */
+  orderId?: string
   onTrackOrder: () => void
   onContinueShopping: () => void
 }
 
 export function OrderConfirmation({
   orderNumber,
+  orderId,
   onTrackOrder,
   onContinueShopping,
 }: OrderConfirmationProps) {
@@ -50,7 +55,8 @@ export function OrderConfirmation({
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <View style={styles.content}>
+      {/* Scrolls once the save-a-relative card makes it taller than the screen. */}
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.celebration}>
           <Confetti />
           <Animated.View
@@ -75,6 +81,12 @@ export function OrderConfirmation({
           </View>
         </Animated.View>
 
+        {orderId && (
+          <Animated.View style={[styles.prompt, { opacity: fadeAnim }]}>
+            <SaveRelativePrompt orderId={orderId} />
+          </Animated.View>
+        )}
+
         <Animated.View style={[styles.actions, { opacity: fadeAnim }]}>
           <TouchableOpacity
             style={styles.primaryButton}
@@ -96,12 +108,15 @@ export function OrderConfirmation({
             <Text style={styles.ghostButtonText}>Continuer mes achats</Text>
           </TouchableOpacity>
         </Animated.View>
-      </View>
+      </ScrollView>
     </View>
   )
 }
 
 const styles = StyleSheet.create({
+  prompt: {
+    alignSelf: 'stretch',
+  },
   celebration: {
     alignItems: 'center',
     justifyContent: 'center',
@@ -111,7 +126,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.neutral[0],
   },
   content: {
-    flex: 1,
+    flexGrow: 1,
     justifyContent: 'center',
     alignItems: 'center',
     paddingHorizontal: spacing[6],

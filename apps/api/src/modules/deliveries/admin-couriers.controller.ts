@@ -8,6 +8,7 @@ import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
+import { MediaService } from '../media/media.service'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { AdminCouriersService } from './admin-couriers.service'
@@ -33,6 +34,7 @@ export class AdminCouriersController {
     private readonly deliveriesService: DeliveriesService,
     private readonly walletService: WalletService,
     private readonly feedbackService: CourierFeedbackService,
+    private readonly mediaService: MediaService,
   ) {}
 
   @CanRead('CourierProfile')
@@ -132,6 +134,36 @@ export class AdminCouriersController {
     return { deliveries, total: result.total, statusCounts: result.statusCounts }
   }
 
+  /**
+   * Hand-over proofs flagged as taken far from the door (FR-036). Declared
+   * before `deliveries/:id`, which would take `far-proofs` for an id.
+   */
+  @CanRead('Delivery')
+  @Get('deliveries/far-proofs')
+  async listFarProofs(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const pageNumber = page ? Number(page) : 1
+    const limitNumber = limit ? Number(limit) : 20
+    const result = await this.adminDeliveriesService.listFarProofs(pageNumber, limitNumber)
+    const items = []
+    for (const delivery of result.deliveries) {
+      items.push({
+        deliveryId: delivery.id,
+        orderId: delivery.order.id,
+        orderNumber: delivery.order.orderNumber,
+        courierId: delivery.courier?.id ?? null,
+        courierName: delivery.courier?.fullName ?? null,
+        photoUrl: await this.signedProofPhoto(delivery.proofMediaId),
+        distanceM: delivery.proofDistanceM ?? null,
+        takenAt: delivery.proofTakenAt?.toISOString() ?? null,
+        deliveredAt: delivery.deliveredAt?.toISOString() ?? null,
+      })
+    }
+    return { items, total: result.total, page: pageNumber, limit: limitNumber }
+  }
+
   @CanRead('Delivery')
   @Get('deliveries/:id')
   async getDelivery(@Param('id') id: string) {
@@ -143,6 +175,19 @@ export class AdminCouriersController {
       courierId: delivery.courier?.id ?? null,
       reassignmentCount: delivery.reassignmentCount,
       offeredAt: delivery.offeredAt.toISOString(),
+    }
+  }
+
+  /** Signed for an hour; null once purged (90 days) or if storage does not answer. */
+  private async signedProofPhoto(mediaId: string | null | undefined): Promise<string | null> {
+    if (!mediaId) {
+      return null
+    }
+    try {
+      return await this.mediaService.getSignedUrl(mediaId, 3600)
+    }
+    catch {
+      return null
     }
   }
 

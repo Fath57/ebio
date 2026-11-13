@@ -1,3 +1,4 @@
+import type { Checkout } from '../payments/entities/checkout.entity'
 import type { CourierProfileResponse, DeliveryOffer, DeliveryResponse } from './contracts/delivery.contract'
 import type { DispatchBlock } from './deliveries.service'
 import type { CourierProfile } from './entities/courier-profile.entity'
@@ -6,10 +7,12 @@ import type { DeliveryEvent } from './entities/delivery-event.entity'
 import type { Delivery } from './entities/delivery.entity'
 import { wrap } from '@mikro-orm/core'
 import { thumbnailUrlFor } from '../../common/media-urls'
+import { firstName } from '../gift/gift-texts'
 import { DeliveryStatus } from './entities/delivery.entity'
 
 /** Who is looking at the delivery — shapes contacts and the confirmation code. */
-export type DeliveryAudience = 'courier' | 'supplier' | 'buyer' | 'admin'
+/** `recipient`: the relative a cart was sent to (009) — sees the delivery, never its amounts. */
+export type DeliveryAudience = 'courier' | 'supplier' | 'buyer' | 'recipient' | 'admin'
 
 /** One order line of an offer, as aggregated by the offers query. */
 export interface OfferItemRow {
@@ -117,6 +120,29 @@ function cashAmounts(paymentMethod: string, totalAmount: number, deliveryFee: nu
   }
   const total = Math.round(totalAmount)
   return { cashToCollect: total, cashToShop: Math.max(0, total - Math.round(deliveryFee)) }
+}
+
+/** The order's checkout when the cart goes to a relative; needs `order.checkout` populated. */
+function giftCheckoutOf(order: Delivery['order']): Checkout | null {
+  const checkout = order.checkout
+  if (!checkout || !wrap(checkout).isInitialized()) {
+    return null
+  }
+  return checkout.recipientPhone ? checkout : null
+}
+
+/** The person to hand the parcel to: the relative for a gift, the buyer otherwise. */
+function buyerContactOf(order: Delivery['order']): NonNullable<DeliveryResponse['buyerContact']> {
+  const gift = giftCheckoutOf(order)
+  if (gift) {
+    return {
+      name: gift.recipientName ?? '',
+      phone: gift.recipientPhone ?? null,
+      role: 'RECIPIENT',
+      payerFirstName: firstName(order.buyer.name),
+    }
+  }
+  return { name: order.buyer.name, phone: order.buyer.phone ?? null, role: 'BUYER', payerFirstName: null }
 }
 
 export class DeliveriesMapper {
@@ -262,7 +288,7 @@ export class DeliveriesMapper {
     const showPosition = inProgress && audience !== 'courier'
       && courier?.lastLatitude != null && courier?.lastLongitude != null
 
-    return {
+    const response: DeliveryResponse = {
       id: delivery.id,
       orderId: order.id,
       orderNumber: order.orderNumber,
@@ -271,9 +297,8 @@ export class DeliveriesMapper {
       dropoffAddress: delivery.dropoffAddress,
       supplierShopName: order.supplier.shopName,
       run,
-      buyerContact: showBuyerContact
-        ? { name: order.buyer.name, phone: order.buyer.phone ?? null }
-        : null,
+      buyerContact: showBuyerContact ? buyerContactOf(order) : null,
+      requiresGiftProof: giftCheckoutOf(order) !== null,
       // Same audience as the buyer contact: the assigned courier (and support).
       supplierContact: showBuyerContact
         ? {
@@ -334,6 +359,25 @@ export class DeliveriesMapper {
       })),
       createdAt: delivery.createdAt.toISOString(),
     }
+    return audience === 'recipient' ? withoutAmounts(response) : response
+  }
+}
+
+/**
+ * The relative's view of a delivery: enough to follow and rate the courier,
+ * nothing of what the payer paid (FR-031) — amounts zeroed, events without
+ * their payloads.
+ */
+function withoutAmounts(response: DeliveryResponse): DeliveryResponse {
+  return {
+    ...response,
+    totalAmount: 0,
+    cashToCollect: null,
+    cashToShop: null,
+    deliveryFee: 0,
+    courierFee: 0,
+    tipAmount: 0,
+    events: response.events.map(event => ({ ...event, payload: null })),
   }
 }
 

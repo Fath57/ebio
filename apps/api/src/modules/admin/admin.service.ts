@@ -56,6 +56,12 @@ const ORDER_LIST_FROM = `FROM orders o
        LEFT JOIN users bu ON o.buyer_id = bu.id
        LEFT JOIN suppliers s ON o.supplier_id = s.id`
 
+/** Whether the order's cart goes to a relative (009), as a selected column. */
+const IS_GIFT_COLUMN = `EXISTS (SELECT 1 FROM checkouts gc WHERE gc.id = o.checkout_id AND gc.recipient_phone IS NOT NULL) AS is_gift`
+
+/** Hand-over photos are shown through a URL signed for an hour. */
+const PROOF_PHOTO_TTL_SECONDS = 3600
+
 /** A spreadsheet export, not a dump of the table: past this, narrow the filters. */
 const ORDER_EXPORT_MAX = 20000
 
@@ -872,7 +878,8 @@ export class AdminService {
       `SELECT o.id, o.order_number, o.status, o.total_amount, o.commission_amount,
               o."createdAt" as created_at, o.pickup_mode, o.payment_method,
               bu.id as buyer_id, bu.name as buyer_name,
-              s.id as supplier_id, s.shop_name as supplier_name
+              s.id as supplier_id, s.shop_name as supplier_name,
+              ${IS_GIFT_COLUMN}
        ${from}
        WHERE ${whereClause}
        ${this.buildOrderBy(ORDER_SORT_COLUMNS, 'createdAt', params.sortBy, params.sortDir)}
@@ -970,10 +977,13 @@ export class AdminService {
               o.delivery_sponsor, o.sponsored_delivery_fee, o.platform_promo_compensation,
               bu.id as buyer_id, bu.name as buyer_name, bu.email as buyer_email,
               bu.phone as buyer_phone,
-              s.id as supplier_id, s.shop_name as supplier_name
+              s.id as supplier_id, s.shop_name as supplier_name,
+              c.recipient_name, c.recipient_phone, c.display_currency, c.fx_rate, c.display_total,
+              ${IS_GIFT_COLUMN}
        FROM orders o
        LEFT JOIN users bu ON o.buyer_id = bu.id
        LEFT JOIN suppliers s ON o.supplier_id = s.id
+       LEFT JOIN checkouts c ON c.id = o.checkout_id
        WHERE o.id = ?`,
       [orderId],
     )
@@ -995,7 +1005,8 @@ export class AdminService {
     // Latest courier run of the order, so the back office can jump straight
     // to the assignment page (null when the order is picked up on site).
     const deliveryRows = await this.em.getConnection().execute(
-      `SELECT d.id, d.status, d.courier_id, cp.full_name AS courier_name, d."updatedAt" AS updated_at
+      `SELECT d.id, d.status, d.courier_id, cp.full_name AS courier_name, d."updatedAt" AS updated_at,
+              d.proof_type, d.proof_media_id, d.proof_taken_at, d.proof_distance_m, d.proof_far
        FROM deliveries d
        LEFT JOIN courier_profiles cp ON cp.id = d.courier_id
        WHERE d.order_id = ?
@@ -1005,8 +1016,32 @@ export class AdminService {
     ) as Array<Record<string, unknown>>
     const deliveryRow = deliveryRows[0]
 
+    const isGift = row.recipient_phone != null
     return {
       ...this.mapOrderRow(row),
+      // A cart sent to a relative (009): who paid, who receives.
+      gift: isGift
+        ? {
+            payer: { id: (row.buyer_id as string) ?? null, name: (row.buyer_name as string) ?? 'Inconnu' },
+            recipient: { name: (row.recipient_name as string) ?? '', phone: row.recipient_phone as string },
+          }
+        : null,
+      // The amount in the payer's currency, frozen at checkout; null in FCFA.
+      display: row.fx_rate != null && row.display_total != null
+        ? {
+            currency: row.display_currency as string,
+            rate: Number(row.fx_rate),
+            total: Number(row.display_total),
+          }
+        : null,
+      proof: deliveryRow?.proof_type === 'CODE_AND_PHOTO'
+        ? {
+            photoUrl: await this.signedProofPhoto(deliveryRow.proof_media_id as string | null),
+            takenAt: this.toIso(deliveryRow.proof_taken_at),
+            distanceM: deliveryRow.proof_distance_m == null ? null : Number(deliveryRow.proof_distance_m),
+            far: deliveryRow.proof_far === true,
+          }
+        : null,
       delivery: deliveryRow
         ? {
             id: deliveryRow.id as string,
@@ -1590,11 +1625,29 @@ export class AdminService {
     return value instanceof Date ? value.toISOString() : new Date(value as string).toISOString()
   }
 
+  /**
+   * The hand-over photo of a cart sent to a relative, signed for an hour.
+   * Null once purged (90 days) or when storage does not answer: the page
+   * shows without it.
+   */
+  async signedProofPhoto(mediaId: string | null | undefined): Promise<string | null> {
+    if (!mediaId) {
+      return null
+    }
+    try {
+      return await this.mediaService.getSignedUrl(mediaId, PROOF_PHOTO_TTL_SECONDS)
+    }
+    catch {
+      return null
+    }
+  }
+
   private mapOrderRow(r: Record<string, unknown>) {
     return {
       id: r.id as string,
       orderNumber: r.order_number as string,
       status: r.status as string,
+      isGift: r.is_gift === true,
       pickupMode: r.pickup_mode as string,
       paymentMethod: (r.payment_method as string) ?? null,
       totalAmount: Number(r.total_amount ?? 0),

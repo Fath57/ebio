@@ -66,6 +66,8 @@ export class OtpAuthService {
       phone,
       email: `${phone.replace('+', '')}@phone.ebio.app`,
       emailVerified: false,
+      // The SMS code just proved this number: a cart sent to it may be shown here.
+      phoneVerifiedAt: new Date(),
       role: UserRole.BUYER,
     })
 

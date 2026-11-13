@@ -36,6 +36,8 @@ export enum DeliveryStatus {
 export enum DeliveryProofType {
   CODE = 'CODE',
   PHOTO = 'PHOTO',
+  /** Delivery to a relative: code, photo and position together. */
+  CODE_AND_PHOTO = 'CODE_AND_PHOTO',
 }
 
 export enum DeliveryFailReason {
@@ -47,7 +49,7 @@ export enum DeliveryFailReason {
 
 @Entity({ tableName: 'deliveries' })
 export class Delivery {
-  [OptionalProps]?: 'id' | 'status' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'tipAmount' | 'dispatchPhase' | 'offerRound' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'proofFar' | 'reassignmentCount' | 'broadcastRadiusKm' | 'deliveryFee' | 'courierFee' | 'tipAmount' | 'dispatchPhase' | 'offerRound' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -102,6 +104,25 @@ export class Delivery {
 
   @Property({ fieldName: 'proof_media_id', nullable: true })
   proofMediaId?: string
+
+  /** Courier position when the hand-over photo was taken. */
+  @Property({ fieldName: 'proof_latitude', type: 'double', nullable: true })
+  proofLatitude?: number | null
+
+  @Property({ fieldName: 'proof_longitude', type: 'double', nullable: true })
+  proofLongitude?: number | null
+
+  /** When the photo was taken — replayed as is when the courier was offline. */
+  @Property({ fieldName: 'proof_taken_at', type: 'Date', nullable: true })
+  proofTakenAt?: Date | null
+
+  /** Distance in metres from the proof position to the delivery point. */
+  @Property({ fieldName: 'proof_distance_m', type: 'integer', nullable: true })
+  proofDistanceM?: number | null
+
+  /** Taken more than 300 m from the delivery point: flagged for support. */
+  @Property({ fieldName: 'proof_far', type: 'boolean', default: false })
+  proofFar: boolean = false
 
   @Enum({ items: () => DeliveryFailReason, fieldName: 'fail_reason', nullable: true })
   failReason?: DeliveryFailReason

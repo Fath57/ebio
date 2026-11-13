@@ -55,12 +55,14 @@ const ACCOUNT_KEYS = [
   'search_history',
   'sync:search_history',
   'sync:supplier_registration_draft',
+  'sync:ebio_display_currency',
 ]
 
 /** Forgets the signed-out account's local traces. */
 export async function clearAccountData(): Promise<void> {
   storageCache.delete('search_history')
   storageCache.delete('supplier_registration_draft')
+  storageCache.delete('ebio_display_currency')
   await AsyncStorage.multiRemove(ACCOUNT_KEYS)
 }
 

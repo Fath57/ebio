@@ -26,6 +26,8 @@ export interface TransitionResult {
   queued: boolean
   status?: number
   errorMessage?: string
+  /** Business refusal code from the API body (e.g. `GIFT_PROOF_REQUIRED`). */
+  errorCode?: string
 }
 
 /**
@@ -89,7 +91,9 @@ export function useOfflineQueue(onFlushed?: () => void) {
     path: string,
     body: Record<string, unknown> = {},
   ): Promise<TransitionResult> => {
-    const occurredAt = new Date().toISOString()
+    // A caller that knows when the action really happened (the photo of a
+    // gift handover) passes it; otherwise it is now.
+    const occurredAt = typeof body.occurredAt === 'string' ? body.occurredAt : new Date().toISOString()
     try {
       const res = await apiFetch(path, {
         method: 'POST',
@@ -105,8 +109,8 @@ export function useOfflineQueue(onFlushed?: () => void) {
         setPendingCount(queue.length)
         return { ok: false, queued: true, status: res.status }
       }
-      const data = await res.json().catch(() => ({})) as { message?: string }
-      return { ok: false, queued: false, status: res.status, errorMessage: data.message }
+      const data = await res.json().catch(() => ({})) as { message?: string, code?: string }
+      return { ok: false, queued: false, status: res.status, errorMessage: data.message, errorCode: data.code }
     }
     catch {
       const queue = await readQueue()

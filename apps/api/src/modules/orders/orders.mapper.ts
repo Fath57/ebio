@@ -1,10 +1,32 @@
-import type { DisputeResponse, OrderDeliverySummary, OrderResponse } from './contracts/order.contract'
+import type { DisplayCurrency } from '../currency/contracts/currency.contract'
+import type { DisputeResponse, OrderDeliverySummary, OrderDisplay, OrderGift, OrderProof, OrderResponse } from './contracts/order.contract'
+import { wrap } from '@mikro-orm/core'
 import { thumbnailUrlFor } from '../../common/media-urls'
 import { Dispute } from './entities/dispute.entity'
 import { Order } from './entities/order.entity'
 
+/** What only the payer reads on their order: the relative, the frozen currency, the proof. */
+export interface OrderPayerView {
+  gift?: OrderGift | null
+  display?: OrderDisplay | null
+  proof?: OrderProof | null
+}
+
 export class OrderMapper {
-  static toResponse(order: Order, delivery: OrderDeliverySummary | null = null): OrderResponse {
+  /** The frozen foreign-currency amount of the order's checkout; needs `checkout` populated. */
+  static displayOf(order: Order): OrderDisplay | null {
+    const checkout = order.checkout
+    if (!checkout || !wrap(checkout).isInitialized() || checkout.fxRate == null || checkout.displayTotal == null) {
+      return null
+    }
+    return {
+      currency: checkout.displayCurrency as DisplayCurrency,
+      rate: Number(checkout.fxRate),
+      total: Number(checkout.displayTotal),
+    }
+  }
+
+  static toResponse(order: Order, delivery: OrderDeliverySummary | null = null, payer: OrderPayerView = {}): OrderResponse {
     return {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -50,6 +72,9 @@ export class OrderMapper {
           }))
         : [],
       delivery,
+      gift: payer.gift ?? null,
+      display: payer.display ?? null,
+      proof: payer.proof ?? null,
       createdAt: order.createdAt.toISOString(),
       updatedAt: order.updatedAt.toISOString(),
     }

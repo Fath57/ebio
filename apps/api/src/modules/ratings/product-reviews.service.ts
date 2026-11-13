@@ -4,6 +4,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { thumbnailUrlFor } from '../../common/media-urls'
 import { ContentReport, ReportStatus, ReportTargetType } from '../admin/entities/content-report.entity'
 import { User } from '../auth/auth.entity'
+import { isLinkedRecipient } from '../gift/recipient-link'
 import { OrderItem } from '../orders/entities/order-item.entity'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
 import { Product } from '../products/entities/product.entity'
@@ -33,9 +34,7 @@ export class ProductReviewsService {
     if (!order) {
       throw new NotFoundException('Commande introuvable')
     }
-    if (order.buyer.id !== buyerId) {
-      throw new BadRequestException('Cette commande ne vous appartient pas')
-    }
+    await this.assertMayReview(order, buyerId)
     if (order.status !== OrderStatus.DELIVERED) {
       return { items: [] }
     }
@@ -81,9 +80,7 @@ export class ProductReviewsService {
     if (!order) {
       throw new NotFoundException('Commande introuvable')
     }
-    if (order.buyer.id !== buyerId) {
-      throw new BadRequestException('Cette commande ne vous appartient pas')
-    }
+    await this.assertMayReview(order, buyerId)
     if (order.status !== OrderStatus.DELIVERED) {
       throw new BadRequestException('Seule une commande livrée peut être notée')
     }
@@ -118,7 +115,8 @@ export class ProductReviewsService {
       this.em.create(ProductReview, {
         orderItem: this.em.getReference(OrderItem, item.id),
         product: this.em.getReference(Product, item.product.id),
-        buyer: order.buyer,
+        // The author: the payer, or the relative who received the cart.
+        buyer: this.em.getReference(User, buyerId),
         rating: input.rating,
         comment: input.comment,
       })
@@ -318,6 +316,19 @@ export class ProductReviewsService {
     await this.em.flush()
     await this.recalculateProductRating(review.product.id)
     return { hidden }
+  }
+
+  /**
+   * The payer reviews their order; so does the relative a cart was sent to
+   * (009), once their phone number is verified and matches the one typed.
+   */
+  private async assertMayReview(order: Order, userId: string): Promise<void> {
+    if (order.buyer.id === userId) {
+      return
+    }
+    if (!await isLinkedRecipient(this.em, order.id, userId)) {
+      throw new BadRequestException('Cette commande ne vous appartient pas')
+    }
   }
 
   /**

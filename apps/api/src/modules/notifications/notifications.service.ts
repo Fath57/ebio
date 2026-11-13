@@ -16,6 +16,9 @@ import { Notification, NotificationChannel, NotificationType } from './notificat
  */
 export type NotificationAudience = 'buyer' | 'supplier' | 'courier'
 
+/** Only numbers under this prefix get SMS notifications. */
+const BENIN_PHONE_PREFIX = '+229'
+
 export const NOTIFICATION_AUDIENCES: ReadonlySet<string> = new Set(['buyer', 'supplier', 'courier'])
 
 const SHARED_TYPES: NotificationType[] = [
@@ -42,6 +45,8 @@ const AUDIENCE_TYPES: Record<NotificationAudience, NotificationType[]> = {
     NotificationType.DELIVERY_PICKED_UP,
     NotificationType.DELIVERY_FAILED,
     NotificationType.DELIVERY_WINDOW_CHANGED,
+    NotificationType.GIFT_DELIVERED,
+    NotificationType.GIFT_DELIVERY_FAILED,
   ],
   supplier: [
     ...SHARED_TYPES,
@@ -104,6 +109,11 @@ interface SendNotificationOptions {
    * apps but this send is for one seat only (a chat message, say).
    */
   apps?: string[]
+  /**
+   * Picture shown in the push (a hand-over photo). Must open without
+   * credentials — a signed link — since the phone fetches it itself.
+   */
+  imageUrl?: string
 }
 
 @Injectable()
@@ -138,7 +148,7 @@ export class NotificationsService {
       try {
         switch (channel) {
           case NotificationChannel.PUSH:
-            await this.sendPush(options.user, options.title, options.body, options.type, options.data, options.apps)
+            await this.sendPush(options.user, options.title, options.body, options.type, options.data, options.apps, options.imageUrl)
             break
           case NotificationChannel.SMS:
             await this.sendSms(options.user, options.body)
@@ -206,6 +216,7 @@ export class NotificationsService {
     type: NotificationType,
     data?: Record<string, unknown>,
     targetApps?: string[],
+    imageUrl?: string,
   ): Promise<void> {
     const em = this.em.fork()
     // One account may run the client, supplier and courier apps at once: only
@@ -229,14 +240,22 @@ export class NotificationsService {
     }
 
     const tokenStrings = tokens.map(t => t.token)
-    await this.fcmService.sendToDevices(tokenStrings, title, body, stringData, this.pushOptionsFor(type, data))
+    await this.fcmService.sendToDevices(tokenStrings, title, body, stringData, this.pushOptionsFor(type, data, imageUrl))
   }
 
   /**
    * Time-sensitive pushes get a TTL and a collapse key so a stale or
    * rebroadcast offer replaces the pending one instead of stacking up.
    */
-  private pushOptionsFor(type: NotificationType, data?: Record<string, unknown>): PushOptions | undefined {
+  private pushOptionsFor(type: NotificationType, data?: Record<string, unknown>, imageUrl?: string): PushOptions | undefined {
+    const options = this.channelOptionsFor(type, data)
+    if (!imageUrl) {
+      return options
+    }
+    return { ...options, imageUrl }
+  }
+
+  private channelOptionsFor(type: NotificationType, data?: Record<string, unknown>): PushOptions | undefined {
     if (type === NotificationType.DELIVERY_OFFER) {
       return {
         ttlSeconds: 900,
@@ -261,6 +280,12 @@ export class NotificationsService {
 
   private async sendSms(user: User, message: string): Promise<void> {
     if (!user.phone) {
+      return
+    }
+    // Our SMS operator only reaches Beninese numbers, and a text abroad costs
+    // more than it is worth: the push and the e-mail carry the news instead.
+    if (!user.phone.startsWith(BENIN_PHONE_PREFIX)) {
+      this.logger.debug(`SMS skipped for user ${user.id}: number outside Benin`)
       return
     }
     try {

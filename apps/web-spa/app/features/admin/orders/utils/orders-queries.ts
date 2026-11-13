@@ -23,6 +23,8 @@ export interface AdminOrderListItem {
   createdAt: string
   buyer: AdminOrderParty
   supplier: AdminOrderParty
+  /** Sent to a relative (009): the buyer paid, someone else receives. */
+  isGift: boolean
 }
 
 export interface AdminOrderLine {
@@ -47,7 +49,35 @@ export interface AdminOrderDeliverySummary {
   updatedAt: string | null
 }
 
+/** Who paid and who receives an order sent to a relative. */
+export interface AdminOrderGift {
+  payer: { id: string | null, name: string }
+  recipient: { name: string, phone: string }
+}
+
+/** The amount in the payer's currency, frozen at checkout. */
+export interface AdminOrderDisplayAmount {
+  currency: string
+  /** FCFA for one unit, margin included. */
+  rate: number
+  total: number
+}
+
+/** Hand-over photo of a delivery to a relative. */
+export interface AdminOrderProof {
+  /** Signed for one hour; null once purged (90 days). */
+  photoUrl: string | null
+  takenAt: string | null
+  /** Distance between the photo and the drop-off point, in metres. */
+  distanceM: number | null
+  far: boolean
+}
+
 export interface AdminOrderDetail extends AdminOrderListItem {
+  gift: AdminOrderGift | null
+  display: AdminOrderDisplayAmount | null
+  proof: AdminOrderProof | null
+
   delivery: AdminOrderDeliverySummary | null
   commissionRate: number
   deliveryAddress: string | null
@@ -91,6 +121,8 @@ export interface AdminOrderFilterValues {
   promo?: string
   sponsor?: string
   courier?: string
+  /** 'true' = sent to a relative, 'false' = ordinary orders only. */
+  gift?: string
 }
 
 export interface AdminOrdersFilters extends AdminOrderFilterValues {
@@ -116,6 +148,7 @@ function orderListQuery(filters: AdminOrdersFilters) {
     promo: filters.promo ?? '',
     sponsor: filters.sponsor ?? '',
     courier: filters.courier ?? '',
+    gift: filters.gift ?? '',
     sortBy: filters.sortBy ?? '',
     sortDir: filters.sortDir ?? '',
   }

@@ -14,6 +14,7 @@ import {
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { ScalePressable } from '../../../utils/animations'
 import { useCart } from '../../cart/cart-context'
+import { useMoney } from '../../common/hooks/use-money'
 import { unitShortLabel } from '../hooks/use-product-units'
 import { promotionChipLabels } from '../promotions'
 import { PromotionChips } from './promotion-chips'
@@ -34,10 +35,6 @@ interface ProductCardProps {
   onPress: (productId: string) => void
 }
 
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
-}
-
 export function ProductCard({
   id,
   name,
@@ -53,11 +50,13 @@ export function ProductCard({
   onPress,
 }: ProductCardProps) {
   const { groups, addItem, updateQuantity } = useCart()
+  const { formatMoney } = useMoney()
 
   const hasPromo = promotionalPrice !== null && promotionalPrice < pricePerUnit
   const displayPrice = hasPromo ? promotionalPrice : pricePerUnit
   const discount = hasPromo ? Math.round((1 - promotionalPrice! / pricePerUnit) * 100) : 0
   const chipLabels = promotionChipLabels(promotionTypes)
+  const price = formatMoney(displayPrice)
 
   const cartItem = useMemo(() => {
     for (const group of groups) {
@@ -105,7 +104,7 @@ export function ProductCard({
       style={styles.card}
       onPress={() => onPress(id)}
       accessibilityRole="button"
-      accessibilityLabel={`${name}, ${formatPrice(displayPrice)} FCFA par ${unitShortLabel(unit)}`}
+      accessibilityLabel={`${name}, ${price.primary} par ${unitShortLabel(unit)}${price.secondary ? `, soit ${price.secondary}` : ''}`}
     >
       {/* ─── Image ────────────────────────────────────────────────────────── */}
       <View style={styles.imageWrap}>
@@ -168,8 +167,8 @@ export function ProductCard({
         <View style={styles.priceRow}>
           <View style={styles.priceCol}>
             <Text style={[styles.price, hasPromo && styles.pricePromo]}>
-              {formatPrice(displayPrice)}
-              <Text style={styles.priceCurrency}> FCFA</Text>
+              {price.amount}
+              <Text style={styles.priceCurrency}>{` ${price.symbol}`}</Text>
             </Text>
             <Text style={styles.unitLabel}>
               /
@@ -177,10 +176,13 @@ export function ProductCard({
               {hasPromo && (
                 <Text style={styles.originalPrice}>
                   {'  '}
-                  {formatPrice(pricePerUnit)}
+                  {formatMoney(pricePerUnit).amount}
                 </Text>
               )}
             </Text>
+            {price.secondary && (
+              <Text style={styles.priceSecondary} numberOfLines={1}>{price.secondary}</Text>
+            )}
           </View>
 
           {/* Cart action — inline, right side */}
@@ -352,6 +354,11 @@ const styles = StyleSheet.create({
     fontFamily: fonts.sansSb,
     fontSize: 10,
     letterSpacing: 0.3,
+  },
+  priceSecondary: {
+    fontFamily: fonts.mono,
+    fontSize: 10,
+    color: colors.neutral[600],
   },
   unitLabel: {
     fontFamily: fonts.sans,

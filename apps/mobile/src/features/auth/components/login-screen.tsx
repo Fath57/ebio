@@ -16,12 +16,13 @@ import {
   View,
 } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { isGoogleSignInAvailable, notifyAuthChange, signInWithEmail } from '../../../lib/auth-client'
+import { isGoogleSignInAvailable, notifyAuthChange, PHONE_NOT_SUPPORTED_MESSAGE, signInWithEmail } from '../../../lib/auth-client'
 import { colors, fonts, radius, shadows, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { isAbroad } from '../../common/utils/is-abroad'
 import { hasBiometricSecret, signInWithBiometrics } from '../hooks/use-biometric-auth'
 import { AppleSignInButton } from './apple-sign-in-button'
 import { GoogleSignInButton } from './google-sign-in-button'
@@ -38,7 +39,9 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
 
-  const [method, setMethod] = useState<Method>('phone')
+  // Outside Benin the account is rarely a +229 number: e-mail comes first.
+  const [abroad] = useState(isAbroad)
+  const [method, setMethod] = useState<Method>(abroad ? 'email' : 'phone')
   const [phone, setPhone] = useState('+229')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -106,7 +109,9 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
       })
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setError(data.message ?? 'Téléphone ou mot de passe incorrect')
+        setError(data.code === 'PHONE_NOT_SUPPORTED'
+          ? PHONE_NOT_SUPPORTED_MESSAGE
+          : data.message ?? 'Téléphone ou mot de passe incorrect')
         return
       }
       const data = await res.json()
@@ -351,9 +356,9 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
                     )}
               </Pressable>
 
-              <Pressable onPress={switchMethod} hitSlop={8} style={styles.methodSwitch}>
+              <Pressable onPress={switchMethod} hitSlop={8} style={styles.methodSwitch} accessibilityRole="button">
                 <Text style={[styles.methodSwitchText, { color: semantic.textPrimaryColor }]}>
-                  Se connecter avec un téléphone
+                  {abroad ? 'J\'ai un numéro béninois' : 'Se connecter avec un téléphone'}
                 </Text>
               </Pressable>
             </>

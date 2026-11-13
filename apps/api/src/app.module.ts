@@ -22,12 +22,14 @@ import { CampaignsModule } from './modules/campaigns/campaigns.module'
 import { CartModule } from './modules/cart/cart.module'
 import { ChatModule } from './modules/chat/chat.module'
 import { CommunityModule } from './modules/community/community.module'
+import { CurrencyModule } from './modules/currency/currency.module'
 import { DbModule } from './modules/db/db.module'
 import { DeliveriesModule } from './modules/deliveries/deliveries.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
 import { FavoritesModule } from './modules/favorites/favorites.module'
 import { GeocodingModule } from './modules/geocoding/geocoding.module'
+import { GiftModule } from './modules/gift/gift.module'
 import { HomeModule } from './modules/home/home.module'
 import { LandingModule } from './modules/landing/landing.module'
 import { MediaModule } from './modules/media/media.module'
@@ -38,6 +40,7 @@ import { ProductsModule } from './modules/products/products.module'
 import { PromoCodesModule } from './modules/promo-codes/promo-codes.module'
 import { RatingsModule } from './modules/ratings/ratings.module'
 import { ReferralsModule } from './modules/referrals/referrals.module'
+import { RelativesModule } from './modules/relatives/relatives.module'
 import { SalesStatementsModule } from './modules/sales-statements/sales-statements.module'
 import { SearchModule } from './modules/search/search.module'
 import { PlatformSettingsModule } from './modules/settings/platform-settings.module'
@@ -157,6 +160,9 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     ChatModule,
     RatingsModule,
     CommunityModule,
+    CurrencyModule,
+    GiftModule,
+    RelativesModule,
     TrainingModule,
     AdminModule,
     BusinessCardsModule,

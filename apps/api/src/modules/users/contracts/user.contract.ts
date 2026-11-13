@@ -1,4 +1,8 @@
 import { z } from 'zod'
+import { displayCurrencyEnum } from '../../currency/contracts/currency.contract'
+
+/** International format: +, country code, then the number (E.164). */
+const E164_PHONE = /^\+[1-9]\d{6,14}$/
 
 export const userResponseSchema = z.object({
   id: z.string().uuid(),
@@ -9,6 +13,8 @@ export const userResponseSchema = z.object({
   image: z.string().url().nullable(),
   /** Null until the person has accepted the terms. */
   termsAcceptedAt: z.string().nullable(),
+  /** Currency prices are shown in; payment stays in FCFA. */
+  displayCurrency: displayCurrencyEnum,
   createdAt: z.string().datetime(),
   /** Staff members only: the back-office role they hold (null = super administrator). */
   staffRole: z.object({ id: z.string().uuid(), name: z.string() }).nullable(),
@@ -26,8 +32,9 @@ export const userResponseSchema = z.object({
  */
 export const updateUserSchema = z.object({
   name: z.string().min(2).max(100).optional(),
-  phone: z.string().optional(),
+  phone: z.string().regex(E164_PHONE, 'Numéro au format international attendu, par exemple +2290197123456').optional(),
   image: z.string().url().optional(),
+  displayCurrency: displayCurrencyEnum.optional(),
   deviceId: z.string().optional(),
 }).meta({ title: 'UpdateUser', description: 'Update user profile' })
 

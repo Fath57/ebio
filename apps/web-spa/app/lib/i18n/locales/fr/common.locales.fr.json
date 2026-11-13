@@ -191,7 +191,8 @@
     "team": "Équipe",
     "certifications": "Labels et certifications",
     "wallets": "Portefeuilles",
-    "topups": "Recharges"
+    "topups": "Recharges",
+    "farProofs": "Preuves éloignées"
   },
   "catalog": {
     "title": "Mon Catalogue",
@@ -1066,6 +1067,28 @@
         "reason": "Motif",
         "reasonPlaceholder": "Ex. : l'acheteur a appelé le support",
         "effect": "Pour un panier multi-boutiques, toutes les commandes du même passage en caisse changent ensemble."
+      },
+      "gift": {
+        "badge": "Proche",
+        "filter": "Destinataire",
+        "filterAll": "Toutes les commandes",
+        "filter_true": "Pour un proche",
+        "filter_false": "Ordinaires",
+        "title": "Pour un proche",
+        "payer": "Payeur",
+        "recipient": "Proche",
+        "recipientPhone": "Téléphone du proche",
+        "paidIn": "Payé en {{currency}}",
+        "frozenRate": "Taux appliqué (marge incluse)",
+        "rateValue": "{{unit}} = {{rate}} FCFA"
+      },
+      "proof": {
+        "title": "Preuve de remise",
+        "far": "Position éloignée",
+        "photoAlt": "Photo de remise de la commande {{number}}",
+        "noPhoto": "Photo supprimée ou indisponible",
+        "takenAt": "Photo prise le",
+        "distance": "Distance au point de livraison"
       }
     },
     "products": {
@@ -1597,6 +1620,33 @@
         "unit": "minutes",
         "saved": "Délai de retrait enregistré",
         "error": "Impossible d'enregistrer le délai de retrait. Réessayez."
+      },
+      "exchangeRates": {
+        "title": "Taux de change",
+        "description": "Ce qu’un acheteur à l’étranger voit dans sa devise. Le montant en devise est figé au paiement : changer un taux ne touche pas les commandes déjà passées.",
+        "label": {
+          "EUR": "FCFA pour 1 €",
+          "USD": "FCFA pour 1 $ US",
+          "CAD": "FCFA pour 1 $ CA"
+        },
+        "source": {
+          "AUTO": "Automatique",
+          "MANUAL": "Saisi à la main"
+        },
+        "sourceLine": "{{source}} · mis à jour {{date}}",
+        "neverUpdated": "jamais",
+        "missing": "Aucun taux : cette devise n’est pas proposée tant qu’il manque.",
+        "eurHint": "Parité fixe du franc CFA (655,957) : ce taux n’est jamais mis à jour automatiquement.",
+        "stale": "Ce taux n’a pas été mis à jour depuis plus de 72 h",
+        "margin": "Marge de change",
+        "marginHint": "Ajoutée au taux pour couvrir les frais de conversion. De 0 à 10 %, par pas de 0,1.",
+        "refresh": "Actualiser",
+        "refreshHint": "« Actualiser » télécharge les taux du dollar US et du dollar canadien, et remplace ceux saisis à la main.",
+        "saved": "Enregistré.",
+        "error": "Le changement n’a pas été enregistré.",
+        "refreshed": "Taux actualisés.",
+        "notRefreshed": "Le service des taux n’a pas répondu : les taux précédents sont conservés. Réessayez plus tard ou saisissez-les à la main.",
+        "refreshError": "L’actualisation a échoué."
       }
     },
     "site": {
@@ -2383,6 +2433,18 @@
         "ASSIGNED_BY_ADMIN": "Livreur attribué par l'équipe",
         "PICKUP_REMINDER": "Rappel de retrait envoyé",
         "WINDOW_CHANGED": "Créneau modifié"
+      },
+      "farProofs": {
+        "title": "Preuves éloignées",
+        "description": "Livraisons à un proche dont la photo de remise a été prise loin du point de livraison. Vérifiez la photo, puis ouvrez la commande si quelque chose cloche.",
+        "empty": "Aucune preuve éloignée.",
+        "columns": {
+          "photo": "Photo",
+          "distance": "Distance",
+          "courier": "Livreur",
+          "order": "Commande",
+          "date": "Date"
+        }
       }
     },
     "team": {

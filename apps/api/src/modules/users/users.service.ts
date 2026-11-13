@@ -57,8 +57,14 @@ export class UsersService {
       user.name = data.name
     // The e-mail is not settable here: it goes through `changeEmail`, which
     // asks for a code at the new address first.
-    if (data.phone !== undefined)
+    // A number typed in the profile proves nothing: it loses its verification,
+    // so nobody can claim the carts sent to someone else's number.
+    if (data.phone !== undefined && data.phone !== user.phone) {
       user.phone = data.phone
+      user.phoneVerifiedAt = null
+    }
+    if (data.displayCurrency !== undefined)
+      user.displayCurrency = data.displayCurrency
     if (data.image !== undefined)
       user.image = data.image
     if (data.deviceId !== undefined)

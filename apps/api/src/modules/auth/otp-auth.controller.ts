@@ -9,8 +9,23 @@ import { RateLimitGuard } from '../../common/guards/rate-limit.guard'
 import { OtpService } from '../../common/otp.service'
 import { config } from '../../config/env.config'
 import { AuthGuard } from './auth.guard'
-import { otpRequestSchema, otpVerifySchema } from './contracts/auth.contract'
+import { BENIN_PHONE, otpRequestSchema, otpVerifySchema } from './contracts/auth.contract'
 import { OtpAuthService } from './otp-auth.service'
+
+/**
+ * SMS codes go to Beninese numbers only. Any other number is refused with a code the apps translate into « use
+ * Google, Apple or your e-mail » (FR-034) — not with a generic validation
+ * error, which would read as a typo.
+ */
+export function assertBeninPhone(phone: string): void {
+  if (!BENIN_PHONE.test(phone)) {
+    throw new BadRequestException({
+      statusCode: 400,
+      code: 'PHONE_NOT_SUPPORTED',
+      message: 'Les codes par SMS sont réservés aux numéros béninois. Continuez avec Google, Apple ou votre e-mail.',
+    })
+  }
+}
 
 const passwordResetRequestSchema = z.object({
   identifier: z.string().min(1),
@@ -32,7 +47,8 @@ const changePasswordSchema = z.object({
 })
 
 const registerWithTokenSchema = z.object({
-  phone: z.string().regex(/^\+229\d{10}$/),
+  // Checked by assertBeninPhone, for the PHONE_NOT_SUPPORTED code.
+  phone: z.string().trim().min(1),
   registrationToken: z.string().uuid(),
   name: z.string().min(2).max(100),
   password: z.string().min(8),
@@ -123,6 +139,7 @@ export class OtpAuthController {
   async requestOtp(
     @TypedBody(otpRequestSchema) body: z.infer<typeof otpRequestSchema>,
   ) {
+    assertBeninPhone(body.phone)
     const result = await this.otpService.sendOtp(body.phone)
     if (!result.success) {
       throw new BadRequestException(result.error)
@@ -138,6 +155,7 @@ export class OtpAuthController {
   async verifyOtp(
     @TypedBody(otpVerifySchema) body: z.infer<typeof otpVerifySchema>,
   ) {
+    assertBeninPhone(body.phone)
     const valid = await this.otpService.verifyOtp(body.phone, body.code)
     if (!valid) {
       throw new UnauthorizedException('Code invalide ou expiré')
@@ -163,6 +181,7 @@ export class OtpAuthController {
   async registerWithToken(
     @TypedBody(registerWithTokenSchema) body: z.infer<typeof registerWithTokenSchema>,
   ) {
+    assertBeninPhone(body.phone)
     const valid = await this.otpService.consumeRegistrationToken(body.phone, body.registrationToken)
     if (!valid) {
       throw new UnauthorizedException('Token invalide ou expiré')

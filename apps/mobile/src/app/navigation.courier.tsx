@@ -277,7 +277,12 @@ function CoursesHomeWrapper({ navigation }: any) {
           delivery={delivery}
           pendingCount={queue.pendingCount}
           onTransition={(action, body) => queue.sendTransition(delivery.id, action, body)}
-          onProof={() => navigation.navigate('CourierProof', { deliveryId: delivery.id, paymentMethod: delivery.paymentMethod })}
+          onProof={() => navigation.navigate('CourierProof', {
+            deliveryId: delivery.id,
+            paymentMethod: delivery.paymentMethod,
+            requiresGiftProof: delivery.requiresGiftProof === true,
+            recipientName: delivery.buyerContact?.role === 'RECIPIENT' ? delivery.buyerContact.name : null,
+          })}
           onOpenChat={(conversationId, peerName) =>
             navigation.navigate('CourierChat', { conversationId, peerName, orderNumber: delivery.orderNumber, kind: 'COURIER' })}
           onChanged={() => {
@@ -331,13 +336,15 @@ function CoursesHomeWrapper({ navigation }: any) {
 }
 
 function CourierProofWrapper({ route, navigation }: any) {
-  const { deliveryId, paymentMethod } = route.params
+  const { deliveryId, paymentMethod, requiresGiftProof, recipientName } = route.params
   const queue = useOfflineQueue()
   return (
     <SafeScreen>
       <ScreenHeader title="Preuve de livraison" onBack={() => navigation.goBack()} />
       <ProofScreen
         isCash={paymentMethod === 'CASH_ON_DELIVERY'}
+        requiresGiftProof={requiresGiftProof === true}
+        recipientName={recipientName ?? null}
         onComplete={body => queue.sendTransition(deliveryId, 'complete', body)}
         onDone={() => navigation.popToTop()}
       />

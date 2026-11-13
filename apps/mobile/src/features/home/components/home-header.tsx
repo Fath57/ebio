@@ -1,3 +1,4 @@
+import type { FormattedMoney } from '../../common/hooks/use-money'
 import { useFocusEffect } from '@react-navigation/native'
 import { StatusBar } from 'expo-status-bar'
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
@@ -13,6 +14,7 @@ import { colors, fonts, radius, spacing } from '../../../theme/theme'
 import { apiFetch } from '../../../utils/api-client'
 import { AssistantEntryIcon } from '../../assistant/components/assistant-entry-icon'
 import { useAssistantIdentity } from '../../assistant/identity'
+import { useMoney } from '../../common/hooks/use-money'
 import { useUnreadNotificationCount } from '../../notifications/components/notification-bell'
 
 interface HomeHeaderProps {
@@ -113,8 +115,9 @@ function useWalletBalance(): number | null {
   return balance
 }
 
-function formatBalance(value: number): string {
-  return `${Math.round(value).toLocaleString('fr-FR')} F`
+/** Compact « 12 500 F » in FCFA; the full amount in a foreign currency. */
+function formatBalance(value: number, money: FormattedMoney): string {
+  return money.secondary ? money.primary : `${Math.round(value).toLocaleString('fr-FR')} F`
 }
 
 /**
@@ -134,6 +137,8 @@ export function HomeHeader({
   const insets = useSafeAreaInsets()
   const unreadCount = useUnreadNotificationCount()
   const balance = useWalletBalance()
+  const { formatMoney } = useMoney()
+  const balanceMoney = balance === null ? null : formatMoney(balance)
   const assistantEnabled = useAssistantEnabled()
   const assistant = useAssistantIdentity()
 
@@ -162,12 +167,14 @@ export function HomeHeader({
             style={styles.walletPill}
             onPress={onOpenWallet}
             accessibilityRole="button"
-            accessibilityLabel={balance === null ? 'Mon portefeuille' : `Mon portefeuille, solde ${formatBalance(balance)}`}
+            accessibilityLabel={balance === null || !balanceMoney
+              ? 'Mon portefeuille'
+              : `Mon portefeuille, solde ${balanceMoney.primary}${balanceMoney.secondary ? `, soit ${balanceMoney.secondary}` : ''}`}
           >
             <View style={styles.walletIcon}>
               <WalletIcon size={15} color={colors.neutral[0]} strokeWidth={2.4} />
             </View>
-            <Text style={styles.walletText}>{balance === null ? '—' : formatBalance(balance)}</Text>
+            <Text style={styles.walletText}>{balance === null || !balanceMoney ? '—' : formatBalance(balance, balanceMoney)}</Text>
           </Pressable>
 
           <Pressable

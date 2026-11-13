@@ -289,6 +289,7 @@ export class AdminController {
     @Query('promo') promo?: string,
     @Query('sponsor') sponsor?: string,
     @Query('courier') courier?: string,
+    @Query('gift') gift?: string,
     @Query('sortBy') sortBy?: string,
     @Query('sortDir') sortDir?: string,
     @Query('format') format: string = 'json',
@@ -296,7 +297,7 @@ export class AdminController {
     @Query('limit') limit: string = '20',
     @Res({ passthrough: true }) res?: Response,
   ) {
-    const filters = readOrderFilters({ supplierId, paymentMethod, pickupMode, from, to, minAmount, maxAmount, promo, sponsor, courier })
+    const filters = readOrderFilters({ supplierId, paymentMethod, pickupMode, from, to, minAmount, maxAmount, promo, sponsor, courier, gift })
 
     if (format === 'csv') {
       const csv = await this.adminService.exportOrdersCsv({ status: status || undefined, q: q || undefined, filters, sortBy, sortDir })

@@ -1,7 +1,11 @@
 import { z } from 'zod'
 
+/** SMS codes only reach Beninese numbers. */
+export const BENIN_PHONE = /^\+229\d{10}$/
+
+/** The number is checked by `assertBeninPhone`, so a foreign one gets its own code. */
 export const otpRequestSchema = z.object({
-  phone: z.string().regex(/^\+229\d{10}$/, 'Format téléphone Bénin requis: +229XXXXXXXXXX'),
+  phone: z.string().trim().min(1),
 }).meta({ title: 'OtpRequest', description: 'Request OTP via SMS' })
 
 export const otpVerifySchema = z.object({

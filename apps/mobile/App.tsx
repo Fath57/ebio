@@ -26,6 +26,7 @@ import { AnimatedSplash } from './src/features/common/components/animated-splash
 import { AppAlertHost } from './src/features/common/components/app-alert'
 import { StoreUpdateGate } from './src/features/common/components/store-update-gate'
 import { UpdatePrompt } from './src/features/common/components/update-prompt'
+import { CurrencyProvider } from './src/features/common/currency-context'
 import { LocationProvider } from './src/features/common/location-context'
 import { ImageCropperHost } from './src/features/media/components/image-cropper'
 import { OnboardingScreen } from './src/features/onboarding/components/onboarding-screen'
@@ -111,31 +112,33 @@ export default function App(): React.JSX.Element | null {
     // l'échec est silencieux, le doigt ne fait simplement rien.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>
-        <LocationProvider>
-          <CartProvider>
-            <SafeAreaProvider onLayout={onLayoutRootView}>
-              <AppNavigation />
-              {accountBlock && <AccountBlockedScreen block={accountBlock} />}
-              <AppAlertHost />
-              <ImageCropperHost />
-              <UpdatePrompt />
-              {/* The store's version, which no over-the-air update can bring. */}
-              <StoreUpdateGate />
-              <StatusBar style="auto" />
-              {showOnboarding === true && (
-                <OnboardingScreen
-                  onFinish={() => {
-                    storage.set(ONBOARDING_KEY, '1')
-                    setShowOnboarding(false)
-                  }}
-                />
-              )}
-              {showSplash && (
-                <AnimatedSplash onFinish={() => setShowSplash(false)} />
-              )}
-            </SafeAreaProvider>
-          </CartProvider>
-        </LocationProvider>
+        <CurrencyProvider>
+          <LocationProvider>
+            <CartProvider>
+              <SafeAreaProvider onLayout={onLayoutRootView}>
+                <AppNavigation />
+                {accountBlock && <AccountBlockedScreen block={accountBlock} />}
+                <AppAlertHost />
+                <ImageCropperHost />
+                <UpdatePrompt />
+                {/* The store's version, which no over-the-air update can bring. */}
+                <StoreUpdateGate />
+                <StatusBar style="auto" />
+                {showOnboarding === true && (
+                  <OnboardingScreen
+                    onFinish={() => {
+                      storage.set(ONBOARDING_KEY, '1')
+                      setShowOnboarding(false)
+                    }}
+                  />
+                )}
+                {showSplash && (
+                  <AnimatedSplash onFinish={() => setShowSplash(false)} />
+                )}
+              </SafeAreaProvider>
+            </CartProvider>
+          </LocationProvider>
+        </CurrencyProvider>
       </ThemeProvider>
     </GestureHandlerRootView>
   )

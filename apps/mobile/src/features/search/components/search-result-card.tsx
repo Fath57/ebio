@@ -14,6 +14,7 @@ import { ScalePressable } from '../../../utils/animations'
 import { PromotionChips } from '../../catalog/components/promotion-chips'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { promotionChipLabels } from '../../catalog/promotions'
+import { useMoney } from '../../common/hooks/use-money'
 
 interface SearchResultCardProps {
   item: SearchResult
@@ -42,11 +43,13 @@ export function formatDistance(meters: number): string {
 
 export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResultCardProps) {
   const { semantic } = useTheme()
+  const { formatMoney } = useMoney()
   const { supplier, product } = item
   const isGrid = variant === 'grid'
   const hasPromo = product.promotionalPrice !== null
   const displayPrice = hasPromo ? product.promotionalPrice! : product.pricePerUnit
   const chipLabels = promotionChipLabels(product.promotionTypes ?? [])
+  const price = formatMoney(displayPrice)
   // The product's own rating, published from three reviews. The shop's rating
   // used to stand here, read as if it were the product's.
   const rating = product.ratingAvg ?? null
@@ -57,7 +60,7 @@ export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResu
       style={[styles.card, { backgroundColor: semantic.bgCard }]}
       onPress={() => onPress(product.id, supplier.id)}
       accessibilityRole="button"
-      accessibilityLabel={`${product.name} chez ${supplier.shopName}, ${formatPrice(displayPrice)} francs CFA par ${unitShortLabel(product.unit)}`}
+      accessibilityLabel={`${product.name} chez ${supplier.shopName}, ${price.primary} par ${unitShortLabel(product.unit)}${price.secondary ? `, soit ${price.secondary}` : ''}`}
     >
       <View style={styles.imageContainer}>
         {product.photo
@@ -108,17 +111,22 @@ export function SearchResultCard({ item, onPress, variant = 'full' }: SearchResu
 
         <View style={styles.priceRow}>
           <Text style={[styles.priceText, isGrid && styles.priceTextGrid, hasPromo && styles.pricePromo]}>
-            {`${formatPrice(displayPrice)} FCFA`}
+            {price.primary}
           </Text>
           <Text style={[styles.priceUnit, { color: semantic.textSecondary }]}>
             {` / ${unitShortLabel(product.unit)}`}
           </Text>
           {hasPromo && (
             <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>
-              {formatPrice(product.pricePerUnit)}
+              {formatMoney(product.pricePerUnit).amount}
             </Text>
           )}
         </View>
+        {price.secondary && (
+          <Text style={[styles.priceSecondary, { color: semantic.textSecondary }]} numberOfLines={1}>
+            {price.secondary}
+          </Text>
+        )}
 
         <View style={styles.metaRow}>
           <Text style={[styles.metaText, { color: semantic.textSecondary }]}>
@@ -264,6 +272,10 @@ const styles = StyleSheet.create({
   priceUnit: {
     fontFamily: fonts.sans,
     fontSize: 12,
+  },
+  priceSecondary: {
+    fontFamily: fonts.mono,
+    fontSize: 11,
   },
   priceOld: {
     fontFamily: fonts.mono,

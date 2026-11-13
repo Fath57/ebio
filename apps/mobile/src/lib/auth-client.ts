@@ -56,6 +56,19 @@ function extractFullToken(res: Response): string | null {
   return null
 }
 
+/** Said when the API refuses a non-Beninese number for an SMS code. */
+export const PHONE_NOT_SUPPORTED_MESSAGE = 'Les codes par SMS sont réservés aux numéros béninois. Continuez avec Google, Apple ou votre e-mail.'
+
+/**
+ * The message of a refused phone (OTP) request: a refusal named by a code
+ * gets its French wording, any other keeps the server's message.
+ */
+function phoneErrorMessage(data: { code?: unknown, message?: unknown }, fallback: string): string {
+  if (data.code === 'PHONE_NOT_SUPPORTED')
+    return PHONE_NOT_SUPPORTED_MESSAGE
+  return typeof data.message === 'string' ? data.message : fallback
+}
+
 // ─── Auth API calls ──────────────────────────────────────────────────────────
 
 export async function signInWithEmail(email: string, password: string): Promise<AuthResponse> {
@@ -314,7 +327,7 @@ export async function requestOtp(phone: string): Promise<{ error: string | null 
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      return { error: data.message ?? 'Impossible d\u2019envoyer le code' }
+      return { error: phoneErrorMessage(data, 'Impossible d\u2019envoyer le code') }
     }
     return { error: null }
   }
@@ -337,7 +350,7 @@ export async function verifyOtp(phone: string, code: string, password?: string):
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      return { user: null, error: data.message ?? 'Code invalide' }
+      return { user: null, error: phoneErrorMessage(data, 'Code invalide') }
     }
     const data = await res.json()
     if (data.needsRegistration) {
@@ -362,7 +375,7 @@ export async function registerWithToken(phone: string, registrationToken: string
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      return { user: null, error: data.message ?? 'Impossible de créer le compte' }
+      return { user: null, error: phoneErrorMessage(data, 'Impossible de créer le compte') }
     }
     const data = await res.json()
     if (data.accessToken) {
@@ -414,6 +427,30 @@ export async function registerWithEmailOtp(email: string, code: string, name: st
   }
   catch {
     return { user: null, error: 'Erreur de connexion. Vérifiez votre réseau.' }
+  }
+}
+
+// ─── Email verification ─────────────────────────────────────────────────────
+
+/**
+ * Sends the account's e-mail confirmation link again (Better Auth
+ * `send-verification-email`). Ordering waits for a confirmed address.
+ */
+export async function sendVerificationEmail(email: string): Promise<{ error: string | null }> {
+  try {
+    const res = await fetch(`${API_URL}/api/auth/send-verification-email`, {
+      method: 'POST',
+      headers: AUTH_HEADERS,
+      body: JSON.stringify({ email }),
+    })
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      return { error: data.message ?? 'Impossible d\u2019envoyer l\u2019e-mail de confirmation' }
+    }
+    return { error: null }
+  }
+  catch {
+    return { error: 'Erreur de connexion. Vérifiez votre réseau.' }
   }
 }
 

@@ -9,6 +9,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
+import { isLinkedRecipient } from '../gift/recipient-link'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
@@ -37,7 +38,8 @@ export class CourierFeedbackService {
   }
 
   async rate(deliveryId: string, buyerUserId: string, data: RateCourier): Promise<CourierRating> {
-    const delivery = await this.loadDeliveredForBuyer(deliveryId, buyerUserId)
+    // The relative who received the cart (009) rates the courier they met.
+    const delivery = await this.loadDeliveredForBuyer(deliveryId, buyerUserId, { allowRecipient: true })
     const courier = delivery.courier!
     const existing = await this.findRating(delivery.id)
     if (existing) {
@@ -135,15 +137,21 @@ export class CourierFeedbackService {
     )
   }
 
-  /** Only the buyer of a delivered run handled by a platform courier may give feedback. */
-  private async loadDeliveredForBuyer(deliveryId: string, buyerUserId: string): Promise<Delivery> {
+  /**
+   * Only the buyer of a delivered run handled by a platform courier may give
+   * feedback — or, for a rating, the relative the cart was sent to. A tip
+   * stays the payer's: it moves money out of their wallet.
+   */
+  private async loadDeliveredForBuyer(deliveryId: string, buyerUserId: string, options: { allowRecipient?: boolean } = {}): Promise<Delivery> {
     const delivery = await this.em.findOne(Delivery, { id: deliveryId }, {
       populate: ['order', 'order.buyer', 'courier', 'courier.user'],
     })
     if (!delivery) {
       throw new NotFoundException('Livraison introuvable')
     }
-    if (delivery.order.buyer.id !== buyerUserId) {
+    const allowed = delivery.order.buyer.id === buyerUserId
+      || (options.allowRecipient === true && await isLinkedRecipient(this.em, delivery.order.id, buyerUserId))
+    if (!allowed) {
       throw new ForbiddenException('Seul le client de la commande peut noter le livreur')
     }
     if (delivery.status !== DeliveryStatus.DELIVERED || !delivery.courier) {

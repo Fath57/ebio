@@ -1,0 +1,29 @@
+<!--
+  Cart sent to a relative, not handed over — to the payer.
+  Variables: payerName, recipientName, orderNumber, reason, refunded,
+    withheld (string | null), orderUrl
+-->
+<% const font = "'Plus Jakarta Sans', Arial, sans-serif" %>
+<% const cell = `font-family: ${font}; font-size: 14px; color: #2A2924; line-height: 1.5;` %>
+<% const muted = `font-family: ${font}; font-size: 12px; color: #9B9890; line-height: 1.5;` %>
+
+<%- include('partials/heading', { text: `Votre panier n'a pas pu être remis à ${recipientName}`, level: 1 }) %>
+
+<p style="<%= cell %>">
+  Bonjour <strong><%= payerName %></strong>, le livreur n'a pas pu remettre la commande
+  <strong><%= orderNumber %></strong> à <strong><%= recipientName %></strong>.
+</p>
+
+<p style="<%= cell %>"><strong>Motif :</strong> <%= reason %></p>
+
+<p style="<%= cell %>">
+  La commande est annulée. <strong><%= refunded %></strong> ont été recrédités sur votre portefeuille eBio<% if (withheld) { %> :
+  les frais de livraison (<%= withheld %>) restent dus, le livreur s'étant déplacé<% } %>.
+</p>
+
+<%- include('partials/button', { href: orderUrl, label: 'Voir la commande', variant: 'primary' }) %>
+
+<p style="<%= muted %>">
+  Le montant recrédité peut servir à une nouvelle commande ou être retiré depuis l'application.
+  Une question ? Répondez à cet e-mail.
+</p>

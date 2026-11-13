@@ -131,6 +131,8 @@ import type {
   AdminCouriersControllerListData,
   AdminCouriersControllerListDeliveriesData,
   AdminCouriersControllerListDeliveriesResponses,
+  AdminCouriersControllerListFarProofsData,
+  AdminCouriersControllerListFarProofsResponses,
   AdminCouriersControllerListResponses,
   AdminCouriersControllerReactivateData,
   AdminCouriersControllerReactivateResponses,
@@ -148,6 +150,14 @@ import type {
   AdminEscrowReleaseControllerGetResponses,
   AdminEscrowReleaseControllerUpdateData,
   AdminEscrowReleaseControllerUpdateResponses,
+  AdminExchangeRatesControllerGetData,
+  AdminExchangeRatesControllerGetResponses,
+  AdminExchangeRatesControllerRefreshData,
+  AdminExchangeRatesControllerRefreshResponses,
+  AdminExchangeRatesControllerUpdateData,
+  AdminExchangeRatesControllerUpdateMarginData,
+  AdminExchangeRatesControllerUpdateMarginResponses,
+  AdminExchangeRatesControllerUpdateResponses,
   AdminHomeSectionsControllerCreateData,
   AdminHomeSectionsControllerCreateResponses,
   AdminHomeSectionsControllerListData,
@@ -330,6 +340,8 @@ import type {
   ChatControllerShareWhatsAppResponses,
   CheckoutsControllerCompensateData,
   CheckoutsControllerCompensateResponses,
+  CheckoutsControllerResendRecipientSmsData,
+  CheckoutsControllerResendRecipientSmsResponses,
   CommentsControllerCreateCommentData,
   CommentsControllerCreateCommentResponses,
   CommentsControllerDeleteCommentData,
@@ -426,6 +438,8 @@ import type {
   GeocodingControllerResolvePlaceResponses,
   GeocodingControllerReverseData,
   GeocodingControllerReverseResponses,
+  GiftTrackingControllerGetData,
+  GiftTrackingControllerGetResponses,
   HomeControllerListData,
   HomeControllerListResponses,
   LandingControllerCreateFaqData,
@@ -496,6 +510,8 @@ import type {
   OrdersControllerFindAllResponses,
   OrdersControllerFindByIdData,
   OrdersControllerFindByIdResponses,
+  OrdersControllerFindReceivedData,
+  OrdersControllerFindReceivedResponses,
   OrdersControllerInvoiceData,
   OrdersControllerInvoiceResponses,
   OrdersControllerPreviewCheckoutData,
@@ -658,6 +674,14 @@ import type {
   ReferralsControllerInvitationResponses,
   ReferralsControllerMeData,
   ReferralsControllerMeResponses,
+  RelativesControllerCreateData,
+  RelativesControllerCreateResponses,
+  RelativesControllerListData,
+  RelativesControllerListResponses,
+  RelativesControllerRemoveData,
+  RelativesControllerRemoveResponses,
+  RelativesControllerUpdateData,
+  RelativesControllerUpdateResponses,
   RolesControllerAssignRoleData,
   RolesControllerAssignRoleResponses,
   RolesControllerCreateData,
@@ -3426,6 +3450,17 @@ export const ordersControllerPreview = <ThrowOnError extends boolean = false>(
     },
   });
 
+export const ordersControllerFindReceived = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<OrdersControllerFindReceivedData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    OrdersControllerFindReceivedResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/orders/received", ...options });
+
 export const ordersControllerFindById = <ThrowOnError extends boolean = false>(
   options: Options<OrdersControllerFindByIdData, ThrowOnError>,
 ) =>
@@ -3659,6 +3694,17 @@ export const checkoutsControllerCompensate = <
       ...options.headers,
     },
   });
+
+export const checkoutsControllerResendRecipientSms = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<CheckoutsControllerResendRecipientSmsData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    CheckoutsControllerResendRecipientSmsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/checkouts/{id}/recipient-sms", ...options });
 
 export const paymentsWebhookControllerHandleFedaPayWebhook = <
   ThrowOnError extends boolean = false,
@@ -4228,6 +4274,17 @@ export const adminCouriersControllerListDeliveries = <
     unknown,
     ThrowOnError
   >({ url: "/api/admin/deliveries", ...options });
+
+export const adminCouriersControllerListFarProofs = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminCouriersControllerListFarProofsData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    AdminCouriersControllerListFarProofsResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/deliveries/far-proofs", ...options });
 
 export const adminCouriersControllerGetDelivery = <
   ThrowOnError extends boolean = false,
@@ -4995,6 +5052,73 @@ export const referralsControllerClaim = <ThrowOnError extends boolean = false>(
       ...options.headers,
     },
   });
+
+export const adminExchangeRatesControllerGet = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminExchangeRatesControllerGetData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminExchangeRatesControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/exchange-rates", ...options });
+
+export const adminExchangeRatesControllerUpdate = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExchangeRatesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminExchangeRatesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/exchange-rates",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminExchangeRatesControllerUpdateMargin = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExchangeRatesControllerUpdateMarginData, ThrowOnError>,
+) =>
+  (options.client ?? client).put<
+    AdminExchangeRatesControllerUpdateMarginResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/fx-margin",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminExchangeRatesControllerRefresh = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminExchangeRatesControllerRefreshData, ThrowOnError>,
+) =>
+  (options?.client ?? client).post<
+    AdminExchangeRatesControllerRefreshResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/exchange-rates/refresh", ...options });
+
+export const giftTrackingControllerGet = <ThrowOnError extends boolean = false>(
+  options: Options<GiftTrackingControllerGetData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    GiftTrackingControllerGetResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/gift-tracking/{token}", ...options });
 
 export const homeControllerList = <ThrowOnError extends boolean = false>(
   options: Options<HomeControllerListData, ThrowOnError>,
@@ -5998,6 +6122,56 @@ export const communityControllerGetShareUrl = <
     unknown,
     ThrowOnError
   >({ url: "/api/groups/publications/{id}/share-url", ...options });
+
+export const relativesControllerList = <ThrowOnError extends boolean = false>(
+  options?: Options<RelativesControllerListData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    RelativesControllerListResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/relatives", ...options });
+
+export const relativesControllerCreate = <ThrowOnError extends boolean = false>(
+  options: Options<RelativesControllerCreateData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    RelativesControllerCreateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/relatives",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const relativesControllerRemove = <ThrowOnError extends boolean = false>(
+  options: Options<RelativesControllerRemoveData, ThrowOnError>,
+) =>
+  (options.client ?? client).delete<
+    RelativesControllerRemoveResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/relatives/{id}", ...options });
+
+export const relativesControllerUpdate = <ThrowOnError extends boolean = false>(
+  options: Options<RelativesControllerUpdateData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    RelativesControllerUpdateResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/relatives/{id}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
 
 export const trainingControllerGetModules = <
   ThrowOnError extends boolean = false,

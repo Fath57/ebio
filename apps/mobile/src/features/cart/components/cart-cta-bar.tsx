@@ -4,6 +4,7 @@ import ShoppingBag from 'lucide-react-native/dist/esm/icons/shopping-bag'
 import { use, useEffect, useRef } from 'react'
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, fonts, radius, spacing } from '../../../theme/theme'
+import { useMoney } from '../../common/hooks/use-money'
 import { useCart } from '../cart-context'
 
 /** Height of the bar itself, so scroll views can keep their last row visible. */
@@ -13,10 +14,6 @@ export const CART_CTA_BAR_CLEARANCE = CART_CTA_BAR_HEIGHT + spacing[3] * 2
 
 interface CartCtaBarProps {
   onPress: () => void
-}
-
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
 }
 
 /**
@@ -29,6 +26,7 @@ export function CartCtaBar({ onPress }: CartCtaBarProps) {
   const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const count = getItemCount()
   const total = getTotal()
+  const { formatMoney } = useMoney()
   const translateY = useRef(new Animated.Value(CART_CTA_BAR_CLEARANCE)).current
 
   useEffect(() => {
@@ -44,6 +42,8 @@ export function CartCtaBar({ onPress }: CartCtaBarProps) {
     return null
 
   const itemsLabel = `${count} article${count > 1 ? 's' : ''}`
+  // The bar has room for one amount: the chosen currency, FCFA read aloud too.
+  const money = formatMoney(total)
 
   return (
     <Animated.View
@@ -54,7 +54,7 @@ export function CartCtaBar({ onPress }: CartCtaBarProps) {
         style={({ pressed }) => [styles.bar, { transform: [{ scale: pressed ? 0.985 : 1 }] }]}
         onPress={onPress}
         accessibilityRole="button"
-        accessibilityLabel={`Voir le panier, ${itemsLabel}, total ${formatPrice(total)} FCFA`}
+        accessibilityLabel={`Voir le panier, ${itemsLabel}, total ${money.primary}${money.secondary ? `, soit ${money.secondary}` : ''}`}
       >
         <View style={styles.iconCircle}>
           <ShoppingBag size={18} color={colors.neutral[0]} strokeWidth={2.4} />
@@ -65,9 +65,7 @@ export function CartCtaBar({ onPress }: CartCtaBarProps) {
         <View style={styles.summary}>
           <Text style={styles.summaryLabel}>{itemsLabel}</Text>
           <Text style={styles.summaryTotal}>
-            {formatPrice(total)}
-            {' '}
-            FCFA
+            {money.primary}
           </Text>
         </View>
         <View style={styles.action}>

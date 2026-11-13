@@ -1,27 +1,53 @@
 import type { OpeningHours } from '../../common/opening-hours'
+import type { DisplayCurrency } from '../currency/contracts/currency.contract'
 import type { OrderDeliveryHooks } from '../deliveries/deliveries.tokens'
-import type { CheckoutPreview, CheckoutPreviewResponse, CreateCheckout, CreateCheckoutResponse } from './contracts/checkout.contract'
+import type { CheckoutDisplay, CheckoutPreview, CheckoutPreviewResponse, CheckoutRecipient, CreateCheckout, CreateCheckoutResponse } from './contracts/checkout.contract'
+import { randomBytes } from 'node:crypto'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { BadRequestException, forwardRef, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { isOpenNow, nextOpening } from '../../common/opening-hours'
 import { User } from '../auth/auth.entity'
+import { ExchangeRatesService } from '../currency/exchange-rates.service'
+import { toDisplayAmount } from '../currency/fx-math'
 import { ORDER_DELIVERY_HOOKS } from '../deliveries/deliveries.tokens'
+import { GiftNotifierService } from '../gift/gift-notifier.service'
+import { giftBadRequest } from '../gift/gift-texts'
 import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from '../payments/entities/checkout.entity'
 import { Payment, PaymentProvider, PaymentStatus } from '../payments/payment.entity'
 import { splitCheckoutAmount } from '../payments/payments.service'
 import { Product } from '../products/entities/product.entity'
+import { SavedRelative } from '../relatives/entities/saved-relative.entity'
 import { DeliveryPricingService } from '../settings/delivery-pricing.service'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode } from '../suppliers/supplier.entity'
 import { WalletTransactionType } from '../wallet/entities/wallet-transaction.entity'
 import { cashBlockedMessage, SupplierCashBlockService } from '../wallet/supplier-cash-block.service'
 import { WalletService } from '../wallet/wallet.service'
+import { assertBuyerVerified } from './account-verification'
+import { GIFT_MINIMUM_TOTAL } from './contracts/checkout.contract'
 import { Order } from './entities/order.entity'
+import { OrderEmailsService } from './order-emails.service'
 import { OrdersService } from './orders.service'
 
 interface SupplierBasket {
   supplier: Supplier
   items: CheckoutPreview['items']
+}
+
+/** Amounts of a cart that get converted for display. */
+interface DisplayableAmounts {
+  total: number
+  itemsTotal: number
+  deliveryFee: number | null
+  discount: number
+}
+
+/** Compares phone numbers whatever spaces the payer typed. */
+function samePhone(left: string | null | undefined, right: string | null | undefined): boolean {
+  if (!left || !right) {
+    return false
+  }
+  return left.replace(/\s+/g, '') === right.replace(/\s+/g, '')
 }
 
 /**
@@ -46,7 +72,34 @@ export class CheckoutService {
     private readonly supplierCashBlock: SupplierCashBlockService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
+    private readonly exchangeRates: ExchangeRatesService,
+    @Inject(forwardRef(() => GiftNotifierService))
+    private readonly giftNotifier: GiftNotifierService,
+    private readonly orderEmails: OrderEmailsService,
   ) {}
+
+  /**
+   * The relative the cart goes to, or null. A recipient with the payer's own
+   * number is the payer: the cart is an ordinary one, not an error.
+   */
+  private effectiveRecipient(buyer: Pick<User, 'phone'>, recipient: CheckoutRecipient | undefined): CheckoutRecipient | null {
+    if (!recipient) {
+      return null
+    }
+    return samePhone(recipient.phone, buyer.phone) ? null : recipient
+  }
+
+  /** Each displayed figure converted at one rate, rounded up to the cent like the total. */
+  private displayBlock(currency: DisplayCurrency, rate: number, amounts: DisplayableAmounts): CheckoutDisplay {
+    return {
+      currency,
+      rate,
+      total: toDisplayAmount(amounts.total, rate),
+      itemsTotal: toDisplayAmount(amounts.itemsTotal, rate),
+      deliveryFee: toDisplayAmount(amounts.deliveryFee ?? 0, rate),
+      discount: toDisplayAmount(amounts.discount, rate),
+    }
+  }
 
   /** Groups items by shop, refusing whatever cannot be sold. */
   private async groupBySupplier(items: CheckoutPreview['items']): Promise<SupplierBasket[]> {
@@ -110,6 +163,8 @@ export class CheckoutService {
   }
 
   async preview(buyerId: string, data: CheckoutPreview): Promise<CheckoutPreviewResponse> {
+    const buyer = await this.em.findOneOrFail(User, { id: buyerId })
+    const recipient = this.effectiveRecipient(buyer, data.recipient)
     const baskets = await this.groupBySupplier(data.items)
     this.assertSingleShop(baskets)
     this.assertPromoUsable(baskets, data.promoCode)
@@ -159,6 +214,8 @@ export class CheckoutService {
       longitude: data.deliveryLongitude,
     })
     const total = itemsTotal + (quote.fee ?? 0)
+    const currency = data.displayCurrency ?? 'XOF'
+    const rate = await this.exchangeRates.effectiveRate(currency)
 
     return {
       suppliers,
@@ -183,6 +240,11 @@ export class CheckoutService {
       // order when it opens, and that is something one accepts knowingly,
       // not something one discovers while waiting.
       closedShop: this.closedShop(baskets),
+      display: rate === null
+        ? null
+        : this.displayBlock(currency, rate, { total, itemsTotal, deliveryFee: quote.fee, discount }),
+      // Said before paying: the card gateway would refuse the payment anyway.
+      cardMinimumNotMet: recipient !== null && total < GIFT_MINIMUM_TOTAL,
     }
   }
 
@@ -265,6 +327,15 @@ export class CheckoutService {
   }
 
   async create(buyerId: string, data: CreateCheckout): Promise<CreateCheckoutResponse> {
+    const buyer = await this.em.findOneOrFail(User, { id: buyerId })
+    assertBuyerVerified(buyer)
+    const recipient = this.effectiveRecipient(buyer, data.recipient)
+    if (recipient) {
+      this.assertGiftAllowed(data)
+    }
+    const savedRelative = recipient?.savedRelativeId
+      ? await this.ownedRelative(buyer.id, recipient.savedRelativeId)
+      : null
     const baskets = await this.groupBySupplier(data.items)
     this.assertSingleShop(baskets)
     this.assertPromoUsable(baskets, data.promoCode)
@@ -287,7 +358,18 @@ export class CheckoutService {
       )
     }
 
-    const buyer = await this.em.findOneOrFail(User, { id: buyerId })
+    if (recipient && quote.total < GIFT_MINIMUM_TOTAL) {
+      throw giftBadRequest(
+        'GIFT_AMOUNT_TOO_LOW',
+        `Une commande pour un proche se paie par carte ou Mobile Money, à partir de ${GIFT_MINIMUM_TOTAL.toLocaleString('fr-FR')} FCFA. Ajoutez des articles.`,
+      )
+    }
+
+    // Frozen now, right before the payment starts: the order keeps showing
+    // what the payer agreed to, whatever the rates do next (FR-022).
+    const currency = data.displayCurrency ?? 'XOF'
+    const frozen = await this.exchangeRates.freeze(quote.total, currency)
+
     const checkout = this.em.create(Checkout, {
       buyer,
       totalAmount: quote.total,
@@ -300,6 +382,15 @@ export class CheckoutService {
       deliveryAddress: data.deliveryAddress,
       deliveryLatitude: data.deliveryLatitude,
       deliveryLongitude: data.deliveryLongitude,
+      recipientName: recipient?.name ?? null,
+      recipientPhone: recipient?.phone ?? null,
+      savedRelative,
+      trackingToken: recipient ? randomBytes(18).toString('base64url') : null,
+      payerTimeZone: data.payerTimeZone ?? null,
+      displayCurrency: frozen ? currency : 'XOF',
+      fxRate: frozen?.fxRate ?? null,
+      fxMarginBps: frozen?.fxMarginBps ?? null,
+      displayTotal: frozen?.displayTotal ?? null,
     })
 
     // Either everything exists or nothing does. An insufficient balance found
@@ -353,10 +444,61 @@ export class CheckoutService {
       return { orders: summaries, createdOrders: entities }
     })
 
-    void createdOrders
+    // Cash and wallet carts have no payment step to wait for: confirm by
+    // e-mail now that the orders are committed and readable.
+    if (data.paymentMethod !== 'FEDAPAY') {
+      for (const order of createdOrders)
+        void this.orderEmails.sendOrderPlaced(order.id)
+    }
+
+    // Paid from the wallet, the cart is paid already: the relative hears of
+    // it now, as they would at an online payment's confirmation.
+    if (recipient && checkout.status === CheckoutStatus.PAID) {
+      await this.giftNotifier.announceToRecipient(checkout.id)
+    }
 
     // No rounds any more: a cart holds one shop, so a checkout is one order
     // and one delivery, taken the way isolated deliveries have always been.
-    return { checkoutId: checkout.id, orders, deliveryRunIds: [] }
+    return {
+      checkoutId: checkout.id,
+      orders,
+      deliveryRunIds: [],
+      isGift: recipient !== null,
+      display: frozen
+        ? {
+            ...this.displayBlock(currency, frozen.fxRate, quote),
+            total: frozen.displayTotal,
+          }
+        : null,
+    }
+  }
+
+  /**
+   * What a cart for a relative cannot be. Checked before pricing: the payer
+   * learns it without waiting for a quote that would be refused anyway.
+   */
+  private assertGiftAllowed(data: CreateCheckout): void {
+    // The relative would hand over money the payer meant to give (FR-006).
+    if (data.paymentMethod === 'CASH_ON_DELIVERY') {
+      throw giftBadRequest(
+        'GIFT_CASH_NOT_ALLOWED',
+        'Une commande pour un proche se paie en ligne : carte bancaire, Mobile Money ou portefeuille eBio.',
+      )
+    }
+    if (data.pickupMode !== 'DELIVERY') {
+      throw giftBadRequest('GIFT_REQUIRES_DELIVERY', 'Une commande pour un proche est livrée chez lui : le retrait sur place n\'est pas possible.')
+    }
+    if (!data.deliveryAddress) {
+      throw giftBadRequest('GIFT_REQUIRES_DELIVERY', 'Indiquez l\'adresse de votre proche, avec un repère.')
+    }
+  }
+
+  /** An address-book entry of the payer, never someone else's. */
+  private async ownedRelative(ownerId: string, relativeId: string): Promise<SavedRelative> {
+    const relative = await this.em.findOne(SavedRelative, { id: relativeId, owner: { id: ownerId } })
+    if (!relative) {
+      throw new NotFoundException('Proche introuvable dans votre carnet')
+    }
+    return relative
   }
 }

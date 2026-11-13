@@ -2,6 +2,7 @@ import type { Delivery } from '../types'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Navigation from 'lucide-react-native/dist/esm/icons/navigation'
+import Phone from 'lucide-react-native/dist/esm/icons/phone'
 import { useState } from 'react'
 import { Linking, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
@@ -10,7 +11,7 @@ import { openDeliveryConversation } from '../../chat/delivery-chat'
 import { appAlert } from '../../common/components/app-alert'
 import { StarRating } from '../../common/components/star-rating'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
-import { DELIVERY_STATUS_LABELS, FAIL_REASON_LABELS } from '../types'
+import { DELIVERY_STATUS_LABELS, FAIL_REASON_LABELS, giftContactLine } from '../types'
 
 interface DeliveryDetailProps {
   delivery: Delivery
@@ -59,6 +60,9 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
   const failed = delivery.status === 'FAILED'
   const delivered = delivery.status === 'DELIVERED'
   const tipAmount = delivery.tipAmount ?? 0
+  const giftLine = giftContactLine(delivery.buyerContact)
+  const recipientPhone = giftLine ? delivery.buyerContact?.phone ?? null : null
+  const runOpen = delivery.status === 'ACCEPTED' || delivery.status === 'PICKED_UP' || delivery.status === 'IN_TRANSIT'
 
   async function openChat(): Promise<void> {
     if (openingChat || !onOpenChat) {
@@ -101,6 +105,24 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
         </Text>
         <Text style={[styles.label, { color: semantic.textTertiary }]}>Livraison</Text>
         <Text style={[styles.value, { color: semantic.textPrimary }]}>{delivery.dropoffAddress}</Text>
+        {giftLine && (
+          <Text style={[styles.value, { color: semantic.textPrimaryColor }]}>{giftLine}</Text>
+        )}
+        {recipientPhone && runOpen && (
+          <Pressable
+            style={[styles.routeButton, { borderColor: semantic.borderNormal }]}
+            onPress={() => {
+              void Linking.openURL(`tel:${recipientPhone}`)
+            }}
+            accessibilityRole="button"
+            accessibilityLabel={`Appeler ${delivery.buyerContact?.name ?? 'le destinataire'}`}
+          >
+            <Phone size={16} color={colors.green[600]} strokeWidth={2.2} />
+            <Text style={[styles.routeText, { color: colors.green[800] }]}>
+              {`Appeler ${delivery.buyerContact?.name ?? 'le destinataire'}`}
+            </Text>
+          </Pressable>
+        )}
         {delivery.dropoffPosition && (
           <Pressable
             style={[styles.routeButton, { borderColor: semantic.borderNormal }]}

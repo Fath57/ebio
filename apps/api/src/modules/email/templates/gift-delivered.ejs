@@ -1,0 +1,30 @@
+<!--
+  Cart sent to a relative, handed over — to the payer, with the photo inline.
+  Variables: payerName, recipientName, beninTime, payerTime (string | null),
+    hasPhoto, photoAlt, orderUrl
+  The photo is attached by the sender with cid "proof".
+-->
+<% const font = "'Plus Jakarta Sans', Arial, sans-serif" %>
+<% const cell = `font-family: ${font}; font-size: 14px; color: #2A2924; line-height: 1.5;` %>
+<% const muted = `font-family: ${font}; font-size: 12px; color: #9B9890; line-height: 1.5;` %>
+
+<%- include('partials/heading', { text: `Votre panier a été remis à ${recipientName}`, level: 1 }) %>
+
+<p style="<%= cell %>">
+  Bonjour <strong><%= payerName %></strong>, le livreur a remis votre panier à
+  <strong><%= recipientName %></strong> à <strong><%= beninTime %></strong> (heure du Bénin)<% if (payerTime) { %>,
+  soit <strong><%= payerTime %></strong><% } %>.
+</p>
+
+<% if (hasPhoto) { %>
+  <p style="margin: 20px 0;">
+    <img src="cid:proof" alt="<%= photoAlt %>" width="480" style="display: block; width: 100%; max-width: 480px; height: auto; border-radius: 12px; background-color: #F7F6F2;" />
+  </p>
+  <p style="<%= muted %>">Photo prise par le livreur au moment de la remise.</p>
+<% } %>
+
+<%- include('partials/button', { href: orderUrl, label: 'Voir la commande', variant: 'primary' }) %>
+
+<p style="<%= muted %>">
+  Un souci avec cette remise ? Répondez à cet e-mail ou écrivez-nous depuis l'application.
+</p>

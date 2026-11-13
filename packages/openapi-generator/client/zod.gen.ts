@@ -161,15 +161,23 @@ export const zCartReminderSettings = z.object({
 });
 
 /**
- * UpdateUser
+ * AdminExchangeRatesInput
  *
- * Update user profile
+ * Taux saisis à la main, en FCFA pour une unité
  */
-export const zUpdateUser = z.object({
-  name: z.optional(z.string().min(2).max(100)),
-  phone: z.optional(z.string()),
-  image: z.optional(z.url()),
-  deviceId: z.optional(z.string()),
+export const zAdminExchangeRatesInput = z.object({
+  EUR: z.optional(z.number().gt(0).lte(100000)),
+  USD: z.optional(z.number().gt(0).lte(100000)),
+  CAD: z.optional(z.number().gt(0).lte(100000)),
+});
+
+/**
+ * AdminFxMarginInput
+ *
+ * Marge de change en points de base (200 = 2 %)
+ */
+export const zAdminFxMarginInput = z.object({
+  bps: z.int().gte(0).lte(1000),
 });
 
 /**
@@ -297,121 +305,6 @@ export const zAdminWalletDebit = z.object({
   amount: z.number().gt(0).lte(10000000),
   reason: z.string().min(3).max(300),
   notify: z.boolean().default(true),
-});
-
-/**
- * RejectCourier
- *
- * Reason shown to the rejected courier applicant
- */
-export const zRejectCourier = z.object({
-  reason: z.string().min(5).max(500),
-});
-
-/**
- * AssignDelivery
- *
- * Back-office assignment of a delivery to a chosen courier
- */
-export const zAssignDelivery = z.object({
-  courierId: z
-    .uuid()
-    .regex(
-      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-    ),
-  note: z.optional(z.string().max(300)),
-});
-
-/**
- * UpdateCourierAvailability
- *
- * Toggle courier availability (online / offline)
- */
-export const zUpdateCourierAvailability = z.object({
-  isAvailable: z.boolean(),
-});
-
-/**
- * UpdateCourierLocation
- *
- * Foreground position update
- */
-export const zUpdateCourierLocation = z.object({
-  latitude: z.number().gte(-90).lte(90),
-  longitude: z.number().gte(-180).lte(180),
-});
-
-/**
- * DeliveryTransition
- *
- * Common payload for delivery step transitions
- */
-export const zDeliveryTransition = z.object({
-  occurredAt: z.optional(
-    z.iso
-      .datetime()
-      .regex(
-        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-      ),
-  ),
-});
-
-/**
- * CompleteDelivery
- *
- * Proof of delivery: buyer confirmation code or photo
- */
-export const zCompleteDelivery = z.union([
-  z.object({
-    proofType: z.literal("CODE"),
-    code: z.string().regex(/^\d{4}$/),
-    occurredAt: z.optional(
-      z.iso
-        .datetime()
-        .regex(
-          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-        ),
-    ),
-  }),
-  z.object({
-    proofType: z.literal("PHOTO"),
-    mediaId: z.string().min(1).max(255),
-    occurredAt: z.optional(
-      z.iso
-        .datetime()
-        .regex(
-          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
-        ),
-    ),
-  }),
-]);
-
-/**
- * RateCourier
- *
- * Buyer rating of the courier once the delivery is done
- */
-export const zRateCourier = z.object({
-  rating: z.int().gte(1).lte(5),
-  comment: z.optional(z.string().max(500)),
-});
-
-/**
- * TipCourier
- *
- * Tip for the courier, debited from the buyer wallet and credited in full to the courier
- */
-export const zTipCourier = z.object({
-  amount: z.int().gte(100).lte(50000),
-});
-
-/**
- * BuyerDecision
- *
- * Attendre encore, ou annuler et être recrédité
- */
-export const zBuyerDecision = z.object({
-  decision: z.enum(["WAIT", "CANCEL"]),
 });
 
 /**
@@ -543,6 +436,139 @@ export const zVerifyCheckoutInput = z.object({
       /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
     ),
   fedapayTransactionId: z.string().min(1),
+});
+
+/**
+ * RejectCourier
+ *
+ * Reason shown to the rejected courier applicant
+ */
+export const zRejectCourier = z.object({
+  reason: z.string().min(5).max(500),
+});
+
+/**
+ * AssignDelivery
+ *
+ * Back-office assignment of a delivery to a chosen courier
+ */
+export const zAssignDelivery = z.object({
+  courierId: z
+    .uuid()
+    .regex(
+      /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+    ),
+  note: z.optional(z.string().max(300)),
+});
+
+/**
+ * UpdateCourierAvailability
+ *
+ * Toggle courier availability (online / offline)
+ */
+export const zUpdateCourierAvailability = z.object({
+  isAvailable: z.boolean(),
+});
+
+/**
+ * UpdateCourierLocation
+ *
+ * Foreground position update
+ */
+export const zUpdateCourierLocation = z.object({
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+});
+
+/**
+ * DeliveryTransition
+ *
+ * Common payload for delivery step transitions
+ */
+export const zDeliveryTransition = z.object({
+  occurredAt: z.optional(
+    z.iso
+      .datetime()
+      .regex(
+        /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+      ),
+  ),
+});
+
+/**
+ * CompleteDelivery
+ *
+ * Proof of delivery: buyer confirmation code, photo, or both with the position (relative)
+ */
+export const zCompleteDelivery = z.union([
+  z.object({
+    proofType: z.literal("CODE"),
+    code: z.string().regex(/^\d{4}$/),
+    occurredAt: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+  }),
+  z.object({
+    proofType: z.literal("PHOTO"),
+    mediaId: z.string().min(1).max(255),
+    occurredAt: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+  }),
+  z.object({
+    proofType: z.literal("CODE_AND_PHOTO"),
+    code: z.string().regex(/^\d{4}$/),
+    mediaId: z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+    latitude: z.number().gte(-90).lte(90),
+    longitude: z.number().gte(-180).lte(180),
+    occurredAt: z.optional(
+      z.iso
+        .datetime()
+        .regex(
+          /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+        ),
+    ),
+  }),
+]);
+
+/**
+ * RateCourier
+ *
+ * Buyer rating of the courier once the delivery is done
+ */
+export const zRateCourier = z.object({
+  rating: z.int().gte(1).lte(5),
+  comment: z.optional(z.string().max(500)),
+});
+
+/**
+ * TipCourier
+ *
+ * Tip for the courier, debited from the buyer wallet and credited in full to the courier
+ */
+export const zTipCourier = z.object({
+  amount: z.int().gte(100).lte(50000),
+});
+
+/**
+ * BuyerDecision
+ *
+ * Attendre encore, ou annuler et être recrédité
+ */
+export const zBuyerDecision = z.object({
+  decision: z.enum(["WAIT", "CANCEL"]),
 });
 
 /**
@@ -1063,7 +1089,7 @@ export const zBiometricVerify = z.object({
  * Request OTP via SMS
  */
 export const zOtpRequest = z.object({
-  phone: z.string().regex(/^\+229\d{10}$/),
+  phone: z.string().min(1),
 });
 
 /**
@@ -1541,6 +1567,34 @@ export const zCreateReview = z.object({
   communicationRating: z.int().gte(1).lte(5),
   conformityRating: z.int().gte(1).lte(5),
   comment: z.optional(z.string().max(500)),
+});
+
+/**
+ * CreateRelative
+ *
+ * Ajouter un proche au carnet
+ */
+export const zCreateRelative = z.object({
+  nickname: z.string().min(1).max(40),
+  name: z.string().min(1).max(120),
+  phone: z.string().regex(/^\+229\d{10}$/),
+  address: z.string().min(10).max(500),
+  latitude: z.number().gte(-90).lte(90),
+  longitude: z.number().gte(-180).lte(180),
+});
+
+/**
+ * UpdateRelative
+ *
+ * Modifier un proche du carnet ; seuls les champs envoyés changent
+ */
+export const zUpdateRelative = z.object({
+  nickname: z.optional(z.string().min(1).max(40)),
+  name: z.optional(z.string().min(1).max(120)),
+  phone: z.optional(z.string().regex(/^\+229\d{10}$/)),
+  address: z.optional(z.string().min(10).max(500)),
+  latitude: z.optional(z.number().gte(-90).lte(90)),
+  longitude: z.optional(z.number().gte(-180).lte(180)),
 });
 
 /**
@@ -2345,6 +2399,26 @@ export const zDeliveryPricingConfig = z.object({
 });
 
 /**
+ * DisplayCurrency
+ *
+ * Devise d'affichage des prix ; le paiement reste en FCFA
+ */
+export const zDisplayCurrency = z.enum(["XOF", "EUR", "USD", "CAD"]);
+
+/**
+ * UpdateUser
+ *
+ * Update user profile
+ */
+export const zUpdateUser = z.object({
+  name: z.optional(z.string().min(2).max(100)),
+  phone: z.optional(z.string().regex(/^\+[1-9]\d{6,14}$/)),
+  image: z.optional(z.url()),
+  displayCurrency: z.optional(zDisplayCurrency),
+  deviceId: z.optional(z.string()),
+});
+
+/**
  * OpeningHours
  *
  * Weekly opening hours with days as keys
@@ -2908,19 +2982,6 @@ export const zOrderItemInput = z.object({
 export const zPickupMode = z.enum(["ON_SITE", "DELIVERY"]);
 
 /**
- * CheckoutPreview
- *
- * Demande de chiffrage d'un panier multi-boutiques
- */
-export const zCheckoutPreview = z.object({
-  items: z.array(zOrderItemInput).min(1),
-  pickupMode: zPickupMode,
-  deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
-  deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
-  promoCode: z.optional(z.string().max(50)),
-});
-
-/**
  * PreviewOrder
  *
  * Basket as it would be charged: promotions, gifts, discount and delivery fee
@@ -2936,6 +2997,39 @@ export const zPreviewOrder = z.object({
   deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
   promoCode: z.optional(z.string().min(1).max(30)),
   items: z.array(zOrderItemInput).min(1),
+});
+
+/**
+ * CheckoutRecipient
+ *
+ * Le proche à qui le panier est livré
+ */
+export const zCheckoutRecipient = z.object({
+  name: z.string().min(1).max(120),
+  phone: z.string().regex(/^\+229\d{10}$/),
+  savedRelativeId: z.optional(
+    z
+      .uuid()
+      .regex(
+        /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+      ),
+  ),
+});
+
+/**
+ * CheckoutPreview
+ *
+ * Demande de chiffrage d'un panier multi-boutiques
+ */
+export const zCheckoutPreview = z.object({
+  items: z.array(zOrderItemInput).min(1),
+  pickupMode: zPickupMode,
+  deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
+  deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
+  promoCode: z.optional(z.string().max(50)),
+  recipient: z.optional(zCheckoutRecipient),
+  displayCurrency: zDisplayCurrency,
+  payerTimeZone: z.optional(z.string().max(64)),
 });
 
 /**
@@ -2973,6 +3067,9 @@ export const zCreateCheckout = z.object({
         /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
       ),
   ),
+  recipient: z.optional(zCheckoutRecipient),
+  displayCurrency: zDisplayCurrency,
+  payerTimeZone: z.optional(z.string().max(64)),
 });
 
 /**
@@ -3774,7 +3871,7 @@ export const zOtpAuthControllerLoginWithPhoneData = z.object({
 
 export const zOtpAuthControllerRequestOtpData = z.object({
   body: z.object({
-    phone: z.string().regex(/^\+229\d{10}$/),
+    phone: z.string().min(1),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -3791,7 +3888,7 @@ export const zOtpAuthControllerVerifyOtpData = z.object({
 
 export const zOtpAuthControllerRegisterWithTokenData = z.object({
   body: z.object({
-    phone: z.string().regex(/^\+229\d{10}$/),
+    phone: z.string().min(1),
     registrationToken: z
       .uuid()
       .regex(
@@ -5328,8 +5425,9 @@ export const zUsersControllerGetMeData = z.object({
 export const zUsersControllerUpdateMeData = z.object({
   body: z.object({
     name: z.optional(z.string().min(2).max(100)),
-    phone: z.optional(z.string()),
+    phone: z.optional(z.string().regex(/^\+[1-9]\d{6,14}$/)),
     image: z.optional(z.url()),
+    displayCurrency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
     deviceId: z.optional(z.string()),
   }),
   path: z.optional(z.never()),
@@ -6155,6 +6253,21 @@ export const zOrdersControllerPreviewCheckoutData = z.object({
     deliveryLatitude: z.optional(z.number().gte(-90).lte(90)),
     deliveryLongitude: z.optional(z.number().gte(-180).lte(180)),
     promoCode: z.optional(z.string().max(50)),
+    recipient: z.optional(
+      z.object({
+        name: z.string().min(1).max(120),
+        phone: z.string().regex(/^\+229\d{10}$/),
+        savedRelativeId: z.optional(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        ),
+      }),
+    ),
+    displayCurrency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+    payerTimeZone: z.optional(z.string().max(64)),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -6202,6 +6315,21 @@ export const zOrdersControllerCreateCheckoutData = z.object({
           /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z|([+-](?:[01]\d|2[0-3]):[0-5]\d)))$/,
         ),
     ),
+    recipient: z.optional(
+      z.object({
+        name: z.string().min(1).max(120),
+        phone: z.string().regex(/^\+229\d{10}$/),
+        savedRelativeId: z.optional(
+          z
+            .uuid()
+            .regex(
+              /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+            ),
+        ),
+      }),
+    ),
+    displayCurrency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+    payerTimeZone: z.optional(z.string().max(64)),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -6303,6 +6431,15 @@ export const zOrdersControllerPreviewData = z.object({
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
+});
+
+export const zOrdersControllerFindReceivedData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    page: z.string(),
+    limit: z.string(),
+  }),
 });
 
 export const zOrdersControllerFindByIdData = z.object({
@@ -6527,6 +6664,16 @@ export const zCheckoutsControllerCompensateData = z.object({
   }),
   query: z.optional(z.never()),
 });
+
+export const zCheckoutsControllerResendRecipientSmsData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zCheckoutsControllerResendRecipientSmsResponse = z.void();
 
 export const zPaymentsWebhookControllerHandleFedaPayWebhookData = z.object({
   body: z.optional(z.never()),
@@ -6852,6 +6999,24 @@ export const zDeliveriesControllerCompleteData = z.object({
           ),
       ),
     }),
+    z.object({
+      proofType: z.literal("CODE_AND_PHOTO"),
+      code: z.string().regex(/^\d{4}$/),
+      mediaId: z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      latitude: z.number().gte(-90).lte(90),
+      longitude: z.number().gte(-180).lte(180),
+      occurredAt: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
+    }),
   ]),
   path: z.object({
     id: z.string(),
@@ -6955,6 +7120,24 @@ export const zRunsControllerDeliverData = z.object({
           ),
       ),
     }),
+    z.object({
+      proofType: z.literal("CODE_AND_PHOTO"),
+      code: z.string().regex(/^\d{4}$/),
+      mediaId: z
+        .uuid()
+        .regex(
+          /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+        ),
+      latitude: z.number().gte(-90).lte(90),
+      longitude: z.number().gte(-180).lte(180),
+      occurredAt: z.optional(
+        z.iso
+          .datetime()
+          .regex(
+            /^(?:(?:\d\d[2468][048]|\d\d[13579][26]|\d\d0[48]|[02468][048]00|[13579][26]00)-02-29|\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\d|30)|(?:02)-(?:0[1-9]|1\d|2[0-8])))T(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d(?:\.\d+)?)?(?:Z))$/,
+          ),
+      ),
+    }),
   ]),
   path: z.object({
     id: z.string(),
@@ -7038,6 +7221,15 @@ export const zAdminCouriersControllerListDeliveriesData = z.object({
   query: z.object({
     status: z.string(),
     courierId: z.string(),
+    page: z.string(),
+    limit: z.string(),
+  }),
+});
+
+export const zAdminCouriersControllerListFarProofsData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
     page: z.string(),
     limit: z.string(),
   }),
@@ -7906,6 +8098,44 @@ export const zReferralsControllerClaimData = z.object({
       .regex(/^[A-Z0-9]+$/),
   }),
   path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerUpdateData = z.object({
+  body: z.object({
+    EUR: z.optional(z.number().gt(0).lte(100000)),
+    USD: z.optional(z.number().gt(0).lte(100000)),
+    CAD: z.optional(z.number().gt(0).lte(100000)),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerUpdateMarginData = z.object({
+  body: z.object({
+    bps: z.int().gte(0).lte(1000),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExchangeRatesControllerRefreshData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zGiftTrackingControllerGetData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    token: z.string(),
+  }),
   query: z.optional(z.never()),
 });
 
@@ -8873,6 +9103,50 @@ export const zCommunityControllerGetShareUrlData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zRelativesControllerListData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRelativesControllerCreateData = z.object({
+  body: z.object({
+    nickname: z.string().min(1).max(40),
+    name: z.string().min(1).max(120),
+    phone: z.string().regex(/^\+229\d{10}$/),
+    address: z.string().min(10).max(500),
+    latitude: z.number().gte(-90).lte(90),
+    longitude: z.number().gte(-180).lte(180),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zRelativesControllerRemoveData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zRelativesControllerRemoveResponse = z.void();
+
+export const zRelativesControllerUpdateData = z.object({
+  body: z.object({
+    nickname: z.optional(z.string().min(1).max(40)),
+    name: z.optional(z.string().min(1).max(120)),
+    phone: z.optional(z.string().regex(/^\+229\d{10}$/)),
+    address: z.optional(z.string().min(10).max(500)),
+    latitude: z.optional(z.number().gte(-90).lte(90)),
+    longitude: z.optional(z.number().gte(-180).lte(180)),
+  }),
+  path: z.object({
+    id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zTrainingControllerGetModulesData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -9078,6 +9352,7 @@ export const zAdminControllerGetOrdersData = z.object({
     promo: z.string(),
     sponsor: z.string(),
     courier: z.string(),
+    gift: z.string(),
     sortBy: z.string(),
     sortDir: z.string(),
     format: z.string(),

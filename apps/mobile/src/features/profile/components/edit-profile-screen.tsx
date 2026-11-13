@@ -26,6 +26,15 @@ import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
+/** E.164, as the API checks it: « + », the country code, then the number. */
+const E164_PATTERN = /^\+[1-9]\d{6,14}$/
+const PHONE_FORMAT_MESSAGE = 'Saisissez le numéro au format international : + suivi de l\u2019indicatif du pays et du numéro, sans espaces.'
+
+/** Drops the spaces, dots and dashes typed between digit groups. */
+function normalizePhone(value: string): string {
+  return value.trim().replace(/[\s.-]/g, '')
+}
+
 interface EditProfileScreenProps {
   onGoBack: () => void
 }
@@ -46,6 +55,11 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [phone, setPhone] = useState('')
+  const normalizedPhoneInput = normalizePhone(phone)
+  // Flagged once it cannot become valid by typing on: no « + », or long enough to judge.
+  const phoneInvalid = normalizedPhoneInput.length > 0
+    && (!normalizedPhoneInput.startsWith('+') || normalizedPhoneInput.length >= 8)
+    && !E164_PATTERN.test(normalizedPhoneInput)
   const [imageUri, setImageUri] = useState<string | null>(null)
   /** Set once a new photo has reached the storage; null means unchanged. */
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string | null>(null)
@@ -171,8 +185,14 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
       // The address is not saved here: it can reset a password, so it goes
       // through a code sent to it. See `handleEmailChange` below.
       const body: Record<string, string> = { name: name.trim() }
-      if (phone.trim())
-        body.phone = phone.trim()
+      const normalizedPhone = normalizePhone(phone)
+      if (normalizedPhone) {
+        if (!E164_PATTERN.test(normalizedPhone)) {
+          setError(PHONE_FORMAT_MESSAGE)
+          return
+        }
+        body.phone = normalizedPhone
+      }
 
       if (uploadedImageUrl) {
         body.image = uploadedImageUrl
@@ -185,7 +205,10 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}))
-        setError(data.message ?? 'Erreur lors de la sauvegarde')
+        // A refused number comes back as a validation error on `phone`.
+        const phoneRefused = data.code === 'PHONE_NOT_SUPPORTED'
+          || (Array.isArray(data.aggregateErrors) && data.aggregateErrors.some((entry: { path?: unknown }) => String(entry.path ?? '').includes('phone')))
+        setError(phoneRefused ? `Ce numéro n'a pas été accepté. ${PHONE_FORMAT_MESSAGE}` : data.message ?? 'Erreur lors de la sauvegarde')
         return
       }
 
@@ -359,14 +382,18 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
             <PhoneIcon size={20} color={iconColor} strokeWidth={1.8} />
             <TextInput
               style={[styles.input, { color: semantic.textPrimary, fontFamily: fonts.sans }]}
-              placeholder="+229 XX XX XX XX XX"
+              placeholder="+33 6 12 34 56 78"
               placeholderTextColor={placeholderColor}
               value={phone}
               onChangeText={setPhone}
               keyboardType="phone-pad"
               autoComplete="tel"
+              accessibilityLabel="Téléphone"
             />
           </View>
+          <Text style={[styles.phoneHint, { color: phoneInvalid ? colors.coral[600] : semantic.textTertiary }]}>
+            {phoneInvalid ? PHONE_FORMAT_MESSAGE : 'Au format international, avec l\u2019indicatif du pays (+229, +33, +1…).'}
+          </Text>
         </View>
 
         {/* Save button */}
@@ -523,6 +550,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing[5],
   },
   errorText: { ...typography.bodyS, color: colors.coral[600] },
+  phoneHint: { ...typography.caption, marginTop: spacing[1] },
 
   form: { gap: spacing[2] },
   label: { ...typography.caption, marginTop: spacing[3], marginBottom: spacing[1] },

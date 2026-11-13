@@ -23,6 +23,11 @@ import {
 import { computeCourierFee, orderPickups } from '../../common/delivery-fee'
 import { computeWindowDispatchAt } from '../../common/delivery-window'
 import { User, UserRole } from '../auth/auth.entity'
+import { GiftFailureService } from '../gift/gift-failure.service'
+import { GiftNotifierService } from '../gift/gift-notifier.service'
+import { GIFT_PROOF_FAR_METRES, giftBadRequest } from '../gift/gift-texts'
+import { isLinkedRecipient } from '../gift/recipient-link'
+import { Media, MediaContext } from '../media/media.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, OrderStatus, PaymentMethod } from '../orders/entities/order.entity'
@@ -48,6 +53,8 @@ const DELIVERY_POPULATE = [
   'order.supplier',
   // The shop owner's phone: the courier calls when the parcel is late or missing.
   'order.supplier.user',
+  // A cart sent to a relative: the courier calls and hands over to them.
+  'order.checkout',
   'order.items',
   'order.items.product',
   'order.items.variant',
@@ -80,7 +87,83 @@ export class DeliveriesService {
     private readonly walletService: WalletService,
     private readonly platformSettings: PlatformSettingsService,
     private readonly deliveryPricing: DeliveryPricingService,
+    @Inject(forwardRef(() => GiftNotifierService))
+    private readonly giftNotifier: GiftNotifierService,
+    @Inject(forwardRef(() => GiftFailureService))
+    private readonly giftFailure: GiftFailureService,
   ) {}
+
+  // ===== Delivery to a relative =====
+
+  /** The checkout behind an order when the cart goes to a relative, or null. */
+  private async giftCheckoutOf(order: Order): Promise<Checkout | null> {
+    return order.checkout ? this.giftCheckoutById(order.checkout.id) : null
+  }
+
+  private async giftCheckoutById(checkoutId: string): Promise<Checkout | null> {
+    const checkout = await this.em.findOne(Checkout, { id: checkoutId })
+    return checkout?.recipientPhone ? checkout : null
+  }
+
+  /**
+   * The photo goes to a payer abroad as proof: it must be one this courier
+   * took for a hand-over, not any media id they could lay hands on.
+   */
+  private async assertProofMedia(mediaId: string, userId: string): Promise<void> {
+    const media = await this.em.findOne(Media, { id: mediaId })
+    if (!media || media.context !== MediaContext.DELIVERY_PROOF || media.uploadedBy?.id !== userId) {
+      throw giftBadRequest('INVALID_PROOF_MEDIA', 'Photo de remise introuvable : reprenez la photo et réessayez.')
+    }
+  }
+
+  /** Metres from the proof position to the drop-off point, or null without one. */
+  private async proofDistance(order: Order, latitude: number, longitude: number): Promise<number | null> {
+    if (order.deliveryLatitude == null || order.deliveryLongitude == null) {
+      return null
+    }
+    const rows = await this.em.getConnection().execute(
+      `SELECT ST_Distance(
+         ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography,
+         ST_SetSRID(ST_MakePoint(?, ?), 4326)::geography
+       ) AS metres`,
+      [longitude, latitude, order.deliveryLongitude, order.deliveryLatitude],
+    ) as Array<{ metres: number | string }>
+    return rows[0] ? Math.round(Number(rows[0].metres)) : null
+  }
+
+  /**
+   * The code-and-photo proof, checked and measured. The code is checked by
+   * the caller, against the delivery's or the run's own.
+   */
+  private async giftProofFields(
+    data: Extract<CompleteDelivery, { proofType: 'CODE_AND_PHOTO' }>,
+    userId: string,
+    order: Order,
+    fallbackTakenAt: Date,
+  ): Promise<Pick<Delivery, 'proofMediaId' | 'proofLatitude' | 'proofLongitude' | 'proofTakenAt' | 'proofDistanceM' | 'proofFar'>> {
+    await this.assertProofMedia(data.mediaId, userId)
+    const distance = await this.proofDistance(order, data.latitude, data.longitude)
+    const takenAt = data.occurredAt ? new Date(data.occurredAt) : fallbackTakenAt
+    return {
+      proofMediaId: data.mediaId,
+      proofLatitude: data.latitude,
+      proofLongitude: data.longitude,
+      // Never in the future: a phone clock ahead must not date the proof after the event.
+      proofTakenAt: takenAt.getTime() > Date.now() ? new Date() : takenAt,
+      proofDistanceM: distance,
+      proofFar: distance !== null && distance > GIFT_PROOF_FAR_METRES,
+    }
+  }
+
+  /** A gift hand-over takes the code and the photo together, nothing less. */
+  private assertGiftProof(data: CompleteDelivery): asserts data is Extract<CompleteDelivery, { proofType: 'CODE_AND_PHOTO' }> {
+    if (data.proofType !== 'CODE_AND_PHOTO') {
+      throw giftBadRequest(
+        'GIFT_PROOF_REQUIRED',
+        'Livraison pour un proche : saisissez le code et prenez la photo de la remise.',
+      )
+    }
+  }
 
   // ===== Courier profile =====
 
@@ -868,6 +951,13 @@ export class DeliveriesService {
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })
 
+    // The relative is the one at the door: they get the code too. The payer
+    // keeps their push — their fallback if the text never arrives.
+    const gift = await this.giftCheckoutOf(delivery.order)
+    if (gift) {
+      await this.giftNotifier.sendCodeToRecipient(gift.id, delivery.confirmationCode)
+    }
+
     return delivery
   }
 
@@ -1192,6 +1282,12 @@ export class DeliveriesService {
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })
 
+    // Once for the whole run, like the payer's push.
+    const gift = await this.giftCheckoutById(run.checkout.id)
+    if (gift) {
+      await this.giftNotifier.sendCodeToRecipient(gift.id, run.confirmationCode)
+    }
+
     return delivery
   }
 
@@ -1215,7 +1311,7 @@ export class DeliveriesService {
     if (run.status === DeliveryRunStatus.DELIVERED) {
       // Run already handed over: confirm it, code checked, rather than let
       // the courier believe shops are still waiting to be collected.
-      if (data.proofType === 'CODE' && (!run.confirmationCode || run.confirmationCode !== data.code)) {
+      if (data.proofType !== 'PHOTO' && (!run.confirmationCode || run.confirmationCode !== data.code)) {
         throw new UnprocessableEntityException('Code de confirmation invalide')
       }
       return run
@@ -1225,7 +1321,11 @@ export class DeliveriesService {
     }
 
     const cash = await this.isRunCash(run)
-    if (data.proofType === 'CODE') {
+    const gift = await this.giftCheckoutById(run.checkout.id)
+    if (gift) {
+      this.assertGiftProof(data)
+    }
+    if (data.proofType === 'CODE' || data.proofType === 'CODE_AND_PHOTO') {
       if (!run.confirmationCode || run.confirmationCode !== data.code) {
         throw new UnprocessableEntityException('Code de confirmation invalide')
       }
@@ -1236,9 +1336,17 @@ export class DeliveriesService {
     }
 
     const when = new Date()
+    // Measured once, against the run's drop-off: every order of a run goes
+    // to the same door.
+    const firstOrder = run.deliveries.getItems()[0]?.order
+    const giftProof = data.proofType === 'CODE_AND_PHOTO' && firstOrder
+      ? await this.giftProofFields(data, userId, await this.em.findOneOrFail(Order, { id: firstOrder.id }), when)
+      : null
     // The proof covers the whole run: one handover, one proof. Each delivery
     // still carries it, because the per-order screens read it.
-    const proofType = data.proofType === 'CODE' ? DeliveryProofType.CODE : DeliveryProofType.PHOTO
+    const proofType = data.proofType === 'CODE'
+      ? DeliveryProofType.CODE
+      : data.proofType === 'CODE_AND_PHOTO' ? DeliveryProofType.CODE_AND_PHOTO : DeliveryProofType.PHOTO
     const proofMediaId = data.proofType === 'PHOTO' ? data.mediaId : null
     for (const delivery of run.deliveries.getItems()) {
       if (delivery.status === DeliveryStatus.DELIVERED) {
@@ -1249,6 +1357,9 @@ export class DeliveriesService {
       delivery.proofType = proofType
       if (proofMediaId) {
         delivery.proofMediaId = proofMediaId
+      }
+      if (giftProof) {
+        Object.assign(delivery, giftProof)
       }
       this.em.create(DeliveryEvent, {
         delivery,
@@ -1268,6 +1379,16 @@ export class DeliveriesService {
 
     for (const delivery of run.deliveries.getItems()) {
       await this.ordersService.applyStatusFromDelivery(delivery.order.id, OrderStatus.DELIVERED)
+    }
+
+    // The payer hears it once for the run, with the photo.
+    if (gift && firstOrder) {
+      await this.giftNotifier.notifyDelivered({
+        checkoutId: gift.id,
+        orderId: firstOrder.id,
+        mediaId: giftProof?.proofMediaId ?? null,
+        deliveredAt: when,
+      })
     }
 
     return run
@@ -1398,14 +1519,32 @@ export class DeliveriesService {
     // request. Confirming beats worrying someone who did their job. The code
     // is still checked: a completed handover does not excuse a wrong one.
     if (delivery.status === DeliveryStatus.DELIVERED) {
-      if (data.proofType === 'CODE' && delivery.confirmationCode !== data.code) {
+      if (data.proofType !== 'PHOTO' && delivery.confirmationCode !== data.code) {
         throw new UnprocessableEntityException('Code de confirmation invalide')
       }
       return delivery
     }
     this.assertStatus(delivery, DeliveryStatus.IN_TRANSIT)
 
-    if (data.proofType === 'CODE') {
+    const gift = await this.giftCheckoutOf(delivery.order)
+    if (gift) {
+      this.assertGiftProof(data)
+    }
+
+    if (data.proofType === 'CODE_AND_PHOTO') {
+      if (delivery.confirmationCode !== data.code) {
+        throw new UnprocessableEntityException('Code de confirmation invalide')
+      }
+      const proof = await this.giftProofFields(
+        data,
+        userId,
+        delivery.order,
+        await this.clampOccurredAt(delivery, data.occurredAt),
+      )
+      delivery.proofType = DeliveryProofType.CODE_AND_PHOTO
+      Object.assign(delivery, proof)
+    }
+    else if (data.proofType === 'CODE') {
       if (delivery.confirmationCode !== data.code) {
         throw new UnprocessableEntityException('Code de confirmation invalide')
       }
@@ -1440,6 +1579,15 @@ export class DeliveriesService {
     // ORDER_DELIVERED notification, cash commission and deliveredAt all come
     // from the existing order machinery.
     await this.ordersService.applyStatusFromDelivery(delivery.order.id, OrderStatus.DELIVERED)
+
+    if (gift) {
+      await this.giftNotifier.notifyDelivered({
+        checkoutId: gift.id,
+        orderId: delivery.order.id,
+        mediaId: delivery.proofMediaId ?? null,
+        deliveredAt: when,
+      })
+    }
 
     return delivery
   }
@@ -1585,7 +1733,27 @@ export class DeliveriesService {
       })
     }
 
+    // A cart for a relative cannot wait for the payer to sort things out from
+    // abroad: the courier is paid for the trip, the order cancelled and the
+    // rest refunded to the wallet (research §5). Ordinary orders move no money.
+    if (await this.giftCheckoutOf(delivery.order)) {
+      await this.settleFailedGiftCourier(delivery)
+      await this.giftFailure.onGiftDeliveryFailed(delivery)
+    }
+
     return delivery
+  }
+
+  /** The courier made the trip: settled as for a delivered run (never cash for a gift). */
+  private async settleFailedGiftCourier(delivery: Delivery): Promise<void> {
+    if (!delivery.deliveryRun) {
+      await this.settleCourierWallet(delivery)
+      return
+    }
+    const run = await this.em.findOne(DeliveryRun, { id: delivery.deliveryRun.id }, { populate: ['courier'] })
+    if (run) {
+      await this.settleRunWallet(run, false)
+    }
   }
 
   /** A courier's deliveries, newest first; a window pages the history. */
@@ -1721,7 +1889,9 @@ export class DeliveriesService {
     const delivery = await this.em.findOne(Delivery, { order: { id: order.id } }, {
       populate: ['courier', 'courier.user'],
     })
-    if (!delivery || delivery.status === DeliveryStatus.CANCELLED || delivery.status === DeliveryStatus.DELIVERED) {
+    // A failed hand-over stays failed: the order is cancelled after it (a
+    // gift refunded), and the courier already knows — they declared it.
+    if (!delivery || delivery.status === DeliveryStatus.CANCELLED || delivery.status === DeliveryStatus.DELIVERED || delivery.status === DeliveryStatus.FAILED) {
       return
     }
 
@@ -1829,6 +1999,11 @@ export class DeliveriesService {
     const supplierUser = await this.resolveSupplierUser(delivery.order)
     if (supplierUser?.id === userId) {
       return 'supplier'
+    }
+    // The relative a cart was sent to, by their verified number (009): they
+    // follow the courier and rate them, without the amounts.
+    if (await isLinkedRecipient(this.em, delivery.order.id, userId)) {
+      return 'recipient'
     }
     if (delivery.courier) {
       const profile = await this.em.findOne(CourierProfile, { user: { id: userId } })

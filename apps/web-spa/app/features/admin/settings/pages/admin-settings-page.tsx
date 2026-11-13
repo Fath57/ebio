@@ -4,6 +4,7 @@ import type { EscrowReleaseFormData } from '../forms/escrow-release-form'
 import type { NewProductSettings } from '../forms/new-product-settings-form'
 import type { PickupPolicyFormData } from '../forms/pickup-policy-form'
 import type { ReferralRewardsFormData } from '../forms/referral-rewards-form'
+import type { ExchangeRatesUpdate } from '../utils/exchange-rates-queries'
 import { client } from '@boilerstone/openapi-generator'
 import {
   adminAssistantControllerGet,
@@ -47,11 +48,18 @@ import { CommissionForm } from '../forms/commission-form'
 import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
 import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
 import { EscrowReleaseForm } from '../forms/escrow-release-form'
+import { ExchangeRatesForm } from '../forms/exchange-rates-form'
 import { NewProductSettingsForm } from '../forms/new-product-settings-form'
 import { OfferTimeoutForm } from '../forms/offer-timeout-form'
 import { PickupPolicyForm } from '../forms/pickup-policy-form'
 import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
 import { ReferralRewardsForm } from '../forms/referral-rewards-form'
+import {
+  EXCHANGE_RATES_QUERY_KEY,
+  fetchExchangeRatesQueryOptions,
+  refreshExchangeRates,
+  updateExchangeRates,
+} from '../utils/exchange-rates-queries'
 
 interface AdminSettingsData {
   commissions: CommissionCategoryRate[]
@@ -202,6 +210,7 @@ export default function AdminSettingsPage() {
   const [reviewFeedback, setReviewFeedback] = useState<'saved' | 'error' | null>(null)
   const [escrowFeedback, setEscrowFeedback] = useState<'saved' | 'error' | null>(null)
   const [newProductFeedback, setNewProductFeedback] = useState<'saved' | 'error' | null>(null)
+  const [fxFeedback, setFxFeedback] = useState<'saved' | 'error' | 'refreshed' | 'notRefreshed' | 'refreshError' | null>(null)
 
   const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
   const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
@@ -211,6 +220,7 @@ export default function AdminSettingsPage() {
   const { data: reviewTiming, isLoading: isReviewLoading } = useQuery(fetchProductReviewTimingQueryOptions())
   const { data: escrowRelease, isLoading: isEscrowLoading } = useQuery(fetchEscrowReleaseQueryOptions())
   const { data: newProducts, isLoading: isNewProductsLoading } = useQuery(fetchNewProductSettingsQueryOptions())
+  const { data: exchangeRates, isLoading: isFxLoading } = useQuery(fetchExchangeRatesQueryOptions())
 
   const { mutate: updateCommissions, isPending } = useMutation({
     mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
@@ -421,6 +431,35 @@ export default function AdminSettingsPage() {
     },
     onError: () => {
       setAssistantFeedback('error')
+    },
+  })
+
+  const { mutate: saveExchangeRates, isPending: isFxPending } = useMutation({
+    mutationFn: (update: ExchangeRatesUpdate) => updateExchangeRates(update),
+    onMutate: () => {
+      setFxFeedback(null)
+    },
+    onSuccess: () => {
+      setFxFeedback('saved')
+      queryClient.invalidateQueries({ queryKey: EXCHANGE_RATES_QUERY_KEY })
+    },
+    onError: () => {
+      setFxFeedback('error')
+      queryClient.invalidateQueries({ queryKey: EXCHANGE_RATES_QUERY_KEY })
+    },
+  })
+
+  const { mutate: refreshRates, isPending: isFxRefreshing } = useMutation({
+    mutationFn: refreshExchangeRates,
+    onMutate: () => {
+      setFxFeedback(null)
+    },
+    onSuccess: (result) => {
+      setFxFeedback(result.refreshed ? 'refreshed' : 'notRefreshed')
+      queryClient.setQueryData(EXCHANGE_RATES_QUERY_KEY, { marginBps: result.marginBps, rates: result.rates })
+    },
+    onError: () => {
+      setFxFeedback('refreshError')
     },
   })
 
@@ -714,6 +753,39 @@ export default function AdminSettingsPage() {
                 {escrowFeedback === 'error' && (
                   <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                     {t('admin.settings.escrowRelease.error')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('admin.settings.exchangeRates.title')}</CardTitle>
+                <p className="text-muted-foreground text-sm">{t('admin.settings.exchangeRates.description')}</p>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {isFxLoading || !exchangeRates
+                  ? <Skeleton className="h-40 w-full" />
+                  : (
+                      <ExchangeRatesForm
+                        data={exchangeRates}
+                        onSubmit={update => saveExchangeRates(update)}
+                        isPending={isFxPending}
+                        onRefresh={() => refreshRates()}
+                        isRefreshing={isFxRefreshing}
+                      />
+                    )}
+                {(fxFeedback === 'saved' || fxFeedback === 'refreshed') && (
+                  <p className="text-sm text-green-600">{t(`admin.settings.exchangeRates.${fxFeedback}`)}</p>
+                )}
+                {fxFeedback === 'notRefreshed' && (
+                  <p role="status" className="rounded-md border border-ebio-earth-200 bg-ebio-earth-50 p-3 text-sm text-ebio-earth-800 dark:border-ebio-earth-800 dark:bg-ebio-earth-900 dark:text-ebio-earth-100">
+                    {t('admin.settings.exchangeRates.notRefreshed')}
+                  </p>
+                )}
+                {(fxFeedback === 'error' || fxFeedback === 'refreshError') && (
+                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                    {t(`admin.settings.exchangeRates.${fxFeedback}`)}
                   </p>
                 )}
               </CardContent>

@@ -83,8 +83,16 @@ function pluralUnits(count: number, singular: string, plural: string): string {
   return `${count} ${count > 1 ? plural : singular}`
 }
 
-/** One promotion in plain French, e.g. "2 achetés, 1 offert · jusqu'au 12 mars". */
-export function describePromotion(promotion: ProductPromotion, formatPrice: (value: number) => string): string {
+/**
+ * One promotion in plain French, e.g. "2 achetés, 1 offert · jusqu'au 12 mars".
+ * `formatPrice` gives the bare FCFA number, unless `withCurrency` says it
+ * already returns the whole amount in the buyer's currency (`useMoney`).
+ */
+export function describePromotion(
+  promotion: ProductPromotion,
+  formatPrice: (value: number) => string,
+  withCurrency = false,
+): string {
   let text: string
   if (promotion.type === 'BOGO') {
     const buy = promotion.buyQty ?? 1
@@ -98,7 +106,7 @@ export function describePromotion(promotion: ProductPromotion, formatPrice: (val
   }
   else {
     text = promotion.promoPrice !== null
-      ? `Prix promotionnel : ${formatPrice(promotion.promoPrice)} FCFA`
+      ? `Prix promotionnel : ${formatPrice(promotion.promoPrice)}${withCurrency ? '' : ' FCFA'}`
       : 'Prix promotionnel'
   }
   const until = promotion.endsAt ? formatEndDate(promotion.endsAt) : null

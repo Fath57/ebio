@@ -1,6 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { colors, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
+import { useMoney } from '../../common/hooks/use-money'
 
 /** A way to buy the product: the plain unit, a pack, a size. */
 export interface ProductFormat {
@@ -22,16 +23,13 @@ interface FormatPickerProps {
   unitLabel: string
 }
 
-function formatPrice(value: number): string {
-  return Math.round(value).toLocaleString('fr-FR').replace(/\u202F/g, '\u00A0')
-}
-
 /**
  * The formats of a product side by side, each with its price — and, for a
  * pack, what one unit comes to, since that is what the buyer compares.
  */
 export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: FormatPickerProps) {
   const { semantic } = useTheme()
+  const { formatMoney } = useMoney()
   const unitPrice = formats.find(format => format.id === null)?.price ?? null
 
   return (
@@ -42,6 +40,7 @@ export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: Forma
           const selected = format.id === selectedId
           const soldOut = format.stock <= 0
           const perUnit = format.packSize ? format.price / format.packSize : null
+          const money = formatMoney(format.price)
           // The saving only says something when the pack beats the unit.
           const saving = perUnit !== null && unitPrice ? Math.round((1 - perUnit / unitPrice) * 100) : 0
           return (
@@ -62,7 +61,7 @@ export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: Forma
                 {perUnit !== null
                   ? (
                       <Text style={[styles.meta, { color: semantic.textSecondary }]}>
-                        {`soit ${formatPrice(perUnit)} FCFA / ${unitLabel}`}
+                        {`soit ${formatMoney(perUnit).primary} / ${unitLabel}`}
                       </Text>
                     )
                   : null}
@@ -71,7 +70,10 @@ export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: Forma
                   : null}
               </View>
               <View style={styles.priceColumn}>
-                <Text style={[styles.price, { color: semantic.textPrimary }]}>{`${formatPrice(format.price)} FCFA`}</Text>
+                <Text style={[styles.price, { color: semantic.textPrimary }]}>{money.primary}</Text>
+                {money.secondary
+                  ? <Text style={[styles.meta, { color: semantic.textSecondary }]}>{money.secondary}</Text>
+                  : null}
                 {saving >= 1
                   ? (
                       <View style={[styles.saving, { backgroundColor: colors.earth[50] }]}>

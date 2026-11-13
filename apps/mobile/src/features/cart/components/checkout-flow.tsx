@@ -1,11 +1,14 @@
 import type { SettlementStatus } from '../../payments/utils/await-settlement'
+import type { Relative } from '../../relatives/relatives-api'
 import type { OrderPreview, OrderPreviewLine, PreviewDeliveryReason } from '../hooks/use-order-preview'
 import type { SlotChoice } from '../utils/delivery-slot'
+import type { DeliveryTarget, RecipientDraft } from './recipient-step'
 import * as Haptics from 'expo-haptics'
 import ArrowRight from 'lucide-react-native/dist/esm/icons/arrow-right'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import Clock from 'lucide-react-native/dist/esm/icons/clock'
+import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import MapPinCheck from 'lucide-react-native/dist/esm/icons/map-pin-check'
 import Store from 'lucide-react-native/dist/esm/icons/store'
@@ -26,6 +29,7 @@ import {
 } from 'react-native'
 import Animated, { LinearTransition } from 'react-native-reanimated'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { sendVerificationEmail } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
 import { track } from '../../../utils/analytics'
@@ -34,12 +38,16 @@ import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useCurrency } from '../../common/currency-context'
+import { formatCurrencyAmount, formatXof, useMoney } from '../../common/hooks/use-money'
 import { useLocation } from '../../common/location-context'
+import { deviceTimeZone } from '../../common/utils/is-abroad'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
 import { awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-settlement'
 import { buildCheckoutHtml, paymentPublicKey } from '../../payments/utils/checkout-widget'
+import { SavedRelativesPicker } from '../../relatives/components/saved-relatives-picker'
 import { useCart } from '../cart-context'
 import { useOrderPreview } from '../hooks/use-order-preview'
 import { useRecommendations } from '../hooks/use-recommendations'
@@ -47,6 +55,7 @@ import { loadCheckoutDraft, saveCheckoutDraft } from '../utils/checkout-draft'
 import { ASAP_CHOICE, availableStartHours, decodeSlotChoice, encodeSlotChoice, toSlotWindow } from '../utils/delivery-slot'
 import { BasketSuggestions } from './basket-suggestions'
 import { DeliverySlotPicker } from './delivery-slot-picker'
+import { EMPTY_RECIPIENT, normalizeRecipientPhone, recipientProblem, RecipientStep } from './recipient-step'
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
@@ -96,8 +105,13 @@ export interface CheckoutFlowProps {
   onCancel: () => void
 }
 
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
+/**
+ * A preview amount for the recap: the server's frozen conversion when the
+ * payer shows a foreign currency, FCFA otherwise. Never converted here.
+ */
+function previewAmount(preview: OrderPreview | null, field: 'deliveryFee' | 'discount' | 'total', xof: number): string {
+  const display = preview?.display
+  return display ? formatCurrencyAmount(display[field], display.currency) : formatXof(xof)
 }
 
 function formatKm(value: number): string {
@@ -115,6 +129,50 @@ function formatKm(value: number): string {
  * position on the map while the message never changed.
  */
 const BLOCKING_DELIVERY_REASONS: PreviewDeliveryReason[] = ['NO_POSITION', 'OUT_OF_RANGE']
+
+/**
+ * French messages for the refusals the API names by `code` (contracts/diaspora.md §2).
+ * The server's own message stays the fallback for every other code.
+ */
+const CHECKOUT_ERROR_MESSAGES: Record<string, { title: string, message: string }> = {
+  GIFT_CASH_NOT_ALLOWED: {
+    title: 'Paiement en espèces indisponible',
+    message: 'Une commande pour un proche se paie en ligne, par carte bancaire ou Mobile Money.',
+  },
+  GIFT_REQUIRES_DELIVERY: {
+    title: 'Livraison requise',
+    message: 'Une commande pour un proche est forcément livrée : le retrait sur place n\'est pas possible.',
+  },
+  GIFT_AMOUNT_TOO_LOW: {
+    title: 'Montant trop faible',
+    message: 'Une commande pour un proche doit atteindre au moins 1 000 FCFA. Ajoutez un article pour continuer.',
+  },
+}
+
+/** Asks for the e-mail confirmation, with a button that sends the link again. */
+function alertAccountNotVerified(email: string | null): void {
+  const message = email
+    ? `Un lien de confirmation a été envoyé à ${email}. Ouvrez-le, puis revenez commander.`
+    : 'Ajoutez et confirmez votre adresse e-mail depuis votre profil, puis revenez commander.'
+  if (!email) {
+    appAlert('Confirmez votre adresse e-mail pour commander', message)
+    return
+  }
+  appAlert('Confirmez votre adresse e-mail pour commander', message, [
+    { text: 'Plus tard', style: 'cancel' },
+    {
+      text: 'Renvoyer l\u2019e-mail',
+      onPress: () => {
+        sendVerificationEmail(email).then(({ error }) => {
+          appAlert(
+            error ? 'Envoi impossible' : 'E-mail envoyé',
+            error ?? `Un nouveau lien de confirmation vient d\u2019être envoyé à ${email}.`,
+          )
+        })
+      },
+    },
+  ])
+}
 
 /** Label of the confirm button; a blocking delivery reason replaces the payment verb. */
 function confirmLabel(choice: PaymentChoice, blockedReason: PreviewDeliveryReason | null): string {
@@ -154,7 +212,7 @@ function DeliveryFeeValue({ preview, loading, textColor, mutedColor }: DeliveryF
   if (deliveryReason === 'NO_SHOP_POSITION') {
     return (
       <Text style={[styles.feeValue, { color: textColor }]}>
-        {`${formatPrice(deliveryFee ?? 0)} FCFA`}
+        {previewAmount(preview, 'deliveryFee', deliveryFee ?? 0)}
         <Text style={[styles.feeDistance, { color: mutedColor }]}> · forfait</Text>
       </Text>
     )
@@ -181,7 +239,7 @@ function DeliveryFeeValue({ preview, loading, textColor, mutedColor }: DeliveryF
     && deliveryDistanceKm !== null
   return (
     <Text style={[styles.feeValue, { color: textColor }]}>
-      {`${formatPrice(deliveryFee)} FCFA`}
+      {previewAmount(preview, 'deliveryFee', deliveryFee)}
       {showDistance && (
         <Text style={[styles.feeDistance, { color: mutedColor }]}>{` · ${formatKm(deliveryDistanceKm ?? 0)}`}</Text>
       )}
@@ -201,6 +259,7 @@ interface SummaryLineProps {
 /** One basket line: a gift is free, a price promotion shows the regular price struck through. */
 function SummaryLine({ line, unit, isLast }: SummaryLineProps) {
   const { semantic } = useTheme()
+  const { formatMoney } = useMoney()
   const hasPricePromo = !line.isGift && line.unitPrice < line.regularPrice
   return (
     <View style={[styles.itemRow, !isLast && [styles.itemRowBorder, { borderBottomColor: semantic.borderLight }]]}>
@@ -218,20 +277,20 @@ function SummaryLine({ line, unit, isLast }: SummaryLineProps) {
         <Text style={[styles.itemUnit, { color: semantic.textTertiary }]}>
           {line.isGift
             ? (
-                <Text style={styles.itemRegularPrice}>{`${formatPrice(line.regularPrice)} FCFA / ${unitShortLabel(unit)}`}</Text>
+                <Text style={styles.itemRegularPrice}>{`${formatMoney(line.regularPrice).primary} / ${unitShortLabel(unit)}`}</Text>
               )
             : (
                 <>
-                  {`${formatPrice(line.unitPrice)} FCFA / ${unitShortLabel(unit)}`}
+                  {`${formatMoney(line.unitPrice).primary} / ${unitShortLabel(unit)}`}
                   {hasPricePromo && (
-                    <Text style={styles.itemRegularPrice}>{`  ${formatPrice(line.regularPrice)} FCFA`}</Text>
+                    <Text style={styles.itemRegularPrice}>{`  ${formatMoney(line.regularPrice).primary}`}</Text>
                   )}
                 </>
               )}
         </Text>
       </View>
       <Text style={[styles.itemTotal, { color: line.isGift ? colors.green[600] : semantic.textPrimary }]}>
-        {line.isGift ? 'Offert' : `${formatPrice(line.totalPrice)} FCFA`}
+        {line.isGift ? 'Offert' : formatMoney(line.totalPrice).primary}
       </Text>
     </View>
   )
@@ -295,6 +354,26 @@ export function CheckoutFlow({
   // would otherwise be priced from where they stand).
   const [pickerStart, setPickerStart] = useState<{ latitude: number, longitude: number } | null>(null)
   const [locatingAddress, setLocatingAddress] = useState(false)
+  // « Me livrer » or « Livrer à un proche ». The recipient lives in this
+  // screen's state only: the checkout draft keeps the payer's own address.
+  const [deliveryTarget, setDeliveryTarget] = useState<DeliveryTarget>('SELF')
+  const [recipient, setRecipient] = useState<RecipientDraft>(EMPTY_RECIPIENT)
+  const { currency: displayCurrency } = useCurrency()
+
+  // A saved relative fills the form; any field can still be changed for
+  // this order without touching the address book.
+  const handlePickRelative = useCallback((relative: Relative) => {
+    setRecipient({
+      name: relative.name,
+      phone: relative.phone,
+      address: relative.address,
+      position: Number.isFinite(relative.latitude) && Number.isFinite(relative.longitude)
+        ? { latitude: relative.latitude, longitude: relative.longitude }
+        : null,
+      placeLabel: null,
+      savedRelativeId: relative.id,
+    })
+  }, [])
 
   const openPicker = useCallback(async () => {
     if (!deliveryPosition && deliveryAddress.trim().length >= 3) {
@@ -398,6 +477,17 @@ export function CheckoutFlow({
   }, [deliveryAddress, deliveryPosition, deliveryPlaceLabel, slotChoice, paymentChoice, promoInput])
 
   const isPickup = orderSummary.deliveryMode === 'PICKUP'
+  // A gift is always delivered (GIFT_REQUIRES_DELIVERY): pickup never offers it.
+  const isGift = !isPickup && deliveryTarget === 'RELATIVE'
+  // Where the courier goes: the recipient's door for a gift, the payer's otherwise.
+  const targetPosition = isGift ? recipient.position : deliveryPosition
+  const recipientPayload = useMemo(() => isGift
+    ? {
+        name: recipient.name.trim(),
+        phone: normalizeRecipientPhone(recipient.phone),
+        ...(recipient.savedRelativeId ? { savedRelativeId: recipient.savedRelativeId } : {}),
+      }
+    : null, [isGift, recipient.name, recipient.phone, recipient.savedRelativeId])
   // `orderSummary` is a snapshot taken when leaving the cart; the basket keeps
   // living in the cart context (suggestions add to it from this very screen).
   //
@@ -456,14 +546,19 @@ export function CheckoutFlow({
   // delivery fee are all priced by the API.
   const previewInput = useMemo(() => ({
     pickupMode: isPickup ? 'ON_SITE' as const : 'DELIVERY' as const,
-    position: isPickup ? null : deliveryPosition,
+    position: isPickup ? null : targetPosition,
     promoCode: appliedPromo?.code ?? null,
     items: basketItems.map(item => ({
       productId: item.productId,
       ...(item.variantId ? { variantId: item.variantId } : {}),
       quantity: item.quantity,
     })),
-  }), [basketItems, isPickup, deliveryPosition, appliedPromo?.code])
+    // Only a complete recipient is sent: a half-typed phone would turn
+    // every keystroke into a refused preview.
+    recipient: recipientPayload && !recipientProblem(recipient) ? recipientPayload : null,
+    displayCurrency,
+    payerTimeZone: deviceTimeZone(),
+  }), [basketItems, isPickup, targetPosition, appliedPromo?.code, recipientPayload, recipient, displayCurrency])
   const { preview, loading: previewLoading, error: previewError } = useOrderPreview(previewInput)
 
   useEffect(() => {
@@ -504,7 +599,9 @@ export function CheckoutFlow({
   const blockedReason: PreviewDeliveryReason | null = preview && BLOCKING_DELIVERY_REASONS.includes(preview.deliveryReason)
     ? preview.deliveryReason
     : null
-  const quoteBlocked = !isPickup && (previewLoading || preview === null || blockedReason !== null)
+  // Gift under the card minimum: the server would refuse it (GIFT_AMOUNT_TOO_LOW).
+  const giftTooLow = isGift && Boolean(preview?.cardMinimumNotMet)
+  const quoteBlocked = (!isPickup && (previewLoading || preview === null || blockedReason !== null)) || giftTooLow
   // Pickup never waits on the server: the typed basket stands in until the preview lands.
   const localTotal = useMemo(
     () => basketItems.reduce((sum, item) => sum + item.pricePerUnit * item.quantity, 0),
@@ -518,7 +615,8 @@ export function CheckoutFlow({
   )
   // The shop's eBio debt is past the platform limit: it is paid online only.
   const cashBlocked = Boolean(preview?.cashBlockedShop)
-  const cashAvailable = cashMaxAmount > 0 && orderTotal <= cashMaxAmount && !cashBlocked
+  // A gift is never paid in cash: the payer is not there to hand it over.
+  const cashAvailable = !isGift && cashMaxAmount > 0 && orderTotal <= cashMaxAmount && !cashBlocked
   const walletAvailable = walletBalance !== null && walletBalance >= orderTotal
   // A choice that stops being affordable (promo removed, fee changed) falls back to online payment.
   const effectiveChoice: PaymentChoice = (paymentChoice === 'CASH' && !cashAvailable) || (paymentChoice === 'WALLET' && !walletAvailable)
@@ -560,14 +658,22 @@ export function CheckoutFlow({
   // Said while typing rather than after the fact; empty is a separate case,
   // handled by the button's own guard.
   const addressTooShort = !isPickup
+    && !isGift
     && deliveryAddress.trim().length > 0
     && deliveryAddress.trim().length < MIN_ADDRESS_LENGTH
 
   const handleProceedToPayment = useCallback(async () => {
-    const trimmedAddress = deliveryAddress.trim()
+    const trimmedAddress = (isGift ? recipient.address : deliveryAddress).trim()
     // The button is disabled meanwhile; this guards the alert-driven re-entry.
     if (quoteBlocked) {
       return
+    }
+    if (isGift) {
+      const problem = recipientProblem(recipient)
+      if (problem) {
+        appAlert('Informations du proche', problem)
+        return
+      }
     }
     if (orderSummary.deliveryMode === 'DELIVERY' && !trimmedAddress) {
       appAlert('Adresse requise', 'Veuillez saisir une adresse de livraison.')
@@ -589,12 +695,17 @@ export function CheckoutFlow({
 
     // Insist on the map point without blocking: an address alone is often
     // not enough for the courier to find the door.
-    if (orderSummary.deliveryMode === 'DELIVERY' && !deliveryPosition && !skipPositionRef.current) {
+    if (orderSummary.deliveryMode === 'DELIVERY' && !targetPosition && !skipPositionRef.current) {
       appAlert(
         'Position sur la carte',
-        'Sans repère sur la carte, le livreur risque de ne pas vous trouver. Placez le repère à votre porte : cela ne prend que quelques secondes.',
+        isGift
+          ? 'Sans repère sur la carte, le livreur risque de ne pas trouver votre proche. Placez le repère à sa porte avec « Choisir sa position sur la carte ».'
+          : 'Sans repère sur la carte, le livreur risque de ne pas vous trouver. Placez le repère à votre porte : cela ne prend que quelques secondes.',
         [
-          { text: 'Choisir sur la carte', onPress: () => { void openPicker() } },
+          // The recipient's map lives in its own step: closing the dialog leads back to it.
+          isGift
+            ? { text: 'Placer le repère' }
+            : { text: 'Choisir sur la carte', onPress: () => { void openPicker() } },
           {
             text: 'Continuer sans',
             style: 'cancel',
@@ -624,9 +735,12 @@ export function CheckoutFlow({
               : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
           promoCode: appliedPromo?.code,
           deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? trimmedAddress : undefined,
-          deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.latitude : undefined,
-          deliveryLongitude: orderSummary.deliveryMode === 'DELIVERY' ? deliveryPosition?.longitude : undefined,
+          deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? targetPosition?.latitude : undefined,
+          deliveryLongitude: orderSummary.deliveryMode === 'DELIVERY' ? targetPosition?.longitude : undefined,
           ...(orderSummary.deliveryMode === 'DELIVERY' ? buildSlotPayload(slotChoice) : {}),
+          ...(recipientPayload ? { recipient: recipientPayload } : {}),
+          displayCurrency,
+          ...(deviceTimeZone() ? { payerTimeZone: deviceTimeZone() } : {}),
           items: basketItems.map(item => ({
             productId: item.productId,
             ...(item.variantId ? { variantId: item.variantId } : {}),
@@ -669,6 +783,18 @@ export function CheckoutFlow({
       }
       else {
         const error = await orderRes.json().catch(() => null)
+        // Refusals named by a code get their own wording, whatever the layer's message.
+        if (error?.code === 'ACCOUNT_NOT_VERIFIED') {
+          track('caisse_refusee', { motif: error.code, paiement: effectiveChoice })
+          alertAccountNotVerified(customer.email)
+          return
+        }
+        const known = typeof error?.code === 'string' ? CHECKOUT_ERROR_MESSAGES[error.code] : undefined
+        if (known) {
+          track('caisse_refusee', { motif: error.code, paiement: effectiveChoice })
+          appAlert(known.title, known.message)
+          return
+        }
         // A validation failure carries its reason in one of two shapes
         // depending on the layer that raised it; a generic message would
         // hide exactly what the buyer has to change.
@@ -735,7 +861,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, basketItems, deliveryAddress, deliveryPosition, slotChoice, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems])
+  }, [orderSummary, basketItems, deliveryAddress, targetPosition, slotChoice, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems, isGift, recipient, recipientPayload, displayCurrency, openPicker, customer.email])
 
   /**
    * Confirms the collection once the payment screen says it is over.
@@ -875,6 +1001,23 @@ export function CheckoutFlow({
 
             {orderSummary.deliveryMode === 'DELIVERY' && (
               <View style={styles.addressSection}>
+                <RecipientStep
+                  target={deliveryTarget}
+                  onTargetChange={setDeliveryTarget}
+                  recipient={recipient}
+                  onRecipientChange={setRecipient}
+                  savedRelativesSlot={(
+                    <SavedRelativesPicker
+                      selectedId={recipient.savedRelativeId}
+                      onPick={handlePickRelative}
+                    />
+                  )}
+                />
+              </View>
+            )}
+
+            {orderSummary.deliveryMode === 'DELIVERY' && !isGift && (
+              <View style={styles.addressSection}>
                 <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>
                   Position de livraison
                 </Text>
@@ -931,9 +1074,13 @@ export function CheckoutFlow({
                     ? 'Trop court pour guider le livreur : ajoutez le quartier et un repère, par exemple « Fidjrossè, en face de la pharmacie ».'
                     : 'Le quartier et un repère suffisent : c\'est ce que le livreur lit pour vous trouver.'}
                 </Text>
+              </View>
+            )}
 
+            {orderSummary.deliveryMode === 'DELIVERY' && (
+              <View style={styles.addressSection}>
                 <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>
-                  Quand souhaitez-vous être livré ?
+                  {isGift ? 'Quand livrer votre proche ?' : 'Quand souhaitez-vous être livré ?'}
                 </Text>
                 <DeliverySlotPicker value={slotChoice} onChange={setSlotChoice} now={slotNow} />
               </View>
@@ -1006,7 +1153,7 @@ export function CheckoutFlow({
                   {`Code ${appliedPromo.code}`}
                 </Text>
                 <Text style={[styles.feeValue, { color: preview ? colors.green[600] : semantic.textTertiary }]}>
-                  {preview ? `−${formatPrice(preview.discount)} FCFA` : '…'}
+                  {preview ? `−${previewAmount(preview, 'discount', preview.discount)}` : '…'}
                 </Text>
               </View>
             )}
@@ -1025,23 +1172,63 @@ export function CheckoutFlow({
                 bouton exact à utiliser, plus haut dans la page. */}
             {blockedReason !== null && (
               <Text style={styles.blockedHelp}>
-                {blockedReason === 'OUT_OF_RANGE'
-                  ? `Votre position est trop loin de la boutique pour être livrée. Choisissez « Retrait sur place » plus haut, ou déplacez le repère avec « Modifier ma position sur la carte ».`
-                  : `Appuyez sur « Choisir ma position sur la carte », plus haut, et placez le repère à votre porte : les frais de livraison se calculent depuis ce point.`}
+                {isGift
+                  ? blockedReason === 'OUT_OF_RANGE'
+                    ? `La position de votre proche est trop loin de la boutique pour être livrée. Déplacez le repère avec « Modifier la position de votre proche sur la carte ».`
+                    : `Appuyez sur « Choisir sa position sur la carte », plus haut, et placez le repère à la porte de votre proche : les frais de livraison se calculent depuis ce point.`
+                  : blockedReason === 'OUT_OF_RANGE'
+                    ? `Votre position est trop loin de la boutique pour être livrée. Choisissez « Retrait sur place » plus haut, ou déplacez le repère avec « Modifier ma position sur la carte ».`
+                    : `Appuyez sur « Choisir ma position sur la carte », plus haut, et placez le repère à votre porte : les frais de livraison se calculent depuis ce point.`}
+              </Text>
+            )}
+            {giftTooLow && (
+              <Text style={styles.blockedHelp}>
+                Pour un proche, la commande doit atteindre au moins 1 000 FCFA, le minimum du paiement par carte. Ajoutez un article pour continuer.
               </Text>
             )}
 
             <View style={[styles.totalRow, { borderTopColor: semantic.borderNormal }]}>
               <Text style={[styles.totalLabel, { color: semantic.textPrimary }]}>Total</Text>
               <Text style={styles.totalValue}>
-                {formatPrice(orderTotal)}
-                {' '}
-                FCFA
+                {previewAmount(preview, 'total', orderTotal)}
               </Text>
             </View>
+            {/* A foreign amount is an estimate of the card statement: the
+                FCFA amount is what is actually charged. */}
+            {preview?.display && (
+              <Text style={[styles.currencyNotice, { color: semantic.textSecondary }]}>
+                {`Le montant prélevé par votre banque peut différer légèrement ; vous serez débité de ${formatXof(orderTotal)}.`}
+              </Text>
+            )}
           </View>
 
-          {/* Payment method */}
+          {/* Payment method. For a gift, online payment comes first and is
+              named: the payer is often abroad and pays by card. */}
+          {isGift && (
+            <TouchableOpacity
+              style={[
+                styles.card,
+                styles.walletOption,
+                { backgroundColor: effectiveChoice === 'FEDAPAY' ? semantic.bgPrimaryLight : semantic.bgCard },
+              ]}
+              onPress={() => setPaymentChoice('FEDAPAY')}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityState={{ selected: effectiveChoice === 'FEDAPAY' }}
+            >
+              <CreditCard size={18} color={effectiveChoice === 'FEDAPAY' ? colors.green[600] : semantic.textSecondary} strokeWidth={2} />
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.walletOptionTitle, { color: semantic.textPrimary }]}>
+                  Carte bancaire ou Mobile Money
+                </Text>
+                <Text style={[styles.walletOptionHint, { color: semantic.textSecondary }]}>
+                  Paiement en ligne sécurisé, Visa ou Mastercard acceptées
+                </Text>
+              </View>
+              {effectiveChoice === 'FEDAPAY' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
+            </TouchableOpacity>
+          )}
+
           {walletAvailable && (
             <TouchableOpacity
               style={[
@@ -1062,16 +1249,16 @@ export function CheckoutFlow({
                 <Text style={[styles.walletOptionHint, { color: semantic.textSecondary }]}>
                   Solde :
                   {' '}
-                  {formatPrice(walletBalance ?? 0)}
+                  {formatXof(walletBalance ?? 0)}
                   {' '}
-                  FCFA — débit immédiat, sans frais
+                  — débit immédiat, sans frais
                 </Text>
               </View>
               {effectiveChoice === 'WALLET' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
             </TouchableOpacity>
           )}
 
-          {cashMaxAmount > 0 && (
+          {cashMaxAmount > 0 && !isGift && (
             <TouchableOpacity
               style={[
                 styles.card,
@@ -1094,7 +1281,7 @@ export function CheckoutFlow({
                   {cashBlocked
                     ? 'Cette boutique n\'accepte pas les espèces pour le moment'
                     : !cashAvailable
-                        ? `Disponible jusqu'à ${formatPrice(cashMaxAmount)} FCFA par commande`
+                        ? `Disponible jusqu'à ${formatXof(cashMaxAmount)} par commande`
                         : isPickup
                           ? 'Vous payez la boutique en retirant votre commande'
                           : 'Vous payez le livreur à la réception, montant exact de préférence'}
@@ -1104,7 +1291,7 @@ export function CheckoutFlow({
             </TouchableOpacity>
           )}
 
-          {effectiveChoice === 'FEDAPAY' && (
+          {effectiveChoice === 'FEDAPAY' && !isGift && (
             <View style={styles.paymentInfo}>
               <CircleCheck size={14} color={semantic.textTertiary} strokeWidth={2} />
               <Text style={[styles.paymentInfoText, { color: semantic.textTertiary }]}>
@@ -1119,9 +1306,7 @@ export function CheckoutFlow({
           <View style={styles.bottomPriceCol}>
             <Text style={[styles.bottomPriceLabel, { color: semantic.textTertiary }]}>Total</Text>
             <Text style={[styles.bottomPriceValue, { color: semantic.textPrimary }]}>
-              {formatPrice(orderTotal)}
-              {' '}
-              FCFA
+              {previewAmount(preview, 'total', orderTotal)}
             </Text>
           </View>
           {/* Lu avant d'appuyer, pas découvert après : la boutique est fermée,
@@ -1472,6 +1657,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     fontSize: 20,
     color: colors.green[600],
+  },
+  currencyNotice: {
+    ...typography.caption,
+    marginTop: spacing[2],
   },
 
   // Payment info

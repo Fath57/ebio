@@ -17,6 +17,8 @@ export interface OrderFilters {
   sponsor?: 'SUPPLIER' | 'PLATFORM' | 'none'
   /** Home deliveries only: `assigned` has a courier on a run, `unassigned` does not. */
   courier?: 'assigned' | 'unassigned'
+  /** `true`: carts sent to a relative only; `false`: ordinary orders only. */
+  gift?: boolean
 }
 
 /** Raw query-string values, as the controller receives them. */
@@ -31,6 +33,7 @@ export interface OrderFilterQuery {
   promo?: string
   sponsor?: string
   courier?: string
+  gift?: string
 }
 
 function oneOf<T extends string>(value: string | undefined, allowed: readonly T[]): T | undefined {
@@ -50,8 +53,11 @@ export function readOrderFilters(query: OrderFilterQuery): OrderFilters {
     promo: oneOf(query.promo, ['with', 'without'] as const),
     sponsor: oneOf(query.sponsor, ['SUPPLIER', 'PLATFORM', 'none'] as const),
     courier: oneOf(query.courier, ['assigned', 'unassigned'] as const),
+    gift: query.gift === 'true' ? true : query.gift === 'false' ? false : undefined,
   }
 }
+
+const IS_GIFT = `EXISTS (SELECT 1 FROM checkouts gc WHERE gc.id = o.checkout_id AND gc.recipient_phone IS NOT NULL)`
 
 const HAS_COURIER = `EXISTS (SELECT 1 FROM deliveries d WHERE d.order_id = o.id AND d.courier_id IS NOT NULL)`
 
@@ -103,6 +109,10 @@ export function buildOrderConditions(filters: OrderFilters): { conditions: strin
     conditions.push(HAS_COURIER)
   if (filters.courier === 'unassigned')
     conditions.push(`o.pickup_mode = '${PickupMode.DELIVERY}' AND NOT ${HAS_COURIER}`)
+  if (filters.gift === true)
+    conditions.push(IS_GIFT)
+  if (filters.gift === false)
+    conditions.push(`NOT ${IS_GIFT}`)
 
   return { conditions, values }
 }

@@ -18,6 +18,17 @@ export interface CompensationResult {
   /** True when the compensation had already happened. */
   alreadyDone: boolean
   checkoutStatus: CheckoutStatus | null
+  /** Delivery fee kept back (`withholdDeliveryFee`), 0 otherwise. */
+  withheld: number
+}
+
+export interface CompensationOptions {
+  /**
+   * The courier made the trip and is paid for it: the buyer gets the order
+   * back minus its delivery fee. A failed hand-over to a relative (research §5).
+   * The caller tells the buyer itself, with the reason.
+   */
+  withholdDeliveryFee?: boolean
 }
 
 /**
@@ -58,7 +69,7 @@ export class CompensationService {
     return rows.length > 0
   }
 
-  async compensateOrder(orderId: string, reason: string): Promise<CompensationResult> {
+  async compensateOrder(orderId: string, reason: string, options: CompensationOptions = {}): Promise<CompensationResult> {
     const order = await this.em.findOne(Order, { id: orderId }, { populate: ['buyer', 'supplier', 'checkout'] })
     if (!order) {
       throw new NotFoundException('Commande introuvable')
@@ -73,6 +84,7 @@ export class CompensationService {
         deliveryRefund: 0,
         alreadyDone: true,
         checkoutStatus: checkout?.status ?? null,
+        withheld: 0,
       }
     }
 
@@ -80,7 +92,7 @@ export class CompensationService {
     // back, only an order that will not happen.
     if (order.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
       const status = checkout ? await this.refreshCheckoutStatus(checkout) : null
-      return { amount: 0, deliveryRefund: 0, alreadyDone: false, checkoutStatus: status }
+      return { amount: 0, deliveryRefund: 0, alreadyDone: false, checkoutStatus: status, withheld: 0 }
     }
 
     // Never paid (Mobile Money abandoned before confirmation): crediting the
@@ -91,17 +103,20 @@ export class CompensationService {
     })
     if (!payment) {
       const status = checkout ? await this.refreshCheckoutStatus(checkout) : null
-      return { amount: 0, deliveryRefund: 0, alreadyDone: false, checkoutStatus: status }
+      return { amount: 0, deliveryRefund: 0, alreadyDone: false, checkoutStatus: status, withheld: 0 }
     }
 
-    const amount = Math.round(order.totalAmount)
+    const withheld = options.withholdDeliveryFee ? Math.round(Math.max(0, order.deliveryFee ?? 0)) : 0
+    const amount = Math.max(0, Math.round(order.totalAmount) - withheld)
     const wallet = await this.walletService.getOrCreate({ userId: order.buyer.id })
 
     if (amount > 0) {
       await this.walletService.credit(wallet.id, {
         type: WalletTransactionType.REFUND,
         amount,
-        description: `Remboursement — commande ${order.orderNumber} : ${reason}`,
+        description: withheld > 0
+          ? `Remboursement — commande ${order.orderNumber} : ${reason} (frais de livraison de ${withheld.toLocaleString('fr-FR')} FCFA retenus)`
+          : `Remboursement — commande ${order.orderNumber} : ${reason}`,
         orderId: order.id,
         paymentId: payment.id,
       })
@@ -112,11 +127,16 @@ export class CompensationService {
 
     // The shop leaves the run: the ride gets shorter, so does the fee. What
     // the buyer overpaid comes back to them.
-    const deliveryRefund = checkout
+    // With the fee withheld the ride did happen: nothing to re-price.
+    const deliveryRefund = checkout && !options.withholdDeliveryFee
       ? await this.settleRunAfterRemoval(checkout, order, wallet.id)
       : 0
 
     const checkoutStatus = checkout ? await this.refreshCheckoutStatus(checkout) : null
+
+    if (options.withholdDeliveryFee) {
+      return { amount, deliveryRefund, alreadyDone: false, checkoutStatus, withheld }
+    }
 
     await this.notificationsService.send({
       user: order.buyer,
@@ -129,7 +149,7 @@ export class CompensationService {
       channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
     })
 
-    return { amount, deliveryRefund, alreadyDone: false, checkoutStatus }
+    return { amount, deliveryRefund, alreadyDone: false, checkoutStatus, withheld: 0 }
   }
 
   /**

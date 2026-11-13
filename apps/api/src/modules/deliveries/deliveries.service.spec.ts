@@ -41,6 +41,9 @@ function buildService() {
   const settings = { getDeliveryCommissionRate: vi.fn().mockResolvedValue(0.1), getCourierMaxDebt: vi.fn().mockResolvedValue(0) }
   // Re-pricing a run that lost a shop.
   const pricing = { quoteRun: vi.fn().mockResolvedValue({ fee: 0, distanceKm: null, reason: 'FLAT' }) }
+  // Deliveries to a relative; none in these cases.
+  const giftNotifier = { sendCodeToRecipient: vi.fn(), notifyDelivered: vi.fn() }
+  const giftFailure = { onGiftDeliveryFailed: vi.fn() }
   const service = new DeliveriesService(
     em as never,
     notifications as never,
@@ -49,8 +52,10 @@ function buildService() {
     wallet as never,
     settings as never,
     pricing as never,
+    giftNotifier as never,
+    giftFailure as never,
   )
-  return { service, em, execute, notifications, dispatch, orders, wallet, settings, pricing }
+  return { service, em, execute, notifications, dispatch, orders, wallet, settings, pricing, giftNotifier, giftFailure }
 }
 
 const validProfile = {

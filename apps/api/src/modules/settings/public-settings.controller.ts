@@ -1,4 +1,5 @@
 import { Controller, Get } from '@nestjs/common'
+import { publicRates } from '../currency/fx-math'
 import { PlatformSettingsService } from './platform-settings.service'
 
 /** Settings the apps need before sign-in or at checkout; nothing sensitive here. */
@@ -17,6 +18,13 @@ export class PublicSettingsController {
     // Her name and her face travel with the switch: the apps write her name
     // into their own labels, and a null portrait means the one they ship.
     const assistant = await this.platformSettings.getAssistantIdentity()
+    // Effective rates (margin included) for prices shown in EUR, USD or CAD.
+    // Computed here rather than through ExchangeRatesService: the currency
+    // module depends on this one, not the other way round.
+    const currencies = publicRates(
+      await this.platformSettings.getExchangeRates(),
+      await this.platformSettings.getFxMarginBps(),
+    )
     return {
       cashOnDeliveryMaxAmount,
       courierMaxDebt,
@@ -24,6 +32,7 @@ export class PublicSettingsController {
       assistantEnabled,
       assistantName: assistant.name,
       assistantAvatarUrl: assistant.avatarUrl,
+      currencies,
     }
   }
 }

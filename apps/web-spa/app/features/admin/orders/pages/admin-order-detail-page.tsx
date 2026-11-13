@@ -27,14 +27,14 @@ import {
   TableRow,
 } from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CalendarClock, Star, Truck } from 'lucide-react'
+import { AlertTriangle, CalendarClock, ImageOff, Star, Truck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useParams } from 'react-router'
 import { BackLink } from '@/features/admin/common/components/back-link'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { Can } from '@/lib/casl/can'
-import { fetchAdminDeliveryQueryOptions } from '../../deliveries/utils/deliveries-queries'
+import { fetchAdminDeliveryQueryOptions, formatDistance } from '../../deliveries/utils/deliveries-queries'
 import { DeliveryWindowForm } from '../forms/delivery-window-form'
 import { formatBeninWindow, WINDOW_EDITABLE_ORDER_STATUSES } from '../utils/delivery-window'
 import { ORDER_STATUS_TONES } from '../utils/order-status'
@@ -79,6 +79,21 @@ function RatingRow({ label, rating, comment }: { label: string, rating: number, 
         {comment && <span className="font-normal italic text-muted-foreground">{`« ${comment} »`}</span>}
       </span>
     </div>
+  )
+}
+
+/** « 45,73 € », « 18,29 $US »: an amount in the payer's currency. */
+function formatForeign(value: number, currency: string, locale: string): string {
+  return value.toLocaleString(locale, { style: 'currency', currency })
+}
+
+/** Proof taken far from the door: an icon and words, never the colour alone. */
+function FarBadge({ label }: { label: string }) {
+  return (
+    <span className="inline-flex h-[22px] items-center gap-1.5 rounded-full border border-ebio-earth-200 bg-ebio-earth-50 px-2.5 text-xs font-medium whitespace-nowrap text-ebio-earth-800 dark:border-ebio-earth-800 dark:bg-ebio-earth-900 dark:text-ebio-earth-100">
+      <AlertTriangle className="h-3 w-3" aria-hidden />
+      {label}
+    </span>
   )
 }
 
@@ -227,6 +242,54 @@ export default function AdminOrderDetailPage() {
           </CardContent>
         </Card>
 
+        {order.gift && (
+          <Card>
+            <CardHeader>
+              <CardTitle>{t('admin.orders.gift.title')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <InfoRow label={t('admin.orders.gift.payer')} value={order.gift.payer.name} />
+              <InfoRow label={t('admin.orders.gift.recipient')} value={order.gift.recipient.name || null} />
+              <InfoRow label={t('admin.orders.gift.recipientPhone')} value={order.gift.recipient.phone} />
+            </CardContent>
+          </Card>
+        )}
+
+        {order.proof && (
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0">
+              <CardTitle>{t('admin.orders.proof.title')}</CardTitle>
+              {order.proof.far && <FarBadge label={t('admin.orders.proof.far')} />}
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {order.proof.photoUrl
+                ? (
+                    <a href={order.proof.photoUrl} target="_blank" rel="noreferrer" className="block w-fit rounded-lg focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none">
+                      <img
+                        src={order.proof.photoUrl}
+                        alt={t('admin.orders.proof.photoAlt', { number: order.orderNumber })}
+                        loading="lazy"
+                        className="aspect-[4/3] w-full max-w-sm rounded-lg object-cover"
+                      />
+                    </a>
+                  )
+                : (
+                    <p className="bg-muted text-muted-foreground flex aspect-[4/3] w-full max-w-sm flex-col items-center justify-center gap-2 rounded-lg text-sm">
+                      <ImageOff className="h-5 w-5" aria-hidden />
+                      {t('admin.orders.proof.noPhoto')}
+                    </p>
+                  )}
+              <div>
+                <InfoRow label={t('admin.orders.proof.takenAt')} value={formatDate(order.proof.takenAt)} />
+                <InfoRow
+                  label={t('admin.orders.proof.distance')}
+                  value={order.proof.distanceM === null ? null : formatDistance(order.proof.distanceM, i18n.language)}
+                />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
         <Card className="md:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <CardTitle>{t('admin.orders.detail.delivery')}</CardTitle>
@@ -342,6 +405,21 @@ export default function AdminOrderDetailPage() {
 
           <Separator className="my-4" />
           <InfoRow label={t('admin.orders.columns.amount')} value={formatAmount(order.totalAmount)} />
+          {order.display && (
+            <>
+              <InfoRow
+                label={t('admin.orders.gift.paidIn', { currency: order.display.currency })}
+                value={formatForeign(order.display.total, order.display.currency, i18n.language)}
+              />
+              <InfoRow
+                label={t('admin.orders.gift.frozenRate')}
+                value={t('admin.orders.gift.rateValue', {
+                  unit: (1).toLocaleString(i18n.language, { style: 'currency', currency: order.display.currency, minimumFractionDigits: 0, maximumFractionDigits: 0 }),
+                  rate: order.display.rate.toLocaleString(i18n.language, { maximumFractionDigits: 2 }),
+                })}
+              />
+            </>
+          )}
           <InfoRow
             label={t('admin.orders.detail.commissionDetail', {
               rate: (order.commissionRate * 100).toFixed(1),

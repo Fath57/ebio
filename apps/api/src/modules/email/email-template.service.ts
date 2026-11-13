@@ -21,6 +21,8 @@ export type TemplateName
     | 'supplier-reinstated'
     | 'contact-message'
     | 'sales-statement'
+    | 'gift-delivered'
+    | 'gift-delivery-failed'
     | 'order-invoice'
     | 'order-confirmation'
     | 'order-new-supplier'

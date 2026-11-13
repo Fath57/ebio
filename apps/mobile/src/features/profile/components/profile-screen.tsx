@@ -17,6 +17,7 @@ import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check'
 import Store from 'lucide-react-native/dist/esm/icons/store'
 import Sun from 'lucide-react-native/dist/esm/icons/sun'
 import UserIcon from 'lucide-react-native/dist/esm/icons/user'
+import Users from 'lucide-react-native/dist/esm/icons/users'
 import WalletIcon from 'lucide-react-native/dist/esm/icons/wallet'
 import * as React from 'react'
 import { useEffect, useState } from 'react'
@@ -40,6 +41,7 @@ import { storage } from '../../../utils/offline-storage'
 import { BiometricSetting } from '../../auth/components/biometric-setting'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { CurrencySetting } from './currency-setting'
 
 interface UserProfile {
   id: string
@@ -70,6 +72,7 @@ interface ProfileScreenProps {
   onNavigateToWallet?: () => void
   onNavigateToFavorites?: () => void
   onNavigateToReferral?: () => void
+  onNavigateToRelatives?: () => void
   onNavigateToNotifications?: () => void
   onNavigateToLogin?: () => void
   onNavigateToEditProfile?: () => void
@@ -80,7 +83,7 @@ interface ProfileScreenProps {
   refreshTrigger?: number
 }
 
-export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToFavorites, onNavigateToReferral, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToFavorites, onNavigateToReferral, onNavigateToRelatives, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
   const tabBarHeight = useBottomTabBarHeight()
@@ -407,6 +410,9 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
           </View>
         </View>
 
+        {/* Display currency (buyer prices) */}
+        <CurrencySetting />
+
         {/* Orders */}
         <View>
           <View style={styles.section}>
@@ -437,6 +443,22 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
                 semantic={semantic}
                 grouped
               />
+
+              {onNavigateToRelatives && (
+                <>
+                  <View style={styles.menuDivider} />
+                  <MenuItem
+                    icon={Users}
+                    iconBg={colors.blue[50]}
+                    iconColor={colors.blue[600]}
+                    label="Mes proches"
+                    sublabel="Les personnes à qui vous faites livrer"
+                    onPress={onNavigateToRelatives}
+                    semantic={semantic}
+                    grouped
+                  />
+                </>
+              )}
 
               <View style={styles.menuDivider} />
 

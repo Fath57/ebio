@@ -3,6 +3,7 @@ import {
   adminCouriersControllerGetDelivery,
   adminCouriersControllerListCandidates,
   adminCouriersControllerListDeliveries,
+  adminCouriersControllerListFarProofs,
   adminCouriersControllerRebroadcastDelivery,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
 
@@ -189,6 +190,50 @@ export const rebroadcastDeliveryMutationOptions = {
       throw new Error('Failed to rebroadcast delivery')
     return response.data as unknown as AdminDelivery
   },
+}
+
+/** A hand-over photo taken far from the drop-off point (FR-036). */
+export interface FarProof {
+  deliveryId: string
+  orderId: string
+  orderNumber: string
+  courierId: string | null
+  courierName: string | null
+  /** Signed for one hour; null once purged (90 days). */
+  photoUrl: string | null
+  distanceM: number | null
+  takenAt: string | null
+  deliveredAt: string | null
+}
+
+export interface FarProofsPage {
+  items: FarProof[]
+  total: number
+  page: number
+  limit: number
+}
+
+export const FAR_PROOFS_PAGE_SIZE = 20
+
+export function fetchFarProofsQueryOptions(page: number) {
+  return {
+    queryKey: ['admin', 'deliveries', 'far-proofs', page],
+    queryFn: async () => {
+      const response = await adminCouriersControllerListFarProofs({
+        query: { page: String(page), limit: String(FAR_PROOFS_PAGE_SIZE) },
+      })
+      if (response.error)
+        throw new Error('Failed to fetch far proofs')
+      return response.data as FarProofsPage
+    },
+  }
+}
+
+/** « 450 m » under a kilometre, « 1,2 km » above, in the UI language. */
+export function formatDistance(metres: number, locale: string): string {
+  if (metres < 1000)
+    return `${Math.round(metres).toLocaleString(locale)} m`
+  return `${(metres / 1000).toLocaleString(locale, { maximumFractionDigits: 1 })} km`
 }
 
 /** "il y a 3 min" style label, in the UI language. */

@@ -73,6 +73,10 @@ export interface DeliveryOffer {
 export interface DeliveryContact {
   name: string
   phone: string | null
+  /** `RECIPIENT` when the basket goes to a relative of the payer. */
+  role?: 'BUYER' | 'RECIPIENT'
+  /** Gift deliveries: the payer's first name, to introduce the courier at the door. */
+  payerFirstName?: string | null
 }
 
 export interface BuyerRating {
@@ -104,7 +108,9 @@ export interface Delivery {
   pickupPosition: { latitude: number, longitude: number } | null
   dropoffPosition: { latitude: number, longitude: number } | null
   confirmationCode: string | null
-  proofType: 'CODE' | 'PHOTO' | null
+  proofType: 'CODE' | 'PHOTO' | 'CODE_AND_PHOTO' | null
+  /** Gift delivery: code, photo and position are all required at the door. */
+  requiresGiftProof?: boolean
   failReason: DeliveryFailReason | null
   failComment: string | null
   itemsCount: number
@@ -181,4 +187,18 @@ export interface DeliveryItem {
   /** Free unit of a promotion: carried, not charged. */
   isGift: boolean
   photo: string | null
+}
+
+/** « Pour Afiavi Kossou, de la part d'Awa » — the line a gift delivery opens with, null otherwise. */
+export function giftContactLine(contact: DeliveryContact | null): string | null {
+  if (!contact || contact.role !== 'RECIPIENT') {
+    return null
+  }
+  const payer = contact.payerFirstName?.trim()
+  if (!payer) {
+    return `Pour ${contact.name}`
+  }
+  // Elision before a vowel or a mute h: « d'Awa », « de Kofi ».
+  const from = /^[aeiouyhàâéèêëîïôöûü]/i.test(payer) ? `d'${payer}` : `de ${payer}`
+  return `Pour ${contact.name}, de la part ${from}`
 }

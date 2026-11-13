@@ -90,6 +90,7 @@ export default function Confidentialite({ loaderData }: Route.ComponentProps) {
       <ul>
         <li>Les fournisseurs voient les informations nécessaires à vos commandes : votre nom, votre commande et l’adresse de livraison si vous choisissez la livraison.</li>
         <li>Nos prestataires techniques : hébergement des serveurs et des images, prestataire de paiement Mobile Money, service d’envoi de notifications. Ils traitent les données pour notre compte et ne peuvent pas les utiliser à d’autres fins.</li>
+        <li>Quand vous commandez pour un proche : le nom et le numéro de téléphone que vous indiquez sont transmis au livreur et utilisés pour envoyer des SMS à votre proche. Votre proche voit votre prénom, jamais le montant payé.</li>
         <li>Les autorités, uniquement lorsque la loi nous y oblige.</li>
       </ul>
       <p>Nous ne vendons jamais vos données personnelles.</p>
@@ -106,6 +107,8 @@ export default function Confidentialite({ loaderData }: Route.ComponentProps) {
         <li>Données de compte : tant que votre compte est actif.</li>
         <li>Commandes et transactions : le temps des obligations comptables et fiscales.</li>
         <li>Messages : tant que la conversation existe dans votre compte.</li>
+        <li>Photos de remise d’une commande pour un proche : 90 jours après la livraison.</li>
+        <li>Lien de suivi d’une commande pour un proche : il n’affiche plus que « livré » ou « annulé » 7 jours après la fin de la livraison.</li>
         <li>Après suppression du compte, les données sont effacées ou anonymisées, hors durées légales de conservation.</li>
       </ul>
 

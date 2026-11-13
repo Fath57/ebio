@@ -60,6 +60,7 @@ export default [
       // Admin — Livraisons (flotte partagée)
       route('admin/livraisons', 'features/admin/deliveries/pages/admin-deliveries-page.tsx'),
       route('admin/livraisons/:deliveryId/assigner', 'features/admin/deliveries/pages/admin-delivery-assign-page.tsx'),
+      route('admin/preuves-eloignees', 'features/admin/deliveries/pages/far-proofs-page.tsx'),
 
       // Admin — Fournisseurs
       route('admin/fournisseurs', 'features/admin/suppliers/pages/admin-suppliers-page.tsx'),

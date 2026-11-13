@@ -23,6 +23,7 @@ import { colors, fonts, radius, shadows, spacing, typography } from '../../../th
 import { useTheme } from '../../../theme/theme-context'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useMoney } from '../../common/hooks/use-money'
 
 type DeliveryMode = 'PICKUP' | 'DELIVERY'
 
@@ -62,10 +63,6 @@ interface CartScreenProps {
   onContinueShopping?: () => void
   /** Opens the product page (image or name tapped). */
   onPressItem?: (productId: string) => void
-}
-
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
 }
 
 interface ShopBasket {
@@ -189,6 +186,7 @@ export function CartScreen({
   onPressItem,
 }: CartScreenProps) {
   const { semantic } = useTheme()
+  const { formatMoney } = useMoney()
   const tabBarHeight = useBottomTabBarHeight()
 
   const totalItemCount = items.reduce((sum, item) => sum + item.quantity, 0)
@@ -331,10 +329,8 @@ export function CartScreen({
                         </View>
 
                         <Text style={[styles.itemUnitPrice, { color: semantic.textTertiary }]}>
-                          {formatPrice(item.pricePerUnit)}
-                          {' '}
-                          FCFA /
-                          {' '}
+                          {formatMoney(item.pricePerUnit).primary}
+                          {' / '}
                           {item.selectedVariant ? item.selectedVariant.label.toLowerCase() : unitShortLabel(item.unit)}
                         </Text>
 
@@ -384,9 +380,7 @@ export function CartScreen({
                               onUpdateQuantity(item.id, item.quantity + 1)}
                           />
                           <Text style={[styles.itemPrice, { color: semantic.textPrimary }]}>
-                            {formatPrice(item.pricePerUnit * item.quantity)}
-                            {' '}
-                            FCFA
+                            {formatMoney(item.pricePerUnit * item.quantity).primary}
                           </Text>
                         </View>
                       </View>
@@ -470,18 +464,25 @@ export function CartScreen({
                       {' article'}
                       {countItems(basket.items) > 1 ? 's' : ''}
                     </Text>
-                    <Text style={[styles.grandTotalValue, { color: semantic.textPrimary }]}>
-                      {formatPrice(computeGroupTotal(basket.items))}
-                      {' '}
-                      FCFA
-                    </Text>
+                    <View style={styles.grandTotalAmounts}>
+                      <Text style={[styles.grandTotalValue, { color: semantic.textPrimary }]}>
+                        {formatMoney(computeGroupTotal(basket.items)).primary}
+                      </Text>
+                      {formatMoney(computeGroupTotal(basket.items)).secondary
+                        ? (
+                            <Text style={[styles.grandTotalSecondary, { color: semantic.textSecondary }]}>
+                              {formatMoney(computeGroupTotal(basket.items)).secondary}
+                            </Text>
+                          )
+                        : null}
+                    </View>
                   </View>
                   <TouchableOpacity
                     style={styles.orderButton}
                     onPress={() => onCheckout(basket.supplierId)}
                     activeOpacity={0.8}
                     accessibilityRole="button"
-                    accessibilityLabel={`Commander chez ${basket.supplierName}, ${formatPrice(computeGroupTotal(basket.items))} FCFA`}
+                    accessibilityLabel={`Commander chez ${basket.supplierName}, ${formatMoney(computeGroupTotal(basket.items)).primary}`}
                   >
                     <Text style={styles.orderButtonText} numberOfLines={1}>
                       Commander chez
@@ -816,6 +817,13 @@ const styles = StyleSheet.create({
   },
   grandTotalLabel: {
     ...typography.bodyS,
+  },
+  grandTotalAmounts: {
+    alignItems: 'flex-end',
+  },
+  grandTotalSecondary: {
+    fontFamily: fonts.mono,
+    fontSize: 12,
   },
   grandTotalValue: {
     fontFamily: fonts.mono,

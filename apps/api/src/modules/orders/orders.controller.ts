@@ -21,6 +21,9 @@ import { AuthGuard } from '../auth/auth.guard'
 import { CartService } from '../cart/cart.service'
 import { CheckoutAttemptsService } from '../cart/checkout-attempts.service'
 import { CheckoutAttemptKind, CheckoutAttemptOutcome } from '../cart/entities/checkout-attempt.entity'
+import { GiftViewService } from '../gift/gift-view.service'
+import { ReceivedOrdersMapper } from '../gift/received-orders.mapper'
+import { ReceivedOrdersService } from '../gift/received-orders.service'
 import { SuppliersService } from '../suppliers/suppliers.service'
 import { CheckoutService } from './checkout.service'
 import { checkoutPreviewSchema, createCheckoutSchema } from './contracts/checkout.contract'
@@ -57,6 +60,8 @@ export class OrdersController {
     private readonly suppliersService: SuppliersService,
     private readonly attempts: CheckoutAttemptsService,
     private readonly cart: CartService,
+    private readonly giftView: GiftViewService,
+    private readonly receivedOrders: ReceivedOrdersService,
   ) {}
 
   /**
@@ -229,7 +234,32 @@ export class OrdersController {
     const result = await this.ordersService.findByBuyer(session.user.id, filters)
     const deliveries = await this.ordersService.deliverySummaries(result.orders.map(o => o.id))
     return {
-      orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null)),
+      // The payer's own list: the amount in the currency they paid in.
+      orders: result.orders.map(order => OrderMapper.toResponse(order, deliveries.get(order.id) ?? null, { display: OrderMapper.displayOf(order) })),
+      total: result.total,
+    }
+  }
+
+  /**
+   * « Paniers reçus »: carts someone else sent to this account's verified
+   * number, without any amount. Declared before `:id`, which would take
+   * `received` for an order id.
+   */
+  @Get('received')
+  @UseGuards(CaslGuard)
+  @CanRead('Order')
+  async findReceived(
+    @Session() session: LoggedInBetterAuthSession,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const result = await this.receivedOrders.list(
+      session.user.id,
+      page ? Number(page) : undefined,
+      limit ? Number(limit) : undefined,
+    )
+    return {
+      items: result.orders.map(order => ReceivedOrdersMapper.toResponse(order)),
       total: result.total,
     }
   }
@@ -245,7 +275,8 @@ export class OrdersController {
     const hasReview = await this.ordersService.hasReview(id)
     const hasUnratedProducts = await this.ordersService.hasUnratedProducts(id)
     const deliveries = await this.ordersService.deliverySummaries([id])
-    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null), hasReview, hasUnratedProducts }
+    const payer = await this.giftView.payerView(order, session.user.id)
+    return { ...OrderMapper.toResponse(order, deliveries.get(id) ?? null, payer), hasReview, hasUnratedProducts }
   }
 
   /** Rendered invoice of a delivered order, for the buyer or the shop. */

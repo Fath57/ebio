@@ -1,11 +1,14 @@
 import type { DeliveryPricingConfig } from '../../common/delivery-fee'
 import type { AppVersions } from '../app-version/app-version.contract'
+import type { ExchangeRate, ExchangeRates, ExchangeRateSource, ForeignCurrency } from '../currency/contracts/currency.contract'
 import type { ReferralRewards } from '../referrals/contracts/referral.contract'
 import type { AssistantIdentity, BannerOffersInput, EscrowReleaseInput } from './contracts/delivery-pricing.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable } from '@nestjs/common'
 import { DEFAULT_DELIVERY_PRICING } from '../../common/delivery-fee'
 import { appVersionsSchema } from '../app-version/app-version.contract'
+import { exchangeRatesSchema, fxMarginBpsSchema } from '../currency/contracts/currency.contract'
+import { DEFAULT_FX_MARGIN_BPS, EUR_OFFICIAL_PARITY, FX_MARGIN_BPS_MAX } from '../currency/currency.constants'
 import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
 import { assistantIdentitySchema, bannerOffersSchema, deliveryPricingConfigSchema, escrowReleaseSchema } from './contracts/delivery-pricing.contract'
 import { PlatformSetting } from './platform-setting.entity'
@@ -32,6 +35,21 @@ export const REFERRAL_REWARDS_KEY = 'referral_rewards'
 export const ESCROW_RELEASE_KEY = 'escrow_release'
 export const PRODUCT_APPROVAL_REQUIRED_KEY = 'product_approval_required'
 export const NEW_PRODUCT_ALERT_EMAILS_KEY = 'new_product_alert_emails'
+export const EXCHANGE_RATES_KEY = 'exchange_rates'
+export const FX_MARGIN_BPS_KEY = 'fx_margin_bps'
+
+/** Exchange rates as read: EUR always present, USD and CAD once downloaded or entered. */
+export type ResolvedExchangeRates = ExchangeRates & { EUR: ExchangeRate }
+
+/**
+ * The euro until someone sets it: the fixed CFA parity. Manual by nature —
+ * no download ever overwrites it.
+ */
+export const DEFAULT_EUR_RATE: ExchangeRate = {
+  xofPerUnit: EUR_OFFICIAL_PARITY,
+  source: 'MANUAL',
+  updatedAt: null,
+}
 
 /**
  * Products go on sale at once until someone decides otherwise: turning review
@@ -516,6 +534,63 @@ export class PlatformSettingsService {
 
   async setAssistantIdentity(identity: AssistantIdentity): Promise<void> {
     await this.set(ASSISTANT_IDENTITY_KEY, JSON.stringify(identity))
+  }
+
+  /**
+   * Reference rates (margin excluded). An unreadable row falls back to the
+   * EUR parity alone: prices then show in FCFA and euros, never fail.
+   */
+  async getExchangeRates(): Promise<ResolvedExchangeRates> {
+    const stored = await this.readExchangeRates()
+    return { ...stored, EUR: stored.EUR ?? DEFAULT_EUR_RATE }
+  }
+
+  /**
+   * Writes the given rates, keeping the others as they are. `MANUAL` comes
+   * from the back-office, `AUTO` from the daily download.
+   */
+  async setExchangeRates(rates: Partial<Record<ForeignCurrency, number>>, source: ExchangeRateSource): Promise<ResolvedExchangeRates> {
+    // Read past the cache: the cron and the back-office both write this row.
+    this.cache.delete(EXCHANGE_RATES_KEY)
+    const next: ExchangeRates = { ...await this.readExchangeRates() }
+    const updatedAt = new Date().toISOString()
+    for (const [currency, xofPerUnit] of Object.entries(rates) as Array<[ForeignCurrency, number | undefined]>) {
+      if (xofPerUnit === undefined) {
+        continue
+      }
+      if (!Number.isFinite(xofPerUnit) || xofPerUnit <= 0) {
+        throw new BadRequestException(`Le taux ${currency} doit être un nombre positif`)
+      }
+      next[currency] = { xofPerUnit, source, updatedAt }
+    }
+    await this.set(EXCHANGE_RATES_KEY, JSON.stringify(exchangeRatesSchema.parse(next)))
+    return { ...next, EUR: next.EUR ?? DEFAULT_EUR_RATE }
+  }
+
+  /** Margin taken off the reference rate, in basis points (200 = 2 %). */
+  async getFxMarginBps(): Promise<number> {
+    return this.readInteger(FX_MARGIN_BPS_KEY, DEFAULT_FX_MARGIN_BPS, 0, FX_MARGIN_BPS_MAX)
+  }
+
+  async setFxMarginBps(bps: number): Promise<void> {
+    if (!fxMarginBpsSchema.safeParse(bps).success) {
+      throw new BadRequestException(`La marge doit être un entier entre 0 et ${FX_MARGIN_BPS_MAX} points de base`)
+    }
+    await this.set(FX_MARGIN_BPS_KEY, String(bps))
+  }
+
+  private async readExchangeRates(): Promise<ExchangeRates> {
+    const raw = await this.get(EXCHANGE_RATES_KEY)
+    if (raw === null) {
+      return {}
+    }
+    try {
+      const parsed = exchangeRatesSchema.safeParse(JSON.parse(raw))
+      return parsed.success ? parsed.data : {}
+    }
+    catch {
+      return {}
+    }
   }
 
   /** Admin edits call this so the new value applies immediately. */

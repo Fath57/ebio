@@ -10,6 +10,10 @@ export const CHECKOUT_DRAFT_KEY = 'ebio_checkout_draft'
  * leaving a payment that failed or is still pending, which also closes the
  * screen — threw the address, the map point and the slot away, and the buyer
  * had to type them all again.
+ *
+ * Always the payer's own address. A relative's name, phone and address
+ * (« Livrer à un proche ») are never written here: they stay in the checkout
+ * screen's state, so the next « Me livrer » order does not inherit them.
  */
 export interface CheckoutDraft {
   address: string

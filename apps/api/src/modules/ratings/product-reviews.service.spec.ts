@@ -58,7 +58,9 @@ describe('productReviewsService', () => {
     })
 
     it('refuse la commande d\'un autre acheteur', async () => {
-      const { service } = buildService({ buyerId: 'someone-else' })
+      const { service, execute } = buildService({ buyerId: 'someone-else' })
+      // Nor the relative the cart was sent to: the recipient lookup finds nobody.
+      execute.mockResolvedValueOnce([])
       await expect(
         service.createMany(ORDER, BUYER, { reviews: [{ orderItemId: 'item-1', rating: 5 }] }),
       ).rejects.toThrow(BadRequestException)

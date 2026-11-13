@@ -111,7 +111,7 @@
                 "properties": {
                   "phone": {
                     "type": "string",
-                    "pattern": "^\\+229\\d{10}$"
+                    "minLength": 1
                   }
                 },
                 "required": [
@@ -189,7 +189,7 @@
                 "properties": {
                   "phone": {
                     "type": "string",
-                    "pattern": "^\\+229\\d{10}$"
+                    "minLength": 1
                   },
                   "registrationToken": {
                     "type": "string",
@@ -5346,11 +5346,23 @@
                     "maxLength": 100
                   },
                   "phone": {
-                    "type": "string"
+                    "type": "string",
+                    "pattern": "^\\+[1-9]\\d{6,14}$"
                   },
                   "image": {
                     "type": "string",
                     "format": "uri"
+                  },
+                  "displayCurrency": {
+                    "type": "string",
+                    "enum": [
+                      "XOF",
+                      "EUR",
+                      "USD",
+                      "CAD"
+                    ],
+                    "title": "DisplayCurrency",
+                    "description": "Devise d'affichage des prix ; le paiement reste en FCFA"
                   },
                   "deviceId": {
                     "type": "string"
@@ -8264,11 +8276,54 @@
                   "promoCode": {
                     "type": "string",
                     "maxLength": 50
+                  },
+                  "recipient": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "phone": {
+                        "type": "string",
+                        "pattern": "^\\+229\\d{10}$"
+                      },
+                      "savedRelativeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "phone"
+                    ],
+                    "additionalProperties": false,
+                    "title": "CheckoutRecipient",
+                    "description": "Le proche à qui le panier est livré"
+                  },
+                  "displayCurrency": {
+                    "default": "XOF",
+                    "type": "string",
+                    "enum": [
+                      "XOF",
+                      "EUR",
+                      "USD",
+                      "CAD"
+                    ],
+                    "title": "DisplayCurrency",
+                    "description": "Devise d'affichage des prix ; le paiement reste en FCFA"
+                  },
+                  "payerTimeZone": {
+                    "type": "string",
+                    "maxLength": 64
                   }
                 },
                 "required": [
                   "items",
-                  "pickupMode"
+                  "pickupMode",
+                  "displayCurrency"
                 ],
                 "additionalProperties": false,
                 "title": "CheckoutPreview",
@@ -8381,12 +8436,55 @@
                     "type": "string",
                     "format": "date-time",
                     "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "recipient": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 120
+                      },
+                      "phone": {
+                        "type": "string",
+                        "pattern": "^\\+229\\d{10}$"
+                      },
+                      "savedRelativeId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      }
+                    },
+                    "required": [
+                      "name",
+                      "phone"
+                    ],
+                    "additionalProperties": false,
+                    "title": "CheckoutRecipient",
+                    "description": "Le proche à qui le panier est livré"
+                  },
+                  "displayCurrency": {
+                    "default": "XOF",
+                    "type": "string",
+                    "enum": [
+                      "XOF",
+                      "EUR",
+                      "USD",
+                      "CAD"
+                    ],
+                    "title": "DisplayCurrency",
+                    "description": "Devise d'affichage des prix ; le paiement reste en FCFA"
+                  },
+                  "payerTimeZone": {
+                    "type": "string",
+                    "maxLength": 64
                   }
                 },
                 "required": [
                   "items",
                   "pickupMode",
-                  "paymentMethod"
+                  "paymentMethod",
+                  "displayCurrency"
                 ],
                 "additionalProperties": false,
                 "title": "CreateCheckout",
@@ -8676,6 +8774,37 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/orders/received": {
+      "get": {
+        "operationId": "OrdersController_findReceived",
+        "tags": [
+          "Orders"
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
             "description": ""
           }
         }
@@ -9306,6 +9435,29 @@
         },
         "responses": {
           "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/checkouts/{id}/recipient-sms": {
+      "post": {
+        "operationId": "CheckoutsController_resendRecipientSms",
+        "tags": [
+          "Checkouts"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
             "description": ""
           }
         }
@@ -10265,7 +10417,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Proof of delivery: buyer confirmation code or photo",
+          "description": "Proof of delivery: buyer confirmation code, photo, or both with the position (relative)",
           "content": {
             "application/json": {
               "schema": {
@@ -10316,10 +10468,51 @@
                       "mediaId"
                     ],
                     "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "proofType": {
+                        "type": "string",
+                        "const": "CODE_AND_PHOTO"
+                      },
+                      "code": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "mediaId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "proofType",
+                      "code",
+                      "mediaId",
+                      "latitude",
+                      "longitude"
+                    ],
+                    "additionalProperties": false
                   }
                 ],
                 "title": "CompleteDelivery",
-                "description": "Proof of delivery: buyer confirmation code or photo",
+                "description": "Proof of delivery: buyer confirmation code, photo, or both with the position (relative)",
                 "type": "object"
               }
             }
@@ -10584,7 +10777,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Proof of delivery: buyer confirmation code or photo",
+          "description": "Proof of delivery: buyer confirmation code, photo, or both with the position (relative)",
           "content": {
             "application/json": {
               "schema": {
@@ -10635,10 +10828,51 @@
                       "mediaId"
                     ],
                     "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "proofType": {
+                        "type": "string",
+                        "const": "CODE_AND_PHOTO"
+                      },
+                      "code": {
+                        "type": "string",
+                        "pattern": "^\\d{4}$"
+                      },
+                      "mediaId": {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      "latitude": {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      "occurredAt": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+                      }
+                    },
+                    "required": [
+                      "proofType",
+                      "code",
+                      "mediaId",
+                      "latitude",
+                      "longitude"
+                    ],
+                    "additionalProperties": false
                   }
                 ],
                 "title": "CompleteDelivery",
-                "description": "Proof of delivery: buyer confirmation code or photo",
+                "description": "Proof of delivery: buyer confirmation code, photo, or both with the position (relative)",
                 "type": "object"
               }
             }
@@ -10924,6 +11158,37 @@
               "type": "string"
             }
           },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/deliveries/far-proofs": {
+      "get": {
+        "operationId": "AdminCouriersController_listFarProofs",
+        "tags": [
+          "AdminCouriers"
+        ],
+        "parameters": [
           {
             "name": "page",
             "required": true,
@@ -13802,6 +14067,138 @@
         }
       }
     },
+    "/api/admin/exchange-rates": {
+      "get": {
+        "operationId": "AdminExchangeRatesController_get",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminExchangeRatesController_update",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Taux saisis à la main, en FCFA pour une unité",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "EUR": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  },
+                  "USD": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  },
+                  "CAD": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 100000
+                  }
+                },
+                "additionalProperties": false,
+                "title": "AdminExchangeRatesInput",
+                "description": "Taux saisis à la main, en FCFA pour une unité"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/fx-margin": {
+      "put": {
+        "operationId": "AdminExchangeRatesController_updateMargin",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Marge de change en points de base (200 = 2 %)",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "bps": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000
+                  }
+                },
+                "required": [
+                  "bps"
+                ],
+                "additionalProperties": false,
+                "title": "AdminFxMarginInput",
+                "description": "Marge de change en points de base (200 = 2 %)"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/exchange-rates/refresh": {
+      "post": {
+        "operationId": "AdminExchangeRatesController_refresh",
+        "tags": [
+          "AdminExchangeRates"
+        ],
+        "parameters": [],
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/gift-tracking/{token}": {
+      "get": {
+        "operationId": "GiftTrackingController_get",
+        "tags": [
+          "GiftTracking"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/home/sections": {
       "get": {
         "operationId": "HomeController_list",
@@ -16662,6 +17059,174 @@
         }
       }
     },
+    "/api/relatives": {
+      "get": {
+        "operationId": "RelativesController_list",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "RelativesController_create",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Ajouter un proche au carnet",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nickname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "required": [
+                  "nickname",
+                  "name",
+                  "phone",
+                  "address",
+                  "latitude",
+                  "longitude"
+                ],
+                "additionalProperties": false,
+                "title": "CreateRelative",
+                "description": "Ajouter un proche au carnet"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/relatives/{id}": {
+      "patch": {
+        "operationId": "RelativesController_update",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Modifier un proche du carnet ; seuls les champs envoyés changent",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nickname": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 40
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "phone": {
+                    "type": "string",
+                    "pattern": "^\\+229\\d{10}$"
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 10,
+                    "maxLength": 500
+                  },
+                  "latitude": {
+                    "type": "number",
+                    "minimum": -90,
+                    "maximum": 90
+                  },
+                  "longitude": {
+                    "type": "number",
+                    "minimum": -180,
+                    "maximum": 180
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateRelative",
+                "description": "Modifier un proche du carnet ; seuls les champs envoyés changent"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "RelativesController_remove",
+        "tags": [
+          "Relatives"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/training/modules": {
       "get": {
         "operationId": "TrainingController_getModules",
@@ -17568,6 +18133,14 @@
           },
           {
             "name": "courier",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "gift",
             "required": true,
             "in": "query",
             "schema": {
@@ -19779,6 +20352,45 @@
         "title": "CartReminderSettings",
         "description": "Délai avant relance d'un panier abandonné, et nombre de relances"
       },
+      "AdminExchangeRatesInput": {
+        "type": "object",
+        "properties": {
+          "EUR": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "USD": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          },
+          "CAD": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 100000
+          }
+        },
+        "additionalProperties": false,
+        "title": "AdminExchangeRatesInput",
+        "description": "Taux saisis à la main, en FCFA pour une unité"
+      },
+      "AdminFxMarginInput": {
+        "type": "object",
+        "properties": {
+          "bps": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000
+          }
+        },
+        "required": [
+          "bps"
+        ],
+        "additionalProperties": false,
+        "title": "AdminFxMarginInput",
+        "description": "Marge de change en points de base (200 = 2 %)"
+      },
       "UpdateUser": {
         "type": "object",
         "properties": {
@@ -19788,11 +20400,15 @@
             "maxLength": 100
           },
           "phone": {
-            "type": "string"
+            "type": "string",
+            "pattern": "^\\+[1-9]\\d{6,14}$"
           },
           "image": {
             "type": "string",
             "format": "uri"
+          },
+          "displayCurrency": {
+            "$ref": "#/components/schemas/DisplayCurrency"
           },
           "deviceId": {
             "type": "string"
@@ -20341,324 +20957,6 @@
         "title": "AdminWalletDebit",
         "description": "Manual debit of a wallet by staff, with its reason"
       },
-      "RejectCourier": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "type": "string",
-            "minLength": 5,
-            "maxLength": 500
-          }
-        },
-        "required": [
-          "reason"
-        ],
-        "additionalProperties": false,
-        "title": "RejectCourier",
-        "description": "Reason shown to the rejected courier applicant"
-      },
-      "AssignDelivery": {
-        "type": "object",
-        "properties": {
-          "courierId": {
-            "type": "string",
-            "format": "uuid",
-            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
-          },
-          "note": {
-            "type": "string",
-            "maxLength": 300
-          }
-        },
-        "required": [
-          "courierId"
-        ],
-        "additionalProperties": false,
-        "title": "AssignDelivery",
-        "description": "Back-office assignment of a delivery to a chosen courier"
-      },
-      "RegisterCourier": {
-        "type": "object",
-        "properties": {
-          "fullName": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "phone": {
-            "type": "string",
-            "pattern": "^\\+229\\d{10}$"
-          },
-          "vehicleType": {
-            "$ref": "#/components/schemas/VehicleType"
-          },
-          "zone": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "zoneLatitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "zoneLongitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "zoneRadiusKm": {
-            "type": "number",
-            "minimum": 1,
-            "maximum": 100
-          },
-          "identityDocument": {
-            "type": "string",
-            "maxLength": 255
-          }
-        },
-        "required": [
-          "fullName",
-          "phone",
-          "vehicleType",
-          "zone"
-        ],
-        "additionalProperties": false,
-        "title": "RegisterCourier",
-        "description": "Courier application data",
-        "examples": [
-          {
-            "fullName": "Jean Hounkpatin",
-            "phone": "+2290197000000",
-            "vehicleType": "MOTO",
-            "zone": "Cotonou — Akpakpa"
-          }
-        ]
-      },
-      "UpdateCourier": {
-        "type": "object",
-        "properties": {
-          "fullName": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "phone": {
-            "type": "string",
-            "pattern": "^\\+229\\d{10}$"
-          },
-          "vehicleType": {
-            "$ref": "#/components/schemas/VehicleType"
-          },
-          "zone": {
-            "type": "string",
-            "minLength": 2,
-            "maxLength": 255
-          },
-          "zoneLatitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "zoneLongitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          },
-          "zoneRadiusKm": {
-            "type": "number",
-            "minimum": 1,
-            "maximum": 100
-          },
-          "identityDocument": {
-            "type": "string",
-            "maxLength": 255
-          }
-        },
-        "additionalProperties": false,
-        "title": "UpdateCourier",
-        "description": "Editable courier profile fields"
-      },
-      "UpdateCourierAvailability": {
-        "type": "object",
-        "properties": {
-          "isAvailable": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "isAvailable"
-        ],
-        "additionalProperties": false,
-        "title": "UpdateCourierAvailability",
-        "description": "Toggle courier availability (online / offline)"
-      },
-      "UpdateCourierLocation": {
-        "type": "object",
-        "properties": {
-          "latitude": {
-            "type": "number",
-            "minimum": -90,
-            "maximum": 90
-          },
-          "longitude": {
-            "type": "number",
-            "minimum": -180,
-            "maximum": 180
-          }
-        },
-        "required": [
-          "latitude",
-          "longitude"
-        ],
-        "additionalProperties": false,
-        "title": "UpdateCourierLocation",
-        "description": "Foreground position update"
-      },
-      "DeliveryTransition": {
-        "type": "object",
-        "properties": {
-          "occurredAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-          }
-        },
-        "additionalProperties": false,
-        "title": "DeliveryTransition",
-        "description": "Common payload for delivery step transitions"
-      },
-      "CompleteDelivery": {
-        "oneOf": [
-          {
-            "type": "object",
-            "properties": {
-              "proofType": {
-                "type": "string",
-                "const": "CODE"
-              },
-              "code": {
-                "type": "string",
-                "pattern": "^\\d{4}$"
-              },
-              "occurredAt": {
-                "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-              }
-            },
-            "required": [
-              "proofType",
-              "code"
-            ],
-            "additionalProperties": false
-          },
-          {
-            "type": "object",
-            "properties": {
-              "proofType": {
-                "type": "string",
-                "const": "PHOTO"
-              },
-              "mediaId": {
-                "type": "string",
-                "minLength": 1,
-                "maxLength": 255
-              },
-              "occurredAt": {
-                "type": "string",
-                "format": "date-time",
-                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-              }
-            },
-            "required": [
-              "proofType",
-              "mediaId"
-            ],
-            "additionalProperties": false
-          }
-        ],
-        "title": "CompleteDelivery",
-        "description": "Proof of delivery: buyer confirmation code or photo",
-        "type": "object"
-      },
-      "FailDelivery": {
-        "type": "object",
-        "properties": {
-          "reason": {
-            "$ref": "#/components/schemas/DeliveryFailReason"
-          },
-          "comment": {
-            "type": "string",
-            "maxLength": 500
-          },
-          "occurredAt": {
-            "type": "string",
-            "format": "date-time",
-            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
-          }
-        },
-        "required": [
-          "reason"
-        ],
-        "additionalProperties": false,
-        "title": "FailDelivery",
-        "description": "Report a failed delivery attempt"
-      },
-      "RateCourier": {
-        "type": "object",
-        "properties": {
-          "rating": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 5
-          },
-          "comment": {
-            "type": "string",
-            "maxLength": 500
-          }
-        },
-        "required": [
-          "rating"
-        ],
-        "additionalProperties": false,
-        "title": "RateCourier",
-        "description": "Buyer rating of the courier once the delivery is done"
-      },
-      "TipCourier": {
-        "type": "object",
-        "properties": {
-          "amount": {
-            "type": "integer",
-            "minimum": 100,
-            "maximum": 50000
-          }
-        },
-        "required": [
-          "amount"
-        ],
-        "additionalProperties": false,
-        "title": "TipCourier",
-        "description": "Tip for the courier, debited from the buyer wallet and credited in full to the courier"
-      },
-      "BuyerDecision": {
-        "type": "object",
-        "properties": {
-          "decision": {
-            "type": "string",
-            "enum": [
-              "WAIT",
-              "CANCEL"
-            ]
-          }
-        },
-        "required": [
-          "decision"
-        ],
-        "additionalProperties": false,
-        "title": "BuyerDecision",
-        "description": "Attendre encore, ou annuler et être recrédité"
-      },
       "CompensateCheckout": {
         "type": "object",
         "properties": {
@@ -20931,6 +21229,365 @@
         "additionalProperties": false,
         "title": "VerifyCheckoutInput",
         "description": "Input for verifying a payment made via Checkout.js"
+      },
+      "RejectCourier": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "RejectCourier",
+        "description": "Reason shown to the rejected courier applicant"
+      },
+      "AssignDelivery": {
+        "type": "object",
+        "properties": {
+          "courierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "note": {
+            "type": "string",
+            "maxLength": 300
+          }
+        },
+        "required": [
+          "courierId"
+        ],
+        "additionalProperties": false,
+        "title": "AssignDelivery",
+        "description": "Back-office assignment of a delivery to a chosen courier"
+      },
+      "RegisterCourier": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "vehicleType": {
+            "$ref": "#/components/schemas/VehicleType"
+          },
+          "zone": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "zoneLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "zoneLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "zoneRadiusKm": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "identityDocument": {
+            "type": "string",
+            "maxLength": 255
+          }
+        },
+        "required": [
+          "fullName",
+          "phone",
+          "vehicleType",
+          "zone"
+        ],
+        "additionalProperties": false,
+        "title": "RegisterCourier",
+        "description": "Courier application data",
+        "examples": [
+          {
+            "fullName": "Jean Hounkpatin",
+            "phone": "+2290197000000",
+            "vehicleType": "MOTO",
+            "zone": "Cotonou — Akpakpa"
+          }
+        ]
+      },
+      "UpdateCourier": {
+        "type": "object",
+        "properties": {
+          "fullName": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "vehicleType": {
+            "$ref": "#/components/schemas/VehicleType"
+          },
+          "zone": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 255
+          },
+          "zoneLatitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "zoneLongitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          },
+          "zoneRadiusKm": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 100
+          },
+          "identityDocument": {
+            "type": "string",
+            "maxLength": 255
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateCourier",
+        "description": "Editable courier profile fields"
+      },
+      "UpdateCourierAvailability": {
+        "type": "object",
+        "properties": {
+          "isAvailable": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "isAvailable"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateCourierAvailability",
+        "description": "Toggle courier availability (online / offline)"
+      },
+      "UpdateCourierLocation": {
+        "type": "object",
+        "properties": {
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "additionalProperties": false,
+        "title": "UpdateCourierLocation",
+        "description": "Foreground position update"
+      },
+      "DeliveryTransition": {
+        "type": "object",
+        "properties": {
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "additionalProperties": false,
+        "title": "DeliveryTransition",
+        "description": "Common payload for delivery step transitions"
+      },
+      "CompleteDelivery": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "proofType": {
+                "type": "string",
+                "const": "CODE"
+              },
+              "code": {
+                "type": "string",
+                "pattern": "^\\d{4}$"
+              },
+              "occurredAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "proofType",
+              "code"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "proofType": {
+                "type": "string",
+                "const": "PHOTO"
+              },
+              "mediaId": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 255
+              },
+              "occurredAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "proofType",
+              "mediaId"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "proofType": {
+                "type": "string",
+                "const": "CODE_AND_PHOTO"
+              },
+              "code": {
+                "type": "string",
+                "pattern": "^\\d{4}$"
+              },
+              "mediaId": {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              "latitude": {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              "longitude": {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              "occurredAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+              }
+            },
+            "required": [
+              "proofType",
+              "code",
+              "mediaId",
+              "latitude",
+              "longitude"
+            ],
+            "additionalProperties": false
+          }
+        ],
+        "title": "CompleteDelivery",
+        "description": "Proof of delivery: buyer confirmation code, photo, or both with the position (relative)",
+        "type": "object"
+      },
+      "FailDelivery": {
+        "type": "object",
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/DeliveryFailReason"
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "occurredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z))$"
+          }
+        },
+        "required": [
+          "reason"
+        ],
+        "additionalProperties": false,
+        "title": "FailDelivery",
+        "description": "Report a failed delivery attempt"
+      },
+      "RateCourier": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 5
+          },
+          "comment": {
+            "type": "string",
+            "maxLength": 500
+          }
+        },
+        "required": [
+          "rating"
+        ],
+        "additionalProperties": false,
+        "title": "RateCourier",
+        "description": "Buyer rating of the courier once the delivery is done"
+      },
+      "TipCourier": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "integer",
+            "minimum": 100,
+            "maximum": 50000
+          }
+        },
+        "required": [
+          "amount"
+        ],
+        "additionalProperties": false,
+        "title": "TipCourier",
+        "description": "Tip for the courier, debited from the buyer wallet and credited in full to the courier"
+      },
+      "BuyerDecision": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "type": "string",
+            "enum": [
+              "WAIT",
+              "CANCEL"
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false,
+        "title": "BuyerDecision",
+        "description": "Attendre encore, ou annuler et être recrédité"
       },
       "CreateCategory": {
         "type": "object",
@@ -21886,11 +22543,22 @@
           "promoCode": {
             "type": "string",
             "maxLength": 50
+          },
+          "recipient": {
+            "$ref": "#/components/schemas/CheckoutRecipient"
+          },
+          "displayCurrency": {
+            "$ref": "#/components/schemas/DisplayCurrency"
+          },
+          "payerTimeZone": {
+            "type": "string",
+            "maxLength": 64
           }
         },
         "required": [
           "items",
-          "pickupMode"
+          "pickupMode",
+          "displayCurrency"
         ],
         "additionalProperties": false,
         "title": "CheckoutPreview",
@@ -21944,12 +22612,23 @@
             "type": "string",
             "format": "date-time",
             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "recipient": {
+            "$ref": "#/components/schemas/CheckoutRecipient"
+          },
+          "displayCurrency": {
+            "$ref": "#/components/schemas/DisplayCurrency"
+          },
+          "payerTimeZone": {
+            "type": "string",
+            "maxLength": 64
           }
         },
         "required": [
           "items",
           "pickupMode",
-          "paymentMethod"
+          "paymentMethod",
+          "displayCurrency"
         ],
         "additionalProperties": false,
         "title": "CreateCheckout",
@@ -22876,7 +23555,7 @@
         "properties": {
           "phone": {
             "type": "string",
-            "pattern": "^\\+229\\d{10}$"
+            "minLength": 1
           }
         },
         "required": [
@@ -24300,6 +24979,88 @@
         "additionalProperties": false,
         "title": "CreateReview",
         "description": "Submit a review for a supplier"
+      },
+      "CreateRelative": {
+        "type": "object",
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "address": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "required": [
+          "nickname",
+          "name",
+          "phone",
+          "address",
+          "latitude",
+          "longitude"
+        ],
+        "additionalProperties": false,
+        "title": "CreateRelative",
+        "description": "Ajouter un proche au carnet"
+      },
+      "UpdateRelative": {
+        "type": "object",
+        "properties": {
+          "nickname": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 40
+          },
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "address": {
+            "type": "string",
+            "minLength": 10,
+            "maxLength": 500
+          },
+          "latitude": {
+            "type": "number",
+            "minimum": -90,
+            "maximum": 90
+          },
+          "longitude": {
+            "type": "number",
+            "minimum": -180,
+            "maximum": 180
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateRelative",
+        "description": "Modifier un proche du carnet ; seuls les champs envoyés changent"
       },
       "Sales Statement Period": {
         "type": "object",
@@ -26015,6 +26776,18 @@
         "title": "DeliveryPricingMode",
         "description": "How the platform prices a delivery: one fee, base + per-km, or distance rings"
       },
+      "DisplayCurrency": {
+        "default": "XOF",
+        "type": "string",
+        "enum": [
+          "XOF",
+          "EUR",
+          "USD",
+          "CAD"
+        ],
+        "title": "DisplayCurrency",
+        "description": "Devise d'affichage des prix ; le paiement reste en FCFA"
+      },
       "OpeningHours": {
         "type": "object",
         "propertyNames": {
@@ -26308,6 +27081,32 @@
         ],
         "title": "PickupMode",
         "description": "How the buyer will receive the order"
+      },
+      "CheckoutRecipient": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "phone": {
+            "type": "string",
+            "pattern": "^\\+229\\d{10}$"
+          },
+          "savedRelativeId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "name",
+          "phone"
+        ],
+        "additionalProperties": false,
+        "title": "CheckoutRecipient",
+        "description": "Le proche à qui le panier est livré"
       },
       "PaymentMethod": {
         "type": "string",

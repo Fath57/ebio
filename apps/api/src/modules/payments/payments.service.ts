@@ -4,6 +4,8 @@ import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
 import {
   BadRequestException,
+  forwardRef,
+  Inject,
   Injectable,
   Logger,
   NotFoundException,
@@ -12,6 +14,7 @@ import { Cron } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
 import { SingleInstance } from '../db/cron-lock'
 import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
+import { GiftNotifierService } from '../gift/gift-notifier.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Order, PaymentMethod as OrderPaymentMethod, OrderStatus } from '../orders/entities/order.entity'
@@ -41,6 +44,8 @@ export class PaymentsService {
     private readonly walletService: WalletService,
     private readonly orderEmails: OrderEmailsService,
     private readonly journal: ProviderTransactionsService,
+    @Inject(forwardRef(() => GiftNotifierService))
+    private readonly giftNotifier: GiftNotifierService,
   ) {}
 
   /**
@@ -486,6 +491,12 @@ export class PaymentsService {
     for (const order of orders) {
       await this.sendOrderPlacedNotifications(order.id)
       void this.orderEmails.sendOrderPlaced(order.id)
+    }
+
+    // A cart for a relative: they learn it is coming. Once, whatever replays
+    // this confirmation (app verification, reconciliation).
+    if (checkout.isGift) {
+      await this.giftNotifier.announceToRecipient(checkout.id)
     }
 
     return payments

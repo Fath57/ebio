@@ -60,12 +60,33 @@ export class AdminDeliveriesService {
 
   async getById(deliveryId: string): Promise<Delivery> {
     const delivery = await this.em.findOne(Delivery, { id: deliveryId }, {
-      populate: ['order', 'order.buyer', 'order.supplier', 'order.items', 'courier', 'courier.user'],
+      populate: ['order', 'order.buyer', 'order.supplier', 'order.checkout', 'order.items', 'courier', 'courier.user'],
     })
     if (!delivery) {
       throw new NotFoundException('Livraison introuvable')
     }
     return delivery
+  }
+
+  /**
+   * Hand-over proofs taken more than 300 m from the delivery point (FR-015),
+   * newest first, for support to look at. Flagged, never blocked: the courier
+   * may have been met at the corner.
+   */
+  async listFarProofs(page = 1, limit = 20): Promise<{ deliveries: Delivery[], total: number }> {
+    const size = Math.min(Math.max(1, Math.floor(limit) || 20), 100)
+    const offset = (Math.max(1, Math.floor(page) || 1) - 1) * size
+    const [deliveries, total] = await this.em.findAndCount(
+      Delivery,
+      { proofFar: true },
+      {
+        populate: ['order', 'courier'],
+        orderBy: { proofTakenAt: 'DESC', createdAt: 'DESC' },
+        limit: size,
+        offset,
+      },
+    )
+    return { deliveries, total }
   }
 
   /**
@@ -202,7 +223,7 @@ export class AdminDeliveriesService {
 
       // The forked manager has no stale copy: this read reflects the raw UPDATE.
       const fresh = await em.findOne(Delivery, { id: deliveryId }, {
-        populate: ['order', 'order.buyer', 'order.supplier', 'order.items', 'courier', 'courier.user'],
+        populate: ['order', 'order.buyer', 'order.supplier', 'order.checkout', 'order.items', 'courier', 'courier.user'],
       })
       if (!fresh) {
         throw new NotFoundException('Livraison introuvable')

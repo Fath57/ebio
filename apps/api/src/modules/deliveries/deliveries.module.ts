@@ -1,4 +1,5 @@
 import { forwardRef, Module } from '@nestjs/common'
+import { GiftModule } from '../gift/gift.module'
 import { MediaModule } from '../media/media.module'
 import { NotificationsModule } from '../notifications/notifications.module'
 import { OrdersModule } from '../orders/orders.module'
@@ -18,7 +19,7 @@ import { RunsController } from './runs.controller'
 // forwardRef at the module level only: OrdersService reaches DeliveriesService
 // through the ORDER_DELIVERY_HOOKS token (no service-level import cycle).
 @Module({
-  imports: [MediaModule, NotificationsModule, WalletModule, PlatformSettingsModule, forwardRef(() => OrdersModule)],
+  imports: [MediaModule, NotificationsModule, WalletModule, PlatformSettingsModule, forwardRef(() => OrdersModule), forwardRef(() => GiftModule)],
   controllers: [CouriersController, DeliveriesController, RunsController, AdminCouriersController],
   providers: [
     DeliveriesService,

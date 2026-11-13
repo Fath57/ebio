@@ -10,6 +10,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { PromotionChips } from '../../catalog/components/promotion-chips'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
 import { promotionChipLabels } from '../../catalog/promotions'
+import { useMoney } from '../../common/hooks/use-money'
 import { MAX_ITEM_QUANTITY, useCart } from '../cart-context'
 import { useRecommendations } from '../hooks/use-recommendations'
 
@@ -42,10 +43,6 @@ const VISIBLE_CARDS = 2.35
 function cardWidthFor(screenWidth: number): number {
   const available = screenWidth - RAIL_GAP * 2
   return Math.round(Math.min(170, Math.max(128, available / VISIBLE_CARDS)))
-}
-
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
 }
 
 interface BasketSuggestionsProps {
@@ -84,6 +81,8 @@ function SuggestionCard({ item, quantity, onAdd, onChangeQuantity, onOpen, reaso
   const hasPromo = item.promotionalPrice !== null && item.promotionalPrice < item.pricePerUnit
   const displayPrice = hasPromo ? item.promotionalPrice ?? item.pricePerUnit : item.pricePerUnit
   const imageUri = item.thumbnail ?? item.photo
+  const { formatMoney } = useMoney()
+  const price = formatMoney(displayPrice)
   return (
     <TouchableOpacity
       style={[styles.card, { width, backgroundColor: semantic.bgSurface, borderColor: semantic.borderLight }]}
@@ -91,7 +90,7 @@ function SuggestionCard({ item, quantity, onAdd, onChangeQuantity, onOpen, reaso
       disabled={!onOpen}
       activeOpacity={0.8}
       accessibilityRole={onOpen ? 'button' : undefined}
-      accessibilityLabel={`${item.name}, ${formatPrice(displayPrice)} FCFA`}
+      accessibilityLabel={`${item.name}, ${price.primary}${price.secondary ? `, soit ${price.secondary}` : ''}`}
     >
       {imageUri
         ? <Image source={{ uri: imageUri }} style={styles.image} resizeMode="contain" />
@@ -107,11 +106,14 @@ function SuggestionCard({ item, quantity, onAdd, onChangeQuantity, onOpen, reaso
         {item.name}
       </Text>
       <Text style={[styles.price, hasPromo && styles.pricePromo]}>
-        {`${formatPrice(displayPrice)} FCFA`}
+        {price.primary}
         <Text style={[styles.unit, { color: semantic.textTertiary }]}>{` / ${unitShortLabel(item.unit)}`}</Text>
       </Text>
       {hasPromo && (
-        <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>{`${formatPrice(item.pricePerUnit)} FCFA`}</Text>
+        <Text style={[styles.priceOld, { color: semantic.textTertiary }]}>{formatMoney(item.pricePerUnit).primary}</Text>
+      )}
+      {price.secondary && (
+        <Text style={[styles.priceSecondary, { color: semantic.textSecondary }]} numberOfLines={1}>{price.secondary}</Text>
       )}
       <PromotionChips labels={promotionChipLabels(item.promotionTypes)} maxVisible={2} />
       {/*
@@ -312,6 +314,10 @@ const styles = StyleSheet.create({
   },
   unit: {
     fontFamily: fonts.sans,
+    fontSize: 10,
+  },
+  priceSecondary: {
+    fontFamily: fonts.mono,
     fontSize: 10,
   },
   priceOld: {

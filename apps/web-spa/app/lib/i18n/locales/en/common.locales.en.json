@@ -191,7 +191,8 @@
     "team": "Team",
     "certifications": "Labels & certifications",
     "wallets": "Wallets",
-    "topups": "Top-ups"
+    "topups": "Top-ups",
+    "farProofs": "Far proofs"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -1066,6 +1067,28 @@
         "reason": "Reason",
         "reasonPlaceholder": "E.g. the buyer called support",
         "effect": "For a multi-shop cart, every order of the same checkout changes together."
+      },
+      "gift": {
+        "badge": "Relative",
+        "filter": "Recipient",
+        "filterAll": "All orders",
+        "filter_true": "For a relative",
+        "filter_false": "Ordinary",
+        "title": "For a relative",
+        "payer": "Payer",
+        "recipient": "Relative",
+        "recipientPhone": "Relative’s phone",
+        "paidIn": "Paid in {{currency}}",
+        "frozenRate": "Applied rate (margin included)",
+        "rateValue": "{{unit}} = {{rate}} FCFA"
+      },
+      "proof": {
+        "title": "Hand-over proof",
+        "far": "Far position",
+        "photoAlt": "Hand-over photo of order {{number}}",
+        "noPhoto": "Photo deleted or unavailable",
+        "takenAt": "Photo taken on",
+        "distance": "Distance to drop-off point"
       }
     },
     "products": {
@@ -1597,6 +1620,33 @@
         "unit": "minutes",
         "saved": "Pickup delay saved",
         "error": "The pickup delay could not be saved. Try again."
+      },
+      "exchangeRates": {
+        "title": "Exchange rates",
+        "description": "What a buyer abroad sees in their currency. The foreign amount is frozen at payment: changing a rate does not affect past orders.",
+        "label": {
+          "EUR": "FCFA for €1",
+          "USD": "FCFA for US$1",
+          "CAD": "FCFA for CA$1"
+        },
+        "source": {
+          "AUTO": "Automatic",
+          "MANUAL": "Entered manually"
+        },
+        "sourceLine": "{{source}} · updated {{date}}",
+        "neverUpdated": "never",
+        "missing": "No rate: this currency is not offered until one is set.",
+        "eurHint": "Fixed CFA franc parity (655.957): this rate is never updated automatically.",
+        "stale": "This rate has not been updated for more than 72 h",
+        "margin": "Exchange margin",
+        "marginHint": "Added to the rate to cover conversion costs. From 0 to 10 %, in steps of 0.1.",
+        "refresh": "Refresh",
+        "refreshHint": "“Refresh” downloads the US and Canadian dollar rates and replaces manually entered ones.",
+        "saved": "Saved.",
+        "error": "The change was not saved.",
+        "refreshed": "Rates refreshed.",
+        "notRefreshed": "The rate service did not answer: the previous rates are kept. Try again later or enter them manually.",
+        "refreshError": "The refresh failed."
       }
     },
     "site": {
@@ -2383,6 +2433,18 @@
         "ASSIGNED_BY_ADMIN": "Courier assigned by the team",
         "PICKUP_REMINDER": "Pickup reminder sent",
         "WINDOW_CHANGED": "Window changed"
+      },
+      "farProofs": {
+        "title": "Far proofs",
+        "description": "Deliveries to a relative whose hand-over photo was taken far from the drop-off point. Check the photo, then open the order if something looks wrong.",
+        "empty": "No far proofs.",
+        "columns": {
+          "photo": "Photo",
+          "distance": "Distance",
+          "courier": "Courier",
+          "order": "Order",
+          "date": "Date"
+        }
       }
     },
     "team": {

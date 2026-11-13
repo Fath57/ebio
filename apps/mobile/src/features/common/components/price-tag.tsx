@@ -3,6 +3,7 @@ import * as React from 'react'
 import { StyleSheet, Text } from 'react-native'
 import { colors, fonts } from '../../../theme/theme'
 import { unitShortLabel } from '../../catalog/hooks/use-product-units'
+import { useMoney } from '../hooks/use-money'
 
 interface PriceTagProps {
   amount: number
@@ -15,7 +16,8 @@ interface PriceTagProps {
 const sizes = { sm: 13, md: 16, lg: 20 }
 
 export function PriceTag({ amount, unit, size = 'md', promotional = false, style }: PriceTagProps) {
-  const formatted = amount.toLocaleString('fr-FR')
+  const { formatMoney } = useMoney()
+  const money = formatMoney(amount)
 
   return (
     <Text
@@ -26,10 +28,8 @@ export function PriceTag({ amount, unit, size = 'md', promotional = false, style
         style,
       ]}
     >
-      {formatted}
-      {' '}
-      FCFA /
-      {unitShortLabel(unit)}
+      {`${money.primary} / ${unitShortLabel(unit)}`}
+      {money.secondary ? <Text style={styles.secondary}>{`  ${money.secondary}`}</Text> : null}
     </Text>
   )
 }
@@ -39,6 +39,10 @@ const styles = StyleSheet.create({
     fontFamily: fonts.mono,
     color: colors.green[600],
     letterSpacing: 0,
+  },
+  secondary: {
+    fontSize: 11,
+    color: colors.neutral[600],
   },
   promotional: {
     textDecorationLine: 'line-through',

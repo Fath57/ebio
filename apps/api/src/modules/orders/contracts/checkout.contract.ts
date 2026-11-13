@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { displayCurrencyEnum } from '../../currency/contracts/currency.contract'
 import { deliveryReasonEnum } from '../../settings/contracts/delivery-pricing.contract'
 import { deliveryAddressSchema, orderItemInputSchema, paymentMethodEnum, pickupModeEnum } from './order.contract'
 
@@ -11,12 +12,41 @@ import { deliveryAddressSchema, orderItemInputSchema, paymentMethodEnum, pickupM
  * business and stops being the buyer's.
  */
 
+/** Below this, the card gateway refuses the payment (INTRAM minimum). */
+export const GIFT_MINIMUM_TOTAL = 1000
+
+/** Accepted IANA zones; UTC is not in the list but a device may report it. */
+const TIME_ZONES = new Set([...Intl.supportedValuesOf('timeZone'), 'UTC'])
+
+/**
+ * The relative a cart is delivered to. Absent means « Me livrer ». The
+ * address and the point on the map are the checkout's own fields: with a
+ * recipient, they are the relative's.
+ */
+export const checkoutRecipientSchema = z.object({
+  name: z.string().trim().min(1).max(120),
+  phone: z.string().trim().regex(/^\+229\d{10}$/, 'Le numéro du proche doit être un numéro béninois (+229 suivi de 10 chiffres)'),
+  /** Picked from the address book; checked against the payer server side. */
+  savedRelativeId: z.string().uuid().optional(),
+}).meta({
+  title: 'CheckoutRecipient',
+  description: 'Le proche à qui le panier est livré',
+})
+
+/** IANA zone of the payer's device, to tell them the hand-over time in their own hour. */
+export const payerTimeZoneSchema = z.string().trim().max(64).refine(zone => TIME_ZONES.has(zone), {
+  message: 'Fuseau horaire inconnu',
+})
+
 export const checkoutPreviewSchema = z.object({
   items: z.array(orderItemInputSchema).min(1, 'Le panier est vide'),
   pickupMode: pickupModeEnum,
   deliveryLatitude: z.number().min(-90).max(90).optional(),
   deliveryLongitude: z.number().min(-180).max(180).optional(),
   promoCode: z.string().trim().max(50).optional(),
+  recipient: checkoutRecipientSchema.optional(),
+  displayCurrency: displayCurrencyEnum.default('XOF'),
+  payerTimeZone: payerTimeZoneSchema.optional(),
 }).meta({
   title: 'CheckoutPreview',
   description: 'Demande de chiffrage d\'un panier multi-boutiques',
@@ -53,6 +83,23 @@ export const checkoutRunBlockSchema = z.object({
   /** Gap between the two farthest pickups; null when a position is missing. */
   pickupSpreadKm: z.number().nullable(),
 }).meta({ title: 'CheckoutRunBlock' })
+
+/**
+ * The amounts in the payer's display currency. Only what is read: the
+ * amount collected is always the FCFA total.
+ */
+export const checkoutDisplaySchema = z.object({
+  currency: displayCurrencyEnum,
+  /** FCFA for one unit, margin included. */
+  rate: z.number(),
+  total: z.number(),
+  itemsTotal: z.number(),
+  deliveryFee: z.number(),
+  discount: z.number(),
+}).meta({
+  title: 'CheckoutDisplay',
+  description: 'Montants convertis dans la devise d\'affichage ; le paiement reste en FCFA',
+})
 
 export const checkoutPreviewResponseSchema = z.object({
   suppliers: z.array(checkoutSupplierBlockSchema),
@@ -91,6 +138,10 @@ export const checkoutPreviewResponseSchema = z.object({
     /** "demain à 08:00", or `null` when the schedule cannot say. */
     opensAt: z.string().nullable(),
   }).nullable(),
+  /** Null when shown in FCFA, or when the currency has no rate yet. */
+  display: checkoutDisplaySchema.nullable(),
+  /** A cart for a relative below the card minimum (1 000 FCFA): it cannot be paid. */
+  cardMinimumNotMet: z.boolean(),
 }).meta({
   title: 'CheckoutPreviewResponse',
   description: 'Chiffrage d\'un panier multi-boutiques, avant paiement',
@@ -115,6 +166,10 @@ export const createCheckoutSchema = z.object({
   /** Window chosen in the app; without it the slot text is read as a fallback. */
   deliveryWindowStart: z.string().datetime({ offset: true }).optional(),
   deliveryWindowEnd: z.string().datetime({ offset: true }).optional(),
+  recipient: checkoutRecipientSchema.optional(),
+  /** Only the currency: the server computes and freezes the rate itself. */
+  displayCurrency: displayCurrencyEnum.default('XOF'),
+  payerTimeZone: payerTimeZoneSchema.optional(),
 }).meta({
   title: 'CreateCheckout',
   description: 'Valide un panier multi-boutiques en une seule opération',
@@ -134,6 +189,10 @@ export const createCheckoutResponseSchema = z.object({
    * pickup: there is nothing to group.
    */
   deliveryRunIds: z.array(z.string().uuid()),
+  /** Delivered to a relative rather than to the payer. */
+  isGift: z.boolean(),
+  /** The conversion frozen on the checkout; null in FCFA. */
+  display: checkoutDisplaySchema.nullable(),
 }).meta({
   title: 'CreateCheckoutResponse',
   description: 'Le passage en caisse et les commandes qu\'il a créées',
@@ -148,6 +207,8 @@ export const compensateCheckoutSchema = z.object({
   description: 'Crédite le portefeuille eBio de l\'acheteur pour une commande perdue',
 })
 
+export type CheckoutRecipient = z.infer<typeof checkoutRecipientSchema>
+export type CheckoutDisplay = z.infer<typeof checkoutDisplaySchema>
 export type CheckoutPreview = z.infer<typeof checkoutPreviewSchema>
 export type CheckoutPreviewResponse = z.infer<typeof checkoutPreviewResponseSchema>
 export type CreateCheckout = z.infer<typeof createCheckoutSchema>

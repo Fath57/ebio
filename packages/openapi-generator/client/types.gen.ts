@@ -186,6 +186,26 @@ export type CartReminderSettings = {
 };
 
 /**
+ * AdminExchangeRatesInput
+ *
+ * Taux saisis à la main, en FCFA pour une unité
+ */
+export type AdminExchangeRatesInput = {
+  EUR?: number;
+  USD?: number;
+  CAD?: number;
+};
+
+/**
+ * AdminFxMarginInput
+ *
+ * Marge de change en points de base (200 = 2 %)
+ */
+export type AdminFxMarginInput = {
+  bps: number;
+};
+
+/**
  * UpdateUser
  *
  * Update user profile
@@ -194,6 +214,7 @@ export type UpdateUser = {
   name?: string;
   phone?: string;
   image?: string;
+  displayCurrency?: DisplayCurrency;
   deviceId?: string;
 };
 
@@ -394,141 +415,6 @@ export type AdminWalletDebit = {
 };
 
 /**
- * RejectCourier
- *
- * Reason shown to the rejected courier applicant
- */
-export type RejectCourier = {
-  reason: string;
-};
-
-/**
- * AssignDelivery
- *
- * Back-office assignment of a delivery to a chosen courier
- */
-export type AssignDelivery = {
-  courierId: string;
-  note?: string;
-};
-
-/**
- * RegisterCourier
- *
- * Courier application data
- */
-export type RegisterCourier = {
-  fullName: string;
-  phone: string;
-  vehicleType: VehicleType;
-  zone: string;
-  zoneLatitude?: number;
-  zoneLongitude?: number;
-  zoneRadiusKm?: number;
-  identityDocument?: string;
-};
-
-/**
- * UpdateCourier
- *
- * Editable courier profile fields
- */
-export type UpdateCourier = {
-  fullName?: string;
-  phone?: string;
-  vehicleType?: VehicleType;
-  zone?: string;
-  zoneLatitude?: number;
-  zoneLongitude?: number;
-  zoneRadiusKm?: number;
-  identityDocument?: string;
-};
-
-/**
- * UpdateCourierAvailability
- *
- * Toggle courier availability (online / offline)
- */
-export type UpdateCourierAvailability = {
-  isAvailable: boolean;
-};
-
-/**
- * UpdateCourierLocation
- *
- * Foreground position update
- */
-export type UpdateCourierLocation = {
-  latitude: number;
-  longitude: number;
-};
-
-/**
- * DeliveryTransition
- *
- * Common payload for delivery step transitions
- */
-export type DeliveryTransition = {
-  occurredAt?: Date;
-};
-
-/**
- * CompleteDelivery
- *
- * Proof of delivery: buyer confirmation code or photo
- */
-export type CompleteDelivery =
-  | {
-      proofType: "CODE";
-      code: string;
-      occurredAt?: Date;
-    }
-  | {
-      proofType: "PHOTO";
-      mediaId: string;
-      occurredAt?: Date;
-    };
-
-/**
- * FailDelivery
- *
- * Report a failed delivery attempt
- */
-export type FailDelivery = {
-  reason: DeliveryFailReason;
-  comment?: string;
-  occurredAt?: Date;
-};
-
-/**
- * RateCourier
- *
- * Buyer rating of the courier once the delivery is done
- */
-export type RateCourier = {
-  rating: number;
-  comment?: string;
-};
-
-/**
- * TipCourier
- *
- * Tip for the courier, debited from the buyer wallet and credited in full to the courier
- */
-export type TipCourier = {
-  amount: number;
-};
-
-/**
- * BuyerDecision
- *
- * Attendre encore, ou annuler et être recrédité
- */
-export type BuyerDecision = {
-  decision: "WAIT" | "CANCEL";
-};
-
-/**
  * CompensateCheckout
  *
  * Crédite le portefeuille eBio de l'acheteur pour une commande perdue
@@ -625,6 +511,149 @@ export type VerifyCheckoutInput = {
   orderId: string;
   paymentId: string;
   fedapayTransactionId: string;
+};
+
+/**
+ * RejectCourier
+ *
+ * Reason shown to the rejected courier applicant
+ */
+export type RejectCourier = {
+  reason: string;
+};
+
+/**
+ * AssignDelivery
+ *
+ * Back-office assignment of a delivery to a chosen courier
+ */
+export type AssignDelivery = {
+  courierId: string;
+  note?: string;
+};
+
+/**
+ * RegisterCourier
+ *
+ * Courier application data
+ */
+export type RegisterCourier = {
+  fullName: string;
+  phone: string;
+  vehicleType: VehicleType;
+  zone: string;
+  zoneLatitude?: number;
+  zoneLongitude?: number;
+  zoneRadiusKm?: number;
+  identityDocument?: string;
+};
+
+/**
+ * UpdateCourier
+ *
+ * Editable courier profile fields
+ */
+export type UpdateCourier = {
+  fullName?: string;
+  phone?: string;
+  vehicleType?: VehicleType;
+  zone?: string;
+  zoneLatitude?: number;
+  zoneLongitude?: number;
+  zoneRadiusKm?: number;
+  identityDocument?: string;
+};
+
+/**
+ * UpdateCourierAvailability
+ *
+ * Toggle courier availability (online / offline)
+ */
+export type UpdateCourierAvailability = {
+  isAvailable: boolean;
+};
+
+/**
+ * UpdateCourierLocation
+ *
+ * Foreground position update
+ */
+export type UpdateCourierLocation = {
+  latitude: number;
+  longitude: number;
+};
+
+/**
+ * DeliveryTransition
+ *
+ * Common payload for delivery step transitions
+ */
+export type DeliveryTransition = {
+  occurredAt?: Date;
+};
+
+/**
+ * CompleteDelivery
+ *
+ * Proof of delivery: buyer confirmation code, photo, or both with the position (relative)
+ */
+export type CompleteDelivery =
+  | {
+      proofType: "CODE";
+      code: string;
+      occurredAt?: Date;
+    }
+  | {
+      proofType: "PHOTO";
+      mediaId: string;
+      occurredAt?: Date;
+    }
+  | {
+      proofType: "CODE_AND_PHOTO";
+      code: string;
+      mediaId: string;
+      latitude: number;
+      longitude: number;
+      occurredAt?: Date;
+    };
+
+/**
+ * FailDelivery
+ *
+ * Report a failed delivery attempt
+ */
+export type FailDelivery = {
+  reason: DeliveryFailReason;
+  comment?: string;
+  occurredAt?: Date;
+};
+
+/**
+ * RateCourier
+ *
+ * Buyer rating of the courier once the delivery is done
+ */
+export type RateCourier = {
+  rating: number;
+  comment?: string;
+};
+
+/**
+ * TipCourier
+ *
+ * Tip for the courier, debited from the buyer wallet and credited in full to the courier
+ */
+export type TipCourier = {
+  amount: number;
+};
+
+/**
+ * BuyerDecision
+ *
+ * Attendre encore, ou annuler et être recrédité
+ */
+export type BuyerDecision = {
+  decision: "WAIT" | "CANCEL";
 };
 
 /**
@@ -919,6 +948,9 @@ export type CheckoutPreview = {
   deliveryLatitude?: number;
   deliveryLongitude?: number;
   promoCode?: string;
+  recipient?: CheckoutRecipient;
+  displayCurrency: DisplayCurrency;
+  payerTimeZone?: string;
 };
 
 /**
@@ -937,6 +969,9 @@ export type CreateCheckout = {
   deliverySlot?: string;
   deliveryWindowStart?: Date;
   deliveryWindowEnd?: Date;
+  recipient?: CheckoutRecipient;
+  displayCurrency: DisplayCurrency;
+  payerTimeZone?: string;
 };
 
 /**
@@ -1856,6 +1891,34 @@ export type CreateReview = {
 };
 
 /**
+ * CreateRelative
+ *
+ * Ajouter un proche au carnet
+ */
+export type CreateRelative = {
+  nickname: string;
+  name: string;
+  phone: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+};
+
+/**
+ * UpdateRelative
+ *
+ * Modifier un proche du carnet ; seuls les champs envoyés changent
+ */
+export type UpdateRelative = {
+  nickname?: string;
+  name?: string;
+  phone?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+};
+
+/**
  * Sales Statement Period
  *
  * Calendar days, both included, read in the shop's own time zone
@@ -2505,6 +2568,26 @@ export type DeliveryPricingMode =
   (typeof DeliveryPricingMode)[keyof typeof DeliveryPricingMode];
 
 /**
+ * DisplayCurrency
+ *
+ * Devise d'affichage des prix ; le paiement reste en FCFA
+ */
+export const DisplayCurrency = {
+  XOF: "XOF",
+  EUR: "EUR",
+  USD: "USD",
+  CAD: "CAD",
+} as const;
+
+/**
+ * DisplayCurrency
+ *
+ * Devise d'affichage des prix ; le paiement reste en FCFA
+ */
+export type DisplayCurrency =
+  (typeof DisplayCurrency)[keyof typeof DisplayCurrency];
+
+/**
  * OpeningHours
  *
  * Weekly opening hours with days as keys
@@ -2741,6 +2824,17 @@ export const PickupMode = { ON_SITE: "ON_SITE", DELIVERY: "DELIVERY" } as const;
  * How the buyer will receive the order
  */
 export type PickupMode = (typeof PickupMode)[keyof typeof PickupMode];
+
+/**
+ * CheckoutRecipient
+ *
+ * Le proche à qui le panier est livré
+ */
+export type CheckoutRecipient = {
+  name: string;
+  phone: string;
+  savedRelativeId?: string;
+};
 
 /**
  * PaymentMethod
@@ -5710,6 +5804,12 @@ export type UsersControllerUpdateMeData = {
     name?: string;
     phone?: string;
     image?: string;
+    /**
+     * DisplayCurrency
+     *
+     * Devise d'affichage des prix ; le paiement reste en FCFA
+     */
+    displayCurrency?: "XOF" | "EUR" | "USD" | "CAD";
     deviceId?: string;
   };
   path?: never;
@@ -7043,6 +7143,23 @@ export type OrdersControllerPreviewCheckoutData = {
     deliveryLatitude?: number;
     deliveryLongitude?: number;
     promoCode?: string;
+    /**
+     * CheckoutRecipient
+     *
+     * Le proche à qui le panier est livré
+     */
+    recipient?: {
+      name: string;
+      phone: string;
+      savedRelativeId?: string;
+    };
+    /**
+     * DisplayCurrency
+     *
+     * Devise d'affichage des prix ; le paiement reste en FCFA
+     */
+    displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+    payerTimeZone?: string;
   };
   path?: never;
   query?: never;
@@ -7084,6 +7201,23 @@ export type OrdersControllerCreateCheckoutData = {
     deliverySlot?: string;
     deliveryWindowStart?: Date;
     deliveryWindowEnd?: Date;
+    /**
+     * CheckoutRecipient
+     *
+     * Le proche à qui le panier est livré
+     */
+    recipient?: {
+      name: string;
+      phone: string;
+      savedRelativeId?: string;
+    };
+    /**
+     * DisplayCurrency
+     *
+     * Devise d'affichage des prix ; le paiement reste en FCFA
+     */
+    displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+    payerTimeZone?: string;
   };
   path?: never;
   query?: never;
@@ -7182,6 +7316,20 @@ export type OrdersControllerPreviewData = {
 
 export type OrdersControllerPreviewResponses = {
   201: unknown;
+};
+
+export type OrdersControllerFindReceivedData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/orders/received";
+};
+
+export type OrdersControllerFindReceivedResponses = {
+  200: unknown;
 };
 
 export type OrdersControllerFindByIdData = {
@@ -7493,6 +7641,22 @@ export type CheckoutsControllerCompensateData = {
 export type CheckoutsControllerCompensateResponses = {
   201: unknown;
 };
+
+export type CheckoutsControllerResendRecipientSmsData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/checkouts/{id}/recipient-sms";
+};
+
+export type CheckoutsControllerResendRecipientSmsResponses = {
+  204: void;
+};
+
+export type CheckoutsControllerResendRecipientSmsResponse =
+  CheckoutsControllerResendRecipientSmsResponses[keyof CheckoutsControllerResendRecipientSmsResponses];
 
 export type PaymentsWebhookControllerHandleFedaPayWebhookData = {
   body?: never;
@@ -7950,7 +8114,7 @@ export type DeliveriesControllerCompleteData = {
   /**
    * CompleteDelivery
    *
-   * Proof of delivery: buyer confirmation code or photo
+   * Proof of delivery: buyer confirmation code, photo, or both with the position (relative)
    */
   body:
     | {
@@ -7961,6 +8125,14 @@ export type DeliveriesControllerCompleteData = {
     | {
         proofType: "PHOTO";
         mediaId: string;
+        occurredAt?: Date;
+      }
+    | {
+        proofType: "CODE_AND_PHOTO";
+        code: string;
+        mediaId: string;
+        latitude: number;
+        longitude: number;
         occurredAt?: Date;
       };
   path: {
@@ -8098,7 +8270,7 @@ export type RunsControllerDeliverData = {
   /**
    * CompleteDelivery
    *
-   * Proof of delivery: buyer confirmation code or photo
+   * Proof of delivery: buyer confirmation code, photo, or both with the position (relative)
    */
   body:
     | {
@@ -8109,6 +8281,14 @@ export type RunsControllerDeliverData = {
     | {
         proofType: "PHOTO";
         mediaId: string;
+        occurredAt?: Date;
+      }
+    | {
+        proofType: "CODE_AND_PHOTO";
+        code: string;
+        mediaId: string;
+        latitude: number;
+        longitude: number;
         occurredAt?: Date;
       };
   path: {
@@ -8255,6 +8435,20 @@ export type AdminCouriersControllerListDeliveriesData = {
 };
 
 export type AdminCouriersControllerListDeliveriesResponses = {
+  200: unknown;
+};
+
+export type AdminCouriersControllerListFarProofsData = {
+  body?: never;
+  path?: never;
+  query: {
+    page: string;
+    limit: string;
+  };
+  url: "/api/admin/deliveries/far-proofs";
+};
+
+export type AdminCouriersControllerListFarProofsResponses = {
   200: unknown;
 };
 
@@ -9389,6 +9583,79 @@ export type ReferralsControllerClaimData = {
 
 export type ReferralsControllerClaimResponses = {
   201: unknown;
+};
+
+export type AdminExchangeRatesControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/exchange-rates";
+};
+
+export type AdminExchangeRatesControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminExchangeRatesControllerUpdateData = {
+  /**
+   * AdminExchangeRatesInput
+   *
+   * Taux saisis à la main, en FCFA pour une unité
+   */
+  body: {
+    EUR?: number;
+    USD?: number;
+    CAD?: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/exchange-rates";
+};
+
+export type AdminExchangeRatesControllerUpdateResponses = {
+  200: unknown;
+};
+
+export type AdminExchangeRatesControllerUpdateMarginData = {
+  /**
+   * AdminFxMarginInput
+   *
+   * Marge de change en points de base (200 = 2 %)
+   */
+  body: {
+    bps: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/fx-margin";
+};
+
+export type AdminExchangeRatesControllerUpdateMarginResponses = {
+  200: unknown;
+};
+
+export type AdminExchangeRatesControllerRefreshData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/exchange-rates/refresh";
+};
+
+export type AdminExchangeRatesControllerRefreshResponses = {
+  201: unknown;
+};
+
+export type GiftTrackingControllerGetData = {
+  body?: never;
+  path: {
+    token: string;
+  };
+  query?: never;
+  url: "/api/gift-tracking/{token}";
+};
+
+export type GiftTrackingControllerGetResponses = {
+  200: unknown;
 };
 
 export type HomeControllerListData = {
@@ -10637,6 +10904,81 @@ export type CommunityControllerGetShareUrlResponses = {
   200: unknown;
 };
 
+export type RelativesControllerListData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/relatives";
+};
+
+export type RelativesControllerListResponses = {
+  200: unknown;
+};
+
+export type RelativesControllerCreateData = {
+  /**
+   * CreateRelative
+   *
+   * Ajouter un proche au carnet
+   */
+  body: {
+    nickname: string;
+    name: string;
+    phone: string;
+    address: string;
+    latitude: number;
+    longitude: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/relatives";
+};
+
+export type RelativesControllerCreateResponses = {
+  201: unknown;
+};
+
+export type RelativesControllerRemoveData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/relatives/{id}";
+};
+
+export type RelativesControllerRemoveResponses = {
+  204: void;
+};
+
+export type RelativesControllerRemoveResponse =
+  RelativesControllerRemoveResponses[keyof RelativesControllerRemoveResponses];
+
+export type RelativesControllerUpdateData = {
+  /**
+   * UpdateRelative
+   *
+   * Modifier un proche du carnet ; seuls les champs envoyés changent
+   */
+  body: {
+    nickname?: string;
+    name?: string;
+    phone?: string;
+    address?: string;
+    latitude?: number;
+    longitude?: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/relatives/{id}";
+};
+
+export type RelativesControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type TrainingControllerGetModulesData = {
   body?: never;
   path?: never;
@@ -10989,6 +11331,7 @@ export type AdminControllerGetOrdersData = {
     promo: string;
     sponsor: string;
     courier: string;
+    gift: string;
     sortBy: string;
     sortDir: string;
     format: string;

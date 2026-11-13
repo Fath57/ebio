@@ -58,6 +58,10 @@ export enum NotificationType {
   /** Sponsored banner request reviewed by eBio. */
   BANNER_APPROVED = 'BANNER_APPROVED',
   BANNER_REJECTED = 'BANNER_REJECTED',
+  /** A cart sent to a relative was handed over; the push carries the photo. */
+  GIFT_DELIVERED = 'GIFT_DELIVERED',
+  /** A cart sent to a relative could not be handed over; the wallet is credited. */
+  GIFT_DELIVERY_FAILED = 'GIFT_DELIVERY_FAILED',
 }
 
 export enum NotificationChannel {

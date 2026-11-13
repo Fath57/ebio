@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { displayCurrencyEnum } from '../../currency/contracts/currency.contract'
 
 /**
  * What a courier needs to find a door.
@@ -150,6 +151,45 @@ export const orderDeliverySummarySchema = z.object({
   description: 'Current delivery run of an order (shared fleet)',
 })
 
+/** A cart sent to a relative, as the payer follows it. */
+export const orderGiftSchema = z.object({
+  recipient: z.object({
+    name: z.string(),
+    phone: z.string(),
+  }),
+  /** The hand-over code, once the courier has collected — as for any order. */
+  confirmationCode: z.string().nullable(),
+  /** Resends of the relative's SMS still allowed (3 at most). */
+  smsResendsLeft: z.number().int().min(0),
+}).meta({
+  title: 'OrderGift',
+  description: 'Commande livrée à un proche : destinataire, code de remise, renvois de SMS restants',
+})
+
+/** The amount in the payer's currency, frozen at checkout. */
+export const orderDisplaySchema = z.object({
+  currency: displayCurrencyEnum,
+  /** FCFA for one unit, margin included, as frozen. */
+  rate: z.number(),
+  /** The whole checkout's total in that currency. */
+  total: z.number(),
+}).meta({
+  title: 'OrderDisplay',
+  description: 'Montant dans la devise d\'affichage, gelé au passage en caisse',
+})
+
+/** The hand-over proof of a cart sent to a relative. */
+export const orderProofSchema = z.object({
+  /** Signed for one hour; null once the photo is purged (90 days). */
+  photoUrl: z.string().nullable(),
+  takenAt: z.string().datetime().nullable(),
+  /** Taken more than 300 m from the delivery point — for support, not shown to the payer. */
+  far: z.boolean(),
+}).meta({
+  title: 'OrderProof',
+  description: 'Preuve de remise au proche : photo, heure, éloignement',
+})
+
 export const orderResponseSchema = z.object({
   id: z.string().uuid(),
   orderNumber: z.string(),
@@ -182,6 +222,12 @@ export const orderResponseSchema = z.object({
   delivery: orderDeliverySummarySchema.nullable(),
   /** The checkout the order came from; null before the unified cart. */
   checkoutId: z.string().uuid().nullable(),
+  /** Payer only: the relative the cart goes to; null for an ordinary order. */
+  gift: orderGiftSchema.nullable(),
+  /** Payer only: the frozen foreign-currency amount; null in FCFA. */
+  display: orderDisplaySchema.nullable(),
+  /** Payer only, on the order detail: the hand-over proof of a gift, once delivered. */
+  proof: orderProofSchema.nullable(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({
@@ -252,5 +298,8 @@ export type RejectOrder = z.infer<typeof rejectOrderSchema>
 export type CreateDispute = z.infer<typeof createDisputeSchema>
 export type OrderItemInput = z.infer<typeof orderItemInputSchema>
 export type OrderResponse = z.infer<typeof orderResponseSchema>
+export type OrderGift = z.infer<typeof orderGiftSchema>
+export type OrderDisplay = z.infer<typeof orderDisplaySchema>
+export type OrderProof = z.infer<typeof orderProofSchema>
 export type OrderDeliverySummary = z.infer<typeof orderDeliverySummarySchema>
 export type DisputeResponse = z.infer<typeof disputeResponseSchema>

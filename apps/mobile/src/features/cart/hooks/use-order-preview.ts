@@ -58,6 +58,27 @@ export interface OrderPreview {
    */
   cashBlockedShop: string | null
   total: number
+  /** The amounts in the payer's display currency; null for FCFA. */
+  display: OrderPreviewDisplay | null
+  /** Gift order under the card minimum (1 000 FCFA): it cannot be paid. */
+  cardMinimumNotMet: boolean
+}
+
+export interface OrderPreviewDisplay {
+  currency: 'EUR' | 'USD' | 'CAD'
+  /** FCFA per unit, margin included. */
+  rate: number
+  total: number
+  itemsTotal: number
+  deliveryFee: number
+  discount: number
+}
+
+/** The person a gift order is delivered to (contracts/diaspora.md §2). */
+export interface PreviewRecipient {
+  name: string
+  phone: string
+  savedRelativeId?: string
 }
 
 export interface OrderPreviewInput {
@@ -65,6 +86,10 @@ export interface OrderPreviewInput {
   position: { latitude: number, longitude: number } | null
   promoCode: string | null
   items: Array<{ productId: string, variantId?: string, quantity: number }>
+  /** Absent for « Me livrer ». */
+  recipient?: PreviewRecipient | null
+  displayCurrency?: 'XOF' | 'EUR' | 'USD' | 'CAD'
+  payerTimeZone?: string | null
 }
 
 export interface OrderPreviewState {
@@ -132,6 +157,27 @@ function parsePreview(data: Record<string, unknown>): OrderPreview {
     closedShop: parseClosedShop(data.closedShop),
     cashBlockedShop: typeof data.cashBlockedShop === 'string' ? data.cashBlockedShop : null,
     total: readNumber(data.total),
+    display: parseDisplay(data.display),
+    cardMinimumNotMet: data.cardMinimumNotMet === true,
+  }
+}
+
+function parseDisplay(raw: unknown): OrderPreviewDisplay | null {
+  if (!raw || typeof raw !== 'object') {
+    return null
+  }
+  const data = raw as Record<string, unknown>
+  const currency = data.currency
+  if (currency !== 'EUR' && currency !== 'USD' && currency !== 'CAD') {
+    return null
+  }
+  return {
+    currency,
+    rate: readNumber(data.rate),
+    total: readNumber(data.total),
+    itemsTotal: readNumber(data.itemsTotal),
+    deliveryFee: readNumber(data.deliveryFee),
+    discount: readNumber(data.discount),
   }
 }
 
@@ -184,6 +230,9 @@ export function useOrderPreview(input: OrderPreviewInput | null): OrderPreviewSt
             pickupMode: body.pickupMode,
             ...(body.position ? { deliveryLatitude: body.position.latitude, deliveryLongitude: body.position.longitude } : {}),
             ...(body.promoCode ? { promoCode: body.promoCode } : {}),
+            ...(body.recipient ? { recipient: body.recipient } : {}),
+            ...(body.displayCurrency ? { displayCurrency: body.displayCurrency } : {}),
+            ...(body.payerTimeZone ? { payerTimeZone: body.payerTimeZone } : {}),
             items: body.items,
           }),
         })

@@ -1,3 +1,5 @@
+import type { FrozenDisplay } from '../../common/hooks/use-money'
+import type { OrderGift, OrderProof } from './gift-recipient-card'
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import Banknote from 'lucide-react-native/dist/esm/icons/banknote'
@@ -39,6 +41,8 @@ import { formatTime } from '../../../utils/format-time'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { StarRating } from '../../common/components/star-rating'
+import { formatFrozenMoney, formatXof, parseFrozenDisplay } from '../../common/hooks/use-money'
+import { GiftRecipientCard, parseOrderGift, parseOrderProof } from './gift-recipient-card'
 
 type OrderStatus = 'PENDING_PAYMENT' | 'PLACED' | 'ACCEPTED' | 'PREPARING' | 'READY' | 'IN_DELIVERY' | 'DELIVERED' | 'CANCELLED'
 type PickupMode = 'ON_SITE' | 'DELIVERY'
@@ -79,6 +83,13 @@ interface OrderDetail {
   /** Shop's own estimate of when the parcel will be ready (PREPARING only). */
   estimatedReadyAt: string | null
   createdAt: string
+  /** The cart this order was paid with; the recipient SMS is resent per cart. */
+  checkoutId: string | null
+  /** Set when the order is delivered to a relative of the payer. */
+  gift: OrderGift | null
+  proof: OrderProof | null
+  /** Currency and rate frozen at checkout; null when paid in FCFA. */
+  display: FrozenDisplay | null
 }
 
 interface OrderTrackingProps {
@@ -122,10 +133,6 @@ function getStatusIcon(status: OrderStatus, color: string): React.ReactNode {
   }
 }
 
-function formatPrice(value: number): string {
-  return value.toLocaleString('fr-FR').replace(/,/g, ' ')
-}
-
 export function OrderTracking({
   orderId,
   onBack,
@@ -164,6 +171,10 @@ export function OrderTracking({
           deliveryAddress: raw.deliveryAddress ?? null,
           estimatedReadyAt: (raw.estimatedReadyAt ?? null) as string | null,
           createdAt: raw.createdAt,
+          checkoutId: typeof raw.checkoutId === 'string' ? raw.checkoutId : null,
+          gift: parseOrderGift(raw.gift),
+          proof: parseOrderProof(raw.proof),
+          display: parseFrozenDisplay(raw.display),
           items: ((raw.items ?? []) as Array<Record<string, unknown>>).map(item => ({
             productName: item.productName as string,
             productPhoto: (item.productPhoto ?? null) as string | null,
@@ -296,6 +307,18 @@ export function OrderTracking({
             onOpenCourierChat={onOpenCourierChat}
             onTipCourier={() => onTipCourier(order.supplierId)}
             onInfoLoaded={setDeliveryInfo}
+            // For a gift the code belongs to the recipient: the gift card shows it.
+            hideCode={order.gift !== null}
+          />
+        )}
+
+        {order.gift && (
+          <GiftRecipientCard
+            gift={order.gift}
+            proof={order.proof}
+            checkoutId={order.checkoutId}
+            isDelivered={isDelivered}
+            isCancelled={isCancelled}
           />
         )}
 
@@ -437,11 +460,11 @@ export function OrderTracking({
                       <Text style={[styles.itemQty, { color: semantic.textTertiary }]}>
                         {item.isGift
                           ? `${item.quantity}x offert${item.quantity > 1 ? 's' : ''}`
-                          : `${item.quantity}x ${formatPrice(item.unitPrice)} FCFA`}
+                          : `${item.quantity}x ${formatFrozenMoney(item.unitPrice, order.display).primary}`}
                       </Text>
                     </View>
                     <Text style={[styles.itemTotal, { color: item.isGift ? colors.green[600] : semantic.textPrimary }]}>
-                      {item.isGift ? 'Offert' : `${formatPrice(item.totalPrice)} FCFA`}
+                      {item.isGift ? 'Offert' : formatFrozenMoney(item.totalPrice, order.display).primary}
                     </Text>
                   </View>
                   {index < order.items.length - 1 && (
@@ -458,9 +481,7 @@ export function OrderTracking({
                     Sous-total
                   </Text>
                   <Text style={[styles.totalsValue, { color: semantic.textSecondary }]}>
-                    {formatPrice(subtotal)}
-                    {' '}
-                    FCFA
+                    {formatFrozenMoney(subtotal, order.display).primary}
                   </Text>
                 </View>
                 {deliveryFee > 0 && (
@@ -469,9 +490,7 @@ export function OrderTracking({
                       Livraison
                     </Text>
                     <Text style={[styles.totalsValue, { color: semantic.textSecondary }]}>
-                      {formatPrice(deliveryFee)}
-                      {' '}
-                      FCFA
+                      {formatFrozenMoney(deliveryFee, order.display).primary}
                     </Text>
                   </View>
                 )}
@@ -480,11 +499,20 @@ export function OrderTracking({
                     Total
                   </Text>
                   <Text style={[styles.totalsFinalValue, { color: semantic.textPrimaryColor }]}>
-                    {formatPrice(order.total)}
-                    {' '}
-                    FCFA
+                    {formatFrozenMoney(order.total, order.display).primary}
                   </Text>
                 </View>
+                {/* The foreign amount is frozen at checkout; FCFA is what was charged. */}
+                {order.display && (
+                  <View style={styles.totalsRow}>
+                    <Text style={[styles.totalsLabel, { color: semantic.textSecondary }]}>
+                      Montant encaissé
+                    </Text>
+                    <Text style={[styles.totalsValue, { color: semantic.textSecondary }]}>
+                      {formatXof(order.total)}
+                    </Text>
+                  </View>
+                )}
               </View>
             </View>
           )}
@@ -544,7 +572,7 @@ export function OrderTracking({
               </Text>
               {order.paymentMethod === 'CASH_ON_DELIVERY' && order.pickupMode === 'DELIVERY' && !isDelivered && !isCancelled && (
                 <Text style={[styles.infoLabel, { color: colors.earth[600], marginTop: 2 }]}>
-                  {`À régler au livreur : ${formatPrice(order.total)} FCFA en espèces`}
+                  {`À régler au livreur : ${formatXof(order.total)} en espèces`}
                 </Text>
               )}
             </View>
@@ -1182,9 +1210,10 @@ function BuyerDecisionCard({ runId, onResolved }: { runId: string, onResolved: (
   )
 }
 
-function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourier, onInfoLoaded }: {
+function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourier, onInfoLoaded, hideCode = false }: {
   orderId: string
   isDelivered: boolean
+  hideCode?: boolean
   onOpenCourierChat: (deliveryId: string, courierName: string) => void
   onTipCourier: () => void
   onInfoLoaded: (info: DeliveryInfo) => void
@@ -1278,7 +1307,7 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourie
             )
           : null}
       </View>
-      {!isDelivered && info.confirmationCode
+      {!isDelivered && !hideCode && info.confirmationCode
         ? (
             <View style={[deliveryStyles.codeBox, { backgroundColor: semantic.bgPrimaryLight }]}>
               <Text style={[deliveryStyles.codeLabel, { color: semantic.textSecondary }]}>
@@ -1306,7 +1335,7 @@ function DeliveryInfoCard({ orderId, isDelivered, onOpenCourierChat, onTipCourie
                     <View style={deliveryStyles.feedbackRow}>
                       <Text style={[deliveryStyles.feedbackLabel, { color: semantic.textSecondary }]}>Pourboire laissé</Text>
                       <Text style={[deliveryStyles.tipValue, { color: semantic.textPrimaryColor }]}>
-                        {`${formatPrice(info.tipAmount)} FCFA`}
+                        {formatXof(info.tipAmount)}
                       </Text>
                     </View>
                   )

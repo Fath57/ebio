@@ -2,6 +2,7 @@ import type { CreateReview } from './contracts/rating.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
+import { isLinkedRecipient } from '../gift/recipient-link'
 import { Order, OrderStatus } from '../orders/entities/order.entity'
 import { Supplier } from '../suppliers/supplier.entity'
 import { Badge, BadgeType } from './entities/badge.entity'
@@ -23,11 +24,19 @@ export class RatingsService {
     if (data.transactionType === TransactionType.ORDER && data.orderId) {
       const order = await this.em.findOne(Order, {
         id: data.orderId,
-        buyer: { id: buyerId },
         status: OrderStatus.DELIVERED,
       })
       if (!order)
         throw new BadRequestException('Commande non trouvée ou non livrée')
+
+      // The payer, or the relative the cart was sent to (009) — who is the
+      // one who actually tasted it. The relative only rates the shop that
+      // sold it.
+      if (order.buyer.id !== buyerId) {
+        const recipient = order.supplier.id === data.supplierId && await isLinkedRecipient(this.em, order.id, buyerId)
+        if (!recipient)
+          throw new BadRequestException('Commande non trouvée ou non livrée')
+      }
 
       const existing = await this.em.findOne(Review, { buyer: { id: buyerId }, order: { id: data.orderId } })
       if (existing)

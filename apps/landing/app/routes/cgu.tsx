@@ -61,6 +61,8 @@ export default function Cgu({ loaderData }: Route.ComponentProps) {
         <li>Le total, frais de livraison compris, est affiché avant la confirmation de commande.</li>
         <li>Le paiement se fait par Mobile Money (MTN, Moov) via un prestataire de paiement, ou en espèces à la remise selon la boutique.</li>
         <li>Les frais de livraison sont fixés par chaque boutique et lui sont reversés en intégralité.</li>
+        <li>Vous pouvez choisir d’afficher les prix en euros, en dollars américains ou en dollars canadiens. Ce montant est indicatif : il est calculé au taux en vigueur au moment de la commande, puis figé. Le montant réellement encaissé est toujours celui en FCFA ; s’il est réglé par carte bancaire, votre banque le convertit à son propre taux.</li>
+        <li>Le paiement par carte bancaire est également accepté.</li>
       </ul>
 
       <h2>6. Livraison et retrait</h2>
@@ -73,6 +75,15 @@ export default function Cgu({ loaderData }: Route.ComponentProps) {
         {' '}
         <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>
         .
+      </p>
+      <p>
+        Vous pouvez aussi commander pour un proche, livré à son adresse. Le
+        paiement en espèces n’est alors pas proposé. Votre proche reçoit par SMS
+        un lien de suivi, puis le code à remettre au livreur. Le livreur vérifie
+        ce code et prend une photo de la remise, qui vous est envoyée. Si la
+        remise échoue (proche absent, refus, adresse introuvable), la commande est
+        annulée et vous êtes remboursé sur votre portefeuille eBio, frais de
+        livraison déduits.
       </p>
 
       <h2>7. Avis et contenus</h2>

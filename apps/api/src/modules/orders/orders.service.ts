@@ -8,6 +8,7 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
+  forwardRef,
   Inject,
   Injectable,
   Logger,
@@ -22,6 +23,7 @@ import { VehicleType } from '../deliveries/entities/courier-profile.entity'
 import { Delivery, DeliveryStatus } from '../deliveries/entities/delivery.entity'
 import { EmailService } from '../email/email.service'
 import { RouteMapService } from '../email/route-map.service'
+import { GiftNotifierService } from '../gift/gift-notifier.service'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { CommissionService } from '../payments/commission.service'
@@ -43,6 +45,7 @@ import { WalletTransactionType } from '../wallet/entities/wallet-transaction.ent
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { SupplierCashBlockService } from '../wallet/supplier-cash-block.service'
 import { WalletService } from '../wallet/wallet.service'
+import { assertBuyerVerified } from './account-verification'
 import { Dispute } from './entities/dispute.entity'
 import { OrderItem } from './entities/order-item.entity'
 import { Order, OrderStatus, PaymentMethod, PickupMode } from './entities/order.entity'
@@ -201,6 +204,8 @@ export class OrdersService {
     private readonly escrowScheduler: EscrowSchedulerService,
     @Inject(ORDER_DELIVERY_HOOKS)
     private readonly deliveriesService: OrderDeliveryHooks,
+    @Inject(forwardRef(() => GiftNotifierService))
+    private readonly giftNotifier: GiftNotifierService,
   ) {}
 
   /**
@@ -237,6 +242,10 @@ export class OrdersService {
    */
   async create(buyerId: string, data: CreateOrder, checkoutContext?: CheckoutOrderContext): Promise<Order> {
     const buyer = await this.em.findOneOrFail(User, { id: buyerId })
+    // The unified checkout checked it already, once for the whole cart.
+    if (!checkoutContext) {
+      assertBuyerVerified(buyer)
+    }
 
     const supplier = await this.em.findOne(Supplier, { id: data.supplierId }, { populate: ['user'] })
     if (!supplier) {
@@ -386,7 +395,10 @@ export class OrdersService {
     // Cash and wallet orders have no pending payment step: notify at once.
     if (order.paymentMethod !== PaymentMethod.FEDAPAY) {
       await this.sendOrderPlacedNotifications(order)
-      void this.orderEmails.sendOrderPlaced(order.id)
+      // Inside a checkout the order is not committed yet: the e-mail reads it
+      // from a fresh context, so the checkout sends it after its transaction.
+      if (!checkoutContext)
+        void this.orderEmails.sendOrderPlaced(order.id)
     }
 
     return order
@@ -466,7 +478,7 @@ export class OrdersService {
 
   async findById(id: string): Promise<Order> {
     const order = await this.em.findOne(Order, { id }, {
-      populate: ['buyer', 'supplier', 'items', 'items.product', 'items.variant'],
+      populate: ['buyer', 'supplier', 'checkout', 'items', 'items.product', 'items.variant'],
     })
     if (!order) {
       throw new NotFoundException('Commande introuvable')
@@ -484,7 +496,8 @@ export class OrdersService {
     const offset = ((filters.page ?? 1) - 1) * limit
 
     const [orders, total] = await this.em.findAndCount(Order, where, {
-      populate: ['supplier', 'items', 'items.product'],
+      // The checkout carries the frozen display currency the list shows.
+      populate: ['supplier', 'checkout', 'items', 'items.product'],
       orderBy: { createdAt: 'DESC' },
       limit,
       offset,
@@ -1399,6 +1412,11 @@ export class OrdersService {
   private async onOrderCancelled(order: Order): Promise<void> {
     await this.promoCodesService.release(order.id)
     await this.compensationService.compensateOrder(order.id, 'commande annulée')
+    // A relative told a cart was coming is told it is not — once every order
+    // of the checkout is cancelled (the notifier checks both).
+    if (order.checkout) {
+      await this.giftNotifier.announceCancellation(order.checkout.id)
+    }
   }
 
   /** The rate button disappears once the order carries a review. */

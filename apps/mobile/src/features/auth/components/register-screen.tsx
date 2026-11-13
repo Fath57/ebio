@@ -33,6 +33,7 @@ import { useTheme } from '../../../theme/theme-context'
 import { apiFetch } from '../../../utils/api-client'
 import { APP_VARIANT, BRAND_LOGO } from '../../../utils/app-variant'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { isAbroad } from '../../common/utils/is-abroad'
 import { clearPendingReferralCode, getPendingReferralCode, normalizeReferralCode, setPendingReferralCode } from '../../referrals/pending-referral'
 import { AppleSignInButton } from './apple-sign-in-button'
 import { GoogleSignInButton } from './google-sign-in-button'
@@ -52,7 +53,10 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
 
-  const [step, setStep] = useState<Step>('phone-input')
+  // Outside Benin an SMS code cannot reach the number: e-mail, Google and
+  // Apple come first, the phone flow stays one tap away.
+  const [abroad] = useState(isAbroad)
+  const [step, setStep] = useState<Step>(abroad ? 'email-form' : 'phone-input')
   const [phone, setPhone] = useState('+229')
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -287,6 +291,40 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
 
   const isPhoneValid = /^\+229\d{10}$/.test(phone)
 
+  // Google and Apple, below the phone form — and below the e-mail form when
+  // the device is abroad, where that form comes first.
+  const socialSignUp = (
+    <>
+      <View style={styles.dividerRow}>
+        <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
+        <Text style={[styles.dividerText, { color: semantic.textTertiary }]}>ou</Text>
+        <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
+      </View>
+
+      <View
+        pointerEvents={acceptedTerms ? 'auto' : 'none'}
+        style={[styles.socialButtons, !acceptedTerms && styles.submitButtonDisabled]}
+      >
+        <AppleSignInButton
+          mode="signUp"
+          onSuccess={() => {
+            void finishRegistration()
+          }}
+          onError={setError}
+        />
+        {isGoogleSignInAvailable && (
+          <GoogleSignInButton
+            label="S'inscrire avec Google"
+            onSuccess={() => {
+              void finishRegistration()
+            }}
+            onError={setError}
+          />
+        )}
+      </View>
+    </>
+  )
+
   return (
     <KeyboardAwareView style={[styles.flex, { backgroundColor: semantic.bgPage }]}>
       <ScrollView
@@ -386,33 +424,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                 </Text>
               </Pressable>
 
-              <View style={styles.dividerRow}>
-                <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
-                <Text style={[styles.dividerText, { color: semantic.textTertiary }]}>ou</Text>
-                <View style={[styles.dividerLine, { backgroundColor: semantic.borderLight }]} />
-              </View>
-
-              <View
-                pointerEvents={acceptedTerms ? 'auto' : 'none'}
-                style={[styles.socialButtons, !acceptedTerms && styles.submitButtonDisabled]}
-              >
-                <AppleSignInButton
-                  mode="signUp"
-                  onSuccess={() => {
-                    void finishRegistration()
-                  }}
-                  onError={setError}
-                />
-                {isGoogleSignInAvailable && (
-                  <GoogleSignInButton
-                    label="S'inscrire avec Google"
-                    onSuccess={() => {
-                      void finishRegistration()
-                    }}
-                    onError={setError}
-                  />
-                )}
-              </View>
+              {socialSignUp}
             </>
           )}
 
@@ -578,11 +590,13 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
                     )}
               </Pressable>
 
-              <Pressable onPress={switchToPhone} hitSlop={8} style={styles.methodSwitch}>
+              <Pressable onPress={switchToPhone} hitSlop={8} style={styles.methodSwitch} accessibilityRole="button">
                 <Text style={[styles.methodSwitchText, { color: semantic.textPrimaryColor }]}>
-                  S'inscrire avec un téléphone
+                  {abroad ? 'J\'ai un numéro béninois' : 'S\'inscrire avec un téléphone'}
                 </Text>
               </Pressable>
+
+              {abroad && socialSignUp}
             </>
           )}
 

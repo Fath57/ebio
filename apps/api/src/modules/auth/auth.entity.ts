@@ -30,7 +30,7 @@ export type UserStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED' | 'DELETED'
 
 @Entity({ tableName: 'users' })
 export class User {
-  [OptionalProps]?: 'id' | 'emailVerified' | 'role' | 'status' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'emailVerified' | 'role' | 'status' | 'displayCurrency' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -51,6 +51,18 @@ export class User {
   @Property({ nullable: true })
   @Unique()
   phone?: string
+
+  /**
+   * When the phone number was proven by an SMS code. Set by the SMS sign-up,
+   * cleared when the number changes in the profile: a cart sent to a number
+   * is only shown to the account that proved owning it.
+   */
+  @Property({ fieldName: 'phone_verified_at', type: 'Date', nullable: true })
+  phoneVerifiedAt?: Date | null
+
+  /** Currency prices are shown in (XOF, EUR, USD, CAD); payment stays in FCFA. */
+  @Property({ fieldName: 'display_currency', type: 'string', length: 3, default: 'XOF' })
+  displayCurrency: string = 'XOF'
 
   @Enum({ items: () => UserRole, default: UserRole.BUYER })
   role: UserRole = UserRole.BUYER

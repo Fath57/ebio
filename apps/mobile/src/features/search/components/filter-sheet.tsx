@@ -8,6 +8,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { FALLBACK_CATEGORIES } from '../../../utils/category-icons'
 import { KeyboardAwareView } from '../../common/components/keyboard-aware-view'
+import { useMoney } from '../../common/hooks/use-money'
 import { useScrollToSelected } from '../../common/hooks/use-scroll-to-selected'
 
 type SortOption = 'price' | 'rating'
@@ -179,6 +180,7 @@ export function FilterSheet({
   showSort = false,
 }: FilterSheetProps) {
   const { semantic } = useTheme()
+  const { formatMoney } = useMoney()
   const insets = useSafeAreaInsets()
   const [filters, setFilters] = useState<FilterValues>({
     ...DEFAULT_FILTERS,
@@ -509,6 +511,13 @@ export function FilterSheet({
                 }}
                 accessibilityLabel="Prix maximum en FCFA"
               />
+              {filters.maxPrice !== undefined && formatMoney(filters.maxPrice).secondary
+                ? (
+                    <Text style={[styles.priceHint, { color: semantic.textSecondary }]}>
+                      {`soit ${formatMoney(filters.maxPrice).primary}`}
+                    </Text>
+                  )
+                : null}
             </View>
 
             {/* In stock toggle */}
@@ -678,6 +687,11 @@ const styles = StyleSheet.create({
   },
   categoryLabelActive: {
     color: colors.green[800],
+  },
+  priceHint: {
+    ...typography.caption,
+    fontFamily: fonts.mono,
+    marginTop: spacing[2],
   },
   priceInput: {
     minHeight: 44,
