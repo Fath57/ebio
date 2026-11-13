@@ -1,0 +1,438 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>eBio — Les modules diaspora</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@500&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --g50:#e8f5ec; --g100:#c5e6cf; --g200:#7cc896; --g400:#2a9d4e; --g600:#1e7a37; --g800:#134e23; --g900:#0a2912;
+    --e50:#FAF5ED; --e100:#F0E0C2; --e400:#C07B2A; --e600:#8A5518; --e800:#543310;
+    --b50:#eaeff6; --b100:#c4d1e6; --b400:#4a6da6; --b600:#335289; --b800:#213559;
+    --n0:#FFFFFF; --n50:#F7F6F2; --n100:#EDECEA; --n200:#D5D3CE; --n400:#9B9890; --n600:#5A5852; --n800:#2A2924;
+  }
+  @page { size: A4; margin: 0; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: var(--n0); color: var(--n800); font-family: 'Plus Jakarta Sans', sans-serif; font-size: 10.5pt; line-height: 1.55; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .page { width: 210mm; height: 297mm; padding: 18mm 18mm 16mm; position: relative; page-break-after: always; overflow: hidden; }
+  .page:last-child { page-break-after: auto; }
+  h1, h2 { font-family: 'DM Serif Display', serif; font-weight: 400; margin: 0; color: var(--n800); }
+  h1 { font-size: 40pt; line-height: 1.05; }
+  h2 { font-size: 26pt; line-height: 1.1; }
+  h3 { font-size: 11.5pt; font-weight: 700; margin: 0 0 2mm; color: var(--g800); }
+  p { margin: 0 0 2.5mm; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  .eyebrow { font-size: 8.5pt; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: var(--g600); margin-bottom: 3mm; }
+  .lead { font-size: 12pt; color: var(--n600); max-width: 150mm; }
+  .footer { position: absolute; left: 18mm; right: 18mm; bottom: 9mm; display: flex; justify-content: space-between; font-size: 8pt; color: var(--n400); border-top: 0.6pt solid var(--n200); padding-top: 2.5mm; }
+  .logo { font-weight: 700; font-size: 12pt; }
+  .logo .e { color: var(--b600); } .logo .bio { color: var(--g600); }
+
+  /* Cover */
+  .cover { background: linear-gradient(160deg, var(--g900) 0%, var(--g800) 55%, #1b5c2c 100%); color: var(--n0); padding: 0; }
+  .cover-inner { padding: 22mm 20mm; height: 100%; display: flex; flex-direction: column; }
+  .cover h1 { color: var(--n0); font-size: 46pt; margin-top: 10mm; }
+  .cover .sub { font-size: 14pt; color: var(--g100); margin-top: 6mm; max-width: 140mm; }
+  .cover .logo { font-size: 20pt; }
+  .cover .logo .e { color: #8aa4cc; } .cover .logo .bio { color: var(--g200); }
+  .cover .chips { display: flex; gap: 4mm; margin-top: auto; }
+  .chip { flex: 1; background: rgba(255,255,255,.08); border: 0.8pt solid rgba(255,255,255,.18); border-radius: 4mm; padding: 5mm; }
+  .chip .n { font-family: 'DM Serif Display', serif; font-size: 22pt; color: var(--g200); }
+  .chip .t { font-weight: 700; font-size: 11pt; margin-top: 1mm; }
+  .chip .d { font-size: 9pt; color: var(--g100); margin-top: 1mm; }
+  .cover .meta { margin-top: 8mm; font-size: 9pt; color: var(--g100); display: flex; justify-content: space-between; }
+
+  /* Content blocks */
+  .hero { display: grid; grid-template-columns: 1fr; gap: 4mm; margin-top: 5mm; }
+  .illu { background: var(--n50); border-radius: 4mm; padding: 5mm; border: 0.6pt solid var(--n100); }
+  .illu svg { width: 100%; height: auto; display: block; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 5mm; margin-top: 5mm; }
+  .cols3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4mm; margin-top: 4mm; }
+  .card { border: 0.6pt solid var(--n200); border-radius: 3mm; padding: 4mm 4.5mm; background: var(--n0); }
+  .card.green { background: var(--g50); border-color: var(--g100); }
+  .card.earth { background: var(--e50); border-color: var(--e100); }
+  .card.blue { background: var(--b50); border-color: var(--b100); }
+  ul { margin: 0; padding-left: 4.5mm; } li { margin-bottom: 1.2mm; }
+  .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; }
+  .steps li { counter-increment: s; position: relative; padding-left: 9mm; margin-bottom: 2.6mm; }
+  .steps li::before { content: counter(s); position: absolute; left: 0; top: 0.2mm; width: 6mm; height: 6mm; border-radius: 50%; background: var(--g600); color: #fff; font-size: 8pt; font-weight: 700; display: flex; align-items: center; justify-content: center; }
+  .steps.earth li::before { background: var(--e600); }
+  .steps.blue li::before { background: var(--b600); }
+  .quote { border-left: 2.5pt solid var(--e400); padding: 1mm 0 1mm 4mm; color: var(--e800); font-style: italic; margin: 4mm 0 0; }
+  .tag { display: inline-block; font-size: 7.5pt; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; padding: 0.8mm 2.4mm; border-radius: 10mm; }
+  .tag.live { background: var(--g100); color: var(--g800); }
+  .tag.off { background: var(--e100); color: var(--e800); }
+  .tag.spec { background: var(--b100); color: var(--b800); }
+  table { width: 100%; border-collapse: collapse; font-size: 9.5pt; }
+  th { text-align: left; font-size: 8pt; text-transform: uppercase; letter-spacing: .08em; color: var(--n600); padding: 2mm 2.5mm; border-bottom: 1pt solid var(--n200); }
+  td { padding: 2.6mm 2.5mm; border-bottom: 0.6pt solid var(--n100); vertical-align: top; }
+  .kpi { font-family: 'JetBrains Mono', monospace; color: var(--g600); }
+  .small { font-size: 9pt; color: var(--n600); }
+</style>
+</head>
+<body>
+
+<!-- ============ COVER ============ -->
+<section class="page cover">
+  <div class="cover-inner">
+    <div class="logo"><span class="e">e</span><span class="bio">Bio</span></div>
+    <div class="eyebrow" style="color:var(--g200);margin-top:24mm">Diaspora · Note de présentation</div>
+    <h1>Nourrir la famille,<br>même de loin.</h1>
+    <p class="sub">Trois modules pour que la diaspora béninoise prenne soin des siens au pays — et garde le goût du pays où qu'elle vive.</p>
+
+    <svg viewBox="0 0 600 210" style="width:100%;margin-top:12mm" aria-label="Carte stylisée : Europe et Bénin reliés">
+      <defs>
+        <linearGradient id="arc" x1="0" x2="1"><stop offset="0" stop-color="#7cc896"/><stop offset="1" stop-color="#F0E0C2"/></linearGradient>
+      </defs>
+      <circle cx="140" cy="70" r="46" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.2)"/>
+      <circle cx="460" cy="150" r="46" fill="rgba(255,255,255,.06)" stroke="rgba(255,255,255,.2)"/>
+      <text x="140" y="74" text-anchor="middle" fill="#c5e6cf" font-size="15" font-family="Plus Jakarta Sans" font-weight="700">Paris · Bruxelles</text>
+      <text x="460" y="154" text-anchor="middle" fill="#F0E0C2" font-size="15" font-family="Plus Jakarta Sans" font-weight="700">Cotonou</text>
+      <path d="M185 82 C 300 10, 360 40, 415 138" fill="none" stroke="url(#arc)" stroke-width="3" stroke-dasharray="7 7"/>
+      <path d="M415 160 C 330 230, 230 200, 160 116" fill="none" stroke="url(#arc)" stroke-width="3" stroke-dasharray="2 8" stroke-linecap="round"/>
+      <g transform="translate(300 34)"><circle r="16" fill="#1e7a37"/><path d="M-6 0 L6 0 M0 -6 L6 0 L0 6" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <text x="300" y="66" text-anchor="middle" fill="#c5e6cf" font-size="11" font-family="Plus Jakarta Sans">argent · paniers</text>
+      <g transform="translate(290 196)"><circle r="16" fill="#C07B2A"/><path d="M6 0 L-6 0 M0 -6 L-6 0 L0 6" stroke="#fff" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></g>
+      <text x="350" y="200" fill="#F0E0C2" font-size="11" font-family="Plus Jakarta Sans">produits du terroir</text>
+    </svg>
+
+    <div class="chips">
+      <div class="chip"><div class="n">01</div><div class="t">Commander pour un proche</div><div class="d">Un panier livré à la famille, preuve à l'appui.</div></div>
+      <div class="chip"><div class="n">02</div><div class="t">Portefeuille famille</div><div class="d">Un budget courses partagé, avec des limites.</div></div>
+      <div class="chip"><div class="n">03</div><div class="t">Terroir vers l'étranger</div><div class="d">Le goût du pays livré en France et en Belgique.</div></div>
+    </div>
+    <div class="meta"><span>Novembre 2026</span><span>Document interne — eBio</span></div>
+  </div>
+</section>
+
+<!-- ============ INTRO ============ -->
+<section class="page">
+  <div class="eyebrow">Pourquoi la diaspora</div>
+  <h2>Le besoin, en une phrase</h2>
+  <p class="lead" style="margin-top:4mm">« Je vis à Paris, Montréal ou Bruxelles, et je veux que ma famille au pays mange bien — en étant sûr que l'argent sert à ça. »</p>
+
+  <div class="cols">
+    <div class="card">
+      <h3>Ce que la diaspora fait aujourd'hui</h3>
+      <ul>
+        <li>Elle envoie de l'argent par transfert : rien ne garantit son usage.</li>
+        <li>Elle appelle pour vérifier, sans preuve.</li>
+        <li>Elle rapporte des produits du pays dans ses valises, deux fois par an.</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3>Ce qu'eBio apporte</h3>
+      <ul>
+        <li>Des courses livrées au pays, payées depuis l'étranger, en euros.</li>
+        <li>Une preuve de remise : photo, heure, position.</li>
+        <li>Un budget famille contrôlé, avec des limites et un suivi.</li>
+        <li>Le terroir béninois livré en Europe, par des agences partenaires.</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="margin-top:8mm">Ce que les trois modules partagent</h3>
+  <div class="cols3">
+    <div class="card blue"><h3 style="color:var(--b800)">Prix en devise</h3><p class="small">EUR, USD ou CAD affichés, FCFA toujours visibles. Taux figé à la commande, réglable au back-office, marge de change paramétrable.</p></div>
+    <div class="card blue"><h3 style="color:var(--b800)">Accès depuis l'étranger</h3><p class="small">L'app détecte l'étranger par le fuseau horaire et propose Google, Apple ou e-mail. Paiement par carte.</p></div>
+    <div class="card blue"><h3 style="color:var(--b800)">Le carnet de proches</h3><p class="small">Les proches enregistrés une fois, choisis aussi dans les contacts du téléphone, réutilisés partout.</p></div>
+  </div>
+
+  <div class="card earth" style="margin-top:8mm">
+    <h3 style="color:var(--e800)">Chaque module a son interrupteur</h3>
+    <p class="small" style="margin:0">Le portefeuille famille et le terroir s'activent depuis la page Réglages du back-office. Ils peuvent être préparés et déployés sans être ouverts aux clients — le temps de valider les aspects juridiques et les partenariats.</p>
+  </div>
+
+  <div class="footer"><span class="logo"><span class="e">e</span><span class="bio">Bio</span></span><span>Modules diaspora — 2</span></div>
+</section>
+
+<!-- ============ 1. COMMANDER POUR UN PROCHE ============ -->
+<section class="page">
+  <div class="eyebrow">Module 01 · En production</div>
+  <h2>Commander pour un proche</h2>
+  <p class="lead" style="margin-top:3mm">Le payeur, à l'étranger, remplit un panier et le fait livrer à un proche au Bénin. Le proche est prévenu par SMS ; le livreur remet le panier contre un code et une photo ; le payeur reçoit la preuve.</p>
+
+  <div class="illu" style="margin-top:5mm">
+    <svg viewBox="0 0 680 236" aria-label="Parcours d'une commande pour un proche">
+      <style>.lbl{font:600 12px 'Plus Jakarta Sans';fill:#2A2924}.sm{font:400 10px 'Plus Jakarta Sans';fill:#5A5852}.mono{font:500 10px 'JetBrains Mono';fill:#1e7a37}</style>
+      <!-- payer phone -->
+      <g transform="translate(20 40)">
+        <rect width="92" height="150" rx="14" fill="#fff" stroke="#D5D3CE" stroke-width="1.5"/>
+        <rect x="10" y="18" width="72" height="20" rx="5" fill="#e8f5ec"/><text x="46" y="32" text-anchor="middle" class="mono">4,36 €</text>
+        <rect x="10" y="46" width="72" height="34" rx="5" fill="#F7F6F2"/><text x="46" y="60" text-anchor="middle" class="sm">Livrer à</text><text x="46" y="73" text-anchor="middle" class="lbl" font-size="11">Maman</text>
+        <rect x="10" y="118" width="72" height="20" rx="10" fill="#1e7a37"/><text x="46" y="132" text-anchor="middle" font="600 10px Plus Jakarta Sans" fill="#fff" font-size="10">Payer</text>
+        <text x="46" y="-8" text-anchor="middle" class="lbl">Awa, Paris</text>
+      </g>
+      <path d="M118 110 H178" stroke="#7cc896" stroke-width="2.5" marker-end="url(#ah)"/>
+      <defs><marker id="ah" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#2a9d4e"/></marker>
+            <marker id="ahe" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#C07B2A"/></marker></defs>
+      <!-- shop -->
+      <g transform="translate(185 70)">
+        <rect width="96" height="80" rx="10" fill="#FAF5ED" stroke="#F0E0C2" stroke-width="1.5"/>
+        <path d="M14 30 h68 l-6 -14 h-56 z" fill="#C07B2A"/><rect x="20" y="30" width="56" height="34" fill="#fff" stroke="#F0E0C2"/>
+        <rect x="40" y="44" width="16" height="20" fill="#F0E0C2"/>
+        <text x="48" y="100" text-anchor="middle" class="lbl">Boutique</text><text x="48" y="114" text-anchor="middle" class="sm">prépare</text>
+      </g>
+      <path d="M288 110 H348" stroke="#7cc896" stroke-width="2.5" marker-end="url(#ah)"/>
+      <!-- courier -->
+      <g transform="translate(352 74)">
+        <circle cx="48" cy="38" r="36" fill="#e8f5ec"/>
+        <circle cx="30" cy="54" r="10" fill="none" stroke="#1e7a37" stroke-width="3"/><circle cx="68" cy="54" r="10" fill="none" stroke="#1e7a37" stroke-width="3"/>
+        <path d="M30 54 L46 34 H62 L68 54" fill="none" stroke="#1e7a37" stroke-width="3" stroke-linejoin="round"/><rect x="40" y="18" width="18" height="14" rx="3" fill="#C07B2A"/>
+        <text x="48" y="96" text-anchor="middle" class="lbl">Livreur</text><text x="48" y="110" text-anchor="middle" class="sm">code + photo + GPS</text>
+      </g>
+      <path d="M458 110 H518" stroke="#7cc896" stroke-width="2.5" marker-end="url(#ah)"/>
+      <!-- relative -->
+      <g transform="translate(522 40)">
+        <circle cx="62" cy="58" r="44" fill="#FAF5ED" stroke="#F0E0C2" stroke-width="1.5"/>
+        <circle cx="62" cy="46" r="15" fill="#C07B2A"/><path d="M36 92 C40 70, 84 70, 88 92" fill="#C07B2A"/>
+        <rect x="78" y="0" width="76" height="34" rx="8" fill="#fff" stroke="#c4d1e6"/><text x="116" y="14" text-anchor="middle" class="sm">SMS</text><text x="116" y="27" text-anchor="middle" class="mono" fill="#335289">Code 5498</text>
+        <text x="62" y="124" text-anchor="middle" class="lbl">Maman, Cotonou</text><text x="62" y="138" text-anchor="middle" class="sm">suivi sans prix</text>
+      </g>
+      <!-- proof back -->
+      <path d="M584 186 C 480 232, 160 232, 66 196" fill="none" stroke="#C07B2A" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#ahe)"/>
+      <rect x="236" y="206" width="208" height="24" rx="12" fill="#C07B2A"/><text x="340" y="222" text-anchor="middle" font-size="11" font-family="Plus Jakarta Sans" font-weight="600" fill="#fff">Photo de remise envoyée au payeur</text>
+    </svg>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h3>Le parcours</h3>
+      <ol class="steps">
+        <li><b>Panier et proche.</b> « Livrer à un proche » : nom, numéro +229, point sur la carte — ou un proche du carnet, ou un contact du téléphone.</li>
+        <li><b>Paiement.</b> Par carte ou portefeuille, jamais en espèces. Montant affiché en euros, figé à la commande.</li>
+        <li><b>SMS au proche.</b> Annonce et lien de suivi public, puis le code de remise quand le livreur part.</li>
+        <li><b>Remise.</b> Code <i>et</i> photo <i>et</i> position. Au-delà de 300 m du point prévu, la remise est signalée au back-office.</li>
+        <li><b>Preuve.</b> Le payeur reçoit la photo par notification et par e-mail.</li>
+      </ol>
+    </div>
+    <div>
+      <div class="card green">
+        <h3>Si la remise échoue</h3>
+        <p class="small" style="margin:0">Proche absent, refus, adresse introuvable : commande annulée, payeur remboursé sur son portefeuille eBio, frais de livraison retenus pour payer le livreur.</p>
+      </div>
+      <div class="card" style="margin-top:4mm">
+        <h3>Ce que chacun voit</h3>
+        <table>
+          <tr><th>Qui</th><th>Voit</th></tr>
+          <tr><td>Payeur</td><td>Prix en devise, code, renvoi du SMS, photo</td></tr>
+          <tr><td>Proche</td><td>Contenu, créneau, livreur sur la carte — jamais le prix</td></tr>
+          <tr><td>Livreur</td><td>Le proche comme contact, « de la part d'Awa »</td></tr>
+        </table>
+      </div>
+      <p class="quote">« Panier remis à Maman à 10 h 42 » — la notification qui rassure.</p>
+    </div>
+  </div>
+  <div class="footer"><span class="logo"><span class="e">e</span><span class="bio">Bio</span></span><span>Modules diaspora — 3</span></div>
+</section>
+
+<!-- ============ 2. PORTEFEUILLE FAMILLE ============ -->
+<section class="page">
+  <div class="eyebrow">Module 02 · Déployé, en attente d'activation</div>
+  <h2>Portefeuille famille</h2>
+  <p class="lead" style="margin-top:3mm">Un budget courses que le payeur alimente et que ses proches dépensent uniquement sur eBio. L'argent ne peut servir qu'aux courses : ni retrait, ni transfert.</p>
+
+  <div class="illu" style="margin-top:5mm">
+    <svg viewBox="0 0 680 250" aria-label="Un payeur alimente un portefeuille partagé par trois proches">
+      <style>.lbl{font:600 12px 'Plus Jakarta Sans';fill:#2A2924}.sm{font:400 10px 'Plus Jakarta Sans';fill:#5A5852}.mono{font:500 11px 'JetBrains Mono';fill:#1e7a37}</style>
+      <defs><marker id="a2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#2a9d4e"/></marker>
+            <marker id="a3" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#4a6da6"/></marker></defs>
+      <!-- payer -->
+      <g transform="translate(24 70)">
+        <circle cx="48" cy="40" r="40" fill="#eaeff6" stroke="#c4d1e6"/>
+        <circle cx="48" cy="30" r="13" fill="#335289"/><path d="M26 62 C30 44, 66 44, 70 62" fill="#335289"/>
+        <text x="48" y="100" text-anchor="middle" class="lbl">Awa, payeuse</text>
+        <text x="48" y="114" text-anchor="middle" class="sm">carte, Mobile Money</text><text x="48" y="127" text-anchor="middle" class="sm">ou son portefeuille eBio</text>
+      </g>
+      <path d="M126 110 H196" stroke="#7cc896" stroke-width="3" marker-end="url(#a2)"/><text x="160" y="100" text-anchor="middle" class="sm">recharge</text>
+      <!-- wallet -->
+      <g transform="translate(204 62)">
+        <rect width="150" height="96" rx="14" fill="#1e7a37"/>
+        <rect x="104" y="34" width="46" height="30" rx="8" fill="#134e23"/><circle cx="120" cy="49" r="5" fill="#7cc896"/>
+        <text x="16" y="28" font-size="11" font-family="Plus Jakarta Sans" font-weight="600" fill="#c5e6cf">Portefeuille famille</text>
+        <text x="16" y="58" font-size="20" font-family="JetBrains Mono" font-weight="500" fill="#fff">64 000</text>
+        <text x="16" y="76" font-size="11" font-family="Plus Jakarta Sans" fill="#c5e6cf">FCFA · 99,57 €</text>
+      </g>
+      <!-- members -->
+      <g font-family="Plus Jakarta Sans">
+        <path d="M356 92 C 410 92, 410 40, 450 40" stroke="#7cc896" stroke-width="2.5" fill="none" marker-end="url(#a2)"/>
+        <path d="M356 112 H448" stroke="#7cc896" stroke-width="2.5" fill="none" marker-end="url(#a2)"/>
+        <path d="M356 132 C 410 132, 410 186, 450 186" stroke="#7cc896" stroke-width="2.5" fill="none" marker-end="url(#a2)"/>
+        <g transform="translate(456 14)"><rect width="200" height="52" rx="10" fill="#fff" stroke="#D5D3CE"/><circle cx="24" cy="26" r="13" fill="#C07B2A"/>
+          <text x="46" y="21" class="lbl">Maman</text><text x="46" y="36" class="sm">limite propre 80 000 / mois</text>
+          <rect x="46" y="42" width="140" height="5" rx="2.5" fill="#EDECEA"/><rect x="46" y="42" width="34" height="5" rx="2.5" fill="#2a9d4e"/></g>
+        <g transform="translate(456 86)"><rect width="200" height="52" rx="10" fill="#fff" stroke="#D5D3CE"/><circle cx="24" cy="26" r="13" fill="#C07B2A"/>
+          <text x="46" y="21" class="lbl">Tata</text><text x="46" y="36" class="sm">limite par défaut 40 000</text>
+          <rect x="46" y="42" width="140" height="5" rx="2.5" fill="#EDECEA"/><rect x="46" y="42" width="98" height="5" rx="2.5" fill="#C07B2A"/></g>
+        <g transform="translate(456 160)"><rect width="200" height="52" rx="10" fill="#fff" stroke="#D5D3CE" stroke-dasharray="4 4"/><circle cx="24" cy="26" r="13" fill="#D5D3CE"/>
+          <text x="46" y="21" class="lbl">Frère</text><text x="46" y="36" class="sm">en attente d'inscription</text>
+          <text x="46" y="48" class="sm" fill="#335289">invitation par SMS</text></g>
+      </g>
+      <!-- notifications back -->
+      <path d="M560 222 C 460 248, 160 248, 76 206" fill="none" stroke="#4a6da6" stroke-width="2" stroke-dasharray="6 6" marker-end="url(#a3)"/>
+      <rect x="200" y="226" width="260" height="22" rx="11" fill="#335289"/><text x="330" y="241" text-anchor="middle" font-size="10.5" font-family="Plus Jakarta Sans" font-weight="600" fill="#fff">« Maman a commandé : 6 800 FCFA »</text>
+    </svg>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h3>Le parcours</h3>
+      <ol class="steps blue">
+        <li><b>Ouvrir.</b> Un portefeuille par payeur, partagé par tous ses proches.</li>
+        <li><b>Ajouter des proches.</b> Depuis le carnet, un nouveau proche ou les contacts. Sans compte eBio, le proche est invité par SMS et le portefeuille l'attend.</li>
+        <li><b>Recharger.</b> Par carte, Mobile Money ou virement depuis le portefeuille eBio, montants affichés en euros.</li>
+        <li><b>Dépenser.</b> Au paiement, chaque proche voit « Portefeuille famille (Awa) — X FCFA disponibles pour vous ce mois-ci ».</li>
+        <li><b>Suivre.</b> Une notification par achat, l'historique filtrable par proche, une alerte de solde bas.</li>
+      </ol>
+    </div>
+    <div>
+      <div class="card blue">
+        <h3 style="color:var(--b800)">Des limites simples</h3>
+        <p class="small">Des limites <b>par défaut</b> pour chaque proche — plafond mensuel, maximum par commande, catégories autorisées — et des limites <b>propres</b> à un proche qui les remplacent.</p>
+        <p class="small" style="margin:0">Le portefeuille paie <b>toute</b> la commande ou rien : pas de paiement partagé. Deux proches qui paient en même temps ne dépassent jamais le solde.</p>
+      </div>
+      <div class="card" style="margin-top:4mm">
+        <h3>Le payeur garde la main</h3>
+        <ul class="small">
+          <li>Suspendre un proche ou tout le portefeuille.</li>
+          <li>Retirer un proche (il reste dans le carnet).</li>
+          <li>Fermer : le solde revient sur son portefeuille eBio.</li>
+          <li>Remboursement d'une commande : retour sur le portefeuille famille.</li>
+        </ul>
+      </div>
+      <p class="quote">Un proche voit ce qu'il peut dépenser — jamais le solde total ni les achats des autres.</p>
+    </div>
+  </div>
+  <div class="footer"><span class="logo"><span class="e">e</span><span class="bio">Bio</span></span><span>Modules diaspora — 4</span></div>
+</section>
+
+<!-- ============ 3. TERROIR ============ -->
+<section class="page">
+  <div class="eyebrow">Module 03 · Spécifié, en cours de conception</div>
+  <h2>Terroir vers l'étranger</h2>
+  <p class="lead" style="margin-top:3mm">Les produits du terroir béninois — karité, gari, moringa, épices — vendus par les boutiques eBio et expédiés en France et en Belgique par des agences d'envoi de colis partenaires.</p>
+
+  <div class="illu" style="margin-top:5mm">
+    <svg viewBox="0 0 680 248" aria-label="Chaîne d'envoi du terroir vers l'Europe">
+      <style>.lbl{font:600 11.5px 'Plus Jakarta Sans';fill:#2A2924}.sm{font:400 9.5px 'Plus Jakarta Sans';fill:#5A5852}</style>
+      <defs><marker id="a4" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="#C07B2A"/></marker></defs>
+      <!-- shops -->
+      <g transform="translate(14 46)">
+        <rect width="92" height="40" rx="8" fill="#FAF5ED" stroke="#F0E0C2"/><text x="46" y="25" text-anchor="middle" class="lbl">Boutique A</text>
+        <rect y="48" width="92" height="40" rx="8" fill="#FAF5ED" stroke="#F0E0C2"/><text x="46" y="73" text-anchor="middle" class="lbl">Boutique B</text>
+        <text x="46" y="110" text-anchor="middle" class="sm">produits validés,</text><text x="46" y="122" text-anchor="middle" class="sm">packs</text>
+      </g>
+      <path d="M110 90 H150" stroke="#C07B2A" stroke-width="2.5" marker-end="url(#a4)"/>
+      <!-- warehouse -->
+      <g transform="translate(156 44)">
+        <path d="M0 40 L50 10 L100 40 V100 H0 Z" fill="#fff" stroke="#C07B2A" stroke-width="1.8"/>
+        <rect x="20" y="58" width="24" height="20" fill="#F0E0C2"/><rect x="50" y="58" width="24" height="20" fill="#F0E0C2"/><rect x="34" y="40" width="24" height="18" fill="#C07B2A"/>
+        <text x="50" y="118" text-anchor="middle" class="lbl">eBio Cotonou</text><text x="50" y="131" text-anchor="middle" class="sm">collecte · contrôle</text><text x="50" y="143" text-anchor="middle" class="sm">emballage · pesée</text>
+      </g>
+      <path d="M262 90 H302" stroke="#C07B2A" stroke-width="2.5" marker-end="url(#a4)"/>
+      <!-- agency + plane -->
+      <g transform="translate(308 40)">
+        <rect width="120" height="74" rx="10" fill="#1e7a37"/>
+        <path d="M30 40 L90 26 L96 30 L60 44 L70 58 L64 60 L50 48 L36 52 L32 48 Z" fill="#fff"/>
+        <text x="60" y="94" text-anchor="middle" class="lbl">Agence partenaire</text>
+        <text x="60" y="108" text-anchor="middle" class="sm">départ du 22/11</text><text x="60" y="120" text-anchor="middle" class="sm" fill="#1e7a37">prix/kg, droits inclus</text>
+      </g>
+      <path d="M434 78 C 470 40, 500 40, 528 70" stroke="#C07B2A" stroke-width="2.5" fill="none" stroke-dasharray="6 5" marker-end="url(#a4)"/>
+      <!-- pickup -->
+      <g transform="translate(530 40)">
+        <rect width="136" height="74" rx="10" fill="#eaeff6" stroke="#c4d1e6"/>
+        <path d="M68 14 C54 14 46 24 46 34 C46 48 68 64 68 64 C68 64 90 48 90 34 C90 24 82 14 68 14 Z" fill="#335289"/><circle cx="68" cy="34" r="7" fill="#fff"/>
+        <text x="68" y="94" text-anchor="middle" class="lbl">Point de retrait</text>
+        <text x="68" y="108" text-anchor="middle" class="sm">Paris · Bruxelles</text><text x="68" y="120" text-anchor="middle" class="sm">ou domicile (option)</text>
+      </g>
+      <!-- timeline -->
+      <g transform="translate(40 206)" font-family="Plus Jakarta Sans" font-size="9.5">
+        <line x1="0" y1="10" x2="600" y2="10" stroke="#D5D3CE" stroke-width="2"/>
+        <g fill="#2a9d4e"><circle cx="0" cy="10" r="6"/><circle cx="100" cy="10" r="6"/><circle cx="200" cy="10" r="6"/><circle cx="300" cy="10" r="6"/></g>
+        <g fill="#c4d1e6"><circle cx="400" cy="10" r="6"/><circle cx="500" cy="10" r="6"/><circle cx="600" cy="10" r="6"/></g>
+        <g fill="#5A5852" text-anchor="middle"><text x="0" y="32">Payé</text><text x="100" y="32">Collecté</text><text x="200" y="32">Emballé</text><text x="300" y="32">Déposé</text><text x="400" y="32">Parti</text><text x="500" y="32">Disponible</text><text x="600" y="32">Remis</text></g>
+      </g>
+    </svg>
+  </div>
+
+  <div class="cols">
+    <div>
+      <h3>Le parcours</h3>
+      <ol class="steps earth">
+        <li><b>Catalogue « Terroir ».</b> Produits et packs validés à l'export, prix en euros, origine et badge « Terroir validé eBio ».</li>
+        <li><b>Départ et prix.</b> Poids estimé, départs des agences avec date, fenêtre d'arrivée et prix — le plus proche par défaut, droits et taxes inclus.</li>
+        <li><b>Préparation.</b> eBio collecte auprès des boutiques, contrôle, emballe et pèse. La boutique est payée dès la collecte.</li>
+        <li><b>Suivi souple.</b> eBio met à jour un départ entier en un geste, ou un colis avec un message ; le client est prévenu à chaque étape.</li>
+        <li><b>Retrait.</b> Adresse et horaires de l'agence dans sa ville, ou livraison à domicile en option.</li>
+      </ol>
+    </div>
+    <div>
+      <div class="card earth">
+        <h3 style="color:var(--e800)">Les petits plus</h3>
+        <ul class="small">
+          <li><b>Calendrier :</b> « Prochain envoi vers Paris le 22 — commandez avant le 18 ».</li>
+          <li><b>Poids optimisé :</b> « Ajoutez 1,8 kg sans frais de transport en plus ».</li>
+          <li><b>Colis offert</b> à quelqu'un en France ou en Belgique, avec un message.</li>
+          <li><b>Assurance</b> du colis en option.</li>
+          <li><b>Packs</b> composés par les boutiques ou par eBio (multi-boutiques).</li>
+        </ul>
+      </div>
+      <div class="card" style="margin-top:4mm">
+        <h3>Côté eBio</h3>
+        <ul class="small">
+          <li>Agences, départs, prix au kilo et capacité tenus à jour.</li>
+          <li>Validation des produits par liste de contrôle (étiquette, allergènes, dates).</li>
+          <li>Remplissage des départs : alerte à 80 %, complet à 100 %.</li>
+          <li>Écart de poids : absorbé jusqu'à 10 %, au-delà le client choisit.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+  <div class="footer"><span class="logo"><span class="e">e</span><span class="bio">Bio</span></span><span>Modules diaspora — 5</span></div>
+</section>
+
+<!-- ============ SUMMARY ============ -->
+<section class="page">
+  <div class="eyebrow">Synthèse</div>
+  <h2>Trois modules, une promesse</h2>
+  <p class="lead" style="margin-top:3mm">Aider la diaspora à prendre soin des siens au Bénin, et lui apporter le goût du pays en Europe — en toute transparence.</p>
+
+  <table style="margin-top:6mm">
+    <tr><th style="width:22%">Module</th><th style="width:26%">Pour qui</th><th style="width:30%">Ce que ça change</th><th>État</th></tr>
+    <tr><td><b>Commander pour un proche</b></td><td>Diaspora qui gâte la famille ponctuellement</td><td>Un panier livré au pays, preuve de remise à l'appui</td><td><span class="tag live">En production</span><br><span class="small">API, back-office, site ; apps mobiles à publier</span></td></tr>
+    <tr><td><b>Portefeuille famille</b></td><td>Diaspora qui soutient la famille chaque mois</td><td>Un budget courses partagé, limité et suivi</td><td><span class="tag off">Déployé, désactivé</span><br><span class="small">Activation après validation juridique</span></td></tr>
+    <tr><td><b>Terroir vers l'étranger</b></td><td>Diaspora en France et en Belgique</td><td>Le terroir béninois livré par des agences partenaires</td><td><span class="tag spec">Spécifié</span><br><span class="small">Conception en cours, interrupteur prévu</span></td></tr>
+  </table>
+
+  <div class="cols" style="margin-top:8mm">
+    <div class="card green">
+      <h3>Garanties communes</h3>
+      <ul class="small">
+        <li>Les montants restent encaissés en FCFA ; la devise n'est qu'un affichage, au taux figé.</li>
+        <li>Rattachement des proches uniquement par numéro vérifié par SMS.</li>
+        <li>Aucun paiement partiel, aucun solde négatif, même sous paiements simultanés.</li>
+        <li>Chaque module se prépare au back-office avant d'être ouvert aux clients.</li>
+      </ul>
+    </div>
+    <div class="card earth">
+      <h3 style="color:var(--e800)">Prochaines étapes</h3>
+      <ul class="small">
+        <li>Tester le paiement par carte INTRAM en sandbox.</li>
+        <li>Publier les nouvelles versions des apps Client et Livreur.</li>
+        <li>Valider juridiquement le portefeuille famille (BCEAO).</li>
+        <li>Nouer les premiers partenariats avec des agences d'envoi de colis.</li>
+        <li>Concevoir puis développer le module Terroir.</li>
+      </ul>
+    </div>
+  </div>
+
+  <div style="margin-top:10mm;text-align:center">
+    <div class="logo" style="font-size:22pt"><span class="e">e</span><span class="bio">Bio</span></div>
+    <p class="small" style="margin-top:1mm">Trouvez des produits bio près de chez vous — et pour ceux que vous aimez, où qu'ils soient.</p>
+  </div>
+  <div class="footer"><span class="logo"><span class="e">e</span><span class="bio">Bio</span></span><span>Modules diaspora — 6</span></div>
+</section>
+
+</body>
+</html>
