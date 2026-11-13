@@ -21,6 +21,21 @@ import { lastOrdersTool, ongoingOrdersTool, orderStatusTool } from './tools/orde
 import { searchProductsTool } from './tools/search-products.tool'
 
 /**
+ * Generation options shared by every assistant call.
+ *
+ * Reasoning kept to a minimum: a reasoning model left at its default spent
+ * 15 to 25 seconds per turn, too long for a spoken exchange. The tools do the
+ * grounding, not the model's deliberation. Keyed by provider, so it is simply
+ * ignored when the assistant runs on Claude.
+ */
+function assistantOptions() {
+  return {
+    stopWhen: config.assistant.maxSteps,
+    providerOptions: { openai: { reasoningEffort: 'minimal' } },
+  }
+}
+
+/**
  * What reaches the screen while she is speaking.
  *
  * One sentence at a time rather than one word: that is the grain at which
@@ -197,11 +212,9 @@ export class AssistantService {
         messages,
         tools,
         model: config.assistant.model,
-        options: {
-          // A bounded loop: a model that keeps hammering a tool would cost a
-          // fortune before anyone noticed, and the bill comes later.
-          stopWhen: config.assistant.maxSteps,
-        },
+        // A bounded loop: a model that keeps hammering a tool would cost a
+        // fortune before anyone noticed, and the bill comes later.
+        options: assistantOptions(),
       })
       text = forSpeech(result.result)
       usage = (result as { usage?: { promptTokens?: number, completionTokens?: number } }).usage ?? {}
@@ -261,7 +274,7 @@ export class AssistantService {
       ],
       tools,
       model: config.assistant.model,
-      options: { stopWhen: config.assistant.maxSteps },
+      options: assistantOptions(),
     })
 
     const second = forSpeech(repaired.result)
@@ -346,7 +359,7 @@ export class AssistantService {
         messages,
         tools,
         model: config.assistant.model,
-        options: { stopWhen: config.assistant.maxSteps },
+        options: assistantOptions(),
       })) {
         if (event.type === 'chunk') {
           buffer += event.text
