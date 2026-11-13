@@ -263,8 +263,8 @@ function TrackingCard({ tracking, now }: { tracking: GiftTracking, now: number }
       <section className="mt-8" aria-labelledby="content-title">
         <h2 id="content-title" className="text-lg font-bold text-ink">Dans votre panier</h2>
         <ul className="mt-4 divide-y divide-line">
-          {tracking.lines.map(line => (
-            <li key={`${line.name}-${line.quantity}`} className="flex items-center gap-4 py-3">
+          {tracking.lines.map((line, index) => (
+            <li key={`${index}-${line.name}`} className="flex items-center gap-4 py-3">
               <div className="size-16 shrink-0 overflow-hidden rounded-lg bg-paper">
                 {line.imageUrl && (
                   <img src={line.imageUrl} alt={line.name} className="size-full object-cover" loading="lazy" width={64} height={64} />
@@ -325,7 +325,7 @@ export default function Suivi({ loaderData }: Route.ComponentProps) {
       <main className="paper-grain">
         <div className="mx-auto max-w-2xl px-4 py-10 sm:px-5 sm:py-16">
           {state.kind === 'found' && <TrackingCard tracking={state.tracking} now={now} />}
-          {state.kind === 'expired' && <MessageCard title="Ce panier a été livré." />}
+          {state.kind === 'expired' && <MessageCard title="Ce panier a été livré" text="Le suivi détaillé n’est plus affiché quelques jours après la livraison. Pour toute question, contactez la personne qui vous l’a envoyé." />}
           {state.kind === 'not-found' && (
             <MessageCard title="Lien de suivi introuvable" text="Vérifiez le lien reçu par SMS. S’il est complet, il n’est peut-être plus valable." />
           )}
