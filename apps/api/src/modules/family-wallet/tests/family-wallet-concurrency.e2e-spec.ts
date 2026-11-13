@@ -2,14 +2,13 @@ import type { INestApplication } from '@nestjs/common'
 import type { CreateCheckoutResponse } from '../../orders/contracts/checkout.contract'
 import { RequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
 import { DeliveriesModule } from '../../deliveries/deliveries.module'
 import { CheckoutService } from '../../orders/checkout.service'
 import { OrdersModule } from '../../orders/orders.module'
-import { OrdersService } from '../../orders/orders.service'
 import { spentThisMonth } from '../family-payment.service'
 import { FamilyWalletModule } from '../family-wallet.module'
 import { balanceOf, familyCart, seedFamily } from './family-checkout.fixture'
@@ -19,14 +18,6 @@ import { balanceOf, familyCart, seedFamily } from './family-checkout.fixture'
  * connection, started together: the wallet lock alone decides.
  */
 async function together(app: INestApplication, payments: Array<() => Promise<CreateCheckoutResponse>>): Promise<PromiseSettledResult<CreateCheckoutResponse>[]> {
-  // Order numbers come from a COUNT of today's orders, which two checkouts
-  // started together read alike: a race of its own, outside the wallet's.
-  // Distinct numbers here, so that only the wallet can refuse.
-  let next = 0
-  vi.spyOn(app.get(OrdersService), 'allocateOrderNumbers').mockImplementation(async (count: number) => {
-    next += 1
-    return Array.from({ length: count }, (_, index) => `EB-FAMILLE-${next}-${index}-${Math.random().toString(36).slice(2, 8)}`)
-  })
   const em = app.get(EntityManager)
   return Promise.allSettled(payments.map(pay => RequestContext.create(em, pay)))
 }
