@@ -537,7 +537,7 @@ export default function AdminSettingsPage() {
       </div>
 
       <Tabs defaultValue="commissions">
-        <TabsList>
+        <TabsList className="max-w-full justify-start overflow-x-auto">
           <TabsTrigger value="commissions">
             <Percent className="mr-2 h-4 w-4" />
             {t('admin.settings.tabs.commissions')}

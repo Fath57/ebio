@@ -1635,6 +1635,7 @@
         },
         "sourceLine": "{{source}} · updated {{date}}",
         "neverUpdated": "never",
+        "sourceNever": "{{source}}, never updated",
         "missing": "No rate: this currency is not offered until one is set.",
         "eurHint": "Fixed CFA franc parity (655.957): this rate is never updated automatically.",
         "stale": "This rate has not been updated for more than 72 h",

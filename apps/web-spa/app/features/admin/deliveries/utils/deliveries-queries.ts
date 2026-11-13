@@ -230,10 +230,11 @@ export function fetchFarProofsQueryOptions(page: number) {
 }
 
 /** « 450 m » under a kilometre, « 1,2 km » above, in the UI language. */
-export function formatDistance(metres: number, locale: string): string {
-  if (metres < 1000)
-    return `${Math.round(metres).toLocaleString(locale)} m`
-  return `${(metres / 1000).toLocaleString(locale, { maximumFractionDigits: 1 })} km`
+export function formatDistance(metres: number | string, locale: string): string {
+  const value = Number(metres)
+  if (value < 1000)
+    return `${Math.round(value).toLocaleString(locale)} m`
+  return `${(value / 1000).toLocaleString(locale, { maximumFractionDigits: 1 })} km`
 }
 
 /** "il y a 3 min" style label, in the UI language. */

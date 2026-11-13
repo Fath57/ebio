@@ -48,8 +48,9 @@ import {
 /** The back office may still pick the courier until the parcel leaves the shop. */
 const ASSIGNABLE_DELIVERY_STATUSES = new Set(['AWAITING_COURIER', 'ACCEPTED'])
 
-function formatAmount(value: number): string {
-  return `${value.toLocaleString('fr-FR')} FCFA`
+function formatAmount(value: number | string): string {
+  // Numeric columns can reach the page as strings: coerce, or no thousands separator.
+  return `${Number(value).toLocaleString('fr-FR')} FCFA`
 }
 
 function InfoRow({ label, value }: { label: string, value: string | null }) {
@@ -228,8 +229,8 @@ export default function AdminOrderDetailPage() {
             )}
           </CardHeader>
           <CardContent>
-            <InfoRow label={t('admin.orders.detail.pickupMode')} value={order.pickupMode} />
-            <InfoRow label={t('admin.orders.detail.paymentMethod')} value={order.paymentMethod} />
+            <InfoRow label={t('admin.orders.detail.pickupMode')} value={order.pickupMode ? t(`admin.orders.pickupModes.${order.pickupMode}`, { defaultValue: order.pickupMode }) : null} />
+            <InfoRow label={t('admin.orders.detail.paymentMethod')} value={order.paymentMethod ? t(`admin.orders.paymentMethods.${order.paymentMethod}`, { defaultValue: order.paymentMethod }) : null} />
             <InfoRow label={t('admin.orders.detail.address')} value={order.deliveryAddress} />
             <InfoRow label={t('admin.orders.detail.slot')} value={order.deliverySlot} />
             {order.pickupMode === 'DELIVERY' && (
@@ -422,7 +423,7 @@ export default function AdminOrderDetailPage() {
           )}
           <InfoRow
             label={t('admin.orders.detail.commissionDetail', {
-              rate: (order.commissionRate * 100).toFixed(1),
+              rate: (Number(order.commissionRate) * 100).toLocaleString(i18n.language, { maximumFractionDigits: 1 }),
             })}
             value={formatAmount(order.commissionAmount)}
           />

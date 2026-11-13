@@ -1635,6 +1635,7 @@
         },
         "sourceLine": "{{source}} · mis à jour {{date}}",
         "neverUpdated": "jamais",
+        "sourceNever": "{{source}}, jamais actualisé",
         "missing": "Aucun taux : cette devise n’est pas proposée tant qu’il manque.",
         "eurHint": "Parité fixe du franc CFA (655,957) : ce taux n’est jamais mis à jour automatiquement.",
         "stale": "Ce taux n’a pas été mis à jour depuis plus de 72 h",

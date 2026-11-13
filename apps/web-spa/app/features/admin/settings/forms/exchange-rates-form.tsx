@@ -91,7 +91,7 @@ export function ExchangeRatesForm({ data, onSubmit, isPending, onRefresh, isRefr
   return (
     <Form {...form}>
       <form className="space-y-6" onSubmit={form.handleSubmit(handleSubmit)}>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid items-start gap-6 md:grid-cols-3">
           {FX_CURRENCIES.map((currency) => {
             const entry = data.rates[currency]
             const fieldId = `exchange-rate-${currency.toLowerCase()}`
@@ -121,10 +121,14 @@ export function ExchangeRatesForm({ data, onSubmit, isPending, onRefresh, isRefr
                     </FormControl>
                     <FormDescription>
                       {entry
-                        ? t('admin.settings.exchangeRates.sourceLine', {
-                            source: t(`admin.settings.exchangeRates.source.${entry.source}`),
-                            date: updated ?? t('admin.settings.exchangeRates.neverUpdated'),
-                          })
+                        ? updated
+                          ? t('admin.settings.exchangeRates.sourceLine', {
+                              source: t(`admin.settings.exchangeRates.source.${entry.source}`),
+                              date: updated,
+                            })
+                          : t('admin.settings.exchangeRates.sourceNever', {
+                              source: t(`admin.settings.exchangeRates.source.${entry.source}`),
+                            })
                         : t('admin.settings.exchangeRates.missing')}
                     </FormDescription>
                     {currency === 'EUR' && (
