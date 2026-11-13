@@ -12,6 +12,7 @@
 - Q: Qui paie les droits et taxes à l'import ? → A: Ils sont inclus dans le prix au kilo de l'agence partenaire (dédouanement compris) ; le client ne paie rien de plus.
 - Q: Quand les boutiques sont-elles payées ? → A: À la remise des produits à eBio (collecte) ; eBio porte le risque de transport.
 - Q: Mode d'envoi par défaut ? → A: Le prochain départ d'une agence partenaire (express) ; les départs et prix au kilo sont mis à jour par eBio.
+- Q: Le module peut-il être préparé sans être ouvert aux clients ? → A: Oui, un interrupteur plateforme désactivé par défaut ; le back-office reste utilisable pour tout préparer.
 - Q: Enrichissements retenus pour la v1 ? → A: Calendrier des départs et alerte, optimisation du poids, origine et traçabilité, colis offert, remplissage des départs, assurance du colis en option ; validation par liste de contrôle et seuil d'écart de poids (10 %) au-delà duquel le client choisit.
 
 ## Vocabulaire
@@ -214,6 +215,10 @@ Awa, à Paris, envoie un colis de terroir à son amie Mireille à Bruxelles, ave
 ## Requirements *(mandatory)*
 
 ### Functional Requirements
+
+**Activation**
+
+- **FR-000**: Le module MUST être derrière un interrupteur plateforme (« Terroir vers l'étranger »), désactivé par défaut et réglable dans la page Réglages du back-office. Désactivé : l'espace « Terroir », les alertes de départ et le paiement d'une commande terroir MUST être indisponibles côté apps ; le back-office (agences, départs, produits exportables, packs) MUST rester utilisable pour préparer l'ouverture ; les commandes terroir déjà payées MUST continuer leur suivi jusqu'à la remise.
 
 **Catalogue et packs**
 
