@@ -653,7 +653,9 @@ export class PlatformSettingsService {
     if (cached && cached.expiresAt > Date.now()) {
       return cached.value
     }
-    const row = await this.em.findOne(PlatformSetting, { key })
+    // `set` writes in raw SQL, past the identity map: without `refresh` a row
+    // loaded earlier in the same context would come back with its old value.
+    const row = await this.em.findOne(PlatformSetting, { key }, { refresh: true })
     const value = row?.value ?? null
     this.cache.set(key, { value, expiresAt: Date.now() + CACHE_TTL_MS })
     return value
