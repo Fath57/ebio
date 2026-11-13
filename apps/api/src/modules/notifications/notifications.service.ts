@@ -47,6 +47,13 @@ const AUDIENCE_TYPES: Record<NotificationAudience, NotificationType[]> = {
     NotificationType.DELIVERY_WINDOW_CHANGED,
     NotificationType.GIFT_DELIVERED,
     NotificationType.GIFT_DELIVERY_FAILED,
+    // Payer and members alike use the client app.
+    NotificationType.FAMILY_WALLET_TOPUP,
+    NotificationType.FAMILY_WALLET_PURCHASE,
+    NotificationType.FAMILY_WALLET_LOW_BALANCE,
+    NotificationType.FAMILY_WALLET_MEMBER_JOINED,
+    NotificationType.FAMILY_WALLET_MEMBER_PENDING,
+    NotificationType.FAMILY_WALLET_STATUS,
   ],
   supplier: [
     ...SHARED_TYPES,

@@ -85,6 +85,17 @@ export default function Cgu({ loaderData }: Route.ComponentProps) {
         livraison déduits.
       </p>
 
+      <p>
+        Avec le portefeuille famille, vous pouvez réserver de l’argent aux
+        courses de vos proches au Bénin. Vous le rechargez ; les proches que vous
+        y ajoutez paient leurs commandes eBio avec, dans les limites que vous
+        fixez. Cet argent ne peut servir qu’à des commandes sur eBio : il ne peut
+        être ni retiré en espèces, ni transféré. Tant qu’il n’est pas dépensé, il
+        reste le vôtre : en fermant le portefeuille, le solde revient sur votre
+        portefeuille eBio. Une commande remboursée revient sur le portefeuille
+        famille, ou sur votre portefeuille eBio s’il a été fermé.
+      </p>
+
       <h2>7. Avis et contenus</h2>
       <p>
         Les avis doivent refléter une expérience réelle d’achat. Sont interdits

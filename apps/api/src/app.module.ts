@@ -27,6 +27,7 @@ import { DbModule } from './modules/db/db.module'
 import { DeliveriesModule } from './modules/deliveries/deliveries.module'
 import { EmailModule } from './modules/email/email.module'
 import { ExampleModule } from './modules/example/example.module'
+import { FamilyWalletModule } from './modules/family-wallet/family-wallet.module'
 import { FavoritesModule } from './modules/favorites/favorites.module'
 import { GeocodingModule } from './modules/geocoding/geocoding.module'
 import { GiftModule } from './modules/gift/gift.module'
@@ -163,6 +164,7 @@ interface ExpressResponse extends ServerResponse<IncomingMessage> {
     CurrencyModule,
     GiftModule,
     RelativesModule,
+    FamilyWalletModule,
     TrainingModule,
     AdminModule,
     BusinessCardsModule,

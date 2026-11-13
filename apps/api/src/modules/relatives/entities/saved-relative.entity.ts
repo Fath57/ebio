@@ -33,14 +33,15 @@ export class SavedRelative {
   @Property({ type: 'string', length: 16 })
   phone!: string
 
-  @Property({ type: 'text' })
-  address!: string
+  /** Optional since 010: a family wallet member may have none known. */
+  @Property({ type: 'text', nullable: true })
+  address?: string | null
 
-  @Property({ type: 'double' })
-  latitude!: number
+  @Property({ type: 'double', nullable: true })
+  latitude?: number | null
 
-  @Property({ type: 'double' })
-  longitude!: number
+  @Property({ type: 'double', nullable: true })
+  longitude?: number | null
 
   @Property({ fieldName: 'created_at', type: 'Date' })
   createdAt: Date = new Date()

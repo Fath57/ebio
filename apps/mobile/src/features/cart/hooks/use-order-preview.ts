@@ -1,5 +1,7 @@
+import type { FamilyWalletOption } from '../../family-wallet/family-wallet-api'
 import { useEffect, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
+import { parseFamilyWalletOption } from '../../family-wallet/family-wallet-api'
 
 export type PreviewPromotionType = 'PRICE' | 'BOGO' | 'FREE_DELIVERY'
 
@@ -62,6 +64,8 @@ export interface OrderPreview {
   display: OrderPreviewDisplay | null
   /** Gift order under the card minimum (1 000 FCFA): it cannot be paid. */
   cardMinimumNotMet: boolean
+  /** Family wallets the buyer is a member of, each with whether it can pay this basket. */
+  familyWallets: FamilyWalletOption[]
 }
 
 export interface OrderPreviewDisplay {
@@ -159,6 +163,11 @@ function parsePreview(data: Record<string, unknown>): OrderPreview {
     total: readNumber(data.total),
     display: parseDisplay(data.display),
     cardMinimumNotMet: data.cardMinimumNotMet === true,
+    familyWallets: Array.isArray(data.familyWallets)
+      ? data.familyWallets
+          .map(parseFamilyWalletOption)
+          .filter((option): option is FamilyWalletOption => option !== null)
+      : [],
   }
 }
 

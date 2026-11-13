@@ -1,12 +1,14 @@
 import type { FilterQuery } from '@mikro-orm/core'
+import type { WalletOwner } from './wallet.service'
 import { EnsureRequestContext } from '@mikro-orm/core'
 import { EntityManager } from '@mikro-orm/postgresql'
-import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common'
+import { BadRequestException, ConflictException, Injectable, Logger, NotFoundException } from '@nestjs/common'
 import { Cron } from '@nestjs/schedule'
 import { config } from '../../config/env.config'
 import { User } from '../auth/auth.entity'
 import { SingleInstance } from '../db/cron-lock'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
+import { FamilyWallet, FamilyWalletStatus } from '../family-wallet/entities/family-wallet.entity'
 import { PaymentGatewayFactory } from '../payments/gateways/payment-gateway.factory'
 import { PaymentProvider } from '../payments/payment.entity'
 import { providerForTransaction } from '../payments/provider-for-transaction'
@@ -18,11 +20,27 @@ import { WalletTransactionType } from './entities/wallet-transaction.entity'
 import { WalletService } from './wallet.service'
 
 /** Which of the user's wallets a topup lands on. */
-export type TopupTarget = 'personal' | 'courier' | 'supplier'
+export type TopupTarget = 'personal' | 'courier' | 'supplier' | 'family'
+
+/** A topup just credited, once. */
+export interface CreditedTopup {
+  topupId: string
+  walletId: string
+  userId: string
+  amount: number
+}
+
+/**
+ * Told of every credited topup, after its transaction committed. Lets a module
+ * that depends on this one react (the family wallet tells its members)
+ * without this one importing it back.
+ */
+export type TopupCreditedListener = (topup: CreditedTopup) => Promise<void>
 
 @Injectable()
 export class TopupService {
   private readonly logger = new Logger(TopupService.name)
+  private readonly creditedListeners: TopupCreditedListener[] = []
 
   constructor(
     private readonly em: EntityManager,
@@ -119,6 +137,10 @@ export class TopupService {
       paymentUrl: opened.redirectUrl ?? null,
       providerTransactionId: opened.providerTransactionId ?? null,
     }
+  }
+
+  onCredited(listener: TopupCreditedListener): void {
+    this.creditedListeners.push(listener)
   }
 
   /**
@@ -314,6 +336,14 @@ export class TopupService {
     if (isCredited) {
       this.logger.log(`Topup ${topup.id} credited (${topup.amount} FCFA)`)
     }
+    if (isCredited && this.creditedListeners.length > 0) {
+      await this.announceCredited({
+        topupId: topup.id,
+        walletId: topup.wallet.id,
+        userId: topup.user.id,
+        amount: Number(topup.amount),
+      })
+    }
     return true
   }
 
@@ -390,9 +420,32 @@ export class TopupService {
     await this.journal.markFailed(operation, reason)
   }
 
-  private async resolveOwner(userId: string, target: TopupTarget): Promise<{ userId?: string, courierId?: string, supplierId?: string }> {
+  /** A listener that fails costs a message, never the credit already made. */
+  private async announceCredited(topup: CreditedTopup): Promise<void> {
+    for (const listener of this.creditedListeners) {
+      try {
+        await listener(topup)
+      }
+      catch (error) {
+        this.logger.error(`Suite de la recharge ${topup.topupId} en échec`, error instanceof Error ? error.stack : String(error))
+      }
+    }
+  }
+
+  private async resolveOwner(userId: string, target: TopupTarget): Promise<WalletOwner> {
     if (target === 'personal') {
       return { userId }
+    }
+    // Only the payer tops up their family wallet, and never a closed one.
+    if (target === 'family') {
+      const familyWallet = await this.em.findOne(FamilyWallet, { payer: { id: userId } })
+      if (!familyWallet) {
+        throw new NotFoundException({ statusCode: 404, code: 'FAMILY_WALLET_NONE', message: 'Vous n\'avez pas encore de portefeuille famille.' })
+      }
+      if (familyWallet.status === FamilyWalletStatus.CLOSED) {
+        throw new ConflictException({ statusCode: 409, code: 'FAMILY_WALLET_CLOSED', message: 'Ce portefeuille famille est fermé.' })
+      }
+      return { familyWalletId: familyWallet.id }
     }
     if (target === 'supplier') {
       const supplier = await this.em.findOne(Supplier, { user: { id: userId } })

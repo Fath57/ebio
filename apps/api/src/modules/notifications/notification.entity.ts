@@ -62,6 +62,18 @@ export enum NotificationType {
   GIFT_DELIVERED = 'GIFT_DELIVERED',
   /** A cart sent to a relative could not be handed over; the wallet is credited. */
   GIFT_DELIVERY_FAILED = 'GIFT_DELIVERY_FAILED',
+  /** Family wallet topped up; members are told what they may spend. */
+  FAMILY_WALLET_TOPUP = 'FAMILY_WALLET_TOPUP',
+  /** A member paid an order from the family wallet; told to the payer. */
+  FAMILY_WALLET_PURCHASE = 'FAMILY_WALLET_PURCHASE',
+  /** The family wallet went below the payer's threshold. */
+  FAMILY_WALLET_LOW_BALANCE = 'FAMILY_WALLET_LOW_BALANCE',
+  /** A pending member proved their number and joined. */
+  FAMILY_WALLET_MEMBER_JOINED = 'FAMILY_WALLET_MEMBER_JOINED',
+  /** A member still pending after 30 days. */
+  FAMILY_WALLET_MEMBER_PENDING = 'FAMILY_WALLET_MEMBER_PENDING',
+  /** A member's access changed: added, suspended, resumed, removed, closed. */
+  FAMILY_WALLET_STATUS = 'FAMILY_WALLET_STATUS',
 }
 
 export enum NotificationChannel {

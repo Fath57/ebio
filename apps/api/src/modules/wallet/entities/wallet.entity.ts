@@ -2,13 +2,15 @@ import type { Rel } from '@mikro-orm/core'
 import { Entity, Enum, OneToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
 import { CourierProfile } from '../../deliveries/entities/courier-profile.entity'
+import { FamilyWallet } from '../../family-wallet/entities/family-wallet.entity'
 import { Supplier } from '../../suppliers/supplier.entity'
 
 /**
  * Internal FCFA balance. The real money sits on the platform's FedaPay
  * account; wallets are the accounting that says who owns what. Exactly one
  * owner: a personal wallet (user), a shop wallet (supplier) or a courier
- * wallet (courier profile), or one of eBio's own accounts (platformAccount),
+ * wallet (courier profile), a family wallet (familyWallet), or one of eBio's
+ * own accounts (platformAccount),
  * never several — a supplier-user or a courier-user has two separate wallets.
  *
  * `balance` is only ever written by WalletService inside a SQL transaction
@@ -46,6 +48,10 @@ export class Wallet {
   /** eBio's own books, one wallet per revenue stream. */
   @Enum({ items: () => PlatformAccount, fieldName: 'platform_account', nullable: true })
   platformAccount?: PlatformAccount | null
+
+  /** The balance of a payer's family wallet (010), spent by their relatives. */
+  @OneToOne(() => FamilyWallet, { fieldName: 'family_wallet_id', nullable: true, unique: true })
+  familyWallet?: Rel<FamilyWallet> | null
 
   /** numeric(12,2) — MikroORM hands it over as a string; Number() at the edges. */
   @Property({ columnType: 'numeric(12,2)', default: '0' })

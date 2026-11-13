@@ -44,6 +44,9 @@ import { ScreenHeader } from '../features/common/components/screen-header'
 import { TabBarIcon } from '../features/common/components/tab-bar-icon'
 import { TabFocusIndicator } from '../features/common/components/tab-focus-indicator'
 import { useLocation } from '../features/common/location-context'
+import { AddFamilyMemberScreen } from '../features/family-wallet/components/add-family-member-screen'
+import { FamilyLimitsScreen } from '../features/family-wallet/components/family-limits-screen'
+import { FamilyWalletScreen } from '../features/family-wallet/components/family-wallet-screen'
 import { FavoritesScreen } from '../features/favorites/components/favorites-screen'
 import { HomeScreen } from '../features/home/components/home-screen'
 import { LocationPickerScreen } from '../features/map/components/location-picker-screen'
@@ -747,6 +750,9 @@ function ProfileStackScreen() {
       <ProfileStack.Screen name="Referral" component={ReferralWrapper} />
       <ProfileStack.Screen name="Relatives" component={RelativesWrapper} />
       <ProfileStack.Screen name="RelativeForm" component={RelativeFormWrapper} />
+      <ProfileStack.Screen name="FamilyWallet" component={FamilyWalletWrapper} />
+      <ProfileStack.Screen name="AddFamilyMember" component={AddFamilyMemberWrapper} />
+      <ProfileStack.Screen name="FamilyLimits" component={FamilyLimitsWrapper} />
       {/* Ouvrir un favori doit rester dans l'onglet Profil : sans cet écran
         * ici, la navigation remonte jusqu'à l'onglet Accueil et y dépose
         * l'acheteur, qui l'y retrouve plus tard sans comprendre. */}
@@ -778,6 +784,7 @@ function ProfileHomeWrapper({ navigation }: any) {
         onNavigateToFavorites={() => navigation.navigate('Favorites')}
         onNavigateToReferral={() => navigation.navigate('Referral')}
         onNavigateToRelatives={() => navigation.navigate('Relatives')}
+        onNavigateToFamilyWallet={() => navigation.navigate('FamilyWallet')}
         onNavigateToNotifications={() => navigation.navigate('Notifications')}
         onNavigateToLogin={() => navigation.navigate('ProfileLogin')}
         onNavigateToEditProfile={() => navigation.navigate('EditProfile')}
@@ -797,6 +804,42 @@ function RelativesWrapper({ navigation }: any) {
       <RelativesScreen
         onBack={() => navigation.goBack()}
         onEdit={relative => navigation.navigate('RelativeForm', { relative })}
+      />
+    </SafeScreen>
+  )
+}
+
+function FamilyWalletWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <FamilyWalletScreen
+        onBack={() => navigation.goBack()}
+        onAddMember={() => navigation.navigate('AddFamilyMember')}
+        onOpenLimits={() => navigation.navigate('FamilyLimits')}
+        // FamilyHistory lands with the history screen (T042).
+        onOpenHistory={() => navigation.navigate('FamilyHistory')}
+      />
+    </SafeScreen>
+  )
+}
+
+function AddFamilyMemberWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <AddFamilyMemberScreen
+        onBack={() => navigation.goBack()}
+        onAdded={() => navigation.goBack()}
+      />
+    </SafeScreen>
+  )
+}
+
+function FamilyLimitsWrapper({ navigation, route }: any) {
+  return (
+    <SafeScreen>
+      <FamilyLimitsScreen
+        onBack={() => navigation.goBack()}
+        initialMemberId={route.params?.memberId ?? null}
       />
     </SafeScreen>
   )

@@ -2,6 +2,8 @@ import { EntityManager } from '@mikro-orm/postgresql'
 import { BadRequestException, Injectable, Logger } from '@nestjs/common'
 import { User } from '../auth/auth.entity'
 import { CourierProfile } from '../deliveries/entities/courier-profile.entity'
+import { FamilyWalletMember } from '../family-wallet/entities/family-wallet-member.entity'
+import { FamilyWallet } from '../family-wallet/entities/family-wallet.entity'
 import { Supplier } from '../suppliers/supplier.entity'
 import { WalletTransaction, WalletTransactionType } from './entities/wallet-transaction.entity'
 import { PlatformAccount, Wallet } from './entities/wallet.entity'
@@ -17,15 +19,18 @@ export interface WalletMovement {
   deliveryId?: string
   /** Settlement of a whole run, rather than of a lone delivery. */
   deliveryRunId?: string
+  /** The family wallet member behind a purchase or its refund. */
+  familyMemberId?: string
   /** COMMISSION_DEBIT / DELIVERY_COMMISSION may push the balance below zero (cash debt). */
   allowNegative?: boolean
 }
 
-/** Exactly one owner: personal, shop, courier wallet, or an eBio account. */
+/** Exactly one owner: personal, shop, courier, family wallet, or an eBio account. */
 export interface WalletOwner {
   userId?: string
   supplierId?: string
   courierId?: string
+  familyWalletId?: string
   platformAccount?: PlatformAccount
 }
 
@@ -50,7 +55,9 @@ export class WalletService {
         ? { supplier: { id: owner.supplierId } }
         : owner.courierId
           ? { courier: { id: owner.courierId } }
-          : { user: { id: owner.userId } }
+          : owner.familyWalletId
+            ? { familyWallet: { id: owner.familyWalletId } }
+            : { user: { id: owner.userId } }
 
     let wallet = await this.em.findOne(Wallet, where)
     if (!wallet) {
@@ -63,7 +70,9 @@ export class WalletService {
             ? { supplier: this.em.getReference(Supplier, owner.supplierId) }
             : owner.courierId
               ? { courier: this.em.getReference(CourierProfile, owner.courierId) }
-              : { user: this.em.getReference(User, owner.userId!) })
+              : owner.familyWalletId
+                ? { familyWallet: this.em.getReference(FamilyWallet, owner.familyWalletId) }
+                : { user: this.em.getReference(User, owner.userId!) })
         await this.em.persistAndFlush(wallet)
       }
       catch {
@@ -155,6 +164,7 @@ export class WalletService {
         withdrawalId: movement.withdrawalId ?? null,
         deliveryId: movement.deliveryId ?? null,
         deliveryRunId: movement.deliveryRunId ?? null,
+        familyMember: movement.familyMemberId ? em.getReference(FamilyWalletMember, movement.familyMemberId) : null,
         description: movement.description,
       })
 

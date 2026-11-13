@@ -42,6 +42,8 @@ import { useCurrency } from '../../common/currency-context'
 import { formatCurrencyAmount, formatXof, useMoney } from '../../common/hooks/use-money'
 import { useLocation } from '../../common/location-context'
 import { deviceTimeZone } from '../../common/utils/is-abroad'
+import { FamilyWalletPaymentOptions } from '../../family-wallet/components/family-wallet-payment-options'
+import { familyErrorMessage } from '../../family-wallet/family-wallet-api'
 import { LocationPickerScreen } from '../../map/components/location-picker-screen'
 import { geocodeAddress } from '../../map/utils/geocode-address'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
@@ -59,7 +61,7 @@ import { EMPTY_RECIPIENT, normalizeRecipientPhone, recipientProblem, RecipientSt
 
 type CheckoutStep = 'SUMMARY' | 'PAYMENT' | 'SUCCESS'
 
-type PaymentChoice = 'FEDAPAY' | 'WALLET' | 'CASH'
+type PaymentChoice = 'FEDAPAY' | 'WALLET' | 'CASH' | 'FAMILY_WALLET'
 
 // Mirrors the API contract (createCheckoutSchema.deliveryAddress), which
 // asks for ten characters. It said three, so an address between the two
@@ -187,6 +189,9 @@ function confirmLabel(choice: PaymentChoice, blockedReason: PreviewDeliveryReaso
   }
   if (choice === 'WALLET') {
     return 'Payer avec le portefeuille'
+  }
+  if (choice === 'FAMILY_WALLET') {
+    return 'Payer avec le portefeuille famille'
   }
   return 'Payer maintenant'
 }
@@ -416,6 +421,8 @@ export function CheckoutFlow({
   // Wallet checkout: the balance decides whether the option is even offered.
   const [walletBalance, setWalletBalance] = useState<number | null>(null)
   const [paymentChoice, setPaymentChoice] = useState<PaymentChoice>('FEDAPAY')
+  // The family wallet picked, when the buyer pays as a member of one.
+  const [familyMemberId, setFamilyMemberId] = useState<string | null>(null)
   // Cash on delivery: the server caps the amount; 0 means the option is off.
   const [cashMaxAmount, setCashMaxAmount] = useState(0)
   // Promo code: server-checked before the order, priced by the preview,
@@ -471,7 +478,8 @@ export function CheckoutFlow({
       position: deliveryPosition,
       placeLabel: deliveryPlaceLabel,
       slot: encodeSlotChoice(slotChoice),
-      paymentChoice,
+      // The family wallet is picked again each time: its member id is not kept.
+      paymentChoice: paymentChoice === 'FAMILY_WALLET' ? 'FEDAPAY' : paymentChoice,
       promoInput,
     })
   }, [deliveryAddress, deliveryPosition, deliveryPlaceLabel, slotChoice, paymentChoice, promoInput])
@@ -619,7 +627,16 @@ export function CheckoutFlow({
   const cashAvailable = !isGift && cashMaxAmount > 0 && orderTotal <= cashMaxAmount && !cashBlocked
   const walletAvailable = walletBalance !== null && walletBalance >= orderTotal
   // A choice that stops being affordable (promo removed, fee changed) falls back to online payment.
-  const effectiveChoice: PaymentChoice = (paymentChoice === 'CASH' && !cashAvailable) || (paymentChoice === 'WALLET' && !walletAvailable)
+  // A gift is bought by the payer, not by a member: family wallets stay out of it.
+  const familyOptions = useMemo(() => (isGift ? [] : preview?.familyWallets ?? []), [isGift, preview?.familyWallets])
+  const familyAvailable = familyOptions.some(option => option.usable && option.memberId === familyMemberId)
+  const productNames = useMemo(
+    () => new Map(summaryLines.map(line => [line.productId, line.name])),
+    [summaryLines],
+  )
+  const effectiveChoice: PaymentChoice = (paymentChoice === 'CASH' && !cashAvailable)
+    || (paymentChoice === 'WALLET' && !walletAvailable)
+    || (paymentChoice === 'FAMILY_WALLET' && !familyAvailable)
     ? 'FEDAPAY'
     : paymentChoice
 
@@ -730,9 +747,10 @@ export function CheckoutFlow({
           pickupMode: orderSummary.deliveryMode === 'PICKUP' ? 'ON_SITE' : 'DELIVERY',
           paymentMethod: effectiveChoice === 'CASH'
             ? 'CASH_ON_DELIVERY'
-            : effectiveChoice === 'WALLET'
-              ? 'WALLET'
+            : effectiveChoice === 'WALLET' || effectiveChoice === 'FAMILY_WALLET'
+              ? effectiveChoice
               : fedapayPublicKey ? 'FEDAPAY' : 'CASH_ON_DELIVERY',
+          ...(effectiveChoice === 'FAMILY_WALLET' && familyMemberId ? { familyMemberId } : {}),
           promoCode: appliedPromo?.code,
           deliveryAddress: orderSummary.deliveryMode === 'DELIVERY' ? trimmedAddress : undefined,
           deliveryLatitude: orderSummary.deliveryMode === 'DELIVERY' ? targetPosition?.latitude : undefined,
@@ -787,6 +805,11 @@ export function CheckoutFlow({
         if (error?.code === 'ACCOUNT_NOT_VERIFIED') {
           track('caisse_refusee', { motif: error.code, paiement: effectiveChoice })
           alertAccountNotVerified(customer.email)
+          return
+        }
+        if (error?.code === 'FAMILY_WALLET_REFUSED' || error?.code === 'FAMILY_WALLET_WITH_RECIPIENT') {
+          track('caisse_refusee', { motif: error.code, paiement: effectiveChoice })
+          appAlert('Portefeuille famille', familyErrorMessage(error, 'Le portefeuille famille ne peut pas payer cette commande.'))
           return
         }
         const known = typeof error?.code === 'string' ? CHECKOUT_ERROR_MESSAGES[error.code] : undefined
@@ -861,7 +884,7 @@ export function CheckoutFlow({
     finally {
       setIsSubmitting(false)
     }
-  }, [orderSummary, basketItems, deliveryAddress, targetPosition, slotChoice, fedapayPublicKey, effectiveChoice, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems, isGift, recipient, recipientPayload, displayCurrency, openPicker, customer.email])
+  }, [orderSummary, basketItems, deliveryAddress, targetPosition, slotChoice, fedapayPublicKey, effectiveChoice, familyMemberId, appliedPromo, orderNumber, onComplete, quoteBlocked, upsellItems, isGift, recipient, recipientPayload, displayCurrency, openPicker, customer.email])
 
   /**
    * Confirms the collection once the payment screen says it is over.
@@ -1256,6 +1279,18 @@ export function CheckoutFlow({
               </View>
               {effectiveChoice === 'WALLET' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2} />}
             </TouchableOpacity>
+          )}
+
+          {familyOptions.length > 0 && (
+            <FamilyWalletPaymentOptions
+              options={familyOptions}
+              productNames={productNames}
+              selectedMemberId={effectiveChoice === 'FAMILY_WALLET' ? familyMemberId : null}
+              onSelect={(memberId) => {
+                setFamilyMemberId(memberId)
+                setPaymentChoice(memberId ? 'FAMILY_WALLET' : 'FEDAPAY')
+              }}
+            />
           )}
 
           {cashMaxAmount > 0 && !isGift && (

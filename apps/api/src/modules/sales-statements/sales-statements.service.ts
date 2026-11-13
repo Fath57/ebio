@@ -32,6 +32,7 @@ const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.FEDAPAY]: 'En ligne',
   [PaymentMethod.CASH_ON_DELIVERY]: 'Espèces',
   [PaymentMethod.WALLET]: 'Portefeuille',
+  [PaymentMethod.FAMILY_WALLET]: 'Portefeuille famille',
 }
 
 const COMBINING_MARKS = /\p{M}/gu

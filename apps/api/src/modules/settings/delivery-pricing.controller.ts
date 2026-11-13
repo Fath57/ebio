@@ -1,5 +1,5 @@
 import type { ReferralRewards } from '../referrals/contracts/referral.contract'
-import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, EscrowReleaseInput, NewProductSettingsInput, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
+import type { AssistantSettingInput, BannerOffersInput, DeliveryPricingConfigInput, DeliveryQuoteRequest, EscrowReleaseInput, FamilyWalletSettingInput, NewProductSettingsInput, ProductReviewTimingInput } from './contracts/delivery-pricing.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
 import { Controller, Get, Post, Put, UseGuards } from '@nestjs/common'
 import { CanManage, CanRead } from '../../common/decorators/check-permissions.decorator'
@@ -8,7 +8,7 @@ import { CaslGuard } from '../../common/guards/casl.guard'
 import { RolesGuard } from '../../common/guards/roles.guard'
 import { AuthGuard } from '../auth/auth.guard'
 import { referralRewardsSchema } from '../referrals/contracts/referral.contract'
-import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, escrowReleaseSchema, newProductSettingsSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
+import { assistantSettingSchema, bannerOffersSchema, deliveryPricingConfigSchema, deliveryQuoteRequestSchema, escrowReleaseSchema, familyWalletSettingSchema, newProductSettingsSchema, productReviewTimingSchema } from './contracts/delivery-pricing.contract'
 import { DeliveryPricingService } from './delivery-pricing.service'
 import { PlatformSettingsService } from './platform-settings.service'
 
@@ -235,5 +235,29 @@ export class AdminNewProductSettingsController {
       validationRequise: await this.platformSettings.getProductApprovalRequired(),
       emailsAlerte: await this.platformSettings.getNewProductAlertEmails(),
     }
+  }
+}
+
+/**
+ * The family wallet switch. Off by default: money held for third parties
+ * waits for a legal go-ahead, and turning it on must be a decision.
+ */
+@Controller('admin/family-wallet-setting')
+@UseGuards(AuthGuard, RolesGuard, CaslGuard)
+@Roles('ADMIN')
+export class AdminFamilyWalletSettingController {
+  constructor(private readonly platformSettings: PlatformSettingsService) {}
+
+  @CanRead('Settings')
+  @Get()
+  async get() {
+    return { enabled: await this.platformSettings.getFamilyWalletEnabled() }
+  }
+
+  @CanManage('Settings')
+  @Put()
+  async update(@TypedBody(familyWalletSettingSchema) body: FamilyWalletSettingInput) {
+    await this.platformSettings.setFamilyWalletEnabled(body.enabled)
+    return { enabled: await this.platformSettings.getFamilyWalletEnabled() }
   }
 }

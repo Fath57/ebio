@@ -1,5 +1,6 @@
 import type { Rel } from '@mikro-orm/core'
 import { Entity, Enum, Index, ManyToOne, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
+import { FamilyWalletMember } from '../../family-wallet/entities/family-wallet-member.entity'
 import { Order } from '../../orders/entities/order.entity'
 import { Payment } from '../../payments/payment.entity'
 import { Wallet } from './wallet.entity'
@@ -39,6 +40,14 @@ export enum WalletTransactionType {
   PLATFORM_BANNER = 'PLATFORM_BANNER',
   /** eBio books: a promotion or a delivery offered by the platform. */
   PLATFORM_MARKETING = 'PLATFORM_MARKETING',
+  /** Payer's personal wallet debited to fund their family wallet. */
+  FAMILY_TRANSFER_OUT = 'FAMILY_TRANSFER_OUT',
+  /** Family wallet credited from the payer's personal wallet. */
+  FAMILY_TRANSFER_IN = 'FAMILY_TRANSFER_IN',
+  /** Family wallet closed: its whole balance leaves… */
+  FAMILY_CLOSURE_OUT = 'FAMILY_CLOSURE_OUT',
+  /** …and lands on the payer's personal wallet. */
+  FAMILY_CLOSURE_IN = 'FAMILY_CLOSURE_IN',
 }
 
 /**
@@ -86,6 +95,13 @@ export class WalletTransaction {
    */
   @Property({ fieldName: 'delivery_run_id', type: 'uuid', nullable: true })
   deliveryRunId?: string | null
+
+  /**
+   * The member behind a purchase or its refund on a family wallet: their
+   * spending of the month is read from these lines.
+   */
+  @ManyToOne(() => FamilyWalletMember, { fieldName: 'family_member_id', nullable: true })
+  familyMember?: Rel<FamilyWalletMember> | null
 
   @Property()
   description!: string

@@ -30,24 +30,24 @@ Tests e2e dans des sous-dossiers `tests/` (testcontainers). Avant un
 
 ## Phase 1 — Mise en place
 
-- [ ] T001 Créer la migration `apps/api/src/modules/db/migrations/Migration20261115090000.ts` selon `data-model.md` : tables `family_wallets` et `family_wallet_members` (index unique partiel, CHECK de statut) ; `wallets.family_wallet_id` (unique) et contrainte `wallet_single_owner` régénérée avec cinq propriétaires ; `wallet_transactions.family_member_id` + index ; `checkouts.family_member_id` + CHECK ; `saved_relatives` à adresse et point nullables (CHECK d'adresse seulement si renseignée) ; régénérer depuis la liste complète les CHECK `wallet_transactions_type_check`, `notifications_type_check` et ceux de `payment_method` (orders, checkouts) s'ils existent — chaque `ADD CONSTRAINT` précédé de `DROP CONSTRAINT IF EXISTS`, tout en `IF NOT EXISTS`
-- [ ] T002 Écrire `apps/api/scripts/2026-11-15-family-wallet.sql`, équivalent idempotent en une transaction, et le rejouer deux fois sur une base jetable
-- [ ] T003 Appliquer la migration en local (`../../node_modules/.bin/mikro-orm migration:up --only Migration20261115090000`) et vérifier le schéma
-- [ ] T004 Ajouter le réglage plateforme `family_wallet_enabled` (faux par défaut) dans `apps/api/src/modules/settings/platform-settings.service.ts`, exposé dans `GET /settings/public` ; toutes les routes du module refusent `403 FAMILY_WALLET_DISABLED` quand il est faux (garde réutilisable)
+- [X] T001 Créer la migration `apps/api/src/modules/db/migrations/Migration20261115090000.ts` selon `data-model.md` : tables `family_wallets` et `family_wallet_members` (index unique partiel, CHECK de statut) ; `wallets.family_wallet_id` (unique) et contrainte `wallet_single_owner` régénérée avec cinq propriétaires ; `wallet_transactions.family_member_id` + index ; `checkouts.family_member_id` + CHECK ; `saved_relatives` à adresse et point nullables (CHECK d'adresse seulement si renseignée) ; régénérer depuis la liste complète les CHECK `wallet_transactions_type_check`, `notifications_type_check` et ceux de `payment_method` (orders, checkouts) s'ils existent — chaque `ADD CONSTRAINT` précédé de `DROP CONSTRAINT IF EXISTS`, tout en `IF NOT EXISTS`
+- [X] T002 Écrire `apps/api/scripts/2026-11-15-family-wallet.sql`, équivalent idempotent en une transaction, et le rejouer deux fois sur une base jetable
+- [X] T003 Appliquer la migration en local (`../../node_modules/.bin/mikro-orm migration:up --only Migration20261115090000`) et vérifier le schéma
+- [X] T004 Ajouter le réglage plateforme `family_wallet_enabled` (faux par défaut) dans `apps/api/src/modules/settings/platform-settings.service.ts`, exposé dans `GET /settings/public` ; toutes les routes du module refusent `403 FAMILY_WALLET_DISABLED` quand il est faux (garde réutilisable)
 
 ---
 
 ## Phase 2 — Socle (bloquant)
 
-- [ ] T005 [P] Créer `apps/api/src/modules/family-wallet/entities/family-wallet.entity.ts` et `family-wallet-member.entity.ts` (data-model §1-2)
-- [ ] T006 [P] `apps/api/src/modules/wallet/entities/wallet.entity.ts` : relation `familyWallet` (OneToOne nullable) ; `wallet-transaction.entity.ts` : `familyMember` (ManyToOne nullable) et types `FAMILY_TRANSFER_OUT`, `FAMILY_TRANSFER_IN`, `FAMILY_CLOSURE_OUT`, `FAMILY_CLOSURE_IN` ; mettre aussi à jour le zod de `wallet/contracts/wallet.contract.ts` (y ajouter `REFERRAL_REWARD`, oublié)
-- [ ] T007 [P] `WalletOwner.familyWalletId` et `getOrCreate` dans `apps/api/src/modules/wallet/wallet.service.ts` ; `WalletMovement.familyMemberId` écrit sur la ligne d'historique
-- [ ] T008 [P] `checkouts.familyMember` dans `apps/api/src/modules/payments/entities/checkout.entity.ts` ; `FAMILY_WALLET` dans `PaymentMethod` (`orders/entities/order.entity.ts`) et `paymentMethodEnum` (`orders/contracts/order.contract.ts`)
-- [ ] T009 [P] Six types de notification (research §9) : `notifications/notification.entity.ts` et `AUDIENCE_TYPES` (`notifications.service.ts`)
-- [ ] T010 Créer `apps/api/src/modules/family-wallet/family-limits.ts` : `effectiveLimits(wallet, member)`, `spendable(balance, effective, spentThisMonth)`, `refusalFor({ wallet, member, effective, spent, balance, total, productCategoryIds })` → `null | { reason, blockedProductIds? }` dans l'ordre de data-model §7 ; `monthStart(now)` au fuseau Africa/Porto-Novo
-- [ ] T011 [P] Test `apps/api/src/modules/family-wallet/family-limits.spec.ts` : limite propre prioritaire, propre vide = défaut, aucune limite = solde seul, ordre des refus, produits bloqués par catégorie, début de mois au Bénin le 1er à 0 h 30 heure de Paris
-- [ ] T012 Créer `apps/api/src/modules/family-wallet/contracts/family-wallet.contract.ts` (contrats §1-5) et `family-wallet.module.ts`, importé dans `app.module.ts`
-- [ ] T013 Assistant `spentThisMonth(em, memberId, now)` dans `family-payment.service.ts` : `−SUM(amount)` des `ORDER_PAYMENT` et `REFUND` du membre depuis `monthStart`
+- [X] T005 [P] Créer `apps/api/src/modules/family-wallet/entities/family-wallet.entity.ts` et `family-wallet-member.entity.ts` (data-model §1-2)
+- [X] T006 [P] `apps/api/src/modules/wallet/entities/wallet.entity.ts` : relation `familyWallet` (OneToOne nullable) ; `wallet-transaction.entity.ts` : `familyMember` (ManyToOne nullable) et types `FAMILY_TRANSFER_OUT`, `FAMILY_TRANSFER_IN`, `FAMILY_CLOSURE_OUT`, `FAMILY_CLOSURE_IN` ; mettre aussi à jour le zod de `wallet/contracts/wallet.contract.ts` (y ajouter `REFERRAL_REWARD`, oublié)
+- [X] T007 [P] `WalletOwner.familyWalletId` et `getOrCreate` dans `apps/api/src/modules/wallet/wallet.service.ts` ; `WalletMovement.familyMemberId` écrit sur la ligne d'historique
+- [X] T008 [P] `checkouts.familyMember` dans `apps/api/src/modules/payments/entities/checkout.entity.ts` ; `FAMILY_WALLET` dans `PaymentMethod` (`orders/entities/order.entity.ts`) et `paymentMethodEnum` (`orders/contracts/order.contract.ts`)
+- [X] T009 [P] Six types de notification (research §9) : `notifications/notification.entity.ts` et `AUDIENCE_TYPES` (`notifications.service.ts`)
+- [X] T010 Créer `apps/api/src/modules/family-wallet/family-limits.ts` : `effectiveLimits(wallet, member)`, `spendable(balance, effective, spentThisMonth)`, `refusalFor({ wallet, member, effective, spent, balance, total, productCategoryIds })` → `null | { reason, blockedProductIds? }` dans l'ordre de data-model §7 ; `monthStart(now)` au fuseau Africa/Porto-Novo
+- [X] T011 [P] Test `apps/api/src/modules/family-wallet/family-limits.spec.ts` : limite propre prioritaire, propre vide = défaut, aucune limite = solde seul, ordre des refus, produits bloqués par catégorie, début de mois au Bénin le 1er à 0 h 30 heure de Paris
+- [X] T012 Créer `apps/api/src/modules/family-wallet/contracts/family-wallet.contract.ts` (contrats §1-5) et `family-wallet.module.ts`, importé dans `app.module.ts`
+- [X] T013 Assistant `spentThisMonth(em, memberId, now)` dans `family-payment.service.ts` : `−SUM(amount)` des `ORDER_PAYMENT` et `REFUND` du membre depuis `monthStart`
 
 **Point de contrôle** : `pnpm lint`, `pnpm --filter api test`, migration appliquée.
 
@@ -59,22 +59,22 @@ Tests e2e dans des sous-dossiers `tests/` (testcontainers). Avant un
 
 ### API
 
-- [ ] T014 [US1] `family-wallets.service.ts` : `open(payerId)` (409 `FAMILY_WALLET_EXISTS`, crée la ligne `wallets` liée), `get(payerId)` (membres, limites effectives, dépense du mois, solde, `display` dans la devise du payeur), `updateDefaults`
-- [ ] T015 [US1] `family-members.service.ts` `add(payerId, input)` : depuis `savedRelativeId` (vérifier le propriétaire) ou création d'un proche via `RelativesService.create` ; refuser le numéro du payeur (`FAMILY_MEMBER_IS_PAYER`) et un doublon actif (`FAMILY_MEMBER_EXISTS`) ; rattacher au compte au numéro vérifié s'il existe (`ACTIVE`), sinon `PENDING`
-- [ ] T016 [US1] `relatives` : adresse, latitude, longitude facultatives dans le contrat et l'entité (`relatives/contracts/relative.contract.ts`, `entities/saved-relative.entity.ts`) ; le passage en caisse « Livrer à un proche » garde son exigence d'adresse et de point
-- [ ] T017 [US1] `family-funding.service.ts` : recharge par carte via `TopupService.initiate(userId, amount, 'family')` — ajouter la cible `'family'` dans `wallet/topup.service.ts` `resolveOwner` (payeur seulement), bornes 1 000–500 000 (`FAMILY_TOPUP_AMOUNT`) ; après `settleFromProvider` d'une recharge famille, appeler le notifier
-- [ ] T018 [US1] `family-funding.service.ts` `transferFromPersonal(payerId, amount)` : débit `FAMILY_TRANSFER_OUT` du personnel et crédit `FAMILY_TRANSFER_IN` du famille dans une seule `em.transactional`
-- [ ] T019 [US1] `family-notifier.service.ts` : SMS + push à l'ajout d'un membre actif, SMS d'invitation à un membre en attente (lien `${PUBLIC_SITE_URL}`), push aux membres actifs après recharge (montant dépensable de chacun) ; ne lève jamais
-- [ ] T020 [US1] `family-wallet.controller.ts` : `GET/POST/PATCH /family-wallet`, `POST /family-wallet/members`, `POST /family-wallet/topups`, `POST /family-wallet/topups/:id/verify`, `POST /family-wallet/transfer`
-- [ ] T021 [P] [US1] Test e2e `apps/api/src/modules/family-wallet/tests/family-wallet-setup.e2e-spec.ts` : ouverture unique, ajout depuis le carnet et nouveau proche, membre actif vs en attente, payeur refusé, doublon refusé, virement atomique (personnel insuffisant → rien ne bouge)
+- [X] T014 [US1] `family-wallets.service.ts` : `open(payerId)` (409 `FAMILY_WALLET_EXISTS`, crée la ligne `wallets` liée), `get(payerId)` (membres, limites effectives, dépense du mois, solde, `display` dans la devise du payeur), `updateDefaults`
+- [X] T015 [US1] `family-members.service.ts` `add(payerId, input)` : depuis `savedRelativeId` (vérifier le propriétaire) ou création d'un proche via `RelativesService.create` ; refuser le numéro du payeur (`FAMILY_MEMBER_IS_PAYER`) et un doublon actif (`FAMILY_MEMBER_EXISTS`) ; rattacher au compte au numéro vérifié s'il existe (`ACTIVE`), sinon `PENDING`
+- [X] T016 [US1] `relatives` : adresse, latitude, longitude facultatives dans le contrat et l'entité (`relatives/contracts/relative.contract.ts`, `entities/saved-relative.entity.ts`) ; le passage en caisse « Livrer à un proche » garde son exigence d'adresse et de point
+- [X] T017 [US1] `family-funding.service.ts` : recharge par carte via `TopupService.initiate(userId, amount, 'family')` — ajouter la cible `'family'` dans `wallet/topup.service.ts` `resolveOwner` (payeur seulement), bornes 1 000–500 000 (`FAMILY_TOPUP_AMOUNT`) ; après `settleFromProvider` d'une recharge famille, appeler le notifier
+- [X] T018 [US1] `family-funding.service.ts` `transferFromPersonal(payerId, amount)` : débit `FAMILY_TRANSFER_OUT` du personnel et crédit `FAMILY_TRANSFER_IN` du famille dans une seule `em.transactional`
+- [X] T019 [US1] `family-notifier.service.ts` : SMS + push à l'ajout d'un membre actif, SMS d'invitation à un membre en attente (lien `${PUBLIC_SITE_URL}`), push aux membres actifs après recharge (montant dépensable de chacun) ; ne lève jamais
+- [X] T020 [US1] `family-wallet.controller.ts` : `GET/POST/PATCH /family-wallet`, `POST /family-wallet/members`, `POST /family-wallet/topups`, `POST /family-wallet/topups/:id/verify`, `POST /family-wallet/transfer`
+- [X] T021 [P] [US1] Test e2e `apps/api/src/modules/family-wallet/tests/family-wallet-setup.e2e-spec.ts` : ouverture unique, ajout depuis le carnet et nouveau proche, membre actif vs en attente, payeur refusé, doublon refusé, virement atomique (personnel insuffisant → rien ne bouge)
 
 ### Mobile (payeur)
 
-- [ ] T022 [US1] `apps/mobile/src/features/family-wallet/family-wallet-api.ts` (appels typés à la main, codes d'erreur traduits)
-- [ ] T023 [US1] `components/family-wallet-screen.tsx` : état « pas encore ouvert » avec explication et bouton ; sinon solde (devise + FCFA), membres (statut, dépense du mois / plafond en jauge doublée de texte), boutons « Recharger » et « Ajouter un proche »
-- [ ] T024 [US1] `components/add-family-member-screen.tsx` : liste du carnet + « Nouveau proche » (nom, `+229`, `ContactPickButton` de 009, adresse facultative)
-- [ ] T025 [US1] Recharge : feuille réutilisant `PaymentWebView` et `awaitSettlement` comme `wallet-screen.tsx`, avec l'onglet « Depuis mon portefeuille eBio » ; montants avec équivalent en devise
-- [ ] T026 [US1] Entrée « Portefeuille famille » dans `profile/components/profile-screen.tsx` (masquée si `family_wallet_enabled` est faux) et routes dans `src/app/navigation.tsx` (modifications locales minimales)
+- [X] T022 [US1] `apps/mobile/src/features/family-wallet/family-wallet-api.ts` (appels typés à la main, codes d'erreur traduits)
+- [X] T023 [US1] `components/family-wallet-screen.tsx` : état « pas encore ouvert » avec explication et bouton ; sinon solde (devise + FCFA), membres (statut, dépense du mois / plafond en jauge doublée de texte), boutons « Recharger » et « Ajouter un proche »
+- [X] T024 [US1] `components/add-family-member-screen.tsx` : liste du carnet + « Nouveau proche » (nom, `+229`, `ContactPickButton` de 009, adresse facultative)
+- [X] T025 [US1] Recharge : feuille réutilisant `PaymentWebView` et `awaitSettlement` comme `wallet-screen.tsx`, avec l'onglet « Depuis mon portefeuille eBio » ; montants avec équivalent en devise
+- [X] T026 [US1] Entrée « Portefeuille famille » dans `profile/components/profile-screen.tsx` (masquée si `family_wallet_enabled` est faux) et routes dans `src/app/navigation.tsx` (modifications locales minimales)
 
 ---
 
@@ -97,8 +97,8 @@ Tests e2e dans des sous-dossiers `tests/` (testcontainers). Avant un
 
 ### Mobile (membre et passage en caisse)
 
-- [ ] T037 [US2] `cart/components/checkout-flow.tsx` : option « Portefeuille famille (Awa) — X FCFA disponibles » par portefeuille de `familyWallets` ; grisée avec la raison en clair (« Il vous reste 2 000 FCFA ce mois-ci », « Ces produits ne sont pas autorisés : … ») ; envoie `paymentMethod: 'FAMILY_WALLET'`, `familyMemberId` ; masquée pour une commande destinée à un proche
-- [ ] T038 [US3] `components/family-limits-screen.tsx` : limites par défaut et limites propres d'un membre (« Comme pour tous » / valeur), sélection des catégories, montants avec équivalent en devise
+- [X] T037 [US2] `cart/components/checkout-flow.tsx` : option « Portefeuille famille (Awa) — X FCFA disponibles » par portefeuille de `familyWallets` ; grisée avec la raison en clair (« Il vous reste 2 000 FCFA ce mois-ci », « Ces produits ne sont pas autorisés : … ») ; envoie `paymentMethod: 'FAMILY_WALLET'`, `familyMemberId` ; masquée pour une commande destinée à un proche
+- [X] T038 [US3] `components/family-limits-screen.tsx` : limites par défaut et limites propres d'un membre (« Comme pour tous » / valeur), sélection des catégories, montants avec équivalent en devise
 
 ---
 
@@ -138,7 +138,7 @@ Tests e2e dans des sous-dossiers `tests/` (testcontainers). Avant un
 - [ ] T055 `pnpm generate` (API temporaire sur un port libre si l'API locale est ancienne, cf. mémoire)
 - [ ] T056 [P] `apps/web-spa/app/features/admin/family-wallets/pages/admin-family-wallets-page.tsx` et `admin-family-wallet-detail-page.tsx` ; type « Famille » dans `wallets/pages/admin-wallets-page.tsx` ; entrée de menu sous « Argent » ; i18n fr/en
 - [ ] T057 [P] Interrupteur `family_wallet_enabled` dans la page Réglages du back-office
-- [ ] T058 CGU et confidentialité (`apps/landing/app/routes/cgu.tsx`, `confidentialite.tsx`) : portefeuille famille, argent récupérable par le payeur, aucun retrait d'espèces
+- [X] T058 CGU et confidentialité (`apps/landing/app/routes/cgu.tsx`, `confidentialite.tsx`) : portefeuille famille, argent récupérable par le payeur, aucun retrait d'espèces
 - [ ] T059 `./node_modules/.bin/eslint` sur les fichiers touchés, `pnpm --filter api test`, `pnpm build`, `npx tsc --noEmit` dans `apps/mobile`
 - [ ] T060 Dérouler `quickstart.md` sur le téléphone de test ; `/design-review` des pages back-office
 

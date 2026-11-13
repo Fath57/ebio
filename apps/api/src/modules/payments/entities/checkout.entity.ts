@@ -1,6 +1,7 @@
 import type { Rel } from '@mikro-orm/core'
 import { Collection, Entity, Enum, Index, ManyToOne, OneToMany, OptionalProps, PrimaryKey, Property } from '@mikro-orm/core'
 import { User } from '../../auth/auth.entity'
+import { FamilyWalletMember } from '../../family-wallet/entities/family-wallet-member.entity'
 import { SavedRelative } from '../../relatives/entities/saved-relative.entity'
 import { Payment } from '../payment.entity'
 
@@ -94,6 +95,14 @@ export class Checkout {
   /** Where the recipient came from, if picked in the address book. */
   @ManyToOne(() => SavedRelative, { fieldName: 'saved_relative_id', nullable: true, deleteRule: 'set null' })
   savedRelative?: Rel<SavedRelative> | null
+
+  /**
+   * The family wallet member who paid, when `paymentMethod` is FAMILY_WALLET
+   * (CHECK both ways). It routes a refund back to that family wallet.
+   */
+  @Index({ name: 'checkouts_family_member_idx' })
+  @ManyToOne(() => FamilyWalletMember, { fieldName: 'family_member_id', nullable: true })
+  familyMember?: Rel<FamilyWalletMember> | null
 
   /** Opaque token of the public tracking link sent to the recipient. */
   @Property({ fieldName: 'tracking_token', type: 'string', length: 32, nullable: true, unique: true })

@@ -18,6 +18,8 @@ export class PublicSettingsController {
     // Her name and her face travel with the switch: the apps write her name
     // into their own labels, and a null portrait means the one they ship.
     const assistant = await this.platformSettings.getAssistantIdentity()
+    // The apps hide every family wallet entry while it is closed.
+    const familyWalletEnabled = await this.platformSettings.getFamilyWalletEnabled()
     // Effective rates (margin included) for prices shown in EUR, USD or CAD.
     // Computed here rather than through ExchangeRatesService: the currency
     // module depends on this one, not the other way round.
@@ -32,6 +34,7 @@ export class PublicSettingsController {
       assistantEnabled,
       assistantName: assistant.name,
       assistantAvatarUrl: assistant.avatarUrl,
+      familyWalletEnabled,
       currencies,
     }
   }

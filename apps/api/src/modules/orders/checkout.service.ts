@@ -329,6 +329,12 @@ export class CheckoutService {
   async create(buyerId: string, data: CreateCheckout): Promise<CreateCheckoutResponse> {
     const buyer = await this.em.findOneOrFail(User, { id: buyerId })
     assertBuyerVerified(buyer)
+    // Placeholder until the family wallet payment lands (010, T029-T030): the
+    // method is in the contract already, and without a member the checkout
+    // would only hit its CHECK constraint.
+    if (data.paymentMethod === 'FAMILY_WALLET') {
+      throw giftBadRequest('FAMILY_WALLET_REFUSED', 'Le paiement par portefeuille famille n\'est pas encore disponible.')
+    }
     const recipient = this.effectiveRecipient(buyer, data.recipient)
     if (recipient) {
       this.assertGiftAllowed(data)

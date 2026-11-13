@@ -8,6 +8,7 @@ export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.FEDAPAY]: 'FedaPay (paiement en ligne)',
   [PaymentMethod.WALLET]: 'Portefeuille eBio',
   [PaymentMethod.CASH_ON_DELIVERY]: 'Espèces à la livraison',
+  [PaymentMethod.FAMILY_WALLET]: 'Portefeuille famille',
 }
 
 /** `1 200 FCFA` — fr-FR grouping with non-breaking spaces, no decimals. */

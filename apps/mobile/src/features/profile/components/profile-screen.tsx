@@ -7,6 +7,7 @@ import ClipboardList from 'lucide-react-native/dist/esm/icons/clipboard-list'
 import FileText from 'lucide-react-native/dist/esm/icons/file-text'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import Heart from 'lucide-react-native/dist/esm/icons/heart'
+import HeartHandshake from 'lucide-react-native/dist/esm/icons/heart-handshake'
 import Hourglass from 'lucide-react-native/dist/esm/icons/hourglass'
 import KeyRound from 'lucide-react-native/dist/esm/icons/key-round'
 import LogOutIcon from 'lucide-react-native/dist/esm/icons/log-out'
@@ -41,6 +42,7 @@ import { storage } from '../../../utils/offline-storage'
 import { BiometricSetting } from '../../auth/components/biometric-setting'
 import { ConfirmModal } from '../../common/components/confirm-modal'
 import { ScreenHeader } from '../../common/components/screen-header'
+import { useFamilyWalletEnabled } from '../../family-wallet/family-wallet-api'
 import { CurrencySetting } from './currency-setting'
 
 interface UserProfile {
@@ -73,6 +75,7 @@ interface ProfileScreenProps {
   onNavigateToFavorites?: () => void
   onNavigateToReferral?: () => void
   onNavigateToRelatives?: () => void
+  onNavigateToFamilyWallet?: () => void
   onNavigateToNotifications?: () => void
   onNavigateToLogin?: () => void
   onNavigateToEditProfile?: () => void
@@ -83,10 +86,11 @@ interface ProfileScreenProps {
   refreshTrigger?: number
 }
 
-export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToFavorites, onNavigateToReferral, onNavigateToRelatives, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
+export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNavigateToFavorites, onNavigateToReferral, onNavigateToRelatives, onNavigateToFamilyWallet, onNavigateToNotifications, onNavigateToLogin, onNavigateToEditProfile, onNavigateToChangePassword, onNavigateToSupplierRegistration, onNavigateToHelp, onNavigateToTerms, refreshTrigger }: ProfileScreenProps = {}) {
   const { mode, setMode, semantic } = useTheme()
   const { data: session } = useSession()
   const tabBarHeight = useBottomTabBarHeight()
+  const familyWalletEnabled = useFamilyWalletEnabled()
   const [profile, setProfile] = useState<UserProfile | null>(null)
   const [supplierStatus, setSupplierStatus] = useState<{ isSupplier: boolean, supplierId: string | null, validationStatus: string | null, shopName: string | null }>({ isSupplier: false, supplierId: null, validationStatus: null, shopName: null })
   const [loading, setLoading] = useState(true)
@@ -472,6 +476,22 @@ export function ProfileScreen({ onNavigateToOrders, onNavigateToWallet, onNaviga
                 semantic={semantic}
                 grouped
               />
+
+              {familyWalletEnabled && onNavigateToFamilyWallet && (
+                <>
+                  <View style={styles.menuDivider} />
+                  <MenuItem
+                    icon={HeartHandshake}
+                    iconBg={colors.green[50]}
+                    iconColor={colors.green[600]}
+                    label="Portefeuille famille"
+                    sublabel="Les courses de vos proches, payées par vous"
+                    onPress={onNavigateToFamilyWallet}
+                    semantic={semantic}
+                    grouped
+                  />
+                </>
+              )}
 
               <View style={styles.menuDivider} />
 

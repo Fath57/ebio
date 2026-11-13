@@ -35,7 +35,7 @@ export const pickupModeEnum = z.enum(['ON_SITE', 'DELIVERY']).meta({
   description: 'How the buyer will receive the order',
 })
 
-export const paymentMethodEnum = z.enum(['FEDAPAY', 'CASH_ON_DELIVERY', 'WALLET']).meta({
+export const paymentMethodEnum = z.enum(['FEDAPAY', 'CASH_ON_DELIVERY', 'WALLET', 'FAMILY_WALLET']).meta({
   title: 'PaymentMethod',
   description: 'Payment method for the order',
 })

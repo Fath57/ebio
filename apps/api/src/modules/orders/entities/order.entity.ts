@@ -27,6 +27,8 @@ export enum PaymentMethod {
   FEDAPAY = 'FEDAPAY',
   CASH_ON_DELIVERY = 'CASH_ON_DELIVERY',
   WALLET = 'WALLET',
+  /** A relative's order paid from a payer's family wallet (010). */
+  FAMILY_WALLET = 'FAMILY_WALLET',
 }
 
 @Entity({ tableName: 'orders' })

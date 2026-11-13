@@ -149,6 +149,16 @@ export const assistantSettingSchema = z.object({
 
 export type AssistantSettingInput = z.infer<typeof assistantSettingSchema>
 
+/** The family wallet switch (010), off until the legal go-ahead. */
+export const familyWalletSettingSchema = z.object({
+  enabled: z.boolean(),
+}).meta({
+  title: 'FamilyWalletSetting',
+  description: 'Ouvre ou ferme le portefeuille famille aux clients',
+})
+
+export type FamilyWalletSettingInput = z.infer<typeof familyWalletSettingSchema>
+
 /** The name and face the apps show, resolved. */
 export const assistantIdentitySchema = z.object({
   name: z.string(),

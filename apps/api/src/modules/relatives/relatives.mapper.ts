@@ -8,9 +8,9 @@ export class RelativesMapper {
       nickname: relative.nickname,
       name: relative.name,
       phone: relative.phone,
-      address: relative.address,
-      latitude: relative.latitude,
-      longitude: relative.longitude,
+      address: relative.address ?? null,
+      latitude: relative.latitude ?? null,
+      longitude: relative.longitude ?? null,
       createdAt: relative.createdAt.toISOString(),
     }
   }

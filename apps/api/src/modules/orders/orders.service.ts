@@ -246,6 +246,11 @@ export class OrdersService {
     if (!checkoutContext) {
       assertBuyerVerified(buyer)
     }
+    // A family wallet pays a whole cart, under its limits, at checkout only:
+    // a lone order has no member to check them against.
+    if (!checkoutContext && data.paymentMethod === PaymentMethod.FAMILY_WALLET) {
+      throw new BadRequestException('Le portefeuille famille se choisit au passage en caisse.')
+    }
 
     const supplier = await this.em.findOne(Supplier, { id: data.supplierId }, { populate: ['user'] })
     if (!supplier) {

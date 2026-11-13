@@ -37,6 +37,7 @@ export const PRODUCT_APPROVAL_REQUIRED_KEY = 'product_approval_required'
 export const NEW_PRODUCT_ALERT_EMAILS_KEY = 'new_product_alert_emails'
 export const EXCHANGE_RATES_KEY = 'exchange_rates'
 export const FX_MARGIN_BPS_KEY = 'fx_margin_bps'
+export const FAMILY_WALLET_ENABLED_KEY = 'family_wallet_enabled'
 
 /** Exchange rates as read: EUR always present, USD and CAD once downloaded or entered. */
 export type ResolvedExchangeRates = ExchangeRates & { EUR: ExchangeRate }
@@ -198,6 +199,13 @@ export const DEFAULT_ANNOUNCEMENT_OFFERS: BannerOffersInput = {
   ],
   paidSlots: 1,
 }
+
+/**
+ * The family wallet stays closed until someone opens it: holding money for
+ * third parties needs a legal go-ahead first (plan, risks), so shipping it
+ * dark makes the opening a decision rather than a deploy.
+ */
+export const DEFAULT_FAMILY_WALLET_ENABLED = false
 
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
@@ -508,6 +516,19 @@ export class PlatformSettingsService {
 
   async setAssistantEnabled(enabled: boolean): Promise<void> {
     await this.set(ASSISTANT_ENABLED_KEY, enabled ? 'true' : 'false')
+  }
+
+  /** Is the family wallet open to payers and their relatives? */
+  async getFamilyWalletEnabled(): Promise<boolean> {
+    const raw = await this.get(FAMILY_WALLET_ENABLED_KEY)
+    if (raw === null) {
+      return DEFAULT_FAMILY_WALLET_ENABLED
+    }
+    return raw === 'true'
+  }
+
+  async setFamilyWalletEnabled(enabled: boolean): Promise<void> {
+    await this.set(FAMILY_WALLET_ENABLED_KEY, enabled ? 'true' : 'false')
   }
 
   /**
