@@ -176,8 +176,11 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       blockedPermissions: [
         'android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK',
         // expo-contacts merges READ and WRITE. Only reading is used — to fill a
-        // relative's name and number from the picker — so writing never ships.
+        // relative's name and number from the picker — so writing never ships,
+        // and the supplier and courier apps, which never pick a relative,
+        // ship neither.
         'android.permission.WRITE_CONTACTS',
+        ...(variant === 'client' ? [] : ['android.permission.READ_CONTACTS']),
       ],
       // Universal links stay on the client app only: the published app keeps
       // handling https://e-bio.org/boutique links after the split.
@@ -223,12 +226,15 @@ export default ({ config }: ConfigContext): ExpoConfig => {
       // Required by expo-localization since it was aligned on SDK 54; PostHog
       // reads the locale through it.
       'expo-localization',
-      [
-        'expo-contacts',
-        {
-          contactsPermission: 'eBio lit le contact que vous choisissez pour remplir le nom et le numéro de votre proche. Rien d\'autre n\'est lu ni envoyé.',
-        },
-      ],
+      // Only the client app picks a relative from the address book.
+      ...(variant === 'client'
+        ? [[
+            'expo-contacts',
+            {
+              contactsPermission: 'eBio lit le contact que vous choisissez pour remplir le nom et le numéro de votre proche. Rien d\'autre n\'est lu ni envoyé.',
+            },
+          ] as [string, Record<string, string>]]
+        : []),
       [
         'expo-location',
         {
