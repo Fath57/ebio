@@ -478,9 +478,26 @@ export class OrdersService {
 
   async findById(id: string): Promise<Order> {
     const order = await this.em.findOne(Order, { id }, {
-      populate: ['buyer', 'supplier', 'checkout', 'items', 'items.product', 'items.variant'],
+      populate: ['buyer', 'supplier', 'supplier.user', 'checkout', 'items', 'items.product', 'items.variant'],
     })
     if (!order) {
+      throw new NotFoundException('Commande introuvable')
+    }
+    return order
+  }
+
+  /**
+   * The order as its buyer, its shop or the back-office may read it.
+   *
+   * `read Order` is granted to every buyer by CASL without a condition on the
+   * row, so the ownership check lives here — same rule as the invoice. Anyone
+   * else gets the not-found answer: a refusal would confirm the id exists.
+   */
+  async findViewableById(id: string, userId: string, role: string): Promise<Order> {
+    const order = await this.findById(id)
+    const isBuyer = order.buyer.id === userId
+    const isSupplier = order.supplier.user.id === userId
+    if (!isBuyer && !isSupplier && role !== UserRole.ADMIN) {
       throw new NotFoundException('Commande introuvable')
     }
     return order

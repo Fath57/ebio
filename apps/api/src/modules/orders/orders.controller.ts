@@ -271,7 +271,7 @@ export class OrdersController {
     @Session() session: LoggedInBetterAuthSession,
     @Param('id') id: string,
   ) {
-    const order = await this.ordersService.findById(id)
+    const order = await this.ordersService.findViewableById(id, session.user.id, session.user.role)
     const hasReview = await this.ordersService.hasReview(id)
     const hasUnratedProducts = await this.ordersService.hasUnratedProducts(id)
     const deliveries = await this.ordersService.deliverySummaries([id])
