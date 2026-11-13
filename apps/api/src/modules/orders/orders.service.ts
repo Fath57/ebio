@@ -1399,25 +1399,35 @@ export class OrdersService {
    * inside a transaction are invisible to the raw counting query, so asking
    * for them one by one would make them all identical.
    */
+  /**
+   * `count` consecutive order numbers for today, reserved atomically.
+   *
+   * The day's counter row is created on first use, seeded with the highest
+   * number already given that day (orders placed before the counter existed),
+   * then bumped in the same statement: two concurrent callers get disjoint
+   * ranges. It runs outside any transaction so the row is never held while an
+   * order is being built.
+   */
   async allocateOrderNumbers(count: number): Promise<string[]> {
-    const first = await this.generateOrderNumber()
-    const [prefix, seq] = [first.slice(0, -3), Number(first.slice(-3))]
+    const day = new Date().toISOString().slice(0, 10).replace(/-/g, '')
+    const prefix = `EB-${day}-`
+    const rows = await this.em.getConnection().execute<{ last: number }[]>(
+      `INSERT INTO order_number_counters (day, last)
+       SELECT ?, COALESCE(MAX(split_part(order_number, '-', 3)::int), 0) + ?
+       FROM orders
+       WHERE order_number LIKE ? AND split_part(order_number, '-', 3) ~ '^[0-9]+$'
+       ON CONFLICT (day) DO UPDATE SET last = order_number_counters.last + ?
+       RETURNING last`,
+      [day, count, `${prefix}%`, count],
+    )
+    const last = Number(rows[0]?.last ?? count)
     return Array.from({ length: count }, (_, index) =>
-      `${prefix}${(seq + index).toString().padStart(3, '0')}`)
+      `${prefix}${(last - count + 1 + index).toString().padStart(3, '0')}`)
   }
 
   private async generateOrderNumber(): Promise<string> {
-    const today = new Date()
-    const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '')
-    const prefix = `EB-${dateStr}-`
-
-    const result = await this.em.getConnection().execute(
-      `SELECT COUNT(*) as count FROM orders WHERE order_number LIKE ?`,
-      [`${prefix}%`],
-    )
-
-    const seq = (Number(result[0]?.count ?? 0) + 1).toString().padStart(3, '0')
-    return `${prefix}${seq}`
+    const [number] = await this.allocateOrderNumbers(1)
+    return number
   }
 
   /**
