@@ -1,534 +1,94 @@
-import type { BannerOffers, DeliveryPricingConfig } from '@boilerstone/openapi-generator/client/types.gen'
-import type { CommissionCategoryRate } from '../forms/commission-form'
-import type { EscrowReleaseFormData } from '../forms/escrow-release-form'
-import type { NewProductSettings } from '../forms/new-product-settings-form'
-import type { PickupPolicyFormData } from '../forms/pickup-policy-form'
-import type { ReferralRewardsFormData } from '../forms/referral-rewards-form'
-import type { ExchangeRatesUpdate } from '../utils/exchange-rates-queries'
-import { client } from '@boilerstone/openapi-generator'
-import {
-  adminAssistantControllerGet,
-  adminAssistantControllerUpdate,
-  adminBannerOffersControllerGet,
-  adminBannerOffersControllerUpdate,
-  adminControllerUpdateCashOnDeliveryLimit,
-  adminControllerUpdateCommissions,
-  adminControllerUpdateCourierDebtLimit,
-  adminControllerUpdateCourierOfferTimeout,
-  adminControllerUpdateCourierPickupPolicy,
-  adminControllerUpdateDeliveryCommission,
-  adminControllerUpdateSupplierDebtLimit,
-  adminDeliveryPricingControllerGet,
-  adminDeliveryPricingControllerUpdate,
-  adminNewProductSettingsControllerGet,
-  adminNewProductSettingsControllerUpdate,
-  adminProductReviewTimingControllerGet,
-  adminProductReviewTimingControllerUpdate,
-  adminReferralRewardsControllerGet,
-  adminReferralRewardsControllerUpdate,
-} from '@boilerstone/openapi-generator/client/sdk.gen'
-import { Card, CardContent, CardHeader, CardTitle } from '@boilerstone/ui/components/primitives/card'
-import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@boilerstone/ui/components/primitives/tabs'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Bot, CreditCard, LayoutGrid, Megaphone, Percent, Smartphone } from 'lucide-react'
-import { useState } from 'react'
+import type { SettingDefinition, SettingsSectionId } from '../utils/settings-registry'
+import { Button } from '@boilerstone/ui/components/primitives/button'
+import { SearchX } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { Link } from 'react-router'
-import { Can } from '@/lib/casl/can'
-import { AnnouncementsManager } from '../../announcements/components/announcements-manager'
-import { AppVersionForm } from '../../app-version/components/app-version-form'
-import { HomeSectionsManager } from '../../home-sections/components/home-sections-manager'
-import { FamilyWalletSettingCard } from '../components/family-wallet-setting-card'
-import { PaymentMethodsManager } from '../components/payment-methods-manager'
-import { AssistantIdentity } from '../forms/assistant-identity'
-import { AssistantToggle } from '../forms/assistant-toggle'
-import { BannerOffersForm } from '../forms/banner-offers-form'
-import { CashLimitForm } from '../forms/cash-limit-form'
-import { CommissionForm } from '../forms/commission-form'
-import { DeliveryCommissionForm } from '../forms/delivery-commission-form'
-import { DeliveryPricingForm } from '../forms/delivery-pricing-form'
-import { EscrowReleaseForm } from '../forms/escrow-release-form'
-import { ExchangeRatesForm } from '../forms/exchange-rates-form'
-import { NewProductSettingsForm } from '../forms/new-product-settings-form'
-import { OfferTimeoutForm } from '../forms/offer-timeout-form'
-import { PickupPolicyForm } from '../forms/pickup-policy-form'
-import { ProductReviewTimingForm } from '../forms/product-review-timing-form'
-import { ReferralRewardsForm } from '../forms/referral-rewards-form'
+import { useLocation, useSearchParams } from 'react-router'
+import { useAbility } from '@/lib/casl/ability-context'
+import { SettingCard } from '../components/setting-card'
+import { SettingsNav } from '../components/settings-nav'
+import { SettingsSearch } from '../components/settings-search'
 import {
-  EXCHANGE_RATES_QUERY_KEY,
-  fetchExchangeRatesQueryOptions,
-  refreshExchangeRates,
-  updateExchangeRates,
-} from '../utils/exchange-rates-queries'
-
-interface AdminSettingsData {
-  commissions: CommissionCategoryRate[]
-  /** eBio's share of the delivery fee as a fraction (0.10 = 10 %). */
-  deliveryCommissionRate: number
-  /** Maximum order total payable in cash on delivery, in FCFA (0 = disabled). */
-  cashOnDeliveryMaxAmount: number
-  /** Deepest negative courier balance before runs are suspended (0 = no limit). */
-  courierMaxDebt: number
-  /** Deepest negative shop balance before cash orders are refused (0 = no limit). */
-  supplierMaxDebt?: number
-  courierOfferTimeoutSeconds?: number
-  courierPickupPolicy?: PickupPolicyFormData
-}
-
-const DEFAULT_PICKUP_POLICY: PickupPolicyFormData = { timeoutMinutes: 25, warningMinutes: 10 }
-
-function fetchDeliveryPricingQueryOptions() {
-  return {
-    queryKey: ['admin', 'delivery-pricing'],
-    queryFn: async () => {
-      const response = await adminDeliveryPricingControllerGet()
-      if (response.error)
-        throw new Error('Failed to fetch delivery pricing')
-      return response.data as DeliveryPricingConfig
-    },
-  }
-}
-
-function fetchReferralRewardsQueryOptions() {
-  return {
-    queryKey: ['admin', 'referral-rewards'],
-    queryFn: async () => {
-      const response = await adminReferralRewardsControllerGet()
-      if (response.error)
-        throw new Error('Failed to fetch referral rewards')
-      return response.data as ReferralRewardsFormData
-    },
-  }
-}
-
-function fetchBannerOffersQueryOptions() {
-  return {
-    queryKey: ['admin', 'banner-offers'],
-    queryFn: async () => {
-      const response = await adminBannerOffersControllerGet()
-      if (response.error)
-        throw new Error('Failed to fetch banner offers')
-      return response.data as BannerOffers
-    },
-  }
-}
-
-interface AssistantSetting {
-  enabled: boolean
-  name: string
-  avatarUrl: string | null
-  voiceSpeed: number
-}
-
-function fetchAssistantQueryOptions() {
-  return {
-    queryKey: ['admin', 'assistant'],
-    queryFn: async () => {
-      const response = await adminAssistantControllerGet()
-      if (response.error)
-        throw new Error('Failed to fetch assistant setting')
-      return response.data as AssistantSetting
-    },
-  }
-}
-
-interface ProductReviewTiming {
-  delaiHeures: number
-  relancesMaximum: number
-}
+  DEFAULT_SETTINGS_SECTION,
+  isSettingsSectionId,
+  LEGACY_TAB_SECTIONS,
+  normalizeSearchText,
+  SETTINGS_REGISTRY,
+  SETTINGS_SECTIONS,
+  settingSearchText,
+} from '../utils/settings-registry'
+import { useAdminSettings } from '../utils/use-admin-settings'
 
 /**
- * The SDK has no function for /api/admin/escrow-release yet: it goes through
- * the shared client, like GET /api/admin/settings above. Same session, same
- * base URL; swap for the generated functions once the SDK is regenerated.
+ * Section to show, from the most specific hint to the least: the section of
+ * the anchored setting (`#tarification-livraison`), `?section=`, a former
+ * `?tab=` link, then the default — as long as the viewer can see it.
  */
-function fetchEscrowReleaseQueryOptions() {
-  return {
-    queryKey: ['admin', 'escrow-release'],
-    queryFn: async () => {
-      const result = await client.get({ url: '/api/admin/escrow-release' })
-      if (result.error)
-        throw new Error('Failed to fetch escrow release delays')
-      return result.data as EscrowReleaseFormData
-    },
-  }
-}
-
-function fetchNewProductSettingsQueryOptions() {
-  return {
-    queryKey: ['admin', 'new-products'],
-    queryFn: async () => {
-      const response = await adminNewProductSettingsControllerGet()
-      if (response.error)
-        throw new Error('Failed to fetch new product settings')
-      return response.data as NewProductSettings
-    },
-  }
-}
-
-function fetchProductReviewTimingQueryOptions() {
-  return {
-    queryKey: ['admin', 'product-review-timing'],
-    queryFn: async () => {
-      const response = await adminProductReviewTimingControllerGet()
-      if (response.error)
-        throw new Error('Failed to fetch product review timing')
-      return response.data as ProductReviewTiming
-    },
-  }
-}
-
-function fetchAdminSettingsQueryOptions() {
-  return {
-    queryKey: ['admin', 'settings'],
-    queryFn: async () => {
-      // No dedicated SDK function for GET /api/admin/settings — fallback to client
-      const result = await client.get({ url: '/api/admin/settings' })
-      return result.data as AdminSettingsData
-    },
-  }
+function resolveSection(
+  hashSetting: SettingDefinition | undefined,
+  sectionParam: string | null,
+  tabParam: string | null,
+  available: readonly SettingsSectionId[],
+): SettingsSectionId {
+  const candidates = [
+    hashSetting?.section,
+    isSettingsSectionId(sectionParam) ? sectionParam : undefined,
+    tabParam ? LEGACY_TAB_SECTIONS[tabParam] : undefined,
+    DEFAULT_SETTINGS_SECTION,
+  ]
+  return candidates.find(id => id !== undefined && available.includes(id)) ?? available[0] ?? DEFAULT_SETTINGS_SECTION
 }
 
 /**
- * Every settings group opens with a short explanation of what it drives and
- * where its effects show up: the page has to stay understandable as groups
- * keep being added.
+ * Platform settings, grouped by what they act on. The registry
+ * (`utils/settings-registry.tsx`) holds every card; this page only picks
+ * which ones to show — a section, or the matches of a search.
  */
 export default function AdminSettingsPage() {
   const { t } = useTranslation()
-  const queryClient = useQueryClient()
-  const [deliveryFeedback, setDeliveryFeedback] = useState<'saved' | 'error' | null>(null)
-  const [cashLimitFeedback, setCashLimitFeedback] = useState<'saved' | 'error' | null>(null)
-  const [debtLimitFeedback, setDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
-  const [supplierDebtLimitFeedback, setSupplierDebtLimitFeedback] = useState<'saved' | 'error' | null>(null)
-  const [offerTimeoutFeedback, setOfferTimeoutFeedback] = useState<'saved' | 'error' | null>(null)
-  const [pickupPolicyFeedback, setPickupPolicyFeedback] = useState<'saved' | 'error' | null>(null)
-  const [pricingFeedback, setPricingFeedback] = useState<'saved' | 'error' | null>(null)
-  const [bannerOffersFeedback, setBannerOffersFeedback] = useState<'saved' | 'error' | null>(null)
-  const [referralFeedback, setReferralFeedback] = useState<'saved' | 'error' | null>(null)
-  const [assistantFeedback, setAssistantFeedback] = useState<'saved' | 'error' | null>(null)
-  const [reviewFeedback, setReviewFeedback] = useState<'saved' | 'error' | null>(null)
-  const [escrowFeedback, setEscrowFeedback] = useState<'saved' | 'error' | null>(null)
-  const [newProductFeedback, setNewProductFeedback] = useState<'saved' | 'error' | null>(null)
-  const [fxFeedback, setFxFeedback] = useState<'saved' | 'error' | 'refreshed' | 'notRefreshed' | 'refreshError' | null>(null)
+  const state = useAdminSettings()
+  const { ability } = useAbility()
+  const [params] = useSearchParams()
+  const { hash } = useLocation()
+  const [query, setQuery] = useState('')
 
-  const { data: settings, isLoading } = useQuery(fetchAdminSettingsQueryOptions())
-  const { data: deliveryPricing, isLoading: isPricingLoading } = useQuery(fetchDeliveryPricingQueryOptions())
-  const { data: bannerOffers, isLoading: isBannerOffersLoading } = useQuery(fetchBannerOffersQueryOptions())
-  const { data: referralRewards, isLoading: isReferralLoading } = useQuery(fetchReferralRewardsQueryOptions())
-  const { data: assistant, isLoading: isAssistantLoading } = useQuery(fetchAssistantQueryOptions())
-  const { data: reviewTiming, isLoading: isReviewLoading } = useQuery(fetchProductReviewTimingQueryOptions())
-  const { data: escrowRelease, isLoading: isEscrowLoading } = useQuery(fetchEscrowReleaseQueryOptions())
-  const { data: newProducts, isLoading: isNewProductsLoading } = useQuery(fetchNewProductSettingsQueryOptions())
-  const { data: exchangeRates, isLoading: isFxLoading } = useQuery(fetchExchangeRatesQueryOptions())
+  const canManage = ability?.can('manage', 'all') ?? false
+  const visibleSettings = useMemo(
+    () => SETTINGS_REGISTRY.filter(setting => !setting.adminOnly || canManage),
+    [canManage],
+  )
+  const visibleSections = SETTINGS_SECTIONS.filter(section => visibleSettings.some(setting => setting.section === section.id))
+  const counts = Object.fromEntries(SETTINGS_SECTIONS.map(section => [
+    section.id,
+    visibleSettings.filter(setting => setting.section === section.id && !setting.informational).length,
+  ])) as Record<SettingsSectionId, number>
 
-  const { mutate: updateCommissions, isPending } = useMutation({
-    mutationFn: async (rates: Array<{ category: string, rate: number }>) => {
-      const response = await adminControllerUpdateCommissions({ body: { rates } })
-      if (response.error)
-        throw new Error('Failed to update commissions')
-      return response.data
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
-      queryClient.invalidateQueries({ queryKey: ['admin', 'commissions'] })
-    },
-  })
+  const anchorId = decodeURIComponent(hash.replace(/^#/, ''))
+  const anchoredSetting = visibleSettings.find(setting => setting.id === anchorId)
+  const activeSection = resolveSection(
+    anchoredSetting,
+    params.get('section'),
+    params.get('tab'),
+    visibleSections.map(section => section.id),
+  )
 
-  const { mutate: updateDeliveryCommission, isPending: isDeliveryPending } = useMutation({
-    mutationFn: async (rate: number) => {
-      const response = await adminControllerUpdateDeliveryCommission({ body: { rate } })
-      if (response.error)
-        throw new Error('Failed to update delivery commission')
-      return response.data
-    },
-    onMutate: () => {
-      setDeliveryFeedback(null)
-    },
-    onSuccess: () => {
-      setDeliveryFeedback('saved')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
-    },
-    onError: () => {
-      setDeliveryFeedback('error')
-    },
-  })
-
-  const { mutate: updateCashLimit, isPending: isCashLimitPending } = useMutation({
-    mutationFn: async (amount: number) => {
-      const response = await adminControllerUpdateCashOnDeliveryLimit({ body: { amount } })
-      if (response.error)
-        throw new Error('Failed to update cash on delivery limit')
-      return response.data
-    },
-    onMutate: () => {
-      setCashLimitFeedback(null)
-    },
-    onSuccess: () => {
-      setCashLimitFeedback('saved')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
-    },
-    onError: () => {
-      setCashLimitFeedback('error')
-    },
-  })
-
-  const { mutate: updateOfferTimeout, isPending: isOfferTimeoutPending } = useMutation({
-    mutationFn: async (seconds: number) => {
-      const response = await adminControllerUpdateCourierOfferTimeout({ body: { seconds } })
-      if (response.error)
-        throw new Error('Failed to update courier offer timeout')
-      return response.data
-    },
-    onMutate: () => {
-      setOfferTimeoutFeedback(null)
-    },
-    onSuccess: () => {
-      setOfferTimeoutFeedback('saved')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
-    },
-    onError: () => {
-      setOfferTimeoutFeedback('error')
-    },
-  })
-
-  const { mutate: updatePickupPolicy, isPending: isPickupPolicyPending } = useMutation({
-    mutationFn: async (policy: PickupPolicyFormData) => {
-      const response = await adminControllerUpdateCourierPickupPolicy({ body: policy })
-      if (response.error)
-        throw new Error('Failed to update courier pickup policy')
-      return response.data
-    },
-    onMutate: () => {
-      setPickupPolicyFeedback(null)
-    },
-    onSuccess: () => {
-      setPickupPolicyFeedback('saved')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
-    },
-    onError: () => {
-      setPickupPolicyFeedback('error')
-    },
-  })
-
-  const { mutate: updateDebtLimit, isPending: isDebtLimitPending } = useMutation({
-    mutationFn: async (amount: number) => {
-      const response = await adminControllerUpdateCourierDebtLimit({ body: { amount } })
-      if (response.error)
-        throw new Error('Failed to update courier debt limit')
-      return response.data
-    },
-    onMutate: () => {
-      setDebtLimitFeedback(null)
-    },
-    onSuccess: () => {
-      setDebtLimitFeedback('saved')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
-    },
-    onError: () => {
-      setDebtLimitFeedback('error')
-    },
-  })
-
-  const { mutate: updateSupplierDebtLimit, isPending: isSupplierDebtLimitPending } = useMutation({
-    mutationFn: async (amount: number) => {
-      const response = await adminControllerUpdateSupplierDebtLimit({ body: { amount } })
-      if (response.error)
-        throw new Error('Failed to update supplier debt limit')
-      return response.data
-    },
-    onMutate: () => {
-      setSupplierDebtLimitFeedback(null)
-    },
-    onSuccess: () => {
-      setSupplierDebtLimitFeedback('saved')
-      queryClient.invalidateQueries({ queryKey: ['admin', 'settings'] })
-    },
-    onError: () => {
-      setSupplierDebtLimitFeedback('error')
-    },
-  })
-
-  const { mutate: updateDeliveryPricing, isPending: isPricingPending } = useMutation({
-    mutationFn: async (config: DeliveryPricingConfig) => {
-      const response = await adminDeliveryPricingControllerUpdate({ body: config })
-      if (response.error)
-        throw new Error('Failed to update delivery pricing')
-      return response.data as DeliveryPricingConfig
-    },
-    onMutate: () => {
-      setPricingFeedback(null)
-    },
-    onSuccess: (saved) => {
-      setPricingFeedback('saved')
-      queryClient.setQueryData(['admin', 'delivery-pricing'], saved)
-    },
-    onError: () => {
-      setPricingFeedback('error')
-    },
-  })
-
-  const { mutate: updateReferralRewards, isPending: isReferralPending } = useMutation({
-    mutationFn: async (rewards: ReferralRewardsFormData) => {
-      const response = await adminReferralRewardsControllerUpdate({ body: rewards })
-      if (response.error)
-        throw new Error('Failed to update referral rewards')
-      return response.data as ReferralRewardsFormData
-    },
-    onMutate: () => {
-      setReferralFeedback(null)
-    },
-    onSuccess: (saved) => {
-      setReferralFeedback('saved')
-      queryClient.setQueryData(['admin', 'referral-rewards'], saved)
-    },
-    onError: () => {
-      setReferralFeedback('error')
-    },
-  })
-
-  const { mutate: updateBannerOffers, isPending: isBannerOffersPending } = useMutation({
-    mutationFn: async (offers: BannerOffers) => {
-      const response = await adminBannerOffersControllerUpdate({ body: offers })
-      if (response.error)
-        throw new Error('Failed to update banner offers')
-      return response.data as BannerOffers
-    },
-    onMutate: () => {
-      setBannerOffersFeedback(null)
-    },
-    onSuccess: (saved) => {
-      setBannerOffersFeedback('saved')
-      queryClient.setQueryData(['admin', 'banner-offers'], saved)
-    },
-    onError: () => {
-      setBannerOffersFeedback('error')
-    },
-  })
-
-  const { mutate: updateAssistant, isPending: isAssistantPending } = useMutation({
-    // The switch and the identity share one route, so every call carries the
-    // current `enabled`: saving a name must never close her by omission.
-    mutationFn: async (input: Partial<AssistantSetting> & { enabled: boolean }) => {
-      const response = await adminAssistantControllerUpdate({
-        body: {
-          enabled: input.enabled,
-          ...(input.name !== undefined ? { name: input.name } : {}),
-          ...(input.avatarUrl !== undefined ? { avatarUrl: input.avatarUrl } : {}),
-          ...(input.voiceSpeed !== undefined ? { voiceSpeed: input.voiceSpeed } : {}),
-        },
+  const terms = normalizeSearchText(query).split(/\s+/).filter(Boolean)
+  const isSearching = terms.length > 0
+  const results = isSearching
+    ? visibleSettings.filter((setting) => {
+        const text = settingSearchText(setting, state, t)
+        return terms.every(term => text.includes(term))
       })
-      if (response.error)
-        throw new Error('Failed to update assistant setting')
-      return response.data as AssistantSetting
-    },
-    onMutate: () => {
-      setAssistantFeedback(null)
-    },
-    onSuccess: (saved) => {
-      setAssistantFeedback('saved')
-      queryClient.setQueryData(['admin', 'assistant'], saved)
-    },
-    onError: () => {
-      setAssistantFeedback('error')
-    },
-  })
+    : []
+  const sectionSettings = visibleSettings.filter(setting => setting.section === activeSection)
 
-  const { mutate: saveExchangeRates, isPending: isFxPending } = useMutation({
-    mutationFn: (update: ExchangeRatesUpdate) => updateExchangeRates(update),
-    onMutate: () => {
-      setFxFeedback(null)
-    },
-    onSuccess: () => {
-      setFxFeedback('saved')
-      queryClient.invalidateQueries({ queryKey: EXCHANGE_RATES_QUERY_KEY })
-    },
-    onError: () => {
-      setFxFeedback('error')
-      queryClient.invalidateQueries({ queryKey: EXCHANGE_RATES_QUERY_KEY })
-    },
-  })
-
-  const { mutate: refreshRates, isPending: isFxRefreshing } = useMutation({
-    mutationFn: refreshExchangeRates,
-    onMutate: () => {
-      setFxFeedback(null)
-    },
-    onSuccess: (result) => {
-      setFxFeedback(result.refreshed ? 'refreshed' : 'notRefreshed')
-      queryClient.setQueryData(EXCHANGE_RATES_QUERY_KEY, { marginBps: result.marginBps, rates: result.rates })
-    },
-    onError: () => {
-      setFxFeedback('refreshError')
-    },
-  })
-
-  const { mutate: updateEscrowRelease, isPending: isEscrowPending } = useMutation({
-    mutationFn: async (delays: EscrowReleaseFormData) => {
-      const result = await client.put({ url: '/api/admin/escrow-release', body: delays })
-      if (result.error)
-        throw new Error('Failed to update escrow release delays')
-      return result.data as EscrowReleaseFormData
-    },
-    onMutate: () => {
-      setEscrowFeedback(null)
-    },
-    onSuccess: (saved) => {
-      setEscrowFeedback('saved')
-      queryClient.setQueryData(['admin', 'escrow-release'], saved)
-    },
-    onError: () => {
-      setEscrowFeedback('error')
-    },
-  })
-
-  const { mutate: updateNewProducts, isPending: isNewProductsPending } = useMutation({
-    mutationFn: async (body: NewProductSettings) => {
-      const response = await adminNewProductSettingsControllerUpdate({ body })
-      if (response.error)
-        throw new Error('Failed to update new product settings')
-      return response.data as NewProductSettings
-    },
-    onMutate: () => {
-      setNewProductFeedback(null)
-    },
-    onSuccess: (saved) => {
-      setNewProductFeedback('saved')
-      queryClient.setQueryData(['admin', 'new-products'], saved)
-    },
-    onError: () => {
-      setNewProductFeedback('error')
-    },
-  })
-
-  const { mutate: updateReviewTiming, isPending: isReviewPending } = useMutation({
-    mutationFn: async (timing: ProductReviewTiming) => {
-      const response = await adminProductReviewTimingControllerUpdate({ body: timing })
-      if (response.error)
-        throw new Error('Failed to update product review timing')
-      return response.data as ProductReviewTiming
-    },
-    onMutate: () => {
-      setReviewFeedback(null)
-    },
-    onSuccess: (saved) => {
-      setReviewFeedback('saved')
-      queryClient.setQueryData(['admin', 'product-review-timing'], saved)
-    },
-    onError: () => {
-      setReviewFeedback('error')
-    },
-  })
-
-  if (isLoading) {
-    return (
-      <div className="space-y-6">
-        <Skeleton className="h-10 w-48" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    )
-  }
+  // Bring the anchored card into view once the cards above it have their
+  // final height, and again whenever back/forward lands on another anchor.
+  useEffect(() => {
+    if (!anchorId || isSearching || state.isAnyLoading)
+      return
+    document.getElementById(anchorId)?.scrollIntoView({ block: 'start' })
+  }, [anchorId, activeSection, isSearching, state.isAnyLoading])
 
   return (
     <div className="space-y-6">
@@ -537,508 +97,56 @@ export default function AdminSettingsPage() {
         <p className="text-muted-foreground">{t('admin.settings.description')}</p>
       </div>
 
-      <Tabs defaultValue="commissions">
-        <TabsList className="max-w-full justify-start overflow-x-auto">
-          <TabsTrigger value="commissions">
-            <Percent className="mr-2 h-4 w-4" />
-            {t('admin.settings.tabs.commissions')}
-          </TabsTrigger>
-          <TabsTrigger value="payments">
-            <CreditCard className="mr-2 h-4 w-4" />
-            {t('admin.settings.tabs.payments')}
-          </TabsTrigger>
-          <TabsTrigger value="accueil">
-            <LayoutGrid className="mr-2 h-4 w-4" />
-            {t('admin.settings.tabs.home')}
-          </TabsTrigger>
-          <TabsTrigger value="annonces">
-            <Megaphone className="mr-2 h-4 w-4" />
-            {t('admin.settings.tabs.announcements')}
-          </TabsTrigger>
-          <TabsTrigger value="apps">
-            <Smartphone className="mr-2 h-4 w-4" />
-            Applications
-          </TabsTrigger>
-          <TabsTrigger value="assistant">
-            <Bot className="mr-2 h-4 w-4" />
-            {t('admin.settings.tabs.assistant')}
-          </TabsTrigger>
-        </TabsList>
+      <div className="flex flex-col gap-4 lg:grid lg:grid-cols-4 lg:gap-x-8 lg:gap-y-6">
+        <div className="lg:col-span-3 lg:col-start-2 lg:row-start-1">
+          <SettingsSearch value={query} onChange={setQuery} />
+        </div>
 
-        <TabsContent value="accueil" className="mt-6 space-y-6">
-          <Can action="manage" subject="all">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.homeSections.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.homeSections.description')}</p>
-              </CardHeader>
-              <CardContent>
-                <HomeSectionsManager />
-              </CardContent>
-            </Card>
-          </Can>
-        </TabsContent>
+        <div className="lg:sticky lg:top-20 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:self-start">
+          <SettingsNav
+            sections={visibleSections}
+            counts={counts}
+            activeSection={isSearching ? null : activeSection}
+            onNavigate={() => setQuery('')}
+          />
+        </div>
 
-        <TabsContent value="apps" className="mt-6 space-y-6">
-          <Can action="manage" subject="all">
-            <Card>
-              <CardHeader>
-                <CardTitle>Versions des applications</CardTitle>
-                <p className="text-muted-foreground text-sm">
-                  Les mises à jour automatiques ne transportent que le code JavaScript. Une
-                  version qui demande un changement natif ne peut venir que du Play Store —
-                  et l'application ne peut pas le deviner seule.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <AppVersionForm />
-              </CardContent>
-            </Card>
-          </Can>
-        </TabsContent>
-
-        <TabsContent value="annonces" className="mt-6 space-y-6">
-          <Can action="manage" subject="all">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.announcements.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.announcements.description')}</p>
-              </CardHeader>
-              <CardContent>
-                <AnnouncementsManager />
-              </CardContent>
-            </Card>
-          </Can>
-        </TabsContent>
-
-        <TabsContent value="assistant" className="mt-6 space-y-6">
-          <Can action="manage" subject="all">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.assistant.title', { name: assistant?.name ?? 'Assita' })}</CardTitle>
-                <p className="text-muted-foreground text-sm">
-                  {t('admin.settings.assistant.description', { name: assistant?.name ?? 'Assita' })}
-                </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isAssistantLoading || !assistant
-                  ? <Skeleton className="h-12 w-full" />
-                  : (
-                      <>
-                        <AssistantToggle
-                          name={assistant.name}
-                          enabled={assistant.enabled}
-                          onChange={enabled => updateAssistant({ enabled })}
-                          isPending={isAssistantPending}
-                        />
-                        <AssistantIdentity
-                          name={assistant.name}
-                          avatarUrl={assistant.avatarUrl}
-                          voiceSpeed={assistant.voiceSpeed}
-                          onSave={identity => updateAssistant({ enabled: assistant.enabled, ...identity })}
-                          isPending={isAssistantPending}
-                        />
-                      </>
-                    )}
-                {assistantFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.assistant.saved')}</p>
-                )}
-                {assistantFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.assistant.error')}
+        <div className="min-w-0 space-y-6 lg:col-span-3 lg:col-start-2 lg:row-start-2">
+          {isSearching
+            ? (
+                <>
+                  <p role="status" className="text-muted-foreground text-sm">
+                    {t('admin.settings.search.results', { count: results.length })}
                   </p>
-                )}
-              </CardContent>
-            </Card>
-          </Can>
-        </TabsContent>
-
-        <TabsContent value="commissions" className="mt-6 space-y-6">
-          <Can action="manage" subject="all">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.deliveryPricing.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.deliveryPricing.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isPricingLoading || !deliveryPricing
-                  ? <Skeleton className="h-40 w-full" />
-                  : (
-                      <DeliveryPricingForm
-                        config={deliveryPricing}
-                        onSubmit={updateDeliveryPricing}
-                        isPending={isPricingPending}
-                      />
-                    )}
-                {pricingFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.deliveryPricing.saved')}</p>
-                )}
-                {pricingFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.deliveryPricing.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.newProducts.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.newProducts.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isNewProductsLoading || !newProducts
-                  ? <Skeleton className="h-40 w-full" />
-                  : (
-                      <NewProductSettingsForm
-                        settings={newProducts}
-                        onSubmit={updateNewProducts}
-                        isPending={isNewProductsPending}
-                      />
-                    )}
-                {newProductFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.newProducts.saved')}</p>
-                )}
-                {newProductFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.newProducts.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.productReview.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.productReview.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isReviewLoading || !reviewTiming
-                  ? <Skeleton className="h-24 w-full" />
-                  : (
-                      <ProductReviewTimingForm
-                        timing={reviewTiming}
-                        onSubmit={updateReviewTiming}
-                        isPending={isReviewPending}
-                      />
-                    )}
-                {reviewFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.productReview.saved')}</p>
-                )}
-                {reviewFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.productReview.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.escrowRelease.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.escrowRelease.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isEscrowLoading || !escrowRelease
-                  ? <Skeleton className="h-24 w-full" />
-                  : (
-                      <EscrowReleaseForm
-                        delays={escrowRelease}
-                        onSubmit={updateEscrowRelease}
-                        isPending={isEscrowPending}
-                      />
-                    )}
-                {escrowFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.escrowRelease.saved')}</p>
-                )}
-                {escrowFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.escrowRelease.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.exchangeRates.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.exchangeRates.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isFxLoading || !exchangeRates
-                  ? <Skeleton className="h-40 w-full" />
-                  : (
-                      <ExchangeRatesForm
-                        data={exchangeRates}
-                        onSubmit={update => saveExchangeRates(update)}
-                        isPending={isFxPending}
-                        onRefresh={() => refreshRates()}
-                        isRefreshing={isFxRefreshing}
-                      />
-                    )}
-                {(fxFeedback === 'saved' || fxFeedback === 'refreshed') && (
-                  <p className="text-sm text-green-600">{t(`admin.settings.exchangeRates.${fxFeedback}`)}</p>
-                )}
-                {fxFeedback === 'notRefreshed' && (
-                  <p role="status" className="rounded-md border border-ebio-earth-200 bg-ebio-earth-50 p-3 text-sm text-ebio-earth-800 dark:border-ebio-earth-800 dark:bg-ebio-earth-900 dark:text-ebio-earth-100">
-                    {t('admin.settings.exchangeRates.notRefreshed')}
-                  </p>
-                )}
-                {(fxFeedback === 'error' || fxFeedback === 'refreshError') && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t(`admin.settings.exchangeRates.${fxFeedback}`)}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.bannerOffers.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.bannerOffers.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isBannerOffersLoading || !bannerOffers
-                  ? <Skeleton className="h-40 w-full" />
-                  : (
-                      <BannerOffersForm
-                        offers={bannerOffers}
-                        onSubmit={updateBannerOffers}
-                        isPending={isBannerOffersPending}
-                      />
-                    )}
-                {bannerOffersFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.bannerOffers.saved')}</p>
-                )}
-                {bannerOffersFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.bannerOffers.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.referral.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.referral.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {isReferralLoading || !referralRewards
-                  ? <Skeleton className="h-40 w-full" />
-                  : (
-                      <ReferralRewardsForm
-                        rewards={referralRewards}
-                        onSubmit={updateReferralRewards}
-                        isPending={isReferralPending}
-                      />
-                    )}
-                {referralFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.referral.saved')}</p>
-                )}
-                {referralFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.referral.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </Can>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-base">{t('admin.settings.commission.howTitle')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <ul className="text-muted-foreground list-disc space-y-2 pl-5 text-sm">
-                <li>{t('admin.settings.commission.how1')}</li>
-                <li>
-                  {t('admin.settings.commission.how2')}
-                  {' '}
-                  <Link to="/admin/fournisseurs" className="text-primary underline-offset-2 hover:underline">
-                    {t('admin.settings.commission.how2Link')}
-                  </Link>
-                </li>
-                <li>{t('admin.settings.commission.how3')}</li>
-                <li>
-                  {t('admin.settings.commission.how4')}
-                  {' '}
-                  <Link to="/admin/commissions" className="text-primary underline-offset-2 hover:underline">
-                    {t('admin.settings.commission.how4Link')}
-                  </Link>
-                </li>
-              </ul>
-            </CardContent>
-          </Card>
-
-          <Can action="manage" subject="all">
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.commission.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.commission.description')}</p>
-              </CardHeader>
-              <CardContent>
-                <CommissionForm
-                  categories={settings?.commissions ?? []}
-                  onSubmit={updateCommissions}
-                  isPending={isPending}
-                />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.deliveryCommission.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.deliveryCommission.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <DeliveryCommissionForm
-                  rate={settings?.deliveryCommissionRate ?? 0.1}
-                  onSubmit={updateDeliveryCommission}
-                  isPending={isDeliveryPending}
-                />
-                {deliveryFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.deliveryCommission.saved')}</p>
-                )}
-                {deliveryFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.deliveryCommission.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.cashLimit.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.cashLimit.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <CashLimitForm
-                  amount={settings?.cashOnDeliveryMaxAmount ?? 25000}
-                  onSubmit={updateCashLimit}
-                  isPending={isCashLimitPending}
-                />
-                {cashLimitFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.cashLimit.saved')}</p>
-                )}
-                {cashLimitFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.cashLimit.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.debtLimit.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.debtLimit.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <CashLimitForm
-                  amount={settings?.courierMaxDebt ?? 5000}
-                  onSubmit={updateDebtLimit}
-                  isPending={isDebtLimitPending}
-                  i18nPrefix="admin.settings.debtLimit"
-                  fieldId="courier-debt-limit-amount"
-                />
-                {debtLimitFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.debtLimit.saved')}</p>
-                )}
-                {debtLimitFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.debtLimit.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.supplierDebtLimit.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.supplierDebtLimit.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <CashLimitForm
-                  amount={settings?.supplierMaxDebt ?? 10000}
-                  onSubmit={updateSupplierDebtLimit}
-                  isPending={isSupplierDebtLimitPending}
-                  i18nPrefix="admin.settings.supplierDebtLimit"
-                  fieldId="supplier-debt-limit-amount"
-                />
-                {supplierDebtLimitFeedback === 'saved' && (
-                  <p className="text-sm text-green-600">{t('admin.settings.supplierDebtLimit.saved')}</p>
-                )}
-                {supplierDebtLimitFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.supplierDebtLimit.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.offerTimeout.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.offerTimeout.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <OfferTimeoutForm
-                  seconds={settings?.courierOfferTimeoutSeconds ?? 90}
-                  onSubmit={updateOfferTimeout}
-                  isPending={isOfferTimeoutPending}
-                />
-                {offerTimeoutFeedback === 'saved' && (
-                  <p className="text-ebio-green-600 text-sm">{t('admin.settings.offerTimeout.saved')}</p>
-                )}
-                {offerTimeoutFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.offerTimeout.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle>{t('admin.settings.pickupPolicy.title')}</CardTitle>
-                <p className="text-muted-foreground text-sm">{t('admin.settings.pickupPolicy.description')}</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <PickupPolicyForm
-                  policy={settings?.courierPickupPolicy ?? DEFAULT_PICKUP_POLICY}
-                  onSubmit={updatePickupPolicy}
-                  isPending={isPickupPolicyPending}
-                />
-                {pickupPolicyFeedback === 'saved' && (
-                  <p className="text-ebio-green-600 text-sm">{t('admin.settings.pickupPolicy.saved')}</p>
-                )}
-                {pickupPolicyFeedback === 'error' && (
-                  <p className="border-destructive/50 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-                    {t('admin.settings.pickupPolicy.error')}
-                  </p>
-                )}
-              </CardContent>
-            </Card>
-          </Can>
-        </TabsContent>
-
-        <TabsContent value="payments" className="mt-6 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>{t('admin.settings.paymentMethods.title')}</CardTitle>
-              <p className="text-muted-foreground text-sm">{t('admin.settings.paymentMethods.description')}</p>
-            </CardHeader>
-            <CardContent>
-              <PaymentMethodsManager />
-            </CardContent>
-          </Card>
-          <Can action="manage" subject="all">
-            <FamilyWalletSettingCard />
-          </Can>
-        </TabsContent>
-      </Tabs>
+                  {results.length === 0
+                    ? (
+                        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed px-6 py-12 text-center">
+                          <SearchX aria-hidden="true" className="text-muted-foreground size-8" />
+                          <p className="font-semibold">{t('admin.settings.search.emptyTitle', { query: query.trim() })}</p>
+                          <p className="text-muted-foreground text-sm">{t('admin.settings.search.emptyHint')}</p>
+                          <Button variant="outline" onClick={() => setQuery('')}>
+                            {t('admin.settings.search.clear')}
+                          </Button>
+                        </div>
+                      )
+                    : results.map(setting => (
+                        <SettingCard key={setting.id} setting={setting} state={state} showSection />
+                      ))}
+                </>
+              )
+            : (
+                <>
+                  <header className="space-y-1">
+                    <h3 className="text-xl font-semibold">{t(`admin.settings.sections.${activeSection}.title`)}</h3>
+                    <p className="text-muted-foreground text-sm">{t(`admin.settings.sections.${activeSection}.description`)}</p>
+                  </header>
+                  {sectionSettings.map(setting => (
+                    <SettingCard key={setting.id} setting={setting} state={state} />
+                  ))}
+                </>
+              )}
+        </div>
+      </div>
     </div>
   )
 }

@@ -1369,7 +1369,8 @@
         "how2Link": "its supplier page",
         "how3": "The commission applies to items only. Delivery fees go to the courier, minus the eBio share set below.",
         "how4": "Collected and upcoming amounts are tracked on",
-        "how4Link": "Sales → Commissions"
+        "how4Link": "Sales → Commissions",
+        "howDescription": "How the category grid, negotiated rates and the delivery share fit together."
       },
       "tabs": {
         "commissions": "Commissions",
@@ -1659,6 +1660,80 @@
         "stateClosed": "Closed: the apps hide the family wallet and refuse every family payment.",
         "saved": "Saved. The change applies within a minute.",
         "error": "The change was not saved."
+      },
+      "sections": {
+        "navLabel": "Settings sections",
+        "count_one": "{{count}} setting",
+        "count_other": "{{count}} settings",
+        "argent": {
+          "title": "Money and commissions",
+          "description": "What eBio takes on each sale and each run, when money reaches the shops, currencies and referrals."
+        },
+        "paiements": {
+          "title": "Payments",
+          "description": "How buyers pay, how far cash is accepted and how much debt couriers and shops may carry."
+        },
+        "livraison": {
+          "title": "Delivery",
+          "description": "The price of a run and the time couriers get to accept it, then pick up the parcel."
+        },
+        "catalogue": {
+          "title": "Catalogue and reviews",
+          "description": "What happens when a shop adds a product, and when the buyer is asked for a review."
+        },
+        "vitrine": {
+          "title": "Storefront and marketing",
+          "description": "What buyers see when opening the app: home rails, announcements and sponsored banners."
+        },
+        "applications": {
+          "title": "Apps",
+          "description": "Minimum app versions and the shopping assistant."
+        }
+      },
+      "search": {
+        "label": "Search a setting",
+        "placeholder": "Cash, commission, exchange rate…",
+        "clear": "Clear search",
+        "results_one": "{{count}} setting found",
+        "results_other": "{{count}} settings found",
+        "emptyTitle": "No setting matches “{{query}}”",
+        "emptyHint": "Try another word: cash, debt, delivery, banner, version…"
+      },
+      "summary": {
+        "label": "Currently:",
+        "disabled": "Disabled",
+        "noLimit": "No limit",
+        "commissionSingle": "{{rate}} on every category",
+        "commissionRange": "From {{min}} to {{max}} depending on the category",
+        "deliveryCommission": "{{rate}} of delivery fees",
+        "escrowRelease": "{{after}} h after double confirmation, {{max}} h at most",
+        "exchangeRates": "Exchange margin of {{margin}}",
+        "referral": "{{sponsor}} to the sponsor, {{referee}} to the referee",
+        "cashLimit": "Up to {{amount}} per order",
+        "debtLimit": "Up to {{amount}} of debt",
+        "familyWalletOpen": "Open",
+        "familyWalletClosed": "Closed",
+        "deliveryFlat": "Flat fee of {{fee}}",
+        "deliveryDistance": "{{base}} + {{perKm}} per km",
+        "deliveryZones_one": "{{count}} zone",
+        "deliveryZones_other": "{{count}} zones",
+        "deliveryFreeFrom": "{{rule}}, free from {{amount}}",
+        "offerTimeout": "{{seconds}} s per courier",
+        "pickupPolicy": "{{timeout}} min to pick up, reminder {{warning}} min before",
+        "newProductsChecked": "Checked by eBio before publication",
+        "newProductsDirect": "Published without review",
+        "newProductsEmails_one": "{{state}}, {{count}} address notified",
+        "newProductsEmails_other": "{{state}}, {{count}} addresses notified",
+        "productReview_one": "{{hours}} h after delivery, {{count}} reminder",
+        "productReview_other": "{{hours}} h after delivery, {{count}} reminders",
+        "bannerOffers_one": "{{count}} offer, {{slots}} paid slots",
+        "bannerOffers_other": "{{count}} offers, {{slots}} paid slots",
+        "assistantOpen": "Open",
+        "assistantClosed": "Closed"
+      },
+      "appVersions": {
+        "title": "App versions",
+        "description": "Automatic updates only carry JavaScript code. A version that needs a native change can only come from the Play Store — and the app cannot guess it on its own."
       }
     },
     "site": {

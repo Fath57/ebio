@@ -1369,7 +1369,8 @@
         "how2Link": "sa fiche fournisseur",
         "how3": "La commission porte sur les articles uniquement. Les frais de livraison reviennent au livreur, moins la part eBio réglée ci-dessous.",
         "how4": "Le suivi des montants prélevés et à venir se fait sur la page",
-        "how4Link": "Ventes → Commissions"
+        "how4Link": "Ventes → Commissions",
+        "howDescription": "Comment la grille par catégorie, les taux négociés et la part sur la livraison s’articulent."
       },
       "tabs": {
         "commissions": "Commissions",
@@ -1659,6 +1660,80 @@
         "stateClosed": "Fermé : les applications masquent le portefeuille famille et refusent tout paiement famille.",
         "saved": "Enregistré. Le changement s'applique dans la minute.",
         "error": "Le changement n'a pas été enregistré."
+      },
+      "sections": {
+        "navLabel": "Sections des réglages",
+        "count_one": "{{count}} réglage",
+        "count_other": "{{count}} réglages",
+        "argent": {
+          "title": "Argent et commissions",
+          "description": "Ce qu’eBio prélève sur chaque vente et chaque course, quand l’argent rejoint les boutiques, les devises et le parrainage."
+        },
+        "paiements": {
+          "title": "Paiements",
+          "description": "Comment les acheteurs paient, jusqu’où les espèces sont acceptées et quelle dette livreurs et boutiques peuvent porter."
+        },
+        "livraison": {
+          "title": "Livraison",
+          "description": "Le prix d’une course et les délais laissés aux livreurs pour l’accepter puis retirer le colis."
+        },
+        "catalogue": {
+          "title": "Catalogue et avis",
+          "description": "Ce qui se passe quand une boutique ajoute un produit, et quand l’acheteur est invité à donner son avis."
+        },
+        "vitrine": {
+          "title": "Vitrine et marketing",
+          "description": "Ce que l’acheteur voit en ouvrant l’application : rails de l’accueil, annonces et bannières sponsorisées."
+        },
+        "applications": {
+          "title": "Applications",
+          "description": "Les versions minimales des applications et l’assistante de courses."
+        }
+      },
+      "search": {
+        "label": "Rechercher un réglage",
+        "placeholder": "Espèces, commission, taux de change…",
+        "clear": "Effacer la recherche",
+        "results_one": "{{count}} réglage trouvé",
+        "results_other": "{{count}} réglages trouvés",
+        "emptyTitle": "Aucun réglage ne correspond à « {{query}} »",
+        "emptyHint": "Essayez un autre mot : espèces, dette, livraison, bannière, version…"
+      },
+      "summary": {
+        "label": "Actuellement :",
+        "disabled": "Désactivé",
+        "noLimit": "Sans limite",
+        "commissionSingle": "{{rate}} sur toutes les catégories",
+        "commissionRange": "De {{min}} à {{max}} selon la catégorie",
+        "deliveryCommission": "{{rate}} des frais de livraison",
+        "escrowRelease": "{{after}} h après double confirmation, {{max}} h au plus",
+        "exchangeRates": "Marge de change de {{margin}}",
+        "referral": "{{sponsor}} au parrain, {{referee}} au filleul",
+        "cashLimit": "Jusqu’à {{amount}} par commande",
+        "debtLimit": "Jusqu’à {{amount}} de dette",
+        "familyWalletOpen": "Ouvert",
+        "familyWalletClosed": "Fermé",
+        "deliveryFlat": "Forfait de {{fee}}",
+        "deliveryDistance": "{{base}} + {{perKm}} par km",
+        "deliveryZones_one": "{{count}} zone",
+        "deliveryZones_other": "{{count}} zones",
+        "deliveryFreeFrom": "{{rule}}, offerte dès {{amount}}",
+        "offerTimeout": "{{seconds}} s par livreur",
+        "pickupPolicy": "{{timeout}} min pour retirer, rappel {{warning}} min avant",
+        "newProductsChecked": "Vérifiés par eBio avant publication",
+        "newProductsDirect": "Publiés sans vérification",
+        "newProductsEmails_one": "{{state}}, {{count}} adresse prévenue",
+        "newProductsEmails_other": "{{state}}, {{count}} adresses prévenues",
+        "productReview_one": "{{hours}} h après la livraison, {{count}} relance",
+        "productReview_other": "{{hours}} h après la livraison, {{count}} relances",
+        "bannerOffers_one": "{{count}} offre, {{slots}} emplacements payants",
+        "bannerOffers_other": "{{count}} offres, {{slots}} emplacements payants",
+        "assistantOpen": "Ouverte",
+        "assistantClosed": "Fermée"
+      },
+      "appVersions": {
+        "title": "Versions des applications",
+        "description": "Les mises à jour automatiques ne transportent que le code JavaScript. Une version qui demande un changement natif ne peut venir que du Play Store — et l’application ne peut pas le deviner seule."
       }
     },
     "site": {
