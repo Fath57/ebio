@@ -13,7 +13,7 @@ import { familyError } from './family-texts'
 
 /**
  * A family wallet as one of its members sees it: what they may spend, their
- * limits, their month — never the balance (FR-025).
+ * limits, their month, never the balance (FR-025).
  */
 export interface MemberWalletView {
   member: FamilyWalletMember

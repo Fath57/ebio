@@ -112,7 +112,7 @@ export class Migration20260921120000 extends Migration {
       ON "delivery_runs" ("status", "dispatch_phase");`)
 
     // The link lives on the order, not on the payment: with cash on delivery
-    // no payment is created — the money changes hands at the door — and the
+    // no payment is created, the money changes hands at the door, and the
     // orders would end up orphaned from their checkout.
     this.addSql(`ALTER TABLE "orders" ADD COLUMN IF NOT EXISTS "checkout_id" uuid NULL REFERENCES "checkouts" ("id");`)
     this.addSql(`CREATE INDEX IF NOT EXISTS "orders_checkout_idx" ON "orders" ("checkout_id");`)

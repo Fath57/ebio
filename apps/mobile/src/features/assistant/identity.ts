@@ -36,7 +36,7 @@ interface PublicSettings {
 /**
  * Her name and her face, refreshed whenever a screen comes back into focus.
  *
- * Renaming her in the back-office has to show up without a new build — the
+ * Renaming her in the back-office has to show up without a new build, the
  * whole point of making it a setting. A failed request keeps the last known
  * values: a name that flickers to a placeholder is worse than one slightly out
  * of date.

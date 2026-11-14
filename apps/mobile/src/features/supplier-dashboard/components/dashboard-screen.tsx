@@ -141,13 +141,13 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         >
           <TriangleAlert size={18} color={colors.coral[600]} />
           <Text style={[styles.errorBannerText, { color: colors.coral[600] }]}>
-            Impossible de charger — Réessayer
+            Impossible de charger, Réessayer
           </Text>
         </TouchableOpacity>
       )}
 
       {/* Sans coordonnées, la diffusion refuse la course faute de savoir d'où
-          elle part. Le bandeau dit la conséquence — pas de livreur — avant de
+          elle part. Le bandeau dit la conséquence, pas de livreur, avant de
           dire le remède, parce que c'est la conséquence qui fait agir. */}
       {data?.hasLocation === false && (
         <TouchableOpacity
@@ -248,7 +248,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         >
           <Star size={20} color={colors.earth[400]} />
           <Text style={[styles.kpiValue, { color: semantic.textPrimary }]}>
-            {data?.averageRating != null ? data.averageRating.toFixed(1) : '—'}
+            {data?.averageRating != null ? data.averageRating.toFixed(1) : '-'}
           </Text>
           <Text style={[styles.kpiLabel, { color: semantic.textSecondary }]}>
             Note moyenne
@@ -272,7 +272,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
         </TouchableOpacity>
       </View>
 
-      {/* Earnings breakdown: gross, eBio commission, net — last 30 days.
+      {/* Earnings breakdown: gross, eBio commission, net, last 30 days.
           Tapping opens the shop wallet where the money actually lives. */}
       {(data?.revenue ?? 0) > 0 && (
         <TouchableOpacity

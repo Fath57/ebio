@@ -36,7 +36,7 @@ interface RealtimeResponse {
  *
  * The model hears and answers in audio, with no text stage in between: that is
  * what takes the wait from three seconds to one and a half, measured. What it
- * costs is the runtime check — by the time a sentence could be verified, it
+ * costs is the runtime check, by the time a sentence could be verified, it
  * has already been spoken.
  *
  * So the grounding moves upstream, and becomes stronger for it: **a tool
@@ -102,7 +102,7 @@ export class RealtimeSession {
             // The far end decides when a sentence has ended, by meaning and not
             // by silence: « deux kilos de… euh… tomates » is one sentence, and
             // a timer would have answered in the middle of it. It also starts
-            // the answer itself, and cuts her off when the buyer speaks again —
+            // the answer itself, and cuts her off when the buyer speaks again,
             // both of which we would otherwise be doing late, over the network.
             turn_detection: {
               type: 'semantic_vad',
@@ -124,12 +124,12 @@ export class RealtimeSession {
     })
 
     socket.on('message', raw => this.receive(raw))
-    socket.on('error', error => this.logger.error(`Socket temps réel — ${error}`))
+    socket.on('error', error => this.logger.error(`Socket temps réel, ${error}`))
     // Without this, a line the provider hangs up looks like one that hears
     // nothing: sends are dropped and no error is ever raised.
     socket.on('close', (code, reason) => {
       this.providerClose = `code ${code}`
-      const detail = `Ligne fournisseur fermée — code ${code}${reason.length > 0 ? `, ${reason.toString().slice(0, 200)}` : ''}`
+      const detail = `Ligne fournisseur fermée, code ${code}${reason.length > 0 ? `, ${reason.toString().slice(0, 200)}` : ''}`
       if (this.closedByUs) {
         this.trace(detail)
       }
@@ -167,7 +167,7 @@ export class RealtimeSession {
       return
     }
     this.trace(
-      `Micro — ${this.micWindowSlices} tranches, crête ${formatDbfs(toDbfs(this.micWindow.peak))}, `
+      `Micro, ${this.micWindowSlices} tranches, crête ${formatDbfs(toDbfs(this.micWindow.peak))}, `
       + `moyenne ${formatDbfs(rmsDbfs(this.micWindow))}, ${this.micWindowLost} perdue(s)`,
     )
     this.micWindow = EMPTY_LEVEL
@@ -186,7 +186,7 @@ export class RealtimeSession {
       .map(([type, count]) => `${type}=${count}`)
       .join(' ')
 
-    return `[${this.traceId}] Bilan — ${this.diagnosis()} | crête ${formatDbfs(toDbfs(this.micPeak))}, `
+    return `[${this.traceId}] Bilan, ${this.diagnosis()} | crête ${formatDbfs(toDbfs(this.micPeak))}, `
       + `${this.slicesLost} tranche(s) perdue(s), ${this.speechStarts} parole(s) détectée(s), `
       + `${this.transcriptions} transcription(s) dont ${this.transcriptionFailures} en échec, `
       + `${this.responses} réponse(s) dont ${this.responseFailures} en échec, `
@@ -224,7 +224,7 @@ export class RealtimeSession {
   /**
    * The buyer wants her to stop talking.
    *
-   * This is the button, not a word spoken over her — that case the far end
+   * This is the button, not a word spoken over her, that case the far end
    * handles by itself. Either way, cutting her off is the whole point of
    * talking rather than typing: one does not wait politely for a market stall
    * to finish its sentence.
@@ -246,7 +246,7 @@ export class RealtimeSession {
    * What the provider charges, per million tokens, in US dollars.
    *
    * Spoken conversation is billed by the token like anything else, but audio
-   * tokens cost several times what text costs — which is the whole reason to
+   * tokens cost several times what text costs, which is the whole reason to
    * count them. These rates are the published ones for `gpt-realtime`; if the
    * price list moves, this is the only place to change.
    */
@@ -323,7 +323,7 @@ export class RealtimeSession {
    * Files one turn's token counts.
    *
    * Cached input is billed apart and is already counted inside the input
-   * total, so it is subtracted rather than added — charging it twice would
+   * total, so it is subtracted rather than added, charging it twice would
    * make the estimate lie in the expensive direction.
    */
   private account(usage: RealtimeUsage | undefined): void {
@@ -343,9 +343,9 @@ export class RealtimeSession {
 
     const total = this.cost()
     this.logger.log(
-      `Tour ${this.spend.turns} — entrée ${textIn} txt / ${audioIn} audio (${cached} en cache), `
+      `Tour ${this.spend.turns}, entrée ${textIn} txt / ${audioIn} audio (${cached} en cache), `
       + `sortie ${usage.output_token_details?.text_tokens ?? 0} txt / ${usage.output_token_details?.audio_tokens ?? 0} audio `
-      + `— cumul ${total.usd.toFixed(4)} $`,
+      + `, cumul ${total.usd.toFixed(4)} $`,
     )
   }
 
@@ -380,7 +380,7 @@ export class RealtimeSession {
         const input = (event.session as {
           audio?: { input?: { format?: { rate?: number }, turn_detection?: { type?: string } } }
         } | undefined)?.audio?.input
-        this.trace(`Réglages acceptés — ${input?.format?.rate ?? '?'} Hz, détection ${input?.turn_detection?.type ?? 'aucune'}`)
+        this.trace(`Réglages acceptés, ${input?.format?.rate ?? '?'} Hz, détection ${input?.turn_detection?.type ?? 'aucune'}`)
         break
       }
 
@@ -422,14 +422,14 @@ export class RealtimeSession {
       case 'conversation.item.input_audio_transcription.completed':
         this.transcriptions += 1
         // The length only: what the buyer said stays out of the logs.
-        this.trace(`Transcription reçue — ${String(event.transcript ?? '').length} caractères`)
+        this.trace(`Transcription reçue, ${String(event.transcript ?? '').length} caractères`)
         this.emit({ type: 'heard', text: String(event.transcript ?? '') })
         break
 
       case 'conversation.item.input_audio_transcription.failed':
         this.transcriptions += 1
         this.transcriptionFailures += 1
-        this.logger.error(`[${this.traceId}] Transcription en échec — ${JSON.stringify(event.error).slice(0, 300)}`)
+        this.logger.error(`[${this.traceId}] Transcription en échec, ${JSON.stringify(event.error).slice(0, 300)}`)
         break
 
       case 'response.function_call_arguments.done':
@@ -448,8 +448,8 @@ export class RealtimeSession {
         break
 
       case 'error': {
-        this.logger.error(`Temps réel — ${JSON.stringify(event.error).slice(0, 300)}`)
-        // A provider refusal — no credit left, revoked key, quota — is not
+        this.logger.error(`Temps réel, ${JSON.stringify(event.error).slice(0, 300)}`)
+        // A provider refusal, no credit left, revoked key, quota, is not
         // fixed by trying again. Saying so plainly and hanging up beats a
         // "try again" that cannot work.
         if (isProviderRefusal(event.error)) {
@@ -478,17 +478,17 @@ export class RealtimeSession {
     const status = response?.status ?? 'inconnu'
     if (status === 'failed' || status === 'incomplete') {
       this.responseFailures += 1
-      this.logger.error(`[${this.traceId}] Réponse ${status} — ${JSON.stringify(response?.status_details ?? null).slice(0, 300)}`)
+      this.logger.error(`[${this.traceId}] Réponse ${status}, ${JSON.stringify(response?.status_details ?? null).slice(0, 300)}`)
       return
     }
-    this.trace(`Réponse terminée — ${status}`)
+    this.trace(`Réponse terminée, ${status}`)
   }
 
   /**
    * Runs whatever the model asked for, then hands it back the floor.
    *
    * A turn that called no tool is simply finished. A turn that did gets its
-   * answers and speaks again — that second pass is where the sentence the
+   * answers and speaks again, that second pass is where the sentence the
    * catalogue wrote comes out of the loudspeaker.
    */
   @EnsureRequestContext()
@@ -515,7 +515,7 @@ export class RealtimeSession {
       catch (error) {
         // Handed back as a result rather than thrown: the model can say it
         // could not find something, which is far better than a silence.
-        this.logger.warn(`Outil ${call.name} en échec — ${error}`)
+        this.logger.warn(`Outil ${call.name} en échec, ${error}`)
         result = { erreur: 'Je n\'ai pas pu vérifier ça.' }
       }
 
@@ -550,7 +550,7 @@ export class RealtimeSession {
     }
     catch (error) {
       // A basket we failed to read is not worth ending a conversation over.
-      this.logger.warn(`Panier illisible — ${error}`)
+      this.logger.warn(`Panier illisible, ${error}`)
     }
   }
 }

@@ -3,11 +3,11 @@ import { cn } from '@boilerstone/ui/lib/utils'
 
 /**
  * What a status asks of the staff, not what it is called:
- * - `action` (earth) — someone must act now;
- * - `progress` (blue) — moving on its own;
- * - `done` (green) — finished well;
- * - `problem` (coral) — went wrong, the only use of coral;
- * - `idle` (neutral) — closed or waiting on someone outside eBio.
+ * - `action` (earth), someone must act now;
+ * - `progress` (blue), moving on its own;
+ * - `done` (green), finished well;
+ * - `problem` (coral), went wrong, the only use of coral;
+ * - `idle` (neutral), closed or waiting on someone outside eBio.
  */
 export type StatusTone = 'action' | 'progress' | 'done' | 'problem' | 'idle'
 

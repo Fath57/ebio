@@ -21,10 +21,10 @@ function fresh(app: INestApplication): void {
 
 /**
  * US2: a member pays their cart from the family wallet; a cancelled order
- * gives the money — and the member's month — back to the wallet, or to the
+ * gives the money, and the member's month, back to the wallet, or to the
  * payer once the wallet is closed.
  */
-describe('portefeuille famille — paiement au passage en caisse (e2e)', { timeout: 30_000 }, () => {
+describe('portefeuille famille, paiement au passage en caisse (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 6 }, {
       imports: [RolesModule, AuditModule, DeliveriesModule, OrdersModule, FamilyWalletModule],

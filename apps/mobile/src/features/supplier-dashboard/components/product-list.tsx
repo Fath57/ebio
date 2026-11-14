@@ -131,7 +131,7 @@ export function ProductList({ onAddProduct, onEditProduct, onGoBack }: ProductLi
       }
     }
     catch {
-      // Silently fail — products stay empty
+      // Silently fail, products stay empty
     }
     finally {
       setIsLoading(false)

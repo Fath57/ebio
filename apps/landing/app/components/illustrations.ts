@@ -2,7 +2,7 @@ import type { IllustrationSpec } from './illustration-slot'
 
 /**
  * Manifest of every generated illustration the page expects. To replace one,
- * drop the WebP in public/illustrations/ under the exact name — the matching
+ * drop the WebP in public/illustrations/ under the exact name, the matching
  * generation prompt is in ILLUSTRATIONS.md.
  */
 export const ILLUSTRATIONS = {

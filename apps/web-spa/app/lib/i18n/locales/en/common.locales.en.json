@@ -224,7 +224,7 @@
       "pickerPlaceholder": "No shop selected",
       "pickerSearch": "Search for a shop…",
       "pickerEmpty": "No shop found",
-      "notValidated": "Shop not validated — its products are not visible to buyers",
+      "notValidated": "Shop not validated, its products are not visible to buyers",
       "emptyTitle": "No shop selected",
       "emptyDescription": "Select a shop above to open its catalogue and edit its products.",
       "shopTitle": "Shop catalogue",
@@ -283,7 +283,7 @@
       "restaged": "Restaged",
       "restageTitle": "Restaging (AI)",
       "restageAction": "Restage",
-      "restageHint": "The AI redraws everything around the product: background, light, shadow. The product itself must stay identical — that is checked right after, and it is not guaranteed. Compare both images before publishing. Allow up to a minute.",
+      "restageHint": "The AI redraws everything around the product: background, light, shadow. The product itself must stay identical, that is checked right after, and it is not guaranteed. Compare both images before publishing. Allow up to a minute.",
       "restagePlaceholder": "Desired setting (optional): light wood background, morning light…",
       "restagePending": "Restaging… up to a minute.",
       "restageDiscard": "Back to the retouch",
@@ -743,7 +743,7 @@
         "subtitle": "Subtitle",
         "subtitleHint": "Shown under the title, smaller.",
         "image": "Image",
-        "imageHint": "Wide format recommended, 2:1 — e.g. 1200×600.",
+        "imageHint": "Wide format recommended, 2:1, e.g. 1200×600.",
         "targetType": "Destination type",
         "target": "Destination",
         "selectSupplier": "Choose a supplier…",
@@ -1060,7 +1060,7 @@
         "asap": "As soon as the order is ready",
         "window": "Within a window",
         "edit": "Change the window",
-        "title": "Delivery window — {{number}}",
+        "title": "Delivery window, {{number}}",
         "description": "The courier search opens one hour before the window starts. The buyer is told about the change, and so is the courier if one is already assigned.",
         "mode": "Delivery",
         "date": "Date",
@@ -1236,7 +1236,7 @@
     },
     "promotions": {
       "title": "Promotions",
-      "dialogTitle": "Promotions — {{name}}",
+      "dialogTitle": "Promotions, {{name}}",
       "dialogDescription": "eBio promotions are funded by the platform: the shop is compensated at settlement.",
       "empty": "No promotion on this product.",
       "types": {
@@ -1551,7 +1551,7 @@
         "avatarDefault": "No portrait chosen: the one shipped with the app is used.",
         "avatarReset": "Restore the original portrait",
         "speedLabel": "Her speech rate",
-        "speedHint": "Tune it by ear. ×1 was her original pace — judged too slow. Past ×1.25 she starts clipping the ends of sentences."
+        "speedHint": "Tune it by ear. ×1 was her original pace, judged too slow. Past ×1.25 she starts clipping the ends of sentences."
       },
       "productReview": {
         "title": "Product reviews",
@@ -1576,7 +1576,7 @@
       },
       "homeSections": {
         "title": "Home sections",
-        "description": "What the buyer sees on opening the app: the product rails, their titles, their order and what they hold. They used to live in the code — renaming one meant shipping a new app version."
+        "description": "What the buyer sees on opening the app: the product rails, their titles, their order and what they hold. They used to live in the code, renaming one meant shipping a new app version."
       },
       "announcements": {
         "title": "Announcements on opening",
@@ -1584,7 +1584,7 @@
       },
       "referral": {
         "title": "Referrals",
-        "description": "What a buyer-to-buyer referral pays. Both amounts are credited to the wallets on the referee's first delivered order — neither signing up nor paying triggers anything.",
+        "description": "What a buyer-to-buyer referral pays. Both amounts are credited to the wallets on the referee's first delivered order, neither signing up nor paying triggers anything.",
         "sponsorAmount": "Sponsor reward (FCFA)",
         "refereeAmount": "Referee reward (FCFA)",
         "minOrderAmount": "Minimum order (FCFA)",
@@ -1740,7 +1740,7 @@
       },
       "appVersions": {
         "title": "App versions",
-        "description": "Automatic updates only carry JavaScript code. A version that needs a native change can only come from the Play Store — and the app cannot guess it on its own."
+        "description": "Automatic updates only carry JavaScript code. A version that needs a native change can only come from the Play Store, and the app cannot guess it on its own."
       },
       "terroirExport": {
         "title": "Terroir abroad",
@@ -2708,7 +2708,7 @@
     },
     "salesStatement": {
       "open": "Sales statement",
-      "title": "Sales statement — {{shop}}",
+      "title": "Sales statement, {{shop}}",
       "description": "Every order of the period in an Excel file: summary, per-order and per-product detail. Days are read in the shop's time zone.",
       "period": "Period",
       "presets": {
@@ -3351,7 +3351,7 @@
       "phoneNumber": "Mobile Money number",
       "phoneNumberHint": "10 digits, Benin format (MTN, Moov or Celtiis).",
       "holderName": "Holder name",
-      "holderNameHint": "As registered with the operator — used for verification.",
+      "holderNameHint": "As registered with the operator, used for verification.",
       "toNumber": "Send to",
       "amount": "Amount (FCFA)",
       "amountHint": "Between {{min}} and {{balance}} FCFA."
@@ -3363,7 +3363,7 @@
     "adminDescription": "Platform discounts and shop discounts",
     "listTitle": "Codes",
     "supplierHint": "The discount applies to items, never delivery, and comes from your margin. A used code can no longer be deleted, only deactivated.",
-    "adminHint": "A code created here works on every shop: eBio pays the shop back for the discount, credited to its wallet. Shop codes stay on their own margin — you can deactivate them.",
+    "adminHint": "A code created here works on every shop: eBio pays the shop back for the discount, credited to its wallet. Shop codes stay on their own margin, you can deactivate them.",
     "add": "New code",
     "empty": "No promo code yet. Create one to drive sales.",
     "createTitle": "New promo code",

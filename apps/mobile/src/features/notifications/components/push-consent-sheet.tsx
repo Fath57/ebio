@@ -11,7 +11,7 @@ interface PushConsentSheetProps {
   /**
    * The moment worth spending the ask on.
    *
-   * Set it true when the buyer has just shown intent — a first basket, a first
+   * Set it true when the buyer has just shown intent, a first basket, a first
    * favourite. Before that the question means nothing; after a refusal it
    * cannot be asked again.
    */
@@ -21,11 +21,11 @@ interface PushConsentSheetProps {
 /**
  * Asks in our own words before Android asks in its.
  *
- * On Android 13 and later a refusal of the system dialog is final — there is
+ * On Android 13 and later a refusal of the system dialog is final, there is
  * no second chance, ever. So the system is only opened once the buyer has said
  * yes here; saying no here costs nothing and can be asked again a fortnight
  * later. That is what lets us ask everyone early, including those who have
- * never ordered — the very people worth bringing back.
+ * never ordered, the very people worth bringing back.
  *
  * Pushing it back down with a thumb is a « plus tard » like any other: the
  * gesture people already make on every sheet they meet should not be the one

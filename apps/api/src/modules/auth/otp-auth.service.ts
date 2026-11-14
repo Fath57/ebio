@@ -172,7 +172,7 @@ export class OtpAuthService {
       await fork.flush()
     }
     else {
-      // User registered via phone — create a credential account with password
+      // User registered via phone, create a credential account with password
       fork.create(Account, {
         accountId: user.id,
         providerId: 'credential',
@@ -188,7 +188,7 @@ export class OtpAuthService {
   /**
    * Password change from inside the app: the current password proves the
    * actor holds the account, then the credential account is rewritten.
-   * Social-only accounts have no credential row — they must go through the
+   * Social-only accounts have no credential row, they must go through the
    * OTP reset flow, which creates one.
    */
   async changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {

@@ -84,8 +84,8 @@ export class DeliveryPricingService {
   /**
    * Prices a run: several shops to collect from, one drop-off point.
    *
-   * The distance is the courier's real ride — pickup to pickup, then the last
-   * pickup to the drop-off — and not the sum of shop → buyer distances, which
+   * The distance is the courier's real ride, pickup to pickup, then the last
+   * pickup to the drop-off, and not the sum of shop → buyer distances, which
    * would count the same road twice. The free-delivery threshold is judged on
    * the whole cart: that is what the buyer sees.
    *
@@ -128,7 +128,7 @@ export class DeliveryPricingService {
    *
    * Two criteria bound the grouping: the number of shops and the gap between
    * their pickup points. Both are checked here, while the quote is built, and
-   * not at dispatch time — a check placed later would come after the money was
+   * not at dispatch time, a check placed later would come after the money was
    * taken, when nothing can be refused any more.
    *
    * The free-delivery threshold, however, stays judged on the whole cart: that

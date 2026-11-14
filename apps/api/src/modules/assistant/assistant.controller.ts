@@ -70,7 +70,7 @@ export class AssistantController {
    * The same turn, delivered as it comes.
    *
    * Written onto the response by hand rather than through `@Sse`: the route is
-   * a POST — it carries a message — and `@Sse` targets GETs. The stream stops
+   * a POST, it carries a message, and `@Sse` targets GETs. The stream stops
    * if the phone hangs up, otherwise an abandoned turn would keep costing.
    */
   @Post('turn/stream')
@@ -115,7 +115,7 @@ export class AssistantController {
    *
    * Shown on screen before being sent: transcription will get things wrong,
    * and "deux kilos" heard as "douze" must be visible at once. The audio is
-   * not kept — it exists only for the length of the call.
+   * not kept, it exists only for the length of the call.
    */
   @Post('transcribe')
   @UseInterceptors(FileInterceptor('audio', { limits: { fileSize: 25 * 1024 * 1024 } }))
@@ -150,8 +150,8 @@ export class AssistantController {
   /**
    * Claims the right to hear an answer.
    *
-   * Two steps because the phone plays straight from the network — the sound
-   * starts before the file is whole — and an audio player reads a URL, it
+   * Two steps because the phone plays straight from the network, the sound
+   * starts before the file is whole, and an audio player reads a URL, it
    * cannot send a body. The sentence stays here; the URL carries a random
    * identifier and nothing else.
    */
@@ -168,8 +168,8 @@ export class AssistantController {
    *
    * One synthesis for the whole answer rather than one per sentence. The
    * sentences were being split to start sooner, but they arrive within a tenth
-   * of a second of each other — measured: first sentence at 1 156 ms, end of
-   * turn at 1 242 ms — so the split bought almost nothing and cost the voice
+   * of a second of each other, measured: first sentence at 1 156 ms, end of
+   * turn at 1 242 ms, so the split bought almost nothing and cost the voice
    * its continuity: a gap between each file, and prosody starting over.
    */
   @Get('voice/:id')

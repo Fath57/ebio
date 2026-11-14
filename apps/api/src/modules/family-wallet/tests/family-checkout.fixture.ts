@@ -13,7 +13,7 @@ import { FamilyWalletsService } from '../family-wallets.service'
 
 /**
  * A payer, their family wallet funded, relatives with verified accounts as
- * active members, and a shop selling products in a category — what the
+ * active members, and a shop selling products in a category, what the
  * family wallet payment tests start from.
  */
 

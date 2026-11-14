@@ -137,7 +137,7 @@ export class HomeSectionsService {
 
     // Resolved in order rather than in parallel: every rail has to know what
     // the ones above already showed. Without it "Près de vous", "Découvrir
-    // plus loin" and "Validé eBio" returned the same goods — the nearby
+    // plus loin" and "Validé eBio" returned the same goods, the nearby
     // catalogue is the same for everyone.
     const alreadyShown = new Set<string>()
     const resolved: ResolvedHomeSection[] = []
@@ -165,7 +165,7 @@ export class HomeSectionsService {
    * A section's products.
    *
    * Everything goes through the search, hand-picked lists included: it already
-   * carries the shop, the distance, the stock and the promotional price —
+   * carries the shop, the distance, the stock and the promotional price,
    * everything a card displays, and which would otherwise be rebuilt here.
    */
   private async resolve(
@@ -181,7 +181,7 @@ export class HomeSectionsService {
      * sorts by.
      *
      * The rule first covered distance-sorted rails only, and "Découvrir plus
-     * loin" — sorted by rating — kept showing the twenty-seven products of
+     * loin", sorted by rating, kept showing the twenty-seven products of
      * "Près de vous": a rail promising elsewhere and showing next door. The
      * sort says nothing about what repeats; only the room already taken on
      * screen does.
@@ -219,7 +219,7 @@ export class HomeSectionsService {
     if (!handPicked) {
       // Nothing new to show: the rail disappears rather than repeating.
       //
-      // A safety net was first placed here — take the whole list back rather
+      // A safety net was first placed here, take the whole list back rather
       // than lose the rail. It fired every single time: "Validé eBio"
       // returned only products already seen, and for good reason, the whole
       // catalogue is validated. A rail with nothing to add does not deserve
@@ -289,7 +289,7 @@ export class HomeSectionsService {
    * Reorder in one go rather than one position at a time.
    *
    * Sending the whole list avoids the in-between states where two sections
-   * share a place — which happens as soon as a move takes two calls.
+   * share a place, which happens as soon as a move takes two calls.
    */
   async reorder(ids: string[]): Promise<AdminHomeSection[]> {
     const sections = await this.em.find(HomeSection, { id: { $in: ids } })
@@ -310,7 +310,7 @@ export class HomeSectionsService {
    * A section has to be able to return something.
    *
    * Hand-picked with no product, or criteria-based with no criterion, it would
-   * show nothing — better to say so when it is saved than to leave someone
+   * show nothing, better to say so when it is saved than to leave someone
    * wondering why their rail is missing.
    */
   private assertCoherent(input: HomeSectionInput): void {

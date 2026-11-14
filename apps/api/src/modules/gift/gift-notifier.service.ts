@@ -101,7 +101,7 @@ export class GiftNotifierService {
       return true
     }
     catch (error) {
-      this.logger.error(`SMS « ${what} » au proche non envoyé — passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
+      this.logger.error(`SMS « ${what} » au proche non envoyé, passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
       return false
     }
   }
@@ -131,13 +131,13 @@ export class GiftNotifierService {
       await this.sendQuietly(row.recipient_phone, await this.announceText(row, checkoutId), 'annonce', checkoutId)
     }
     catch (error) {
-      this.logger.error(`Annonce au proche impossible — passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
+      this.logger.error(`Annonce au proche impossible, passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
     }
   }
 
   /**
    * The courier is on the way: the relative gets the code to hand over. Sent
-   * once per code — a run of two orders announces it once, and only a new
+   * once per code, a run of two orders announces it once, and only a new
    * code (a reassigned courier) is texted again.
    */
   async sendCodeToRecipient(checkoutId: string, code: string): Promise<void> {
@@ -155,13 +155,13 @@ export class GiftNotifierService {
       await this.sendQuietly(row.recipient_phone, codeSms(code), 'code', checkoutId)
     }
     catch (error) {
-      this.logger.error(`Code au proche impossible — passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
+      this.logger.error(`Code au proche impossible, passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
     }
   }
 
   /**
    * Every order of the checkout is cancelled and the relative had been told
-   * a cart was coming: they are told it is not. Silent otherwise — a relative
+   * a cart was coming: they are told it is not. Silent otherwise, a relative
    * who never heard of the cart has nothing to be un-told.
    */
   async announceCancellation(checkoutId: string): Promise<void> {
@@ -184,7 +184,7 @@ export class GiftNotifierService {
       await this.sendQuietly(row.recipient_phone, cancellationSms(row.buyer_name), 'annulation', checkoutId)
     }
     catch (error) {
-      this.logger.error(`Annulation au proche impossible — passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
+      this.logger.error(`Annulation au proche impossible, passage en caisse ${checkoutId}`, error instanceof Error ? error.stack : String(error))
     }
   }
 
@@ -321,7 +321,7 @@ export class GiftNotifierService {
       }
     }
     catch (error) {
-      this.logger.error(`Avis de remise au payeur impossible — commande ${input.orderId}`, error instanceof Error ? error.stack : String(error))
+      this.logger.error(`Avis de remise au payeur impossible, commande ${input.orderId}`, error instanceof Error ? error.stack : String(error))
     }
   }
 
@@ -363,7 +363,7 @@ export class GiftNotifierService {
       }
     }
     catch (error) {
-      this.logger.error(`Avis d'échec au payeur impossible — commande ${input.orderId}`, error instanceof Error ? error.stack : String(error))
+      this.logger.error(`Avis d'échec au payeur impossible, commande ${input.orderId}`, error instanceof Error ? error.stack : String(error))
     }
   }
 }

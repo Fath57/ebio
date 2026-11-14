@@ -51,7 +51,7 @@ interface RawProductReview {
 }
 
 /**
- * The two endpoints answer in different shapes — a shop review carries four
+ * The two endpoints answer in different shapes, a shop review carries four
  * criteria and a buyer object, a product review one rating and a name. They
  * are normalised here rather than duplicating the list and its rendering.
  */

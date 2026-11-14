@@ -35,7 +35,7 @@ interface DragSheetProps {
  * The whole point is that the sheet follows the thumb rather than replaying a
  * canned animation: the gesture and the movement live on the interface thread,
  * so the sheet keeps up even while JavaScript is busy fetching. That is the
- * part `Animated` cannot do — its gesture events go through JavaScript, and a
+ * part `Animated` cannot do, its gesture events go through JavaScript, and a
  * loaded thread turns a drag into a series of jumps.
  *
  * Letting go decides: past a quarter of the height, or with enough speed, it

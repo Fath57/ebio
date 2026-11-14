@@ -67,7 +67,7 @@ export class PaymentsWebhookController {
 
   /**
    * INTRAM signs what it sends, so this route proves the delivery before
-   * acting on it — unlike the FedaPay one above, which can only re-read
+   * acting on it, unlike the FedaPay one above, which can only re-read
    * the transaction it names.
    *
    * The raw bytes are required: the signature covers `timestamp.body` exactly

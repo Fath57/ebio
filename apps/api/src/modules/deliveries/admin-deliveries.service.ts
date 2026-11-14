@@ -296,7 +296,7 @@ export class AdminDeliveriesService {
         user: courier.user,
         type: NotificationType.DELIVERY_ASSIGNED,
         title: 'Course attribuée par eBio',
-        body: `${orderNumber} — retrait chez ${order.supplier.shopName}, ${delivery.pickupAddress}${note ? `. ${note}` : ''}`,
+        body: `${orderNumber}, retrait chez ${order.supplier.shopName}, ${delivery.pickupAddress}${note ? `. ${note}` : ''}`,
         data: { deliveryId: delivery.id, orderId: order.id, assignedByAdmin: 'true' },
         channels: [NotificationChannel.PUSH, NotificationChannel.IN_APP],
         apps: ['courier'],

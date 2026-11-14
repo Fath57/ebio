@@ -9,7 +9,7 @@ import { FamilyHistoryMapper } from './family-history.mapper'
 import { FamilyMemberViewService } from './family-member-view.service'
 import { FamilyWalletEnabledGuard } from './family-wallet-enabled.guard'
 
-/** The member's side (010, US4): what they may spend and their own purchases — never the balance. */
+/** The member's side (010, US4): what they may spend and their own purchases, never the balance. */
 @Controller('family-wallets/mine')
 @UseGuards(AuthGuard, FamilyWalletEnabledGuard)
 export class FamilyMemberViewController {

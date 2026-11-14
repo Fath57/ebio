@@ -208,7 +208,7 @@ export default function CatalogPage() {
                         <TableCell>
                           {product.categoryName
                             ? <Badge variant="outline">{product.categoryName}</Badge>
-                            : <span className="text-muted-foreground">—</span>}
+                            : <span className="text-muted-foreground">-</span>}
                         </TableCell>
 
                         {/* Price */}
@@ -258,7 +258,7 @@ export default function CatalogPage() {
                           </Can>
                         </TableCell>
 
-                        {/* Status — directly from backend enum */}
+                        {/* Status, directly from backend enum */}
                         <TableCell>
                           {product.status === 'ACTIVE' && (
                             <Badge className="bg-ebio-green-600">{t('catalog.status.active')}</Badge>

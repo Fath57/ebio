@@ -11,7 +11,7 @@ import { Supplier } from '../../suppliers/supplier.entity'
  * owner: a personal wallet (user), a shop wallet (supplier) or a courier
  * wallet (courier profile), a family wallet (familyWallet), or one of eBio's
  * own accounts (platformAccount),
- * never several — a supplier-user or a courier-user has two separate wallets.
+ * never several, a supplier-user or a courier-user has two separate wallets.
  *
  * `balance` is only ever written by WalletService inside a SQL transaction
  * holding a row lock, alongside its ledger line. It always equals the sum of
@@ -59,7 +59,7 @@ export class Wallet {
   @OneToOne(() => FamilyWallet, { fieldName: 'family_wallet_id', nullable: true, unique: true })
   familyWallet?: Rel<FamilyWallet> | null
 
-  /** numeric(12,2) — MikroORM hands it over as a string; Number() at the edges. */
+  /** numeric(12,2), MikroORM hands it over as a string; Number() at the edges. */
   @Property({ columnType: 'numeric(12,2)', default: '0' })
   balance: string = '0'
 

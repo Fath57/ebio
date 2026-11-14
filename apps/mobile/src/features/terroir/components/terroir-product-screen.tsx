@@ -169,7 +169,7 @@ export function TerroirProductScreen({ productId, onBack, onOpenCart }: TerroirP
       kind: 'PRODUCT',
       productId: product.id,
       variantId: variant?.id ?? null,
-      name: variant ? `${product.name} — ${variant.label}` : product.name,
+      name: variant ? `${product.name}, ${variant.label}` : product.name,
       imageUrl: product.photos[0] ?? null,
       price: unitPrice,
       shopName: product.shopName,
@@ -378,7 +378,7 @@ export function TerroirPackScreen({ packId, onBack, onOpenCart }: TerroirPackScr
                       </Text>
                     </TouchableOpacity>
                   )}
-                  {expanded && item.origin && <OriginBlock origin={item.origin} title={`Origine — ${item.name}`} />}
+                  {expanded && item.origin && <OriginBlock origin={item.origin} title={`Origine, ${item.name}`} />}
                 </View>
               )
             })}

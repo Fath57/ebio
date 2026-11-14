@@ -8,7 +8,7 @@ import { thumbnailUrlFor } from '../../common/media-urls'
 import { availableQuantity } from '../orders/order-stock'
 import { PromotionsService } from './promotions.service'
 
-/** The legacy promo price, only while it is running — started and not over. */
+/** The legacy promo price, only while it is running, started and not over. */
 export function livePromotionalPrice(
   product: Pick<Product, 'promotionalPrice' | 'promotionStartsAt' | 'promotionExpiresAt'>,
 ): number | null {

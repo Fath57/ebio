@@ -9,7 +9,7 @@ interface BackLinkProps {
 }
 
 /**
- * "Back" from a detail page returns to the list exactly as it was left —
+ * "Back" from a detail page returns to the list exactly as it was left,
  * filters, page and sort live in that entry's URL. A page opened with no
  * history behind it falls back to the bare list.
  */

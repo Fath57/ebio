@@ -44,7 +44,7 @@ export interface DeliveryRunHooks {
    * Removes a shop from a cart's run and re-prices the ride.
    *
    * Returns the fee difference owed to the buyer, or `null` when there is no
-   * run — on-site pickup, or an order from before the unified cart. A run that
+   * run, on-site pickup, or an order from before the unified cart. A run that
    * loses its last shop is cancelled.
    */
   removeSupplierFromRun: (input: {

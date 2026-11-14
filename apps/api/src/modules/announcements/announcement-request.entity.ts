@@ -16,7 +16,7 @@ export enum AnnouncementRequestStatus {
  *
  * Same circuit as the banners: the wallet is debited when the request is
  * filed, a rejection or a cancellation refunds it. Paying first is what makes
- * the queue serious — a request that cannot be paid does not exist.
+ * the queue serious, a request that cannot be paid does not exist.
  */
 @Entity({ tableName: 'announcement_requests' })
 @Index({ properties: ['supplier', 'createdAt'] })

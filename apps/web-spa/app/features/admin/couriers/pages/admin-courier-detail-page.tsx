@@ -184,7 +184,7 @@ export default function AdminCourierDetailPage() {
                   )
                 : (
                     <>
-                      <p className="text-2xl font-bold text-muted-foreground">—</p>
+                      <p className="text-2xl font-bold text-muted-foreground">-</p>
                       <p className="text-sm text-muted-foreground">{t('admin.couriers.detail.noRating')}</p>
                     </>
                   )}

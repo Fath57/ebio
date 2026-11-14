@@ -21,7 +21,7 @@ import { SupplierSheet } from './supplier-sheet'
 
 interface MapScreenProps {
   onNavigateToSupplier?: (supplierId: string) => void
-  /** Rayon de recherche en km — sans valeur, le rayon par défaut de l'API. */
+  /** Rayon de recherche en km, sans valeur, le rayon par défaut de l'API. */
   radiusKm?: number
   /** Slugs de catégories : seuls les fournisseurs qui en vendent sont affichés. */
   categories?: string[]
@@ -31,7 +31,7 @@ interface MapScreenProps {
   inStockOnly?: boolean
 }
 
-/** Niveau de zoom d'ouverture — environ un quart d'agglomération. */
+/** Niveau de zoom d'ouverture, environ un quart d'agglomération. */
 const DEFAULT_DELTA = 0.08
 
 /**
@@ -138,7 +138,7 @@ export function MapScreen({ onNavigateToSupplier, radiusKm, categories, maxPrice
               zIndex={placeId === selectedId ? 2 : 1}
               tracksViewChanges={tracksChanges}
               onPress={() => handleMarkerPress(placeId, supplier.latitude, supplier.longitude)}
-              accessibilityLabel={supplier.salesPointName ? `${supplier.shopName} — ${supplier.salesPointName}` : supplier.shopName}
+              accessibilityLabel={supplier.salesPointName ? `${supplier.shopName}, ${supplier.salesPointName}` : supplier.shopName}
             >
               {/* A sales point is a stall the shop holds elsewhere, not the
                   shop itself: it gets its own silhouette and its own colour,

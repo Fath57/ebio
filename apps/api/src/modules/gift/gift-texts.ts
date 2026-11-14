@@ -25,7 +25,7 @@ export function firstName(fullName: string | null | undefined): string {
   return first || 'Un proche'
 }
 
-/** « 10 h », « 10 h 30 » — how a time is said in a text message. */
+/** « 10 h », « 10 h 30 », how a time is said in a text message. */
 function spokenClock(hours: number, minutes: number): string {
   return minutes === 0 ? `${hours} h` : `${hours} h ${String(minutes).padStart(2, '0')}`
 }

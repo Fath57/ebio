@@ -90,7 +90,7 @@ export interface SettingDefinition {
   section: SettingsSectionId
   titleKey: string
   descriptionKey: string
-  /** Extra French search terms — what an admin types, not what the title says. */
+  /** Extra French search terms, what an admin types, not what the title says. */
   keywords: readonly string[]
   icon: LucideIcon
   /** Wrapped in `<Can action="manage" subject="all">`, as the card was before the split. */

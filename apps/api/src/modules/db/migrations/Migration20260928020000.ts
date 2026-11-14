@@ -3,7 +3,7 @@ import { Migration } from '@mikro-orm/migrations'
 /**
  * Referrals: who brought whom, and what it earned them.
  *
- * The referee is unique — one is referred only once. The sponsor's code
+ * The referee is unique, one is referred only once. The sponsor's code
  * lives on the account, null until someone asks for it: most accounts will
  * never need one.
  */

@@ -18,7 +18,7 @@ import { TerroirMapper } from './terroir.mapper'
 /**
  * A shop's export requests and packs (011, contracts §4). `me` is the shop
  * owner; another id is eBio working inside a shop's catalogue, which takes
- * `manage Product` and is written down — as for the products themselves.
+ * `manage Product` and is written down, as for the products themselves.
  * Not behind the platform switch: shops prepare their catalogue before the
  * opening.
  */

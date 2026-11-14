@@ -68,7 +68,7 @@ export interface PlatformDateRange {
 
 /**
  * Turns a period key into the ISO bounds the API expects. Empty strings mean
- * "no bound" — the generated SDK types both params as required.
+ * "no bound", the generated SDK types both params as required.
  */
 export function platformPeriodRange(period: PlatformPeriod): PlatformDateRange {
   const now = new Date()

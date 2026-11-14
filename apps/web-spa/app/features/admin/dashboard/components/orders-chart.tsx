@@ -11,7 +11,7 @@ interface OrdersChartProps {
 const GRID_STEPS = [0.5, 1]
 
 /**
- * Orders per day over the period — one series, so no legend: the card title
+ * Orders per day over the period, one series, so no legend: the card title
  * names it. Bars grow from the baseline with a rounded top; hovering a day
  * shows its orders and order value. A hidden table carries the same figures
  * for screen readers.

@@ -343,7 +343,7 @@ export class ExportLogisticsService {
         await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
           type: WalletTransactionType.EXPORT_LOSS,
           amount: extra,
-          description: `Surcoût de réaffectation — colis ${shipment.id.slice(0, 8)} vers le départ du ${spokenDay(reassignedTo.departsOn)}`,
+          description: `Surcoût de réaffectation, colis ${shipment.id.slice(0, 8)} vers le départ du ${spokenDay(reassignedTo.departsOn)}`,
         })
         await this.notifier.shipmentReassigned({
           buyerId: shipment.buyer.id,
@@ -445,7 +445,7 @@ export class ExportLogisticsService {
 
   /**
    * A departure opened (created, or set back to OPEN): every buyer waiting
-   * for one towards a country it serves is told, once — the alert is marked
+   * for one towards a country it serves is told, once, the alert is marked
    * sent in the same statement that picks it. Nothing goes out for a
    * departure already past its order deadline.
    */
@@ -553,9 +553,9 @@ export class ExportLogisticsService {
   }
 
   /**
-   * Checks every parcel fits the target — country served, weight accepted,
+   * Checks every parcel fits the target, country served, weight accepted,
    * room left, home delivery still offered, a pickup point in the same
-   * country — and works out eBio's surcharge for each. All or nothing.
+   * country, and works out eBio's surcharge for each. All or nothing.
    */
   private async planMoves(em: EntityManager, target: ExportDeparture, shipments: ExportShipment[], moves: Array<{ shipment: ExportShipment, surcharge: number }>): Promise<void> {
     let incomingG = 0

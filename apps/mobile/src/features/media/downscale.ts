@@ -17,7 +17,7 @@ const MAX_EDGE_DOCUMENT = 2400
 
 const DOCUMENT_CONTEXTS = new Set(['IDENTITY_DOCUMENT', 'BUSINESS_PROOF'])
 
-/** JPEG quality of the reduced copy — the server re-encodes to WebP anyway. */
+/** JPEG quality of the reduced copy, the server re-encodes to WebP anyway. */
 const QUALITY = 0.85
 
 /**
@@ -58,7 +58,7 @@ function loadManipulator(): typeof ImageManipulatorModule {
 /**
  * Reduces an image to `maxEdgeFor(context)` on its longest side. Returns null
  * when nothing was done: the source is already small enough, it is not an
- * image, or the reduction failed — uploading the original still works, it is
+ * image, or the reduction failed, uploading the original still works, it is
  * only slower, and a failed resize must never cost the user their photo.
  *
  * The manipulator bakes the EXIF orientation into the pixels and drops the
@@ -94,7 +94,7 @@ export async function downscaleImage(
       width: saved.width,
       height: saved.height,
       // The bytes are JPEG now, whatever the source was, and the name carries
-      // the extension the storage key is built from — so it has to follow.
+      // the extension the storage key is built from, so it has to follow.
       fileName: renameToJpeg(source.fileName),
       mimeType: 'image/jpeg',
     }

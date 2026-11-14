@@ -140,12 +140,12 @@ export const configValidationSchema = z.object({
    * decides which gateway verifies what the widget hands back.
    *
    * Defaults to the provider already in service. A default of `intram` would
-   * switch production the day this ships, keys or no keys — a deployment must
+   * switch production the day this ships, keys or no keys, a deployment must
    * never change who takes the money by omission.
    */
   // ── Assistant vocal ──────────────────────────────────────────────────────
   /**
-   * The model, chosen from the `ai` module's registry — which already carries
+   * The model, chosen from the `ai` module's registry, which already carries
    * the providers, their keys, rate limiting and telemetry. None of that needs
    * rebuilding here.
    */
@@ -163,7 +163,7 @@ export const configValidationSchema = z.object({
    */
   ASSISTANT_MAX_STEPS: z.coerce.number().int().min(1).max(20).default(8),
   /**
-   * The ear. Whisper is the most robust on accents and noise — spec 008's
+   * The ear. Whisper is the most robust on accents and noise, spec 008's
    * research picks it for that reason, not for its price.
    */
   ASSISTANT_STT_MODEL: z.string().default('whisper-1'),
@@ -175,7 +175,7 @@ export const configValidationSchema = z.object({
   /**
    * Where a provider sends the browser once a payment ends. It must be a
    * public HTTPS address: a gateway will not redirect to `localhost`, which
-   * is what the web app's URL is in development — and the payment then ends
+   * is what the web app's URL is in development, and the payment then ends
    * on the provider's receipt with nothing telling the app it is over.
    */
   PAYMENT_RETURN_URL: z.string().default('https://e-bio.org/payments/callback'),
@@ -187,7 +187,7 @@ export const configValidationSchema = z.object({
   PAYOUT_PROVIDER: z.enum(['fedapay', 'intram']).default('intram'),
 
   /**
-   * SMS — Wirepick.
+   * SMS, Wirepick.
    *
    * A GET with the credentials in the query string and an XML answer; the
    * operator is the one that actually delivers to Benin numbers. Without the
@@ -208,7 +208,7 @@ export const configValidationSchema = z.object({
   // an older app files a push on an unknown channel under a generic one.
   PUSH_CUSTOM_SOUNDS: z.stringbool().default(false),
 
-  // Apple Push Notification service — iOS tokens are APNs tokens, which FCM
+  // Apple Push Notification service, iOS tokens are APNs tokens, which FCM
   // cannot address without the Firebase SDK in the app. Key from
   // developer.apple.com → Keys (.p8), PEM content with \n escapes.
   APNS_KEY_ID: z.string().optional(),
@@ -256,7 +256,7 @@ export const config = {
     ttsModel: configParsed.data.ASSISTANT_TTS_MODEL,
     ttsVoice: configParsed.data.ASSISTANT_TTS_VOICE,
   },
-  // Google Maps Platform — Places, pour les suggestions de villes.
+  // Google Maps Platform, Places, pour les suggestions de villes.
   maps: {
     googleApiKey: configParsed.data.GOOGLE_MAPS_API_KEY,
   },

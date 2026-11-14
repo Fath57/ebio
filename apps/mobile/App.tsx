@@ -61,7 +61,7 @@ export default function App(): React.JSX.Element | null {
       .catch(() => setShowOnboarding(false))
   }, [])
   // Notifications are mounted once inside each variant's navigation root,
-  // where the session is known — a second mount here double-fired every tap.
+  // where the session is known, a second mount here double-fired every tap.
   const [fontsLoaded, fontError] = useFonts({
     DMSerifDisplay_400Regular,
     PlusJakartaSans_400Regular,
@@ -109,7 +109,7 @@ export default function App(): React.JSX.Element | null {
 
   return (
     // Racine des gestes : sans cette enveloppe, un geste de
-    // react-native-gesture-handler n'atteint jamais son composant — et
+    // react-native-gesture-handler n'atteint jamais son composant, et
     // l'échec est silencieux, le doigt ne fait simplement rien.
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ThemeProvider>

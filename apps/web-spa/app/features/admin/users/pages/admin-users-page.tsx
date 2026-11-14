@@ -54,7 +54,7 @@ export default function AdminUsersPage() {
         <span className="flex flex-col">
           <span className="flex flex-wrap items-center gap-2">
             <span className={row.original.emailVerified ? '' : 'text-muted-foreground'}>
-              {row.original.email ?? '—'}
+              {row.original.email ?? '-'}
             </span>
             {row.original.email && !row.original.emailVerified && (
               <Badge variant="outline">{t('admin.users.unverified')}</Badge>
@@ -105,7 +105,7 @@ export default function AdminUsersPage() {
               {row.original.supplierShopName}
             </Link>
           )
-        : '—'),
+        : '-'),
     },
     {
       id: 'createdAt',

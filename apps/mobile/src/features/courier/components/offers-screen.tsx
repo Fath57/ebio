@@ -283,7 +283,7 @@ interface CashBreakdownProps {
 /**
  * The cash the courier handles, as a statement rather than a sentence: the
  * advance is what they risk, and the gap between what they keep and what they
- * earn is eBio's commission, debited from their wallet — said here so it
+ * earn is eBio's commission, debited from their wallet, said here so it
  * never reads as a mistake.
  */
 function CashBreakdown({ offer }: CashBreakdownProps) {
@@ -334,7 +334,7 @@ interface OfferCardProps {
  * One delivery offered to the courier.
  *
  * Read top to bottom in the order the decision is made: what it pays and how
- * far it goes, where to, what to carry, the cash to handle — then the answer.
+ * far it goes, where to, what to carry, the cash to handle, then the answer.
  * The order number, useless for deciding, closes the card.
  */
 function OfferCard({ offer, busy, locked, onAccept, onDecline }: OfferCardProps) {
@@ -498,7 +498,7 @@ export function OffersScreen({ offers, refreshing, unavailable, notAllowed, debt
   // card's button slides under it and becomes untappable.
   const tabBarHeight = useBottomTabBarHeight()
   // One answer at a time: a second tap while the first is in flight used to
-  // send a second accept, which came back as « already taken » — by oneself.
+  // send a second accept, which came back as « already taken », by oneself.
   const [pendingId, setPendingId] = useState<string | null>(null)
 
   async function accept(offer: CourierOffer) {

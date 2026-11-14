@@ -18,7 +18,7 @@ export interface FilterOption {
 interface FilterSelectProps {
   value: string
   onValueChange: (value: string) => void
-  /** Label of the unfiltered choice — « Tous les statuts ». */
+  /** Label of the unfiltered choice, « Tous les statuts ». */
   allLabel: string
   options: FilterOption[]
   ariaLabel: string

@@ -64,13 +64,13 @@ interface DeliveryRun {
 function runProgressLabel(delivery: DeliveryRun): string | null {
   const run = delivery.run
   if (run !== null && run.awaitingBuyerDecision) {
-    return 'Aucun livreur disponible — attendre ou annuler ?'
+    return 'Aucun livreur disponible, attendre ou annuler ?'
   }
   if (run === null || run.shopCount <= 1) {
     return RUN_LABELS[delivery.status]
   }
   if (run.awaitingBuyerDecision) {
-    return 'Aucun livreur disponible — attendre ou annuler ?'
+    return 'Aucun livreur disponible, attendre ou annuler ?'
   }
   if (delivery.status === 'AWAITING_COURIER') {
     return `Recherche d’un livreur pour vos ${run.shopCount} boutiques…`
@@ -94,7 +94,7 @@ const RUN_LABELS: Record<DeliveryRunStatus, string | null> = {
   PICKED_UP: 'Colis récupéré par le livreur',
   IN_TRANSIT: 'Livreur en route vers vous',
   DELIVERED: null,
-  FAILED: 'Livraison non aboutie — la boutique vous recontacte',
+  FAILED: 'Livraison non aboutie, la boutique vous recontacte',
   CANCELLED: null,
 }
 const LIVE_RUN_STATUSES: DeliveryRunStatus[] = ['AWAITING_COURIER', 'ACCEPTED', 'PICKED_UP', 'IN_TRANSIT']
@@ -444,7 +444,7 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
 
                 {/* Le geste le plus fréquent d'un acheteur de courses : refaire
                   * celle de la semaine dernière. Offert seulement une fois la
-                  * commande livrée — avant, elle est encore en cours. */}
+                  * commande livrée, avant, elle est encore en cours. */}
                 {item.status === 'DELIVERED' && (
                   <TouchableOpacity
                     style={[styles.reorderButton, { borderColor: semantic.borderNormal }]}

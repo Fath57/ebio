@@ -20,7 +20,7 @@ export const BRAND_LOGO = APP_VARIANT === 'supplier'
     : require('../../assets/logo-transparent.png')
 
 /**
- * The eBio mark used wherever the platform itself is the correspondent —
+ * The eBio mark used wherever the platform itself is the correspondent,
  * the support thread. Always the client logo: support speaks for the house,
  * whichever app the thread is opened from.
  */

@@ -10,7 +10,7 @@ import { FavoritesService } from './favorites.service'
  *
  * Signed in, always: a favourite belongs to someone. The heart used to fill in
  * and forget everything on leaving the screen, while the profile promised
- * « votre panier et vos favoris » to anyone signed out — a promise with
+ * « votre panier et vos favoris » to anyone signed out, a promise with
  * nothing behind it.
  */
 @Controller('favorites')
@@ -32,7 +32,7 @@ export class FavoritesController {
     return this.favoritesService.list(session.user.id, position)
   }
 
-  /** Which of these are kept — asked once for a whole page of cards. */
+  /** Which of these are kept, asked once for a whole page of cards. */
   @Get('ids')
   async pickKept(
     @Session() session: LoggedInBetterAuthSession,

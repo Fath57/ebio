@@ -7,7 +7,7 @@ export interface PlaceSuggestion {
   context: string
 }
 
-/** Laisse le temps de finir un mot avant d'interroger l'API — et de facturer. */
+/** Laisse le temps de finir un mot avant d'interroger l'API, et de facturer. */
 const DEBOUNCE_MS = 350
 /** En deçà, toute recherche de ville est trop ambiguë pour être utile. */
 const MIN_QUERY_LENGTH = 2

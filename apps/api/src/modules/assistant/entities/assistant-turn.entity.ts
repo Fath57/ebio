@@ -20,7 +20,7 @@ export class AssistantTurn {
   @ManyToOne(() => AssistantSession, { fieldName: 'session_id' })
   session!: Rel<AssistantSession>
 
-  /** Ce que l'acheteur a dit — transcrit, le jour où il y aura du son. */
+  /** Ce que l'acheteur a dit, transcrit, le jour où il y aura du son. */
   @Property({ type: 'text' })
   input!: string
 

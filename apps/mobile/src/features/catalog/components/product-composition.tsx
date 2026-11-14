@@ -128,7 +128,7 @@ export function ProductCompositionSections({ composition }: { composition: Produ
         </>
       )}
 
-      {/* Allergènes — prominent warning-tinted chips */}
+      {/* Allergènes, prominent warning-tinted chips */}
       {hasAllergens && (
         <>
           <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
@@ -175,7 +175,7 @@ export function ProductCompositionSections({ composition }: { composition: Produ
         </>
       )}
 
-      {/* Valeurs nutritionnelles — 2-column table */}
+      {/* Valeurs nutritionnelles, 2-column table */}
       {hasNutrition && (
         <>
           <View style={[styles.divider, { backgroundColor: semantic.bgPage }]} />
@@ -219,7 +219,7 @@ export function ProductCompositionSections({ composition }: { composition: Produ
 // ─── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  // Shared section layout — mirrors product-detail-screen sections
+  // Shared section layout, mirrors product-detail-screen sections
   section: {
     paddingHorizontal: spacing[5],
     paddingVertical: spacing[4],
@@ -255,7 +255,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Allergen chips — warning tinted
+  // Allergen chips, warning tinted
   chipRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',

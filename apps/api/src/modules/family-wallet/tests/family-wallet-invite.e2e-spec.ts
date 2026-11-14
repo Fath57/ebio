@@ -54,7 +54,7 @@ async function notificationsOf(em: EntityManager, userId: string, type: string):
  * sign up with that number proven by SMS; the payer hears it, may resend the
  * invitation once a day, and is reminded once after 30 days.
  */
-describe('portefeuille famille — invitation (e2e)', () => {
+describe('portefeuille famille, invitation (e2e)', () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
       imports: [RolesModule, AuditModule, FamilyWalletModule],

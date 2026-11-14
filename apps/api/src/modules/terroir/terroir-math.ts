@@ -27,7 +27,7 @@ export interface RateTerms {
   homeDeliveryFee?: number | null
 }
 
-/** Σ weights × quantities, plus the flat packaging — none for an empty cart. */
+/** Σ weights × quantities, plus the flat packaging, none for an empty cart. */
 export function estimateWeight(lines: WeightLine[], packagingG: number): number {
   const items = lines.reduce((total, line) => total + Math.max(0, line.weightG) * Math.max(0, line.quantity), 0)
   return items > 0 ? Math.round(items + packagingG) : 0
@@ -171,7 +171,7 @@ export interface PackSplit {
  * Unfolds `quantity` packs into ordinary lines per shop (research §7). Every
  * shop is paid at its own price; the gap with the pack price is eBio's
  * compensation or margin on an eBio pack, the shop's own adjustment on a
- * shop pack — so the shops, eBio and the buyer always add up.
+ * shop pack, so the shops, eBio and the buyer always add up.
  */
 export function packSplit(pack: { price: number, supplierId: string | null }, lines: PackLine[], quantity = 1): PackSplit {
   const groups = new Map<string, PackLine[]>()

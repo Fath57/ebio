@@ -5,7 +5,7 @@ import type { z } from 'zod'
  *
  * Le modèle ne connaît du domaine que ce que cette liste expose. C'est ce qui
  * rend l'ancrage tenable : ce n'est pas une consigne qu'on lui donne, c'est la
- * seule chose qu'il puisse faire. Un outil de paiement n'existe pas — et ce
+ * seule chose qu'il puisse faire. Un outil de paiement n'existe pas, et ce
  * qui n'existe pas ne s'appelle pas par erreur.
  */
 export interface AssistantTool<TArgs extends z.ZodTypeAny = z.ZodTypeAny> {

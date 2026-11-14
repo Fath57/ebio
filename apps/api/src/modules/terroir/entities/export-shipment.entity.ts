@@ -10,7 +10,7 @@ import { ExportPickupPoint } from './export-pickup-point.entity'
  * A terroir parcel (011): one per terroir checkout, grouping the EXPORT
  * orders of several shops for one buyer, one departure, one destination.
  *
- * It carries the shipping, home delivery and insurance — frozen at payment —
+ * It carries the shipping, home delivery and insurance, frozen at payment,
  * so that none of it ever sits in an order's `deliveryFee`, which would be
  * paid out to the shop. `status` is the current step, denormalised from the
  * events.
@@ -120,7 +120,7 @@ export class ExportShipment {
   @Property({ fieldName: 'pickup_reminded_at', type: 'Date', nullable: true })
   pickupRemindedAt?: Date | null
 
-  /** Opaque token of the public tracking page of a gifted parcel — never shows a price. */
+  /** Opaque token of the public tracking page of a gifted parcel, never shows a price. */
   @Property({ fieldName: 'tracking_token', type: 'string', length: 32, unique: 'export_shipments_tracking_token_unique' })
   trackingToken!: string
 

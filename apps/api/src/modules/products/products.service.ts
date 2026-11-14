@@ -279,7 +279,7 @@ export class ProductsService {
 
       for (const variant of existing) {
         if (!keptLabels.has(variant.label)) {
-          // Variants quoted by past orders keep their row (FK) — the supplier
+          // Variants quoted by past orders keep their row (FK), the supplier
           // removing one from the form just stops offering it.
           const rows = await this.em.getConnection().execute(
             `SELECT COUNT(*)::int AS refs FROM order_items WHERE variant_id = ?`,

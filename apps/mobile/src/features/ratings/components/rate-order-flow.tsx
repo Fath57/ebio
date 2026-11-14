@@ -35,7 +35,7 @@ type Step = 'loading' | 'shop' | 'courier' | 'tip'
  * itself, are skipped.
  *
  * The products are no longer here. They used to be rated at the moment the
- * parcel arrives — so before anything had been tasted, and the review was
+ * parcel arrives, so before anything had been tasted, and the review was
  * about the packaging. The ask now goes out hours later, by notification, to a
  * screen that does nothing else.
  */

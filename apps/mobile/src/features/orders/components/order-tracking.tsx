@@ -1148,7 +1148,7 @@ function DeliveryLiveMap({ info }: { info: DeliveryInfo }) {
  *
  * The platform has exhausted its options: back-office alert at 15 minutes,
  * ungrouping at 30. Waiting on in silence would be worse than asking the
- * question — the buyer decides, and cancelling gives everything back, fee included.
+ * question, the buyer decides, and cancelling gives everything back, fee included.
  */
 function BuyerDecisionCard({ runId, onResolved }: { runId: string, onResolved: () => void }) {
   const { semantic } = useTheme()

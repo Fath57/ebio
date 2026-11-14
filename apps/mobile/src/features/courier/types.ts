@@ -172,7 +172,7 @@ export const FAIL_REASON_LABELS: Record<DeliveryFailReason, string> = {
 /**
  * One offer in the feed.
  *
- * The `kind` survives a second shape that no longer exists — grouped rounds —
+ * The `kind` survives a second shape that no longer exists, grouped rounds,
  * and is kept so the screens read as they did; a cart holds one shop, so a
  * delivery is the only thing there is to offer.
  */
@@ -189,7 +189,7 @@ export interface DeliveryItem {
   photo: string | null
 }
 
-/** « Pour Afiavi Kossou, de la part d'Awa » — the line a gift delivery opens with, null otherwise. */
+/** « Pour Afiavi Kossou, de la part d'Awa », the line a gift delivery opens with, null otherwise. */
 export function giftContactLine(contact: DeliveryContact | null): string | null {
   if (!contact || contact.role !== 'RECIPIENT') {
     return null

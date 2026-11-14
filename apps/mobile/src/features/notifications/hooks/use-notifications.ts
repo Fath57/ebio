@@ -117,7 +117,7 @@ export function useNotifications() {
     })
 
     notificationListener.current = Notifications.addNotificationReceivedListener((_notification) => {
-      // Foreground notification — handled by the notification handler above
+      // Foreground notification, handled by the notification handler above
     })
 
     responseListener.current = Notifications.addNotificationResponseReceivedListener((response) => {
@@ -134,7 +134,7 @@ export function useNotifications() {
         }
       })
       .catch(() => {
-        // No launch notification — normal start
+        // No launch notification, normal start
       })
 
     // Flush the parked tap as soon as the navigator can route it
@@ -183,7 +183,7 @@ export function useNotifications() {
  * Registers the device, without ever opening the system dialog.
  *
  * Asking Android on sign-in put the prompt in front of someone who had not
- * yet seen what the app does — and a refusal there is **final**, on Android 13
+ * yet seen what the app does, and a refusal there is **final**, on Android 13
  * and later. The dialog is now opened by `askForPush` alone, after the app has
  * asked in its own words and been told yes. This one only picks up a
  * permission that is already granted.
@@ -199,7 +199,7 @@ async function registerForPush(): Promise<string | null> {
   }
 
   try {
-    // Native FCM/APNs device token — throws when the build has no
+    // Native FCM/APNs device token, throws when the build has no
     // google-services file (supplier/courier before their Firebase apps exist)
     const tokenData = await Notifications.getDevicePushTokenAsync()
     const token = tokenData.data as string
@@ -230,7 +230,7 @@ export function handleNotificationTap(data: Record<string, unknown>) {
   }
 
   // A campaign carries its own identifier. Reporting the open is what turns
-  // "handed to a phone" into "read by someone" — the only figure that says
+  // "handed to a phone" into "read by someone", the only figure that says
   // whether a campaign was worth sending. Fire and forget: a tap must open
   // the screen whether or not the report gets through.
   const campaignId = data.campaignId
@@ -325,7 +325,7 @@ export function handleNotificationTap(data: Record<string, unknown>) {
  * Where a campaign leads.
  *
  * The destination was chosen when the message was written, so it travels with
- * it rather than being guessed from the type. Without one, the home screen —
+ * it rather than being guessed from the type. Without one, the home screen,
  * which is where someone tapping an offer expects to land anyway.
  */
 function openCampaignTarget(data: Record<string, unknown>) {

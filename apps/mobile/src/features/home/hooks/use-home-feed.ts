@@ -19,7 +19,7 @@ async function fetchProducts(params: Record<string, string>): Promise<SearchResu
     }
   }
   catch {
-    // Silent fail — sections simply render empty
+    // Silent fail, sections simply render empty
   }
   return []
 }

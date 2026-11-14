@@ -78,20 +78,20 @@ export class TerroirSettlementService implements OnModuleInit {
     await this.wallets.post(PlatformAccount.EXPORT, 'credit', {
       type: WalletTransactionType.EXPORT_SHIPPING_INCOME,
       amount: cents(shipping + home),
-      description: home > 0 ? `Transport et livraison à domicile — colis ${reference}` : `Transport — colis ${reference}`,
+      description: home > 0 ? `Transport et livraison à domicile, colis ${reference}` : `Transport, colis ${reference}`,
       orderId,
     })
     await this.wallets.post(PlatformAccount.EXPORT, 'credit', {
       type: WalletTransactionType.EXPORT_INSURANCE_INCOME,
       amount: insurance,
-      description: `Assurance — colis ${reference}`,
+      description: `Assurance, colis ${reference}`,
       orderId,
     })
     if (packDelta !== 0) {
       await this.wallets.post(PlatformAccount.EXPORT, packDelta > 0 ? 'credit' : 'debit', {
         type: WalletTransactionType.EXPORT_PACK_COMPENSATION,
         amount: Math.abs(packDelta),
-        description: packDelta > 0 ? `Marge pack eBio — colis ${reference}` : `Compensation pack eBio — colis ${reference}`,
+        description: packDelta > 0 ? `Marge pack eBio, colis ${reference}` : `Compensation pack eBio, colis ${reference}`,
         orderId,
       })
     }

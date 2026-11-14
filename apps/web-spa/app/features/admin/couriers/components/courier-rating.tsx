@@ -17,7 +17,7 @@ export function CourierRating({ ratingAvg, ratingCount, className = '' }: Courie
   const { t, i18n } = useTranslation()
 
   if (ratingCount === 0 || ratingAvg === null)
-    return <span className={`text-muted-foreground ${className}`}>—</span>
+    return <span className={`text-muted-foreground ${className}`}>-</span>
 
   return (
     <span

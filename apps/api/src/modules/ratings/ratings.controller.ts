@@ -14,7 +14,7 @@ import { RatingsService } from './ratings.service'
 export class RatingsController {
   constructor(private readonly ratingsService: RatingsService) {}
 
-  // Session auth like every buyer route — the JWT guard here belonged to the
+  // Session auth like every buyer route, the JWT guard here belonged to the
   // chat module and rejected the app's session token as « expired ».
   @Post('reviews')
   @UseGuards(AuthGuard, CaslGuard)

@@ -99,8 +99,8 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
    *
    * The ticked box never left the phone: it disabled the button, and there was
    * nothing to produce in a dispute. The server now records it, with the date
-   * and the app it came from. A network failure does not block the sign-up —
-   * the account already exists by then — but it is reported to the console.
+   * and the app it came from. A network failure does not block the sign-up,
+   * the account already exists by then, but it is reported to the console.
    */
   const finishRegistration = useCallback(async () => {
     try {
@@ -153,12 +153,12 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
         return
       }
       if (result.needsRegistration) {
-        // New user — save the registration token and ask for name
+        // New user, save the registration token and ask for name
         setRegistrationToken(result.registrationToken ?? null)
         setStep('name')
       }
       else {
-        // Existing user — already logged in via OTP
+        // Existing user, already logged in via OTP
         await finishRegistration()
       }
     }
@@ -291,7 +291,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
 
   const isPhoneValid = /^\+229\d{10}$/.test(phone)
 
-  // Google and Apple, below the phone form — and below the e-mail form when
+  // Google and Apple, below the phone form, and below the e-mail form when
   // the device is abroad, where that form comes first.
   const socialSignUp = (
     <>
@@ -620,7 +620,7 @@ export function RegisterScreen({ onRegisterSuccess, onNavigateToLogin }: Registe
             </>
           )}
 
-          {/* Terms gate — required before any of the three signup paths */}
+          {/* Terms gate, required before any of the three signup paths */}
           {(step === 'phone-input' || step === 'email-form') && (
             <Pressable
               style={styles.termsRow}

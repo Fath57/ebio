@@ -9,7 +9,7 @@ import { apiUrl, getChatToken } from '../../utils/api-client'
  * The microphone and loudspeaker, loaded only once we know they are there.
  *
  * The library reaches for its native half the moment it is imported, and a
- * binary built before it was added has no native half — that is a startup
+ * binary built before it was added has no native half, that is a startup
  * crash, not a caught error, because the failure is in evaluating the module
  * graph and by then we have already let it begin. So the native side is asked
  * for first, and the import only happens if it answers.
@@ -27,7 +27,7 @@ async function audio(): Promise<typeof ExpoPlayAudioStream | null> {
 /**
  * Where the spoken conversation is held.
  *
- * Same host as the rest of the API — it is the same server. The dedicated
+ * Same host as the rest of the API, it is the same server. The dedicated
  * variable is what the chat already uses; falling back to the API's own
  * address keeps a development machine working when only that one is set.
  */
@@ -36,15 +36,15 @@ const WS_URL = process.env.EXPO_PUBLIC_WS_URL ?? apiUrl()
 /**
  * The line is open in both directions at once.
  *
- * `off` — nothing running. `opening` — the far end is being reached.
- * `listening` — the microphone is live and nobody has said anything yet.
- * `thinking` — the buyer has stopped and an answer is being composed.
- * `answering` — she is talking, and can be cut off mid-word.
+ * `off`, nothing running. `opening`, the far end is being reached.
+ * `listening`, the microphone is live and nobody has said anything yet.
+ * `thinking`, the buyer has stopped and an answer is being composed.
+ * `answering`, she is talking, and can be cut off mid-word.
  */
 export type LineState = 'off' | 'opening' | 'listening' | 'thinking' | 'answering'
 
 /**
- * The only rate the far end accepts, in either direction — it refuses 16 000
+ * The only rate the far end accepts, in either direction, it refuses 16 000
  * for being too low and 48 000 for being too high, in those words.
  */
 const WIRE_RATE = 24_000
@@ -70,7 +70,7 @@ for (let i = 0; i < B64_ALPHABET.length; i += 1) {
  * One slice of 48 kHz sound, halved to 24 kHz, as raw bytes.
  *
  * The recorder hands over base64; the socket takes bytes. Between the two the
- * sample pairs are averaged — so the decode that has to happen anyway is the
+ * sample pairs are averaged, so the decode that has to happen anyway is the
  * only pass over the data, and nothing is encoded again on the way out.
  */
 function halve(base64: string): ArrayBuffer {
@@ -109,7 +109,7 @@ function halve(base64: string): ArrayBuffer {
 const SLICE_MS = 100
 
 interface LiveVoiceOptions {
-  /** What the buyer was heard to say — worth showing, transcription being fallible. */
+  /** What the buyer was heard to say, worth showing, transcription being fallible. */
   onHeard?: (text: string) => void
   /** Her answer, once she has finished saying it. */
   onSaid?: (text: string) => void
@@ -141,7 +141,7 @@ interface Incoming {
  * A spoken conversation with her, held open.
  *
  * Nothing here decides when the buyer has finished talking. That was the old
- * way — count milliseconds of silence, stop the recorder, upload a file — and
+ * way, count milliseconds of silence, stop the recorder, upload a file, and
  * it cut people off in the middle of « deux kilos de… euh… tomates ». The
  * microphone now simply stays open and the far end judges by meaning, which is
  * both better at it and closer to the ear: around 200 ms to notice the end of
@@ -191,7 +191,7 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
    * the voice-communication path with the hardware echo canceller attached,
    * and it is still not enough: a loudspeaker at arm's length gets heard, the
    * far end writes her own words down as the buyer's, and she answers herself
-   * — which is exactly what the screen showed, « C'est nous. », « J'écoute. »,
+   * which is exactly what the screen showed, « C'est nous. », « J'écoute. »,
    * in the buyer's bubbles.
    *
    * Counted from the sound itself rather than waited for as an event: each
@@ -316,14 +316,14 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
       // echo cancellation.
       try {
         await player.current.setSoundConfig({
-          // Playback has no such restriction — it takes the rate it is given.
+          // Playback has no such restriction, it takes the rate it is given.
           sampleRate: WIRE_RATE as NonNullable<RecordingConfig['sampleRate']>,
           playbackMode: 'conversation',
         })
       }
       catch (caught) {
         // Said out loud rather than swallowed: refused, playback falls back to
-        // 44 100 Hz and her voice comes out fast and high — a symptom one
+        // 44 100 Hz and her voice comes out fast and high, a symptom one
         // would otherwise chase for a long time.
         console.warn('[voix] réglage du lecteur refusé', caught)
       }
@@ -417,7 +417,7 @@ export function useLiveVoice({ onHeard, onSaid, onCart }: LiveVoiceOptions): Liv
        * Opens the microphone and keeps it open.
        *
        * The recorder runs at 48 kHz because it refuses the 24 kHz the far end
-       * insists on, so each slice is halved on the way out — one pass over a
+       * insists on, so each slice is halved on the way out, one pass over a
        * tenth of a second of sound, ten times a second.
        */
       async function listen(): Promise<void> {

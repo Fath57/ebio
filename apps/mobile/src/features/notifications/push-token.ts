@@ -6,7 +6,7 @@ import { storage } from '../../utils/offline-storage'
 export const PUSH_TOKEN_KEY = 'push_device_token'
 
 /**
- * Deletes this device's token server-side. Called from signOut — without it
+ * Deletes this device's token server-side. Called from signOut, without it
  * the next account on the phone inherits the previous user's notifications.
  */
 export async function unregisterPushToken(): Promise<void> {

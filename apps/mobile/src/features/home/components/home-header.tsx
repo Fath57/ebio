@@ -34,7 +34,7 @@ interface HomeHeaderProps {
  * Is the assistant open to buyers?
  *
  * Read from the public settings, because it can be closed from the back-office
- * at any moment — during a spending spike, or when it answers badly. A button
+ * at any moment, during a spending spike, or when it answers badly. A button
  * that would only answer "indisponible" is worse than no button, so it simply
  * is not drawn.
  */
@@ -174,7 +174,7 @@ export function HomeHeader({
             <View style={styles.walletIcon}>
               <WalletIcon size={15} color={colors.neutral[0]} strokeWidth={2.4} />
             </View>
-            <Text style={styles.walletText}>{balance === null || !balanceMoney ? '—' : formatBalance(balance, balanceMoney)}</Text>
+            <Text style={styles.walletText}>{balance === null || !balanceMoney ? '-' : formatBalance(balance, balanceMoney)}</Text>
           </Pressable>
 
           <Pressable

@@ -130,7 +130,7 @@ describe('commander pour un proche (e2e)', () => {
   it('traite le numéro du payeur comme une commande ordinaire', async (context) => {
     const { em, app } = context as { em: EntityManager, app: INestApplication }
     // A payer with a Beninese number who types their own number as the
-    // relative's: an ordinary order — cash is then allowed again.
+    // relative's: an ordinary order, cash is then allowed again.
     const fixture = await seed(em, '+2290197555555')
     const own = await app.get(CheckoutService).create(
       fixture.buyerId,

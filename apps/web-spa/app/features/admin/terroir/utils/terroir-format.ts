@@ -37,7 +37,7 @@ export function formatDayShort(isoDay: string): string {
 
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso)
-    return '—'
+    return '-'
   const date = new Date(iso)
   return Number.isNaN(date.getTime()) ? iso : FR_DATE_TIME.format(date)
 }

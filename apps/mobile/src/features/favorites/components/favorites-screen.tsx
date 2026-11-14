@@ -25,7 +25,7 @@ interface FavoritesScreenProps {
  *
  * Kept in the order they were kept, not by distance: the buyer put them there
  * in a sequence and looks for them in it. A product gone out of stock stays
- * on the shelf — it is often the very reason one comes back — and its card
+ * on the shelf, it is often the very reason one comes back, and its card
  * says so on its own.
  */
 

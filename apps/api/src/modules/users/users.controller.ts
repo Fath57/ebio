@@ -53,7 +53,7 @@ export class UsersController {
    * Record that the terms were accepted.
    *
    * Called by the app right after a successful sign-up, whichever path was
-   * taken — phone, email or Google. The box ticked on screen never left the
+   * taken, phone, email or Google. The box ticked on screen never left the
    * phone; it now leaves a dated record.
    */
   /**

@@ -15,7 +15,7 @@ interface RatingFormProps {
   onComplete?: () => void
   /** Heading above the criteria; defaults to the generic "Notez votre expérience". */
   title?: string
-  /** Skip the "Merci !" alert — the caller chains another step and thanks the user itself. */
+  /** Skip the "Merci !" alert, the caller chains another step and thanks the user itself. */
   silent?: boolean
 }
 

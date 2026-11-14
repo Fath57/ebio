@@ -21,7 +21,7 @@ import { debitWallet } from '../utils/wallets-queries'
 
 /**
  * The staff debit: an amount up to the balance, a reason the owner will read,
- * and — on by default — a notification to them. Nothing is debited without
+ * and, on by default, a notification to them. Nothing is debited without
  * a reason; nothing goes below zero.
  */
 export function DebitDialog({ wallet, onClose }: { wallet: AdminWalletListItem | null, onClose: () => void }) {

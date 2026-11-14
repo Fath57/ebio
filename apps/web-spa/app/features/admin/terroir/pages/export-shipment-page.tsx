@@ -182,7 +182,7 @@ export default function ExportShipmentPage() {
               <p className="font-medium">{t(`admin.terroir.reception.${data.reception}`)}</p>
               {data.pickupPoint && (
                 <p className="whitespace-pre-line">
-                  {`${data.pickupPoint.city} — ${data.pickupPoint.address}`}
+                  {`${data.pickupPoint.city}, ${data.pickupPoint.address}`}
                   {data.pickupPoint.openingHours && `\n${data.pickupPoint.openingHours}`}
                 </p>
               )}
@@ -204,7 +204,7 @@ export default function ExportShipmentPage() {
               <dt className="text-muted-foreground">{t('admin.terroir.shipment.estimatedWeight')}</dt>
               <dd className="text-right font-mono">{formatGrams(data.estimatedWeightG)}</dd>
               <dt className="text-muted-foreground">{t('admin.terroir.shipment.actualWeight')}</dt>
-              <dd className="text-right font-mono">{data.actualWeightG == null ? '—' : formatGrams(data.actualWeightG)}</dd>
+              <dd className="text-right font-mono">{data.actualWeightG == null ? '-' : formatGrams(data.actualWeightG)}</dd>
             </dl>
           </CardContent>
         </Card>

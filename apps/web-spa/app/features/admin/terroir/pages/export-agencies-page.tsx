@@ -176,7 +176,7 @@ function AgencyCard({ agency, onEdit, onAddPoint, onEditPoint }: AgencyCardProps
                         <TableCell>{t(`admin.terroir.countries.${point.country}`)}</TableCell>
                         <TableCell className="font-medium">{point.city}</TableCell>
                         <TableCell className="max-w-xs whitespace-pre-line">{point.address}</TableCell>
-                        <TableCell className="text-muted-foreground">{point.openingHours ?? '—'}</TableCell>
+                        <TableCell className="text-muted-foreground">{point.openingHours ?? '-'}</TableCell>
                         <TableCell>
                           <StatusBadge tone={point.active ? 'done' : 'idle'}>
                             {point.active ? t('admin.terroir.active') : t('admin.terroir.inactive')}

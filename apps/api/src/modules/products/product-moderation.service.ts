@@ -117,7 +117,7 @@ export class ProductModerationService {
 
   /**
    * A shop editing a refused product sends it back for review: correcting it
-   * is the only answer a refusal asks for. A withdrawal stays as it is — eBio
+   * is the only answer a refusal asks for. A withdrawal stays as it is, eBio
    * alone lifts it.
    */
   resubmitIfRejected(product: Product): void {

@@ -604,7 +604,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
             <View style={styles.flex}>
               <Text style={[styles.switchLabel, { color: semantic.textPrimary }]}>Assurer mon colis</Text>
               <Text style={[styles.optionHint, { color: semantic.textSecondary }]}>
-                {(insurance ?? insuranceOffer) ? `${(insurance ?? insuranceOffer)?.primary ?? ''} — remboursé en cas de perte ou de casse` : 'Remboursé en cas de perte ou de casse'}
+                {(insurance ?? insuranceOffer) ? `${(insurance ?? insuranceOffer)?.primary ?? ''}, remboursé en cas de perte ou de casse` : 'Remboursé en cas de perte ou de casse'}
               </Text>
             </View>
             <Switch
@@ -647,7 +647,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
                 <Wallet size={18} color={semantic.textSecondary} strokeWidth={2} />
                 <View style={styles.flex}>
                   <Text style={[styles.optionTitle, { color: semantic.textPrimary }]}>Mon portefeuille</Text>
-                  <Text style={[styles.optionHint, { color: semantic.textSecondary }]}>{`Solde : ${formatXof(walletBalance ?? 0)} — débit immédiat`}</Text>
+                  <Text style={[styles.optionHint, { color: semantic.textSecondary }]}>{`Solde : ${formatXof(walletBalance ?? 0)}, débit immédiat`}</Text>
                 </View>
                 {effectiveChoice === 'WALLET' && <CircleCheck size={18} color={colors.green[600]} strokeWidth={2.2} />}
               </TouchableOpacity>

@@ -99,8 +99,8 @@ export class TerroirNotifierService {
         return
       }
       const title = 'Complément de poids pour votre colis'
-      // Compare with what the buyer paid for — the billed minimum when the
-      // estimate was below it — not with the bare estimate.
+      // Compare with what the buyer paid for, the billed minimum when the
+      // estimate was below it, not with the bare estimate.
       const paidG = Math.max(input.estimatedG, Number(shipment.minBilledKg) * 1000)
       const body = `Votre colis pèse ${kilos(input.actualG)}, pour ${kilos(paidG)} payés : un complément de ${formatFcfa(input.amount)} est demandé. Vous pouvez le payer ou retirer un produit (remboursé) avant le ${spokenInstant(input.deadline)} ; sans réponse, eBio prend l'écart à sa charge et votre colis part quand même.`
       await this.push(shipment.buyer.id, NotificationType.EXPORT_WEIGHT_SUPPLEMENT, title, body, { shipmentId: shipment.id })
@@ -121,7 +121,7 @@ export class TerroirNotifierService {
   /** A departure opened towards a country the buyer asked to be told about (FR-032). */
   async departureOpen(input: { userId: string, city: string | null, departsOn: string, orderBefore: Date }): Promise<void> {
     const destination = input.city ? `vers ${input.city}` : 'à l\'étranger'
-    const body = `Prochain envoi ${destination} le ${spokenDay(input.departsOn)} — commandez avant le ${spokenDay(input.orderBefore.toISOString().slice(0, 10))}.`
+    const body = `Prochain envoi ${destination} le ${spokenDay(input.departsOn)}, commandez avant le ${spokenDay(input.orderBefore.toISOString().slice(0, 10))}.`
     await this.push(input.userId, NotificationType.EXPORT_DEPARTURE_OPEN, 'Un départ terroir est ouvert', body, { departsOn: input.departsOn })
   }
 

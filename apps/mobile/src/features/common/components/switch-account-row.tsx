@@ -11,7 +11,7 @@ interface SwitchAccountRowProps {
 
 /**
  * Footer for gate / onboarding screens: shows who is signed in and offers
- * to sign out — landing on such a screen with the wrong account is the
+ * to sign out, landing on such a screen with the wrong account is the
  * most common reason to be stuck there.
  */
 export function SwitchAccountRow({ accountLabel, onSwitch }: SwitchAccountRowProps) {

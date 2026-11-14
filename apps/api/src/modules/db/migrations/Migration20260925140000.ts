@@ -5,8 +5,8 @@ import { Migration } from '@mikro-orm/migrations'
  *
  * A poster is often enough on its own: it already carries its text, and asking
  * for a title on top forced someone to invent one that would be written over
- * it. One of the two is still required — an empty announcement would have
- * nothing to show — but the contract is what checks it, where the rule reads.
+ * it. One of the two is still required, an empty announcement would have
+ * nothing to show, but the contract is what checks it, where the rule reads.
  */
 export class Migration20260925140000 extends Migration {
   override async up(): Promise<void> {

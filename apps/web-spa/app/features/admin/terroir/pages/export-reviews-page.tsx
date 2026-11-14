@@ -151,8 +151,8 @@ function ProductReviewCard({ product, onReview }: { product: ExportReviewProduct
   const { t } = useTranslation()
   const dimensions = [product.lengthCm, product.widthCm, product.heightCm].every(value => value != null)
     ? t('admin.terroir.reviews.dimensionsValue', { length: product.lengthCm, width: product.widthCm, height: product.heightCm })
-    : '—'
-  const origin = [product.origin.producer, product.origin.place, product.origin.year].filter(Boolean).join(' · ') || '—'
+    : '-'
+  const origin = [product.origin.producer, product.origin.place, product.origin.year].filter(Boolean).join(' · ') || '-'
 
   return (
     <Card>
@@ -197,7 +197,7 @@ function ProductReviewCard({ product, onReview }: { product: ExportReviewProduct
           <dl className="space-y-2 text-sm">
             <div>
               <dt className="text-muted-foreground text-xs">{t('admin.terroir.reviews.ingredients')}</dt>
-              <dd>{product.composition.ingredients ?? '—'}</dd>
+              <dd>{product.composition.ingredients ?? '-'}</dd>
             </div>
             <div>
               <dt className="text-muted-foreground text-xs">{t('admin.terroir.reviews.allergens')}</dt>
@@ -205,7 +205,7 @@ function ProductReviewCard({ product, onReview }: { product: ExportReviewProduct
             </div>
             <div>
               <dt className="text-muted-foreground text-xs">{t('admin.terroir.reviews.conservation')}</dt>
-              <dd>{product.composition.conservation ?? '—'}</dd>
+              <dd>{product.composition.conservation ?? '-'}</dd>
             </div>
             {product.origin.method && (
               <div>

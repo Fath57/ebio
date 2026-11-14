@@ -29,7 +29,7 @@ interface VoiceSocket extends Socket {
      *
      * Opening the provider's socket takes a moment, and a buyer who has
      * already started talking does not know that. Dropping those first slices
-     * lost the beginning of every sentence — and the beginning is where one
+     * lost the beginning of every sentence, and the beginning is where one
      * says what one wants.
      */
     waiting?: RealtimeInbound[]
@@ -39,8 +39,8 @@ interface VoiceSocket extends Socket {
 /**
  * The spoken conversation, relayed.
  *
- * The phone never talks to the model directly. It could — the provider issues
- * short-lived client tokens for exactly that — and it would save a hop. But
+ * The phone never talks to the model directly. It could, the provider issues
+ * short-lived client tokens for exactly that, and it would save a hop. But
  * the tools are here, the catalogue is here, and what the model is allowed to
  * know is decided here. A phone that held the conversation on its own would
  * be a phone that decides what the assistant may say.
@@ -67,7 +67,7 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
       const token = client.handshake.auth.token as string | undefined
         ?? client.handshake.headers.authorization?.replace('Bearer ', '')
       if (!token) {
-        this.logger.warn('Voix refusée — aucun jeton')
+        this.logger.warn('Voix refusée, aucun jeton')
         client.disconnect()
         return
       }
@@ -77,15 +77,15 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
       // Told apart here because the phone's platform is often what explains a
       // microphone that behaves differently.
       this.logger.log(
-        `Voix demandée par ${payload.sub} — ${client.handshake.headers['user-agent'] ?? 'client inconnu'}, `
+        `Voix demandée par ${payload.sub}, ${client.handshake.headers['user-agent'] ?? 'client inconnu'}, `
         + `transport ${client.conn.transport.name}`,
       )
-      client.on('disconnect', reason => this.logger.log(`Téléphone de ${payload.sub} déconnecté — ${reason}`))
+      client.on('disconnect', reason => this.logger.log(`Téléphone de ${payload.sub} déconnecté, ${reason}`))
 
       // Checked here rather than at boot, like every other turn: closing her
       // from the back-office must cut the voice too.
       if (!await this.platformSettings.getAssistantEnabled()) {
-        this.logger.warn(`Voix refusée pour ${payload.sub} — assistante fermée`)
+        this.logger.warn(`Voix refusée pour ${payload.sub}, assistante fermée`)
         client.emit('event', { type: 'error', message: 'L\'assistante est fermée pour le moment.' })
         client.disconnect()
         return
@@ -126,7 +126,7 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
       this.logger.log(`Voix ouverte pour ${payload.sub}`)
     }
     catch (error) {
-      this.logger.warn(`Voix refusée — ${error}`)
+      this.logger.warn(`Voix refusée, ${error}`)
       client.disconnect()
     }
   }
@@ -139,7 +139,7 @@ export class AssistantRealtimeGateway implements OnGatewayConnection, OnGatewayD
     const heard = client.data.session?.heard() ?? 0
     if (spent) {
       this.logger.log(
-        `Voix close pour ${client.data.userId} — ${heard.toFixed(1)} s entendues, `
+        `Voix close pour ${client.data.userId}, ${heard.toFixed(1)} s entendues, `
         + `${spent.turns} tour(s), ${spent.audioOut} audio sortant, ${spent.usd.toFixed(4)} $`,
       )
       this.logger.log(client.data.session?.summary())

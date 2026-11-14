@@ -90,7 +90,7 @@ export async function spentThisMonth(em: EntityManager, memberId: string, now: D
 
 /**
  * Where the money of a cart goes back (research §4): the family wallet that
- * paid it while it is not closed, else its payer's personal wallet — never
+ * paid it while it is not closed, else its payer's personal wallet, never
  * the member's, who never owned that money. Any other cart: the buyer's own.
  *
  * A plain function rather than a provider: payments and deliveries call it
@@ -132,7 +132,7 @@ export async function clearLowBalanceAlert(em: EntityManager, familyWalletId: st
   )
 }
 
-/** « … sur votre portefeuille eBio » — where the buyer is told their refund went. */
+/** « … sur votre portefeuille eBio », where the buyer is told their refund went. */
 export function refundDestination(target: RefundTarget): string {
   if (target.kind === 'FAMILY') {
     return 'sur le portefeuille famille'
@@ -167,7 +167,7 @@ function refused(refusal: FamilyRefusal): never {
  * Paying a cart from a family wallet (US2), under the member's limits (US3).
  *
  * The limits are checked twice: by the preview, to explain a refusal before
- * the buyer taps, and by the payment, after the wallet lock — the only check
+ * the buyer taps, and by the payment, after the wallet lock, the only check
  * that counts, since two members paying at once are serialized there.
  */
 @Injectable()
@@ -249,7 +249,7 @@ export class FamilyPaymentService {
    * (`em` is that transaction's).
    *
    * The wallet row is locked first, then everything the decision rests on is
-   * read again — statuses, limits, the member's month — and only then is the
+   * read again, statuses, limits, the member's month, and only then is the
    * wallet debited. A refusal throws before any debit; a later failure rolls
    * the debit back with the orders. No partial state either way.
    *
@@ -308,8 +308,8 @@ export class FamilyPaymentService {
       type: WalletTransactionType.ORDER_PAYMENT,
       amount: total,
       description: orders.length > 1
-        ? `Panier de ${orders.length} boutiques — portefeuille famille`
-        : `Commande ${orders[0].orderNumber} — portefeuille famille`,
+        ? `Panier de ${orders.length} boutiques, portefeuille famille`
+        : `Commande ${orders[0].orderNumber}, portefeuille famille`,
       orderId: orders[0].id,
       familyMemberId: memberId,
     })

@@ -163,7 +163,7 @@ export class DemoSeeder extends Seeder {
       validationStatus: ValidationStatus.VALIDATED,
       mode: SupplierMode.ORDER,
       address: 'Marché de Talensac, 44000 Nantes',
-      neighborhood: 'Hauts-Pavés — Saint-Félix',
+      neighborhood: 'Hauts-Pavés, Saint-Félix',
       mobileMoneyNumber: '+33240000001',
       globalRating: 4.7,
       totalReviews: 31,
@@ -195,7 +195,7 @@ export class DemoSeeder extends Seeder {
       validationStatus: ValidationStatus.VALIDATED,
       mode: SupplierMode.ORDER,
       address: '5 route de Sainte-Luce, 44300 Nantes',
-      neighborhood: 'Doulon — Bottière',
+      neighborhood: 'Doulon, Bottière',
       mobileMoneyNumber: '+33240000003',
       globalRating: 4.1,
       totalReviews: 9,
@@ -211,7 +211,7 @@ export class DemoSeeder extends Seeder {
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(2.4183, 6.3654)::geography WHERE id = ?`, [s1.id])
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(2.6289, 6.4969)::geography WHERE id = ?`, [s2.id])
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(2.4264, 6.3616)::geography WHERE id = ?`, [s3.id])
-    // Nantes — ST_MakePoint attend (longitude, latitude)
+    // Nantes, ST_MakePoint attend (longitude, latitude)
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(-1.5546, 47.2216)::geography WHERE id = ?`, [s4.id])
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(-1.5920, 47.2050)::geography WHERE id = ?`, [s5.id])
     await db.execute(`UPDATE suppliers SET location = ST_MakePoint(-1.5100, 47.2320)::geography WHERE id = ?`, [s6.id])

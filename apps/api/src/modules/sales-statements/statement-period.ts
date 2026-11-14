@@ -42,7 +42,7 @@ export interface StatementRange {
 }
 
 /**
- * The two calendar days, both included, as instants in the shop's zone — the
+ * The two calendar days, both included, as instants in the shop's zone, the
  * shop's « aujourd'hui » ends at its own midnight, not the server's.
  */
 export function statementRange(from: string, to: string, timeZone: string): StatementRange {

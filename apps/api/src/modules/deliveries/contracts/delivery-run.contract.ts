@@ -3,7 +3,7 @@ import { z } from 'zod'
 /**
  * The run: several pickups, one handover, a single courier.
  *
- * The courier's decision covers the whole run — there is no
+ * The courier's decision covers the whole run, there is no
  * partial acceptance. The pickup, however, stays shop by shop:
  * each order turns "picked up" at its own point.
  */

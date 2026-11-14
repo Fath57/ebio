@@ -228,7 +228,7 @@ export class WithdrawalsService {
    * Approval = atomic reservation (lesson from the POS project): the
    * PENDING → PROCESSING transition is a conditional UPDATE touching exactly
    * one row. Two concurrent approvals: the first wins, the second neither
-   * debits nor pays — the wallet was already debited at request time, so
+   * debits nor pays, the wallet was already debited at request time, so
    * approval only fires the payout.
    */
   async approve(withdrawalId: string, adminId: string) {
@@ -383,7 +383,7 @@ export class WithdrawalsService {
         await this.reserve(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.PAID, extra)
       }
       else {
-        await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, extra, 'Échec du versement — solde rétabli')
+        await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, extra, 'Échec du versement, solde rétabli')
       }
     }
     catch {
@@ -440,7 +440,7 @@ export class WithdrawalsService {
 
     for (const withdrawal of unconfirmed) {
       if (withdrawal.processedAt && now - withdrawal.processedAt.getTime() > UNCONFIRMED_GIVE_UP_MS) {
-        this.logger.error(`Reversement ${withdrawal.id} sans réponse du prestataire depuis plus de 24 h — à vérifier à la main, solde non rétabli`)
+        this.logger.error(`Reversement ${withdrawal.id} sans réponse du prestataire depuis plus de 24 h, à vérifier à la main, solde non rétabli`)
         continue
       }
       try {
@@ -493,7 +493,7 @@ export class WithdrawalsService {
    * - `sent`: the provider took it; the poller follows it to the end.
    * - `unconfirmed`: no verdict (timeout, 5xx). It may have been taken all
    *   the same, so the withdrawal stays in progress and its balance is NOT
-   *   given back — `retryUnconfirmedPayouts` asks again with the same key.
+   *   given back, `retryUnconfirmedPayouts` asks again with the same key.
    * - `refused`: a clear refusal; the withdrawal fails and the balance comes back.
    */
   private async sendPayout(
@@ -532,7 +532,7 @@ export class WithdrawalsService {
       }
       this.logger.error(`Reversement refusé par le prestataire pour ${withdrawal.id} : ${detail}`)
       await this.journal.markFailed(operation, detail)
-      await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, {}, 'Échec du versement — solde rétabli')
+      await this.reserveAndRefund(withdrawal.id, WithdrawalStatus.PROCESSING, WithdrawalStatus.FAILED, {}, 'Échec du versement, solde rétabli')
       return 'refused'
     }
   }
@@ -625,7 +625,7 @@ export class WithdrawalsService {
     }
   }
 
-  /** Loads the user behind the owner — fresh from the DB, the row may come from a cleared EM. */
+  /** Loads the user behind the owner, fresh from the DB, the row may come from a cleared EM. */
   private async resolvePayee(owned: { supplier?: { id: string } | null, courier?: { id: string } | null }): Promise<Payee> {
     if (owned.supplier) {
       const supplier = await this.em.findOneOrFail(Supplier, { id: owned.supplier.id }, { populate: ['user'] })

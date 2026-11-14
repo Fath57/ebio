@@ -89,7 +89,7 @@ export class StaffInboxService {
         const def = QUEUES.find(d => d.key === q.key)!
         return { label: def.label, count: q.count, url: `${config.clients.webApp.url}${def.path}` }
       })
-      await this.safeSend(user.email, `eBio — ${lines.reduce((s, l) => s + l.count, 0)} élément(s) à traiter`, 'staff-digest', { userName: user.name, lines })
+      await this.safeSend(user.email, `eBio, ${lines.reduce((s, l) => s + l.count, 0)} élément(s) à traiter`, 'staff-digest', { userName: user.name, lines })
       sent += 1
     }
     return sent

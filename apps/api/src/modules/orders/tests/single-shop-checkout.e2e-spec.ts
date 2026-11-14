@@ -95,7 +95,7 @@ async function seed(em: EntityManager): Promise<Fixture> {
  * This is the shape carts went back to after the unified cart: mixing shops
  * refused every promo code (a code belongs to one shop), let a slow shop hold
  * up another's delivery, and put one payment across several orders. What is
- * checked here is what that reversal actually rests on — that the fee lands on
+ * checked here is what that reversal actually rests on, that the fee lands on
  * the order, and that no round is opened around a single delivery.
  */
 describe('caisse d\'une seule boutique (e2e)', () => {
@@ -125,7 +125,7 @@ describe('caisse d\'une seule boutique (e2e)', () => {
     expect(result.orders).toHaveLength(1)
 
     // The fee is the order's again. Read off it are the courier's pay, the
-    // cash to collect and the refund — all of which read zero while it lived
+    // cash to collect and the refund, all of which read zero while it lived
     // on the wrapper.
     const [order] = await db.execute(
       `SELECT delivery_fee, checkout_id FROM orders WHERE checkout_id = ?`,
@@ -149,7 +149,7 @@ describe('caisse d\'une seule boutique (e2e)', () => {
     expect(Number(checkout.delivery_fee)).toBe(Number(order.delivery_fee))
 
     // The courier's pay hangs off this. The delivery snapshots the order's
-    // fee when it is created, and the settlement pays from that snapshot —
+    // fee when it is created, and the settlement pays from that snapshot,
     // so a fee left on the wrapper meant a courier credited nothing at all.
     const deliveries = app.get(DeliveriesService)
     const placed = await em.findOneOrFail(Order, { id: result.orders[0].orderId }, { populate: ['supplier', 'checkout'] })

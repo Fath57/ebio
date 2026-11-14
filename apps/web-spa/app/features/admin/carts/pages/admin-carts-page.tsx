@@ -8,7 +8,7 @@ import { CartsOverview } from '../components/carts-overview'
  * How many people stop before paying is a question about sales, not a
  * setting. The delay that decides when a basket counts as abandoned sits on
  * the same page because it is the number every figure above is measured
- * against — reading one without the other explains nothing.
+ * against, reading one without the other explains nothing.
  */
 export default function AdminCartsPage() {
   return (

@@ -1,7 +1,7 @@
 import { Entity, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 
 /**
- * A label or certification a product can carry — Bio, Ecocert, Commerce
+ * A label or certification a product can carry, Bio, Ecocert, Commerce
  * équitable… The list is the platform's, managed from the back office.
  *
  * `products.labels` keeps the codes rather than foreign keys, like

@@ -93,7 +93,7 @@ export function LocationProvider({ children }: { children: React.ReactNode }) {
         }
       }
       catch {
-        // Lecture du stockage échouée — on bascule sur la détection
+        // Lecture du stockage échouée, on bascule sur la détection
       }
       if (!cancelled) {
         await detectDevice()

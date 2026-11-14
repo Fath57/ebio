@@ -81,7 +81,7 @@ export const nutritionBasisEnum = z.enum(['100g', '100ml']).meta({
   description: 'Reference quantity the nutritional values are given for',
 })
 
-/** Per 100 g / 100 ml — grams are bounded by the reference quantity itself. */
+/** Per 100 g / 100 ml, grams are bounded by the reference quantity itself. */
 const gramsPer100 = z.number().min(0).max(100)
 
 export const nutritionalValuesSchema = z.object({
@@ -138,7 +138,7 @@ export const updateProductSchema = createProductSchema.partial().extend({
   photos: z.array(z.string()).max(10).optional(),
 }).meta({
   title: 'UpdateProduct',
-  description: 'Update product — all fields optional',
+  description: 'Update product, all fields optional',
 })
 
 export const stockUpdateSchema = z.object({
@@ -198,7 +198,7 @@ export const promotionSchema = z.object({
 const variantResponseSchema = z.object({
   id: z.string().uuid(),
   label: z.string(),
-  /** Price of one unit of this format — of one whole pack for a pack. */
+  /** Price of one unit of this format, of one whole pack for a pack. */
   pricePerUnit: z.number(),
   /** Sellable quantity of this format: whole packs out of the product's stock for a pack. */
   stock: z.number(),

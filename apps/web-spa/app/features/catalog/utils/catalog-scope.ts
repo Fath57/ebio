@@ -5,7 +5,7 @@ import { useAbility } from '@/lib/casl/ability-context'
  * The shop whose catalogue is being worked on, carried in the URL.
  *
  * In the URL rather than in a store so a refresh, a bookmark or a link sent to
- * a colleague all land on the same shop — and so the address bar always says
+ * a colleague all land on the same shop, and so the address bar always says
  * whose catalogue is open, which a hidden state could not.
  */
 export const SHOP_PARAM = 'boutique'

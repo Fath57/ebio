@@ -14,7 +14,7 @@ interface FavoriteState {
  * The heart flips at once and is put back if the server refuses: a favourite
  * is a small, reversible thing, and waiting a round trip to fill a heart is
  * the kind of delay that reads as a broken button. What it never does again is
- * flip without telling anyone — it used to be a `useState(false)`, so it
+ * flip without telling anyone, it used to be a `useState(false)`, so it
  * forgot everything the moment one left the screen.
  */
 export function useFavorite(productId: string | null): FavoriteState {

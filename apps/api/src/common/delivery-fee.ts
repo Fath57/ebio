@@ -5,7 +5,7 @@
  * per shop: one of three modes, a basket threshold for free delivery, and a
  * hard distance limit. Distances are computed by the caller and passed in.
  *
- * Since the unified cart, that distance is the one of the **whole run** —
+ * Since the unified cart, that distance is the one of the **whole run**,
  * pickup to pickup, then the last pickup to the drop-off point (see
  * `computeRunDistance`). It is the road the courier actually rides, so the
  * only honest basis for both the fee and their earning. A run with a single
@@ -89,7 +89,7 @@ export interface DeliveryFeeInput {
   isDelivery: boolean
   /**
    * Items only: the fee never counts toward its own waiver. On a multi-shop
-   * cart this is the whole cart total — the free-delivery threshold is judged
+   * cart this is the whole cart total, the free-delivery threshold is judged
    * on what the buyer sees, which is one cart.
    */
   itemsTotal: number
@@ -150,7 +150,7 @@ export function computeDeliveryFee(config: DeliveryPricingConfig, input: Deliver
 /**
  * What the courier keeps out of the delivery fee. eBio takes `rate` of the
  * fee (admin-tunable, 0.10 by default); the rest is the courier's earning.
- * Rounded to the FCFA — there is no sub-unit in Mobile Money — and never
+ * Rounded to the FCFA, there is no sub-unit in Mobile Money, and never
  * negative, whatever a stray rate above 1 would suggest.
  */
 export function computeCourierFee(deliveryFee: number, rate: number): number {
@@ -244,7 +244,7 @@ function widestSpread(shops: GroupableShop[]): number | null {
 /**
  * Splits the shops of a cart into runs.
  *
- * Two rules, enforced here and nowhere else — a check placed later, at
+ * Two rules, enforced here and nowhere else, a check placed later, at
  * dispatch time, would come after the money was taken:
  *
  * 1. A shop with no known position cannot be grouped. Its gap cannot be
@@ -256,7 +256,7 @@ function widestSpread(shops: GroupableShop[]): number | null {
  *
  * The walk is greedy and deterministic: start from the north-westmost
  * remaining shop, add the closest one that respects the threshold, repeat. The
- * optimum is not sought — it would cost dearly for a cart that rarely holds
+ * optimum is not sought, it would cost dearly for a cart that rarely holds
  * more than three shops, and the count limit already bounds the possible gain.
  */
 export function groupShopsIntoRuns(shops: GroupableShop[], config: RunGroupingConfig): ShopGroup[] {
@@ -314,14 +314,14 @@ export interface PickupStop extends RunPoint {
  * Visiting order of a run: closest to the courier first, then step by step.
  *
  * That rule minimises the first shop's wait, and it is the one couriers find
- * natural — they start with what is at hand. The resulting ride is not always
+ * natural, they start with what is at hand. The resulting ride is not always
  * the shortest possible, but with two or three pickups the difference is
  * negligible, and a counter-intuitive order costs more in refusals than it
  * saves in kilometres.
  *
  * While no courier has accepted, `origin` is null: the shop farthest from the
- * drop-off then comes first, so that the last leg — the one carrying every
- * shop's goods — is the shortest. That order is provisional and is recomputed
+ * drop-off then comes first, so that the last leg, the one carrying every
+ * shop's goods, is the shortest. That order is provisional and is recomputed
  * on acceptance.
  */
 export function orderPickups(stops: PickupStop[], origin: RunPoint | null, dropoff: RunPoint): string[] {

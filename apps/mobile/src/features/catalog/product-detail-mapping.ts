@@ -3,7 +3,7 @@ import type { ProductDetailProduct, ProductDetailSupplier } from './components/p
 /**
  * Traduction des réponses de l'API vers ce que la fiche produit attend.
  *
- * Les deux mondes ne parlent pas le même langage — l'API renvoie `stock`,
+ * Les deux mondes ne parlent pas le même langage, l'API renvoie `stock`,
  * `globalRating`, `validationStatus`, l'écran attend `isInStock`, `rating`,
  * `isValidated`. Recopier la réponse telle quelle laissait ces champs
  * indéfinis : la boutique perdait sa note et **tous** les produits
@@ -14,7 +14,7 @@ import type { ProductDetailProduct, ProductDetailSupplier } from './components/p
  * ci-dessous sont donc écrites à la main, réduites aux champs consommés.
  */
 
-/** `GET /api/products/:id` — champs utilisés par la fiche. */
+/** `GET /api/products/:id`, champs utilisés par la fiche. */
 export interface ApiProductDetail {
   id: string
   name: string
@@ -31,7 +31,7 @@ export interface ApiProductDetail {
   supplierId: string
 }
 
-/** `GET /api/suppliers/:id` — champs utilisés par la fiche. */
+/** `GET /api/suppliers/:id`, champs utilisés par la fiche. */
 export interface ApiSupplierDetail {
   id: string
   shopName: string

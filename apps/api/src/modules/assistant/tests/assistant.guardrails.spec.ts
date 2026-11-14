@@ -208,7 +208,7 @@ it('sépare deux phrases que le modèle a collées', () => {
 /**
  * Seen on the phone: "Salut, comment tu vas ?" triggered the fallback
  * sentence. The answer contained "je vous mets", which the prompt itself
- * teaches as an offer — and an offer commits to nothing.
+ * teaches as an offer, and an offer commits to nothing.
  */
 describe('proposer n\'est pas annoncer', () => {
   const searchedOnly: RecordedToolCall[] = [

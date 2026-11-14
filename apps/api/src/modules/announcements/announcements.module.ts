@@ -16,8 +16,8 @@ import { AnnouncementsService } from './announcements.service'
 /**
  * The announcements shown when the app opens.
  *
- * Same money circuit as the banners — the shop's wallet is debited when the
- * request is filed, a rejection refunds it — so that each explains the other.
+ * Same money circuit as the banners, the shop's wallet is debited when the
+ * request is filed, a rejection refunds it, so that each explains the other.
  */
 @Module({
   imports: [

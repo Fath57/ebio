@@ -24,7 +24,7 @@ const STALE_AFTER_MS = 24 * 60 * 60 * 1000
 const LIVE_POLL_MS = 45_000
 
 /**
- * While nothing is moving there is nothing to miss, so we ask rarely — most
+ * While nothing is moving there is nothing to miss, so we ask rarely, most
  * buyers open the app with no order in progress, and data costs them money.
  */
 const IDLE_POLL_MS = 180_000
@@ -75,7 +75,7 @@ const RANK: Record<string, number> = { ACCEPTED: 1, PREPARING: 2, READY: 3, IN_D
 /**
  * The order in progress, wherever the buyer happens to be.
  *
- * The orders screen already refreshed itself while a courier was moving — but
+ * The orders screen already refreshed itself while a courier was moving, but
  * only while that screen was open, which is precisely when the buyer does not
  * need telling. Held here instead, so one poll serves the whole app: the bar
  * that shows it, and the badge on the orders tab.

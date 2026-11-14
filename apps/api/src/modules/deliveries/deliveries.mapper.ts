@@ -10,8 +10,8 @@ import { thumbnailUrlFor } from '../../common/media-urls'
 import { firstName } from '../gift/gift-texts'
 import { DeliveryStatus } from './entities/delivery.entity'
 
-/** Who is looking at the delivery — shapes contacts and the confirmation code. */
-/** `recipient`: the relative a cart was sent to (009) — sees the delivery, never its amounts. */
+/** Who is looking at the delivery, shapes contacts and the confirmation code. */
+/** `recipient`: the relative a cart was sent to (009), sees the delivery, never its amounts. */
 export type DeliveryAudience = 'courier' | 'supplier' | 'buyer' | 'recipient' | 'admin'
 
 /** One order line of an offer, as aggregated by the offers query. */
@@ -57,7 +57,7 @@ export interface RunStopRow {
 
 /**
  * An offered run. Unlike `OfferRow`, nothing in it is per order: one earning,
- * one drop-off address, a sequence of pickups — exactly what the courier
+ * one drop-off address, a sequence of pickups, exactly what the courier
  * decides to accept or not.
  */
 export interface RunOfferRow {
@@ -206,7 +206,7 @@ export class DeliveriesMapper {
   }
 
   /**
-   * A run offered to the courier. The earning is the whole run's — that is
+   * A run offered to the courier. The earning is the whole run's, that is
    * FR-019: we pay for a ride, not for a number of orders.
    */
   static toRunOffer(row: RunOfferRow) {
@@ -365,7 +365,7 @@ export class DeliveriesMapper {
 
 /**
  * The relative's view of a delivery: enough to follow and rate the courier,
- * nothing of what the payer paid (FR-031) — amounts zeroed, events without
+ * nothing of what the payer paid (FR-031), amounts zeroed, events without
  * their payloads.
  */
 function withoutAmounts(response: DeliveryResponse): DeliveryResponse {

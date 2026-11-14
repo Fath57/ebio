@@ -19,7 +19,7 @@ interface SkeletonProps {
  * The shape of what is coming, while it comes.
  *
  * A spinner on an empty screen reads as waiting; a block where the content
- * will be reads as loading. Nothing here is faster — it is the same request —
+ * will be reads as loading. Nothing here is faster, it is the same request,
  * but the page stops jumping when the answer lands, because the space was
  * already taken.
  */

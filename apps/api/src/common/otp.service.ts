@@ -29,7 +29,7 @@ export class OtpService {
   async sendOtp(phone: string): Promise<{ success: boolean, error?: string }> {
     const fork = this.em.fork()
 
-    // Check cooldown — prevent spam
+    // Check cooldown, prevent spam
     const recent = await fork.findOne(Verification, {
       identifier: `otp:${phone}`,
       createdAt: { $gte: new Date(Date.now() - OTP_COOLDOWN_SECONDS * 1000) },
@@ -97,7 +97,7 @@ export class OtpService {
 
     await this.emailService.sendTemplatedEmail({
       to: email,
-      subject: 'eBio — Code de vérification',
+      subject: 'eBio, Code de vérification',
       template: 'otp-code',
       data: { otpCode: code, userName: null, expiresInMinutes: OTP_TTL_MINUTES },
     })
@@ -137,7 +137,7 @@ export class OtpService {
 
     await this.emailService.sendTemplatedEmail({
       to: email,
-      subject: 'eBio — Confirmez votre nouvelle adresse',
+      subject: 'eBio, Confirmez votre nouvelle adresse',
       template: 'otp-code',
       data: { otpCode: code, userName: null, expiresInMinutes: OTP_TTL_MINUTES },
     })
@@ -198,7 +198,7 @@ export class OtpService {
     else if (identifier.includes('@')) {
       await this.emailService.sendTemplatedEmail({
         to: identifier,
-        subject: 'eBio — Code de réinitialisation',
+        subject: 'eBio, Code de réinitialisation',
         template: 'otp-code',
         data: { otpCode: code, userName: null, expiresInMinutes: OTP_TTL_MINUTES },
       })

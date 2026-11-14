@@ -34,8 +34,8 @@ export function formatXof(xof: number): string {
 }
 
 /**
- * Formats an amount already in a foreign currency — the frozen `display`
- * block of a preview or an order — without converting it again: « 30,50 € ».
+ * Formats an amount already in a foreign currency, the frozen `display`
+ * block of a preview or an order, without converting it again: « 30,50 € ».
  */
 export function formatCurrencyAmount(value: number, currency: Exclude<DisplayCurrency, 'XOF'>): string {
   const cents = Math.round(value * 100)
@@ -97,7 +97,7 @@ export function parseFrozenDisplay(raw: unknown): FrozenDisplay | null {
 }
 
 /**
- * An order amount at the rate frozen on its checkout — never today's rate:
+ * An order amount at the rate frozen on its checkout, never today's rate:
  * the order reads the same in a month. FCFA alone when nothing was frozen.
  */
 export function formatFrozenMoney(xof: number, display: FrozenDisplay | null): FormattedMoney {

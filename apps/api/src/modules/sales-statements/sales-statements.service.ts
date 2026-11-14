@@ -100,7 +100,7 @@ export class SalesStatementsService {
     const label = periodLabel(from, to)
     await this.emailService.sendTemplatedEmail({
       to: recipient,
-      subject: `Relevé des ventes ${supplier.shopName} — ${label}`,
+      subject: `Relevé des ventes ${supplier.shopName}, ${label}`,
       template: 'sales-statement',
       data: {
         shopName: supplier.shopName,
@@ -136,7 +136,7 @@ export class SalesStatementsService {
   }
 
   /**
-   * Every order the shop saw in the period — an unpaid online order never
+   * Every order the shop saw in the period, an unpaid online order never
    * reached it, so it is left out. Money is only summed over delivered orders:
    * an order in progress can still be cancelled.
    */

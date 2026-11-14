@@ -29,7 +29,7 @@ export class ReferralsService {
    *
    * Drawn at random rather than derived from the name: two Fatous would get
    * the same one, and a code carrying someone's name then travels around
-   * WhatsApp groups. A collision is simply retried — six characters out of
+   * WhatsApp groups. A collision is simply retried, six characters out of
    * an alphabet of 32 make it rare, and the unique constraint catches it.
    */
   async codeFor(userId: string): Promise<string> {
@@ -116,7 +116,7 @@ export class ReferralsService {
    *
    * Refused after the first delivered order: a referral pays for an
    * introduction, not for a customer who was already ordering. Refused on
-   * one's own code, and once per person — the unique constraint on the
+   * one's own code, and once per person, the unique constraint on the
    * referee holds even when two requests arrive together.
    */
   async claim(userId: string, code: string): Promise<{ sponsorName: string }> {
@@ -158,7 +158,7 @@ export class ReferralsService {
    *
    * Called on the move to DELIVERED, and never in its way: a reward that
    * fails must not stop an order from being delivered. The whole thing is
-   * idempotent — only a row still pending is ever paid, and it only turns
+   * idempotent, only a row still pending is ever paid, and it only turns
    * REWARDED once both credits have gone through.
    */
   async onOrderDelivered(orderId: string, buyerId: string, orderTotal: number): Promise<void> {
@@ -177,7 +177,7 @@ export class ReferralsService {
         return
       }
       if (orderTotal < rewards.minOrderAmount) {
-        this.logger.log(`Parrainage ${referral.id} — commande de ${orderTotal} sous le plancher de ${rewards.minOrderAmount}, on attend la suivante`)
+        this.logger.log(`Parrainage ${referral.id}, commande de ${orderTotal} sous le plancher de ${rewards.minOrderAmount}, on attend la suivante`)
         return
       }
 
@@ -196,15 +196,15 @@ export class ReferralsService {
           return false
         }
 
-        await this.pay(referral.sponsor, rewards.sponsorAmount, orderId, `Parrainage — ${referral.referee.name}`)
-        await this.pay(referral.referee, rewards.refereeAmount, orderId, `Bienvenue — parrainé par ${referral.sponsor.name}`)
+        await this.pay(referral.sponsor, rewards.sponsorAmount, orderId, `Parrainage, ${referral.referee.name}`)
+        await this.pay(referral.referee, rewards.refereeAmount, orderId, `Bienvenue, parrainé par ${referral.sponsor.name}`)
 
         // eBio carries the cost: this is acquisition, not a shop's discount,
         // so it lands on the marketing account.
         await this.wallet.post(PlatformAccount.MARKETING, 'debit', {
           type: WalletTransactionType.PLATFORM_MARKETING,
           amount: rewards.sponsorAmount + rewards.refereeAmount,
-          description: `Parrainage — ${referral.sponsor.name} et ${referral.referee.name}`,
+          description: `Parrainage, ${referral.sponsor.name} et ${referral.referee.name}`,
           orderId,
         })
         return true

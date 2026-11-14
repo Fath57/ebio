@@ -48,7 +48,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
         />
         <meta
           name="description"
-          content="eBio — Trouvez des produits bio près de chez vous."
+          content="eBio, Trouvez des produits bio près de chez vous."
         />
         <link rel="icon" href="/favicon.png" type="image/png" />
         <Meta />

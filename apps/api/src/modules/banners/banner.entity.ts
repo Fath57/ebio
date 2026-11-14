@@ -34,7 +34,7 @@ export class Banner {
   /**
    * Identifiant de la cible pour SUPPLIER et PRODUCT. Pas de clé étrangère :
    * la cible change de table selon `targetType`, et une bannière doit survivre
-   * à la suppression de sa cible — le service écarte les orphelines.
+   * à la suppression de sa cible, le service écarte les orphelines.
    */
   @Property({ fieldName: 'target_id', type: 'uuid', nullable: true })
   targetId?: string

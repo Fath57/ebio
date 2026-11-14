@@ -270,7 +270,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           </View>
         )}
 
-        {/* Status transitions — same rules as the orders list */}
+        {/* Status transitions, same rules as the orders list */}
         {isExport
           ? (
               <View style={styles.actionBar}>
@@ -303,7 +303,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
                   <ActionButton label="Marquer comme prête" onPress={() => { void transition('status', { status: 'READY' }) }} disabled={acting} />
                 )}
                 {order.status === 'READY' && order.pickupMode === 'ON_SITE' && (
-                  <ActionButton label="Remise au client — livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la remise.') }} disabled={acting} />
+                  <ActionButton label="Remise au client, livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la remise.') }} disabled={acting} />
                 )}
                 {order.status === 'IN_DELIVERY' && (
                   <ActionButton label="Marquer comme livrée" onPress={() => { void transition('confirm-delivery', undefined, 'Impossible de confirmer la livraison.') }} disabled={acting} variant="secondary" />
@@ -430,7 +430,7 @@ export function OrderDetailScreen({ orderId, onGoBack }: OrderDetailScreenProps)
           )}
         </View>
 
-        {/* Course (courier delivery) — only meaningful once the order is READY */}
+        {/* Course (courier delivery), only meaningful once the order is READY */}
         {order.pickupMode === 'DELIVERY' && ['PREPARING', 'READY', 'IN_DELIVERY', 'DELIVERED'].includes(order.status) && (
           <CourseSection orderId={orderId} refreshToken={refreshToken} />
         )}
@@ -478,7 +478,7 @@ function CourseSection({ orderId, refreshToken }: { orderId: string, refreshToke
       }
     }
     catch {
-      // ignore — the block simply stays hidden
+      // ignore, the block simply stays hidden
     }
   }, [orderId])
 
@@ -508,7 +508,7 @@ function CourseSection({ orderId, refreshToken }: { orderId: string, refreshToke
         {isFailed && course.failReason && (
           <InfoRow
             label="Échec"
-            value={`${COURSE_FAIL_LABELS[course.failReason] ?? course.failReason}${course.failComment ? ` — ${course.failComment}` : ''}`}
+            value={`${COURSE_FAIL_LABELS[course.failReason] ?? course.failReason}${course.failComment ? `, ${course.failComment}` : ''}`}
             semantic={semantic}
           />
         )}

@@ -44,7 +44,7 @@ export class CommissionService {
 
   /**
    * A rate negotiated with the supplier wins over the category grid; otherwise
-   * each item pays its own category's rate. The base is the items only —
+   * each item pays its own category's rate. The base is the items only,
    * delivery is the shop's cost, passed through in full.
    */
   async calculateForItems(

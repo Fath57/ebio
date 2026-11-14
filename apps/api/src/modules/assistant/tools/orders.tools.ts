@@ -41,7 +41,7 @@ export function ongoingOrdersTool(em: EntityManager) {
     description: [
       'Liste les commandes en cours de l\'acheteur.',
       'À utiliser quand il demande où en est sa commande et qu\'il peut en avoir plusieurs :',
-      'les désigner par la boutique et leur contenu, jamais par un numéro — personne ne connaît ses numéros.',
+      'les désigner par la boutique et leur contenu, jamais par un numéro, personne ne connaît ses numéros.',
     ].join(' '),
     parameters,
     async execute(_args: z.infer<typeof parameters>, context: AssistantToolContext) {

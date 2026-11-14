@@ -193,7 +193,7 @@ export function OrderManagement({ supplierId, onOpenOrder, onGoBack, requestedTa
   }, `${supplierId}:${tab}`)
 
   // On focus, not just on mount: the screen stays mounted while an order's
-  // detail is open — and a notification opens that detail directly — so
+  // detail is open, and a notification opens that detail directly, so
   // coming back used to show a list from before the order that caused it.
   // The first page is re-read and merged, so the pages scrolled through stay.
   const syncLatest = useCallback(async () => {

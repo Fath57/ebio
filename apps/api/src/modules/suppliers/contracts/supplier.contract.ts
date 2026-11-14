@@ -21,7 +21,7 @@ export const validationStatusEnum = z.enum([
   description: 'Supplier account validation status',
 })
 
-/** Fuseau IANA — validé en tentant de le résoudre, sans liste en dur. */
+/** Fuseau IANA, validé en tentant de le résoudre, sans liste en dur. */
 export const timezoneSchema = z.string().min(1).max(64).refine(
   (tz) => {
     try {
@@ -89,7 +89,7 @@ export const updateSupplierSchema = registerSupplierSchema.partial().extend({
   profilePhoto: z.string().url().optional(),
 }).meta({
   title: 'UpdateSupplier',
-  description: 'Update supplier profile — all fields optional',
+  description: 'Update supplier profile, all fields optional',
 })
 
 export const supplierResponseSchema = z.object({

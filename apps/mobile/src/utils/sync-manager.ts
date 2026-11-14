@@ -58,7 +58,7 @@ export const SyncManager = {
           succeeded++
         }
         else if (res.status === 409) {
-          // Conflict — server wins, discard local action
+          // Conflict, server wins, discard local action
           succeeded++
         }
         else {

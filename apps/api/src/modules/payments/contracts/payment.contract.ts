@@ -88,7 +88,7 @@ export const cartPaymentResultSchema = z.object({
   paymentUrl: z.string().nullable().optional(),
   /**
    * The provider's transaction, known server-side from the moment the payment
-   * is opened — so confirmation never has to trust a reference the phone
+   * is opened, so confirmation never has to trust a reference the phone
    * hands back.
    */
   providerTransactionId: z.string().nullable().optional(),

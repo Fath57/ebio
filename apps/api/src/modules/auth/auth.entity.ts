@@ -108,7 +108,7 @@ export class User {
    *
    * The box was ticked on the sign-up screen and went nowhere: it gated the
    * button, and that was all. In a dispute there was nothing to show. These
-   * three columns are the record — the date, where it came from, and which
+   * three columns are the record, the date, where it came from, and which
    * text was in force that day.
    *
    * The first acceptance is never overwritten: what matters is the moment

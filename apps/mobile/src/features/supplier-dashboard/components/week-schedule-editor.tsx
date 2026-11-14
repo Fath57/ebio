@@ -27,7 +27,7 @@ export type ApiWeekHours = Record<string, ApiDayHours>
 /**
  * Controlled weekly-hours editor, shared wherever a schedule is edited. The
  * value travels in the API shape directly, so callers never juggle two models.
- * Days absent from the value are closed — a market stall only lists its days.
+ * Days absent from the value are closed, a market stall only lists its days.
  */
 export function WeekScheduleEditor({ value, onChange }: {
   value: ApiWeekHours

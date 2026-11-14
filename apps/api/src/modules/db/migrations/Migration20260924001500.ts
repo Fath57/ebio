@@ -3,8 +3,8 @@ import { Migration } from '@mikro-orm/migrations'
 /**
  * The `unaccent` extension, so search ignores accents.
  *
- * The catalogue is typed without accents — "Tomates fraiches", "Panier de
- * legumes" — while speech dictation adds them. So "légumes" found nothing, and
+ * The catalogue is typed without accents, "Tomates fraiches", "Panier de
+ * legumes", while speech dictation adds them. So "légumes" found nothing, and
  * the assistant announced a shortage that did not exist.
  *
  * `unaccent` has been marked *trusted* since PostgreSQL 13: the database owner

@@ -18,7 +18,7 @@ config.resolver.unstable_conditionNames = ['react-native', 'import', 'default']
  *       "default": "./helpers/interopRequireDefault.js"        // the function
  *     }
  *
- * A package shipped as pre-compiled CommonJS — posthog-react-native is one —
+ * A package shipped as pre-compiled CommonJS, posthog-react-native is one,
  * does `require("@babel/runtime/helpers/interopRequireDefault")` and receives
  * the namespace object where it expects a function. It throws
  * « _interopRequireDefault is not a function (it is Object) » at startup, and

@@ -17,7 +17,7 @@ export interface ReportedReview {
   } | null
 }
 
-/** The pending queue. Product reviews only — see the service for why. */
+/** The pending queue. Product reviews only, see the service for why. */
 export async function fetchPendingReports(): Promise<ReportedReview[]> {
   const response = await productReviewsControllerListReports()
   if (response.error) {

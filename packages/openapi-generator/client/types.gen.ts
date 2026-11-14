@@ -289,7 +289,7 @@ export type CreateSalesPoint = {
 /**
  * UpdateSalesPoint
  *
- * Update a sales point — every field optional
+ * Update a sales point, every field optional
  */
 export type UpdateSalesPoint = {
   name?: string;
@@ -327,7 +327,7 @@ export type RegisterSupplier = {
 /**
  * UpdateSupplier
  *
- * Update supplier profile — all fields optional
+ * Update supplier profile, all fields optional
  */
 export type UpdateSupplier = {
   shopName?: string;
@@ -814,7 +814,7 @@ export type CreateCertification = {
 /**
  * UpdateCertification
  *
- * Update a label or certification — every field optional, the code is immutable
+ * Update a label or certification, every field optional, the code is immutable
  */
 export type UpdateCertification = {
   name?: string;
@@ -897,7 +897,7 @@ export type CreateProductUnit = {
 /**
  * UpdateProductUnit
  *
- * Update a unit of sale — every field optional, the code is immutable
+ * Update a unit of sale, every field optional, the code is immutable
  */
 export type UpdateProductUnit = {
   label?: string;
@@ -938,7 +938,7 @@ export type CreateProduct = {
 /**
  * UpdateProduct
  *
- * Update product — all fields optional
+ * Update product, all fields optional
  */
 export type UpdateProduct = {
   name?: string;
@@ -1029,7 +1029,7 @@ export type CreatePromoCode = {
 /**
  * UpdatePromoCode
  *
- * Editable fields — the code itself is immutable once created
+ * Editable fields, the code itself is immutable once created
  */
 export type UpdatePromoCode = {
   type?: PromoType;
@@ -1576,7 +1576,7 @@ export type CreateBanner = {
 /**
  * UpdateBanner
  *
- * Update a banner — every field optional
+ * Update a banner, every field optional
  */
 export type UpdateBanner = {
   title?: string;
@@ -6179,7 +6179,7 @@ export type SuppliersControllerUpdateMeData = {
   /**
    * UpdateSupplier
    *
-   * Update supplier profile — all fields optional
+   * Update supplier profile, all fields optional
    */
   body: {
     shopName?: string;
@@ -6439,7 +6439,7 @@ export type SalesPointsControllerUpdateData = {
   /**
    * UpdateSalesPoint
    *
-   * Update a sales point — every field optional
+   * Update a sales point, every field optional
    */
   body: {
     name?: string;
@@ -9833,7 +9833,7 @@ export type SupplierPromoCodesControllerUpdateData = {
   /**
    * UpdatePromoCode
    *
-   * Editable fields — the code itself is immutable once created
+   * Editable fields, the code itself is immutable once created
    */
   body: {
     /**
@@ -9925,7 +9925,7 @@ export type AdminPromoCodesControllerUpdateData = {
   /**
    * UpdatePromoCode
    *
-   * Editable fields — the code itself is immutable once created
+   * Editable fields, the code itself is immutable once created
    */
   body: {
     /**
@@ -10094,7 +10094,7 @@ export type ProductsControllerUpdateData = {
   /**
    * UpdateProduct
    *
-   * Update product — all fields optional
+   * Update product, all fields optional
    */
   body: {
     name?: string;
@@ -10414,7 +10414,7 @@ export type ProductUnitsControllerUpdateData = {
   /**
    * UpdateProductUnit
    *
-   * Update a unit of sale — every field optional, the code is immutable
+   * Update a unit of sale, every field optional, the code is immutable
    */
   body: {
     label?: string;
@@ -10508,7 +10508,7 @@ export type CertificationsControllerUpdateData = {
   /**
    * UpdateCertification
    *
-   * Update a label or certification — every field optional, the code is immutable
+   * Update a label or certification, every field optional, the code is immutable
    */
   body: {
     name?: string;
@@ -11088,7 +11088,7 @@ export type BannersControllerUpdateData = {
   /**
    * UpdateBanner
    *
-   * Update a banner — every field optional
+   * Update a banner, every field optional
    */
   body: {
     title?: string;

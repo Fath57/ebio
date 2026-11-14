@@ -10,7 +10,7 @@ import { AssistantSession } from '../entities/assistant-session.entity'
  *
  * eBio has no server-side cart: it lives in the app, and checkout receives its
  * lines in the request. So the assistant keeps its own in the session, and the
- * app picks it up when the conversation lands — rather than inventing a second
+ * app picks it up when the conversation lands, rather than inventing a second
  * server cart that would drift from the first at the first bug.
  */
 export interface AssistantCartLine {
@@ -39,7 +39,7 @@ export async function loadState(em: EntityManager, sessionId: string): Promise<{
  *
  * The model calls its tools in parallel: "mets-moi de l'huile et du piment"
  * fires two additions in the same step. Read-modify-write has both read the
- * empty cart and the second overwrite the first — an item vanishes silently,
+ * empty cart and the second overwrite the first, an item vanishes silently,
  * and the assistant announces that everything is there anyway. So Postgres
  * does the merge itself.
  *

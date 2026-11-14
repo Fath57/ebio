@@ -14,7 +14,7 @@ interface AssistantEntryIconProps {
  * A new entry point does not find itself in the middle of an already crowded
  * bar. The halo leaves slowly, every four seconds: enough for the eye to catch
  * it in passing, rare enough to be forgotten afterwards. Nothing spins,
- * nothing blinks — the charter does not want an element fidgeting for no
+ * nothing blinks, the charter does not want an element fidgeting for no
  * reason, and this one says "there is something here".
  */
 export function AssistantEntryIcon({ size = 20, color = colors.green[600] }: AssistantEntryIconProps) {

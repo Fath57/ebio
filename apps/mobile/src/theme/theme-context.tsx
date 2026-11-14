@@ -12,7 +12,7 @@ type ThemeMode = 'light' | 'dark' | 'system'
  * Not `typeof lightTheme`: both themes are declared `as const`, so that froze
  * the light theme's own hex values into the type and the dark one could never
  * satisfy it. What a caller relies on is the set of names and that each gives
- * a colour — which is exactly what this says, while still refusing a name the
+ * a colour, which is exactly what this says, while still refusing a name the
  * light theme does not define.
  */
 export type SemanticColors = { [K in keyof typeof lightTheme]: string }

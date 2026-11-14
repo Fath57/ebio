@@ -73,7 +73,7 @@ export async function seedShop(em: EntityManager, shopName = 'Karité Fatou'): P
     const [product] = await db.execute(
       `INSERT INTO products (supplier_id, category_id, name, price_per_unit, unit, stock, status, "createdAt", "updatedAt")
        VALUES (?, ?, ?, ?, 'PIECE', 50, 'ACTIVE', NOW(), NOW()) RETURNING id`,
-      [shop.id, category.id, `${name} — ${shopName}`, price],
+      [shop.id, category.id, `${name}, ${shopName}`, price],
     ) as Array<{ id: string }>
     productIds.push(product.id)
   }

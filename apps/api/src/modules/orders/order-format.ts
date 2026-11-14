@@ -11,7 +11,7 @@ export const PAYMENT_LABELS: Record<PaymentMethod, string> = {
   [PaymentMethod.FAMILY_WALLET]: 'Portefeuille famille',
 }
 
-/** `1 200 FCFA` — fr-FR grouping with non-breaking spaces, no decimals. */
+/** `1 200 FCFA`, fr-FR grouping with non-breaking spaces, no decimals. */
 export function formatFcfa(amount: number): string {
   const grouped = Math.round(amount).toString().replace(/\B(?=(?:\d{3})+(?!\d))/g, '\u00A0')
   return `${grouped}\u00A0FCFA`

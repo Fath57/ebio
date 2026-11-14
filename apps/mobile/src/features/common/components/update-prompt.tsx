@@ -26,7 +26,7 @@ const useUpdatesState = Updates?.useUpdates
 
 /**
  * Shortest gap between two checks. Without it, every app switch would hit the
- * update server — and someone going back and forth between the app and a
+ * update server, and someone going back and forth between the app and a
  * message would do it a dozen times a minute.
  */
 const CHECK_INTERVAL_MS = 5 * 60 * 1000
@@ -61,7 +61,7 @@ function UpdateBanner() {
    * A download of ours that did not finish.
    *
    * The module reports its own failures through `downloadError`, but the
-   * fetch started below is ours, and its failure was swallowed — so a version
+   * fetch started below is ours, and its failure was swallowed, so a version
    * waiting on the server stayed invisible to someone whose network dropped
    * mid-download.
    */
@@ -94,7 +94,7 @@ function UpdateBanner() {
 
   /**
    * The module only looks for an update at cold start. The common case is the
-   * app being backgrounded, a version published, and the person coming back —
+   * app being backgrounded, a version published, and the person coming back,
    * which used to surface nothing until they killed the app.
    */
   useEffect(() => {
@@ -169,8 +169,8 @@ function UpdateBanner() {
   }, [])
 
   // Two things worth interrupting for: a version ready to apply, and a
-  // version that exists but could not be fetched. Everything else — checking,
-  // downloading — happens quietly.
+  // version that exists but could not be fetched. Everything else, checking,
+  // downloading, happens quietly.
   const stuck = (failed || downloadError !== undefined) && !isUpdatePending
   if (!isUpdatePending && !isRestarting && !stuck) {
     return null

@@ -39,7 +39,7 @@ const STEPS: Array<{ status: Delivery['status'], label: string }> = [
 
 /**
  * Turn-by-turn to the exact point when the buyer (or the shop) pinned one;
- * the free-text address is only the fallback — « Cotonou » is not a door.
+ * the free-text address is only the fallback, « Cotonou » is not a door.
  */
 function openItinerary(address: string, position: { latitude: number, longitude: number } | null) {
   if (position) {
@@ -217,11 +217,11 @@ export function ActiveDeliveryScreen({ delivery, pendingCount, onTransition, onP
           <View style={styles.addressText}>
             <Text style={[styles.addressLabel, { color: semantic.textTertiary }]}>Retrait</Text>
             <Text style={[styles.addressValue, { color: semantic.textPrimary }]}>
-              {`${delivery.supplierShopName} — ${delivery.pickupAddress}`}
+              {`${delivery.supplierShopName}, ${delivery.pickupAddress}`}
             </Text>
             {delivery.status === 'ACCEPTED' && isFutureIso(delivery.pickupReadyAt) && (
               <Text style={[styles.readyHint, { color: semantic.textSecondary }]}>
-                {`Colis prêt vers ${formatTime(delivery.pickupReadyAt)} — inutile d'arriver avant`}
+                {`Colis prêt vers ${formatTime(delivery.pickupReadyAt)}, inutile d'arriver avant`}
               </Text>
             )}
           </View>

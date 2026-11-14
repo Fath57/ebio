@@ -154,7 +154,7 @@ export class AiExampleController {
     })
 
     // 💡 The AI service does not add the schemaType to the messages metadata. This is to keep the Service agnostic (our use of a `schemaType` here is a single example of how you could use it)
-    // As we want to keep track of the schemaType — because we use it on the frontend for custom display— we add it to the last assistant message metadata.
+    // As we want to keep track of the schemaType, because we use it on the frontend for custom display, we add it to the last assistant message metadata.
     const schemaTypeValue = body.schemaType && body.schemaType !== 'none' ? body.schemaType : undefined
     const messagesWithSchemaType = result.messages.map((msg, idx) => {
       if (idx === result.messages.length - 1 && msg.role === 'assistant' && schemaTypeValue) {

@@ -70,7 +70,7 @@ export class AuthGuard implements CanActivate {
           // Under both names, because the one it looks for depends on the
           // address it was configured with: over https it prefixes its cookies
           // with `__Secure-`, over http it does not. Sending only the bare name
-          // worked in development and refused every phone in production — the
+          // worked in development and refused every phone in production, the
           // token was minted and then rejected on the very next call, which
           // reads as « your code is wrong » to whoever is holding the phone.
           const fakeHeaders = new Headers()

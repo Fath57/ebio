@@ -12,8 +12,8 @@ const OPEN_ORDER_STATUSES = ['PLACED', 'ACCEPTED', 'PREPARING', 'READY', 'IN_DEL
  * The person disappears, the books do not: orders, payments and wallet
  * movements are accounting records the platform must keep, so the user row
  * survives with every personal field wiped instead of being dropped. Whatever
- * let the account be reached — sessions, passwords, social links, trusted
- * devices, push tokens — is deleted outright.
+ * let the account be reached, sessions, passwords, social links, trusted
+ * devices, push tokens, is deleted outright.
  */
 @Injectable()
 export class AccountDeletionService {

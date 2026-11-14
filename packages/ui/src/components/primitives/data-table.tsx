@@ -38,7 +38,7 @@ export interface DataTableLabels {
   empty: string
   error: string
   retry: string
-  /** Reçoit la plage affichée et le total — ex. « 21–40 sur 312 ». */
+  /** Reçoit la plage affichée et le total, ex. « 21–40 sur 312 ». */
   range: (from: number, to: number, total: number) => string
   previous: string
   next: string
@@ -80,7 +80,7 @@ export interface DataTableProps<TData> {
   data: TData[]
   /** Total renvoyé par le serveur, pas la longueur de `data`. */
   total: number
-  /** Page courante, en base 1 — l'API pagine à partir de 1. */
+  /** Page courante, en base 1, l'API pagine à partir de 1. */
   page: number
   pageSize: number
   onPageChange: (page: number) => void
@@ -94,7 +94,7 @@ export interface DataTableProps<TData> {
   isFetching?: boolean
   isError?: boolean
   onRetry?: () => void
-  /** Action proposée sous l'état vide — typiquement « Effacer les filtres ». */
+  /** Action proposée sous l'état vide, typiquement « Effacer les filtres ». */
   emptyAction?: ReactNode
   labels: DataTableLabels
 }
@@ -418,7 +418,7 @@ function Pagination({ page, lastPage, from, to, total, onPageChange, labels }: P
 
 /**
  * Page numbers to show: always the first and the last, the current one and
- * its neighbours, a gap wherever pages are skipped — `1 … 4 5 6 … 16`.
+ * its neighbours, a gap wherever pages are skipped, `1 … 4 5 6 … 16`.
  */
 function pageItems(page: number, lastPage: number): Array<number | 'gap'> {
   if (lastPage <= 7)
@@ -452,7 +452,7 @@ function columnClasses(meta: DataTableColumnMeta | undefined): string {
 
 /**
  * Sorting is the server's: TanStack's own `getCanSort` wants an accessor the
- * columns don't declare, so sortability is read from the definition — a list
+ * columns don't declare, so sortability is read from the definition, a list
  * that handles sorting, a labelled header, and no `enableSorting: false`.
  */
 function isSortable(columnDef: { enableSorting?: boolean, header?: unknown }, listSorts: boolean): boolean {

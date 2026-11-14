@@ -26,7 +26,7 @@ function keysOf(value: unknown): string[] {
 }
 
 /** T052 (US10): a gifted parcel's public page shows the journey, never a price. */
-describe('terroir — suivi public d\'un colis offert (e2e)', { timeout: 30_000 }, () => {
+describe('terroir, suivi public d\'un colis offert (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 6 }, {
       imports: [RolesModule, AuditModule, TerroirModule],

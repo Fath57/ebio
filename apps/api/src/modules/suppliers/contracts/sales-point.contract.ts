@@ -20,7 +20,7 @@ export const updateSalesPointSchema = createSalesPointSchema.partial().extend({
   longitude: z.number().min(-180).max(180).nullable().optional(),
 }).meta({
   title: 'UpdateSalesPoint',
-  description: 'Update a sales point — every field optional',
+  description: 'Update a sales point, every field optional',
 })
 
 export const salesPointSchema = z.object({

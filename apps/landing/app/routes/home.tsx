@@ -205,7 +205,7 @@ export default function Home({ loaderData }: Route.ComponentProps) {
         </section>
 
         {/* Les partenaires : un bandeau, pas un annuaire. Rien n'est rendu tant
-          * que le back-office n'en a publié aucun — inventer un logo serait
+          * que le back-office n'en a publié aucun, inventer un logo serait
           * affirmer une caution qu'on n'a pas. */}
         {content.partners.length > 0 && (
           <section id="partenaires" className="scroll-mt-20 bg-white">

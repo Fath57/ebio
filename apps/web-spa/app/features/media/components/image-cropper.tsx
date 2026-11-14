@@ -13,7 +13,7 @@ import { useCallback, useEffect, useState } from 'react'
 import Cropper from 'react-easy-crop'
 import { useTranslation } from 'react-i18next'
 
-/** Longest side of the exported image — beyond this, banners only cost bandwidth. */
+/** Longest side of the exported image, beyond this, banners only cost bandwidth. */
 const MAX_OUTPUT_WIDTH = 1600
 const JPEG_QUALITY = 0.9
 
@@ -86,7 +86,7 @@ export function ImageCropper({ file, aspect, onCancel, onCropped }: ImageCropper
 
   // Derived from the prop rather than initialised once: the dialog stays mounted
   // with `file` null between uses, and a lazy initialiser would have captured
-  // that null forever — leaving the frame blank on every open.
+  // that null forever, leaving the frame blank on every open.
   //
   // Object URL rather than a data URL: no base64 copy of a multi-megabyte photo
   // in memory, and it is released as soon as the file changes or the dialog goes.

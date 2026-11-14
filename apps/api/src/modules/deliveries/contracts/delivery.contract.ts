@@ -80,7 +80,7 @@ export const registerCourierSchema = z.object({
       fullName: 'Jean Hounkpatin',
       phone: '+2290197000000',
       vehicleType: 'MOTO',
-      zone: 'Cotonou — Akpakpa',
+      zone: 'Cotonou, Akpakpa',
     },
   ],
 })
@@ -160,7 +160,7 @@ export const completeDeliverySchema = z.discriminatedUnion('proofType', [
     occurredAt: z.string().datetime().optional(),
   }),
   /**
-   * Required — and the only one accepted — for a cart sent to a relative:
+   * Required, and the only one accepted, for a cart sent to a relative:
    * the payer is far away and gets the photo. The position and the time are
    * those of the shot, replayed as they are when the courier was offline.
    */
@@ -252,7 +252,7 @@ export const deliveryContactSchema = z.object({
 
 /**
  * Who the courier hands the parcel to. For a cart sent to a relative, the
- * relative — the payer is abroad — with the payer's first name so the courier
+ * relative, the payer is abroad, with the payer's first name so the courier
  * can say who it is from.
  */
 export const deliveryBuyerContactSchema = deliveryContactSchema.extend({
@@ -307,7 +307,7 @@ export const deliveryResponseSchema = z.object({
   supplierShopName: z.string(),
   /**
    * The run this delivery belongs to. It carries the progress the
-   * buyer follows — one progression for their whole cart — and the moment
+   * buyer follows, one progression for their whole cart, and the moment
    * the platform hands the decision back for want of a courier.
    */
   run: z.object({
@@ -316,22 +316,22 @@ export const deliveryResponseSchema = z.object({
     collectedCount: z.number().int().min(0),
     awaitingBuyerDecision: z.boolean(),
   }).nullable(),
-  /** Buyer contact — only present for the assigned courier. The relative for a gift. */
+  /** Buyer contact, only present for the assigned courier. The relative for a gift. */
   buyerContact: deliveryBuyerContactSchema.nullable(),
   /** Delivered to a relative: the hand-over takes code, photo and position together. */
   requiresGiftProof: z.boolean(),
   /** The shop to call at pickup; courier and admin only. */
   supplierContact: deliveryContactSchema.nullable(),
-  /** Courier identity — present for supplier/buyer once assigned. */
+  /** Courier identity, present for supplier/buyer once assigned. */
   courier: deliveryCourierSchema.nullable(),
   courierVehicleType: vehicleTypeEnum.nullable(),
-  /** Live position — only while the delivery is in progress. */
+  /** Live position, only while the delivery is in progress. */
   courierPosition: courierPositionSchema.nullable(),
   /** Shop position snapshot, for the tracking map. */
   pickupPosition: geoPointSchema.nullable(),
   /** Drop-off point picked by the buyer at checkout (null for legacy orders). */
   dropoffPosition: geoPointSchema.nullable(),
-  /** Confirmation code — only present for the buyer. */
+  /** Confirmation code, only present for the buyer. */
   confirmationCode: z.string().nullable(),
   proofType: z.enum(['CODE', 'PHOTO', 'CODE_AND_PHOTO']).nullable(),
   failReason: deliveryFailReasonEnum.nullable(),

@@ -119,7 +119,7 @@ export default function ProductDetailPage() {
       {/* ===== 2-col equal split ===== */}
       <div className="grid gap-10 lg:grid-cols-2">
 
-        {/* LEFT — Photos */}
+        {/* LEFT, Photos */}
         <div className="space-y-4">
           {product.photos.length > 0
             ? (
@@ -175,7 +175,7 @@ export default function ProductDetailPage() {
               )}
         </div>
 
-        {/* RIGHT — Product info */}
+        {/* RIGHT, Product info */}
         <div className="flex flex-col py-2">
           {/* Category + Status */}
           <div className="flex items-center gap-2 mb-3">
@@ -282,7 +282,7 @@ export default function ProductDetailPage() {
             <span className={`text-sm font-medium ${isOutOfStock ? 'text-destructive' : ''}`}>
               {isOutOfStock
                 ? t('catalog.status.outOfStock')
-                : `${t('catalog.detail.inStock')} — ${activeStock} ${unitLabel}`}
+                : `${t('catalog.detail.inStock')}, ${activeStock} ${unitLabel}`}
             </span>
           </div>
 

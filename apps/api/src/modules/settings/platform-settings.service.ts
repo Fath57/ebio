@@ -51,7 +51,7 @@ export const EXPORT_PICKUP_REMINDER_DAYS_KEY = 'export_pickup_reminder_days'
 export type ResolvedExchangeRates = ExchangeRates & { EUR: ExchangeRate }
 
 /**
- * The euro until someone sets it: the fixed CFA parity. Manual by nature —
+ * The euro until someone sets it: the fixed CFA parity. Manual by nature,
  * no download ever overwrites it.
  */
 export const DEFAULT_EUR_RATE: ExchangeRate = {
@@ -67,7 +67,7 @@ export const DEFAULT_EUR_RATE: ExchangeRate = {
 export const DEFAULT_PRODUCT_APPROVAL_REQUIRED = false
 
 /**
- * A day after delivery at most — time for a complaint about the parcel — and
+ * A day after delivery at most, time for a complaint about the parcel, and
  * at once when buyer and shop both confirmed it: nothing is left to wait for.
  */
 export const DEFAULT_ESCROW_RELEASE: EscrowReleaseInput = {
@@ -145,7 +145,7 @@ export const DEFAULT_ASSISTANT_ENABLED = false
  * Who she is, until someone says otherwise.
  *
  * The name is the one her prompt has carried since the first day, and a null
- * portrait means the one bundled with the app — changing the setting must be a
+ * portrait means the one bundled with the app, changing the setting must be a
  * decision, never a side effect of shipping this.
  */
 export const DEFAULT_ASSISTANT_IDENTITY: AssistantIdentity = {
@@ -620,7 +620,7 @@ export class PlatformSettingsService {
       ['insuranceMin', EXPORT_INSURANCE_MIN_KEY, 'Le minimum d\'assurance doit être compris entre 0 et 1 000 000 FCFA'],
       ['pickupReminderDays', EXPORT_PICKUP_REMINDER_DAYS_KEY, 'Le rappel de retrait doit tomber entre 1 et 90 jours'],
     ]
-    for (const [field, , message] of integers) {
+    for (const [field, message] of integers) {
       const value = input[field]
       if (value !== undefined) {
         this.assertInteger(value, bounds[field][0], bounds[field][1], message)

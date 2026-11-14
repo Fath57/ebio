@@ -267,7 +267,7 @@ export default function AppLayout() {
                     <p className="text-sm font-medium leading-none">{session?.user?.name}</p>
                     <p className="text-xs leading-none text-muted-foreground">{session?.user?.email}</p>
                     <Badge variant="secondary" className="mt-1 w-fit text-xs">
-                      {role ? t(`userRoles.${role}`) : '—'}
+                      {role ? t(`userRoles.${role}`) : '-'}
                     </Badge>
                   </div>
                 ),

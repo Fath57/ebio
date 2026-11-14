@@ -75,7 +75,7 @@ export class ProductsController {
     const supplier = await this.suppliersService.findById(resolvedId)
 
     // Someone from eBio who may work inside a catalogue sees it as the shop
-    // does — otherwise the studio would show a truncated catalogue and let
+    // does, otherwise the studio would show a truncated catalogue and let
     // them edit a product they cannot see.
     const manages = session?.user?.id
       ? (await this.caslAbilityFactory.createForUser(session.user as never)).can('manage', 'Product')
@@ -153,7 +153,7 @@ export class ProductsController {
    *
    * `me` is a shop owner working on their own catalogue. Anything else is
    * someone from eBio working on a shop's behalf, which takes the permission
-   * to manage suppliers — and is written down, because "the shop changed its
+   * to manage suppliers, and is written down, because "the shop changed its
    * price" and "eBio changed the shop's price" are not the same fact, and the
    * difference matters the day it has to be explained.
    *
@@ -169,7 +169,7 @@ export class ProductsController {
     }
 
     // `manage Product` is the back-office right to work inside a shop's
-    // catalogue — deliberately not `manage Supplier`, which is about
+    // catalogue, deliberately not `manage Supplier`, which is about
     // validating and suspending shops, a different job.
     const ability = await this.caslAbilityFactory.createForUser(session.user as never)
     if (!ability.can('manage', 'Product')) {

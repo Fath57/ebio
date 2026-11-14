@@ -122,7 +122,7 @@ export type VisibilityIssue
     | 'OUT_OF_STOCK'
     | 'NO_PHOTO'
 
-/** The product as the API maps it — the fields the admin page reads. */
+/** The product as the API maps it, the fields the admin page reads. */
 export interface AdminProductRecord {
   id: string
   name: string

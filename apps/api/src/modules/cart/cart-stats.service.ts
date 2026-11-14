@@ -46,7 +46,7 @@ export class CartStatsService {
     )
 
     // A reminder counts as having worked when an order follows it within a
-    // day. Not proof it caused the order — nothing here could prove that —
+    // day. Not proof it caused the order, nothing here could prove that,
     // but it is the figure that says whether to keep sending them.
     const [followed] = await connection.execute<Array<{ count: string }>>(
       `SELECT COUNT(DISTINCT c.user_id)::text AS count
@@ -68,7 +68,7 @@ export class CartStatsService {
       quantity: string
     }>>(
       // The photo travels with the name: a list of product names alone is not
-      // a list anyone reads — "huile d'arachide" and "huile de palme" look the
+      // a list anyone reads, "huile d'arachide" and "huile de palme" look the
       // same at a glance, their pictures do not.
       `SELECT ci.product_name AS name,
               s.shop_name,

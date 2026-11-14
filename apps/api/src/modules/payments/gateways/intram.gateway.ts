@@ -47,7 +47,7 @@ const WEBHOOK_EVENT_STATUS: Record<string, string> = {
 
 /**
  * Where a transaction is paid. Their widget builds the same address, and
- * appends `?native=1` when it detects a native host — which makes the page
+ * appends `?native=1` when it detects a native host, which makes the page
  * close instead of redirecting. We want the redirect: it is how we learn the
  * payment is over.
  */
@@ -87,7 +87,7 @@ interface IntramTransaction {
  * creating a payment is **asynchronous**. The POST answers `202` with an
  * operation id, a worker then creates the transaction, and only afterwards
  * does the hosted checkout URL exist. Since the rest of eBio expects a
- * redirect URL in hand, this gateway waits for it — briefly, and without
+ * redirect URL in hand, this gateway waits for it, briefly, and without
  * failing the payment if it is not ready: the webhook carries it too.
  *
  * Fees are added on top of the amount by INTRAM and paid by the customer, so
@@ -120,13 +120,13 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
    * This goes through INTRAM's older endpoint, on purpose. The Merchant API
    * v1 equivalent answers `504` and, even when it does not, only promises the
    * URL later through a webhook; this one returns it in the same breath. The
-   * verification* stays on v1, signed — a transaction opened here is
+   * verification* stays on v1, signed, a transaction opened here is
    * readable there, which was checked against their sandbox.
    *
    * Their JavaScript widget is skipped entirely: all it does is call this
    * same endpoint from the browser and open `gateway.intram.org/<id>` in an
    * iframe. Doing it server-side removes jQuery, socket.io and a credentialed
-   * cross-origin call from a page that has no origin — and the transaction id
+   * cross-origin call from a page that has no origin, and the transaction id
    * then comes from us, so a phone cannot invent one.
    */
   async initiatePayment(params: InitiatePaymentParams): Promise<InitiatePaymentResult> {
@@ -220,7 +220,7 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
 
     const data = JSON.parse(text) as { transaction_id?: string, receipt_url?: string, status?: string }
     if (!data.transaction_id) {
-      this.logger.error(`INTRAM (ancienne API) : réponse sans transaction — ${text.slice(0, 300)}`)
+      this.logger.error(`INTRAM (ancienne API) : réponse sans transaction, ${text.slice(0, 300)}`)
       throw new Error('INTRAM: réponse sans transaction')
     }
 
@@ -256,7 +256,7 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
         }
       }
       catch (error) {
-        this.logger.warn(`INTRAM: lecture de l'opération ${operationId} impossible — ${error}`)
+        this.logger.warn(`INTRAM: lecture de l'opération ${operationId} impossible, ${error}`)
       }
       await new Promise(resolve => setTimeout(resolve, GATEWAY_URL_POLL_MS))
     }
@@ -302,7 +302,7 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
       paidAt: status === 'completed' ? (transaction.date ? new Date(transaction.date) : new Date()) : undefined,
       reference: transaction.reference,
       providerPaymentMethodId: transaction.payment_method,
-      // What INTRAM actually took, fees excluded — the figure to reconcile on.
+      // What INTRAM actually took, fees excluded, the figure to reconcile on.
       amount: typeof transaction.amount === 'number' ? transaction.amount : undefined,
     }
   }
@@ -407,7 +407,7 @@ export class IntramGateway implements PaymentGatewayInterface, PayoutGatewayInte
   }
 
   /**
-   * Sends money out — a courier's earnings, a shop's withdrawal.
+   * Sends money out, a courier's earnings, a shop's withdrawal.
    *
    * Asynchronous like everything else here: the `202` only says the order was
    * taken. `payout.completed` or `payout.failed` says what became of it, and

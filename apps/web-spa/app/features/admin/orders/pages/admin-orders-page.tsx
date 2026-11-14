@@ -133,7 +133,7 @@ export default function AdminOrdersPage() {
       cell: ({ row }) => {
         const method = row.original.paymentMethod
         if (!method)
-          return <span className="text-muted-foreground">—</span>
+          return <span className="text-muted-foreground">-</span>
         return (
           <Badge variant="outline">
             {PAYMENT_METHODS.includes(method) ? t(`admin.orders.paymentMethods.${method}`) : method}

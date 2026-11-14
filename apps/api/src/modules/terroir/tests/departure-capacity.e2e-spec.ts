@@ -14,7 +14,7 @@ import { TerroirModule } from '../terroir.module'
 import { balanceOfUser, seedTerroirWorld, terroirCart, topUp } from './terroir-checkout.fixture'
 import { refusalOf } from './terroir.fixture'
 
-/** Each payment in its own request context — its own transaction and connection — started together. */
+/** Each payment in its own request context, its own transaction and connection, started together. */
 async function together(app: INestApplication, payments: Array<() => Promise<TerroirCheckoutCreated>>): Promise<PromiseSettledResult<TerroirCheckoutCreated>[]> {
   const em = app.get(EntityManager)
   return Promise.allSettled(payments.map(pay => RequestContext.create(em, pay)))
@@ -29,7 +29,7 @@ function codeOf(result: PromiseSettledResult<unknown>): unknown {
 }
 
 /** T030: the departure lock alone decides when two parcels would overfill it. */
-describe('terroir — capacité d\'un départ sous paiements simultanés (e2e)', { timeout: 40_000 }, () => {
+describe('terroir, capacité d\'un départ sous paiements simultanés (e2e)', { timeout: 40_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 8 }, {
       imports: [RolesModule, AuditModule, TerroirModule],

@@ -26,7 +26,7 @@ import { LocationPickerScreen } from '../../map/components/location-picker-scree
 import { reverseGeocode } from '../../map/utils/reverse-geocode'
 import { useMediaUpload } from '../../media/hooks/use-media-upload'
 
-/** Cotonou — where the map opens when the shop has no position yet. */
+/** Cotonou, where the map opens when the shop has no position yet. */
 const FALLBACK_CENTER = { latitude: 6.3703, longitude: 2.3912 }
 
 interface ShopProfileEditorProps {
@@ -56,7 +56,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
    *
    * Two numbers to five decimals say nothing to anyone: a shopkeeper
    * checking their pin wants to read a street and a town. The coordinates
-   * remain as a fallback when the geocoder does not answer — an unreadable
+   * remain as a fallback when the geocoder does not answer, an unreadable
    * landmark beats no landmark at all.
    */
   const [placeLabel, setPlaceLabel] = useState<string | null>(null)
@@ -105,7 +105,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
         }
       }
       catch {
-        // ignore — champs vides
+        // ignore, champs vides
       }
       finally {
         if (!cancelled)
@@ -368,7 +368,7 @@ export function ShopProfileEditor({ onGoBack, onSaved }: ShopProfileEditorProps)
                 )}
           </TouchableOpacity>
 
-          {/* Lets the position be fixed from anywhere — a wrong pin would
+          {/* Lets the position be fixed from anywhere, a wrong pin would
               otherwise require standing inside the shop to correct it. */}
           <TouchableOpacity
             style={[styles.locationAction, { borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}

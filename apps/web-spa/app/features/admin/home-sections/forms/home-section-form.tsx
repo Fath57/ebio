@@ -82,7 +82,7 @@ function compact(values: Record<string, unknown>): Record<string, unknown> {
 /**
  * Creating or editing a home section.
  *
- * Two ways to fill it, mutually exclusive: criteria — a saved search — or a
+ * Two ways to fill it, mutually exclusive: criteria, a saved search, or a
  * list of products picked one by one. The form only shows the one in use,
  * because seeing both suggests they combine.
  */

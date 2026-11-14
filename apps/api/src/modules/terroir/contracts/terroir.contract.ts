@@ -116,7 +116,7 @@ const amount = z.number().positive().max(10_000_000)
 const optionalText = (max: number) => z.string().trim().max(max).nullable().optional()
 const isoDay = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date attendue au format AAAA-MM-JJ')
 
-// ===== §5 BACK-OFFICE — AGENCIES =====
+// ===== §5 BACK-OFFICE, AGENCIES =====
 
 export const exportAgencyInputSchema = z.object({
   name: z.string().trim().min(2).max(120),
@@ -190,7 +190,7 @@ export const exportAgencyResponseSchema = z.object({
 export type ExportAgencyResponse = z.infer<typeof exportAgencyResponseSchema>
 export type ExportPickupPointResponse = z.infer<typeof exportPickupPointResponseSchema>
 
-// ===== §5 BACK-OFFICE — DEPARTURES =====
+// ===== §5 BACK-OFFICE, DEPARTURES =====
 
 export const exportDepartureRateInputSchema = z.object({
   country: exportCountryEnum,
@@ -344,7 +344,7 @@ export const cancelExportDepartureResponseSchema = z.object({
 
 export type CancelExportDepartureResult = z.infer<typeof cancelExportDepartureResponseSchema>
 
-// ===== §4 SHOP — EXPORT PROFILE =====
+// ===== §4 SHOP, EXPORT PROFILE =====
 
 export const exportOriginSchema = z.object({
   producer: optionalText(120),
@@ -402,7 +402,7 @@ export const exportProfileResponseSchema = z.object({
 
 export type ExportProfileResponse = z.infer<typeof exportProfileResponseSchema>
 
-// ===== §4 SHOP / §5 BACK-OFFICE — PACKS =====
+// ===== §4 SHOP / §5 BACK-OFFICE, PACKS =====
 
 export const exportPackItemInputSchema = z.object({
   productId: z.string().uuid(),
@@ -470,7 +470,7 @@ export const exportPackResponseSchema = z.object({
 
 export type ExportPackResponse = z.infer<typeof exportPackResponseSchema>
 
-// ===== §5 BACK-OFFICE — REVIEWS =====
+// ===== §5 BACK-OFFICE, REVIEWS =====
 
 export const exportChecklistSchema = z.object(
   Object.fromEntries(EXPORT_CHECKLIST_KEYS.map(key => [key, z.boolean().optional()])) as Record<ExportChecklistKey, z.ZodOptional<z.ZodBoolean>>,
@@ -530,7 +530,7 @@ export const exportReviewsResponseSchema = z.object({
 
 export type ExportReviewsResponse = z.infer<typeof exportReviewsResponseSchema>
 
-// ===== §1 CLIENT — CATALOGUE AND DEPARTURES =====
+// ===== §1 CLIENT, CATALOGUE AND DEPARTURES =====
 
 export const exportReceptionEnum = z.enum(ExportReception).meta({
   title: 'ExportReception',
@@ -746,7 +746,7 @@ export const terroirDeparturesResponseSchema = z.object({
 export type TerroirDeparturesResponse = z.infer<typeof terroirDeparturesResponseSchema>
 export type TerroirDepartureOffer = z.infer<typeof terroirDepartureOfferSchema>
 
-// ===== §2 CLIENT — CHECKOUT =====
+// ===== §2 CLIENT, CHECKOUT =====
 
 export const terroirCartLineSchema = z.object({
   productId: z.string().uuid().optional(),
@@ -773,7 +773,7 @@ export const terroirGiftSchema = z.object({
 })
 
 export const terroirCheckoutInputSchema = z.object({
-  /** The destination — the recipient's country for a gift. */
+  /** The destination, the recipient's country for a gift. */
   country: exportCountryEnum,
   lines: z.array(terroirCartLineSchema).min(1, 'Votre panier terroir est vide').max(40),
   /** Preview: the soonest offered departure when absent. */
@@ -871,7 +871,7 @@ export const terroirCheckoutResultSchema = z.object({
 
 export type TerroirCheckoutResult = z.infer<typeof terroirCheckoutResultSchema>
 
-// ===== §3 CLIENT — PARCELS =====
+// ===== §3 CLIENT, PARCELS =====
 
 const shipmentDepartureSchema = z.object({
   agency: z.string(),
@@ -973,7 +973,7 @@ export const terroirTrackingSchema = z.object({
 
 export type TerroirTracking = z.infer<typeof terroirTrackingSchema>
 
-// ===== §1 CLIENT — DEPARTURE ALERTS =====
+// ===== §1 CLIENT, DEPARTURE ALERTS =====
 
 export const terroirDepartureAlertInputSchema = z.object({
   country: exportCountryEnum,
@@ -995,7 +995,7 @@ export const terroirDepartureAlertResponseSchema = z.object({
 
 export type TerroirDepartureAlertResponse = z.infer<typeof terroirDepartureAlertResponseSchema>
 
-// ===== §3 CLIENT — WEIGHT SUPPLEMENT =====
+// ===== §3 CLIENT, WEIGHT SUPPLEMENT =====
 
 export const terroirSupplementChoiceEnum = z.enum(['PAY', 'REMOVE_ITEM']).meta({
   title: 'TerroirSupplementChoice',
@@ -1024,7 +1024,7 @@ export const terroirSupplementResultSchema = z.object({
   amount: z.number().nullable(),
   /**
    * PAY by card: the wallet top-up opened for the amount. The app opens
-   * `paymentUrl` (INTRAM hosted page) — or the widget when null — then calls
+   * `paymentUrl` (INTRAM hosted page), or the widget when null, then calls
    * POST /wallet/me/topups/:topupId/verify; once credited, the supplement is
    * debited from the wallet and the parcel goes on. Null otherwise.
    */
@@ -1038,7 +1038,7 @@ export const terroirSupplementResultSchema = z.object({
 
 export type TerroirSupplementResult = z.infer<typeof terroirSupplementResultSchema>
 
-// ===== §5 BACK-OFFICE — PARCELS =====
+// ===== §5 BACK-OFFICE, PARCELS =====
 
 export const collectExportShipmentSchema = z.object({
   supplierId: z.string().uuid(),

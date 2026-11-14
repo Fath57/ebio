@@ -3,7 +3,7 @@ import { Migration } from '@mikro-orm/migrations'
 /**
  * The count of invitations to review the products.
  *
- * The review was asked for right after the order rating, at delivery — so a
+ * The review was asked for right after the order rating, at delivery, so a
  * product was rated before it had been opened. It now goes out hours later,
  * and these two columns hold what is needed to stop reminding forever.
  */

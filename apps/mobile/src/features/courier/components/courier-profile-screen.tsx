@@ -95,7 +95,7 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
     <ScrollView
       style={{ backgroundColor: semantic.bgPage }}
       // La barre d'onglets flotte par-dessus le contenu : une marge fixe
-      // laissait les derniers boutons — Notifications, Se déconnecter — sous
+      // laissait les derniers boutons, Notifications, Se déconnecter, sous
       // elle, et d'autant plus que le bandeau de gestes est haut.
       contentContainerStyle={[styles.container, { paddingBottom: tabBarHeight + spacing[6] }]}
     >
@@ -130,7 +130,7 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
             )
           : (
               <Text style={[styles.value, { color: semantic.textSecondary }]}>
-                Pas encore de note — vos premières livraisons compteront.
+                Pas encore de note, vos premières livraisons compteront.
               </Text>
             )}
       </View>
@@ -150,7 +150,7 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
         </View>
 
         {/* Le point, montré et non décrit : « 10 km autour de Fidjrossè » ne
-            dit pas autour de quel endroit exactement. La carte est inerte —
+            dit pas autour de quel endroit exactement. La carte est inerte,
             sans quoi elle volerait le défilement de la page. */}
         {hasZonePoint && (
           <View style={styles.zoneMap} pointerEvents="none">
@@ -186,7 +186,7 @@ export function CourierProfileScreen({ profile, onAvailabilityChanged, onEdit, o
         <Text style={[styles.zoneHint, { color: semantic.textSecondary }]}>
           {hasZonePoint
             ? `Vous recevez les courses dans un rayon de ${profile.zoneRadiusKm ?? 10} km autour de ce point.`
-            : 'Aucun point précis enregistré — placez-le sur la carte pour recevoir les courses autour de vous.'}
+            : 'Aucun point précis enregistré, placez-le sur la carte pour recevoir les courses autour de vous.'}
         </Text>
 
         <Pressable

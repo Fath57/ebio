@@ -1,7 +1,7 @@
 import { Entity, OptionalProps, PrimaryKey, Property, Unique } from '@mikro-orm/core'
 
 /**
- * A unit of sale a supplier can price a product in — kilogramme, litre, sachet…
+ * A unit of sale a supplier can price a product in, kilogramme, litre, sachet…
  *
  * `products.unit` keeps the code rather than a foreign key. A product and the
  * orders that quote it must keep reading the same way for years, whatever an
@@ -30,7 +30,7 @@ export class ProductUnit {
 
   /**
    * A retired unit disappears from the pickers but keeps naming the products
-   * that already use it — which is why a unit is deactivated, not deleted.
+   * that already use it, which is why a unit is deactivated, not deleted.
    */
   @Property({ fieldName: 'is_active', default: true })
   isActive: boolean = true

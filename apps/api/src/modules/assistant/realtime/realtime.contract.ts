@@ -4,8 +4,8 @@ import type { AssistantCartLine } from '../tools/cart.tools'
  * What crosses the wire between the phone and us during a spoken exchange.
  *
  * Kept deliberately small. The phone holds the microphone open and sends what
- * it hears; everything else — deciding that a sentence has ended, the model,
- * the tools, the grounding — happens on this side, as it always has.
+ * it hears; everything else, deciding that a sentence has ended, the model,
+ * the tools, the grounding, happens on this side, as it always has.
  */
 
 /**
@@ -13,10 +13,10 @@ import type { AssistantCartLine } from '../tools/cart.tools'
  *
  * - `audio` carries a slice of microphone sound: PCM 16-bit, 24 kHz, mono. It
  *   arrives continuously, for as long as the screen is open, and as raw bytes
- *   rather than base64 — the phone already spends a decode per slice halving
+ *   rather than base64, the phone already spends a decode per slice halving
  *   48 kHz down to the only rate the far end accepts, and socket.io carries
  *   binary perfectly well. A string is still read, for anything that sends one.
- * - `interrupt` says the buyer wants her to stop talking now — a tap on the
+ * - `interrupt` says the buyer wants her to stop talking now, a tap on the
  *   button, not a word spoken over her. Speaking over her is noticed by the
  *   far end on its own.
  *

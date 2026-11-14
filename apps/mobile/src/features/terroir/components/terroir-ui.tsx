@@ -53,11 +53,11 @@ export function CountryChips({ value, onChange, label = 'Livrer en' }: CountryCh
   )
 }
 
-/** « Coopérative des femmes de Djougou, Atacora — récolte 2026, fabrication artisanale » */
+/** « Coopérative des femmes de Djougou, Atacora, récolte 2026, fabrication artisanale » */
 export function originSentence(origin: TerroirOrigin): string {
   const where = [origin.producer, origin.place].filter(Boolean).join(', ')
   const details = [origin.year ? `récolte ${origin.year}` : null, origin.method].filter(Boolean).join(', ')
-  return [where, details].filter(part => part.length > 0).join(' — ')
+  return [where, details].filter(part => part.length > 0).join(', ')
 }
 
 interface OriginBlockProps {

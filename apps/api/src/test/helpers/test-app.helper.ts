@@ -31,8 +31,8 @@ interface InitializeTestAppOptions {
   orm: MikroORM
   /**
    * Connection pool size. One is enough for most tests and keeps
-   * isolation strict, but a flow opening its own transaction — the
-   * wallet, for instance — needs a second one and would otherwise stay
+   * isolation strict, but a flow opening its own transaction, the
+   * wallet, for instance, needs a second one and would otherwise stay
    * blocked until knex times out.
    */
   poolMax?: number

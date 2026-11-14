@@ -19,7 +19,7 @@ export type PickContactResult
 /**
  * Whether this binary carries the contacts module. A build made before it was
  * added has only the JS half, and importing it then crashes the module graph
- * at evaluation — the native side is asked for first (same guard as analytics).
+ * at evaluation, the native side is asked for first (same guard as analytics).
  */
 export function contactPickerAvailable(): boolean {
   return requireOptionalNativeModule('ExpoContacts') !== null
@@ -54,7 +54,7 @@ export function toBeninPhone(raw: string): string | null {
  * Opens the system contact picker.
  *
  * Android reads the chosen contact's numbers through the address book, which
- * needs READ_CONTACTS — asked here, at the moment of the tap, never at launch.
+ * needs READ_CONTACTS, asked here, at the moment of the tap, never at launch.
  * Nothing from the address book leaves the phone: only the chosen name and
  * number fill the form.
  */

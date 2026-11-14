@@ -127,7 +127,7 @@ export class CourierWalletController {
     return this.topupService.initiate(session.user.id, body.amount, 'courier')
   }
 
-  /** Topups of this user restricted to the courier wallet — pending and failed ones included. */
+  /** Topups of this user restricted to the courier wallet, pending and failed ones included. */
   @Get('topups')
   async listTopups(
     @Session() session: LoggedInBetterAuthSession,

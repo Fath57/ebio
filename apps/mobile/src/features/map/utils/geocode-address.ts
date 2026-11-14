@@ -8,7 +8,7 @@ export interface GeocodedAddress {
 
 /**
  * Best-effort coordinates for a free-text address: first Places suggestion,
- * then its position. Null when nothing matches or the network fails — the
+ * then its position. Null when nothing matches or the network fails, the
  * caller falls back to the device position.
  */
 export async function geocodeAddress(address: string): Promise<GeocodedAddress | null> {

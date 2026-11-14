@@ -78,8 +78,8 @@ interface Window {
  * Figures of the back-office home.
  *
  * Every period is cut on local days (Africa/Porto-Novo), and is compared with
- * the stretch of the same length just before it — the month to date against
- * the same days of last month — so a trend never compares a full week with
+ * the stretch of the same length just before it, the month to date against
+ * the same days of last month, so a trend never compares a full week with
  * three days.
  */
 @Injectable()

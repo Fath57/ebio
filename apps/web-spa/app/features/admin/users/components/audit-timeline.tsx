@@ -35,7 +35,7 @@ export function AuditTimeline({ entries, showTarget = false }: AuditTimelineProp
               </span>
             </div>
             <p className="text-muted-foreground">
-              {t('admin.users.audit.by', { name: entry.actor?.name ?? '—' })}
+              {t('admin.users.audit.by', { name: entry.actor?.name ?? '-' })}
               {until && ` · ${t('admin.users.audit.until', { date: new Date(until).toLocaleDateString(i18n.language) })}`}
             </p>
             {entry.reason && <p className="mt-1 italic">{entry.reason}</p>}

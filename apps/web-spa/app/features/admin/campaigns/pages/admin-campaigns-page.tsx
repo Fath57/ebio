@@ -217,7 +217,7 @@ export default function AdminCampaignsPage() {
                 Le message part immédiatement à
                 {' '}
                 {APPS[sending?.app ?? ''] ?? 'cette application'}
-                {' — '}
+                {', '}
                 {SEGMENTS[sending?.segment ?? ''] ?? 'segment'}
                 . Une notification ne se rappelle pas.
               </p>

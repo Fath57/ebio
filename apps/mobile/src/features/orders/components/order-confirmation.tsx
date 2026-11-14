@@ -35,7 +35,7 @@ export function OrderConfirmation({
 
   useEffect(() => {
     // Une commande passée, ça se fête un peu : la vibration de réussite
-    // arrive avec la coche, pas avant — sinon elle annonce une chose qu'on
+    // arrive avec la coche, pas avant, sinon elle annonce une chose qu'on
     // ne voit pas encore.
     void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success)
     Animated.sequence([

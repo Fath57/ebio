@@ -20,11 +20,11 @@ function statusFrom(body: string): { ok: boolean, status: string | null, message
  * What a refusal actually means, in words.
  *
  * Wirepick answers 200 whatever happens and refuses with three letters. The
- * wording comes from the operator's own table — guessing at them is how `NCR`
+ * wording comes from the operator's own table, guessing at them is how `NCR`
  * gets read as "no credit", which it is not.
  */
 const REFUSALS: Record<string, string> = {
-  NCR: 'aucune route configurée pour ce compte chez Wirepick — à faire provisionner par l\'opérateur',
+  NCR: 'aucune route configurée pour ce compte chez Wirepick, à faire provisionner par l\'opérateur',
   NSF: 'compte Wirepick sans crédit',
   INV: 'numéro de destination invalide',
   PHN: 'longueur de numéro invalide',
@@ -80,7 +80,7 @@ export class SmsService {
   /**
    * Sends one message, and says plainly when it did not.
    *
-   * Without credentials the message goes to the log instead of the network —
+   * Without credentials the message goes to the log instead of the network,
    * a developer reads their own code there, and a test environment must not
    * spend money. Presence of the credentials is the deliberate act, not the
    * environment name: a staging box with real keys is meant to send.
@@ -105,7 +105,7 @@ export class SmsService {
 
       if (!res.ok) {
         // The credentials are in the query string, so the URL never goes to
-        // the log — only what came back.
+        // the log, only what came back.
         this.logger.error(`SMS refusé (${res.status}) pour ${masked(phone)} : ${body.slice(0, 200)}`)
         throw new Error('SMS send failed')
       }
@@ -114,7 +114,7 @@ export class SmsService {
       if (error instanceof Error && error.message === 'SMS send failed') {
         throw error
       }
-      this.logger.error(`SMS injoignable pour ${masked(phone)} — ${error}`)
+      this.logger.error(`SMS injoignable pour ${masked(phone)}, ${error}`)
       throw new Error('SMS send failed')
     }
 
@@ -122,13 +122,13 @@ export class SmsService {
     if (!ok) {
       // A 200 with a refusal inside is the failure that costs the most time:
       // without this the code above would call it a success.
-      this.logger.error(`SMS non envoyé à ${masked(phone)} — ${explain(status, body)}`)
+      this.logger.error(`SMS non envoyé à ${masked(phone)}, ${explain(status, body)}`)
       throw new Error('SMS send failed')
     }
 
     // Said at a level production prints, and with the identifier Wirepick
     // gives back. `ACT` means they accepted and billed the message, not that a
-    // handset received it — when one never arrives, this identifier is the only
+    // handset received it, when one never arrives, this identifier is the only
     // thing that can be put in front of them.
     this.logger.log(`[SMS] → ${masked(phone)} : accepté par Wirepick${messageId ? ` (msgid ${messageId})` : ' (sans identifiant)'}`)
   }

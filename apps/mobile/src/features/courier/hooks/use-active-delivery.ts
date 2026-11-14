@@ -3,7 +3,7 @@ import { useFocusEffect } from '@react-navigation/native'
 import { useCallback, useState } from 'react'
 import { apiFetch } from '../../../utils/api-client'
 
-/** The courier's current job — first active delivery (one at a time in practice). */
+/** The courier's current job, first active delivery (one at a time in practice). */
 export function useActiveDelivery() {
   const [delivery, setDelivery] = useState<Delivery | null>(null)
   const [loading, setLoading] = useState(true)
@@ -34,7 +34,7 @@ export function useActiveDelivery() {
   )
 
   /**
-   * Puts a delivery on screen at once — the one just accepted — and confirms
+   * Puts a delivery on screen at once, the one just accepted, and confirms
    * it with the server behind. Without it the courier stared at the offer
    * list until they pulled to refresh.
    */

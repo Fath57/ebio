@@ -83,7 +83,7 @@ class WebSocketClient {
   /**
    * Listeners that outlive a `connect` call. `handlers` belongs to whichever
    * screen owns the connection (the open thread); these are for everyone
-   * else who needs to know a message arrived — the conversation list, which
+   * else who needs to know a message arrived, the conversation list, which
    * otherwise only learned of it on its next focus.
    */
   private messageListeners = new Set<EventHandler<ChatMessage>>()
@@ -113,8 +113,8 @@ class WebSocketClient {
   /**
    * Subscribes to « this device has just read a thread ».
    *
-   * The unread badge cannot learn this from the server — reading is
-   * something *we* do — and without it the badge kept showing messages the
+   * The unread badge cannot learn this from the server, reading is
+   * something *we* do, and without it the badge kept showing messages the
    * user had just opened, until the next poll came round.
    */
   addReadListener(listener: () => void): () => void {
@@ -182,7 +182,7 @@ class WebSocketClient {
   /** Joins the socket room of a conversation (idempotent server-side). */
   joinConversation(conversationId: string): void {
     this.socket?.emit('chat:join', { conversationId }, (_ack: Record<string, unknown>) => {
-      // Idempotent join — nothing to do with the ack
+      // Idempotent join, nothing to do with the ack
     })
   }
 
@@ -242,7 +242,7 @@ class WebSocketClient {
     })
 
     this.socket.io.on('reconnect_failed', () => {
-      // All retry attempts exhausted — surface a hard-disconnected state
+      // All retry attempts exhausted, surface a hard-disconnected state
       this.updateConnectionState('disconnected')
     })
 

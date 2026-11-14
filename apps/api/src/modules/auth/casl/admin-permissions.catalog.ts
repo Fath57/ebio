@@ -121,12 +121,12 @@ const READ_EVERYTHING = ALL_CATALOG_PERMISSIONS
 export const STAFF_ROLES: StaffRoleDefinition[] = [
   {
     name: 'ADMIN',
-    description: 'Super administrateur — tous les droits',
+    description: 'Super administrateur, tous les droits',
     permissions: ['manage:all'],
   },
   {
     name: 'OPERATIONS',
-    description: 'Opérations — commandes, livraisons, livreurs, boutiques en lecture',
+    description: 'Opérations, commandes, livraisons, livreurs, boutiques en lecture',
     permissions: [
       'read:Order',
       'manage:Order',
@@ -141,7 +141,7 @@ export const STAFF_ROLES: StaffRoleDefinition[] = [
   },
   {
     name: 'SUPPORT',
-    description: 'Support — utilisateurs, commandes et litiges',
+    description: 'Support, utilisateurs, commandes et litiges',
     permissions: [
       'read:Order',
       'manage:Order',
@@ -155,7 +155,7 @@ export const STAFF_ROLES: StaffRoleDefinition[] = [
   },
   {
     name: 'FINANCE',
-    description: 'Finance — transactions, commissions, reversements',
+    description: 'Finance, transactions, commissions, reversements',
     permissions: [
       'read:Payment',
       'manage:Withdrawal',
@@ -167,7 +167,7 @@ export const STAFF_ROLES: StaffRoleDefinition[] = [
   },
   {
     name: 'MODERATOR',
-    description: 'Modération — signalements et contenu du site',
+    description: 'Modération, signalements et contenu du site',
     permissions: [
       'manage:ContentReport',
       'manage:Banner',
@@ -179,7 +179,7 @@ export const STAFF_ROLES: StaffRoleDefinition[] = [
   },
   {
     name: 'READ_ONLY',
-    description: 'Lecture seule — consultation de tout le back-office',
+    description: 'Lecture seule, consultation de tout le back-office',
     permissions: READ_EVERYTHING,
   },
 ]

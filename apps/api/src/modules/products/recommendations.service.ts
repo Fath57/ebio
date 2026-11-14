@@ -22,7 +22,7 @@ interface RankedRow {
 /**
  * "Complete your basket": products of the same shop, ranked by how often
  * they were ordered together with the given ones, then by live promotions,
- * then by sales, then by novelty — so a young shop with no history still
+ * then by sales, then by novelty, so a young shop with no history still
  * gets sensible suggestions. Same shop only: one order, one shop.
  */
 @Injectable()

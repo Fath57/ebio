@@ -148,7 +148,7 @@ export interface CheckoutOrderContext {
    * The delivery fee this order carries, when it carries one.
    *
    * A cart holds one shop now, so the checkout wraps a single order and the
-   * fee belongs on that order, exactly as it did before carts were grouped —
+   * fee belongs on that order, exactly as it did before carts were grouped,
    * which is what lets the courier be paid per order rather than per round,
    * and the cash to collect be read off the order. It stays at zero for a
    * checkout that still groups several shops, where one fee covers a road no
@@ -245,7 +245,7 @@ export class OrdersService {
    * What a unified checkout imposes on order creation.
    *
    * Without this context, `create` prices its own delivery and checks its own
-   * cash cap — both right for a lone order, both wrong as soon as several
+   * cash cap, both right for a lone order, both wrong as soon as several
    * shops share a run and a payment: the fee would be charged N times, and the
    * cap, which bounds the courier's advance, would apply per order instead of
    * per run.
@@ -292,7 +292,7 @@ export class OrdersService {
     }
 
     // Cash: eBio's commission becomes a debt on the shop wallet. Past the
-    // platform limit the shop is paid online only — on every route, lone
+    // platform limit the shop is paid online only, on every route, lone
     // order or checkout alike.
     if (data.paymentMethod === PaymentMethod.CASH_ON_DELIVERY) {
       await this.supplierCashBlock.assertCashAllowed(supplier.id, supplier.shopName)
@@ -388,7 +388,7 @@ export class OrdersService {
       }
       catch (error) {
         // Insufficient balance: the order must not survive its failed
-        // payment. Items first — they hold the FK.
+        // payment. Items first, they hold the FK.
         await this.em.nativeDelete(OrderItem, { order: order.id })
         await this.em.nativeDelete(Order, { id: order.id })
         throw error
@@ -408,8 +408,8 @@ export class OrdersService {
 
     // For online payments (FedaPay), notifications are sent after payment confirmation.
     // Cash and wallet orders have no pending payment step: notify at once.
-    // Inside a checkout the order is not committed yet — the payment may still
-    // fail and roll it back, and a pack may still adjust its total — so the
+    // Inside a checkout the order is not committed yet, the payment may still
+    // fail and roll it back, and a pack may still adjust its total, so the
     // checkout announces it after its transaction (notifyOrderPlaced).
     if (order.paymentMethod !== PaymentMethod.FEDAPAY && !checkoutContext) {
       await this.sendOrderPlacedNotifications(order)
@@ -460,7 +460,7 @@ export class OrdersService {
   }
 
   /**
-   * Live courier runs for a set of orders, keyed by order id — one query,
+   * Live courier runs for a set of orders, keyed by order id, one query,
    * entity-only access to the deliveries module (no service dependency).
    */
   async deliverySummaries(orderIds: string[]): Promise<Map<string, OrderDeliverySummary>> {
@@ -521,7 +521,7 @@ export class OrdersService {
    * The order as its buyer, its shop or the back-office may read it.
    *
    * `read Order` is granted to every buyer by CASL without a condition on the
-   * row, so the ownership check lives here — same rule as the invoice. Anyone
+   * row, so the ownership check lives here, same rule as the invoice. Anyone
    * else gets the not-found answer: a refusal would confirm the id exists.
    */
   async findViewableById(id: string, userId: string, role: string): Promise<Order> {
@@ -555,7 +555,7 @@ export class OrdersService {
   }
 
   /**
-   * A shop's orders — the ones it is meant to act on.
+   * A shop's orders, the ones it is meant to act on.
    *
    * An order awaiting an online payment is not one of them. It may never be
    * paid, and the shop was seeing it anyway: a line appeared in the list, was
@@ -731,7 +731,7 @@ export class OrdersService {
     }
     // The buyer's deadline is the deposit minus the collection days; the shop
     // has until one day before the deposit, which leaves eBio a day to pack
-    // and weigh — an order placed at the buyer's last minute still gets the
+    // and weigh, an order placed at the buyer's last minute still gets the
     // collection days to be prepared.
     return new Map(rows.map(row => [row.order_id, new Date(new Date(row.deposit_deadline).getTime() - TWENTY_FOUR_HOURS_MS)]))
   }
@@ -739,7 +739,7 @@ export class OrdersService {
   /**
    * Warns the shop the moment its eBio debt crosses the limit: from now on it
    * is paid online only, until sales or a top-up bring the wallet back. Never
-   * throws — a missed push must not fail a delivered order.
+   * throws, a missed push must not fail a delivered order.
    */
   private async notifyIfCashBlocked(supplierId: string): Promise<void> {
     try {
@@ -764,7 +764,7 @@ export class OrdersService {
 
   /**
    * Back office (admin or support) sets the delivery window an order should
-   * follow — a buyer on the phone, a slot the app could not read. A unified
+   * follow, a buyer on the phone, a slot the app could not read. A unified
    * cart shares one courier run, so every open order of the checkout moves
    * together. A null window means « as soon as ready ».
    */
@@ -857,7 +857,7 @@ export class OrdersService {
     }
 
     // Cash order: eBio never touches the money, so its commission is
-    // collected as a wallet debit — the shop balance may go negative and the
+    // collected as a wallet debit, the shop balance may go negative and the
     // debt is absorbed by future sale credits.
     if (
       newStatus === OrderStatus.DELIVERED
@@ -874,7 +874,7 @@ export class OrdersService {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.COMMISSION_DEBIT,
           amount: order.commissionAmount,
-          description: `Commission eBio — commande ${order.orderNumber} (espèces)`,
+          description: `Commission eBio, commande ${order.orderNumber} (espèces)`,
           orderId: order.id,
           allowNegative: true,
         })
@@ -884,7 +884,7 @@ export class OrdersService {
           await this.walletService.credit(wallet.id, {
             type: WalletTransactionType.PROMO_COMPENSATION,
             amount: order.discountAmount,
-            description: `Compensation code promo — ${order.orderNumber}`,
+            description: `Compensation code promo, ${order.orderNumber}`,
             orderId: order.id,
           })
         }
@@ -892,7 +892,7 @@ export class OrdersService {
           await this.walletService.credit(wallet.id, {
             type: WalletTransactionType.PROMO_COMPENSATION,
             amount: order.platformPromoCompensation,
-            description: `Compensation promotion eBio — ${order.orderNumber}`,
+            description: `Compensation promotion eBio, ${order.orderNumber}`,
             orderId: order.id,
           })
         }
@@ -902,13 +902,13 @@ export class OrdersService {
         await this.walletService.post(PlatformAccount.SALES_COMMISSION, 'credit', {
           type: WalletTransactionType.PLATFORM_COMMISSION,
           amount: order.commissionAmount,
-          description: `Commission — commande ${order.orderNumber} (espèces)`,
+          description: `Commission, commande ${order.orderNumber} (espèces)`,
           orderId: order.id,
         })
         await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
           type: WalletTransactionType.PLATFORM_MARKETING,
           amount: order.platformPromoCompensation + (order.discountFundedBy === 'PLATFORM' ? order.discountAmount : 0),
-          description: `Promotions eBio — commande ${order.orderNumber}`,
+          description: `Promotions eBio, commande ${order.orderNumber}`,
           orderId: order.id,
         })
 
@@ -945,7 +945,7 @@ export class OrdersService {
       // Fire-and-forget: the e-mail must never delay or fail the transition.
       void this.sendInvoiceEmail(order.id)
       // A referee's first delivered order: the referral is paid here and
-      // nowhere else. The service swallows its own errors — a missed reward
+      // nowhere else. The service swallows its own errors, a missed reward
       // must not hold back a delivered order.
       void this.referralsService.onOrderDelivered(order.id, order.buyer.id, order.totalAmount)
     }
@@ -1060,10 +1060,10 @@ export class OrdersService {
       mapSrc,
       // The web app only has supplier/admin order pages: the buyer lands in the mobile app.
       orderUrl: `ebio-mobile://orders/${order.id}`,
-      legalLine: 'eBio — facture émise pour le compte du vendeur ; TVA non applicable.',
+      legalLine: 'eBio, facture émise pour le compte du vendeur ; TVA non applicable.',
     }
 
-    const subject = `Votre facture eBio — commande ${order.orderNumber}`
+    const subject = `Votre facture eBio, commande ${order.orderNumber}`
     const html = await this.emailService.renderTemplate('order-invoice', data, subject)
     const text = this.invoicePlainText(data)
     return { subject, html, text, attachments }
@@ -1072,8 +1072,8 @@ export class OrdersService {
   private invoicePlainText(data: InvoiceData): string {
     const lines = [
       `Votre facture eBio ${data.invoiceNumber}`,
-      `Commande ${data.orderNumber} — commandée le ${data.orderDate}, livrée le ${data.deliveryDate}`,
-      `Vendeur : ${data.seller.shopName}${data.seller.address ? ` — ${data.seller.address}` : ''}`,
+      `Commande ${data.orderNumber}, commandée le ${data.orderDate}, livrée le ${data.deliveryDate}`,
+      `Vendeur : ${data.seller.shopName}${data.seller.address ? `, ${data.seller.address}` : ''}`,
       '',
       ...data.items.map(item => `- ${item.name}${item.variant ? ` (${item.variant})` : ''} × ${item.quantity} : ${item.totalPrice}`),
       '',
@@ -1234,7 +1234,7 @@ export class OrdersService {
       lines: pricing.itemEntities.map(line => ({
         productId: line.product.id,
         variantId: line.variant?.id ?? null,
-        name: line.variant ? `${line.product.name} — ${line.variant.label}` : line.product.name,
+        name: line.variant ? `${line.product.name}, ${line.variant.label}` : line.product.name,
         quantity: line.quantity,
         unitPrice: line.unitPrice,
         regularPrice: line.regularPrice,
@@ -1403,8 +1403,8 @@ export class OrdersService {
       if (!product) {
         throw new NotFoundException('Produit introuvable')
       }
-      // Off the apps for buyers — withdrawn by its shop or by eBio, or still
-      // waiting for review — so not orderable from an old basket either.
+      // Off the apps for buyers, withdrawn by its shop or by eBio, or still
+      // waiting for review, so not orderable from an old basket either.
       if (product.status === ProductStatus.HIDDEN || product.moderationStatus !== ProductModeration.APPROVED) {
         throw new BadRequestException(`${product.name} n’est plus disponible`)
       }
@@ -1503,7 +1503,7 @@ export class OrdersService {
   /**
    * Whatever cancels an order (supplier reject, admin, auto-cancel), the
    * promo use returns to the pool and what the buyer paid comes back on their
-   * eBio wallet — never through the aggregator, whichever one took the money.
+   * eBio wallet, never through the aggregator, whichever one took the money.
    * A unified-cart order also adjusts the fee of the shortened run.
    */
   /**
@@ -1518,7 +1518,7 @@ export class OrdersService {
   private async onOrderCancelled(order: Order): Promise<void> {
     await this.promoCodesService.release(order.id)
     await this.compensationService.compensateOrder(order.id, 'commande annulée')
-    // A relative told a cart was coming is told it is not — once every order
+    // A relative told a cart was coming is told it is not, once every order
     // of the checkout is cancelled (the notifier checks both).
     if (order.checkout) {
       await this.giftNotifier.announceCancellation(order.checkout.id)
@@ -1548,7 +1548,7 @@ export class OrdersService {
    * True while at least one delivered line still has no product review.
    *
    * Without it the rate button vanished as soon as the shop and the courier
-   * were rated, and the products step became unreachable — the buyer could
+   * were rated, and the products step became unreachable, the buyer could
    * never rate what they actually bought.
    */
   async hasUnratedProducts(orderId: string): Promise<boolean> {

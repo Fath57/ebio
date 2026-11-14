@@ -24,7 +24,7 @@ interface ShopIdentity {
  *
  * Permanent rather than a one-off confirmation: the whole risk of editing a
  * catalogue on someone's behalf is forgetting you are doing it. The shop's own
- * staff never see this bar — they only ever have one catalogue.
+ * staff never see this bar, they only ever have one catalogue.
  */
 export function CatalogScopeBar() {
   const { t } = useTranslation()
@@ -38,7 +38,7 @@ export function CatalogScopeBar() {
     queryKey: ['supplier', 'identity', shopId],
     queryFn: async () => {
       // Empty coordinates: the contract asks for them, the endpoint skips the
-      // distance when they are blank — and a distance means nothing here.
+      // distance when they are blank, and a distance means nothing here.
       const response = await suppliersControllerFindById({
         path: { id: shopId! },
         query: { latitude: '', longitude: '' },
@@ -87,7 +87,7 @@ export function CatalogScopeBar() {
             <p className="text-muted-foreground text-xs">
               {onBehalf ? t('catalog.scope.onBehalfHint') : t('catalog.scope.chooseHint')}
             </p>
-            {/* A shop that is not validated shows nothing to buyers — worth
+            {/* A shop that is not validated shows nothing to buyers, worth
                 knowing before spending an afternoon on its catalogue. */}
             {onBehalf && shop?.validationStatus && shop.validationStatus !== 'VALIDATED' && (
               <Badge variant="secondary" className="mt-2">

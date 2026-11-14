@@ -627,7 +627,7 @@ export function ExportPackForm({ pack, onGoBack, onDone }: ExportPackFormProps) 
           </View>
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, { color: semantic.textSecondary }]}>Prix du pack</Text>
-            <Text style={[styles.summaryAmount, { color: semantic.textPrimary }]}>{priceValue !== null ? formatXof(priceValue) : '—'}</Text>
+            <Text style={[styles.summaryAmount, { color: semantic.textPrimary }]}>{priceValue !== null ? formatXof(priceValue) : '-'}</Text>
           </View>
           {difference !== null && items.length > 0
             ? (

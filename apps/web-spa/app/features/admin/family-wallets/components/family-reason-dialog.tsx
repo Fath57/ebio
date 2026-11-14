@@ -26,7 +26,7 @@ interface FamilyReasonDialogProps {
 }
 
 /**
- * Confirms a suspension or a resumption. A suspension needs a reason — it goes
+ * Confirms a suspension or a resumption. A suspension needs a reason, it goes
  * to the audit trail and to the payer; a resumption takes an optional note.
  */
 export function FamilyReasonDialog({ open, kind, title, description, isPending, onConfirm, onClose }: FamilyReasonDialogProps) {

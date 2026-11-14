@@ -4,7 +4,7 @@ import { z } from 'zod'
  * What may be done to a photo.
  *
  * Every one of these is arithmetic on the pixels that were photographed. None
- * of them adds anything that was not in front of the lens — a product listing
+ * of them adds anything that was not in front of the lens, a product listing
  * has to show the product, and a retouched photo that flatters a different
  * item is a dispute waiting to happen.
  */
@@ -75,7 +75,7 @@ export type PhotoReview = z.infer<typeof photoReviewSchema>
 /**
  * A deeper pass: the product is kept, its surroundings are rebuilt.
  *
- * Unlike the adjustments above, this one does not move pixels — it asks a
+ * Unlike the adjustments above, this one does not move pixels, it asks a
  * model to draw the scene again around the product. That is a real risk, and
  * it is why every result comes back with a fidelity verdict attached: on a
  * bottle with no label, the model has been observed inventing one reading

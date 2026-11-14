@@ -1,6 +1,6 @@
 import type { Announcement } from '../features/announcements/hooks/use-announcement'
 import type { AssistantCartLine } from '../features/assistant/assistant'
-// @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
+// @ts-nocheck (React Navigation types incompatible with React 19 types, upstream issue)
 // The two directives above must stay at the top of the file: an import
 // placed before them disables the `@ts-nocheck` and wakes the React
 // de types de React Navigation.
@@ -90,7 +90,7 @@ import { navigationRef } from './navigation-ref'
  * The strip every screen sits under, below the status bar.
  *
  * `SafeAreaView` alone trusted the inset the system reports, and some Android
- * devices report less than the status bar they actually draw — the title then
+ * devices report less than the status bar they actually draw, the title then
  * sat half under the clock. Taking the larger of the two costs nothing where
  * the inset is right (edge-to-edge makes them equal) and is the only thing
  * that saves the devices where it is not; it is a max, never a sum, so
@@ -339,7 +339,7 @@ function SearchLocationPickerWrapper({ navigation }: any) {
         initialLongitude={longitude}
         onConfirm={(coords) => {
           // The picker says "no name yet" with null, the store only knows
-          // "absent" — they mean the same thing and only one can be stored.
+          // "absent", they mean the same thing and only one can be stored.
           setManualLocation({
             latitude: coords.latitude,
             longitude: coords.longitude,
@@ -666,7 +666,7 @@ function CartHomeWrapper({ navigation }: any) {
       return
 
     // One shop, one order. The cart may hold other shops' baskets; they stay
-    // where they are and are ordered on their own — which is what makes a
+    // where they are and are ordered on their own, which is what makes a
     // promo code usable again, and a refund a single shop's business.
     const shopName = groups.find(g => g.supplierId === supplierId)?.supplierName ?? ''
     const orderSummary = {
@@ -677,7 +677,7 @@ function CartHomeWrapper({ navigation }: any) {
         supplierId: i.supplierId,
         supplierName: i.supplierName,
         ...(i.variantId ? { variantId: i.variantId } : {}),
-        name: i.variantLabel ? `${i.name} — ${i.variantLabel}` : i.name,
+        name: i.variantLabel ? `${i.name}, ${i.variantLabel}` : i.name,
         quantity: i.quantity,
         pricePerUnit: i.pricePerUnit,
         unit: i.unit,
@@ -1227,7 +1227,7 @@ const Tab = createBottomTabNavigator()
  *
  * `navigate({ screen: 'ChatHome' })` is not enough. In React Navigation 7 a
  * navigation no longer pops back to a screen already in the stack, and nested
- * params are read only once — the tab bar even puts the old ones back right
+ * params are read only once, the tab bar even puts the old ones back right
  * after our listener. So we target the child stack directly through `target`,
  * the only way for an action to travel down: otherwise it bubbles up.
  */
@@ -1482,7 +1482,7 @@ function BuyerTabs() {
       </Tab.Navigator>
 
       {/* The announcement of the day, mounted above the navigator so it
-        * survives a tab change — closing it is a gesture, not a side effect. */}
+        * survives a tab change, closing it is a gesture, not a side effect. */}
       {/* Le réseau tombe souvent : l'acheteur doit l'apprendre du bandeau,
         * pas d'une liste qui ne se remplit jamais. Monté au-dessus du
         * navigateur, donc visible quel que soit l'onglet. */}
@@ -1498,7 +1498,7 @@ function BuyerTabs() {
 
       {/* On demande à partir du premier panier : la personne a montré son
         * intention, la question a du sens, et elle n'a pas eu besoin de
-        * commander — ceux qui ne l'ont jamais fait sont justement ceux qu'on
+        * commander, ceux qui ne l'ont jamais fait sont justement ceux qu'on
         * veut pouvoir rappeler. */}
       <PushConsentSheet when={hasBasket} />
     </NavigationContainer>

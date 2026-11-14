@@ -114,7 +114,7 @@ interface Shrinkage {
 
 /**
  * Terroir parcels (011): as their buyer and a gift's recipient follow them
- * (contracts §3), and as eBio handles them in the back office (§5) —
+ * (contracts §3), and as eBio handles them in the back office (§5),
  * collection from each shop, missing products, weighing, steps, hand-over,
  * loss.
  *
@@ -178,7 +178,7 @@ export class ExportShipmentsService implements OnModuleInit {
     return view
   }
 
-  // ===== BACK OFFICE — READING =====
+  // ===== BACK OFFICE, READING =====
 
   async adminDetail(shipmentId: string): Promise<AdminShipmentView> {
     const shipment = await this.em.findOne(
@@ -200,7 +200,7 @@ export class ExportShipmentsService implements OnModuleInit {
 
   /**
    * The departure's printable list for the agency (FR-021): one block per
-   * parcel — recipient, city, contents, quantities, declared value in euros,
+   * parcel, recipient, city, contents, quantities, declared value in euros,
    * weight.
    */
   async manifestHtml(departureId: string): Promise<string> {
@@ -236,8 +236,8 @@ export class ExportShipmentsService implements OnModuleInit {
       const phone = shipment.giftRecipientName ? shipment.giftRecipientPhone : shipment.buyer.phone
       const destination = shipment.reception === ExportReception.HOME
         ? `Domicile : ${shipment.homeAddress ?? ''}`
-        : `${shipment.pickupPoint?.city ?? ''} — retrait ${shipment.pickupPoint?.address ?? ''}`
-      const rows = lines.map(item => `<tr><td>${escapeHtml(item.variant ? `${item.product.name} — ${item.variant.label}` : item.product.name)}</td><td class="num">${item.quantity}</td></tr>`).join('')
+        : `${shipment.pickupPoint?.city ?? ''}, retrait ${shipment.pickupPoint?.address ?? ''}`
+      const rows = lines.map(item => `<tr><td>${escapeHtml(item.variant ? `${item.product.name}, ${item.variant.label}` : item.product.name)}</td><td class="num">${item.quantity}</td></tr>`).join('')
       return `<section>
         <h2>Colis ${index + 1} · ${escapeHtml(shipment.id.slice(0, 8).toUpperCase())}${shipment.insured ? ' · assuré' : ''}</h2>
         <p><strong>${escapeHtml(recipient)}</strong>${phone ? ` · ${escapeHtml(phone)}` : ''}<br>${escapeHtml(shipment.country)} · ${escapeHtml(destination)}</p>
@@ -256,18 +256,18 @@ export class ExportShipmentsService implements OnModuleInit {
   .num { text-align: right; width: 60px; } p { margin: 6px 0; font-size: 13px; }
   @media print { body { margin: 0; } }
 </style></head><body>
-<h1>${escapeHtml(departure.agency.name)} — départ du ${escapeHtml(spokenDay(departure.departsOn))}</h1>
+<h1>${escapeHtml(departure.agency.name)}, départ du ${escapeHtml(spokenDay(departure.departsOn))}</h1>
 <p>${shipments.length} colis · ${(totalWeightG / 1000).toLocaleString('fr-FR')} kg · valeur déclarée ${totalEur.toLocaleString('fr-FR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} € · droits et taxes inclus</p>
 ${blocks.join('\n')}
 </body></html>`
   }
 
-  // ===== BACK OFFICE — COLLECTION =====
+  // ===== BACK OFFICE, COLLECTION =====
 
   /**
    * eBio collected a shop's products for this parcel (T037): the shop's
    * order is DELIVERED at the time of collection and its escrow released at
-   * once — the shop credited its own order only. The parcel moves to
+   * once, the shop credited its own order only. The parcel moves to
    * COLLECTING, then PACKED once every shop is collected.
    */
   async collect(shipmentId: string, supplierId: string, actorUserId: string): Promise<AdminShipmentView> {
@@ -302,7 +302,7 @@ ${blocks.join('\n')}
    * A product missing at collection (T038, FR-022): out of the parcel, the
    * buyer refunded of it and of the shipping the lighter parcel no longer
    * costs; the parcel goes on. The order's last line cancels the order
-   * itself — the ordinary cancellation refunds it and shrinks the parcel.
+   * itself, the ordinary cancellation refunds it and shrinks the parcel.
    */
   async missing(shipmentId: string, orderItemId: string, actorUserId: string): Promise<AdminShipmentView> {
     const shipment = await this.load(shipmentId)
@@ -371,15 +371,15 @@ ${blocks.join('\n')}
       payment.amount = Math.max(0, cents(Number(payment.amount) - value))
       this.em.remove(item)
       await this.em.flush()
-      await this.refundBuyer(shipment.buyer.id, value, `Remboursement — ${item.product.name}, retiré du colis terroir ${reference}`, payment.id)
+      await this.refundBuyer(shipment.buyer.id, value, `Remboursement, ${item.product.name}, retiré du colis terroir ${reference}`, payment.id)
     }
     else {
       // Collected, so the shop was paid: the line stays its sale; eBio refunds.
-      await this.refundBuyer(shipment.buyer.id, value, `Remboursement — ${item.product.name}, retiré du colis terroir ${reference}`)
+      await this.refundBuyer(shipment.buyer.id, value, `Remboursement, ${item.product.name}, retiré du colis terroir ${reference}`)
       await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
         type: WalletTransactionType.EXPORT_LOSS,
         amount: value,
-        description: `Produit retiré après collecte — ${item.product.name}, colis ${reference}`,
+        description: `Produit retiré après collecte, ${item.product.name}, colis ${reference}`,
         orderId: order.id,
       })
     }
@@ -428,7 +428,7 @@ ${blocks.join('\n')}
     await this.advanceCollection(shipment.id, null)
   }
 
-  // ===== BACK OFFICE — WEIGHING =====
+  // ===== BACK OFFICE, WEIGHING =====
 
   /**
    * The real weight (T039, FR-020). Within the tolerance eBio absorbs the
@@ -481,7 +481,7 @@ ${blocks.join('\n')}
     return this.adminDetail(shipmentId)
   }
 
-  // ===== BACK OFFICE — TRACKING =====
+  // ===== BACK OFFICE, TRACKING =====
 
   /** A step and / or a free message on one parcel (T041, FR-024–FR-026). */
   async addEvent(shipmentId: string, input: ExportShipmentEventInput, actorUserId: string): Promise<AdminShipmentView> {
@@ -562,7 +562,7 @@ ${blocks.join('\n')}
   }
 
   /**
-   * A parcel lost or damaged (FR-028, FR-030): refunded without any return —
+   * A parcel lost or damaged (FR-028, FR-030): refunded without any return,
    * the products and the shipping; an insured parcel in full, door delivery
    * included. The shops, paid at collection, are not debited: the EXPORT
    * account carries the loss, the insurance collected (booked apart as
@@ -590,13 +590,13 @@ ${blocks.join('\n')}
     const reference = shipment.id.slice(0, 8)
     const what = damaged ? 'abîmé' : 'perdu'
 
-    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement — colis terroir ${reference} ${what}`)
+    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement, colis terroir ${reference} ${what}`)
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
       type: WalletTransactionType.EXPORT_LOSS,
       amount: refund,
       description: shipment.insured
-        ? `Colis assuré ${what} — ${reference} (assurance encaissée : ${Number(shipment.insurancePrice).toLocaleString('fr-FR')} FCFA)`
-        : `Colis ${what} — ${reference}`,
+        ? `Colis assuré ${what}, ${reference} (assurance encaissée : ${Number(shipment.insurancePrice).toLocaleString('fr-FR')} FCFA)`
+        : `Colis ${what}, ${reference}`,
     })
     this.em.create(ExportShipmentEvent, {
       shipment: this.em.getReference(ExportShipment, shipmentId),
@@ -648,7 +648,7 @@ ${blocks.join('\n')}
   /**
    * Takes `value` and `weightG` off the parcel under a row lock and reprices
    * its shipping (frozen rate) and insurance. Returns null when the mark is
-   * already there — a replay. Money moves after, in payShrinkage.
+   * already there, a replay. Money moves after, in payShrinkage.
    */
   async shrink(shipmentId: string, input: { value: number, weightG: number, basis: 'estimate' | 'actual', markItemId?: string, markOrderId?: string }): Promise<Shrinkage | null> {
     const settings = await this.platformSettings.getTerroirExportSettings()
@@ -701,23 +701,23 @@ ${blocks.join('\n')}
   async payShrinkage(shrunk: Shrinkage): Promise<void> {
     const { shipment, shippingRefund, insuranceRefund } = shrunk
     const reference = shipment.id.slice(0, 8)
-    await this.refundBuyer(shipment.buyer.id, cents(shippingRefund + insuranceRefund), `Remboursement — transport du colis terroir ${reference} allégé`)
+    await this.refundBuyer(shipment.buyer.id, cents(shippingRefund + insuranceRefund), `Remboursement, transport du colis terroir ${reference} allégé`)
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
       type: WalletTransactionType.EXPORT_SHIPPING_INCOME,
       amount: shippingRefund,
-      description: `Transport remboursé — colis ${reference} allégé`,
+      description: `Transport remboursé, colis ${reference} allégé`,
     })
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
       type: WalletTransactionType.EXPORT_INSURANCE_INCOME,
       amount: insuranceRefund,
-      description: `Assurance remboursée — colis ${reference} allégé`,
+      description: `Assurance remboursée, colis ${reference} allégé`,
     })
     await this.logistics.refreshFill(shipment.departure.id)
   }
 
   /**
    * No order left in the parcel: it is cancelled and everything not yet
-   * refunded comes back — shipping, door delivery, insurance, a paid
+   * refunded comes back, shipping, door delivery, insurance, a paid
    * supplement, an eBio pack's margin.
    */
   private async closeEmpty(shrunk: Shrinkage): Promise<void> {
@@ -736,10 +736,10 @@ ${blocks.join('\n')}
     const residual = Math.max(0, Number(shipment.declaredValue))
     const refund = cents(shipping + insurance + residual)
 
-    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement — colis terroir ${reference} annulé`)
-    await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_SHIPPING_INCOME, amount: shipping, description: `Transport remboursé — colis ${reference} annulé` })
-    await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_INSURANCE_INCOME, amount: insurance, description: `Assurance remboursée — colis ${reference} annulé` })
-    await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_PACK_COMPENSATION, amount: residual, description: `Marge pack eBio remboursée — colis ${reference} annulé` })
+    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement, colis terroir ${reference} annulé`)
+    await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_SHIPPING_INCOME, amount: shipping, description: `Transport remboursé, colis ${reference} annulé` })
+    await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_INSURANCE_INCOME, amount: insurance, description: `Assurance remboursée, colis ${reference} annulé` })
+    await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_PACK_COMPENSATION, amount: residual, description: `Marge pack eBio remboursée, colis ${reference} annulé` })
     if (residual > 0) {
       await this.em.getConnection().execute(`UPDATE export_shipments SET declared_value = 0 WHERE id = ?`, [shipment.id])
     }
@@ -779,7 +779,7 @@ ${blocks.join('\n')}
   private applyEvent(shipment: ExportShipment, step: ExportShipmentStatus | null, message: string | null, pickupPoint: string | null, actorUserId: string | null): ShipmentNews {
     const snapshot = pickupPoint
       ?? (step === ExportShipmentStatus.READY_FOR_PICKUP && shipment.pickupPoint
-        ? [shipment.pickupPoint.address, shipment.pickupPoint.openingHours].filter(Boolean).join(' — ')
+        ? [shipment.pickupPoint.address, shipment.pickupPoint.openingHours].filter(Boolean).join(', ')
         : null)
     if (step) {
       shipment.status = step

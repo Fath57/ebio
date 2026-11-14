@@ -9,8 +9,8 @@ import { ExportProfileStatus } from '../contracts/terroir.contract'
  * A shop's request to sell one product abroad, and eBio's answer (011).
  *
  * One row per product. The composition stays on the product; this carries
- * what only export needs — packed weight, size, shelf life, a structured
- * origin, the label photo — and the checklist eBio ticked, by whom, when.
+ * what only export needs, packed weight, size, shelf life, a structured
+ * origin, the label photo, and the checklist eBio ticked, by whom, when.
  * Any change to the weight, the composition or the label sends it back to
  * PENDING (FR-002).
  */

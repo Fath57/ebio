@@ -157,7 +157,7 @@ export function CampaignForm({ onSubmit, onCancel, isPending }: {
             {reach === undefined
               ? 'Calcul du nombre de destinataires…'
               : reach === 0
-                ? 'Personne ne correspond — rien ne partira.'
+                ? 'Personne ne correspond, rien ne partira.'
                 : `${reach} téléphone${reach > 1 ? 's' : ''} ${reach > 1 ? 'recevront' : 'recevra'} ce message.`}
           </p>
         </div>

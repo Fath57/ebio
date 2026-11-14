@@ -32,7 +32,7 @@ export class RateLimitGuard implements CanActivate {
 
     const request = context.switchToHttp().getRequest()
     // The route, not the URL: a query string per keystroke would open a
-    // fresh window — and a fresh map entry — on every search.
+    // fresh window, and a fresh map entry, on every search.
     const route = request.route?.path ?? request.path
     const key = `${request.ip}:${request.method}:${route}`
     const now = Date.now()

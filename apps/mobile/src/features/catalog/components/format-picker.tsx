@@ -24,7 +24,7 @@ interface FormatPickerProps {
 }
 
 /**
- * The formats of a product side by side, each with its price — and, for a
+ * The formats of a product side by side, each with its price, and, for a
  * pack, what one unit comes to, since that is what the buyer compares.
  */
 export function FormatPicker({ formats, selectedId, onSelect, unitLabel }: FormatPickerProps) {

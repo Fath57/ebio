@@ -87,7 +87,7 @@ function usePrices(productIds: string[], known: Map<string, number>) {
 /**
  * An eBio pack: products from several shops sold together. Each shop is paid
  * its own price; the gap between the pack price and the sum of the lines is
- * shown live — eBio's margin above, its compensation below.
+ * shown live, eBio's margin above, its compensation below.
  */
 export function PackFormDialog({ pack, approved, isPending, error, onSubmit, onClose }: PackFormDialogProps) {
   const { t } = useTranslation()

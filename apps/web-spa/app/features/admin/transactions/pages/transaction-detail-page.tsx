@@ -205,7 +205,7 @@ export default function TransactionDetailPage() {
                     <li key={`${entry.kind}-${entry.createdAt}-${entry.reference ?? ''}`} className="flex flex-wrap items-center gap-3 p-3 text-sm">
                       <span className="text-muted-foreground w-40">{formatDate(entry.createdAt)}</span>
                       <span className="font-medium">{t(`admin.transactions.detail.kinds.${entry.kind}`, { defaultValue: entry.kind })}</span>
-                      <span className="text-muted-foreground font-mono text-xs">{entry.reference ?? '—'}</span>
+                      <span className="text-muted-foreground font-mono text-xs">{entry.reference ?? '-'}</span>
                       <StatusBadge tone={JOURNAL_TONES[entry.status] ?? 'idle'}>
                         {t(`admin.transactions.detail.journalStatus.${entry.status}`, { defaultValue: entry.status })}
                       </StatusBadge>
@@ -256,7 +256,7 @@ function Info({ label, value, mono = false }: { label: string, value: ReactNode 
   return (
     <div className="flex justify-between gap-4 border-b py-2 text-sm last:border-0">
       <span className="text-muted-foreground">{label}</span>
-      <span className={cn('text-right', mono && 'font-mono')}>{value ?? '—'}</span>
+      <span className={cn('text-right', mono && 'font-mono')}>{value ?? '-'}</span>
     </div>
   )
 }
@@ -266,7 +266,7 @@ function Step({ label, at }: { label: string, at: string | null }) {
     <li className="flex items-center gap-3 text-sm">
       <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', at ? 'bg-ebio-green-400' : 'bg-muted-foreground/30')} />
       <span className={cn('flex-1', !at && 'text-muted-foreground')}>{label}</span>
-      <span className="text-muted-foreground">{at ?? '—'}</span>
+      <span className="text-muted-foreground">{at ?? '-'}</span>
     </li>
   )
 }

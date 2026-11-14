@@ -112,7 +112,7 @@ function mapRestMessage(m: Record<string, unknown>): DisplayMessage {
   }
 }
 
-/** Union by id, newest first — keeps optimistic bubbles, dedupes refetches. */
+/** Union by id, newest first, keeps optimistic bubbles, dedupes refetches. */
 function mergeMessages(prev: DisplayMessage[], incoming: DisplayMessage[]): DisplayMessage[] {
   const byId = new Map<string, DisplayMessage>()
   for (const m of prev) {
@@ -253,7 +253,7 @@ export function ChatScreen({
     }
   }, [conversationId, currentUserId])
 
-  // Initial history load (REST) — DESC array, newest first
+  // Initial history load (REST), DESC array, newest first
   useEffect(() => {
     let cancelled = false
     async function loadHistory(): Promise<void> {
@@ -269,7 +269,7 @@ export function ChatScreen({
         setMessages(prev => mergeMessages(prev, raw.map(mapRestMessage)))
       }
       catch {
-        // ignore — the reconnect catch-up will retry
+        // ignore, the reconnect catch-up will retry
       }
     }
     void loadHistory()
@@ -296,7 +296,7 @@ export function ChatScreen({
         setMessages(prev => mergeMessages(prev, raw.map(mapRestMessage)))
       }
       catch {
-        // ignore — history already on screen, next reconnect will retry
+        // ignore, history already on screen, next reconnect will retry
       }
     }
     void catchUp()
@@ -520,7 +520,7 @@ export function ChatScreen({
       }
     }
     catch {
-      // network hiccup — scrolling up again retries
+      // network hiccup, scrolling up again retries
     }
     finally {
       loadingOlderRef.current = false

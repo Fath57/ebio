@@ -67,7 +67,7 @@ async function shipmentOf(ctx: Context, id: string): Promise<ExportShipment> {
  * ever debiting a shop; a weight supplement is asked beyond 10 % and
  * absorbed after 48 h; one step moves every parcel of a departure.
  */
-describe('terroir — colis : collecte, pesée, suivi, pertes (e2e)', { timeout: 60_000 }, () => {
+describe('terroir, colis : collecte, pesée, suivi, pertes (e2e)', { timeout: 60_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 6 }, {
       imports: [RolesModule, AuditModule, TerroirModule],
@@ -295,7 +295,7 @@ describe('terroir — colis : collecte, pesée, suivi, pertes (e2e)', { timeout:
     await service.addDepartureEvent(world.departureId, { step: ExportShipmentStatus.READY_FOR_PICKUP }, world.agentId)
     fresh(ctx)
     const ready = await ctx.em.findOneOrFail(ExportShipmentEvent, { shipment: first.shipmentId, step: ExportShipmentStatus.READY_FOR_PICKUP })
-    expect(ready.pickupPointSnapshot).toBe('12 rue Myrha, 75018 Paris — mar.–sam. 10 h–19 h')
+    expect(ready.pickupPointSnapshot).toBe('12 rue Myrha, 75018 Paris, mar.–sam. 10 h–19 h')
     expect(await refusalOf(service.addEvent(first.shipmentId, { step: ExportShipmentStatus.LOST }, world.agentId))).toEqual({ status: 400, code: 'EXPORT_STEP_INVALID' })
   })
 

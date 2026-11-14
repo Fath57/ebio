@@ -69,7 +69,7 @@ export async function clearAccountData(): Promise<void> {
 // Simple sync key-value for non-async contexts (biometric keys, device IDs)
 export const storage = {
   getString(key: string): string | null {
-    // In RN, we need async — provide a sync wrapper via a cache
+    // In RN, we need async, provide a sync wrapper via a cache
     // This is populated at app startup
     return storageCache.get(key) ?? null
   },

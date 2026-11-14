@@ -48,7 +48,7 @@ export default function ValidationPage() {
     {
       id: 'phone',
       header: t('admin.validation.columns.phone'),
-      cell: ({ row }) => row.original.phone ?? <span className="text-muted-foreground">—</span>,
+      cell: ({ row }) => row.original.phone ?? <span className="text-muted-foreground">-</span>,
     },
     {
       id: 'submittedAt',

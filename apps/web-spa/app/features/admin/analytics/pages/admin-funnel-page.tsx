@@ -84,7 +84,7 @@ export default function AdminFunnelPage() {
                     {' '}
                     {new Date(data.measuringSince!).toLocaleDateString('fr-FR')}
                     . Sur une fenêtre plus ancienne, les commandes apparaissent sans les
-                    paniers qui les ont précédées — les taux du haut ne veulent alors rien dire.
+                    paniers qui les ont précédées, les taux du haut ne veulent alors rien dire.
                   </p>
                 </div>
               )}

@@ -22,7 +22,7 @@ export interface AssistantTurn {
 /**
  * The buyer speaks, the assistant answers.
  *
- * `sessionId` is absent on the first turn — the server opens the conversation
+ * `sessionId` is absent on the first turn, the server opens the conversation
  * and hands back its id, which every later turn carries.
  *
  * The cart comes back whole rather than as a change: the screen shows what the
@@ -64,7 +64,7 @@ export type AssistantStreamEvent
  *
  * React Native's `fetch` does not expose a stream: you wait for the whole
  * response, which defeats the point. `XMLHttpRequest`, on the other hand,
- * exposes the text received so far on every progress event — we read what has
+ * exposes the text received so far on every progress event, we read what has
  * just arrived from there.
  *
  * Returns a function that cuts: if the buyer leaves the screen, the turn has
@@ -125,7 +125,7 @@ export function streamTurn(
      *
      * A refused request carries no event at all, so draining it finds nothing
      * and the screen would wait for ever. The status is read here because
-     * `onerror` only fires when the transport itself fails — an HTTP 401 is a
+     * `onerror` only fires when the transport itself fails, an HTTP 401 is a
      * perfectly successful request that happens to say no.
      */
     request.onload = () => {
@@ -192,7 +192,7 @@ export interface VoiceSource {
   headers: Record<string, string>
 }
 
-/** The provider refused the voice — writing stays open. */
+/** The provider refused the voice, writing stays open. */
 export const VOICE_UNAVAILABLE = 'voice-unavailable' as const
 
 /**
@@ -204,7 +204,7 @@ export const VOICE_UNAVAILABLE = 'voice-unavailable' as const
  *
  * One call for the whole answer, not one per sentence. Splitting was meant to
  * start sooner, but the sentences arrive within a tenth of a second of each
- * other — the split bought almost nothing and cost the voice its continuity.
+ * other, the split bought almost nothing and cost the voice its continuity.
  */
 export async function voiceUrl(text: string): Promise<VoiceSource | typeof VOICE_UNAVAILABLE | null> {
   const res = await apiFetch('/api/assistant/voice', {
@@ -214,7 +214,7 @@ export async function voiceUrl(text: string): Promise<VoiceSource | typeof VOICE
   })
   if (!res.ok) {
     // 503: the voice provider shut the door on us. Writing goes through
-    // another one — staying silent would suggest everything is broken.
+    // another one, staying silent would suggest everything is broken.
     return res.status === 503 ? VOICE_UNAVAILABLE : null
   }
 

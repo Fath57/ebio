@@ -34,7 +34,7 @@ import { WithdrawalsService } from './withdrawals.service'
   /**
    * The gateway factory is provided here rather than imported from
    * `PaymentsModule`: that module already imports this one, and a second
-   * instance of a stateless factory costs nothing — far less than a circular
+   * instance of a stateless factory costs nothing, far less than a circular
    * import held together by `forwardRef`.
    */
   providers: [WalletService, WithdrawalsService, TopupService, PlatformAccountsService, PendingEarningsService, PaymentGatewayFactory, AdminWalletsService, SupplierCashBlockService],

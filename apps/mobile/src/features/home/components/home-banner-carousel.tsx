@@ -146,7 +146,7 @@ export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: Hom
             style={[styles.card, { width: cardWidth, backgroundColor: semantic.bgSurface }]}
             onPress={() => handleBannerPress(banner)}
             accessibilityRole="button"
-            accessibilityLabel={banner.subtitle ? `${banner.title} — ${banner.subtitle}` : banner.title}
+            accessibilityLabel={banner.subtitle ? `${banner.title}, ${banner.subtitle}` : banner.title}
           >
             <Image source={{ uri: banner.imageUrl }} style={styles.image} resizeMode="contain" />
 
@@ -168,7 +168,7 @@ export function HomeBannerCarousel({ items, onOpenSupplier, onOpenProduct }: Hom
         ))}
       </ScrollView>
 
-      {/* Position marker — pointless with a single banner. Purely indicative,
+      {/* Position marker, pointless with a single banner. Purely indicative,
           so hidden from screen readers: the carousel already announces its
           own content. */}
       {items.length > 1 && (

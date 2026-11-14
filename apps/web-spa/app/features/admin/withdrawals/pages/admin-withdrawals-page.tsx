@@ -219,7 +219,7 @@ function RequestsSection({ list }: { list: ListParams }) {
               variant="ghost"
               size="sm"
               disabled={action.isPending}
-              onClick={() => setRejectTarget({ kind: 'withdrawal', id: row.original.id, label: `${formatAmount(row.original.amount)} — ${row.original.ownerName}` })}
+              onClick={() => setRejectTarget({ kind: 'withdrawal', id: row.original.id, label: `${formatAmount(row.original.amount)}, ${row.original.ownerName}` })}
             >
               {t('admin.withdrawals.reject')}
             </Button>

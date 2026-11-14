@@ -23,7 +23,7 @@ export class CheckoutsController {
   /**
    * Compensation for one order of a unified cart, triggered by hand.
    *
-   * Ordinary cancellations — shop refusal, expiry — already go through it on
+   * Ordinary cancellations, shop refusal, expiry, already go through it on
    * their own. This endpoint serves the back-office when an order fell through
    * without the automatic path noticing, and it is safe to replay: compensation
    * is idempotent per order.
@@ -46,7 +46,7 @@ export class CheckoutsController {
   }
 
   /**
-   * The payer sends the relative the last useful text again — the code while
+   * The payer sends the relative the last useful text again, the code while
    * the courier is on the way, the announcement before. Three times at most,
    * then `429 RECIPIENT_SMS_LIMIT`. Payer only: anyone else gets a 404.
    */

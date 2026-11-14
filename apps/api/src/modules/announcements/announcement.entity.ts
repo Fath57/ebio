@@ -15,7 +15,7 @@ export enum AnnouncementOrigin {
  *
  * An announcement interrupts: it stands in front of what the buyer came to do.
  * That is why it is dated, why it does not come back before a configured
- * delay, and why only one goes through at a time — two modals back to back and
+ * delay, and why only one goes through at a time, two modals back to back and
  * nobody reads either.
  */
 @Entity({ tableName: 'announcements' })

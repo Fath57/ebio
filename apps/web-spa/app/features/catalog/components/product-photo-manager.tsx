@@ -21,7 +21,7 @@ interface ProductPhotoManagerProps {
  * What the studio is currently working on.
  *
  * A photo already on the product and one that was just uploaded are kept the
- * same way on screen but not underneath — one is a URL in the product, the
+ * same way on screen but not underneath, one is a URL in the product, the
  * other a media id not attached to anything yet. Rather than branch inside the
  * dialog, each opener says here how to put the result back.
  */
@@ -33,7 +33,7 @@ interface StudioTarget {
 /**
  * Photo management for the product form: kept existing photos with
  * remove/reorder controls, plus upload slots for new photos. Both kinds can be
- * retouched, including the one that has just finished uploading — improving a
+ * retouched, including the one that has just finished uploading, improving a
  * photo should not mean saving first and coming back for it.
  */
 export function ProductPhotoManager({ keptUrls, onKeptUrlsChange, onMediaIdsChange, max = 3, productName }: ProductPhotoManagerProps) {

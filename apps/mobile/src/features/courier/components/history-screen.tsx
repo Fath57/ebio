@@ -33,7 +33,7 @@ function formatDate(iso: string | null): string {
   return new Date(iso).toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' })
 }
 
-/** Finished deliveries (delivered and failed) — FR-019. */
+/** Finished deliveries (delivered and failed), FR-019. */
 export function HistoryScreen({ onOpenDetail }: HistoryScreenProps) {
   const { semantic } = useTheme()
   const tabBarClearance = useTabBarClearance()

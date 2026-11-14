@@ -1,5 +1,5 @@
 // eslint-disable-next-line ts/ban-ts-comment
-// @ts-nocheck — React Navigation types incompatible with React 19 types (upstream issue)
+// @ts-nocheck (React Navigation types incompatible with React 19 types, upstream issue)
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs'
 import { getFocusedRouteNameFromRoute, NavigationContainer } from '@react-navigation/native'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'

@@ -1,6 +1,6 @@
 /**
  * Relative French date, the form the brand rules ask for: « il y a 2 h »,
- * « hier », « 20 mars » — never an ISO timestamp on screen.
+ * « hier », « 20 mars », never an ISO timestamp on screen.
  *
  * Lifted out of `reviews-list.tsx`, where it was a local function, so the
  * product reviews show their dates exactly like the shop ones.

@@ -97,8 +97,8 @@ function generateId(): string {
 }
 
 /**
- * Cap per cart line. The lower bound already lives here — a quantity
- * dropping to zero removes the item — and the upper one keeps it company
+ * Cap per cart line. The lower bound already lives here, a quantity
+ * dropping to zero removes the item, and the upper one keeps it company
  * rather than being rewritten by every screen that can increment.
  */
 export const MAX_ITEM_QUANTITY = 99
@@ -116,7 +116,7 @@ interface StoredCart {
  * Reads back the persisted cart, whatever its age.
  *
  * Three shapes have been stored. The oldest grouped items by shop with a mode
- * per group — which is what we keep again — the middle one flattened
+ * per group, which is what we keep again, the middle one flattened
  * everything under a single mode, and the current one keeps the items flat
  * with the modes beside them. A buyer updating the app must not lose their
  * cart, so all three are read; a single stored mode is spread over the shops
@@ -325,7 +325,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
    * It is kept on the device so it survives a restart, and nothing used to
    * remove it on sign-out: the next person to sign in on the same phone
    * inherited the previous one's articles. Emptying storage alone would not
-   * do — the provider stays mounted and writes its items straight back.
+   * do, the provider stays mounted and writes its items straight back.
    *
    * `undefined` means the session has not resolved yet; comparing against it
    * would empty the basket of someone who never left.
@@ -364,7 +364,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
    *
    * Debounced because a stepper held down fires on every tap, and the server
    * only needs to know where it landed. The phone stays the authority while
-   * the app is open; the server keeps the copy that outlives it — the one
+   * the app is open; the server keeps the copy that outlives it, the one
    * that follows its owner to another device and can be reminded about.
    *
    * Failures are swallowed: the basket on this phone is intact either way,

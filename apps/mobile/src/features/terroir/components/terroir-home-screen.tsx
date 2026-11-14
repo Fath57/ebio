@@ -138,7 +138,7 @@ function DeparturesBlock({ departures, loading, countryCity, alertBusy, onToggle
           <Plane size={18} color={colors.blue[800]} strokeWidth={2.2} />
           <Text style={[styles.bannerText, { color: colors.blue[800] }]}>
             {`Prochain envoi vers ${headline.city ?? countryCity} : ${formatDay(headline.departsOn)}`}
-            {headline.orderBefore ? ` — commandez avant le ${formatDay(headline.orderBefore)}` : ''}
+            {headline.orderBefore ? `, commandez avant le ${formatDay(headline.orderBefore)}` : ''}
           </Text>
         </View>
       )}

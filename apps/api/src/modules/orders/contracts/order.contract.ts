@@ -6,7 +6,7 @@ import { displayCurrencyEnum } from '../../currency/contracts/currency.contract'
  *
  * One rule, stated once: the two order endpoints asked for three characters
  * and ten, with two different wordings, so the same address was accepted on
- * one path and refused on the other — which reads as an arbitrary rule rather
+ * one path and refused on the other, which reads as an arbitrary rule rather
  * than a requirement. "Cotonou" is a city, not an address.
  */
 export const deliveryAddressSchema = z
@@ -157,7 +157,7 @@ export const orderGiftSchema = z.object({
     name: z.string(),
     phone: z.string(),
   }),
-  /** The hand-over code, once the courier has collected — as for any order. */
+  /** The hand-over code, once the courier has collected, as for any order. */
   confirmationCode: z.string().nullable(),
   /** Resends of the relative's SMS still allowed (3 at most). */
   smsResendsLeft: z.number().int().min(0),
@@ -183,7 +183,7 @@ export const orderProofSchema = z.object({
   /** Signed for one hour; null once the photo is purged (90 days). */
   photoUrl: z.string().nullable(),
   takenAt: z.string().datetime().nullable(),
-  /** Taken more than 300 m from the delivery point — for support, not shown to the payer. */
+  /** Taken more than 300 m from the delivery point, for support, not shown to the payer. */
   far: z.boolean(),
 }).meta({
   title: 'OrderProof',

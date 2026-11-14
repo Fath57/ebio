@@ -90,7 +90,7 @@ export default function ReviewModerationPage() {
                         Signalé le
                         {' '}
                         {formatDate(report.reportedAt)}
-                        {' — '}
+                        {', '}
                         {report.reason}
                       </p>
                     </CardHeader>

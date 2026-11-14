@@ -186,7 +186,7 @@ export default function AdminDeliveryAssignPage() {
             <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-orange-600" />
             <div>
               <p className="text-xs uppercase tracking-wide text-muted-foreground">{t('admin.deliveries.assignPage.dropoff')}</p>
-              <p className="font-medium">{delivery.buyerContact?.name ?? '—'}</p>
+              <p className="font-medium">{delivery.buyerContact?.name ?? '-'}</p>
               <p className="text-muted-foreground">{delivery.dropoffAddress}</p>
             </div>
           </div>

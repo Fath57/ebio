@@ -13,7 +13,7 @@ const OPENAI_AUDIO_URL = 'https://api.openai.com/v1/audio'
  * rewrite. The conversation itself does not know it exists.
  *
  * Audio is never kept: it comes in, it is transcribed, it is gone. What
- * remains of the speech is the text — visible to the buyer, and checkable
+ * remains of the speech is the text, visible to the buyer, and checkable
  * afterwards.
  */
 @Injectable()
@@ -31,8 +31,8 @@ export class AssistantVoiceService {
   /**
    * Audio becomes text.
    *
-   * The language is forced: letting it guess would tip a short phrase — "oui",
-   * "deux kilos" — into English one time in ten.
+   * The language is forced: letting it guess would tip a short phrase, "oui",
+   * "deux kilos", into English one time in ten.
    */
   async transcribe(audio: Buffer, filename: string, mimeType: string): Promise<string> {
     const form = new FormData()
@@ -47,7 +47,7 @@ export class AssistantVoiceService {
     })
 
     if (!response.ok) {
-      this.logger.error(`Transcription refusée (${response.status}) — ${await response.text()}`)
+      this.logger.error(`Transcription refusée (${response.status}), ${await response.text()}`)
       throw new ServiceUnavailableException('Je n\'ai pas pu vous entendre. Réessayez ?')
     }
 
@@ -80,8 +80,8 @@ export class AssistantVoiceService {
         input: text,
         response_format: 'mp3',
         // Both levers pull the same way. Averaged over four runs of the same
-        // sentence — this model re-performs the text each time, so one sample
-        // says nothing — 7.76 s as she shipped against 6.66 s here: 14 %.
+        // sentence, this model re-performs the text each time, so one sample
+        // says nothing, 7.76 s as she shipped against 6.66 s here: 14 %.
         // Shorter audio also comes back sooner.
         speed,
         // This is not a narrator: it is someone behind a market stall with
@@ -92,7 +92,7 @@ export class AssistantVoiceService {
 
     if (!response.ok) {
       const body = await response.text()
-      this.logger.error(`Synthèse refusée (${response.status}) — ${body}`)
+      this.logger.error(`Synthèse refusée (${response.status}), ${body}`)
       // An empty account is not a passing glitch: the buyer has to know they
       // can write instead of waiting for the voice to come back.
       throw new ServiceUnavailableException(

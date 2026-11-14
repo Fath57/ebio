@@ -14,7 +14,7 @@ interface Ticket {
  * A one-time claim on a sentence to be spoken.
  *
  * The phone plays the answer straight from the network so the sound starts
- * before the file is whole — and a player reads a **URL**, it cannot send a
+ * before the file is whole, and a player reads a **URL**, it cannot send a
  * body. Putting the sentence in the query string would write a buyer's
  * conversation into every proxy log between here and the phone, so the text
  * stays on the server and the URL carries nothing but a random identifier.
@@ -38,7 +38,7 @@ export class AssistantVoiceTickets {
    *
    * It used to be consumed on first read, which sounded tidy and was wrong: a
    * native player does not fetch a stream once. It reconnects, asks for a byte
-   * range, retries a stall — and every one of those got a 404, so the voice
+   * range, retries a stall, and every one of those got a 404, so the voice
    * cut out mid-sentence. The ticket expires on time instead, which is what
    * actually bounds it.
    */

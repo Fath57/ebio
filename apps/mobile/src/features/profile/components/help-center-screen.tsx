@@ -25,7 +25,7 @@ const SUPPORT_EMAIL = 'contact@e-bio.org'
 /**
  * The help centre reads the very FAQ the back-office already manages for the
  * landing site (`GET /api/landing/content`). One place to edit, two places to
- * read — a second hard-coded list in the app would drift within a month.
+ * read, a second hard-coded list in the app would drift within a month.
  */
 export function HelpCenterScreen({ onGoBack, onOpenChat }: HelpCenterScreenProps) {
   const { semantic } = useTheme()
@@ -50,7 +50,7 @@ export function HelpCenterScreen({ onGoBack, onOpenChat }: HelpCenterScreenProps
     }
     catch {
       // Offline: the contact routes below still work, so the screen is not
-      // useless — it just has no questions to show.
+      // useless, it just has no questions to show.
       setFailed(true)
     }
     finally {

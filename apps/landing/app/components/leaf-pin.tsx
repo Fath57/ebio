@@ -1,5 +1,5 @@
 interface LeafPinProps {
-  /** Height in pixels — the marker keeps its 32:44 ratio. */
+  /** Height in pixels, the marker keeps its 32:44 ratio. */
   size?: number
   color?: string
   className?: string

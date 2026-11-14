@@ -42,7 +42,7 @@ export function SupplierGateScreen({ validationStatus, onCreateShop, onRefresh, 
         : validationStatus === 'COMPLEMENT_REQUESTED'
           ? 'Des documents complémentaires sont requis pour valider votre boutique. Consultez votre boîte e-mail pour connaître les pièces demandées, ou contactez l\'équipe eBio.'
           : 'L\'équipe eBio examine votre boutique. Vous serez notifié dès sa validation.'
-    : 'Cette application est destinée aux fournisseurs. Créez votre fiche boutique pour vendre vos produits bio — ou installez l\'application eBio pour commander.'
+    : 'Cette application est destinée aux fournisseurs. Créez votre fiche boutique pour vendre vos produits bio, ou installez l\'application eBio pour commander.'
 
   const showContact = validationStatus === 'REJECTED'
     || validationStatus === 'SUSPENDED'
@@ -50,7 +50,7 @@ export function SupplierGateScreen({ validationStatus, onCreateShop, onRefresh, 
 
   function handleContactSupport(): void {
     Linking.openURL(`mailto:${SUPPORT_EMAIL}`).catch(() => {
-      // No mail app configured — nothing actionable on our side.
+      // No mail app configured, nothing actionable on our side.
     })
   }
 

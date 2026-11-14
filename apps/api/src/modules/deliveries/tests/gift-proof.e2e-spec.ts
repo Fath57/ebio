@@ -28,7 +28,7 @@ async function refusal(promise: Promise<unknown>): Promise<Record<string, unknow
 
 /**
  * The hand-over proof of a cart sent to a relative: code, photo and position
- * together, checked against a real PostGIS database — the distance is an
+ * together, checked against a real PostGIS database, the distance is an
  * `ST_Distance` in geography, which only a real server computes.
  */
 describe('preuve de remise à un proche (e2e)', () => {

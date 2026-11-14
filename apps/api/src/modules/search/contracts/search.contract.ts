@@ -14,13 +14,13 @@ export const searchProductsQuerySchema = z.object({
   promoOnly: z.enum(['true', 'false']).default('false').meta({ description: 'Filter promotional products only' }),
   /** One specific shop: a section can be dedicated to a single supplier. */
   supplierId: z.string().uuid().optional(),
-  /** Listed less than N days ago — what "nouveau" actually means. */
+  /** Listed less than N days ago, what "nouveau" actually means. */
   newerThanDays: z.coerce.number().int().min(1).max(365).optional(),
   /**
    * Products picked one by one.
    *
    * Going through the search rather than a separate query gives the shop, the
-   * distance and the promotional price for free — everything a card displays
+   * distance and the promotional price for free, everything a card displays
    * and which would otherwise have to be rebuilt.
    *
    * Read from a query string as well as from code, so a single identifier
@@ -51,7 +51,7 @@ export const searchResultSchema = z.object({
   supplier: z.object({
     id: z.string().uuid(),
     shopName: z.string(),
-    /** Coordonnées du point de vente — `null` si le fournisseur n'est pas localisé. */
+    /** Coordonnées du point de vente, `null` si le fournisseur n'est pas localisé. */
     latitude: z.number().nullable(),
     longitude: z.number().nullable(),
     distance: z.number(),

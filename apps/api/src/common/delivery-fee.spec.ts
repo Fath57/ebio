@@ -57,7 +57,7 @@ describe('computeRunDistance', () => {
 
   it('mesure le trajet réel du livreur, pas la somme boutique → acheteur', () => {
     const run = computeRunDistance([shopA, shopB], buyer)
-    // A→B then B→buyer, so two legs — and not A→buyer plus
+    // A→B then B→buyer, so two legs, and not A→buyer plus
     // B→buyer, which would count the same road twice.
     expect(run).toBeCloseTo(2.22, 1)
     const naiveSum = computeRunDistance([shopA], buyer)! + computeRunDistance([shopB], buyer)!

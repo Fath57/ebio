@@ -39,7 +39,7 @@ export const familyLimitsSchema = z.object({
   description: 'Limites de dépense : plafond mensuel, maximum par commande, catégories autorisées',
 })
 
-// ===== §1 PAYER — WALLET =====
+// ===== §1 PAYER, WALLET =====
 
 export const updateFamilyWalletSchema = z.object({
   /** Only the limits sent change; null removes one. */
@@ -85,7 +85,7 @@ export const familyWalletResponseSchema = z.object({
   description: 'Le portefeuille famille du payeur : solde, limites par défaut, membres',
 })
 
-// ===== §2 PAYER — MEMBERS =====
+// ===== §2 PAYER, MEMBERS =====
 
 /** From the address book, or a new relative (also saved in the address book). */
 export const addFamilyMemberSchema = z.object({
@@ -107,7 +107,7 @@ export const updateFamilyMemberSchema = z.object({
   description: 'Limites propres d\'un membre',
 })
 
-// ===== §3 PAYER — MONEY =====
+// ===== §3 PAYER, MONEY =====
 
 /** Bounds are checked by the service, to answer with FAMILY_TOPUP_AMOUNT. */
 export const familyAmountSchema = z.object({
@@ -232,7 +232,7 @@ export const memberFamilyTransactionListSchema = z.object({
   total: z.number().int(),
 }).meta({ title: 'MemberFamilyTransactionList' })
 
-// ===== §1 PAYER — CLOSURE =====
+// ===== §1 PAYER, CLOSURE =====
 
 export const familyClosureResponseSchema = z.object({
   /** FCFA credited to the payer's personal wallet; 0 when it was already closed or empty. */

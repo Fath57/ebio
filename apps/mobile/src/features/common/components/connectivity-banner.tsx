@@ -10,7 +10,7 @@ import { colors, fonts, spacing } from '../../../theme/theme'
  *
  * Without it the app simply stops answering: a list that never fills, a
  * button that does nothing. The failure is the network's, but it reads as the
- * app's — and in a place where connections drop as a matter of course, that
+ * app's, and in a place where connections drop as a matter of course, that
  * is the difference between « ça a coupé » and « cette app est cassée ».
  */
 export function ConnectivityBanner() {

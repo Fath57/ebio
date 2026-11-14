@@ -18,7 +18,7 @@ import {
 import { mapPromo, PromoCodesController } from './promo-codes.controller'
 import { PromoCodesService } from './promo-codes.service'
 
-/** Admin sees every code — platform ones it creates, shop ones it can retire. */
+/** Admin sees every code, platform ones it creates, shop ones it can retire. */
 @Controller('admin/promo-codes')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
 @Roles('ADMIN')

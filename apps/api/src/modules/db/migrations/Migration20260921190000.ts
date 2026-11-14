@@ -6,7 +6,7 @@ import { Migration } from '@mikro-orm/migrations'
  *
  * Direct consequence on the schema: a cart no longer yields one run but as
  * many as its split holds. `delivery_runs.checkout_id` therefore loses its
- * uniqueness, and the run gains the shops it collects from — which is what
+ * uniqueness, and the run gains the shops it collects from, which is what
  * lets each delivery join the right one when its order is born, before any
  * delivery exists.
  *

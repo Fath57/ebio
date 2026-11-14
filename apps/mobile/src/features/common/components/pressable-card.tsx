@@ -8,7 +8,7 @@ interface PressableCardProps extends Omit<PressableProps, 'style'> {
   /** How far it sinks. A card takes less than a button: it is wider. */
   scaleTo?: number
   /**
-   * A tick under the finger, for a press that changes something — adding to
+   * A tick under the finger, for a press that changes something, adding to
    * the basket, keeping a product. Navigating somewhere does not deserve one:
    * a phone that buzzes at every tap is a phone one turns off.
    */
@@ -20,7 +20,7 @@ interface PressableCardProps extends Omit<PressableProps, 'style'> {
 /**
  * A card that answers the finger.
  *
- * The default touchable flashes its opacity — cheap, and read as such. A card
+ * The default touchable flashes its opacity, cheap, and read as such. A card
  * that sinks under the thumb and springs back reads as a physical thing, which
  * is most of what separates an app that feels finished from one that does not.
  *

@@ -3,7 +3,7 @@ import type { EntityManager } from '@mikro-orm/postgresql'
 /**
  * Whether `userId` is the relative a cart was sent to: their phone number is
  * the one the payer typed, and it was proven by an SMS code (research §9). A
- * number merely typed in a profile links nothing — anyone could type anyone's.
+ * number merely typed in a profile links nothing, anyone could type anyone's.
  *
  * A plain function on the entity manager, not a service: ratings and
  * deliveries ask it without depending on the gift module.

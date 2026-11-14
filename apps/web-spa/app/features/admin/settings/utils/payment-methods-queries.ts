@@ -40,7 +40,7 @@ export function fetchPaymentMethodsQueryOptions() {
     queryKey: ['admin', 'payment-methods'],
     queryFn: async () => {
       // The route reads its filters via raw @Query, invisible to the OpenAPI
-      // spec — the default page size (50) is plenty for a per-country list.
+      // spec, the default page size (50) is plenty for a per-country list.
       const response = await paymentMethodAdminControllerList()
       if (response.error)
         throw new Error('Failed to load payment methods')

@@ -26,7 +26,7 @@ const STATUS_OPTIONS = ['PENDING', 'CAPTURED', 'ESCROW', 'RELEASED', 'REFUNDED',
 
 /**
  * French grouping uses a narrow no-break space (U+202F) that Plus Jakarta Sans
- * lacks — "58 100" rendered as "58100" outside the mono font. A plain
+ * lacks, "58 100" rendered as "58100" outside the mono font. A plain
  * no-break space is in every font.
  */
 function formatAmount(value: number): string {
@@ -88,7 +88,7 @@ export default function TransactionsPage() {
       enableSorting: false,
       cell: ({ row }) => (
         <>
-          <div className="font-medium">{row.original.orderNumber ?? '—'}</div>
+          <div className="font-medium">{row.original.orderNumber ?? '-'}</div>
           <div className="text-muted-foreground text-xs">
             {row.original.providerReference ?? row.original.provider}
           </div>
@@ -132,7 +132,7 @@ export default function TransactionsPage() {
       // Zéro tant que le séquestre n'est pas libéré : rien n'est acquis.
       cell: ({ row }) => (row.original.commission > 0
         ? formatAmount(row.original.commission)
-        : <span className="text-muted-foreground">—</span>),
+        : <span className="text-muted-foreground">-</span>),
     },
   ], [t, i18n.language])
 

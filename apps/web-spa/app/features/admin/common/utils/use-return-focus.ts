@@ -5,7 +5,7 @@ import { useRef } from 'react'
  * hand focus back to: closing it drops a keyboard user at the top of the page.
  *
  * Remembers whatever held focus when `open` turned true and returns the
- * `onCloseAutoFocus` handler that puts it back — unless that element left the
+ * `onCloseAutoFocus` handler that puts it back, unless that element left the
  * page meanwhile (its row was resolved), where the default behaviour stays.
  */
 export function useReturnFocus(open: boolean): (event: Event) => void {

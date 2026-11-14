@@ -36,7 +36,7 @@ export function useTopupColumns({ withWalletLink }: { withWalletLink: boolean })
       cell: ({ row }) => (
         <span className="flex flex-col">
           <Link to={`/admin/utilisateurs/${row.original.userId}`} className="font-medium hover:underline">
-            {row.original.userName || '—'}
+            {row.original.userName || '-'}
           </Link>
           {row.original.userEmail && <span className="text-muted-foreground text-xs">{row.original.userEmail}</span>}
         </span>
@@ -46,7 +46,7 @@ export function useTopupColumns({ withWalletLink }: { withWalletLink: boolean })
       id: 'reference',
       header: t('admin.wallets.columns.reference'),
       meta: { hideBelow: 'md' },
-      cell: ({ row }) => <span className="text-muted-foreground font-mono text-xs">{row.original.fedapayTransactionId ?? '—'}</span>,
+      cell: ({ row }) => <span className="text-muted-foreground font-mono text-xs">{row.original.fedapayTransactionId ?? '-'}</span>,
     },
     {
       id: 'amount',

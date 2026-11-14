@@ -34,7 +34,7 @@ export enum CampaignSegment {
 /**
  * A message sent to many people at once, on purpose.
  *
- * Everything else the app sends is a consequence — an order moved, a courier
+ * Everything else the app sends is a consequence, an order moved, a courier
  * accepted. This is the only kind written by someone who decided to write it,
  * so it carries what that needs: a picture, a moment, and a count of who it
  * actually reached.

@@ -20,7 +20,7 @@ import { Supplier } from '../../suppliers/supplier.entity'
  *
  * A SUPPORT thread carries neither supplier nor courier: support is a team,
  * not a person. Any back-office member answers it, and the buyer always sees
- * the same correspondent — assigning an agent would make the thread go quiet
+ * the same correspondent, assigning an agent would make the thread go quiet
  * the day that agent is off.
  */
 export enum ConversationKind {
@@ -52,7 +52,7 @@ export class Conversation {
   @ManyToOne(() => CourierProfile, { fieldName: 'courier_profile_id', nullable: true })
   courier?: Rel<CourierProfile> | null
 
-  /** The delivery a COURIER thread is about — one thread per delivery. */
+  /** The delivery a COURIER thread is about, one thread per delivery. */
   @Property({ fieldName: 'delivery_id', type: 'uuid', nullable: true })
   deliveryId?: string
 

@@ -60,7 +60,7 @@ function summarise(attempt: Attempt): string {
 }
 
 /**
- * What this buyer tried, and — on request — what is in their basket.
+ * What this buyer tried, and, on request, what is in their basket.
  *
  * The attempts come first because they are what answers "I can't order": the
  * contents are almost never the problem, and reading them is a cost that

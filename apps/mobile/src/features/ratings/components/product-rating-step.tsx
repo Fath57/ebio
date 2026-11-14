@@ -30,7 +30,7 @@ interface Draft {
 /**
  * Third step of the rating journey: the products actually received.
  *
- * One row per product, five stars, and nothing else until a star is touched —
+ * One row per product, five stars, and nothing else until a star is touched,
  * a page opening with five comment fields is a page nobody finishes. Rating
  * nothing and validating is a normal outcome, not an error.
  */
@@ -52,7 +52,7 @@ export function ProductRatingStep({ orderId, onComplete }: ProductRatingStepProp
         if (res.ok && !cancelled) {
           const data = await res.json() as { items: RateableProduct[] }
           setItems(data.items)
-          // Nothing to rate — an order delivered by the shop itself, or one
+          // Nothing to rate, an order delivered by the shop itself, or one
           // already fully reviewed. Leave without showing an empty screen.
           if (data.items.length === 0) {
             onComplete()

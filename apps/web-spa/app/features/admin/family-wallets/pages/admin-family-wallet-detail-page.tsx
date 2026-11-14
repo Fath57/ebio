@@ -36,7 +36,7 @@ function amountToneClass(value: number): string {
 /**
  * One family wallet as the staff see it: who pays, what is left, the limits
  * every relative spends under, and the last ledger lines. Suspending the
- * wallet or a member needs a reason — it goes to the audit trail.
+ * wallet or a member needs a reason, it goes to the audit trail.
  */
 export default function AdminFamilyWalletDetailPage() {
   const { t, i18n } = useTranslation()
@@ -336,7 +336,7 @@ function TransactionsTable({ items, isLoading }: { items: AdminFamilyTransaction
     {
       id: 'member',
       header: t('admin.familyWallets.columns.member'),
-      cell: ({ row }) => row.original.member?.nickname ?? <span className="text-muted-foreground">—</span>,
+      cell: ({ row }) => row.original.member?.nickname ?? <span className="text-muted-foreground">-</span>,
     },
     {
       id: 'order',
@@ -345,7 +345,7 @@ function TransactionsTable({ items, isLoading }: { items: AdminFamilyTransaction
       cell: ({ row }) => {
         const { order } = row.original
         if (!order)
-          return <span className="text-muted-foreground">—</span>
+          return <span className="text-muted-foreground">-</span>
         return (
           <div className="min-w-0">
             <Link to={`/admin/commandes/${order.id}`} className="font-medium hover:underline">

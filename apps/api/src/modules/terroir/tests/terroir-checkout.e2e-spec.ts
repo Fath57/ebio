@@ -27,10 +27,10 @@ function fresh(app: INestApplication, em: EntityManager): void {
 
 /**
  * US1 (T029): one parcel for several shops, EXPORT orders at no delivery
- * fee, an exact total, prices frozen at payment — and the shipping never
+ * fee, an exact total, prices frozen at payment, and the shipping never
  * reaching a shop: it goes to eBio's EXPORT account.
  */
-describe('terroir — passage en caisse (e2e)', { timeout: 30_000 }, () => {
+describe('terroir, passage en caisse (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 6 }, {
       imports: [RolesModule, AuditModule, TerroirModule],
@@ -101,7 +101,7 @@ describe('terroir — passage en caisse (e2e)', { timeout: 30_000 }, () => {
     expect(payments.map(payment => Number(payment.amount)).sort()).toEqual([2500, 6000])
     expect(await exportMovements(em)).toEqual([{ type: 'EXPORT_SHIPPING_INCOME', amount: 42_500 }])
 
-    // Released (as at collection), the shop nets its sale less the commission — no shipping.
+    // Released (as at collection), the shop nets its sale less the commission, no shipping.
     const shopAOrder = orders.find(order => order.supplier.id === world.shopA.supplierId)!
     const shopAPayment = payments.find(payment => payment.order.id === shopAOrder.id)!
     await app.get(PaymentsService).releaseEscrow(shopAPayment.id)

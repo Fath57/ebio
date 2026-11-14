@@ -11,7 +11,7 @@ import { Notification, NotificationChannel, NotificationType } from './notificat
 
 /**
  * Which app a notification belongs to. One eBio account can be buyer, supplier
- * and courier at once, and each app must only list its own notifications —
+ * and courier at once, and each app must only list its own notifications,
  * the type decides, since the sender already targets one role per type.
  */
 export type NotificationAudience = 'buyer' | 'supplier' | 'courier'
@@ -117,13 +117,13 @@ interface SendNotificationOptions {
   channels: NotificationChannel[]
   /**
    * Explicit target apps for the push ('client' | 'supplier' | 'courier').
-   * Overrides the per-type audience — needed when one type serves several
+   * Overrides the per-type audience, needed when one type serves several
    * apps but this send is for one seat only (a chat message, say).
    */
   apps?: string[]
   /**
    * Picture shown in the push (a hand-over photo). Must open without
-   * credentials — a signed link — since the phone fetches it itself.
+   * credentials, a signed link, since the phone fetches it itself.
    */
   imageUrl?: string
 }
@@ -232,14 +232,14 @@ export class NotificationsService {
   ): Promise<void> {
     const em = this.em.fork()
     // One account may run the client, supplier and courier apps at once: only
-    // the app(s) that display this type get the push — or the apps the caller
+    // the app(s) that display this type get the push, or the apps the caller
     // named explicitly. Legacy tokens without an app tag keep receiving
     // everything.
     const apps = targetApps ? new Set(targetApps) : appsForType(type)
     const allTokens = await em.find(DeviceToken, { user: { id: user.id } })
     const tokens = allTokens.filter(t => !t.app || apps.size === 0 || apps.has(t.app))
     if (tokens.length === 0) {
-      this.logger.debug(`No device tokens for user ${user.id} and type ${type} — skipping push`)
+      this.logger.debug(`No device tokens for user ${user.id} and type ${type}, skipping push`)
       return
     }
 

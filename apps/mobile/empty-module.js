@@ -1,4 +1,4 @@
-// Stub for @opentelemetry/api — provides no-op implementations for React Native
+// Stub for @opentelemetry/api, provides no-op implementations for React Native
 const noopSpan = {
   setAttribute: () => noopSpan,
   setAttributes: () => noopSpan,

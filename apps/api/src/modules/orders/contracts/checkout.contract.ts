@@ -9,7 +9,7 @@ import { deliveryAddressSchema, orderItemInputSchema, paymentMethodEnum, pickupM
  * orders created behind it.
  *
  * No `supplierId` on the way in: the shops are derived from the products. That
- * is the whole point of the feature — splitting becomes the platform's
+ * is the whole point of the feature, splitting becomes the platform's
  * business and stops being the buyer's.
  */
 
@@ -124,12 +124,12 @@ export const checkoutPreviewResponseSchema = z.object({
    */
   cashLimitExceededBy: z.number().nullable(),
   /**
-   * Name of a shop that cannot be paid in cash right now — its eBio debt is
-   * past the platform limit — or `null`. Online and wallet stay open.
+   * Name of a shop that cannot be paid in cash right now, its eBio debt is
+   * past the platform limit, or `null`. Online and wallet stay open.
    */
   cashBlockedShop: z.string().nullable(),
   /**
-   * The shop is closed right now — `null` when it is open.
+   * The shop is closed right now, `null` when it is open.
    *
    * Read by the checkout screen above the button: the order is still
    * possible, but it is no longer placed unknowingly.
@@ -164,7 +164,7 @@ export const createCheckoutSchema = z.object({
   familyMemberId: z.string().uuid().optional(),
   promoCode: z.string().trim().max(50).optional(),
   /**
-   * What the buyer types, in their own words — « Demain matin entre 8h et
+   * What the buyer types, in their own words, « Demain matin entre 8h et
    * 12h ». Not a timestamp: the column is text, the entity declares a string,
    * and the single-order contract has always taken one. Only this schema
    * asked for an ISO datetime, so any cart where the buyer filled the slot

@@ -224,7 +224,7 @@
       "pickerPlaceholder": "Aucune boutique sélectionnée",
       "pickerSearch": "Rechercher une boutique…",
       "pickerEmpty": "Aucune boutique trouvée",
-      "notValidated": "Boutique non validée — ses produits ne sont pas visibles des acheteurs",
+      "notValidated": "Boutique non validée, ses produits ne sont pas visibles des acheteurs",
       "emptyTitle": "Aucune boutique sélectionnée",
       "emptyDescription": "Sélectionnez une boutique ci-dessus pour ouvrir son catalogue et modifier ses produits.",
       "shopTitle": "Catalogue de la boutique",
@@ -283,7 +283,7 @@
       "restaged": "Remise en scène",
       "restageTitle": "Mise en scène (IA)",
       "restageAction": "Remettre en scène",
-      "restageHint": "L'IA redessine tout ce qui entoure le produit : fond, lumière, ombre. Le produit lui-même doit rester identique — c'est vérifié juste après, et ce n'est pas garanti. Comparez les deux images avant de publier. Comptez jusqu'à une minute.",
+      "restageHint": "L'IA redessine tout ce qui entoure le produit : fond, lumière, ombre. Le produit lui-même doit rester identique, c'est vérifié juste après, et ce n'est pas garanti. Comparez les deux images avant de publier. Comptez jusqu'à une minute.",
       "restagePlaceholder": "Ambiance souhaitée (facultatif) : fond bois clair, lumière du matin…",
       "restagePending": "Mise en scène en cours… jusqu'à une minute.",
       "restageDiscard": "Revenir à la retouche",
@@ -743,7 +743,7 @@
         "subtitle": "Sous-titre",
         "subtitleHint": "Affiché sous le titre, en plus petit.",
         "image": "Visuel",
-        "imageHint": "Format large recommandé, 2:1 — par exemple 1200×600.",
+        "imageHint": "Format large recommandé, 2:1, par exemple 1200×600.",
         "targetType": "Type de destination",
         "target": "Destination",
         "selectSupplier": "Choisir un fournisseur…",
@@ -1060,7 +1060,7 @@
         "asap": "Dès que la commande est prête",
         "window": "Sur un créneau",
         "edit": "Modifier le créneau",
-        "title": "Créneau de livraison — {{number}}",
+        "title": "Créneau de livraison, {{number}}",
         "description": "La recherche du livreur s'ouvre une heure avant le début du créneau. L'acheteur est prévenu du changement, ainsi que le livreur s'il y en a déjà un.",
         "mode": "Livraison",
         "date": "Date",
@@ -1236,7 +1236,7 @@
     },
     "promotions": {
       "title": "Promotions",
-      "dialogTitle": "Promotions — {{name}}",
+      "dialogTitle": "Promotions, {{name}}",
       "dialogDescription": "Les promotions eBio sont financées par la plateforme : la boutique est compensée lors du reversement.",
       "empty": "Aucune promotion sur ce produit.",
       "types": {
@@ -1551,7 +1551,7 @@
         "avatarDefault": "Aucun portrait choisi : celui livré avec l’application est utilisé.",
         "avatarReset": "Remettre le portrait d’origine",
         "speedLabel": "Son débit de parole",
-        "speedHint": "Réglez à l’oreille. ×1 était son débit d’origine — jugé trop lent. Au-delà de ×1,25 elle commence à manger les fins de phrase."
+        "speedHint": "Réglez à l’oreille. ×1 était son débit d’origine, jugé trop lent. Au-delà de ×1,25 elle commence à manger les fins de phrase."
       },
       "productReview": {
         "title": "Avis sur les produits",
@@ -1576,7 +1576,7 @@
       },
       "homeSections": {
         "title": "Sections de l'accueil",
-        "description": "Ce que l'acheteur voit en ouvrant l'application : les rails de produits, leur titre, leur ordre et ce qu'ils contiennent. Ils étaient écrits dans le code — les renommer demandait une nouvelle version de l'application."
+        "description": "Ce que l'acheteur voit en ouvrant l'application : les rails de produits, leur titre, leur ordre et ce qu'ils contiennent. Ils étaient écrits dans le code, les renommer demandait une nouvelle version de l'application."
       },
       "announcements": {
         "title": "Annonces à l'ouverture",
@@ -1584,7 +1584,7 @@
       },
       "referral": {
         "title": "Parrainage",
-        "description": "Ce que rapporte un parrainage entre acheteurs. Les deux montants sont versés sur les portefeuilles à la première commande livrée du filleul — ni l'inscription ni le paiement ne déclenchent quoi que ce soit.",
+        "description": "Ce que rapporte un parrainage entre acheteurs. Les deux montants sont versés sur les portefeuilles à la première commande livrée du filleul, ni l'inscription ni le paiement ne déclenchent quoi que ce soit.",
         "sponsorAmount": "Récompense du parrain (FCFA)",
         "refereeAmount": "Récompense du filleul (FCFA)",
         "minOrderAmount": "Commande minimum (FCFA)",
@@ -1740,7 +1740,7 @@
       },
       "appVersions": {
         "title": "Versions des applications",
-        "description": "Les mises à jour automatiques ne transportent que le code JavaScript. Une version qui demande un changement natif ne peut venir que du Play Store — et l’application ne peut pas le deviner seule."
+        "description": "Les mises à jour automatiques ne transportent que le code JavaScript. Une version qui demande un changement natif ne peut venir que du Play Store, et l’application ne peut pas le deviner seule."
       },
       "terroirExport": {
         "title": "Terroir vers l'étranger",
@@ -2708,7 +2708,7 @@
     },
     "salesStatement": {
       "open": "Relevé des ventes",
-      "title": "Relevé des ventes — {{shop}}",
+      "title": "Relevé des ventes, {{shop}}",
       "description": "Toutes les commandes de la période dans un fichier Excel : résumé, détail par commande et par produit. Les jours sont lus à l'heure de la boutique.",
       "period": "Période",
       "presets": {
@@ -3351,7 +3351,7 @@
       "phoneNumber": "Numéro Mobile Money",
       "phoneNumberHint": "10 chiffres, format béninois (MTN, Moov ou Celtiis).",
       "holderName": "Nom du titulaire",
-      "holderNameHint": "Tel qu’enregistré chez l’opérateur — il sert à la vérification.",
+      "holderNameHint": "Tel qu’enregistré chez l’opérateur, il sert à la vérification.",
       "toNumber": "Verser sur",
       "amount": "Montant (FCFA)",
       "amountHint": "Entre {{min}} et {{balance}} FCFA."
@@ -3363,7 +3363,7 @@
     "adminDescription": "Les remises de la plateforme et celles des boutiques",
     "listTitle": "Codes",
     "supplierHint": "La remise porte sur les articles, jamais sur la livraison, et vient de votre marge. Un code utilisé ne peut plus être supprimé, seulement désactivé.",
-    "adminHint": "Un code créé ici vaut sur toutes les boutiques : eBio compense la boutique du montant remisé, versé sur son portefeuille. Les codes des boutiques restent à leur charge — vous pouvez les désactiver.",
+    "adminHint": "Un code créé ici vaut sur toutes les boutiques : eBio compense la boutique du montant remisé, versé sur son portefeuille. Les codes des boutiques restent à leur charge, vous pouvez les désactiver.",
     "add": "Nouveau code",
     "empty": "Aucun code promo. Créez-en un pour animer vos ventes.",
     "createTitle": "Nouveau code promo",

@@ -219,7 +219,7 @@ export default function ExportDepartureDetailPage() {
                         <TableCell><ShipmentStatusBadge status={shipment.status} /></TableCell>
                         <TableCell className="text-right font-mono">{formatGrams(shipment.estimatedWeightG)}</TableCell>
                         <TableCell className="text-right font-mono">
-                          {shipment.actualWeightG == null ? '—' : formatGrams(shipment.actualWeightG)}
+                          {shipment.actualWeightG == null ? '-' : formatGrams(shipment.actualWeightG)}
                         </TableCell>
                         <TableCell>
                           {shipment.insured

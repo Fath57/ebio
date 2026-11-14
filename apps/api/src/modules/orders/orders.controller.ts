@@ -91,8 +91,8 @@ export class OrdersController {
     options: { total?: number, shopCount?: number, distanceKm?: number } = {},
   ) {
     return {
-      // The request names products, not shops — those are worked out server
-      // side — so the count comes from the answer, and is unknown on a refusal
+      // The request names products, not shops, those are worked out server
+      // side, so the count comes from the answer, and is unknown on a refusal
       // that never got that far.
       shopCount: options.shopCount ?? 0,
       itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
@@ -102,7 +102,7 @@ export class OrdersController {
   }
 
   /**
-   * The whole cart as it would be charged — every shop together,
+   * The whole cart as it would be charged, every shop together,
    * a single delivery fee. Nothing is created.
    *
    * Lives next to `preview`, which prices a single shop: the two answer
@@ -117,8 +117,8 @@ export class OrdersController {
   ) {
     try {
       const quote = await this.checkoutService.preview(session.user.id, body)
-      // A quote can succeed and still lead nowhere — out of zone, no drop-off
-      // point — and that is exactly what someone calls about.
+      // A quote can succeed and still lead nowhere, out of zone, no drop-off
+      // point, and that is exactly what someone calls about.
       const blocked = quote.deliveryFee === null && quote.deliveryReason !== 'PICKUP'
       await this.attempts.record(
         session.user.id,

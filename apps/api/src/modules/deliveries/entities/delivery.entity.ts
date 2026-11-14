@@ -73,7 +73,7 @@ export class Delivery {
   @Index()
   status: DeliveryStatus = DeliveryStatus.AWAITING_COURIER
 
-  /** Supplier address snapshotted at creation — later shop edits must not rewrite it. */
+  /** Supplier address snapshotted at creation, later shop edits must not rewrite it. */
   @Property({ fieldName: 'pickup_address' })
   pickupAddress!: string
 
@@ -112,7 +112,7 @@ export class Delivery {
   @Property({ fieldName: 'proof_longitude', type: 'double', nullable: true })
   proofLongitude?: number | null
 
-  /** When the photo was taken — replayed as is when the courier was offline. */
+  /** When the photo was taken, replayed as is when the courier was offline. */
   @Property({ fieldName: 'proof_taken_at', type: 'Date', nullable: true })
   proofTakenAt?: Date | null
 

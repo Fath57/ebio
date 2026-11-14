@@ -50,7 +50,7 @@ export interface ExportStatusDisplay {
   kind: 'pending' | 'approved' | 'rejected' | 'retired'
 }
 
-/** Badge wording for a product profile or a pack — paired with an icon, never colour alone. */
+/** Badge wording for a product profile or a pack, paired with an icon, never colour alone. */
 export function describeExportStatus(status: ExportPackStatus): ExportStatusDisplay {
   switch (status) {
     case 'APPROVED':

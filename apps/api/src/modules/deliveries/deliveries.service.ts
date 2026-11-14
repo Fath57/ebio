@@ -257,9 +257,9 @@ export class DeliveriesService {
 
   /**
    * Called by OrdersService when a DELIVERY order turns READY. Snapshots both
-   * addresses, the fee split (the platform rate may change later — the run
+   * addresses, the fee split (the platform rate may change later, the run
    * is paid at the rate in force when it was offered), and copies the
-   * supplier position (may be null — the broadcast then targets everyone and
+   * supplier position (may be null, the broadcast then targets everyone and
    * the supplier is nudged to set a location).
    */
   /**
@@ -269,7 +269,7 @@ export class DeliveriesService {
    * when each shop accepts. The dispatch only happens once every pickup is
    * known.
    *
-   * Pay follows the existing rule — `computeCourierFee` on the fee — applied
+   * Pay follows the existing rule, `computeCourierFee` on the fee, applied
    * to the run's single fee. The courier gets their share of the road they
    * actually ride, not a share per order carried, which would pay them three
    * times for one trip.
@@ -306,7 +306,7 @@ export class DeliveriesService {
   }
 
   /**
-   * The parcel is ready. The search starts now — unless the buyer's window is
+   * The parcel is ready. The search starts now, unless the buyer's window is
    * still far: then the run waits, SCHEDULED, until the window nears. A courier
    * found at 9 h for a 14 h delivery had nothing to do but lose the run.
    */
@@ -332,7 +332,7 @@ export class DeliveriesService {
   /**
    * PREPARING with a readiness estimate: the run exists at once (visible to
    * the back-office, assignable by hand) but stays SCHEDULED until
-   * DISPATCH_LEAD_MINUTES before the estimate — or until the buyer's window
+   * DISPATCH_LEAD_MINUTES before the estimate, or until the buyer's window
    * nears, whichever is later.
    */
   async scheduleForOrder(order: Order): Promise<Delivery | null> {
@@ -347,7 +347,7 @@ export class DeliveriesService {
   /**
    * The back office moved the buyer's window. An unclaimed run follows it: back
    * to waiting if the window moved away, searched now if it came closer. A
-   * claimed run keeps its courier — the pickup clock reads the window live —
+   * claimed run keeps its courier, the pickup clock reads the window live,
    * but the reminder may fire again.
    */
   async applyWindowChange(order: Order, actorUserId: string): Promise<Delivery | null> {
@@ -424,7 +424,7 @@ export class DeliveriesService {
     // in full: the snapshot is the real fee, whoever covers it.
     const deliveryFee = (order.deliveryFee || order.sponsoredDeliveryFee) ?? 0
     const rate = await this.platformSettings.getDeliveryCommissionRate()
-    // The delivery joins the run that collects from its shop — a cart may hold
+    // The delivery joins the run that collects from its shop, a cart may hold
     // several, and picking the wrong one would send the courier to the wrong
     // address.
     const run = order.checkout
@@ -636,7 +636,7 @@ export class DeliveriesService {
 
     await this.dispatchService.respondToOffer(deliveryId, profile.id, DeliveryOfferResponse.ACCEPTED)
     // The claim was a raw UPDATE: without a refresh the courier got back the
-    // delivery as it was before — no courier, still awaiting one.
+    // delivery as it was before, no courier, still awaiting one.
     const delivery = await this.loadDelivery(deliveryId, { refresh: true })
     this.em.create(DeliveryEvent, {
       delivery,
@@ -675,8 +675,8 @@ export class DeliveriesService {
    * The runs offered to this courier: the ones they hold exclusively, and the
    * ones the broadcast pushed into their radius.
    *
-   * Same reference point as for lone deliveries — a live position under 12 h,
-   * the declared zone otherwise — and the same visibility rules.
+   * Same reference point as for lone deliveries, a live position under 12 h,
+   * the declared zone otherwise, and the same visibility rules.
    */
   async getRunOffers(userId: string): Promise<RunOfferRow[]> {
     const profile = await this.getMyProfile(userId)
@@ -750,7 +750,7 @@ export class DeliveriesService {
    * Orders the pickups of a run from a starting point.
    *
    * Called twice: at opening, with no known courier, so the offer shows a
-   * plausible order; then on acceptance, from the courier's real position —
+   * plausible order; then on acceptance, from the courier's real position,
    * that one is authoritative, and it is the one the courier follows.
    */
   private async applyPickupOrder(run: DeliveryRun, origin: { latitude: number, longitude: number } | null): Promise<void> {
@@ -795,7 +795,7 @@ export class DeliveriesService {
    * A courier claims a whole run. As for a lone delivery, the
    * `courier_id IS NULL` guard is the lock: first write wins.
    *
-   * Acceptance covers the whole — that is FR-015, and it is what makes the
+   * Acceptance covers the whole, that is FR-015, and it is what makes the
    * single fee tenable. Deliveries follow the run; they are not accepted one
    * by one.
    */
@@ -846,7 +846,7 @@ export class DeliveriesService {
     // the courier starts from.
     await this.applyPickupOrder(run, await this.courierPosition(profile.id))
 
-    // Each delivery follows its run. The per-order status keeps its shape —
+    // Each delivery follows its run. The per-order status keeps its shape,
     // which is what leaves the supplier app untouched.
     const deliveries = run.deliveries.getItems()
     for (const delivery of deliveries) {
@@ -953,7 +953,7 @@ export class DeliveriesService {
     })
 
     // The relative is the one at the door: they get the code too. The payer
-    // keeps their push — their fallback if the text never arrives.
+    // keeps their push, their fallback if the text never arrives.
     const gift = await this.giftCheckoutOf(delivery.order)
     if (gift) {
       await this.giftNotifier.sendCodeToRecipient(gift.id, delivery.confirmationCode)
@@ -1058,7 +1058,7 @@ export class DeliveriesService {
       await this.walletService.credit(target.walletId, {
         type: WalletTransactionType.REFUND,
         amount: fee,
-        description: 'Remboursement des frais de livraison — aucun livreur disponible',
+        description: 'Remboursement des frais de livraison, aucun livreur disponible',
         deliveryRunId: run.id,
         familyMemberId: target.familyMemberId,
       })
@@ -1081,7 +1081,7 @@ export class DeliveriesService {
    * by the same rules as the original quote, on the remaining shops.
    *
    * If the pickup already happened, nothing changes: the courier rode that
-   * road and is paid for it (FR-021 — the run goes on for the others).
+   * road and is paid for it (FR-021, the run goes on for the others).
    */
   async removeSupplierFromRun(input: { checkoutId: string, supplierId: string }): Promise<{ runId: string, refund: number, remainingShops: number } | null> {
     // Filtering in memory rather than in SQL: `supplier_ids` is jsonb, which
@@ -1124,7 +1124,7 @@ export class DeliveriesService {
     }
 
     // The courier already rode that road: we do not take it back from them,
-    // and we refund nothing either — the kilometre was covered.
+    // and we refund nothing either, the kilometre was covered.
     if (collected) {
       await this.em.flush()
       return { runId: run.id, refund: 0, remainingShops: remaining.length }
@@ -1208,7 +1208,7 @@ export class DeliveriesService {
    *
    * The status moves for **that** order only (FR-017): the shop sees its order
    * leave, the others keep waiting for the courier. That is what leaves the
-   * supplier app unchanged — it does not know a run exists, and it does not
+   * supplier app unchanged, it does not know a run exists, and it does not
    * need to.
    *
    * The handover code, however, belongs to the run: drawn at the first pickup,
@@ -1259,7 +1259,7 @@ export class DeliveriesService {
     }
 
     // Everything is loaded: the run is on the road, and the buyer gets their
-    // code — once, not once per shop.
+    // code, once, not once per shop.
     run.status = DeliveryRunStatus.DELIVERING
     run.deliveringAt = when
     for (const item of siblings) {
@@ -1301,7 +1301,7 @@ export class DeliveriesService {
    * Handover of a run: one code, every order delivered.
    *
    * The buyer holds a single parcel and should not recite one code per shop.
-   * The courier is settled here, once, on the run's fee — the orders of a
+   * The courier is settled here, once, on the run's fee, the orders of a
    * unified cart carry zero, and a per-order settlement would pay them
    * nothing.
    */
@@ -1379,7 +1379,7 @@ export class DeliveriesService {
     run.deliveredAt = when
     await this.em.flush()
 
-    // The courier's money first: a failure here is logged, never surfaced —
+    // The courier's money first: a failure here is logged, never surfaced,
     // the goods are handed over whatever the ledger says.
     await this.settleRunWallet(run, cash)
 
@@ -1411,7 +1411,7 @@ export class DeliveriesService {
    *
    * Paid online: the buyer paid the fee to the platform, the courier is
    * credited their share. Cash: they kept the whole fee at the door, so eBio's
-   * cut is debited — the balance may go below zero, which is what top-ups are
+   * cut is debited, the balance may go below zero, which is what top-ups are
    * for. Replayable: the entry carries the run.
    */
   private async settleRunWallet(run: DeliveryRun, isCash: boolean): Promise<void> {
@@ -1515,13 +1515,13 @@ export class DeliveriesService {
   async complete(deliveryId: string, userId: string, data: CompleteDelivery): Promise<Delivery> {
     const delivery = await this.loadOwnedDelivery(deliveryId, userId)
     if (delivery.deliveryRun) {
-      // Closing a lone delivery would settle the courier on a zero fee — the
+      // Closing a lone delivery would settle the courier on a zero fee, the
       // orders of a unified cart carry none, the fee sits on the run. The
       // handover happens as a whole, with a single code.
       throw new ConflictException('Cette course fait partie d\'une tournée : remettez la tournée entière')
     }
     // Already delivered: the courier tapped twice, or the offline queue is
-    // replaying what the network swallowed — the answer was lost, not the
+    // replaying what the network swallowed, the answer was lost, not the
     // request. Confirming beats worrying someone who did their job. The code
     // is still checked: a completed handover does not excuse a wrong one.
     if (delivery.status === DeliveryStatus.DELIVERED) {
@@ -1578,7 +1578,7 @@ export class DeliveriesService {
     })
     await this.em.flush()
 
-    // The courier's money first: a failure here is logged, never surfaced —
+    // The courier's money first: a failure here is logged, never surfaced,
     // the parcel is delivered whatever the ledger says.
     await this.settleCourierWallet(delivery)
 
@@ -1602,7 +1602,7 @@ export class DeliveriesService {
    * Settles the delivery fee with the courier wallet once the run is done.
    * Paid online: the buyer's fee sits on the platform account, the courier
    * is credited their share. Cash: the courier pocketed the whole fee at the
-   * door, so eBio's cut is debited (the balance may go negative — that is
+   * door, so eBio's cut is debited (the balance may go negative, that is
    * what top-ups are for). Idempotent on wallet_transactions.delivery_id.
    */
   private async settleCourierWallet(delivery: Delivery): Promise<void> {
@@ -1638,7 +1638,7 @@ export class DeliveriesService {
         await this.walletService.debit(shopWallet.id, {
           type: WalletTransactionType.DELIVERY_SPONSORSHIP,
           amount: deliveryFee,
-          description: `Livraison offerte (promotion) — commande #${order.orderNumber}`,
+          description: `Livraison offerte (promotion), commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
           allowNegative: true,
@@ -1648,7 +1648,7 @@ export class DeliveriesService {
         await this.walletService.debit(wallet.id, {
           type: WalletTransactionType.DELIVERY_COMMISSION,
           amount,
-          description: `Commission eBio sur la course — commande #${order.orderNumber}`,
+          description: `Commission eBio sur la course, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
           allowNegative: true,
@@ -1658,7 +1658,7 @@ export class DeliveriesService {
         await this.walletService.credit(wallet.id, {
           type: WalletTransactionType.DELIVERY_EARNING,
           amount,
-          description: `Gain de la course — commande #${order.orderNumber}`,
+          description: `Gain de la course, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
         })
@@ -1670,7 +1670,7 @@ export class DeliveriesService {
         await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
           type: WalletTransactionType.PLATFORM_MARKETING,
           amount: courierFee,
-          description: `Livraison offerte par eBio — commande #${order.orderNumber}`,
+          description: `Livraison offerte par eBio, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
         })
@@ -1679,7 +1679,7 @@ export class DeliveriesService {
         await this.walletService.post(PlatformAccount.DELIVERY_COMMISSION, 'credit', {
           type: WalletTransactionType.PLATFORM_DELIVERY_SHARE,
           amount: deliveryFee - courierFee,
-          description: `Part eBio sur la livraison — commande #${order.orderNumber}`,
+          description: `Part eBio sur la livraison, commande #${order.orderNumber}`,
           orderId: order.id,
           deliveryId: delivery.id,
         })
@@ -1827,7 +1827,7 @@ export class DeliveriesService {
   /**
    * The supplier advances READY → IN_DELIVERY manually (self-delivery). An
    * unclaimed delivery is closed and withdrawn from courier lists; a claimed
-   * one blocks the manual move — a courier is already on it.
+   * one blocks the manual move, a courier is already on it.
    */
   async handleSupplierTakeover(order: Order): Promise<void> {
     const delivery = await this.em.findOne(Delivery, { order: { id: order.id } })
@@ -1896,7 +1896,7 @@ export class DeliveriesService {
       populate: ['courier', 'courier.user'],
     })
     // A failed hand-over stays failed: the order is cancelled after it (a
-    // gift refunded), and the courier already knows — they declared it.
+    // gift refunded), and the courier already knows, they declared it.
     if (!delivery || delivery.status === DeliveryStatus.CANCELLED || delivery.status === DeliveryStatus.DELIVERED || delivery.status === DeliveryStatus.FAILED) {
       return
     }

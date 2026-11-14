@@ -12,7 +12,7 @@ import { roundRate } from './fx-math'
  * Downloads the dollar rates every morning.
  *
  * USD and CAD in XOF follow from the ECB euro crosses and the official
- * parity — never from the euro rate saved in the back-office, so correcting
+ * parity, never from the euro rate saved in the back-office, so correcting
  * the euro does not distort the dollar. The euro itself is never touched.
  */
 @Injectable()

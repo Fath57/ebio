@@ -53,7 +53,7 @@ export class CheckoutAttemptsService {
       await fork.flush()
     }
     catch (error) {
-      this.logger.warn(`Tentative de commande non consignée pour ${userId} — ${error}`)
+      this.logger.warn(`Tentative de commande non consignée pour ${userId}, ${error}`)
     }
   }
 

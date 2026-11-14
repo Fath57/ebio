@@ -24,7 +24,7 @@ interface ChatDetailScreenProps {
   onOpenOrder?: (orderId: string) => void
 }
 
-/** One-tap messages for a courier on the road — sent as-is. */
+/** One-tap messages for a courier on the road, sent as-is. */
 const COURIER_QUICK_REPLIES = [
   'Je suis en route vers vous 🛵',
   'J’arrive dans 5 minutes',

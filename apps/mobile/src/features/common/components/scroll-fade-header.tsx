@@ -9,7 +9,7 @@ import { useTheme } from '../../../theme/theme-context'
 /**
  * Header icon that follows the scroll: white over the photo, ink over the
  * page once the header has turned opaque. `fixedColor` opts out for a state
- * that carries its own meaning — a favourited heart stays coral throughout.
+ * that carries its own meaning, a favourited heart stays coral throughout.
  *
  * Both copies are always rendered and cross-faded; at rest one of them sits
  * at opacity 0 and contributes nothing.
@@ -45,7 +45,7 @@ export function HeaderIcon({
 }
 
 interface ScrollFadeHeaderProps {
-  /** Where the photo stops and the page begins — drives the whole fade. */
+  /** Where the photo stops and the page begins, drives the whole fade. */
   heroHeight: number
   scrollY: Animated.Value
   /** Appears with the background, once the photo is scrolled past. */

@@ -601,7 +601,7 @@ export function SupplierProfileScreen({
             end={{ x: 0, y: 1 }}
           />
 
-          {/* Profile photo — overlapping bottom of cover */}
+          {/* Profile photo, overlapping bottom of cover */}
           <View style={styles.profilePhotoAnchor}>
             <View style={[styles.profilePhotoWrapper, { borderColor: semantic.bgPage }]}>
               {supplier.profilePhotoUrl
@@ -643,7 +643,7 @@ export function SupplierProfileScreen({
 
           {/* Ce que la boutique dit d'elle-même, juste sous son adresse : le
               nom et la distance disent où elle est, jamais qui elle est.
-              Rien n'est dessiné tant qu'elle n'a rien écrit — un encart vide
+              Rien n'est dessiné tant qu'elle n'a rien écrit, un encart vide
               vaut moins que pas d'encart. */}
           {supplier.description !== null && supplier.description.trim().length > 0 && (
             <Text style={[styles.description, { color: semantic.textSecondary }]}>
@@ -659,7 +659,7 @@ export function SupplierProfileScreen({
             semantic={semantic}
           />
 
-          {/* Badge pills — horizontal scroll */}
+          {/* Badge pills, horizontal scroll */}
           {(supplier.badges?.length ?? 0) > 0 && (
             <ScrollView
               horizontal

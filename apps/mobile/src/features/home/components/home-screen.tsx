@@ -88,7 +88,7 @@ export function HomeScreen({
   const { latitude, longitude, label: locationLabel, source: locationSource } = useLocation()
   // Permission refused or position unavailable: the app falls back to a
   // default city. Saying "near you" about someone else's city is a lie, and
-  // the one thing that would fix it — choosing a position — is one tap away.
+  // the one thing that would fix it, choosing a position, is one tap away.
   const positionIsAssumed = locationSource === 'default'
   const { categories, loadCategories } = useCategories()
   const { sections, loading } = useHomeSections(latitude, longitude)
@@ -99,8 +99,8 @@ export function HomeScreen({
   }, [loadCategories])
 
   // Les bannières pilotées depuis le back-office priment. Sans aucune bannière
-  // publiée, on retombe sur une sélection automatique — promotions, à défaut
-  // fournisseurs validés, à défaut les plus proches — pour ne jamais laisser
+  // publiée, on retombe sur une sélection automatique, promotions, à défaut
+  // fournisseurs validés, à défaut les plus proches, pour ne jamais laisser
   // la section vide.
   // With no published banner, we draw from what the sections already
   // returned rather than firing another search for nothing.

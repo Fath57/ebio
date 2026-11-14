@@ -331,8 +331,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted, on
                     ]}
                     >
                       {v.label}
-                      {' '}
-                      —
+                      {' · '}
                       {formatPrice(v.pricePerUnit)}
                     </Text>
                   </TouchableOpacity>
@@ -345,7 +344,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted, on
           <View style={styles.stockRow}>
             <Box size={16} color={isOutOfStock ? colors.coral[600] : colors.green[600]} />
             <Text style={[styles.stockText, { color: isOutOfStock ? colors.coral[600] : colors.green[600] }]}>
-              {isOutOfStock ? 'En rupture de stock' : `En stock — ${activeStock} ${unitLabel}`}
+              {isOutOfStock ? 'En rupture de stock' : `En stock, ${activeStock} ${unitLabel}`}
             </Text>
           </View>
 
@@ -357,7 +356,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted, on
             </View>
           )}
 
-          {/* Composition & product sheet — read-only, shown only when filled in */}
+          {/* Composition & product sheet, read-only, shown only when filled in */}
           {product.ingredients != null && product.ingredients !== '' && (
             <View style={styles.descriptionSection}>
               <Text style={[styles.sectionLabel, { color: semantic.textSecondary }]}>Ingrédients</Text>

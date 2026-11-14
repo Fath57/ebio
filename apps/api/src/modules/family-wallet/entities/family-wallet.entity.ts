@@ -15,7 +15,7 @@ export enum FamilyWalletStatus {
  *
  * The balance is not here: it is the `wallets` row whose `family_wallet_id`
  * points at this one, so it shares the row lock, the ledger and the top-up
- * flow of every other wallet. This row carries the rest — who pays, the
+ * flow of every other wallet. This row carries the rest, who pays, the
  * status, the limits every member gets by default, the low-balance alert.
  */
 @Entity({ tableName: 'family_wallets' })
@@ -36,7 +36,7 @@ export class FamilyWallet {
   @Property({ fieldName: 'suspended_by_admin', type: 'boolean', default: false })
   suspendedByAdmin: boolean = false
 
-  /** numeric(12,2) — MikroORM hands it over as a string; Number() at the edges. */
+  /** numeric(12,2), MikroORM hands it over as a string; Number() at the edges. */
   @Property({ fieldName: 'low_balance_threshold', columnType: 'numeric(12,2)', default: '5000' })
   lowBalanceThreshold: string = '5000'
 

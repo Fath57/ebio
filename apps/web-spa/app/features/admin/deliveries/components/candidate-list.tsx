@@ -123,7 +123,7 @@ function CandidateRow({ candidate, selected, onSelect, onAssign, assignDisabled 
           <p className="text-sm font-semibold tabular-nums">
             {candidate.distanceKm !== null
               ? t('admin.deliveries.assignPage.distance', { km: candidate.distanceKm.toLocaleString(i18n.language) })
-              : '—'}
+              : '-'}
           </p>
         </div>
       </button>

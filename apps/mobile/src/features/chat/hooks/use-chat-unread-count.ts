@@ -7,7 +7,7 @@ const POLL_INTERVAL_MS = 30000
 /**
  * Global unread chat messages count, for navigation badges.
  * Polls GET /api/chat/unread-count on mount then every 30 s, and refreshes
- * immediately on any message the socket delivers — a badge that lags half a
+ * immediately on any message the socket delivers, a badge that lags half a
  * minute behind the conversation it counts is worse than none.
  * Exposes refetch() so a consumer can refresh on demand (e.g. screen focus).
  */

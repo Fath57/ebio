@@ -78,7 +78,7 @@ function localInputValue(daysFromNow: number): string {
 /**
  * An announcement published by eBio itself.
  *
- * Same object as a shop's, minus the money: no offer, no wallet, no approval —
+ * Same object as a shop's, minus the money: no offer, no wallet, no approval,
  * it goes live on its start date. The dates are prefilled because an
  * announcement without an end is the one that keeps reappearing in July for a
  * March campaign.

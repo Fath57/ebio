@@ -37,7 +37,7 @@ export interface AdminFamilyWalletDetailView extends AdminFamilyWalletRowView {
 /**
  * The family wallets as eBio's staff handle them (FR-032, FR-033): a list,
  * one wallet with its members and ledger, and the suspensions decided for
- * fraud or a dispute — each written to the audit trail, and lifted by staff
+ * fraud or a dispute, each written to the audit trail, and lifted by staff
  * only.
  */
 @Injectable()

@@ -19,7 +19,7 @@ interface SearchFilters {
   promoOnly?: boolean
   /** One specific shop, when a home section is dedicated to it. */
   supplierId?: string
-  /** Listed less than N days ago — what "nouveau" actually means. */
+  /** Listed less than N days ago, what "nouveau" actually means. */
   newerThanDays?: number
   /** Exactly these products, for a hand-picked home section. */
   productIds?: string[]
@@ -31,7 +31,7 @@ interface SearchResult {
   supplier: {
     id: string
     shopName: string
-    /** Coordonnées du point de vente — `null` si le fournisseur n'est pas localisé. */
+    /** Coordonnées du point de vente, `null` si le fournisseur n'est pas localisé. */
     latitude: number | null
     longitude: number | null
     distance: number
@@ -130,7 +130,7 @@ export function useSearchProducts() {
           return
         }
         if (page === 1 && filters.q) {
-          // A search that returns nothing is the catalogue's shopping list —
+          // A search that returns nothing is the catalogue's shopping list,
           // the one measurement here that names something to go and fix.
           track('recherche', { terme: filters.q, resultats: data.total })
         }

@@ -34,7 +34,7 @@ export enum DeliveryEventType {
   WINDOW_CHANGED = 'WINDOW_CHANGED',
 }
 
-/** Append-only transition log — the traceable per-step history (SC-002). */
+/** Append-only transition log, the traceable per-step history (SC-002). */
 @Entity({ tableName: 'delivery_events' })
 export class DeliveryEvent {
   [OptionalProps]?: 'id' | 'occurredAt' | 'createdAt'

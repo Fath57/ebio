@@ -31,7 +31,7 @@ export class ExportPack {
   @Property({ type: 'json', columnType: 'jsonb', default: '[]' })
   photos: string[] = []
 
-  /** numeric(12,2) — a string from the driver; Number() at the edges. */
+  /** numeric(12,2), a string from the driver; Number() at the edges. */
   @Property({ columnType: 'numeric(12,2)' })
   price!: string
 

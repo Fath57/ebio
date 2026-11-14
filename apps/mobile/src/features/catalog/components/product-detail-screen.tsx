@@ -134,7 +134,7 @@ export function ProductDetailScreen({
   const [selectedFormatId, setSelectedFormatId] = useState<string | null>(null)
   const scrollY = useRef(new Animated.Value(0)).current
 
-  // The navigation param is a lean list payload — the full product detail
+  // The navigation param is a lean list payload, the full product detail
   // brings the composition fields (fiche produit). Fetched only when the
   // caller did not already hand it over.
   useEffect(() => {
@@ -272,7 +272,7 @@ export function ProductDetailScreen({
       // app when it is installed.
       const url = `https://e-bio.org/produit/${product.id}`
       await Share.share({
-        message: `${product.name} — ${formatPrice(displayPrice)} FCFA/${unitLabel}\nChez ${supplier.shopName} sur eBio 🌿\n${url}`,
+        message: `${product.name}, ${formatPrice(displayPrice)} FCFA/${unitLabel}\nChez ${supplier.shopName} sur eBio 🌿\n${url}`,
       })
     }
     catch {
@@ -340,7 +340,7 @@ export function ProductDetailScreen({
         scrollEventThrottle={16}
       >
         {/* ============================================================== */}
-        {/* HERO IMAGE — parallax                                           */}
+        {/* HERO IMAGE, parallax                                           */}
         {/* ============================================================== */}
         <View style={styles.heroContainer}>
           <Animated.View
@@ -430,7 +430,7 @@ export function ProductDetailScreen({
             )}
           </View>
 
-          {/* Price block — editorial treatment */}
+          {/* Price block, editorial treatment */}
           <View style={styles.priceBlock}>
             <View style={styles.priceHeaderRow}>
               <View style={styles.priceTexts}>
@@ -545,7 +545,7 @@ export function ProductDetailScreen({
         )}
 
         {/* ============================================================== */}
-        {/* FICHE PRODUIT — composition                                     */}
+        {/* FICHE PRODUIT, composition                                     */}
         {/* ============================================================== */}
         <ProductCompositionSections composition={composition} />
 
@@ -663,7 +663,7 @@ interface CartControlProps {
 /**
  * Même geste que sur les cartes produit : un « + » tant que rien n'est au
  * panier, puis un compteur branché directement dessus. Pas de bouton
- * « Ajouter au panier » à valider — la quantité affichée EST celle du panier.
+ * « Ajouter au panier » à valider, la quantité affichée EST celle du panier.
  */
 function CartControl({ quantity, unitLabel, onAdd, onRemove }: CartControlProps) {
   const isAtMax = quantity >= MAX_ITEM_QUANTITY
@@ -726,7 +726,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
 
-  // Hero — parallax container
+  // Hero, parallax container
   heroContainer: {
     position: 'relative',
     width: SCREEN_WIDTH,
@@ -802,7 +802,7 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 28,
   },
 
-  // Info section — editorial layout
+  // Info section, editorial layout
   infoSection: {
     paddingHorizontal: spacing[5],
     paddingTop: spacing[5],
@@ -862,7 +862,7 @@ const styles = StyleSheet.create({
     letterSpacing: 0.2,
   },
 
-  // Price — editorial
+  // Price, editorial
   priceHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1093,7 +1093,7 @@ const styles = StyleSheet.create({
     fontSize: 10,
   },
 
-  // CTA section — premium
+  // CTA section, premium
   ctaSection: {
     paddingHorizontal: spacing[5],
     paddingTop: spacing[6],

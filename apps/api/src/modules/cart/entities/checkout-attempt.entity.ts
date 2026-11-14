@@ -18,7 +18,7 @@ export enum CheckoutAttemptOutcome {
  * What a buyer tried, and what the server answered.
  *
  * Written for the person who picks up the phone. "I can't order" is not a
- * question about the basket — the contents are almost never the problem — it
+ * question about the basket, the contents are almost never the problem, it
  * is a question about the refusal, and the refusal had nowhere to be read.
  *
  * On purpose it holds no product: counts and totals are enough to follow a
@@ -44,8 +44,8 @@ export class CheckoutAttempt {
   /**
    * Why it was refused, in the words the buyer saw.
    *
-   * The server already writes its refusals for a human — "Hors zone de
-   * livraison", "Solde insuffisant" — so the agent and the caller are reading
+   * The server already writes its refusals for a human, "Hors zone de
+   * livraison", "Solde insuffisant", so the agent and the caller are reading
    * the same sentence. Null when nothing was refused.
    */
   @Property({ length: 300, nullable: true })

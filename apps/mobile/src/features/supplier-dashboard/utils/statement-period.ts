@@ -6,7 +6,7 @@ export interface StatementPeriod {
   to: string
 }
 
-/** `YYYY-MM-DD` of the phone's own calendar day — never through UTC. */
+/** `YYYY-MM-DD` of the phone's own calendar day, never through UTC. */
 export function toDayString(date: Date): string {
   const month = String(date.getMonth() + 1).padStart(2, '0')
   const day = String(date.getDate()).padStart(2, '0')
@@ -18,7 +18,7 @@ export function fromDayString(day: string): Date {
   return new Date(year, month - 1, date)
 }
 
-/** Today, the week from Monday, the month from the 1st — each up to today. */
+/** Today, the week from Monday, the month from the 1st, each up to today. */
 export function presetPeriod(preset: Exclude<StatementPreset, 'custom'>, now = new Date()): StatementPeriod {
   const today = toDayString(now)
   if (preset === 'today')

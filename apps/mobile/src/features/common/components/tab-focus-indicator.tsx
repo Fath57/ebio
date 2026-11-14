@@ -21,12 +21,12 @@ const SPRING = { damping: 18, stiffness: 240, mass: 0.6 }
  * The mark that travels from one tab to the next.
  *
  * A dot that lit up here and went out there said which tab was active without
- * ever showing the move — two separate events, and the eye has nothing to
+ * ever showing the move, two separate events, and the eye has nothing to
  * follow. One mark that slides says the same thing as a single gesture, which
  * is what makes a bar feel like an object rather than a set of buttons.
  *
- * Drawn through `tabBarBackground`, so the bar itself — its corners, its
- * shadow, its badges, its safe-area padding — is left exactly as it was.
+ * Drawn through `tabBarBackground`, so the bar itself, its corners, its
+ * shadow, its badges, its safe-area padding, is left exactly as it was.
  * Positions are computed from the bar's width divided by the number of tabs,
  * which is how the default bar lays them out.
  */

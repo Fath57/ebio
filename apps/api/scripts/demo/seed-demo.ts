@@ -3,8 +3,8 @@
  *
  * The catalogue is the real one of the shops that agreed to appear
  * (snapshot/*.json, exported from production by export-prod-catalog.sh):
- * their own names, photos and prices. Every person is fictitious — owners'
- * accounts, buyers, couriers — with phone numbers outside any real range, so
+ * their own names, photos and prices. Every person is fictitious, owners'
+ * accounts, buyers, couriers, with phone numbers outside any real range, so
  * that nothing filmed belongs to an actual customer.
  *
  * Orders are not created here: scenario.ts places them through the API, so
@@ -215,10 +215,10 @@ async function seed(em: EntityManager): Promise<void> {
   // video shows earnings, not the lone cash commission of a first run (a
   // red « solde négatif »). Same descriptions as the API writes.
   await seedCourierHistory(em, 'Rodrigue Houngbo', [
-    { daysAgo: 4, type: 'DELIVERY_EARNING', amount: 720, description: 'Gain de la course — commande #EB-20261105-002' },
-    { daysAgo: 3, type: 'DELIVERY_EARNING', amount: 810, description: 'Gain de la course — commande #EB-20261106-004' },
-    { daysAgo: 3, type: 'TIP_EARNING', amount: 200, description: 'Pourboire reçu — commande #EB-20261106-004' },
-    { daysAgo: 1, type: 'DELIVERY_EARNING', amount: 640, description: 'Gain de la course — commande #EB-20261108-001' },
+    { daysAgo: 4, type: 'DELIVERY_EARNING', amount: 720, description: 'Gain de la course, commande #EB-20261105-002' },
+    { daysAgo: 3, type: 'DELIVERY_EARNING', amount: 810, description: 'Gain de la course, commande #EB-20261106-004' },
+    { daysAgo: 3, type: 'TIP_EARNING', amount: 200, description: 'Pourboire reçu, commande #EB-20261106-004' },
+    { daysAgo: 1, type: 'DELIVERY_EARNING', amount: 640, description: 'Gain de la course, commande #EB-20261108-001' },
   ])
 
   // Demo only: a courier's position stays in their zone, whatever the phone

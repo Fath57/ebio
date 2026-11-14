@@ -16,7 +16,7 @@ import { DeliveriesService } from './deliveries.service'
 
 /**
  * Self-scoped courier profile routes: every handler acts on the caller's own
- * profile, so AuthGuard alone is enough — anyone may apply (spec FR-007), and
+ * profile, so AuthGuard alone is enough, anyone may apply (spec FR-007), and
  * the service enforces the validated/suspended gates.
  */
 @Controller('couriers')

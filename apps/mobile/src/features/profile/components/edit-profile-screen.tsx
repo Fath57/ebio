@@ -415,7 +415,7 @@ export function EditProfileScreen({ onGoBack }: EditProfileScreenProps) {
               )}
         </Pressable>
 
-        {/* Account deletion — required in-app by both stores. Kept quiet and
+        {/* Account deletion, required in-app by both stores. Kept quiet and
             last: it must be findable, not inviting. */}
         <View style={styles.deleteSection}>
           {deleteError && (

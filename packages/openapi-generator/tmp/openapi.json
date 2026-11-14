@@ -4747,7 +4747,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Update supplier profile — all fields optional",
+          "description": "Update supplier profile, all fields optional",
           "content": {
             "application/json": {
               "schema": {
@@ -4882,7 +4882,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdateSupplier",
-                "description": "Update supplier profile — all fields optional"
+                "description": "Update supplier profile, all fields optional"
               }
             }
           }
@@ -5310,7 +5310,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Update a sales point — every field optional",
+          "description": "Update a sales point, every field optional",
           "content": {
             "application/json": {
               "schema": {
@@ -5400,7 +5400,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdateSalesPoint",
-                "description": "Update a sales point — every field optional"
+                "description": "Update a sales point, every field optional"
               }
             }
           }
@@ -11361,7 +11361,7 @@
                     "fullName": "Jean Hounkpatin",
                     "phone": "+2290197000000",
                     "vehicleType": "MOTO",
-                    "zone": "Cotonou — Akpakpa"
+                    "zone": "Cotonou, Akpakpa"
                   }
                 ]
               }
@@ -12950,7 +12950,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Editable fields — the code itself is immutable once created",
+          "description": "Editable fields, the code itself is immutable once created",
           "content": {
             "application/json": {
               "schema": {
@@ -13033,7 +13033,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdatePromoCode",
-                "description": "Editable fields — the code itself is immutable once created"
+                "description": "Editable fields, the code itself is immutable once created"
               }
             }
           }
@@ -13235,7 +13235,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Editable fields — the code itself is immutable once created",
+          "description": "Editable fields, the code itself is immutable once created",
           "content": {
             "application/json": {
               "schema": {
@@ -13318,7 +13318,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdatePromoCode",
-                "description": "Editable fields — the code itself is immutable once created"
+                "description": "Editable fields, the code itself is immutable once created"
               }
             }
           }
@@ -13712,7 +13712,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Update product — all fields optional",
+          "description": "Update product, all fields optional",
           "content": {
             "application/json": {
               "schema": {
@@ -13931,7 +13931,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdateProduct",
-                "description": "Update product — all fields optional"
+                "description": "Update product, all fields optional"
               }
             }
           }
@@ -14489,7 +14489,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Update a unit of sale — every field optional, the code is immutable",
+          "description": "Update a unit of sale, every field optional, the code is immutable",
           "content": {
             "application/json": {
               "schema": {
@@ -14518,7 +14518,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdateProductUnit",
-                "description": "Update a unit of sale — every field optional, the code is immutable"
+                "description": "Update a unit of sale, every field optional, the code is immutable"
               }
             }
           }
@@ -14696,7 +14696,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Update a label or certification — every field optional, the code is immutable",
+          "description": "Update a label or certification, every field optional, the code is immutable",
           "content": {
             "application/json": {
               "schema": {
@@ -14743,7 +14743,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdateCertification",
-                "description": "Update a label or certification — every field optional, the code is immutable"
+                "description": "Update a label or certification, every field optional, the code is immutable"
               }
             }
           }
@@ -16124,7 +16124,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Update a banner — every field optional",
+          "description": "Update a banner, every field optional",
           "content": {
             "application/json": {
               "schema": {
@@ -16216,7 +16216,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdateBanner",
-                "description": "Update a banner — every field optional"
+                "description": "Update a banner, every field optional"
               }
             }
           }
@@ -24708,7 +24708,7 @@
         },
         "additionalProperties": false,
         "title": "UpdateSalesPoint",
-        "description": "Update a sales point — every field optional"
+        "description": "Update a sales point, every field optional"
       },
       "RegisterSupplier": {
         "type": "object",
@@ -24883,7 +24883,7 @@
         },
         "additionalProperties": false,
         "title": "UpdateSupplier",
-        "description": "Update supplier profile — all fields optional"
+        "description": "Update supplier profile, all fields optional"
       },
       "DeliveryZone": {
         "type": "object",
@@ -25456,7 +25456,7 @@
             "fullName": "Jean Hounkpatin",
             "phone": "+2290197000000",
             "vehicleType": "MOTO",
-            "zone": "Cotonou — Akpakpa"
+            "zone": "Cotonou, Akpakpa"
           }
         ]
       },
@@ -26197,7 +26197,7 @@
         },
         "additionalProperties": false,
         "title": "UpdateCertification",
-        "description": "Update a label or certification — every field optional, the code is immutable"
+        "description": "Update a label or certification, every field optional, the code is immutable"
       },
       "ProductModerationAction": {
         "type": "object",
@@ -26399,7 +26399,7 @@
         },
         "additionalProperties": false,
         "title": "UpdateProductUnit",
-        "description": "Update a unit of sale — every field optional, the code is immutable"
+        "description": "Update a unit of sale, every field optional, the code is immutable"
       },
       "CreateProduct": {
         "type": "object",
@@ -26661,7 +26661,7 @@
         },
         "additionalProperties": false,
         "title": "UpdateProduct",
-        "description": "Update product — all fields optional"
+        "description": "Update product, all fields optional"
       },
       "StockUpdate": {
         "type": "object",
@@ -26932,7 +26932,7 @@
         },
         "additionalProperties": false,
         "title": "UpdatePromoCode",
-        "description": "Editable fields — the code itself is immutable once created"
+        "description": "Editable fields, the code itself is immutable once created"
       },
       "ClaimReferral": {
         "type": "object",
@@ -28393,7 +28393,7 @@
         },
         "additionalProperties": false,
         "title": "UpdateBanner",
-        "description": "Update a banner — every field optional"
+        "description": "Update a banner, every field optional"
       },
       "GenerateBusinessCards": {
         "type": "object",

@@ -61,7 +61,7 @@
 
 /* eBio Tailwind v4 theme tokens */
 @theme inline {
-  /* Colors — eBio Green */
+  /* Colors, eBio Green */
   --color-ebio-green-50: #e8f5ec;
   --color-ebio-green-100: #c5e6cf;
   --color-ebio-green-200: #7cc896;
@@ -70,7 +70,7 @@
   --color-ebio-green-800: #134e23;
   --color-ebio-green-900: #0a2912;
 
-  /* Colors — eBio Earth */
+  /* Colors, eBio Earth */
   --color-ebio-earth-50: #FAF5ED;
   --color-ebio-earth-100: #F0E0C2;
   --color-ebio-earth-200: #DFB97A;
@@ -79,7 +79,7 @@
   --color-ebio-earth-800: #543310;
   --color-ebio-earth-900: #2C1A07;
 
-  /* Colors — eBio Blue */
+  /* Colors, eBio Blue */
   --color-ebio-blue-50: #eaeff6;
   --color-ebio-blue-100: #c4d1e6;
   --color-ebio-blue-200: #8aa4cc;
@@ -88,7 +88,7 @@
   --color-ebio-blue-800: #213559;
   --color-ebio-blue-900: #121d30;
 
-  /* Colors — eBio Coral */
+  /* Colors, eBio Coral */
   --color-ebio-coral-50: #FFF0EC;
   --color-ebio-coral-100: #FFD8CC;
   --color-ebio-coral-200: #FFAD94;
@@ -97,7 +97,7 @@
   --color-ebio-coral-800: #6F2010;
   --color-ebio-coral-900: #3A100A;
 
-  /* Colors — eBio Neutral */
+  /* Colors, eBio Neutral */
   --color-ebio-neutral-0: #FFFFFF;
   --color-ebio-neutral-50: #F7F6F2;
   --color-ebio-neutral-100: #EDECEA;

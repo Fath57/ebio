@@ -50,7 +50,7 @@ async function write(state: ConsentState): Promise<void> {
 /**
  * Whether it is worth asking, in our own words.
  *
- * Never when the system has already answered — granted or denied. Android 13
+ * Never when the system has already answered, granted or denied. Android 13
  * and later make a refusal final, so the only prompt worth spending is one
  * asked at a moment the buyer understands. Between two asks, a fortnight;
  * after three refusals, silence.

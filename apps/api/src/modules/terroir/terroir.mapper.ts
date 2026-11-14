@@ -39,7 +39,7 @@ function shipmentLines(orders: Order[], removedItemIds: string[] = []) {
   const removed = new Set(removedItemIds)
   return orders.flatMap(order => order.items.getItems().filter(item => !removed.has(item.id)).map(item => ({
     id: item.id,
-    name: item.variant ? `${item.product.name} — ${(item.variant as ProductVariant).label}` : item.product.name,
+    name: item.variant ? `${item.product.name}, ${(item.variant as ProductVariant).label}` : item.product.name,
     quantity: item.quantity,
     imageUrl: item.product.photos?.[0] ?? null,
     shopName: order.supplier.shopName,
@@ -195,7 +195,7 @@ export const TerroirMapper = {
         productId: item.product.id,
         variantId: item.variant?.id ?? null,
         quantity: item.quantity,
-        name: item.variant ? `${item.product.name} — ${item.variant.label}` : item.product.name,
+        name: item.variant ? `${item.product.name}, ${item.variant.label}` : item.product.name,
         imageUrl: item.product.photos?.[0] ?? null,
         supplierId: item.product.supplier.id,
         shopName: item.product.supplier.shopName,
@@ -326,7 +326,7 @@ export const TerroirMapper = {
         return {
           productId: item.product.id,
           variantId: item.variant?.id ?? null,
-          name: item.variant ? `${item.product.name} — ${item.variant.label}` : item.product.name,
+          name: item.variant ? `${item.product.name}, ${item.variant.label}` : item.product.name,
           quantity: item.quantity,
           imageUrl: item.product.photos?.[0] ?? null,
           shopName: item.product.supplier.shopName,
@@ -549,7 +549,7 @@ export const TerroirMapper = {
         totalAmount: Number(order.totalAmount),
         lines: order.items.getItems().map(item => ({
           id: item.id,
-          name: item.variant ? `${item.product.name} — ${(item.variant as ProductVariant).label}` : item.product.name,
+          name: item.variant ? `${item.product.name}, ${(item.variant as ProductVariant).label}` : item.product.name,
           quantity: item.quantity,
           totalPrice: Number(item.totalPrice),
           imageUrl: item.product.photos?.[0] ?? null,

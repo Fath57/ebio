@@ -33,7 +33,7 @@ export interface TransitionResult {
 /**
  * Offline-first status transitions: a network failure stores the action with
  * its real timestamp (`occurredAt`) and the queue replays sequentially when
- * connectivity returns. Business errors (4xx) are never queued — the server
+ * connectivity returns. Business errors (4xx) are never queued, the server
  * already saw and refused them.
  */
 export function useOfflineQueue(onFlushed?: () => void) {
@@ -55,7 +55,7 @@ export function useOfflineQueue(onFlushed?: () => void) {
         if (!res.ok && res.status >= 500) {
           break
         }
-        // 2xx applied; 4xx definitively refused — drop it either way.
+        // 2xx applied; 4xx definitively refused, drop it either way.
         remaining.shift()
       }
       catch {

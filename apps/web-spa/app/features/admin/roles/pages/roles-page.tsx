@@ -51,7 +51,7 @@ export default function RolesPage() {
       id: 'description',
       header: t('admin.roles.columns.description'),
       meta: { className: 'max-w-xs truncate' },
-      cell: ({ row }) => <span className="text-muted-foreground">{row.original.description || '—'}</span>,
+      cell: ({ row }) => <span className="text-muted-foreground">{row.original.description || '-'}</span>,
     },
     {
       id: 'members',

@@ -171,7 +171,7 @@ export class PaymentsService {
    *
    * The apps embed one provider's script and hand back its transaction
    * reference; reading it from configuration rather than hard-coding FedaPay
-   * is what lets a build switch without a migration — the payments already
+   * is what lets a build switch without a migration, the payments already
    * recorded keep their own provider, since each row carries it.
    */
   private checkoutProvider(): PaymentProvider {
@@ -306,7 +306,7 @@ export class PaymentsService {
    * Nothing is created on the `Payment` side at this point: it owns a
    * `@OneToOne(Order)` and therefore only exists per order. The checkout
    * carries the provider's transaction, and per-order payments are born at
-   * confirmation — one per order, each with its own escrow, so that a shop is
+   * confirmation, one per order, each with its own escrow, so that a shop is
    * paid at its own pace rather than the slowest one's.
    */
   async initiateCartPayment(userId: string, data: InitiateCartPayment) {
@@ -461,7 +461,7 @@ export class PaymentsService {
     checkResult: CheckStatusResult,
   ): Promise<Payment[]> {
     if (checkResult.amount !== undefined && checkResult.amount !== Math.round(checkout.totalAmount)) {
-      this.logger.error(`Panier ${checkout.id} : ${checkResult.amount} payés, ${checkout.totalAmount} attendus — à régler à la main`)
+      this.logger.error(`Panier ${checkout.id} : ${checkResult.amount} payés, ${checkout.totalAmount} attendus, à régler à la main`)
       throw new BadRequestException('Le montant payé ne correspond pas au panier')
     }
 
@@ -538,7 +538,7 @@ export class PaymentsService {
    * Same reason as the topups: the buyer is sent back before the operator has
    * answered, and the app stops asking when its screen closes. A cart paid
    * late is confirmed here; one that failed or was abandoned is only written
-   * down — its orders are cancelled after 24 h by the orders module.
+   * down, its orders are cancelled after 24 h by the orders module.
    */
   @Cron('1-59/2 * * * *')
   @SingleInstance()
@@ -562,7 +562,7 @@ export class PaymentsService {
         if (checkout.status !== CheckoutStatus.PENDING) {
           // Paid through another attempt already: this one took money twice.
           if (checkout.providerTransactionId !== operation.reference) {
-            this.logger.error(`Panier ${checkout.id} payé deux fois (${operation.reference} en plus de ${checkout.providerTransactionId}) — remboursement à faire`)
+            this.logger.error(`Panier ${checkout.id} payé deux fois (${operation.reference} en plus de ${checkout.providerTransactionId}), remboursement à faire`)
           }
           continue
         }
@@ -760,7 +760,7 @@ export class PaymentsService {
       await this.walletService.credit(wallet.id, {
         type: WalletTransactionType.PROMO_COMPENSATION,
         amount: payment.order.discountAmount,
-        description: `Compensation code promo — ${payment.order.orderNumber}`,
+        description: `Compensation code promo, ${payment.order.orderNumber}`,
         orderId: payment.order.id,
       })
     }
@@ -768,7 +768,7 @@ export class PaymentsService {
       await this.walletService.credit(wallet.id, {
         type: WalletTransactionType.PROMO_COMPENSATION,
         amount: payment.order.platformPromoCompensation,
-        description: `Compensation promotion eBio — ${payment.order.orderNumber}`,
+        description: `Compensation promotion eBio, ${payment.order.orderNumber}`,
         orderId: payment.order.id,
       })
     }
@@ -778,7 +778,7 @@ export class PaymentsService {
     await this.walletService.post(PlatformAccount.SALES_COMMISSION, 'credit', {
       type: WalletTransactionType.PLATFORM_COMMISSION,
       amount: payment.order.commissionAmount,
-      description: `Commission — commande ${payment.order.orderNumber}`,
+      description: `Commission, commande ${payment.order.orderNumber}`,
       orderId: payment.order.id,
       paymentId: payment.id,
     })
@@ -787,7 +787,7 @@ export class PaymentsService {
     await this.walletService.post(PlatformAccount.MARKETING, 'debit', {
       type: WalletTransactionType.PLATFORM_MARKETING,
       amount: platformMarketingCost,
-      description: `Promotions eBio — commande ${payment.order.orderNumber}`,
+      description: `Promotions eBio, commande ${payment.order.orderNumber}`,
       orderId: payment.order.id,
     })
 

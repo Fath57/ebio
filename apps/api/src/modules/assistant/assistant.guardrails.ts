@@ -11,7 +11,7 @@ import type { RecordedToolCall } from './tools/assistant-tool'
  * going off the rails, not a perfect one.
  */
 
-/** Below this, a number is a quantity — "deux kilos", "5 bouteilles". */
+/** Below this, a number is a quantity, "deux kilos", "5 bouteilles". */
 const AMOUNT_THRESHOLD = 100
 
 /** Beyond this, a turn no longer fits in one listening. */
@@ -20,8 +20,8 @@ const MAX_SENTENCES = 3
 /**
  * The numbers in a text that look like amounts.
  *
- * French writes thousands with a space — sometimes non-breaking, sometimes
- * thin — and dictation produces the same. All three forms are accepted, or
+ * French writes thousands with a space, sometimes non-breaking, sometimes
+ * thin, and dictation produces the same. All three forms are accepted, or
  * "5 500" would read as two numbers.
  */
 export function amountsIn(text: string): number[] {
@@ -121,7 +121,7 @@ const CLAIMS_ADDED = /(?:c['’]est|ça y est|voilà)[^.!?]{0,25}(?:dans (?:le|v
 /**
  * An announcement, not an offer.
  *
- * "Je vous mets deux kilos ?" is a question — it is even the phrasing the
+ * "Je vous mets deux kilos ?" is a question, it is even the phrasing the
  * prompt teaches. Reading it as an announcement had the model corrected on a
  * plain hello, all the way down to the fallback sentence. Only a sentence that
  * does not ask commits to anything.
@@ -174,7 +174,7 @@ export function groundingBreaches(
     breaches.push({
       what: 'ajout annoncé sans que le panier ait bougé',
       fix: 'Tu viens de laisser entendre que l\'article est dans le panier alors que tu ne l\'y as pas mis. '
-        + 'Appelle ajouter_au_panier, puis redis ta phrase. Si la quantité ou le produit ne sont pas clairs, demande — n\'annonce rien.',
+        + 'Appelle ajouter_au_panier, puis redis ta phrase. Si la quantité ou le produit ne sont pas clairs, demande, n\'annonce rien.',
     })
   }
 
@@ -220,7 +220,7 @@ export function takeSentences(buffer: string): { sentences: string[], rest: stri
 
   // Terminal punctuation closes a sentence when a space or a capital follows.
   // Without that, the dot could belong to a number; and the model sometimes
-  // forgets the space — "je regarde.J'ai du gari" really is two sentences, and
+  // forgets the space, "je regarde.J'ai du gari" really is two sentences, and
   // they must be separated before being shown.
   const boundary = /[.!?…]+(?:\s|(?=\p{Lu}))/u
 

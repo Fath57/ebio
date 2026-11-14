@@ -16,7 +16,7 @@ import { ProductCopyService } from './product-copy.service'
 /**
  * The product studio: the help a shop gets while filling its own catalogue.
  *
- * Open to anyone who may edit a product — a shop owner on their own products,
+ * Open to anyone who may edit a product, a shop owner on their own products,
  * and someone from eBio working on a shop's catalogue. Which of the two it is
  * decides whose photos may be touched, so the ability is resolved here and
  * handed down.

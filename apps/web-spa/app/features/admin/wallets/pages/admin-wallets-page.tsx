@@ -22,7 +22,7 @@ const BALANCES = ['positive', 'negative', 'zero'] as const
 
 /**
  * What every account holds: shops, couriers, buyers and family wallets, the
- * biggest balance first. A row opens the wallet's history — a family wallet
+ * biggest balance first. A row opens the wallet's history, a family wallet
  * opens its own page, with members and limits; staff with the right can debit it.
  */
 export default function AdminWalletsPage() {

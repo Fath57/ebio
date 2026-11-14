@@ -62,7 +62,7 @@ export default function CertificationsPage() {
       id: 'description',
       header: t('admin.certifications.columns.description'),
       meta: { wrap: true, hideBelow: 'lg' },
-      cell: ({ row }) => <span className="text-muted-foreground line-clamp-2">{row.original.description || '—'}</span>,
+      cell: ({ row }) => <span className="text-muted-foreground line-clamp-2">{row.original.description || '-'}</span>,
     },
     {
       id: 'productCount',

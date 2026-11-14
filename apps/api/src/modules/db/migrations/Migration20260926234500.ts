@@ -4,7 +4,7 @@ import { Migration } from '@mikro-orm/migrations'
  * Products a buyer keeps aside.
  *
  * The pair is unique: keeping the same product twice means nothing, and the
- * list would show the same card twice. Both sides cascade — a deleted account
+ * list would show the same card twice. Both sides cascade, a deleted account
  * takes its shelf with it, and a deleted product leaves no dangling card.
  */
 export class Migration20260926234500 extends Migration {

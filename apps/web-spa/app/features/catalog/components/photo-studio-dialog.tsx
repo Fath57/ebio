@@ -34,7 +34,7 @@ interface PhotoStudioDialogProps {
   productName?: string
   onClose: () => void
   /**
-   * The retouched photo, once kept — id included, because a photo that has not
+   * The retouched photo, once kept, id included, because a photo that has not
    * been attached to the product yet is tracked by its media id.
    */
   onReplace: (next: { mediaId: string, url: string }) => void
@@ -61,7 +61,7 @@ function NoteBadge({ note }: { note: number }) {
  * Retouching a product photo, and asking what is wrong with it.
  *
  * The adjustments only rearrange the light and the framing of the photo that
- * was taken — nothing is invented, because a listing has to show the product
+ * was taken, nothing is invented, because a listing has to show the product
  * that will be delivered. The review is the other half: it reads the photo and
  * says, in words, what to redo with the phone.
  */

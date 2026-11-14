@@ -5,7 +5,7 @@ import { z } from 'zod'
  *
  * The model writes *from* these facts; it is never asked to find new ones. A
  * description that invents an origin, a certification or a health benefit is a
- * claim the shop cannot back — and on food, that is the kind of claim that
+ * claim the shop cannot back, and on food, that is the kind of claim that
  * ends in a refund or worse.
  */
 export const describeProductSchema = z.object({

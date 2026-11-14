@@ -5,7 +5,7 @@
  * a second, separate stylesheet, `ebio-tokens.css` was parsed by the browser
  * alone: the at-rule was dropped, `--color-ebio-*` never reached `:root`, and
  * every `bg-ebio-green-600` / `text-ebio-coral-600` in the app resolved to
- * nothing — white badge text on a transparent background. Importing both into
+ * nothing, white badge text on a transparent background. Importing both into
  * one file puts the brand tokens back in the compiler's graph.
  */
 @import "@boilerstone/ui/globals.css";

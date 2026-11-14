@@ -21,7 +21,7 @@ import { refusalOf } from './terroir.fixture'
  * parcel lost is refunded in full, door delivery included, the shop never
  * debited.
  */
-describe('terroir — domicile et assurance (e2e)', { timeout: 30_000 }, () => {
+describe('terroir, domicile et assurance (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 6 }, {
       imports: [RolesModule, AuditModule, TerroirModule],

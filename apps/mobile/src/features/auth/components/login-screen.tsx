@@ -169,8 +169,8 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
-        {/* The screen used to open on three welcomes stacked — a tagline, a
-            title and a subtitle — before showing a single field. One is
+        {/* The screen used to open on three welcomes stacked, a tagline, a
+            title and a subtitle, before showing a single field. One is
             enough, and the fields arrive above the fold. */}
         <View style={styles.brandContainer}>
           <Image
@@ -261,7 +261,7 @@ export function LoginScreen({ onLoginSuccess, onNavigateToRegister, onNavigateTo
               {/* Two ways of signing in, side by side rather than stacked:
                   they are alternatives to each other, and a column of them
                   pushed everything below off the screen. The fingerprint
-                  shows only where a secret is held — offering one that
+                  shows only where a secret is held, offering one that
                   cannot work is worse than not offering it. */}
               <View style={styles.alternativesRow}>
                 <Pressable onPress={switchMethod} hitSlop={10} style={styles.alternative}>

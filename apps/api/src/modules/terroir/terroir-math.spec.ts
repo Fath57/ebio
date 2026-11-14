@@ -28,7 +28,7 @@ function departure(overrides: Partial<DepartureFacts> = {}): DepartureFacts {
   }
 }
 
-describe('terroir — poids et prix', () => {
+describe('terroir, poids et prix', () => {
   it('estime le poids avec l\'emballage forfaitaire, rien pour un panier vide', () => {
     expect(estimateWeight([{ weightG: 250, quantity: 2 }, { weightG: 1200, quantity: 1 }], 300)).toBe(2000)
     expect(estimateWeight([], 300)).toBe(0)
@@ -54,7 +54,7 @@ describe('terroir — poids et prix', () => {
   })
 })
 
-describe('terroir — départs proposables', () => {
+describe('terroir, départs proposables', () => {
   it('propose un départ ouvert qui dessert le pays, avec son prix et sa date limite', () => {
     const [offer] = availableDepartures([departure()], 'FR', 1800, NOW, 3)
 
@@ -89,7 +89,7 @@ describe('terroir — départs proposables', () => {
   })
 })
 
-describe('terroir — remplissage et complément', () => {
+describe('terroir, remplissage et complément', () => {
   it('rapporte les kilos réservés à la capacité', () => {
     expect(fillRatio(82_400, 100)).toBe(0.824)
     expect(fillRatio(5_000, null)).toBeNull()
@@ -107,7 +107,7 @@ describe('terroir — remplissage et complément', () => {
   })
 })
 
-describe('terroir — packs', () => {
+describe('terroir, packs', () => {
   const lines: PackLine[] = [
     { productId: 'karite', variantId: null, supplierId: 'fatou', unitPrice: 3000, quantity: 2 },
     { productId: 'moringa', variantId: null, supplierId: 'koffi', unitPrice: 2500, quantity: 1 },

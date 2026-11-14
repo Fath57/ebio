@@ -23,7 +23,7 @@ export interface SupplierShare {
 }
 
 /**
- * The shop's share of an order paid online — the one place it is computed,
+ * The shop's share of an order paid online, the one place it is computed,
  * so the credit made at release and the « en attente » shown beforehand
  * cannot drift apart.
  */

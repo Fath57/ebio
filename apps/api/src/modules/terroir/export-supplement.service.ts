@@ -33,9 +33,9 @@ const AT_EBIO = [ExportShipmentStatus.PAID, ExportShipmentStatus.COLLECTING, Exp
  * The buyer's answer to a weight supplement (011, T039, FR-020): pay it, or
  * take a product out (refunded). Unanswered after 48 h, eBio absorbs it.
  *
- * Paying by card goes through a wallet top-up of the supplement's amount —
+ * Paying by card goes through a wallet top-up of the supplement's amount,
  * the same INTRAM hosted page, verification and reconciliation as any
- * recharge — and the supplement is debited from the wallet the moment the
+ * recharge, and the supplement is debited from the wallet the moment the
  * top-up is credited. A checkout or a payment row would have needed an
  * order to hang on; a supplement belongs to no shop.
  */
@@ -117,7 +117,7 @@ export class ExportSupplementService implements OnModuleInit {
       await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
         type: WalletTransactionType.EXPORT_LOSS,
         amount,
-        description: `Écart de poids pris en charge — colis ${row.id.slice(0, 8)}`,
+        description: `Écart de poids pris en charge, colis ${row.id.slice(0, 8)}`,
       })
       await this.event(row.id, 'Sans réponse sous 48 h, eBio prend en charge le complément de poids : votre colis part sans rien de plus à payer.')
     }
@@ -138,7 +138,7 @@ export class ExportSupplementService implements OnModuleInit {
       await this.wallets.debit(walletId, {
         type: WalletTransactionType.ORDER_PAYMENT,
         amount,
-        description: `Complément de poids — colis terroir ${reference}`,
+        description: `Complément de poids, colis terroir ${reference}`,
       })
     }
     catch (error) {
@@ -151,7 +151,7 @@ export class ExportSupplementService implements OnModuleInit {
     await this.wallets.post(PlatformAccount.EXPORT, 'credit', {
       type: WalletTransactionType.EXPORT_SHIPPING_INCOME,
       amount,
-      description: `Complément de poids — colis ${reference}`,
+      description: `Complément de poids, colis ${reference}`,
     })
     await this.event(shipmentId, 'Complément de poids réglé : votre colis part comme prévu.')
   }

@@ -1,7 +1,7 @@
 @import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=JetBrains+Mono:wght@400;500&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
 @import 'tailwindcss';
 
-/* eBio design tokens — single source: the v2.0 design system charter. */
+/* eBio design tokens, single source: the v2.0 design system charter. */
 @theme {
   --color-green-50: #e8f5ec;
   --color-green-100: #c5e6cf;

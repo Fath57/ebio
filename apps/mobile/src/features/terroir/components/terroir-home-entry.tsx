@@ -19,7 +19,7 @@ export function TerroirHomeEntry({ onPress }: TerroirHomeEntryProps) {
       style={styles.card}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel="Terroir — le goût du pays, livré en France et en Belgique"
+      accessibilityLabel="Terroir, le goût du pays, livré en France et en Belgique"
     >
       <View style={styles.icon}>
         <Plane size={20} color={colors.earth[800]} strokeWidth={2.2} />

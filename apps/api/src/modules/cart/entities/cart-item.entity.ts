@@ -8,7 +8,7 @@ import { Cart } from './cart.entity'
  * One line of a basket.
  *
  * A row rather than a field of JSON, because the questions asked of it are
- * "which products get abandoned most?" and "what is in this basket?" — both
+ * "which products get abandoned most?" and "what is in this basket?", both
  * of which a JSON blob answers badly.
  *
  * The name and unit price are copies taken at the time. The product may be

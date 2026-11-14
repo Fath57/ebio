@@ -101,7 +101,7 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
 
         <Text style={[styles.label, { color: semantic.textTertiary }]}>Retrait</Text>
         <Text style={[styles.value, { color: semantic.textPrimary }]}>
-          {`${delivery.supplierShopName} — ${delivery.pickupAddress}`}
+          {`${delivery.supplierShopName}, ${delivery.pickupAddress}`}
         </Text>
         <Text style={[styles.label, { color: semantic.textTertiary }]}>Livraison</Text>
         <Text style={[styles.value, { color: semantic.textPrimary }]}>{delivery.dropoffAddress}</Text>
@@ -207,7 +207,7 @@ export function DeliveryDetail({ delivery, onOpenChat }: DeliveryDetailProps) {
               <View style={[styles.failBox, { backgroundColor: colors.coral[50] }]}>
                 <Text style={[styles.failText, { color: colors.coral[800] }]}>
                   {FAIL_REASON_LABELS[delivery.failReason]}
-                  {delivery.failComment ? ` — ${delivery.failComment}` : ''}
+                  {delivery.failComment ? `, ${delivery.failComment}` : ''}
                 </Text>
               </View>
             )

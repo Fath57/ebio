@@ -369,7 +369,7 @@ export function ProductPromotionsSection({ productId, regularPrice }: ProductPro
           {type === 'PRICE' && (
             <View>
               <Text style={[styles.formLabel, { color: semantic.textSecondary }]}>
-                Prix promo (FCFA) — prix normal :
+                Prix promo (FCFA), prix normal :
                 {' '}
                 {formatPrice(regularPrice)}
                 {' '}

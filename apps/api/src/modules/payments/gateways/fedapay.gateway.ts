@@ -34,8 +34,8 @@ export class FedaPayGateway implements PaymentGatewayInterface, PayoutGatewayInt
 
   /**
    * False on purpose: the apps embed Checkout.js, which opens its own
-   * transaction. `initiatePayment` still works — the no-redirect flow uses
-   * it — but the cart and the wallets must not pre-open one.
+   * transaction. `initiatePayment` still works, the no-redirect flow uses
+   * it, but the cart and the wallets must not pre-open one.
    */
   hostsPaymentPage(): boolean {
     return false

@@ -16,7 +16,7 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 
 /**
  * Distance between the device and the courier's declared zone when the courier
- * is clearly outside it — beyond twice the zone radius. Dispatch uses the live
+ * is clearly outside it, beyond twice the zone radius. Dispatch uses the live
  * position first, so a courier far from their zone silently stops receiving
  * offers; this surfaces the reason. `null` while inside, unknown or unavailable.
  * The permission is never prompted here: the availability toggle owns that.

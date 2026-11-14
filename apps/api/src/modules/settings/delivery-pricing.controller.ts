@@ -69,7 +69,7 @@ export class AdminBannerOffersController {
  *
  * Two amounts and a floor, which must be fixable without deploying: a reward
  * set too generously shows up in the spending, and it has to be possible to
- * lower it — or pause the programme — the same day.
+ * lower it, or pause the programme, the same day.
  */
 @Controller('admin/referral-rewards')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)
@@ -96,7 +96,7 @@ export class AdminReferralRewardsController {
  *
  * Every turn calls a paid model: it has to be possible to cut it off without
  * deploying, whether to contain spending or because it is answering badly. The
- * setting applies within the minute — the settings cache is cleared on write.
+ * setting applies within the minute, the settings cache is cleared on write.
  *
  * Her name and her portrait sit here too. They are not decoration: the name
  * goes into her own instructions, and the portrait is the first thing a buyer
@@ -208,7 +208,7 @@ export class AdminEscrowReleaseController {
 /**
  * New products: reviewed by eBio before going on sale or not, and who hears
  * about them. Turning review off does not release the products already
- * waiting — each one still takes a decision.
+ * waiting, each one still takes a decision.
  */
 @Controller('admin/new-products')
 @UseGuards(AuthGuard, RolesGuard, CaslGuard)

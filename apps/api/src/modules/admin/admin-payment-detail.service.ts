@@ -29,7 +29,7 @@ export interface PaymentDetail {
     discount: number
     paymentMethod: string
     createdAt: string
-    /** Every order this one payment covers — a unified cart pays for several shops. */
+    /** Every order this one payment covers, a unified cart pays for several shops. */
     orders: Array<{ id: string, orderNumber: string, status: string, totalAmount: number, supplierName: string }>
   } | null
   /** What eBio asked the provider and what it answered, oldest first. */
@@ -159,7 +159,7 @@ export class AdminPaymentDetailService {
               orderNumber: sibling.order_number as string,
               status: sibling.status as string,
               totalAmount: Number(sibling.total_amount ?? 0),
-              supplierName: (sibling.shop_name as string | null) ?? '—',
+              supplierName: (sibling.shop_name as string | null) ?? '-',
             })),
           }
         : null,
@@ -205,12 +205,12 @@ function iso(value: unknown): string | null {
 /** Who a wallet belongs to, in words the back office can show. */
 function walletOwner(row: Record<string, unknown>): { ownerLabel: string, ownerKind: PaymentDetail['walletMovements'][number]['ownerKind'] } {
   if (row.platform_account)
-    return { ownerLabel: `eBio — ${String(row.platform_account)}`, ownerKind: 'PLATFORM' }
+    return { ownerLabel: `eBio, ${String(row.platform_account)}`, ownerKind: 'PLATFORM' }
   if (row.supplier_id)
     return { ownerLabel: (row.shop_name as string | null) ?? 'Boutique', ownerKind: 'SUPPLIER' }
   if (row.courier_profile_id)
     return { ownerLabel: (row.courier_name as string | null) ?? 'Livreur', ownerKind: 'COURIER' }
   if (row.user_id)
     return { ownerLabel: (row.user_name as string | null) ?? 'Acheteur', ownerKind: 'BUYER' }
-  return { ownerLabel: '—', ownerKind: 'OTHER' }
+  return { ownerLabel: '-', ownerKind: 'OTHER' }
 }

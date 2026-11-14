@@ -28,7 +28,7 @@ export const deliveryPricingConfigSchema = z.object({
    * Grouping of shops into runs. The defaults cover a configuration written
    * before these thresholds existed.
    *
-   * `maxPickupSpreadKm` is capped by `maxDistanceKm` — checked below: grouping
+   * `maxPickupSpreadKm` is capped by `maxDistanceKm`, checked below: grouping
    * two shops farther apart than we deliver would make no sense.
    */
   grouping: z.object({
@@ -52,7 +52,7 @@ export const deliveryQuoteRequestSchema = z.object({
 })
 
 /**
- * Why the delivery costs what it costs — or why it cannot be priced. Mirrors
+ * Why the delivery costs what it costs, or why it cannot be priced. Mirrors
  * `DeliveryFeeReason` (common/delivery-fee.ts).
  *
  * `NO_SHOP_POSITION` is not blocking: the flat fee applies and the order goes
@@ -114,7 +114,7 @@ export type DeliveryQuoteResponse = z.infer<typeof deliveryQuoteResponseSchema>
  * The assistant's switch.
  *
  * An object rather than a bare boolean: a request body reads better that way,
- * and the setting can gain a field — a list of buyers, a spending cap —
+ * and the setting can gain a field, a list of buyers, a spending cap,
  * without breaking its callers.
  */
 export const assistantSettingSchema = z.object({
@@ -137,8 +137,8 @@ export const assistantSettingSchema = z.object({
    * How fast she speaks, as a multiplier.
    *
    * Adjustable because the right pace is a matter of ear, not of doctrine.
-   * The default was chosen on measurement — four readings of the same
-   * sentence averaged 7.76 s at the original setting against 6.66 s — and the
+   * The default was chosen on measurement, four readings of the same
+   * sentence averaged 7.76 s at the original setting against 6.66 s, and the
    * range is left wide because 14 % may not be enough for everyone.
    */
   voiceSpeed: z.number().min(0.8).max(1.4).optional(),

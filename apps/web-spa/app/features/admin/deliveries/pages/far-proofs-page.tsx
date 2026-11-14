@@ -67,7 +67,7 @@ export default function FarProofsPage() {
       meta: { numeric: true },
       cell: ({ row }) => (
         <span className="font-mono font-medium">
-          {row.original.distanceM === null ? '—' : formatDistance(row.original.distanceM, i18n.language)}
+          {row.original.distanceM === null ? '-' : formatDistance(row.original.distanceM, i18n.language)}
         </span>
       ),
     },
@@ -110,7 +110,7 @@ export default function FarProofsPage() {
       cell: ({ row }) => {
         const iso = row.original.takenAt ?? row.original.deliveredAt
         if (!iso)
-          return <span className="text-muted-foreground">—</span>
+          return <span className="text-muted-foreground">-</span>
         const date = new Date(iso)
         return (
           <span className="flex flex-col">

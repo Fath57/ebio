@@ -22,7 +22,7 @@ import { biometricEnrollSchema, biometricVerifySchema } from './contracts/auth.c
  *
  * The secret is 32 random bytes, so guessing it is out of reach whatever the
  * rate; what this stops is an open endpoint being hammered into the database.
- * In memory because the API runs as one process — move it to Redis the day it
+ * In memory because the API runs as one process, move it to Redis the day it
  * runs as several, or each will allow its own share.
  */
 const MAX_ATTEMPTS = 10

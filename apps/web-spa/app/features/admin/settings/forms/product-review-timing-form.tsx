@@ -33,7 +33,7 @@ interface ProductReviewTimingFormProps {
  * When the buyer is asked what they thought of the products.
  *
  * The delay runs from the delivery for the first ask, then from the previous
- * one for each reminder — a single number to understand rather than two.
+ * one for each reminder, a single number to understand rather than two.
  */
 export function ProductReviewTimingForm({ timing, onSubmit, isPending }: ProductReviewTimingFormProps) {
   const { t } = useTranslation()

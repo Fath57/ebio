@@ -10,7 +10,7 @@
 :root {
   --header-height: 3.5rem;
 
-  /* eBio Design System — Light Mode */
+  /* eBio Design System, Light Mode */
   --background: #FFFFFF;
   --foreground: #2A2924;
   --card: #FFFFFF;
@@ -47,7 +47,7 @@
 }
 
 .dark {
-  /* eBio Design System — Dark Mode */
+  /* eBio Design System, Dark Mode */
   --background: #141410;
   --foreground: #F7F6F2;
   --card: #2A2924;

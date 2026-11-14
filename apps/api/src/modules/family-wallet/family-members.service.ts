@@ -95,7 +95,7 @@ export class FamilyMembersService {
   ) {}
 
   /**
-   * Adds a relative from the address book, or a new one — saved in the
+   * Adds a relative from the address book, or a new one, saved in the
    * address book too (FR-002). Active at once when an account proved that
    * number, pending with an invitation SMS otherwise.
    */
@@ -261,7 +261,7 @@ export class FamilyMembersService {
   /**
    * A number was just proven by SMS at sign-up: every pending member with
    * that number becomes active on this account (FR-005), and each payer
-   * hears it. Never throws — the sign-up stands whatever happens here.
+   * hears it. Never throws, the sign-up stands whatever happens here.
    *
    * A payer is never made a member of their own wallet.
    */

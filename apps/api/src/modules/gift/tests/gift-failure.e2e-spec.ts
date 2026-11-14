@@ -20,7 +20,7 @@ async function balanceOf(em: EntityManager, column: 'user_id' | 'courier_profile
 /**
  * A cart for a relative that could not be handed over (research §5): the
  * courier is paid for the trip, the order cancelled, and the payer's wallet
- * credited with the order minus its delivery fee — once.
+ * credited with the order minus its delivery fee, once.
  */
 describe('échec de remise à un proche (e2e)', () => {
   beforeEach(async (context) => {

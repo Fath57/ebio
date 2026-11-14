@@ -39,7 +39,7 @@ export interface AdminProductDetail {
 
 /**
  * The back office's view of a product: the shop's page plus what only staff
- * needs — how it sells, who bought it lately, what buyers think, and every
+ * needs, how it sells, who bought it lately, what buyers think, and every
  * reason it might not show up in the app.
  */
 @Injectable()

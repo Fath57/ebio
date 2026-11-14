@@ -3,7 +3,7 @@ import { Migration } from '@mikro-orm/migrations'
 /**
  * The journal of operations sent to payment providers.
  *
- * One line per attempt — topup, cart payment, payout — written before the
+ * One line per attempt, topup, cart payment, payout, written before the
  * provider is called, then updated each time it is asked. Additive only: the
  * running code ignores the table until it is deployed.
  */

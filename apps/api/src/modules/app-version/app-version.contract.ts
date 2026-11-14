@@ -8,7 +8,7 @@ export const appVariantEnum = z.enum(['client', 'supplier', 'courier']).meta({
 /**
  * A version, as three numbers.
  *
- * Not free text: it is compared, and "1.10.0" must come after "1.9.0" — which
+ * Not free text: it is compared, and "1.10.0" must come after "1.9.0", which
  * a string comparison gets wrong.
  */
 const version = z.string().regex(/^\d+\.\d+\.\d+$/, 'Format attendu : 1.2.3')
@@ -17,7 +17,7 @@ export const appVersionRuleSchema = z.object({
   /**
    * Below this, the app refuses to go on.
    *
-   * For the day a release must not be skipped — a payment that changed, a
+   * For the day a release must not be skipped, a payment that changed, a
    * field the API no longer accepts. Everything else is a suggestion.
    */
   minimum: version,

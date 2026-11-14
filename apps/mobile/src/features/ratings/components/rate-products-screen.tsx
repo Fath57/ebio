@@ -16,7 +16,7 @@ interface RateProductsScreenProps {
  *
  * This screen exists apart from the order rating for a substantive reason: the
  * product used to be rated at delivery, before anything had been tasted. The
- * invitation now arrives hours later and leads straight here — the shop and
+ * invitation now arrives hours later and leads straight here, the shop and
  * the courier, for their part, are judged on arrival.
  */
 export function RateProductsScreen({ orderId, onDone, onBack }: RateProductsScreenProps) {

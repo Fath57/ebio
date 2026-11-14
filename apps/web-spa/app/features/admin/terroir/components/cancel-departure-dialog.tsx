@@ -28,7 +28,7 @@ interface CancelDepartureDialogProps {
 
 /**
  * Cancelling a departure cannot be undone. Its parcels may move to another
- * open departure — eBio pays the difference when that one is dearer — or wait
+ * open departure, eBio pays the difference when that one is dearer, or wait
  * on this one until the staff decide.
  */
 export function CancelDepartureDialog({ departure, targets, isPending, error, onConfirm, onClose }: CancelDepartureDialogProps) {

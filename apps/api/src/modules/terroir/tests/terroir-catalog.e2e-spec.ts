@@ -15,7 +15,7 @@ import { seedTerroirWorld } from './terroir-checkout.fixture'
 import { refusalOf } from './terroir.fixture'
 
 /** T024: buyers abroad see approved products and orderable packs only, and the departures towards them. */
-describe('terroir — catalogue et départs côté client (e2e)', { timeout: 30_000 }, () => {
+describe('terroir, catalogue et départs côté client (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 6 }, {
       imports: [RolesModule, AuditModule, TerroirModule],

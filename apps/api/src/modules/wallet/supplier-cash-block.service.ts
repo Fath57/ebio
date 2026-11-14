@@ -13,7 +13,7 @@ export interface SupplierCashBlock {
  * Cash orders never put money in eBio's hands: its commission is debited
  * from the shop wallet at delivery, and a cash-only shop never earns the
  * credits that would pay it back. Past the platform debt limit the shop
- * stops receiving cash orders — online and wallet payments stay open, and
+ * stops receiving cash orders, online and wallet payments stay open, and
  * they are what pays the debt down, along with a top-up.
  */
 @Injectable()

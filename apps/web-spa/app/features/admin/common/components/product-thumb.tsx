@@ -8,8 +8,8 @@ import { useState } from 'react'
  * de palme" read the same in a list scanned at speed, their pictures do not.
  *
  * Two ways to have no picture, and both end the same: none was stored, or the
- * one stored no longer answers. The second is not hypothetical — the seed
- * catalogue is full of links that have since gone — and an `img` left to fail
+ * one stored no longer answers. The second is not hypothetical, the seed
+ * catalogue is full of links that have since gone, and an `img` left to fail
  * on its own draws a broken icon, which is worse than an empty square.
  */
 export function ProductThumb({ url, size = 40 }: { url: string | null, size?: number }) {

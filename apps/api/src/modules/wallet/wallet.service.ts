@@ -37,7 +37,7 @@ export interface WalletOwner {
 /**
  * The only writer of wallet balances. Every movement runs in its own SQL
  * transaction, locks the wallet row (`FOR UPDATE`), writes the append-only
- * ledger line with the resulting balance, then updates the balance itself —
+ * ledger line with the resulting balance, then updates the balance itself,
  * so two concurrent debits can never both spend the same money, and any
  * balance is auditable from its history.
  */

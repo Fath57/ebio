@@ -3,7 +3,7 @@ import { Migration } from '@mikro-orm/migrations'
 /**
  * Broadcast notifications, written on purpose.
  *
- * Everything the app sent until now was a consequence — an order moved, a
+ * Everything the app sent until now was a consequence, an order moved, a
  * courier accepted. Nothing let anyone address a group deliberately, with a
  * picture and a moment of their choosing, and see afterwards how far it went.
  */

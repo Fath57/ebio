@@ -357,7 +357,7 @@ export class ExportCatalogService {
 
   /**
    * The terroir catalogue (FR-007): approved products on sale, then the
-   * orderable packs. Country-blind in v1 — both countries get the same
+   * orderable packs. Country-blind in v1, both countries get the same
    * catalogue; the country only decides the departures.
    */
   async clientCatalog(filters: { category?: string, search?: string, page: number }): Promise<ClientCatalog> {

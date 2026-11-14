@@ -185,7 +185,7 @@ export function ProductCard({
             )}
           </View>
 
-          {/* Cart action — inline, right side */}
+          {/* Cart action, inline, right side */}
           {cartEnabled && isInStock && (
             cartItem
               ? (

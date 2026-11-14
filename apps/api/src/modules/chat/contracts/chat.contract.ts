@@ -33,7 +33,7 @@ export const sendMessageSchema = z.object({
   description: 'Send a message in a conversation',
 })
 
-/** WebSocket payload of chat:send — the REST shape plus the target room. */
+/** WebSocket payload of chat:send, the REST shape plus the target room. */
 export const wsSendMessageSchema = sendMessageSchema.extend({
   conversationId: z.string().uuid(),
 })

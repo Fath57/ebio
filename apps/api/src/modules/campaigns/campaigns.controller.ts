@@ -53,7 +53,7 @@ export class CampaignsController {
     return { campaigns: await this.campaigns.list() }
   }
 
-  /** How many phones a segment reaches — asked while the message is written. */
+  /** How many phones a segment reaches, asked while the message is written. */
   @CanRead('Settings')
   @Get('reach')
   async reach(@Query('app') app?: string, @Query('segment') segment?: string) {

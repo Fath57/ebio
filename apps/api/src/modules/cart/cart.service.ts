@@ -33,8 +33,8 @@ export class CartService {
   /**
    * Replaces the stored basket with the one the app holds.
    *
-   * The app stays the authority while it is open — it is where the basket is
-   * edited — and the server keeps the copy that outlives the phone. Prices and
+   * The app stays the authority while it is open, it is where the basket is
+   * edited, and the server keeps the copy that outlives the phone. Prices and
    * names are read from the catalogue here rather than taken from the app: a
    * client is free to send anything, and a basket is about to become money.
    */
@@ -72,7 +72,7 @@ export class CartService {
 
     const current = signatureOf(input.items)
     if (current !== previous) {
-      // Only a real change restarts the clock — and gives the basket another
+      // Only a real change restarts the clock, and gives the basket another
       // chance at a reminder.
       cart.updatedAt = new Date()
       cart.remindedAt = undefined

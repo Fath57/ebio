@@ -15,7 +15,7 @@ export interface Certification {
   logoUrl: string | null
   isActive: boolean
   sortOrder: number
-  /** Products carrying it — a label in use cannot be deleted, only retired. */
+  /** Products carrying it, a label in use cannot be deleted, only retired. */
   productCount: number
 }
 
@@ -98,7 +98,7 @@ export const deleteCertificationMutationOptions = {
   },
 }
 
-/** The API explains refusals in French — a duplicate code, a label still worn. */
+/** The API explains refusals in French, a duplicate code, a label still worn. */
 function readError(error: unknown): string {
   const message = (error as { message?: unknown })?.message
   return typeof message === 'string' ? message : 'Une erreur est survenue'

@@ -120,7 +120,7 @@ function departureUnavailable(message = 'Ce départ n\'est plus disponible. Choi
  * The terroir checkout (011, US1): one parcel for one buyer, one departure,
  * one destination, grouping one EXPORT order per shop.
  *
- * Shipping, home delivery and insurance never sit on an order — an order's
+ * Shipping, home delivery and insurance never sit on an order, an order's
  * `deliveryFee` would be paid out to the shop (research §3). They live on the
  * parcel and in the checkout total, and go to eBio's EXPORT account when the
  * payment is confirmed.
@@ -197,7 +197,7 @@ export class TerroirCheckoutService {
    * Places the parcel. In one transaction: the departure locked
    * (`FOR UPDATE`), its capacity and deadline checked again, one EXPORT order
    * per shop at zero delivery fee, the checkout, the parcel with its prices
-   * frozen — and, paid from the wallet, the debit and the escrowed payments.
+   * frozen, and, paid from the wallet, the debit and the escrowed payments.
    * A card checkout holds its kilos for {@link CARD_HOLD_MINUTES} minutes.
    */
   async create(buyerId: string, input: TerroirCheckoutInput): Promise<TerroirCheckoutCreated> {
@@ -325,7 +325,7 @@ export class TerroirCheckoutService {
         await this.wallets.debit(wallet.id, {
           type: WalletTransactionType.ORDER_PAYMENT,
           amount: total,
-          description: `Colis terroir — ${created.length > 1 ? `${created.length} boutiques` : `commande ${created[0].orderNumber}`}`,
+          description: `Colis terroir, ${created.length > 1 ? `${created.length} boutiques` : `commande ${created[0].orderNumber}`}`,
           orderId: created[0].id,
         })
         // Each shop is escrowed its own order, never a share of the shipping.
@@ -351,8 +351,8 @@ export class TerroirCheckoutService {
 
     await this.em.nativeDelete(ExportCheckoutDraft, { user: buyerId })
 
-    // A card checkout is paid through the existing cart flow — the app calls
-    // /payments/cart/initiate then /verify — so it is not opened here: one
+    // A card checkout is paid through the existing cart flow, the app calls
+    // /payments/cart/initiate then /verify, so it is not opened here: one
     // provider transaction per attempt, never two.
     if (paymentMethod === PaymentMethod.WALLET) {
       const orderIds = (await this.em.find(Order, { checkout: checkout.id })).map(order => order.id)
@@ -437,8 +437,8 @@ export class TerroirCheckoutService {
 
   /**
    * Unfolds packs into ordinary lines per shop (packSplit), checks every
-   * product is approved for export, on sale and in stock — stock added up
-   * across lines sharing a shelf — and weighs what can leave.
+   * product is approved for export, on sale and in stock, stock added up
+   * across lines sharing a shelf, and weighs what can leave.
    */
   private async analyse(input: TerroirCheckoutInput['lines']): Promise<CartAnalysis> {
     const productIds = [...new Set(input.map(line => line.productId).filter((id): id is string => Boolean(id)))]
@@ -530,7 +530,7 @@ export class TerroirCheckoutService {
           productId: product.id,
           variantId: variant?.id ?? null,
           packId: null,
-          name: variant ? `${product.name} — ${variant.label}` : product.name,
+          name: variant ? `${product.name}, ${variant.label}` : product.name,
           imageUrl: product.photos?.[0] ?? null,
           quantity: line.quantity,
           unitPrice,

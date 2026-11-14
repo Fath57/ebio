@@ -35,7 +35,7 @@ interface CartVariant {
 interface CartItem {
   id: string
   productId: string
-  /** Which shop sells it — one basket per shop, one order per basket. */
+  /** Which shop sells it, one basket per shop, one order per basket. */
   supplierId: string
   supplierName: string
   name: string
@@ -262,8 +262,8 @@ export function CartScreen({
                 </View>
                 {basket.items.map((item, index) => (
                   // Les lignes glissent quand l'une part : `LayoutAnimation`
-                  // ne fait rien sous la nouvelle architecture — le journal
-                  // le dit en toutes lettres — et Reanimated, si.
+                  // ne fait rien sous la nouvelle architecture, le journal
+                  // le dit en toutes lettres, et Reanimated, si.
                   <Animated.View
                     key={item.id}
                     layout={LinearTransition.duration(220)}

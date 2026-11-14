@@ -14,7 +14,7 @@ import { OtpAuthService } from './otp-auth.service'
 
 /**
  * SMS codes go to Beninese numbers only. Any other number is refused with a code the apps translate into « use
- * Google, Apple or your e-mail » (FR-034) — not with a generic validation
+ * Google, Apple or your e-mail » (FR-034), not with a generic validation
  * error, which would read as a typo.
  */
 export function assertBeninPhone(phone: string): void {
@@ -163,7 +163,7 @@ export class OtpAuthController {
 
     const result = await this.otpAuthService.loginWithPhone(body.phone)
     if (!result) {
-      // User does not exist — issue a short-lived registration token so the
+      // User does not exist, issue a short-lived registration token so the
       // client can collect the name and call /register without a second OTP
       const registrationToken = randomUUID()
       await this.otpService.storeRegistrationToken(body.phone, registrationToken)

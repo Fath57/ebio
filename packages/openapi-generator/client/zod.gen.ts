@@ -779,7 +779,7 @@ export const zCreateCertification = z.object({
 /**
  * UpdateCertification
  *
- * Update a label or certification — every field optional, the code is immutable
+ * Update a label or certification, every field optional, the code is immutable
  */
 export const zUpdateCertification = z.object({
   name: z.optional(z.string().min(1).max(100)),
@@ -856,7 +856,7 @@ export const zCreateProductUnit = z.object({
 /**
  * UpdateProductUnit
  *
- * Update a unit of sale — every field optional, the code is immutable
+ * Update a unit of sale, every field optional, the code is immutable
  */
 export const zUpdateProductUnit = z.object({
   label: z.optional(z.string().min(1).max(64)),
@@ -2723,7 +2723,7 @@ export const zCreateSalesPoint = z.object({
 /**
  * UpdateSalesPoint
  *
- * Update a sales point — every field optional
+ * Update a sales point, every field optional
  */
 export const zUpdateSalesPoint = z.object({
   name: z.optional(z.string().min(2).max(100)),
@@ -2800,7 +2800,7 @@ export const zRegisterSupplier = z.object({
 /**
  * UpdateSupplier
  *
- * Update supplier profile — all fields optional
+ * Update supplier profile, all fields optional
  */
 export const zUpdateSupplier = z.object({
   shopName: z.optional(z.string().min(2).max(100)),
@@ -3077,7 +3077,7 @@ export const zCreateProduct = z.object({
 /**
  * UpdateProduct
  *
- * Update product — all fields optional
+ * Update product, all fields optional
  */
 export const zUpdateProduct = z.object({
   name: z.optional(z.string().min(2).max(200)),
@@ -3219,7 +3219,7 @@ export const zCreatePromoCode = z.object({
 /**
  * UpdatePromoCode
  *
- * Editable fields — the code itself is immutable once created
+ * Editable fields, the code itself is immutable once created
  */
 export const zUpdatePromoCode = z.object({
   type: z.optional(zPromoType),
@@ -3616,7 +3616,7 @@ export const zCreateBanner = z.object({
 /**
  * UpdateBanner
  *
- * Update a banner — every field optional
+ * Update a banner, every field optional
  */
 export const zUpdateBanner = z.object({
   title: z.optional(z.string().min(1).max(255)),

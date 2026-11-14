@@ -20,7 +20,7 @@ export default [
 
   // App routes (protected via app-layout)
   layout('features/layouts/app-layout.tsx', [
-    // Catalogue — the shop's, and the studio staff open on a shop's behalf.
+    // Catalogue, the shop's, and the studio staff open on a shop's behalf.
     layout('features/layouts/catalog-layout.tsx', [
       route('catalogue', 'features/catalog/pages/catalog-page.tsx'),
       route('catalogue/nouveau', 'features/catalog/pages/product-create-page.tsx'),
@@ -29,11 +29,11 @@ export default [
     ]),
     layout('features/layouts/supplier-layout.tsx', [
 
-      // Supplier — Commandes
+      // Supplier, Commandes
       route('commandes', 'features/orders/pages/orders-page.tsx'),
       route('commandes/:orderId', 'features/orders/pages/order-detail-page.tsx'),
 
-      // Supplier — Analytics, Notifications & Settings
+      // Supplier, Analytics, Notifications & Settings
       route('analytics', 'features/analytics/pages/analytics-page.tsx'),
       route('portefeuille', 'features/wallet/pages/wallet-page.tsx'),
       route('codes-promo', 'features/promo-codes/pages/supplier-promo-codes-page.tsx'),
@@ -46,48 +46,48 @@ export default [
 
     // Admin routes nested in admin layout
     layout('features/layouts/admin-layout.tsx', [
-      // Admin — Dashboard
+      // Admin, Dashboard
       route('admin', 'features/admin/dashboard/pages/admin-dashboard-page.tsx'),
 
-      // Admin — Validations
+      // Admin, Validations
       route('admin/validations', 'features/admin/validation/pages/validation-page.tsx'),
       route('admin/validations/:supplierId', 'features/admin/validation/pages/validation-detail-page.tsx'),
 
-      // Admin — Commandes
+      // Admin, Commandes
       route('admin/commandes', 'features/admin/orders/pages/admin-orders-page.tsx'),
       route('admin/commandes/:orderId', 'features/admin/orders/pages/admin-order-detail-page.tsx'),
 
-      // Admin — Livraisons (flotte partagée)
+      // Admin, Livraisons (flotte partagée)
       route('admin/livraisons', 'features/admin/deliveries/pages/admin-deliveries-page.tsx'),
       route('admin/livraisons/:deliveryId/assigner', 'features/admin/deliveries/pages/admin-delivery-assign-page.tsx'),
       route('admin/preuves-eloignees', 'features/admin/deliveries/pages/far-proofs-page.tsx'),
 
-      // Admin — Fournisseurs
+      // Admin, Fournisseurs
       route('admin/fournisseurs', 'features/admin/suppliers/pages/admin-suppliers-page.tsx'),
       route('admin/fournisseurs/:supplierId', 'features/admin/suppliers/pages/admin-supplier-detail-page.tsx'),
       route('admin/cartes-de-visite', 'features/admin/business-cards/pages/admin-business-cards-page.tsx'),
 
-      // Admin — Livreurs
+      // Admin, Livreurs
       route('admin/livreurs', 'features/admin/couriers/pages/admin-couriers-page.tsx'),
       route('admin/livreurs/:courierId', 'features/admin/couriers/pages/admin-courier-detail-page.tsx'),
 
-      // Admin — Utilisateurs
+      // Admin, Utilisateurs
       route('admin/paniers', 'features/admin/carts/pages/admin-carts-page.tsx'),
       route('admin/entonnoir', 'features/admin/analytics/pages/admin-funnel-page.tsx'),
       route('admin/campagnes', 'features/admin/campaigns/pages/admin-campaigns-page.tsx'),
       route('admin/utilisateurs', 'features/admin/users/pages/admin-users-page.tsx'),
       route('admin/utilisateurs/:userId', 'features/admin/users/pages/admin-user-detail-page.tsx'),
 
-      // Admin — Bannières
+      // Admin, Bannières
       route('admin/bannieres', 'features/admin/banners/pages/banners-page.tsx'),
       route('admin/bannieres/nouvelle', 'features/admin/banners/pages/banner-create-page.tsx'),
       route('admin/bannieres/demandes', 'features/admin/banners/pages/banner-requests-page.tsx'),
       route('admin/bannieres/:bannerId/modifier', 'features/admin/banners/pages/banner-edit-page.tsx'),
 
-      // Admin — Moderation
+      // Admin, Moderation
       route('admin/moderation', 'features/admin/moderation/pages/moderation-page.tsx'),
 
-      // Admin — Transactions
+      // Admin, Transactions
       route('admin/transactions', 'features/admin/transactions/pages/transactions-page.tsx'),
       route('admin/transactions/:paymentId', 'features/admin/transactions/pages/transaction-detail-page.tsx'),
 
@@ -103,7 +103,7 @@ export default [
       route('admin/avis-signales', 'features/admin/review-moderation/pages/review-moderation-page.tsx'),
       route('admin/support', 'features/admin/support/pages/support-inbox-page.tsx'),
 
-      // Admin — Terroir vers l'étranger (011)
+      // Admin, Terroir vers l'étranger (011)
       route('admin/terroir/validation', 'features/admin/terroir/pages/export-reviews-page.tsx'),
       route('admin/terroir/packs', 'features/admin/terroir/pages/export-packs-page.tsx'),
       route('admin/terroir/agences', 'features/admin/terroir/pages/export-agencies-page.tsx'),
@@ -111,29 +111,29 @@ export default [
       route('admin/terroir/departs/:departureId', 'features/admin/terroir/pages/export-departure-detail-page.tsx'),
       route('admin/terroir/colis/:shipmentId', 'features/admin/terroir/pages/export-shipment-page.tsx'),
 
-      // Admin — Catalogue de la plateforme
+      // Admin, Catalogue de la plateforme
       route('admin/produits', 'features/admin/products/pages/admin-products-page.tsx'),
       route('admin/produits/:productId', 'features/admin/products/pages/admin-product-detail-page.tsx'),
 
-      // Admin — Categories
+      // Admin, Categories
       route('admin/categories', 'features/admin/categories/pages/categories-page.tsx'),
       route('admin/categories/nouveau', 'features/admin/categories/pages/category-create-page.tsx'),
       route('admin/categories/:categoryId/modifier', 'features/admin/categories/pages/category-edit-page.tsx'),
 
-      // Admin — Site vitrine
+      // Admin, Site vitrine
       route('admin/site', 'features/admin/site/pages/site-page.tsx'),
 
-      // Admin — Unites de vente
+      // Admin, Unites de vente
       route('admin/unites', 'features/admin/product-units/pages/product-units-page.tsx'),
       route('admin/unites/nouveau', 'features/admin/product-units/pages/product-unit-create-page.tsx'),
       route('admin/unites/:unitId/modifier', 'features/admin/product-units/pages/product-unit-edit-page.tsx'),
 
-      // Admin — Labels et certifications (one page creates and edits: two route ids)
+      // Admin, Labels et certifications (one page creates and edits: two route ids)
       route('admin/certifications', 'features/admin/certifications/pages/certifications-page.tsx'),
       route('admin/certifications/nouveau', 'features/admin/certifications/pages/certification-form-page.tsx', { id: 'certification-create' }),
       route('admin/certifications/:certificationId/modifier', 'features/admin/certifications/pages/certification-form-page.tsx', { id: 'certification-edit' }),
 
-      // Admin — Settings & Roles
+      // Admin, Settings & Roles
       route('admin/parametres', 'features/admin/settings/pages/admin-settings-page.tsx'),
       route('admin/equipe', 'features/admin/team/pages/team-page.tsx'),
       route('admin/roles', 'features/admin/roles/pages/roles-page.tsx'),

@@ -31,7 +31,7 @@ interface ShipmentEventDialogProps {
 }
 
 /**
- * Publishes a step of the timeline — the buyer is told by push and e-mail.
+ * Publishes a step of the timeline, the buyer is told by push and e-mail.
  * On a parcel the staff may also write a free message or the pickup address
  * shown with the step (the parcel's own point by default).
  */

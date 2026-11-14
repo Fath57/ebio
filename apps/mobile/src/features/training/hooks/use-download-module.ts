@@ -1,6 +1,6 @@
 // The legacy entry point, deliberately: SDK 54 moved the package to a new
 // `File` / `Directory` API, and the resumable download this hook is built on
-// — with its progress callback — lives only in the old one. Importing the new
+// with its progress callback, lives only in the old one. Importing the new
 // root left `documentDirectory` and `DownloadResumable` undefined, which the
 // bundler was happy to ship.
 import * as FileSystem from 'expo-file-system/legacy'

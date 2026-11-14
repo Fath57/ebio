@@ -53,7 +53,7 @@ function fresh(app: INestApplication): void {
  * that are open, not past their deadline, and not full. A cancelled
  * departure's parcels move at eBio's expense.
  */
-describe('terroir — agences et départs (e2e)', { timeout: 30_000 }, () => {
+describe('terroir, agences et départs (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
       imports: [RolesModule, AuditModule, TerroirModule],

@@ -39,7 +39,7 @@ function fresh(app: INestApplication): void {
  * before it is seen abroad; packs only hold approved products and stop being
  * orderable as soon as one is no longer approved.
  */
-describe('terroir — produits exportables et packs (e2e)', { timeout: 30_000 }, () => {
+describe('terroir, produits exportables et packs (e2e)', { timeout: 30_000 }, () => {
   beforeEach(async (context) => {
     const { orm, app } = await initializeTestApp({ orm: context.orm, poolMax: 4 }, {
       imports: [RolesModule, AuditModule, ProductsModule, TerroirModule],

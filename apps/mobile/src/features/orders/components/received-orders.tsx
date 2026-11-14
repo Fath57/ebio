@@ -17,7 +17,7 @@ export interface ReceivedLine {
   imageUrl: string | null
 }
 
-/** One basket sent by someone else to this account's verified number — never an amount. */
+/** One basket sent by someone else to this account's verified number, never an amount. */
 export interface ReceivedOrder {
   orderId: string
   payerFirstName: string
@@ -75,7 +75,7 @@ function toReceivedOrder(raw: Record<string, unknown>): ReceivedOrder {
 
 /**
  * The baskets received by this account (`GET /api/orders/received`). Empty
- * for most accounts — the segment only shows when there is at least one.
+ * for most accounts, the segment only shows when there is at least one.
  */
 export function useReceivedOrders() {
   const [items, setItems] = useState<ReceivedOrder[]>([])
@@ -119,7 +119,7 @@ interface ReceivedCardProps {
   onRateCourier: (orderId: string, supplierId: string | null) => void
 }
 
-/** A received basket: who sent it, from which shop, and — opened — every line. */
+/** A received basket: who sent it, from which shop, and, opened, every line. */
 function ReceivedCard({ order, expanded, onToggle, onRateProducts, onRateCourier }: ReceivedCardProps) {
   const { semantic } = useTheme()
   const statusColor = STATUS_COLORS[order.status]
@@ -213,7 +213,7 @@ interface ReceivedOrdersProps {
 
 /**
  * « Paniers reçus » : what someone ordered for this account. No amount, no
- * cancellation — only the progress, the contents and, once delivered, the
+ * cancellation, only the progress, the contents and, once delivered, the
  * rating.
  */
 export function ReceivedOrders({ items, isRefreshing, onRefresh, onRateProducts, onRateCourier, bottomInset }: ReceivedOrdersProps) {

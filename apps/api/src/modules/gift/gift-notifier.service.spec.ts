@@ -9,8 +9,8 @@ const RECIPIENT_PHONE = '+2290197000001'
 
 /**
  * A stand-in for the `checkouts` row the notifier claims before each text.
- * The real claims are single UPDATEs; this keeps the same rules — announced
- * once, a code once, three resends — so the service's logic is what is tested.
+ * The real claims are single UPDATEs; this keeps the same rules, announced
+ * once, a code once, three resends, so the service's logic is what is tested.
  */
 function buildService(options: { window?: { start: Date, end: Date } | null } = {}) {
   const state = { announced: false, codeSent: null as string | null, resends: 0 }
