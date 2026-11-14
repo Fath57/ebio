@@ -172,6 +172,22 @@ export type FamilyWalletSetting = {
 };
 
 /**
+ * UpdateTerroirExportSetting
+ *
+ * Réglages du terroir vers l'étranger à modifier
+ */
+export type UpdateTerroirExportSetting = {
+  enabled?: boolean;
+  packagingWeightG?: number;
+  collectionDays?: number;
+  weightTolerancePct?: number;
+  insuranceRateBps?: number;
+  insuranceMin?: number;
+  bannedCategoryIds?: Array<string>;
+  pickupReminderDays?: number;
+};
+
+/**
  * CartSync
  *
  * Le panier tel que l'application le détient
@@ -2012,6 +2028,276 @@ export type SendSalesStatement = {
 };
 
 /**
+ * ExportAgencyInput
+ *
+ * Agence partenaire : nom, contact, notes
+ */
+export type ExportAgencyInput = {
+  name: string;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  notes?: string | null;
+  active?: boolean;
+};
+
+/**
+ * UpdateExportAgency
+ *
+ * Champs d'une agence partenaire à modifier
+ */
+export type UpdateExportAgency = {
+  name?: string;
+  contactName?: string | null;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  notes?: string | null;
+  active?: boolean;
+};
+
+/**
+ * ExportPickupPointInput
+ *
+ * Point de retrait d'une agence : pays, ville, adresse, horaires
+ */
+export type ExportPickupPointInput = {
+  country: ExportCountry;
+  city: string;
+  address: string;
+  openingHours?: string | null;
+  active?: boolean;
+};
+
+/**
+ * UpdateExportPickupPoint
+ *
+ * Champs d'un point de retrait à modifier
+ */
+export type UpdateExportPickupPoint = {
+  country?: ExportCountry;
+  city?: string;
+  address?: string;
+  openingHours?: string | null;
+  active?: boolean;
+};
+
+/**
+ * CreateExportDeparture
+ *
+ * Nouveau départ : agence, dates, délai annoncé, capacité, tarifs par pays
+ */
+export type CreateExportDeparture = {
+  agencyId: string;
+  departsOn: string;
+  depositDeadline: Date;
+  transitMinDays: number;
+  transitMaxDays: number;
+  capacityKg?: number | null;
+  rates: Array<ExportDepartureRateInput>;
+};
+
+/**
+ * UpdateExportDeparture
+ *
+ * Champs d'un départ à modifier ; les tarifs envoyés remplacent les précédents
+ */
+export type UpdateExportDeparture = {
+  agencyId?: string;
+  departsOn?: string;
+  depositDeadline?: Date;
+  transitMinDays?: number;
+  transitMaxDays?: number;
+  capacityKg?: number | null;
+  rates?: Array<ExportDepartureRateInput>;
+  status?: "OPEN" | "FULL" | "DEPARTED";
+};
+
+/**
+ * CancelExportDeparture
+ *
+ * Annulation d'un départ, avec réaffectation facultative des colis
+ */
+export type CancelExportDeparture = {
+  reassignTo?: string | null;
+};
+
+/**
+ * ExportDepartureEventInput
+ *
+ * Étape appliquée à tous les colis d'un départ
+ */
+export type ExportDepartureEventInput = {
+  step: ExportShipmentStatus;
+  message?: string | null;
+};
+
+/**
+ * CollectExportShipment
+ *
+ * Collecte des produits d'une boutique pour un colis
+ */
+export type CollectExportShipment = {
+  supplierId: string;
+};
+
+/**
+ * MissingExportItem
+ *
+ * Produit manquant à la collecte : retiré du colis et remboursé
+ */
+export type MissingExportItem = {
+  orderItemId: string;
+};
+
+/**
+ * WeighExportShipment
+ *
+ * Poids réel du colis, en grammes
+ */
+export type WeighExportShipment = {
+  actualWeightG: number;
+};
+
+/**
+ * ExportShipmentEventInput
+ *
+ * Étape et / ou message libre sur un colis
+ */
+export type ExportShipmentEventInput = {
+  step?:
+    | "PENDING_PAYMENT"
+    | "PAID"
+    | "COLLECTING"
+    | "PACKED"
+    | "DROPPED_AT_AGENCY"
+    | "DEPARTED"
+    | "ARRIVED"
+    | "READY_FOR_PICKUP"
+    | "OUT_FOR_DELIVERY"
+    | "HANDED_OVER"
+    | "LOST"
+    | "DAMAGED"
+    | "CANCELLED"
+    | null;
+  message?: string | null;
+  pickupPoint?: string | null;
+};
+
+/**
+ * LostExportShipment
+ *
+ * Colis perdu (false) ou abîmé (true) : remboursé sans retour
+ */
+export type LostExportShipment = {
+  damaged: boolean;
+};
+
+/**
+ * ReviewExportProduct
+ *
+ * Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé
+ */
+export type ReviewExportProduct = {
+  decision: ExportReviewDecision;
+  checklist: ExportChecklist;
+  reason?: string | null;
+};
+
+/**
+ * ReviewExportPack
+ *
+ * Validation d'un pack, ou refus motivé
+ */
+export type ReviewExportPack = {
+  decision: ExportReviewDecision;
+  reason?: string | null;
+};
+
+/**
+ * ExportPackInput
+ *
+ * Pack terroir : nom, description, photos, prix, produits
+ */
+export type ExportPackInput = {
+  name: string;
+  description?: string | null;
+  photos: Array<string>;
+  price: number;
+  items: Array<ExportPackItemInput>;
+};
+
+/**
+ * UpdateExportPack
+ *
+ * Champs d'un pack à modifier ; les produits envoyés remplacent les précédents
+ */
+export type UpdateExportPack = {
+  name?: string;
+  description?: string | null;
+  photos?: Array<string>;
+  price?: number;
+  items?: Array<ExportPackItemInput>;
+};
+
+/**
+ * ExportProfileInput
+ *
+ * Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette
+ */
+export type ExportProfileInput = {
+  packedWeightG: number;
+  lengthCm?: number | null;
+  widthCm?: number | null;
+  heightCm?: number | null;
+  shelfLifeDays: number;
+  origin: ExportOrigin;
+  labelPhoto?: string | null;
+};
+
+/**
+ * TerroirDepartureAlertInput
+ *
+ * « Me prévenir du prochain départ » vers un pays
+ */
+export type TerroirDepartureAlertInput = {
+  country: ExportCountry;
+};
+
+/**
+ * TerroirCheckoutInput
+ *
+ * Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement
+ */
+export type TerroirCheckoutInput = {
+  country: ExportCountry;
+  lines: Array<TerroirCartLine>;
+  departureId?: string | null;
+  reception: ExportReception;
+  pickupPointId?: string | null;
+  homeAddress?: string | null;
+  insured: boolean;
+  gift?: {
+    name: string;
+    email?: string | null;
+    phone?: string | null;
+    message?: string | null;
+  } | null;
+  paymentMethod: TerroirPaymentMethod;
+  displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+};
+
+/**
+ * TerroirSupplementInput
+ *
+ * Choix du client face au complément de poids
+ */
+export type TerroirSupplementInput = {
+  choice: TerroirSupplementChoice;
+  lineId?: string | null;
+  paymentMethod: TerroirPaymentMethod;
+};
+
+/**
  * CompleteModule
  *
  * Answers submitted to complete a training module quiz
@@ -2912,7 +3198,11 @@ export type OrderItemInput = {
  *
  * How the buyer will receive the order
  */
-export const PickupMode = { ON_SITE: "ON_SITE", DELIVERY: "DELIVERY" } as const;
+export const PickupMode = {
+  ON_SITE: "ON_SITE",
+  DELIVERY: "DELIVERY",
+  EXPORT: "EXPORT",
+} as const;
 
 /**
  * PickupMode
@@ -3338,6 +3628,257 @@ export const ContactReason = {
  * Why the visitor is writing
  */
 export type ContactReason = (typeof ContactReason)[keyof typeof ContactReason];
+
+/**
+ * ExportCountry
+ *
+ * Pays de destination d'un colis terroir
+ */
+export const ExportCountry = { FR: "FR", BE: "BE" } as const;
+
+/**
+ * ExportCountry
+ *
+ * Pays de destination d'un colis terroir
+ */
+export type ExportCountry = (typeof ExportCountry)[keyof typeof ExportCountry];
+
+/**
+ * ExportDeparturesQuery
+ *
+ * Filtre de la liste des départs
+ */
+export type ExportDeparturesQuery = {
+  /**
+   * ExportDepartureStatus
+   *
+   * Statut d'un départ : ouvert, complet, annulé, parti
+   */
+  status?: "OPEN" | "FULL" | "CANCELLED" | "DEPARTED";
+};
+
+/**
+ * ExportDepartureRateInput
+ *
+ * Tarif d'un départ pour un pays
+ */
+export type ExportDepartureRateInput = {
+  /**
+   * ExportCountry
+   *
+   * Pays de destination d'un colis terroir
+   */
+  country: "FR" | "BE";
+  pricePerKg: number;
+  minBilledKg: number;
+  maxWeightKg?: number | null;
+  homeDeliveryFee?: number | null;
+};
+
+/**
+ * ExportShipmentStatus
+ *
+ * Étape d'un colis terroir
+ */
+export const ExportShipmentStatus = {
+  PENDING_PAYMENT: "PENDING_PAYMENT",
+  PAID: "PAID",
+  COLLECTING: "COLLECTING",
+  PACKED: "PACKED",
+  DROPPED_AT_AGENCY: "DROPPED_AT_AGENCY",
+  DEPARTED: "DEPARTED",
+  ARRIVED: "ARRIVED",
+  READY_FOR_PICKUP: "READY_FOR_PICKUP",
+  OUT_FOR_DELIVERY: "OUT_FOR_DELIVERY",
+  HANDED_OVER: "HANDED_OVER",
+  LOST: "LOST",
+  DAMAGED: "DAMAGED",
+  CANCELLED: "CANCELLED",
+} as const;
+
+/**
+ * ExportShipmentStatus
+ *
+ * Étape d'un colis terroir
+ */
+export type ExportShipmentStatus =
+  (typeof ExportShipmentStatus)[keyof typeof ExportShipmentStatus];
+
+/**
+ * ExportReviewsQuery
+ *
+ * Filtre de la file de validation
+ */
+export type ExportReviewsQuery = {
+  /**
+   * ExportProfileStatus
+   *
+   * Validation d'un produit pour l'export : en attente, validé, refusé
+   */
+  status: "PENDING" | "APPROVED" | "REJECTED";
+};
+
+/**
+ * ExportReviewDecision
+ *
+ * Décision d'eBio sur un produit ou un pack
+ */
+export const ExportReviewDecision = {
+  APPROVE: "APPROVE",
+  REJECT: "REJECT",
+} as const;
+
+/**
+ * ExportReviewDecision
+ *
+ * Décision d'eBio sur un produit ou un pack
+ */
+export type ExportReviewDecision =
+  (typeof ExportReviewDecision)[keyof typeof ExportReviewDecision];
+
+/**
+ * ExportChecklist
+ *
+ * Liste de contrôle d'export : chaque clé cochée
+ */
+export type ExportChecklist = {
+  label_french?: boolean;
+  allergens_declared?: boolean;
+  dates_present?: boolean;
+  shelf_life_sufficient?: boolean;
+  ingredients_allowed?: boolean;
+  label_photo?: boolean;
+};
+
+/**
+ * ExportPackItemInput
+ *
+ * Produit d'un pack et sa quantité
+ */
+export type ExportPackItemInput = {
+  productId: string;
+  variantId?: string | null;
+  quantity: number;
+};
+
+/**
+ * ExportOrigin
+ *
+ * Origine du produit : producteur, lieu, année, mode de fabrication, photos
+ */
+export type ExportOrigin = {
+  producer?: string | null;
+  place?: string | null;
+  year?: number | null;
+  method?: string | null;
+  photos: Array<string>;
+};
+
+/**
+ * TerroirCatalogQuery
+ *
+ * Catalogue terroir : pays, catégorie, recherche, page, devise d'affichage
+ */
+export type TerroirCatalogQuery = {
+  /**
+   * ExportCountry
+   *
+   * Pays de destination d'un colis terroir
+   */
+  country: "FR" | "BE";
+  category?: string;
+  search?: string;
+  page: number;
+  currency: "XOF" | "EUR" | "USD" | "CAD";
+};
+
+/**
+ * TerroirDisplayQuery
+ *
+ * Devise d'affichage des prix
+ */
+export type TerroirDisplayQuery = {
+  currency: "XOF" | "EUR" | "USD" | "CAD";
+};
+
+/**
+ * TerroirDeparturesQuery
+ *
+ * Départs proposables vers un pays, pour un poids de colis
+ */
+export type TerroirDeparturesQuery = {
+  /**
+   * ExportCountry
+   *
+   * Pays de destination d'un colis terroir
+   */
+  country: "FR" | "BE";
+  weightG: number;
+  currency: "XOF" | "EUR" | "USD" | "CAD";
+};
+
+/**
+ * TerroirCartLine
+ *
+ * Ligne du panier terroir : un produit (et sa variante) ou un pack
+ */
+export type TerroirCartLine = {
+  productId?: string;
+  variantId?: string | null;
+  packId?: string;
+  quantity: number;
+};
+
+/**
+ * ExportReception
+ *
+ * Réception du colis : retrait en agence ou livraison à domicile
+ */
+export const ExportReception = { PICKUP: "PICKUP", HOME: "HOME" } as const;
+
+/**
+ * ExportReception
+ *
+ * Réception du colis : retrait en agence ou livraison à domicile
+ */
+export type ExportReception =
+  (typeof ExportReception)[keyof typeof ExportReception];
+
+/**
+ * TerroirPaymentMethod
+ *
+ * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+ */
+export const TerroirPaymentMethod = {
+  FEDAPAY: "FEDAPAY",
+  WALLET: "WALLET",
+} as const;
+
+/**
+ * TerroirPaymentMethod
+ *
+ * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+ */
+export type TerroirPaymentMethod =
+  (typeof TerroirPaymentMethod)[keyof typeof TerroirPaymentMethod];
+
+/**
+ * TerroirSupplementChoice
+ *
+ * Réponse au complément de poids : payer, ou retirer un produit (remboursé)
+ */
+export const TerroirSupplementChoice = {
+  PAY: "PAY",
+  REMOVE_ITEM: "REMOVE_ITEM",
+} as const;
+
+/**
+ * TerroirSupplementChoice
+ *
+ * Réponse au complément de poids : payer, ou retirer un produit (remboursé)
+ */
+export type TerroirSupplementChoice =
+  (typeof TerroirSupplementChoice)[keyof typeof TerroirSupplementChoice];
 
 export type CommentsControllerGetCommentsFilterItem = {
   property: "content";
@@ -5511,6 +6052,42 @@ export type AdminFamilyWalletSettingControllerUpdateResponses = {
   200: unknown;
 };
 
+export type AdminTerroirExportSettingControllerGetData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/terroir-export-setting";
+};
+
+export type AdminTerroirExportSettingControllerGetResponses = {
+  200: unknown;
+};
+
+export type AdminTerroirExportSettingControllerUpdateData = {
+  /**
+   * UpdateTerroirExportSetting
+   *
+   * Réglages du terroir vers l'étranger à modifier
+   */
+  body: {
+    enabled?: boolean;
+    packagingWeightG?: number;
+    collectionDays?: number;
+    weightTolerancePct?: number;
+    insuranceRateBps?: number;
+    insuranceMin?: number;
+    bannedCategoryIds?: Array<string>;
+    pickupReminderDays?: number;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/terroir-export-setting";
+};
+
+export type AdminTerroirExportSettingControllerUpdateResponses = {
+  200: unknown;
+};
+
 export type SuppliersControllerRegisterData = {
   /**
    * RegisterSupplier
@@ -7265,7 +7842,7 @@ export type OrdersControllerPreviewCheckoutData = {
      *
      * How the buyer will receive the order
      */
-    pickupMode: "ON_SITE" | "DELIVERY";
+    pickupMode: "ON_SITE" | "DELIVERY" | "EXPORT";
     deliveryLatitude?: number;
     deliveryLongitude?: number;
     promoCode?: string;
@@ -7313,7 +7890,7 @@ export type OrdersControllerCreateCheckoutData = {
      *
      * How the buyer will receive the order
      */
-    pickupMode: "ON_SITE" | "DELIVERY";
+    pickupMode: "ON_SITE" | "DELIVERY" | "EXPORT";
     deliveryAddress?: string;
     deliveryLatitude?: number;
     deliveryLongitude?: number;
@@ -7384,7 +7961,7 @@ export type OrdersControllerCreateData = {
      *
      * How the buyer will receive the order
      */
-    pickupMode: "ON_SITE" | "DELIVERY";
+    pickupMode: "ON_SITE" | "DELIVERY" | "EXPORT";
     /**
      * PaymentMethod
      *
@@ -7426,7 +8003,7 @@ export type OrdersControllerPreviewData = {
      *
      * How the buyer will receive the order
      */
-    pickupMode: "ON_SITE" | "DELIVERY";
+    pickupMode: "ON_SITE" | "DELIVERY" | "EXPORT";
     deliveryLatitude?: number;
     deliveryLongitude?: number;
     promoCode?: string;
@@ -11498,6 +12075,1060 @@ export type CommunityControllerGetShareUrlData = {
 };
 
 export type CommunityControllerGetShareUrlResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerListAgenciesData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/export/agencies";
+};
+
+export type AdminExportControllerListAgenciesResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCreateAgencyData = {
+  /**
+   * ExportAgencyInput
+   *
+   * Agence partenaire : nom, contact, notes
+   */
+  body: {
+    name: string;
+    contactName?: string | null;
+    contactPhone?: string | null;
+    contactEmail?: string | null;
+    notes?: string | null;
+    active?: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/export/agencies";
+};
+
+export type AdminExportControllerCreateAgencyResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerUpdateAgencyData = {
+  /**
+   * UpdateExportAgency
+   *
+   * Champs d'une agence partenaire à modifier
+   */
+  body: {
+    name?: string;
+    contactName?: string | null;
+    contactPhone?: string | null;
+    contactEmail?: string | null;
+    notes?: string | null;
+    active?: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/agencies/{id}";
+};
+
+export type AdminExportControllerUpdateAgencyResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerListPickupPointsData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/agencies/{id}/pickup-points";
+};
+
+export type AdminExportControllerListPickupPointsResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCreatePickupPointData = {
+  /**
+   * ExportPickupPointInput
+   *
+   * Point de retrait d'une agence : pays, ville, adresse, horaires
+   */
+  body: {
+    /**
+     * ExportCountry
+     *
+     * Pays de destination d'un colis terroir
+     */
+    country: "FR" | "BE";
+    city: string;
+    address: string;
+    openingHours?: string | null;
+    active?: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/agencies/{id}/pickup-points";
+};
+
+export type AdminExportControllerCreatePickupPointResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerUpdatePickupPointData = {
+  /**
+   * UpdateExportPickupPoint
+   *
+   * Champs d'un point de retrait à modifier
+   */
+  body: {
+    /**
+     * ExportCountry
+     *
+     * Pays de destination d'un colis terroir
+     */
+    country?: "FR" | "BE";
+    city?: string;
+    address?: string;
+    openingHours?: string | null;
+    active?: boolean;
+  };
+  path: {
+    id: string;
+    pointId: string;
+  };
+  query?: never;
+  url: "/api/admin/export/agencies/{id}/pickup-points/{pointId}";
+};
+
+export type AdminExportControllerUpdatePickupPointResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerListDeparturesData = {
+  body?: never;
+  path?: never;
+  query?: {
+    /**
+     * ExportDepartureStatus
+     *
+     * Statut d'un départ : ouvert, complet, annulé, parti
+     */
+    status?: "OPEN" | "FULL" | "CANCELLED" | "DEPARTED";
+  };
+  url: "/api/admin/export/departures";
+};
+
+export type AdminExportControllerListDeparturesResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCreateDepartureData = {
+  /**
+   * CreateExportDeparture
+   *
+   * Nouveau départ : agence, dates, délai annoncé, capacité, tarifs par pays
+   */
+  body: {
+    agencyId: string;
+    departsOn: string;
+    depositDeadline: Date;
+    transitMinDays: number;
+    transitMaxDays: number;
+    capacityKg?: number | null;
+    rates: Array<{
+      /**
+       * ExportCountry
+       *
+       * Pays de destination d'un colis terroir
+       */
+      country: "FR" | "BE";
+      pricePerKg: number;
+      minBilledKg: number;
+      maxWeightKg?: number | null;
+      homeDeliveryFee?: number | null;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/export/departures";
+};
+
+export type AdminExportControllerCreateDepartureResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerDepartureDetailData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/departures/{id}";
+};
+
+export type AdminExportControllerDepartureDetailResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerUpdateDepartureData = {
+  /**
+   * UpdateExportDeparture
+   *
+   * Champs d'un départ à modifier ; les tarifs envoyés remplacent les précédents
+   */
+  body: {
+    agencyId?: string;
+    departsOn?: string;
+    depositDeadline?: Date;
+    transitMinDays?: number;
+    transitMaxDays?: number;
+    capacityKg?: number | null;
+    rates?: Array<{
+      /**
+       * ExportCountry
+       *
+       * Pays de destination d'un colis terroir
+       */
+      country: "FR" | "BE";
+      pricePerKg: number;
+      minBilledKg: number;
+      maxWeightKg?: number | null;
+      homeDeliveryFee?: number | null;
+    }>;
+    status?: "OPEN" | "FULL" | "DEPARTED";
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/departures/{id}";
+};
+
+export type AdminExportControllerUpdateDepartureResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCancelDepartureData = {
+  /**
+   * CancelExportDeparture
+   *
+   * Annulation d'un départ, avec réaffectation facultative des colis
+   */
+  body: {
+    reassignTo?: string | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/departures/{id}/cancel";
+};
+
+export type AdminExportControllerCancelDepartureResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerManifestData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/departures/{id}/manifest";
+};
+
+export type AdminExportControllerManifestResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerDepartureEventData = {
+  /**
+   * ExportDepartureEventInput
+   *
+   * Étape appliquée à tous les colis d'un départ
+   */
+  body: {
+    /**
+     * ExportShipmentStatus
+     *
+     * Étape d'un colis terroir
+     */
+    step:
+      | "PENDING_PAYMENT"
+      | "PAID"
+      | "COLLECTING"
+      | "PACKED"
+      | "DROPPED_AT_AGENCY"
+      | "DEPARTED"
+      | "ARRIVED"
+      | "READY_FOR_PICKUP"
+      | "OUT_FOR_DELIVERY"
+      | "HANDED_OVER"
+      | "LOST"
+      | "DAMAGED"
+      | "CANCELLED";
+    message?: string | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/departures/{id}/events";
+};
+
+export type AdminExportControllerDepartureEventResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerShipmentData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/shipments/{id}";
+};
+
+export type AdminExportControllerShipmentResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCollectData = {
+  /**
+   * CollectExportShipment
+   *
+   * Collecte des produits d'une boutique pour un colis
+   */
+  body: {
+    supplierId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/shipments/{id}/collect";
+};
+
+export type AdminExportControllerCollectResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerMissingData = {
+  /**
+   * MissingExportItem
+   *
+   * Produit manquant à la collecte : retiré du colis et remboursé
+   */
+  body: {
+    orderItemId: string;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/shipments/{id}/missing";
+};
+
+export type AdminExportControllerMissingResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerWeighData = {
+  /**
+   * WeighExportShipment
+   *
+   * Poids réel du colis, en grammes
+   */
+  body: {
+    actualWeightG: number;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/shipments/{id}/weigh";
+};
+
+export type AdminExportControllerWeighResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerShipmentEventData = {
+  /**
+   * ExportShipmentEventInput
+   *
+   * Étape et / ou message libre sur un colis
+   */
+  body: {
+    step?:
+      | "PENDING_PAYMENT"
+      | "PAID"
+      | "COLLECTING"
+      | "PACKED"
+      | "DROPPED_AT_AGENCY"
+      | "DEPARTED"
+      | "ARRIVED"
+      | "READY_FOR_PICKUP"
+      | "OUT_FOR_DELIVERY"
+      | "HANDED_OVER"
+      | "LOST"
+      | "DAMAGED"
+      | "CANCELLED"
+      | null;
+    message?: string | null;
+    pickupPoint?: string | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/shipments/{id}/events";
+};
+
+export type AdminExportControllerShipmentEventResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerHandedOverData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/shipments/{id}/handed-over";
+};
+
+export type AdminExportControllerHandedOverResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerLostData = {
+  /**
+   * LostExportShipment
+   *
+   * Colis perdu (false) ou abîmé (true) : remboursé sans retour
+   */
+  body: {
+    damaged: boolean;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/shipments/{id}/lost";
+};
+
+export type AdminExportControllerLostResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerReviewsData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * ExportProfileStatus
+     *
+     * Validation d'un produit pour l'export : en attente, validé, refusé
+     */
+    status: "PENDING" | "APPROVED" | "REJECTED";
+  };
+  url: "/api/admin/export/reviews";
+};
+
+export type AdminExportControllerReviewsResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerReviewProductData = {
+  /**
+   * ReviewExportProduct
+   *
+   * Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé
+   */
+  body: {
+    /**
+     * ExportReviewDecision
+     *
+     * Décision d'eBio sur un produit ou un pack
+     */
+    decision: "APPROVE" | "REJECT";
+    /**
+     * ExportChecklist
+     *
+     * Liste de contrôle d'export : chaque clé cochée
+     */
+    checklist: {
+      label_french?: boolean;
+      allergens_declared?: boolean;
+      dates_present?: boolean;
+      shelf_life_sufficient?: boolean;
+      ingredients_allowed?: boolean;
+      label_photo?: boolean;
+    };
+    reason?: string | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/products/{id}/review";
+};
+
+export type AdminExportControllerReviewProductResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerReviewPackData = {
+  /**
+   * ReviewExportPack
+   *
+   * Validation d'un pack, ou refus motivé
+   */
+  body: {
+    /**
+     * ExportReviewDecision
+     *
+     * Décision d'eBio sur un produit ou un pack
+     */
+    decision: "APPROVE" | "REJECT";
+    reason?: string | null;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/packs/{id}/review";
+};
+
+export type AdminExportControllerReviewPackResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerListPacksData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/export/packs";
+};
+
+export type AdminExportControllerListPacksResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCreatePackData = {
+  /**
+   * ExportPackInput
+   *
+   * Pack terroir : nom, description, photos, prix, produits
+   */
+  body: {
+    name: string;
+    description?: string | null;
+    photos: Array<string>;
+    price: number;
+    items: Array<{
+      productId: string;
+      variantId?: string | null;
+      quantity: number;
+    }>;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/export/packs";
+};
+
+export type AdminExportControllerCreatePackResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerRetirePackData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/packs/{id}";
+};
+
+export type AdminExportControllerRetirePackResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerGetPackData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/packs/{id}";
+};
+
+export type AdminExportControllerGetPackResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerUpdatePackData = {
+  /**
+   * UpdateExportPack
+   *
+   * Champs d'un pack à modifier ; les produits envoyés remplacent les précédents
+   */
+  body: {
+    name?: string;
+    description?: string | null;
+    photos?: Array<string>;
+    price?: number;
+    items?: Array<{
+      productId: string;
+      variantId?: string | null;
+      quantity: number;
+    }>;
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/admin/export/packs/{id}";
+};
+
+export type AdminExportControllerUpdatePackResponses = {
+  200: unknown;
+};
+
+export type SupplierExportControllerRemoveProfileData = {
+  body?: never;
+  path: {
+    supplierId: string;
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/products/{id}/export";
+};
+
+export type SupplierExportControllerRemoveProfileResponses = {
+  200: unknown;
+};
+
+export type SupplierExportControllerGetProfileData = {
+  body?: never;
+  path: {
+    supplierId: string;
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/products/{id}/export";
+};
+
+export type SupplierExportControllerGetProfileResponses = {
+  200: unknown;
+};
+
+export type SupplierExportControllerUpsertProfileData = {
+  /**
+   * ExportProfileInput
+   *
+   * Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette
+   */
+  body: {
+    packedWeightG: number;
+    lengthCm?: number | null;
+    widthCm?: number | null;
+    heightCm?: number | null;
+    shelfLifeDays: number;
+    /**
+     * ExportOrigin
+     *
+     * Origine du produit : producteur, lieu, année, mode de fabrication, photos
+     */
+    origin: {
+      producer?: string | null;
+      place?: string | null;
+      year?: number | null;
+      method?: string | null;
+      photos: Array<string>;
+    };
+    labelPhoto?: string | null;
+  };
+  path: {
+    supplierId: string;
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/products/{id}/export";
+};
+
+export type SupplierExportControllerUpsertProfileResponses = {
+  200: unknown;
+};
+
+export type SupplierExportControllerListPacksData = {
+  body?: never;
+  path: {
+    supplierId: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/export-packs";
+};
+
+export type SupplierExportControllerListPacksResponses = {
+  200: unknown;
+};
+
+export type SupplierExportControllerCreatePackData = {
+  /**
+   * ExportPackInput
+   *
+   * Pack terroir : nom, description, photos, prix, produits
+   */
+  body: {
+    name: string;
+    description?: string | null;
+    photos: Array<string>;
+    price: number;
+    items: Array<{
+      productId: string;
+      variantId?: string | null;
+      quantity: number;
+    }>;
+  };
+  path: {
+    supplierId: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/export-packs";
+};
+
+export type SupplierExportControllerCreatePackResponses = {
+  201: unknown;
+};
+
+export type SupplierExportControllerRetirePackData = {
+  body?: never;
+  path: {
+    supplierId: string;
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/export-packs/{id}";
+};
+
+export type SupplierExportControllerRetirePackResponses = {
+  200: unknown;
+};
+
+export type SupplierExportControllerUpdatePackData = {
+  /**
+   * UpdateExportPack
+   *
+   * Champs d'un pack à modifier ; les produits envoyés remplacent les précédents
+   */
+  body: {
+    name?: string;
+    description?: string | null;
+    photos?: Array<string>;
+    price?: number;
+    items?: Array<{
+      productId: string;
+      variantId?: string | null;
+      quantity: number;
+    }>;
+  };
+  path: {
+    supplierId: string;
+    id: string;
+  };
+  query?: never;
+  url: "/api/suppliers/{supplierId}/export-packs/{id}";
+};
+
+export type SupplierExportControllerUpdatePackResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerGetCatalogData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * ExportCountry
+     *
+     * Pays de destination d'un colis terroir
+     */
+    country: "FR" | "BE";
+    category?: string;
+    search?: string;
+    page: number;
+    currency: "XOF" | "EUR" | "USD" | "CAD";
+  };
+  url: "/api/terroir/catalog";
+};
+
+export type TerroirClientControllerGetCatalogResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerGetProductData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    currency: "XOF" | "EUR" | "USD" | "CAD";
+  };
+  url: "/api/terroir/products/{id}";
+};
+
+export type TerroirClientControllerGetProductResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerGetPackData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query: {
+    currency: "XOF" | "EUR" | "USD" | "CAD";
+  };
+  url: "/api/terroir/packs/{id}";
+};
+
+export type TerroirClientControllerGetPackResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerGetDeparturesData = {
+  body?: never;
+  path?: never;
+  query: {
+    /**
+     * ExportCountry
+     *
+     * Pays de destination d'un colis terroir
+     */
+    country: "FR" | "BE";
+    weightG: number;
+    currency: "XOF" | "EUR" | "USD" | "CAD";
+  };
+  url: "/api/terroir/departures";
+};
+
+export type TerroirClientControllerGetDeparturesResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerSubscribeAlertData = {
+  /**
+   * TerroirDepartureAlertInput
+   *
+   * « Me prévenir du prochain départ » vers un pays
+   */
+  body: {
+    /**
+     * ExportCountry
+     *
+     * Pays de destination d'un colis terroir
+     */
+    country: "FR" | "BE";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/terroir/departure-alerts";
+};
+
+export type TerroirClientControllerSubscribeAlertResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerUnsubscribeAlertData = {
+  body?: never;
+  path: {
+    country: string;
+  };
+  query?: never;
+  url: "/api/terroir/departure-alerts/{country}";
+};
+
+export type TerroirClientControllerUnsubscribeAlertResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerPreviewData = {
+  /**
+   * TerroirCheckoutInput
+   *
+   * Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement
+   */
+  body: {
+    /**
+     * ExportCountry
+     *
+     * Pays de destination d'un colis terroir
+     */
+    country: "FR" | "BE";
+    lines: Array<{
+      productId?: string;
+      variantId?: string | null;
+      packId?: string;
+      quantity: number;
+    }>;
+    departureId?: string | null;
+    /**
+     * ExportReception
+     *
+     * Réception du colis : retrait en agence ou livraison à domicile
+     */
+    reception: "PICKUP" | "HOME";
+    pickupPointId?: string | null;
+    homeAddress?: string | null;
+    insured: boolean;
+    gift?: {
+      name: string;
+      email?: string | null;
+      phone?: string | null;
+      message?: string | null;
+    } | null;
+    /**
+     * TerroirPaymentMethod
+     *
+     * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+     */
+    paymentMethod: "FEDAPAY" | "WALLET";
+    displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/terroir/checkout/preview";
+};
+
+export type TerroirClientControllerPreviewResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerCreateData = {
+  /**
+   * TerroirCheckoutInput
+   *
+   * Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement
+   */
+  body: {
+    /**
+     * ExportCountry
+     *
+     * Pays de destination d'un colis terroir
+     */
+    country: "FR" | "BE";
+    lines: Array<{
+      productId?: string;
+      variantId?: string | null;
+      packId?: string;
+      quantity: number;
+    }>;
+    departureId?: string | null;
+    /**
+     * ExportReception
+     *
+     * Réception du colis : retrait en agence ou livraison à domicile
+     */
+    reception: "PICKUP" | "HOME";
+    pickupPointId?: string | null;
+    homeAddress?: string | null;
+    insured: boolean;
+    gift?: {
+      name: string;
+      email?: string | null;
+      phone?: string | null;
+      message?: string | null;
+    } | null;
+    /**
+     * TerroirPaymentMethod
+     *
+     * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+     */
+    paymentMethod: "FEDAPAY" | "WALLET";
+    displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+  };
+  path?: never;
+  query?: never;
+  url: "/api/terroir/checkout";
+};
+
+export type TerroirClientControllerCreateResponses = {
+  201: unknown;
+};
+
+export type TerroirClientControllerListShipmentsData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/terroir/shipments";
+};
+
+export type TerroirClientControllerListShipmentsResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerGetShipmentData = {
+  body?: never;
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/terroir/shipments/{id}";
+};
+
+export type TerroirClientControllerGetShipmentResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerSupplementData = {
+  /**
+   * TerroirSupplementInput
+   *
+   * Choix du client face au complément de poids
+   */
+  body: {
+    /**
+     * TerroirSupplementChoice
+     *
+     * Réponse au complément de poids : payer, ou retirer un produit (remboursé)
+     */
+    choice: "PAY" | "REMOVE_ITEM";
+    lineId?: string | null;
+    /**
+     * TerroirPaymentMethod
+     *
+     * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+     */
+    paymentMethod: "FEDAPAY" | "WALLET";
+  };
+  path: {
+    id: string;
+  };
+  query?: never;
+  url: "/api/terroir/shipments/{id}/supplement";
+};
+
+export type TerroirClientControllerSupplementResponses = {
+  200: unknown;
+};
+
+export type TerroirClientControllerTrackingData = {
+  body?: never;
+  path: {
+    token: string;
+  };
+  query?: never;
+  url: "/api/terroir/tracking/{token}";
+};
+
+export type TerroirClientControllerTrackingResponses = {
   200: unknown;
 };
 

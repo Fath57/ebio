@@ -103,6 +103,14 @@ export default [
       route('admin/avis-signales', 'features/admin/review-moderation/pages/review-moderation-page.tsx'),
       route('admin/support', 'features/admin/support/pages/support-inbox-page.tsx'),
 
+      // Admin — Terroir vers l'étranger (011)
+      route('admin/terroir/validation', 'features/admin/terroir/pages/export-reviews-page.tsx'),
+      route('admin/terroir/packs', 'features/admin/terroir/pages/export-packs-page.tsx'),
+      route('admin/terroir/agences', 'features/admin/terroir/pages/export-agencies-page.tsx'),
+      route('admin/terroir/departs', 'features/admin/terroir/pages/export-departures-page.tsx'),
+      route('admin/terroir/departs/:departureId', 'features/admin/terroir/pages/export-departure-detail-page.tsx'),
+      route('admin/terroir/colis/:shipmentId', 'features/admin/terroir/pages/export-shipment-page.tsx'),
+
       // Admin — Catalogue de la plateforme
       route('admin/produits', 'features/admin/products/pages/admin-products-page.tsx'),
       route('admin/produits/:productId', 'features/admin/products/pages/admin-product-detail-page.tsx'),

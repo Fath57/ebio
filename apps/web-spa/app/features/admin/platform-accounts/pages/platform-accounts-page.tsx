@@ -250,15 +250,12 @@ export default function PlatformAccountsPage() {
 
       {isLoading
         ? (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-              <Skeleton className="h-32" />
-              <Skeleton className="h-32" />
-              <Skeleton className="h-32" />
-              <Skeleton className="h-32" />
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+              {PLATFORM_ACCOUNTS.map(account => <Skeleton key={account} className="h-32" />)}
             </div>
           )
         : (
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
               {balances.map(entry => (
                 <AccountCard
                   key={entry.account}

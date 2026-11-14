@@ -57,7 +57,7 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 - [X] T013 [US2] `export-logistics.service.ts` : `reservedKg(departureId)`, remplissage, alerte 80 % une fois (`fill_alerted_at`), passage `FULL` à 100 %
 - [X] T014 [US2] `admin-export.controller.ts` : routes agences, points de retrait, départs, annulation, détail d'un départ (remplissage, colis, liste de collecte) — `@Roles('ADMIN')`, `@CanManage`, audit des créations et annulations
 - [X] T015 [P] [US2] Test e2e `terroir/tests/departures.e2e-spec.ts` : création avec tarifs FR/BE, départ échu exclu, plein exclu, annulation avec réaffectation et surcoût porté par `EXPORT`
-- [ ] T016 [US2] Back-office `apps/web-spa/app/features/admin/terroir/pages/export-agencies-page.tsx` (agences + points de retrait) et `export-departures-page.tsx` (liste, création, tarifs par pays, jauge de remplissage en barre + texte) ; routes et menu « Terroir » ; i18n fr/en
+- [X] T016 [US2] Back-office `apps/web-spa/app/features/admin/terroir/pages/export-agencies-page.tsx` (agences + points de retrait) et `export-departures-page.tsx` (liste, création, tarifs par pays, jauge de remplissage en barre + texte) ; routes et menu « Terroir » ; i18n fr/en
 
 ---
 
@@ -71,7 +71,7 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 - [X] T020 [US3] `supplier-export.controller.ts` (routes boutique) et routes back-office de validation et de packs eBio dans `admin-export.controller.ts`
 - [X] T021 [P] [US3] Test e2e `terroir/tests/export-catalog.e2e-spec.ts` : catégorie interdite, validation refusée sans liste complète, modification qui renvoie en validation, pack boutique avec un produit étranger refusé, pack non commandable si un produit n'est plus validé
 - [X] T022 [US3] App Fournisseur : `apps/mobile/src/features/supplier-dashboard/components/export-profile-form.tsx` (« Vendre à l'étranger » depuis la fiche produit : poids, dimensions, conservation, origine, photos d'origine, photo d'étiquette, statut et motif) et `export-packs-screen.tsx` ; routes dans `navigation.supplier.tsx`
-- [ ] T023 [US3] Back-office `export-reviews-page.tsx` (file de validation produits et packs, liste de contrôle à cocher, photo d'étiquette, motif de refus) et `export-packs-page.tsx` (packs eBio : composition multi-boutiques, prix, écart avec la somme affiché)
+- [X] T023 [US3] Back-office `export-reviews-page.tsx` (file de validation produits et packs, liste de contrôle à cocher, photo d'étiquette, motif de refus) et `export-packs-page.tsx` (packs eBio : composition multi-boutiques, prix, écart avec la somme affiché)
 
 ---
 
@@ -111,7 +111,7 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 - [X] T041 [US5] `addEvent(shipmentId, step?, message?, pickupPoint?)` et `addDepartureEvent(departureId, step, message?)` (tous les colis en une requête) ; `handedOver`, `lost(damaged)` (remboursement produits + transport, boutique non débitée, perte sur `EXPORT`, assurance suivie)
 - [X] T042 [US5] `terroir-notifier.service.ts` : notification à chaque événement (push + e-mail) ; colis offert : destinataire par e-mail / SMS +229, sans prix (US10) ; `terroir.scheduler.ts` : rappel de retrait à 14 j
 - [X] T043 [P] [US4] Test e2e `terroir/tests/shipment-flow.e2e-spec.ts` : collecte → portefeuille boutique crédité immédiatement de sa seule part ; manquant remboursé ; complément demandé au-delà de 10 % et absorbé à 48 h ; colis perdu remboursé, boutique non débitée ; étape de départ appliquée à tous les colis
-- [ ] T044 [US4] Back-office `export-departure-detail-page.tsx` : jauge, liste de collecte par boutique (« Collecté »), pesée, étape pour tout le départ, liste imprimable ; `export-shipment-page.tsx` : événements, message libre, manquant, perte, remise
+- [X] T044 [US4] Back-office `export-departure-detail-page.tsx` : jauge, liste de collecte par boutique (« Collecté »), pesée, étape pour tout le départ, liste imprimable ; `export-shipment-page.tsx` : événements, message libre, manquant, perte, remise
 - [X] T045 [US5] App Client : complément de poids dans `shipment-screen.tsx` (payer ou retirer un produit, échéance)
 
 ---
@@ -139,10 +139,10 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 ## Phase 9 — Finitions
 
-- [ ] T057 Carte « Terroir vers l'étranger » dans la section Livraison de la page Réglages (`settings-registry.tsx`) : interrupteur, emballage, délai de collecte, seuil de poids, assurance, catégories interdites, rappel de retrait
-- [ ] T058 Comptes plateforme : le compte `EXPORT` visible dans Argent → Comptes ; colonne de solde
+- [X] T057 Carte « Terroir vers l'étranger » dans la section Livraison de la page Réglages (`settings-registry.tsx`) : interrupteur, emballage, délai de collecte, seuil de poids, assurance, catégories interdites, rappel de retrait
+- [X] T058 Comptes plateforme : le compte `EXPORT` visible dans Argent → Comptes ; colonne de solde
 - [X] T059 CGU et confidentialité (`apps/landing/app/routes/cgu.tsx`, `confidentialite.tsx`) : terroir, droits et taxes inclus, remboursement sans retour, assurance
-- [ ] T060 `pnpm generate` (API temporaire sur un port libre) ; lint, `pnpm --filter api test`, `pnpm build`, `npx tsc --noEmit` dans `apps/mobile`
+- [X] T060 `pnpm generate` (API temporaire sur un port libre) ; lint, `pnpm --filter api test`, `pnpm build`, `npx tsc --noEmit` dans `apps/mobile`
 - [ ] T061 Dérouler `quickstart.md` ; `/design-review` des pages back-office et de la page `colis/:token`
 
 ---

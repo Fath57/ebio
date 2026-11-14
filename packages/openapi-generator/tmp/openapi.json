@@ -4399,6 +4399,90 @@
         }
       }
     },
+    "/api/admin/terroir-export-setting": {
+      "get": {
+        "operationId": "AdminTerroirExportSettingController_get",
+        "tags": [
+          "AdminTerroirExportSetting"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "AdminTerroirExportSettingController_update",
+        "tags": [
+          "AdminTerroirExportSetting"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Réglages du terroir vers l'étranger à modifier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enabled": {
+                    "type": "boolean"
+                  },
+                  "packagingWeightG": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5000
+                  },
+                  "collectionDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 30
+                  },
+                  "weightTolerancePct": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 100
+                  },
+                  "insuranceRateBps": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 5000
+                  },
+                  "insuranceMin": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 1000000
+                  },
+                  "bannedCategoryIds": {
+                    "maxItems": 200,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uuid",
+                      "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                    }
+                  },
+                  "pickupReminderDays": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 90
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateTerroirExportSetting",
+                "description": "Réglages du terroir vers l'étranger à modifier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/suppliers/register": {
       "post": {
         "operationId": "SuppliersController_register",
@@ -8306,7 +8390,8 @@
                     "type": "string",
                     "enum": [
                       "ON_SITE",
-                      "DELIVERY"
+                      "DELIVERY",
+                      "EXPORT"
                     ],
                     "title": "PickupMode",
                     "description": "How the buyer will receive the order"
@@ -8437,7 +8522,8 @@
                     "type": "string",
                     "enum": [
                       "ON_SITE",
-                      "DELIVERY"
+                      "DELIVERY",
+                      "EXPORT"
                     ],
                     "title": "PickupMode",
                     "description": "How the buyer will receive the order"
@@ -8578,7 +8664,8 @@
                     "type": "string",
                     "enum": [
                       "ON_SITE",
-                      "DELIVERY"
+                      "DELIVERY",
+                      "EXPORT"
                     ],
                     "title": "PickupMode",
                     "description": "How the buyer will receive the order"
@@ -8763,7 +8850,8 @@
                     "type": "string",
                     "enum": [
                       "ON_SITE",
-                      "DELIVERY"
+                      "DELIVERY",
+                      "EXPORT"
                     ],
                     "title": "PickupMode",
                     "description": "How the buyer will receive the order"
@@ -18237,6 +18325,2980 @@
         }
       }
     },
+    "/api/admin/export/agencies": {
+      "get": {
+        "operationId": "AdminExportController_listAgencies",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "AdminExportController_createAgency",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Agence partenaire : nom, contact, notes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "contactName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "contactPhone": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 30
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "contactEmail": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200,
+                        "format": "email",
+                        "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "title": "ExportAgencyInput",
+                "description": "Agence partenaire : nom, contact, notes"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/agencies/{id}": {
+      "patch": {
+        "operationId": "AdminExportController_updateAgency",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Champs d'une agence partenaire à modifier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "contactName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "contactPhone": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 30
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "contactEmail": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200,
+                        "format": "email",
+                        "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "notes": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateExportAgency",
+                "description": "Champs d'une agence partenaire à modifier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/agencies/{id}/pickup-points": {
+      "get": {
+        "operationId": "AdminExportController_listPickupPoints",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "AdminExportController_createPickupPoint",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Point de retrait d'une agence : pays, ville, adresse, horaires",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "FR",
+                      "BE"
+                    ],
+                    "title": "ExportCountry",
+                    "description": "Pays de destination d'un colis terroir"
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "openingHours": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "country",
+                  "city",
+                  "address"
+                ],
+                "additionalProperties": false,
+                "title": "ExportPickupPointInput",
+                "description": "Point de retrait d'une agence : pays, ville, adresse, horaires"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/agencies/{id}/pickup-points/{pointId}": {
+      "patch": {
+        "operationId": "AdminExportController_updatePickupPoint",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "pointId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Champs d'un point de retrait à modifier",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "FR",
+                      "BE"
+                    ],
+                    "title": "ExportCountry",
+                    "description": "Pays de destination d'un colis terroir"
+                  },
+                  "city": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "address": {
+                    "type": "string",
+                    "minLength": 5,
+                    "maxLength": 500
+                  },
+                  "openingHours": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "active": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateExportPickupPoint",
+                "description": "Champs d'un point de retrait à modifier"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/departures": {
+      "get": {
+        "operationId": "AdminExportController_listDepartures",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "OPEN",
+                "FULL",
+                "CANCELLED",
+                "DEPARTED"
+              ],
+              "title": "ExportDepartureStatus",
+              "description": "Statut d'un départ : ouvert, complet, annulé, parti"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "AdminExportController_createDeparture",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Nouveau départ : agence, dates, délai annoncé, capacité, tarifs par pays",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agencyId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "departsOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "depositDeadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "transitMinDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 120
+                  },
+                  "transitMaxDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 120
+                  },
+                  "capacityKg": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rates": {
+                    "minItems": 1,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "country": {
+                          "type": "string",
+                          "enum": [
+                            "FR",
+                            "BE"
+                          ],
+                          "title": "ExportCountry",
+                          "description": "Pays de destination d'un colis terroir"
+                        },
+                        "pricePerKg": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 10000000
+                        },
+                        "minBilledKg": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "maxWeightKg": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "exclusiveMinimum": 0,
+                              "maximum": 1000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "homeDeliveryFee": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 10000000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "country",
+                        "pricePerKg",
+                        "minBilledKg"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ExportDepartureRateInput",
+                      "description": "Tarif d'un départ pour un pays"
+                    }
+                  }
+                },
+                "required": [
+                  "agencyId",
+                  "departsOn",
+                  "depositDeadline",
+                  "transitMinDays",
+                  "transitMaxDays",
+                  "rates"
+                ],
+                "additionalProperties": false,
+                "title": "CreateExportDeparture",
+                "description": "Nouveau départ : agence, dates, délai annoncé, capacité, tarifs par pays"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/departures/{id}": {
+      "get": {
+        "operationId": "AdminExportController_departureDetail",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "operationId": "AdminExportController_updateDeparture",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Champs d'un départ à modifier ; les tarifs envoyés remplacent les précédents",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "agencyId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  },
+                  "departsOn": {
+                    "type": "string",
+                    "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+                  },
+                  "depositDeadline": {
+                    "type": "string",
+                    "format": "date-time",
+                    "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                  },
+                  "transitMinDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 120
+                  },
+                  "transitMaxDays": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 120
+                  },
+                  "capacityKg": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "exclusiveMinimum": 0,
+                        "maximum": 100000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "rates": {
+                    "minItems": 1,
+                    "maxItems": 2,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "country": {
+                          "type": "string",
+                          "enum": [
+                            "FR",
+                            "BE"
+                          ],
+                          "title": "ExportCountry",
+                          "description": "Pays de destination d'un colis terroir"
+                        },
+                        "pricePerKg": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 10000000
+                        },
+                        "minBilledKg": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1000
+                        },
+                        "maxWeightKg": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "exclusiveMinimum": 0,
+                              "maximum": 1000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "homeDeliveryFee": {
+                          "anyOf": [
+                            {
+                              "type": "number",
+                              "minimum": 0,
+                              "maximum": 10000000
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        }
+                      },
+                      "required": [
+                        "country",
+                        "pricePerKg",
+                        "minBilledKg"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ExportDepartureRateInput",
+                      "description": "Tarif d'un départ pour un pays"
+                    }
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "OPEN",
+                      "FULL",
+                      "DEPARTED"
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateExportDeparture",
+                "description": "Champs d'un départ à modifier ; les tarifs envoyés remplacent les précédents"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/departures/{id}/cancel": {
+      "post": {
+        "operationId": "AdminExportController_cancelDeparture",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Annulation d'un départ, avec réaffectation facultative des colis",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "reassignTo": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "title": "CancelExportDeparture",
+                "description": "Annulation d'un départ, avec réaffectation facultative des colis"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/departures/{id}/manifest": {
+      "get": {
+        "operationId": "AdminExportController_manifest",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/departures/{id}/events": {
+      "post": {
+        "operationId": "AdminExportController_departureEvent",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Étape appliquée à tous les colis d'un départ",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "step": {
+                    "type": "string",
+                    "enum": [
+                      "PENDING_PAYMENT",
+                      "PAID",
+                      "COLLECTING",
+                      "PACKED",
+                      "DROPPED_AT_AGENCY",
+                      "DEPARTED",
+                      "ARRIVED",
+                      "READY_FOR_PICKUP",
+                      "OUT_FOR_DELIVERY",
+                      "HANDED_OVER",
+                      "LOST",
+                      "DAMAGED",
+                      "CANCELLED"
+                    ],
+                    "title": "ExportShipmentStatus",
+                    "description": "Étape d'un colis terroir"
+                  },
+                  "message": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "step"
+                ],
+                "additionalProperties": false,
+                "title": "ExportDepartureEventInput",
+                "description": "Étape appliquée à tous les colis d'un départ"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/shipments/{id}": {
+      "get": {
+        "operationId": "AdminExportController_shipment",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/shipments/{id}/collect": {
+      "post": {
+        "operationId": "AdminExportController_collect",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Collecte des produits d'une boutique pour un colis",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "supplierId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "supplierId"
+                ],
+                "additionalProperties": false,
+                "title": "CollectExportShipment",
+                "description": "Collecte des produits d'une boutique pour un colis"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/shipments/{id}/missing": {
+      "post": {
+        "operationId": "AdminExportController_missing",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Produit manquant à la collecte : retiré du colis et remboursé",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "orderItemId": {
+                    "type": "string",
+                    "format": "uuid",
+                    "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                  }
+                },
+                "required": [
+                  "orderItemId"
+                ],
+                "additionalProperties": false,
+                "title": "MissingExportItem",
+                "description": "Produit manquant à la collecte : retiré du colis et remboursé"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/shipments/{id}/weigh": {
+      "post": {
+        "operationId": "AdminExportController_weigh",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Poids réel du colis, en grammes",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "actualWeightG": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 200000
+                  }
+                },
+                "required": [
+                  "actualWeightG"
+                ],
+                "additionalProperties": false,
+                "title": "WeighExportShipment",
+                "description": "Poids réel du colis, en grammes"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/shipments/{id}/events": {
+      "post": {
+        "operationId": "AdminExportController_shipmentEvent",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Étape et / ou message libre sur un colis",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "step": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "enum": [
+                          "PENDING_PAYMENT",
+                          "PAID",
+                          "COLLECTING",
+                          "PACKED",
+                          "DROPPED_AT_AGENCY",
+                          "DEPARTED",
+                          "ARRIVED",
+                          "READY_FOR_PICKUP",
+                          "OUT_FOR_DELIVERY",
+                          "HANDED_OVER",
+                          "LOST",
+                          "DAMAGED",
+                          "CANCELLED"
+                        ],
+                        "title": "ExportShipmentStatus",
+                        "description": "Étape d'un colis terroir"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "message": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 1000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "pickupPoint": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "additionalProperties": false,
+                "title": "ExportShipmentEventInput",
+                "description": "Étape et / ou message libre sur un colis"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/shipments/{id}/handed-over": {
+      "post": {
+        "operationId": "AdminExportController_handedOver",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/shipments/{id}/lost": {
+      "post": {
+        "operationId": "AdminExportController_lost",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Colis perdu (false) ou abîmé (true) : remboursé sans retour",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "damaged": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "damaged"
+                ],
+                "additionalProperties": false,
+                "title": "LostExportShipment",
+                "description": "Colis perdu (false) ou abîmé (true) : remboursé sans retour"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/reviews": {
+      "get": {
+        "operationId": "AdminExportController_reviews",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "status",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "PENDING",
+              "type": "string",
+              "enum": [
+                "PENDING",
+                "APPROVED",
+                "REJECTED"
+              ],
+              "title": "ExportProfileStatus",
+              "description": "Validation d'un produit pour l'export : en attente, validé, refusé"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/products/{id}/review": {
+      "post": {
+        "operationId": "AdminExportController_reviewProduct",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "REJECT"
+                    ],
+                    "title": "ExportReviewDecision",
+                    "description": "Décision d'eBio sur un produit ou un pack"
+                  },
+                  "checklist": {
+                    "default": {},
+                    "type": "object",
+                    "properties": {
+                      "label_french": {
+                        "type": "boolean"
+                      },
+                      "allergens_declared": {
+                        "type": "boolean"
+                      },
+                      "dates_present": {
+                        "type": "boolean"
+                      },
+                      "shelf_life_sufficient": {
+                        "type": "boolean"
+                      },
+                      "ingredients_allowed": {
+                        "type": "boolean"
+                      },
+                      "label_photo": {
+                        "type": "boolean"
+                      }
+                    },
+                    "additionalProperties": false,
+                    "title": "ExportChecklist",
+                    "description": "Liste de contrôle d'export : chaque clé cochée"
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "decision",
+                  "checklist"
+                ],
+                "additionalProperties": false,
+                "title": "ReviewExportProduct",
+                "description": "Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/packs/{id}/review": {
+      "post": {
+        "operationId": "AdminExportController_reviewPack",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Validation d'un pack, ou refus motivé",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "decision": {
+                    "type": "string",
+                    "enum": [
+                      "APPROVE",
+                      "REJECT"
+                    ],
+                    "title": "ExportReviewDecision",
+                    "description": "Décision d'eBio sur un produit ou un pack"
+                  },
+                  "reason": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "decision"
+                ],
+                "additionalProperties": false,
+                "title": "ReviewExportPack",
+                "description": "Validation d'un pack, ou refus motivé"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/packs": {
+      "get": {
+        "operationId": "AdminExportController_listPacks",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "AdminExportController_createPack",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Pack terroir : nom, description, photos, prix, produits",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "photos": {
+                    "default": [],
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "price": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  "items": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ExportPackItemInput",
+                      "description": "Produit d'un pack et sa quantité"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "photos",
+                  "price",
+                  "items"
+                ],
+                "additionalProperties": false,
+                "title": "ExportPackInput",
+                "description": "Pack terroir : nom, description, photos, prix, produits"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/packs/{id}": {
+      "get": {
+        "operationId": "AdminExportController_getPack",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "patch": {
+        "operationId": "AdminExportController_updatePack",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Champs d'un pack à modifier ; les produits envoyés remplacent les précédents",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "photos": {
+                    "default": [],
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "price": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  "items": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ExportPackItemInput",
+                      "description": "Produit d'un pack et sa quantité"
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateExportPack",
+                "description": "Champs d'un pack à modifier ; les produits envoyés remplacent les précédents"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "AdminExportController_retirePack",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{supplierId}/products/{id}/export": {
+      "get": {
+        "operationId": "SupplierExportController_getProfile",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "put": {
+        "operationId": "SupplierExportController_upsertProfile",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "packedWeightG": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 50000
+                  },
+                  "lengthCm": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "widthCm": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "heightCm": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "shelfLifeDays": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 3650
+                  },
+                  "origin": {
+                    "default": {
+                      "photos": []
+                    },
+                    "type": "object",
+                    "properties": {
+                      "producer": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "place": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 120
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "year": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 1900,
+                            "maximum": 2100
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "method": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 300
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "photos": {
+                        "default": [],
+                        "maxItems": 3,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "format": "uri"
+                        }
+                      }
+                    },
+                    "required": [
+                      "photos"
+                    ],
+                    "additionalProperties": false,
+                    "title": "ExportOrigin",
+                    "description": "Origine du produit : producteur, lieu, année, mode de fabrication, photos"
+                  },
+                  "labelPhoto": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uri"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "packedWeightG",
+                  "shelfLifeDays",
+                  "origin"
+                ],
+                "additionalProperties": false,
+                "title": "ExportProfileInput",
+                "description": "Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "SupplierExportController_removeProfile",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{supplierId}/export-packs": {
+      "get": {
+        "operationId": "SupplierExportController_listPacks",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "SupplierExportController_createPack",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Pack terroir : nom, description, photos, prix, produits",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "photos": {
+                    "default": [],
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "price": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  "items": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ExportPackItemInput",
+                      "description": "Produit d'un pack et sa quantité"
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "photos",
+                  "price",
+                  "items"
+                ],
+                "additionalProperties": false,
+                "title": "ExportPackInput",
+                "description": "Pack terroir : nom, description, photos, prix, produits"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/suppliers/{supplierId}/export-packs/{id}": {
+      "patch": {
+        "operationId": "SupplierExportController_updatePack",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Champs d'un pack à modifier ; les produits envoyés remplacent les précédents",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "description": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 2000
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "photos": {
+                    "default": [],
+                    "maxItems": 6,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "uri"
+                    }
+                  },
+                  "price": {
+                    "type": "number",
+                    "exclusiveMinimum": 0,
+                    "maximum": 10000000
+                  },
+                  "items": {
+                    "minItems": 1,
+                    "maxItems": 20,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 100
+                        }
+                      },
+                      "required": [
+                        "productId",
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "ExportPackItemInput",
+                      "description": "Produit d'un pack et sa quantité"
+                    }
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateExportPack",
+                "description": "Champs d'un pack à modifier ; les produits envoyés remplacent les précédents"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "delete": {
+        "operationId": "SupplierExportController_retirePack",
+        "tags": [
+          "SupplierExport"
+        ],
+        "parameters": [
+          {
+            "name": "supplierId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/catalog": {
+      "get": {
+        "operationId": "TerroirClientController_getCatalog",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FR",
+                "BE"
+              ],
+              "title": "ExportCountry",
+              "description": "Pays de destination d'un colis terroir"
+            }
+          },
+          {
+            "name": "category",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          {
+            "name": "search",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "maxLength": 100
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 500
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "EUR",
+              "type": "string",
+              "enum": [
+                "XOF",
+                "EUR",
+                "USD",
+                "CAD"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/products/{id}": {
+      "get": {
+        "operationId": "TerroirClientController_getProduct",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "EUR",
+              "type": "string",
+              "enum": [
+                "XOF",
+                "EUR",
+                "USD",
+                "CAD"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/packs/{id}": {
+      "get": {
+        "operationId": "TerroirClientController_getPack",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "EUR",
+              "type": "string",
+              "enum": [
+                "XOF",
+                "EUR",
+                "USD",
+                "CAD"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/departures": {
+      "get": {
+        "operationId": "TerroirClientController_getDepartures",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "FR",
+                "BE"
+              ],
+              "title": "ExportCountry",
+              "description": "Pays de destination d'un colis terroir"
+            }
+          },
+          {
+            "name": "weightG",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 0,
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 1000000
+            }
+          },
+          {
+            "name": "currency",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "EUR",
+              "type": "string",
+              "enum": [
+                "XOF",
+                "EUR",
+                "USD",
+                "CAD"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/departure-alerts": {
+      "post": {
+        "operationId": "TerroirClientController_subscribeAlert",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "« Me prévenir du prochain départ » vers un pays",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "FR",
+                      "BE"
+                    ],
+                    "title": "ExportCountry",
+                    "description": "Pays de destination d'un colis terroir"
+                  }
+                },
+                "required": [
+                  "country"
+                ],
+                "additionalProperties": false,
+                "title": "TerroirDepartureAlertInput",
+                "description": "« Me prévenir du prochain départ » vers un pays"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/departure-alerts/{country}": {
+      "delete": {
+        "operationId": "TerroirClientController_unsubscribeAlert",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "country",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/checkout/preview": {
+      "post": {
+        "operationId": "TerroirClientController_preview",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "FR",
+                      "BE"
+                    ],
+                    "title": "ExportCountry",
+                    "description": "Pays de destination d'un colis terroir"
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "maxItems": 40,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "packId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 50
+                        }
+                      },
+                      "required": [
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "TerroirCartLine",
+                      "description": "Ligne du panier terroir : un produit (et sa variante) ou un pack"
+                    }
+                  },
+                  "departureId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reception": {
+                    "default": "PICKUP",
+                    "type": "string",
+                    "enum": [
+                      "PICKUP",
+                      "HOME"
+                    ],
+                    "title": "ExportReception",
+                    "description": "Réception du colis : retrait en agence ou livraison à domicile"
+                  },
+                  "pickupPointId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "homeAddress": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "insured": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "gift": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 120
+                          },
+                          "email": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 200,
+                                "format": "email",
+                                "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "phone": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^\\+\\d{8,15}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "message": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false,
+                        "title": "TerroirGift",
+                        "description": "Destinataire d'un colis offert : nom, e-mail, téléphone, message"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "paymentMethod": {
+                    "default": "FEDAPAY",
+                    "type": "string",
+                    "enum": [
+                      "FEDAPAY",
+                      "WALLET"
+                    ],
+                    "title": "TerroirPaymentMethod",
+                    "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+                  },
+                  "displayCurrency": {
+                    "default": "EUR",
+                    "type": "string",
+                    "enum": [
+                      "XOF",
+                      "EUR",
+                      "USD",
+                      "CAD"
+                    ]
+                  }
+                },
+                "required": [
+                  "country",
+                  "lines",
+                  "reception",
+                  "insured",
+                  "paymentMethod",
+                  "displayCurrency"
+                ],
+                "additionalProperties": false,
+                "title": "TerroirCheckoutInput",
+                "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/checkout": {
+      "post": {
+        "operationId": "TerroirClientController_create",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "country": {
+                    "type": "string",
+                    "enum": [
+                      "FR",
+                      "BE"
+                    ],
+                    "title": "ExportCountry",
+                    "description": "Pays de destination d'un colis terroir"
+                  },
+                  "lines": {
+                    "minItems": 1,
+                    "maxItems": 40,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "productId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "variantId": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "format": "uuid",
+                              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "packId": {
+                          "type": "string",
+                          "format": "uuid",
+                          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                        },
+                        "quantity": {
+                          "type": "integer",
+                          "exclusiveMinimum": 0,
+                          "maximum": 50
+                        }
+                      },
+                      "required": [
+                        "quantity"
+                      ],
+                      "additionalProperties": false,
+                      "title": "TerroirCartLine",
+                      "description": "Ligne du panier terroir : un produit (et sa variante) ou un pack"
+                    }
+                  },
+                  "departureId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "reception": {
+                    "default": "PICKUP",
+                    "type": "string",
+                    "enum": [
+                      "PICKUP",
+                      "HOME"
+                    ],
+                    "title": "ExportReception",
+                    "description": "Réception du colis : retrait en agence ou livraison à domicile"
+                  },
+                  "pickupPointId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "homeAddress": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 10,
+                        "maxLength": 500
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "insured": {
+                    "default": false,
+                    "type": "boolean"
+                  },
+                  "gift": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "minLength": 2,
+                            "maxLength": 120
+                          },
+                          "email": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 200,
+                                "format": "email",
+                                "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "phone": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "pattern": "^\\+\\d{8,15}$"
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "message": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 300
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "name"
+                        ],
+                        "additionalProperties": false,
+                        "title": "TerroirGift",
+                        "description": "Destinataire d'un colis offert : nom, e-mail, téléphone, message"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "paymentMethod": {
+                    "default": "FEDAPAY",
+                    "type": "string",
+                    "enum": [
+                      "FEDAPAY",
+                      "WALLET"
+                    ],
+                    "title": "TerroirPaymentMethod",
+                    "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+                  },
+                  "displayCurrency": {
+                    "default": "EUR",
+                    "type": "string",
+                    "enum": [
+                      "XOF",
+                      "EUR",
+                      "USD",
+                      "CAD"
+                    ]
+                  }
+                },
+                "required": [
+                  "country",
+                  "lines",
+                  "reception",
+                  "insured",
+                  "paymentMethod",
+                  "displayCurrency"
+                ],
+                "additionalProperties": false,
+                "title": "TerroirCheckoutInput",
+                "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/shipments": {
+      "get": {
+        "operationId": "TerroirClientController_listShipments",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/shipments/{id}": {
+      "get": {
+        "operationId": "TerroirClientController_getShipment",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/shipments/{id}/supplement": {
+      "post": {
+        "operationId": "TerroirClientController_supplement",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Choix du client face au complément de poids",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "choice": {
+                    "type": "string",
+                    "enum": [
+                      "PAY",
+                      "REMOVE_ITEM"
+                    ],
+                    "title": "TerroirSupplementChoice",
+                    "description": "Réponse au complément de poids : payer, ou retirer un produit (remboursé)"
+                  },
+                  "lineId": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "format": "uuid",
+                        "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "paymentMethod": {
+                    "default": "FEDAPAY",
+                    "type": "string",
+                    "enum": [
+                      "FEDAPAY",
+                      "WALLET"
+                    ],
+                    "title": "TerroirPaymentMethod",
+                    "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+                  }
+                },
+                "required": [
+                  "choice",
+                  "paymentMethod"
+                ],
+                "additionalProperties": false,
+                "title": "TerroirSupplementInput",
+                "description": "Choix du client face au complément de poids"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/terroir/tracking/{token}": {
+      "get": {
+        "operationId": "TerroirClientController_tracking",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "token",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/training/modules": {
       "get": {
         "operationId": "TrainingController_getModules",
@@ -21312,6 +24374,56 @@
         "additionalProperties": false,
         "title": "FamilyWalletSetting",
         "description": "Ouvre ou ferme le portefeuille famille aux clients"
+      },
+      "UpdateTerroirExportSetting": {
+        "type": "object",
+        "properties": {
+          "enabled": {
+            "type": "boolean"
+          },
+          "packagingWeightG": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "collectionDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 30
+          },
+          "weightTolerancePct": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 100
+          },
+          "insuranceRateBps": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5000
+          },
+          "insuranceMin": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "bannedCategoryIds": {
+            "maxItems": 200,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uuid",
+              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+            }
+          },
+          "pickupReminderDays": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 90
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateTerroirExportSetting",
+        "description": "Réglages du terroir vers l'étranger à modifier"
       },
       "CartSync": {
         "type": "object",
@@ -26365,6 +29477,905 @@
           }
         ]
       },
+      "ExportAgencyInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "contactName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactPhone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactEmail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "format": "email",
+                "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "additionalProperties": false,
+        "title": "ExportAgencyInput",
+        "description": "Agence partenaire : nom, contact, notes"
+      },
+      "UpdateExportAgency": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "contactName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactPhone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 30
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "contactEmail": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200,
+                "format": "email",
+                "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateExportAgency",
+        "description": "Champs d'une agence partenaire à modifier"
+      },
+      "ExportPickupPointInput": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "$ref": "#/components/schemas/ExportCountry"
+          },
+          "city": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "address": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          },
+          "openingHours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "country",
+          "city",
+          "address"
+        ],
+        "additionalProperties": false,
+        "title": "ExportPickupPointInput",
+        "description": "Point de retrait d'une agence : pays, ville, adresse, horaires"
+      },
+      "UpdateExportPickupPoint": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "$ref": "#/components/schemas/ExportCountry"
+          },
+          "city": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "address": {
+            "type": "string",
+            "minLength": 5,
+            "maxLength": 500
+          },
+          "openingHours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateExportPickupPoint",
+        "description": "Champs d'un point de retrait à modifier"
+      },
+      "CreateExportDeparture": {
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "departsOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "depositDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "transitMinDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "transitMaxDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "capacityKg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rates": {
+            "minItems": 1,
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportDepartureRateInput"
+            }
+          }
+        },
+        "required": [
+          "agencyId",
+          "departsOn",
+          "depositDeadline",
+          "transitMinDays",
+          "transitMaxDays",
+          "rates"
+        ],
+        "additionalProperties": false,
+        "title": "CreateExportDeparture",
+        "description": "Nouveau départ : agence, dates, délai annoncé, capacité, tarifs par pays"
+      },
+      "UpdateExportDeparture": {
+        "type": "object",
+        "properties": {
+          "agencyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "departsOn": {
+            "type": "string",
+            "pattern": "^\\d{4}-\\d{2}-\\d{2}$"
+          },
+          "depositDeadline": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "transitMinDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "transitMaxDays": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 120
+          },
+          "capacityKg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 100000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "rates": {
+            "minItems": 1,
+            "maxItems": 2,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportDepartureRateInput"
+            }
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "FULL",
+              "DEPARTED"
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateExportDeparture",
+        "description": "Champs d'un départ à modifier ; les tarifs envoyés remplacent les précédents"
+      },
+      "CancelExportDeparture": {
+        "type": "object",
+        "properties": {
+          "reassignTo": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "CancelExportDeparture",
+        "description": "Annulation d'un départ, avec réaffectation facultative des colis"
+      },
+      "ExportDepartureEventInput": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "$ref": "#/components/schemas/ExportShipmentStatus"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "step"
+        ],
+        "additionalProperties": false,
+        "title": "ExportDepartureEventInput",
+        "description": "Étape appliquée à tous les colis d'un départ"
+      },
+      "CollectExportShipment": {
+        "type": "object",
+        "properties": {
+          "supplierId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "supplierId"
+        ],
+        "additionalProperties": false,
+        "title": "CollectExportShipment",
+        "description": "Collecte des produits d'une boutique pour un colis"
+      },
+      "MissingExportItem": {
+        "type": "object",
+        "properties": {
+          "orderItemId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          }
+        },
+        "required": [
+          "orderItemId"
+        ],
+        "additionalProperties": false,
+        "title": "MissingExportItem",
+        "description": "Produit manquant à la collecte : retiré du colis et remboursé"
+      },
+      "WeighExportShipment": {
+        "type": "object",
+        "properties": {
+          "actualWeightG": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 200000
+          }
+        },
+        "required": [
+          "actualWeightG"
+        ],
+        "additionalProperties": false,
+        "title": "WeighExportShipment",
+        "description": "Poids réel du colis, en grammes"
+      },
+      "ExportShipmentEventInput": {
+        "type": "object",
+        "properties": {
+          "step": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "PENDING_PAYMENT",
+                  "PAID",
+                  "COLLECTING",
+                  "PACKED",
+                  "DROPPED_AT_AGENCY",
+                  "DEPARTED",
+                  "ARRIVED",
+                  "READY_FOR_PICKUP",
+                  "OUT_FOR_DELIVERY",
+                  "HANDED_OVER",
+                  "LOST",
+                  "DAMAGED",
+                  "CANCELLED"
+                ],
+                "title": "ExportShipmentStatus",
+                "description": "Étape d'un colis terroir"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "pickupPoint": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "additionalProperties": false,
+        "title": "ExportShipmentEventInput",
+        "description": "Étape et / ou message libre sur un colis"
+      },
+      "LostExportShipment": {
+        "type": "object",
+        "properties": {
+          "damaged": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "damaged"
+        ],
+        "additionalProperties": false,
+        "title": "LostExportShipment",
+        "description": "Colis perdu (false) ou abîmé (true) : remboursé sans retour"
+      },
+      "ReviewExportProduct": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/ExportReviewDecision"
+          },
+          "checklist": {
+            "$ref": "#/components/schemas/ExportChecklist"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "decision",
+          "checklist"
+        ],
+        "additionalProperties": false,
+        "title": "ReviewExportProduct",
+        "description": "Validation d'un produit pour l'export, liste de contrôle cochée, ou refus motivé"
+      },
+      "ReviewExportPack": {
+        "type": "object",
+        "properties": {
+          "decision": {
+            "$ref": "#/components/schemas/ExportReviewDecision"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "additionalProperties": false,
+        "title": "ReviewExportPack",
+        "description": "Validation d'un pack, ou refus motivé"
+      },
+      "ExportPackInput": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "default": [],
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000000
+          },
+          "items": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportPackItemInput"
+            }
+          }
+        },
+        "required": [
+          "name",
+          "photos",
+          "price",
+          "items"
+        ],
+        "additionalProperties": false,
+        "title": "ExportPackInput",
+        "description": "Pack terroir : nom, description, photos, prix, produits"
+      },
+      "UpdateExportPack": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 120
+          },
+          "description": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 2000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "default": [],
+            "maxItems": 6,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          },
+          "price": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000000
+          },
+          "items": {
+            "minItems": 1,
+            "maxItems": 20,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ExportPackItemInput"
+            }
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateExportPack",
+        "description": "Champs d'un pack à modifier ; les produits envoyés remplacent les précédents"
+      },
+      "ExportProfileInput": {
+        "type": "object",
+        "properties": {
+          "packedWeightG": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 50000
+          },
+          "lengthCm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 300
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "widthCm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 300
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "heightCm": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 300
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "shelfLifeDays": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 3650
+          },
+          "origin": {
+            "$ref": "#/components/schemas/ExportOrigin"
+          },
+          "labelPhoto": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uri"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "packedWeightG",
+          "shelfLifeDays",
+          "origin"
+        ],
+        "additionalProperties": false,
+        "title": "ExportProfileInput",
+        "description": "Demande d'export d'un produit : poids, dimensions, conservation, origine, étiquette"
+      },
+      "TerroirDepartureAlertInput": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "$ref": "#/components/schemas/ExportCountry"
+          }
+        },
+        "required": [
+          "country"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirDepartureAlertInput",
+        "description": "« Me prévenir du prochain départ » vers un pays"
+      },
+      "TerroirCheckoutInput": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "$ref": "#/components/schemas/ExportCountry"
+          },
+          "lines": {
+            "minItems": 1,
+            "maxItems": 40,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TerroirCartLine"
+            }
+          },
+          "departureId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reception": {
+            "$ref": "#/components/schemas/ExportReception"
+          },
+          "pickupPointId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "homeAddress": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 10,
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insured": {
+            "default": false,
+            "type": "boolean"
+          },
+          "gift": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 120
+                  },
+                  "email": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200,
+                        "format": "email",
+                        "pattern": "^(?!\\.)(?!.*\\.\\.)([A-Za-z0-9_'+\\-\\.]*)[A-Za-z0-9_+-]@([A-Za-z0-9][A-Za-z0-9\\-]*\\.)+[A-Za-z]{2,}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "phone": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\+\\d{8,15}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "message": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 300
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "name"
+                ],
+                "additionalProperties": false,
+                "title": "TerroirGift",
+                "description": "Destinataire d'un colis offert : nom, e-mail, téléphone, message"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/TerroirPaymentMethod"
+          },
+          "displayCurrency": {
+            "default": "EUR",
+            "type": "string",
+            "enum": [
+              "XOF",
+              "EUR",
+              "USD",
+              "CAD"
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "lines",
+          "reception",
+          "insured",
+          "paymentMethod",
+          "displayCurrency"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirCheckoutInput",
+        "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement"
+      },
+      "TerroirSupplementInput": {
+        "type": "object",
+        "properties": {
+          "choice": {
+            "$ref": "#/components/schemas/TerroirSupplementChoice"
+          },
+          "lineId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "paymentMethod": {
+            "$ref": "#/components/schemas/TerroirPaymentMethod"
+          }
+        },
+        "required": [
+          "choice",
+          "paymentMethod"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirSupplementInput",
+        "description": "Choix du client face au complément de poids"
+      },
       "CompleteModule": {
         "type": "object",
         "properties": {
@@ -28387,7 +32398,8 @@
         "type": "string",
         "enum": [
           "ON_SITE",
-          "DELIVERY"
+          "DELIVERY",
+          "EXPORT"
         ],
         "title": "PickupMode",
         "description": "How the buyer will receive the order"
@@ -29226,6 +33238,443 @@
         ],
         "title": "ContactReason",
         "description": "Why the visitor is writing"
+      },
+      "ExportCountry": {
+        "type": "string",
+        "enum": [
+          "FR",
+          "BE"
+        ],
+        "title": "ExportCountry",
+        "description": "Pays de destination d'un colis terroir"
+      },
+      "ExportDeparturesQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "type": "string",
+            "enum": [
+              "OPEN",
+              "FULL",
+              "CANCELLED",
+              "DEPARTED"
+            ],
+            "title": "ExportDepartureStatus",
+            "description": "Statut d'un départ : ouvert, complet, annulé, parti"
+          }
+        },
+        "additionalProperties": false,
+        "title": "ExportDeparturesQuery",
+        "description": "Filtre de la liste des départs"
+      },
+      "ExportDepartureRateInput": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "enum": [
+              "FR",
+              "BE"
+            ],
+            "title": "ExportCountry",
+            "description": "Pays de destination d'un colis terroir"
+          },
+          "pricePerKg": {
+            "type": "number",
+            "exclusiveMinimum": 0,
+            "maximum": 10000000
+          },
+          "minBilledKg": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 1000
+          },
+          "maxWeightKg": {
+            "anyOf": [
+              {
+                "type": "number",
+                "exclusiveMinimum": 0,
+                "maximum": 1000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "homeDeliveryFee": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 10000000
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "pricePerKg",
+          "minBilledKg"
+        ],
+        "additionalProperties": false,
+        "title": "ExportDepartureRateInput",
+        "description": "Tarif d'un départ pour un pays"
+      },
+      "ExportShipmentStatus": {
+        "type": "string",
+        "enum": [
+          "PENDING_PAYMENT",
+          "PAID",
+          "COLLECTING",
+          "PACKED",
+          "DROPPED_AT_AGENCY",
+          "DEPARTED",
+          "ARRIVED",
+          "READY_FOR_PICKUP",
+          "OUT_FOR_DELIVERY",
+          "HANDED_OVER",
+          "LOST",
+          "DAMAGED",
+          "CANCELLED"
+        ],
+        "title": "ExportShipmentStatus",
+        "description": "Étape d'un colis terroir"
+      },
+      "ExportReviewsQuery": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "default": "PENDING",
+            "type": "string",
+            "enum": [
+              "PENDING",
+              "APPROVED",
+              "REJECTED"
+            ],
+            "title": "ExportProfileStatus",
+            "description": "Validation d'un produit pour l'export : en attente, validé, refusé"
+          }
+        },
+        "required": [
+          "status"
+        ],
+        "additionalProperties": false,
+        "title": "ExportReviewsQuery",
+        "description": "Filtre de la file de validation"
+      },
+      "ExportReviewDecision": {
+        "type": "string",
+        "enum": [
+          "APPROVE",
+          "REJECT"
+        ],
+        "title": "ExportReviewDecision",
+        "description": "Décision d'eBio sur un produit ou un pack"
+      },
+      "ExportChecklist": {
+        "default": {},
+        "type": "object",
+        "properties": {
+          "label_french": {
+            "type": "boolean"
+          },
+          "allergens_declared": {
+            "type": "boolean"
+          },
+          "dates_present": {
+            "type": "boolean"
+          },
+          "shelf_life_sufficient": {
+            "type": "boolean"
+          },
+          "ingredients_allowed": {
+            "type": "boolean"
+          },
+          "label_photo": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "ExportChecklist",
+        "description": "Liste de contrôle d'export : chaque clé cochée"
+      },
+      "ExportPackItemInput": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "variantId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 100
+          }
+        },
+        "required": [
+          "productId",
+          "quantity"
+        ],
+        "additionalProperties": false,
+        "title": "ExportPackItemInput",
+        "description": "Produit d'un pack et sa quantité"
+      },
+      "ExportOrigin": {
+        "default": {
+          "photos": []
+        },
+        "type": "object",
+        "properties": {
+          "producer": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "place": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "year": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1900,
+                "maximum": 2100
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "photos": {
+            "default": [],
+            "maxItems": 3,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "required": [
+          "photos"
+        ],
+        "additionalProperties": false,
+        "title": "ExportOrigin",
+        "description": "Origine du produit : producteur, lieu, année, mode de fabrication, photos"
+      },
+      "TerroirCatalogQuery": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "enum": [
+              "FR",
+              "BE"
+            ],
+            "title": "ExportCountry",
+            "description": "Pays de destination d'un colis terroir"
+          },
+          "category": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "search": {
+            "type": "string",
+            "maxLength": 100
+          },
+          "page": {
+            "default": 1,
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 500
+          },
+          "currency": {
+            "default": "EUR",
+            "type": "string",
+            "enum": [
+              "XOF",
+              "EUR",
+              "USD",
+              "CAD"
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "page",
+          "currency"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirCatalogQuery",
+        "description": "Catalogue terroir : pays, catégorie, recherche, page, devise d'affichage"
+      },
+      "TerroirDisplayQuery": {
+        "type": "object",
+        "properties": {
+          "currency": {
+            "default": "EUR",
+            "type": "string",
+            "enum": [
+              "XOF",
+              "EUR",
+              "USD",
+              "CAD"
+            ]
+          }
+        },
+        "required": [
+          "currency"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirDisplayQuery",
+        "description": "Devise d'affichage des prix"
+      },
+      "TerroirDeparturesQuery": {
+        "type": "object",
+        "properties": {
+          "country": {
+            "type": "string",
+            "enum": [
+              "FR",
+              "BE"
+            ],
+            "title": "ExportCountry",
+            "description": "Pays de destination d'un colis terroir"
+          },
+          "weightG": {
+            "default": 0,
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 1000000
+          },
+          "currency": {
+            "default": "EUR",
+            "type": "string",
+            "enum": [
+              "XOF",
+              "EUR",
+              "USD",
+              "CAD"
+            ]
+          }
+        },
+        "required": [
+          "country",
+          "weightG",
+          "currency"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirDeparturesQuery",
+        "description": "Départs proposables vers un pays, pour un poids de colis"
+      },
+      "TerroirCartLine": {
+        "type": "object",
+        "properties": {
+          "productId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "variantId": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid",
+                "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "packId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "quantity": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "quantity"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirCartLine",
+        "description": "Ligne du panier terroir : un produit (et sa variante) ou un pack"
+      },
+      "ExportReception": {
+        "default": "PICKUP",
+        "type": "string",
+        "enum": [
+          "PICKUP",
+          "HOME"
+        ],
+        "title": "ExportReception",
+        "description": "Réception du colis : retrait en agence ou livraison à domicile"
+      },
+      "TerroirPaymentMethod": {
+        "default": "FEDAPAY",
+        "type": "string",
+        "enum": [
+          "FEDAPAY",
+          "WALLET"
+        ],
+        "title": "TerroirPaymentMethod",
+        "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+      },
+      "TerroirSupplementChoice": {
+        "type": "string",
+        "enum": [
+          "PAY",
+          "REMOVE_ITEM"
+        ],
+        "title": "TerroirSupplementChoice",
+        "description": "Réponse au complément de poids : payer, ou retirer un produit (remboursé)"
       },
       "CommentsController_getComments_filterItem": {
         "type": "object",

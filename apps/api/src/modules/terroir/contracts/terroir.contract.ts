@@ -317,6 +317,8 @@ export const exportDepartureDetailSchema = exportDepartureResponseSchema.extend(
       orderItemId: z.string().uuid(),
       name: z.string(),
       quantity: z.number(),
+      /** A product is never shown without its picture. */
+      imageUrl: z.string().nullable(),
     })),
     collected: z.boolean(),
   })),
