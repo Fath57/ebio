@@ -204,7 +204,9 @@ export class TerroirClientController {
 
   @Get('shipments')
   async listShipments(@Session() session: LoggedInBetterAuthSession): Promise<TerroirShipmentSummary[]> {
-    return (await this.shipments.listForBuyer(session.user.id)).map(TerroirMapper.toShipmentSummary)
+    const views = await this.shipments.listForBuyer(session.user.id)
+    const names = await this.countryNames(views.map(view => view.shipment.country))
+    return views.map(view => ({ ...TerroirMapper.toShipmentSummary(view), countryInfo: names.get(view.shipment.country) ?? null }))
   }
 
   @Get('shipments/:id')
@@ -212,7 +214,19 @@ export class TerroirClientController {
     @Session() session: LoggedInBetterAuthSession,
     @Param('id', ParseUUIDPipe) id: string,
   ): Promise<TerroirShipmentDetail> {
-    return TerroirMapper.toShipmentDetail(await this.shipments.detailForBuyer(session.user.id, id))
+    const view = await this.shipments.detailForBuyer(session.user.id, id)
+    const names = await this.countryNames([view.shipment.country])
+    return { ...TerroirMapper.toShipmentDetail(view), countryInfo: names.get(view.shipment.country) ?? null }
+  }
+
+  /** The words for each destination, whatever the country's state today. */
+  private async countryNames(codes: string[]): Promise<Map<string, NonNullable<TerroirShipmentSummary['countryInfo']>>> {
+    const unique = [...new Set(codes)]
+    const found = await Promise.all(unique.map(code => this.countries.find(code)))
+    return new Map(found.filter(country => country !== null).map(country => [
+      country.code,
+      { name: country.name, toPhrase: country.toPhrase, inPhrase: country.inPhrase, flagEmoji: country.flagEmoji ?? null },
+    ]))
   }
 
   /**

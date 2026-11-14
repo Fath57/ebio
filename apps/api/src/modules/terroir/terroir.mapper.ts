@@ -489,6 +489,8 @@ export const TerroirMapper = {
       id: shipment.id,
       status: shipment.status,
       country: shipment.country,
+      // Filled by the controller, which knows the country table.
+      countryInfo: null,
       departure: { agency: shipment.departure.agency.name, departsOn: shipment.departure.departsOn, arrival: arrivalOf(shipment.departure) },
       reception: shipment.reception,
       itemCount: lines.reduce((total, line) => total + line.quantity, 0),
@@ -507,6 +509,8 @@ export const TerroirMapper = {
       id: shipment.id,
       status: shipment.status,
       country: shipment.country,
+      // Filled by the controller, which knows the country table.
+      countryInfo: null,
       departure: {
         agency: shipment.departure.agency.name,
         departsOn: shipment.departure.departsOn,

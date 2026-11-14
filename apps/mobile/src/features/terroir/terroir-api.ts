@@ -170,6 +170,28 @@ export function cachedTerroirCountries(all = false): TerroirCountryInfo[] | null
 }
 
 /** A country from the last known lists, null when neither has it (an inactive one). */
+/**
+ * The words each valise carries for its destination: the country lists are
+ * not served while the module is closed, a valise on its way still needs
+ * « vers la Belgique ».
+ */
+const shipmentCountryWords = new Map<string, { name: string, toPhrase: string, inPhrase: string, flagEmoji: string | null }>()
+
+function rememberCountryWords(raw: Raw): void {
+  const code = str(raw.country)
+  const info = obj(raw.countryInfo)
+  const name = str(info.name)
+  const toPhrase = str(info.toPhrase)
+  const inPhrase = str(info.inPhrase)
+  if (code && name && toPhrase && inPhrase)
+    shipmentCountryWords.set(code, { name, toPhrase, inPhrase, flagEmoji: str(info.flagEmoji) })
+}
+
+/** The flag of a destination, from the lists or from a valise's own words. */
+export function countryFlag(code: TerroirCountry): string | null {
+  return terroirCountryInfo(code)?.flagEmoji ?? shipmentCountryWords.get(code)?.flagEmoji ?? null
+}
+
 export function terroirCountryInfo(code: TerroirCountry): TerroirCountryInfo | null {
   return countriesCache.offered?.find(country => country.code === code)
     ?? countriesCache.all?.find(country => country.code === code)
@@ -188,17 +210,17 @@ function regionName(code: TerroirCountry): string {
 }
 
 export function countryName(code: TerroirCountry): string {
-  return terroirCountryInfo(code)?.name ?? regionName(code)
+  return terroirCountryInfo(code)?.name ?? shipmentCountryWords.get(code)?.name ?? regionName(code)
 }
 
 /** « vers la France », « vers le Canada ». */
 export function countryToPhrase(code: TerroirCountry): string {
-  return terroirCountryInfo(code)?.toPhrase ?? `vers ${regionName(code)}`
+  return terroirCountryInfo(code)?.toPhrase ?? shipmentCountryWords.get(code)?.toPhrase ?? `vers ${regionName(code)}`
 }
 
 /** « en France », « aux Pays-Bas ». */
 export function countryInPhrase(code: TerroirCountry): string {
-  return terroirCountryInfo(code)?.inPhrase ?? `en ${regionName(code)}`
+  return terroirCountryInfo(code)?.inPhrase ?? shipmentCountryWords.get(code)?.inPhrase ?? `en ${regionName(code)}`
 }
 
 /** « 🇫🇷 France » */
@@ -795,6 +817,7 @@ function readSupplement(value: unknown): TerroirSupplement | null {
 }
 
 function readSummary(raw: Raw): TerroirShipmentSummary {
+  rememberCountryWords(raw)
   const departure = obj(raw.departure)
   const arrival = obj(departure.arrival)
   const display = readDisplay(raw.display)

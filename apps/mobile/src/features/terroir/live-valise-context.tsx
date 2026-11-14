@@ -4,6 +4,7 @@ import { createContext, use, useCallback, useEffect, useMemo, useRef, useState }
 import { AppState } from 'react-native'
 import { useSession } from '../../lib/auth-client'
 import {
+  countryFlag,
   countryInPhrase,
   countryToPhrase,
   fetchTerroirCountries,
@@ -68,25 +69,30 @@ function urgency(valise: LiveValise): number {
 /**
  * The valises in progress, for the floating bar.
  *
- * Asked only while the module is open and someone is signed in, never in the
- * background. The switch is read when the app starts or comes back to the
- * foreground, not on every tick: the buyer pays for the data.
+ * Asked only while someone is signed in, never in the background. The
+ * switch is read when the app starts or comes back to the foreground, not on
+ * every tick: the buyer pays for the data. With the module closed, valises
+ * already on their way are still followed: the list is checked on those
+ * same moments, and the regular ticks go on only while one is moving.
  */
 export function LiveValiseProvider({ children }: { children: ReactNode }) {
   const [valises, setValises] = useState<LiveValise[]>([])
   const { data: session } = useSession()
   const userId = session?.user?.id ?? null
   const enabledRef = useRef(false)
+  const movingRef = useRef(false)
 
   const load = useCallback(async (checkSwitch: boolean): Promise<void> => {
     try {
       if (checkSwitch)
         enabledRef.current = await fetchTerroirEnabled()
-      if (!enabledRef.current) {
+      // Module closed and nothing moving at the last check: no need to ask.
+      if (!enabledRef.current && !checkSwitch && !movingRef.current) {
         setValises([])
         return
       }
       const active = (await fetchTerroirShipments()).filter(shipment => LIVE_STATUSES.has(shipment.status))
+      movingRef.current = active.length > 0
       if (active.length > 0 && active.some(shipment => terroirCountryInfo(shipment.country) === null))
         await fetchTerroirCountries(true).catch(() => undefined)
       // The list does not carry the supplement: one detail per active valise,
@@ -99,7 +105,7 @@ export function LiveValiseProvider({ children }: { children: ReactNode }) {
           id: shipment.id,
           status: shipment.status,
           country: shipment.country,
-          flag: terroirCountryInfo(shipment.country)?.flagEmoji ?? null,
+          flag: countryFlag(shipment.country),
           reception: shipment.reception,
           departsOn: shipment.departsOn,
           arrivalFrom: shipment.arrivalFrom,

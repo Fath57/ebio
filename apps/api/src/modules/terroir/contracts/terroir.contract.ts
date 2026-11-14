@@ -1075,10 +1075,23 @@ const shipmentLineSchema = z.object({
   shopName: z.string(),
 })
 
+/**
+ * How to name a valise's destination, carried with the valise itself: the
+ * country list is not served while the module is closed, yet a valise on
+ * its way still has to read « vers la Belgique ».
+ */
+const shipmentCountrySchema = z.object({
+  name: z.string(),
+  toPhrase: z.string(),
+  inPhrase: z.string(),
+  flagEmoji: z.string().nullable(),
+}).nullable()
+
 export const terroirShipmentSummarySchema = z.object({
   id: z.string().uuid(),
   status: exportShipmentStatusEnum,
   country: exportCountryCodeSchema,
+  countryInfo: shipmentCountrySchema,
   departure: shipmentDepartureSchema,
   reception: exportReceptionEnum,
   itemCount: z.number(),
@@ -1095,6 +1108,7 @@ export const terroirShipmentDetailSchema = z.object({
   id: z.string().uuid(),
   status: exportShipmentStatusEnum,
   country: exportCountryCodeSchema,
+  countryInfo: shipmentCountrySchema,
   departure: shipmentDepartureSchema.extend({ collectBefore: z.string().datetime() }),
   reception: exportReceptionEnum,
   pickupPoint: z.object({ city: z.string(), address: z.string(), openingHours: z.string().nullable() }).nullable(),
