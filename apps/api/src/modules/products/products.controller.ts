@@ -14,6 +14,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common'
+import { ApiQuery } from '@nestjs/swagger'
 import { z } from 'zod'
 import { CanCreate, CanDelete, CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
@@ -120,6 +121,7 @@ export class ProductsController {
 
   @Get('products/:id')
   @Public()
+  @ApiQuery({ name: 'exportCountry', required: false, type: String })
   async findById(
     @Session() session: BetterAuthSession,
     @Param('id') id: string,

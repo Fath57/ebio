@@ -27,6 +27,8 @@ const terroirTuningSchema = z.object({
   insuranceMin: z.coerce.number().int().min(0).max(1_000_000),
   bannedCategoryIds: z.array(z.string()).max(200),
   pickupReminderDays: z.coerce.number().int().min(1).max(90),
+  minShelfLifeDays: z.coerce.number().int().min(1).max(3_650),
+  maxUnitWeightG: z.coerce.number().int().min(100).max(50_000),
 })
 
 export type TerroirTuningFormData = z.infer<typeof terroirTuningSchema>
@@ -75,7 +77,8 @@ function NumberField({ form, name, min, max, step = 1 }: NumberFieldProps) {
 /**
  * The tuning of the terroir export: packaging added to every parcel, how
  * long eBio needs to collect, the weight gap tolerated before a supplement,
- * the insurance price, the banned categories and the pickup reminder.
+ * the insurance price, the pickup reminder, and the export criteria
+ * (banned categories, minimum shelf life, maximum unit weight).
  */
 export function TerroirExportForm({ values, categories, onSubmit, isPending }: TerroirExportFormProps) {
   const { t } = useTranslation()
@@ -101,40 +104,49 @@ export function TerroirExportForm({ values, categories, onSubmit, isPending }: T
           <NumberField form={form} name="insuranceMin" min={0} max={1000000} />
         </div>
 
-        <FormField
-          control={form.control}
-          name="bannedCategoryIds"
-          render={({ field }) => {
-            const selected = new Set(field.value)
-            const toggle = (id: string, checked: boolean) => {
-              const next = new Set(selected)
-              if (checked)
-                next.add(id)
-              else
-                next.delete(id)
-              field.onChange([...next])
-            }
-            return (
-              <FormItem>
-                <FormLabel>{t('admin.settings.terroirExport.fields.bannedCategoryIds')}</FormLabel>
-                <FormDescription>{t('admin.settings.terroirExport.fields.bannedCategoryIdsHint')}</FormDescription>
-                <div className="grid max-h-56 gap-2 overflow-y-auto rounded-md border p-3 sm:grid-cols-2">
-                  {categories.length === 0 && <p className="text-muted-foreground text-sm">{t('admin.settings.terroirExport.noCategories')}</p>}
-                  {categories.map(category => (
-                    <div key={category.id} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`terroir-banned-${category.id}`}
-                        checked={selected.has(category.id)}
-                        onCheckedChange={checked => toggle(category.id, checked === true)}
-                      />
-                      <Label htmlFor={`terroir-banned-${category.id}`} className="font-normal">{category.name}</Label>
-                    </div>
-                  ))}
-                </div>
-              </FormItem>
-            )
-          }}
-        />
+        <fieldset className="space-y-3 rounded-md border p-4">
+          <legend className="px-1 text-sm font-semibold">{t('admin.settings.terroirExport.criteriaTitle')}</legend>
+          <p className="text-muted-foreground text-sm">{t('admin.settings.terroirExport.criteriaHint')}</p>
+          <div className="grid items-start gap-4 sm:grid-cols-2">
+            <NumberField form={form} name="minShelfLifeDays" min={1} max={3650} />
+            <NumberField form={form} name="maxUnitWeightG" min={100} max={50000} />
+          </div>
+
+          <FormField
+            control={form.control}
+            name="bannedCategoryIds"
+            render={({ field }) => {
+              const selected = new Set(field.value)
+              const toggle = (id: string, checked: boolean) => {
+                const next = new Set(selected)
+                if (checked)
+                  next.add(id)
+                else
+                  next.delete(id)
+                field.onChange([...next])
+              }
+              return (
+                <FormItem>
+                  <FormLabel>{t('admin.settings.terroirExport.fields.bannedCategoryIds')}</FormLabel>
+                  <FormDescription>{t('admin.settings.terroirExport.fields.bannedCategoryIdsHint')}</FormDescription>
+                  <div className="grid max-h-56 gap-2 overflow-y-auto rounded-md border p-3 sm:grid-cols-2">
+                    {categories.length === 0 && <p className="text-muted-foreground text-sm">{t('admin.settings.terroirExport.noCategories')}</p>}
+                    {categories.map(category => (
+                      <div key={category.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`terroir-banned-${category.id}`}
+                          checked={selected.has(category.id)}
+                          onCheckedChange={checked => toggle(category.id, checked === true)}
+                        />
+                        <Label htmlFor={`terroir-banned-${category.id}`} className="font-normal">{category.name}</Label>
+                      </div>
+                    ))}
+                  </div>
+                </FormItem>
+              )
+            }}
+          />
+        </fieldset>
 
         <Button type="submit" disabled={isPending}>
           {t('common.save')}

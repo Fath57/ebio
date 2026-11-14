@@ -496,7 +496,7 @@ export const SETTINGS_REGISTRY: readonly SettingDefinition[] = [
     section: 'livraison',
     titleKey: 'admin.settings.terroirExport.title',
     descriptionKey: 'admin.settings.terroirExport.description',
-    keywords: ['valise', 'pays', 'terroir', 'étranger', 'export', 'diaspora', 'france', 'belgique', 'colis', 'agence', 'assurance', 'emballage', 'poids', 'catégorie interdite'],
+    keywords: ['valise', 'pays', 'terroir', 'étranger', 'export', 'diaspora', 'france', 'belgique', 'colis', 'agence', 'assurance', 'emballage', 'poids', 'catégorie interdite', 'conservation', 'critères'],
     icon: Globe,
     adminOnly: true,
     summary: () => <TerroirExportSummary />,

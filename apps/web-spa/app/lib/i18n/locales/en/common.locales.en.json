@@ -195,11 +195,11 @@
     "familyWallets": "Family wallets",
     "topups": "Top-ups",
     "farProofs": "Far proofs",
-    "terroirReviews": "Review",
     "terroirPacks": "eBio packs",
     "terroirCountries": "Countries",
     "terroirAgencies": "Agencies",
-    "terroirDepartures": "Departures"
+    "terroirDepartures": "Departures",
+    "terroirControl": "Export control"
   },
   "catalog": {
     "title": "My Catalogue",
@@ -1745,7 +1745,7 @@
       },
       "terroirExport": {
         "title": "La Valise du pays",
-        "description": "Lets diaspora buyers order Beninese terroir products, shipped by partner agencies to the countries opened in Valise du pays → Countries. Closed, the apps hide the terroir; the back office stays usable to prepare countries, agencies, departures and reviews.",
+        "description": "Lets diaspora buyers order Beninese terroir products, shipped by partner agencies to the countries opened in Valise du pays → Countries. Closed, the apps hide the terroir; the back office stays usable to prepare countries, agencies, departures and export control.",
         "legalWarning": "Partnerships and legal review pending: do not open La Valise du pays before the agency agreements are signed and the terms are approved in writing (duties and taxes, refund without return, insurance).",
         "toggleLabel": "Open La Valise du pays to buyers",
         "stateOpen": "Open: the apps offer La Valise du pays and accept orders abroad.",
@@ -1767,8 +1767,14 @@
           "insuranceMin": "Insurance minimum (FCFA)",
           "insuranceMinHint": "Floor price of a parcel's insurance.",
           "bannedCategoryIds": "Categories banned from export",
-          "bannedCategoryIdsHint": "Products of these categories cannot be offered abroad."
-        }
+          "bannedCategoryIdsHint": "Products of these categories cannot be offered abroad.",
+          "minShelfLifeDays": "Minimum shelf life (days)",
+          "minShelfLifeDaysHint": "Below it, the product cannot travel in the suitcase.",
+          "maxUnitWeightG": "Maximum weight per item (g)",
+          "maxUnitWeightGHint": "Weight of one unit with its packaging."
+        },
+        "criteriaTitle": "Export criteria",
+        "criteriaHint": "A product is exportable as soon as it meets every criterion. Changing a threshold re-evaluates every product and every pack at once."
       }
     },
     "site": {
@@ -3019,26 +3025,12 @@
         "DAMAGED": "Damaged",
         "CANCELLED": "Cancelled"
       },
-      "reviewStatus": {
-        "PENDING": "To review",
-        "APPROVED": "Approved",
-        "REJECTED": "Rejected",
-        "RETIRED": "Retired"
-      },
       "supplementStatus": {
         "NONE": "None",
         "REQUESTED": "Requested",
         "PAID": "Paid",
         "WAIVED": "Covered by eBio",
         "ITEM_REMOVED": "Product removed"
-      },
-      "checklist": {
-        "label_french": "Label in French",
-        "allergens_declared": "Allergens declared",
-        "dates_present": "Production and expiry dates",
-        "shelf_life_sufficient": "Sufficient shelf life",
-        "ingredients_allowed": "Allowed ingredients",
-        "label_photo": "Label photo"
       },
       "fill": {
         "label": "Departure fill",
@@ -3063,7 +3055,8 @@
         "country": "Choose a country.",
         "countryCode": "Two letters, the ISO country code (FR, BE, CA…).",
         "phraseMin": "At least three characters.",
-        "sortOrder": "A whole number, 0 or more."
+        "sortOrder": "A whole number, 0 or more.",
+        "withdrawReason": "Give the reason for the withdrawal (at least 3 characters)."
       },
       "agencies": {
         "title": "Partner agencies",
@@ -3260,56 +3253,13 @@
           "damaged": "Parcel marked damaged, buyer refunded."
         }
       },
-      "reviews": {
-        "title": "Export review",
-        "description": "Products and packs the shops want to send abroad",
-        "products_one": "{{count}} product",
-        "products_other": "{{count}} products",
-        "packs_one": "{{count}} pack",
-        "packs_other": "{{count}} packs",
-        "noProducts": "No product in this list.",
-        "noPacks": "No pack in this list.",
-        "review": "Review",
-        "updatedAt": "Request updated {{date}}",
-        "weight": "Packed weight",
-        "shelfLife": "Shelf life",
-        "days_one": "{{count}} day",
-        "days_other": "{{count}} days",
-        "dimensions": "Dimensions",
-        "dimensionsValue": "{{length}} × {{width}} × {{height}} cm",
-        "origin": "Origin",
-        "labelPhoto": "Label photo",
-        "labelPhotoOf": "{{name}} label",
-        "noLabelPhotoShort": "No label photo",
-        "ingredients": "Ingredients",
-        "allergens": "Allergens",
-        "noAllergens": "No allergen declared",
-        "conservation": "Storage",
-        "method": "Production method",
-        "originPhotos": "Origin photos",
-        "originPhotoOf": "Origin photo {{index}}",
-        "rejectionReason": "Rejection reason:",
-        "productDialogTitle": "Review “{{name}}”",
-        "productDialogDescription": "Request from {{shop}}. Tick each point checked on the label photo before approving.",
-        "packDialogTitle": "Review the “{{name}}” pack",
-        "packDialogDescription": "Pack proposed by {{shop}}.",
-        "checklistTitle": "Checklist",
-        "noLabelPhoto": "No label photo: the shop must add it before any approval.",
-        "reason": "Rejection reason",
-        "reasonPlaceholder": "E.g. the label shows no expiry date.",
-        "reasonHint": "Required to reject; sent to the shop.",
-        "approve": "Approve for export",
-        "reject": "Reject",
-        "approved": "Approved for export.",
-        "rejected": "Rejected; the shop is notified."
-      },
       "packs": {
-        "title": "eBio packs",
-        "description": "Packs composed by eBio with approved products from several shops",
+        "title": "Country packs",
+        "description": "Packs composed by eBio or by the shops. A pack becomes exportable by itself once it meets its criteria; eBio can withdraw it.",
         "create": "New pack",
         "createTitle": "New eBio pack",
         "editTitle": "Edit pack",
-        "formDescription": "Pick products approved for export, from any shop. Each shop is paid its own price.",
+        "formDescription": "Pick exportable products, from any shop. Each shop is paid its own price.",
         "empty": "No eBio pack yet.",
         "saved": "Pack saved.",
         "retired": "Pack retired.",
@@ -3322,8 +3272,7 @@
         "composition": "Composition",
         "noItems": "No product in the pack.",
         "addItem": "Add",
-        "searchPlaceholder": "Search an approved product or a shop",
-        "noApproved": "No product approved for export yet.",
+        "searchPlaceholder": "Search an exportable product or a shop",
         "quantityOf": "Quantity of {{name}}",
         "removeItem": "Remove {{name}} from the pack",
         "pricesLoading": "Loading prices…",
@@ -3335,12 +3284,102 @@
         "notOrderable": "Not orderable",
         "shopCount_one": "{{count}} shop",
         "shopCount_other": "{{count}} shops",
-        "itemNotApproved": "No longer approved",
         "editAria": "Edit the {{name}} pack",
         "retireAria": "Retire the {{name}} pack",
         "retire": "Retire pack",
         "retireTitle": "Retire the “{{name}}” pack?",
-        "retireDescription": "The pack is no longer offered to buyers. Orders already placed are unchanged."
+        "retireDescription": "The pack is no longer offered to buyers. Orders already placed are unchanged.",
+        "noExportable": "No exportable product yet.",
+        "noMatch": "No exportable product matches this search.",
+        "emptyAll": "No pack in this list.",
+        "scopeLabel": "Packs shown",
+        "scope": {
+          "ebio": "eBio packs",
+          "all": "All"
+        },
+        "itemNotOffered": "Not offered for export",
+        "withdraw": "Withdraw from export",
+        "reinstate": "Reinstate",
+        "withdrawTitle": "Withdraw the pack “{{name}}” from export?",
+        "withdrawDescription": "The pack leaves the Valise du pays at once. {{shop}} is notified with your reason. You can reinstate it later.",
+        "withdrawDescriptionEbio": "The pack leaves the Valise du pays at once. You can reinstate it later.",
+        "withdrawn": "Pack withdrawn from export.",
+        "reinstated": "Pack reinstated: exportable again if it meets its criteria.",
+        "withdrawnOn": "Withdrawn from export on {{date}}"
+      },
+      "exportStatus": {
+        "EXPORTABLE": "Exportable",
+        "INCOMPLETE": "Incomplete",
+        "WITHDRAWN": "Withdrawn by eBio",
+        "RETIRED": "Retired by its author"
+      },
+      "storage": {
+        "AMBIENT": "Room temperature",
+        "COOL": "Chilled",
+        "FROZEN": "Frozen"
+      },
+      "criteria": {
+        "met": "Met:",
+        "unmet": "Missing:"
+      },
+      "withdraw": {
+        "reason": "Reason for withdrawal",
+        "reasonPlaceholder": "E.g. the label shows no use-by date.",
+        "reasonHint": "Required, sent as is to the shop.",
+        "submit": "Withdraw from export"
+      },
+      "control": {
+        "title": "Export control",
+        "description": "Products the shops offer abroad, with the criteria they meet or miss",
+        "explanation": "A product becomes exportable by itself as soon as it meets every criterion set in <settings>Settings, Valise du pays</settings>. Nobody validates by hand: eBio can withdraw any product from export, then reinstate it.",
+        "tabs": {
+          "EXPORTABLE": "Exportable",
+          "INCOMPLETE": "Incomplete",
+          "WITHDRAWN": "Withdrawn"
+        },
+        "searchPlaceholder": "Search a product or a shop",
+        "columns": {
+          "product": "Product",
+          "shop": "Shop",
+          "category": "Category",
+          "status": "Status",
+          "criteria": "Criteria",
+          "updatedAt": "Updated"
+        },
+        "empty": {
+          "EXPORTABLE": "No exportable product.",
+          "INCOMPLETE": "No incomplete product.",
+          "WITHDRAWN": "No withdrawn product."
+        },
+        "allMet": "Every criterion met",
+        "missing_one": "{{count}} missing criterion",
+        "missing_other": "{{count}} missing criteria",
+        "criteriaTitle": "Export criteria ({{met}} of {{total}} met)",
+        "withdrawnOn": "Withdrawn from export on {{date}}",
+        "weight": "Packed weight",
+        "shelfLife": "Shelf life",
+        "days_one": "{{count}} day",
+        "days_other": "{{count}} days",
+        "storage": "Storage",
+        "dimensions": "Dimensions",
+        "dimensionsValue": "{{length}} × {{width}} × {{height}} cm",
+        "labelPhoto": "Label photo",
+        "labelPhotoOf": "Label of {{name}}",
+        "noLabelPhoto": "No label photo",
+        "origin": "Origin",
+        "originPhotoOf": "Origin photo {{index}}",
+        "composition": "Composition",
+        "ingredients": "Ingredients",
+        "allergens": "Allergens",
+        "noAllergens": "No allergen, declared by the shop",
+        "conservation": "Storage instructions",
+        "updatedAt": "Sheet updated on {{date}}",
+        "withdraw": "Withdraw from export",
+        "reinstate": "Reinstate",
+        "withdrawTitle": "Withdraw “{{name}}” from export?",
+        "withdrawDescription": "The product leaves the Valise du pays at once, whatever its criteria. {{shop}} is notified with your reason. You can reinstate it later.",
+        "withdrawn": "Product withdrawn from export, the shop is notified.",
+        "reinstated": "Product reinstated: exportable again if it meets every criterion."
       }
     }
   },

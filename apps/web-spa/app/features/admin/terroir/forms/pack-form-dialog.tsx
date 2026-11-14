@@ -1,5 +1,5 @@
 import type { Resolver } from 'react-hook-form'
-import type { ExportPack, ExportPackInput, ExportReviewProduct } from '../utils/terroir-types'
+import type { AdminExportProduct, ExportPack, ExportPackInput } from '../utils/terroir-types'
 import { productsControllerFindById } from '@boilerstone/openapi-generator/client/sdk.gen'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
@@ -14,9 +14,9 @@ import { Form, FormControl, FormField, FormItem, FormLabel } from '@boilerstone/
 import { Input } from '@boilerstone/ui/components/primitives/input'
 import { Textarea } from '@boilerstone/ui/components/primitives/textarea'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { Plus, Search, Trash2 } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useFieldArray, useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
@@ -24,8 +24,11 @@ import { ProductThumb } from '@/features/admin/common/components/product-thumb'
 import { formatAmount } from '@/features/admin/wallets/utils/format-amount'
 import { PackBalance } from '../components/pack-balance'
 import { formatGrams } from '../utils/terroir-format'
+import { exportableProductsQueryOptions } from '../utils/terroir-queries'
 
 const MAX_ITEMS = 20
+/** Delay between the last keystroke and the search request. */
+const SEARCH_DEBOUNCE_MS = 300
 
 const packSchema = z.object({
   name: z.string().trim().min(2, 'admin.terroir.validation.nameMin').max(120),
@@ -40,7 +43,7 @@ const packSchema = z.object({
 
 type PackFormData = z.infer<typeof packSchema>
 
-/** What the picker knows of a product: the approved export queue, plus the lines of the pack edited. */
+/** What the picker knows of a product: the lines of the pack edited, plus every exportable product it has listed. */
 interface PickableProduct {
   productId: string
   name: string
@@ -51,8 +54,6 @@ interface PickableProduct {
 interface PackFormDialogProps {
   /** Null: a new eBio pack. */
   pack: ExportPack | null
-  /** Products approved for export, from every shop. */
-  approved: ExportReviewProduct[]
   isPending: boolean
   error: string | null
   onSubmit: (input: ExportPackInput) => void
@@ -89,9 +90,19 @@ function usePrices(productIds: string[], known: Map<string, number>) {
  * its own price; the gap between the pack price and the sum of the lines is
  * shown live, eBio's margin above, its compensation below.
  */
-export function PackFormDialog({ pack, approved, isPending, error, onSubmit, onClose }: PackFormDialogProps) {
+export function PackFormDialog({ pack, isPending, error, onSubmit, onClose }: PackFormDialogProps) {
   const { t } = useTranslation()
   const [search, setSearch] = useState('')
+  const [searched, setSearched] = useState('')
+  const [picked, setPicked] = useState<Map<string, PickableProduct>>(() => new Map())
+
+  useEffect(() => {
+    const timer = setTimeout(() => setSearched(search.trim()), SEARCH_DEBOUNCE_MS)
+    return () => clearTimeout(timer)
+  }, [search])
+
+  const exportable = useQuery(exportableProductsQueryOptions(searched))
+  const results = exportable.data ?? []
   const form = useForm<PackFormData>({
     resolver: zodResolver(packSchema) as Resolver<PackFormData>,
     defaultValues: {
@@ -107,10 +118,20 @@ export function PackFormDialog({ pack, approved, isPending, error, onSubmit, onC
     const map = new Map<string, PickableProduct>()
     for (const item of pack?.items ?? [])
       map.set(item.productId, { productId: item.productId, name: item.name, imageUrl: item.imageUrl, shopName: item.shopName })
-    for (const product of approved)
-      map.set(product.productId, { productId: product.productId, name: product.productName, imageUrl: product.imageUrl, shopName: product.shopName })
+    for (const product of picked.values())
+      map.set(product.productId, product)
     return map
-  }, [pack, approved])
+  }, [pack, picked])
+
+  const pick = (product: AdminExportProduct) => {
+    setPicked(current => new Map(current).set(product.productId, {
+      productId: product.productId,
+      name: product.productName,
+      imageUrl: product.imageUrl,
+      shopName: product.shopName,
+    }))
+    append({ productId: product.productId, variantId: null, quantity: 1 })
+  }
 
   const knownPrices = useMemo(() => new Map((pack?.items ?? []).map(item => [item.productId, item.unitPrice])), [pack])
   const items = form.watch('items')
@@ -120,10 +141,8 @@ export function PackFormDialog({ pack, approved, isPending, error, onSubmit, onC
   const price = Number(form.watch('price') || 0)
 
   const pickedIds = new Set(items.map(item => item.productId))
-  const needle = search.trim().toLowerCase()
-  const candidates = approved
+  const candidates = results
     .filter(product => !pickedIds.has(product.productId))
-    .filter(product => !needle || `${product.productName} ${product.shopName}`.toLowerCase().includes(needle))
     .slice(0, 12)
 
   const submit = (values: PackFormData) => {
@@ -240,20 +259,24 @@ export function PackFormDialog({ pack, approved, isPending, error, onSubmit, onC
                       onChange={event => setSearch(event.target.value)}
                     />
                   </div>
-                  {approved.length === 0 && <p className="text-muted-foreground text-sm">{t('admin.terroir.packs.noApproved')}</p>}
+                  {exportable.data && results.length === 0 && (
+                    <p className="text-muted-foreground text-sm">
+                      {searched ? t('admin.terroir.packs.noMatch') : t('admin.terroir.packs.noExportable')}
+                    </p>
+                  )}
                   <ul className="max-h-60 divide-y overflow-y-auto rounded-md border">
                     {candidates.map(product => (
                       <li key={product.productId} className="flex items-center gap-3 p-2">
                         <ProductThumb url={product.imageUrl} />
                         <div className="min-w-0 flex-1">
                           <p className="truncate text-sm font-medium">{product.productName}</p>
-                          <p className="text-muted-foreground text-xs">{`${product.shopName} · ${formatGrams(product.packedWeightG)}`}</p>
+                          <p className="text-muted-foreground text-xs">{`${product.shopName} · ${product.packedWeightG == null ? '-' : formatGrams(product.packedWeightG)}`}</p>
                         </div>
                         <Button
                           type="button"
                           variant="outline"
                           size="sm"
-                          onClick={() => append({ productId: product.productId, variantId: null, quantity: 1 })}
+                          onClick={() => pick(product)}
                         >
                           <Plus className="mr-1 h-4 w-4" />
                           {t('admin.terroir.packs.addItem')}

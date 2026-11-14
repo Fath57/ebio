@@ -10118,8 +10118,8 @@ export type ProductsControllerFindByIdData = {
   path: {
     id: string;
   };
-  query: {
-    exportCountry: string;
+  query?: {
+    exportCountry?: string;
   };
   url: "/api/products/{id}";
 };

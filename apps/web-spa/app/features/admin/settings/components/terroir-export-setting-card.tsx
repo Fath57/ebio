@@ -23,6 +23,10 @@ interface TerroirExportSettingData {
   insuranceMin: number
   bannedCategoryIds: string[]
   pickupReminderDays: number
+  /** Export criteria: a product keeping fewer days cannot travel. */
+  minShelfLifeDays: number
+  /** Export criteria: heaviest packed unit allowed, in grams. */
+  maxUnitWeightG: number
 }
 
 type TerroirExportUpdate = Partial<TerroirExportSettingData>
@@ -39,6 +43,8 @@ function toSetting(raw: TerroirExportSettingData): TerroirExportSettingData {
     insuranceMin: Number(raw.insuranceMin),
     bannedCategoryIds: raw.bannedCategoryIds ?? [],
     pickupReminderDays: Number(raw.pickupReminderDays),
+    minShelfLifeDays: Number(raw.minShelfLifeDays ?? 90),
+    maxUnitWeightG: Number(raw.maxUnitWeightG ?? 5000),
   }
 }
 
@@ -67,7 +73,7 @@ export function TerroirExportSummary() {
  * The platform switch of the terroir export (011) and its tuning. Off by
  * default: the client routes refuse everything until the agency agreements
  * are signed, while the back office prepares agencies, departures and
- * validations. The switch saves on the flick; the tuning has its own button.
+ * export watch. The switch saves on the flick; the tuning has its own button.
  */
 export function TerroirExportSetting() {
   const { t } = useTranslation()
@@ -90,6 +96,8 @@ export function TerroirExportSetting() {
     onSuccess: (saved) => {
       setFeedback('saved')
       queryClient.setQueryData(QUERY_KEY, saved)
+      // The criteria thresholds may have moved: every export status was re-evaluated.
+      queryClient.invalidateQueries({ queryKey: ['admin', 'terroir'] })
     },
     onError: () => {
       setFeedback('error')
@@ -105,6 +113,8 @@ export function TerroirExportSetting() {
         insuranceMin: data.insuranceMin,
         bannedCategoryIds: data.bannedCategoryIds,
         pickupReminderDays: data.pickupReminderDays,
+        minShelfLifeDays: data.minShelfLifeDays,
+        maxUnitWeightG: data.maxUnitWeightG,
       }
     : null, [data])
 

@@ -1,9 +1,11 @@
 import type {
+  AdminExportProduct,
+  AdminExportProductsFilter,
+  AdminExportProductsPage,
   CancelDepartureResult,
   ExportAdminShipment,
   ExportAgency,
   ExportAgencyInput,
-  ExportChecklistKey,
   ExportCountryAdmin,
   ExportCountryInput,
   ExportCountryUpdate,
@@ -15,11 +17,10 @@ import type {
   ExportFill,
   ExportPack,
   ExportPackInput,
+  ExportPackScope,
+  ExportPackStatus,
   ExportPickupPoint,
   ExportPickupPointInput,
-  ExportProfileStatus,
-  ExportReviewDecision,
-  ExportReviews,
   ExportShipmentEventInput,
   ExportShipmentStatus,
 } from './terroir-types'
@@ -38,13 +39,13 @@ import {
   adminExportControllerListCountries,
   adminExportControllerListDepartures,
   adminExportControllerListPacks,
+  adminExportControllerListProducts,
   adminExportControllerLost,
   adminExportControllerManifest,
   adminExportControllerMissing,
+  adminExportControllerReinstatePack,
+  adminExportControllerReinstateProduct,
   adminExportControllerRetirePack,
-  adminExportControllerReviewPack,
-  adminExportControllerReviewProduct,
-  adminExportControllerReviews,
   adminExportControllerShipment,
   adminExportControllerShipmentEvent,
   adminExportControllerUpdateAgency,
@@ -53,7 +54,10 @@ import {
   adminExportControllerUpdatePack,
   adminExportControllerUpdatePickupPoint,
   adminExportControllerWeigh,
+  adminExportControllerWithdrawPack,
+  adminExportControllerWithdrawProduct,
 } from '@boilerstone/openapi-generator/client/sdk.gen'
+import { keepPreviousData } from '@tanstack/react-query'
 
 export const TERROIR_KEY = ['admin', 'terroir'] as const
 
@@ -64,9 +68,11 @@ export const terroirKeys = {
   departuresRoot: [...TERROIR_KEY, 'departures'] as const,
   departure: (id: string) => [...TERROIR_KEY, 'departure', id] as const,
   shipment: (id: string) => [...TERROIR_KEY, 'shipment', id] as const,
-  reviews: (status: ExportProfileStatus) => [...TERROIR_KEY, 'reviews', status] as const,
-  reviewsRoot: [...TERROIR_KEY, 'reviews'] as const,
-  packs: [...TERROIR_KEY, 'packs'] as const,
+  products: (filter: AdminExportProductsFilter) => [...TERROIR_KEY, 'products', filter] as const,
+  exportableProducts: (search: string) => [...TERROIR_KEY, 'products', 'exportable', search] as const,
+  productsRoot: [...TERROIR_KEY, 'products'] as const,
+  packs: (scope: ExportPackScope, status?: ExportPackStatus) => [...TERROIR_KEY, 'packs', scope, status ?? 'all'] as const,
+  packsRoot: [...TERROIR_KEY, 'packs'] as const,
 }
 
 /** A refusal of the API, with its machine code (`EXPORT_COUNTRY_EXISTS`…) when it sent one. */
@@ -176,23 +182,36 @@ function toPack(raw: ExportPack): ExportPack {
   return {
     ...raw,
     price: Number(raw.price),
+    missingCount: Number(raw.missingCount),
     linesTotal: Number(raw.linesTotal),
     difference: Number(raw.difference),
     items: raw.items.map(item => ({ ...item, quantity: Number(item.quantity), unitPrice: Number(item.unitPrice) })),
   }
 }
 
-function toReviews(raw: ExportReviews): ExportReviews {
+function toExportProduct(raw: AdminExportProduct): AdminExportProduct {
   return {
-    products: raw.products.map(product => ({
-      ...product,
-      packedWeightG: Number(product.packedWeightG),
-      shelfLifeDays: Number(product.shelfLifeDays),
-      lengthCm: toNullableNumber(product.lengthCm),
-      widthCm: toNullableNumber(product.widthCm),
-      heightCm: toNullableNumber(product.heightCm),
-    })),
-    packs: raw.packs.map(toPack),
+    ...raw,
+    missingCount: Number(raw.missingCount),
+    packedWeightG: toNullableNumber(raw.packedWeightG),
+    shelfLifeDays: toNullableNumber(raw.shelfLifeDays),
+    lengthCm: toNullableNumber(raw.lengthCm),
+    widthCm: toNullableNumber(raw.widthCm),
+    heightCm: toNullableNumber(raw.heightCm),
+  }
+}
+
+function toExportProductsPage(raw: AdminExportProductsPage): AdminExportProductsPage {
+  return {
+    data: raw.data.map(toExportProduct),
+    total: Number(raw.total),
+    page: Number(raw.page),
+    pageSize: Number(raw.pageSize),
+    counts: {
+      EXPORTABLE: Number(raw.counts?.EXPORTABLE ?? 0),
+      INCOMPLETE: Number(raw.counts?.INCOMPLETE ?? 0),
+      WITHDRAWN: Number(raw.counts?.WITHDRAWN ?? 0),
+    },
   }
 }
 
@@ -263,23 +282,43 @@ export function shipmentQueryOptions(id: string) {
   }
 }
 
-export function reviewsQueryOptions(status: ExportProfileStatus) {
+/** One page of the products offered for export, with the count of each status for the tabs. */
+export function exportProductsQueryOptions(filter: AdminExportProductsFilter) {
   return {
-    queryKey: terroirKeys.reviews(status),
+    queryKey: terroirKeys.products(filter),
     queryFn: async () => {
-      const response = await adminExportControllerReviews({ query: { status } })
+      const response = await adminExportControllerListProducts({
+        query: { status: filter.status, page: filter.page, ...(filter.search ? { search: filter.search } : {}) },
+      })
       if (response.error)
-        fail(response.error, 'Failed to load reviews')
-      return toReviews(response.data as ExportReviews)
+        fail(response.error, 'Failed to load export products')
+      return toExportProductsPage(response.data as AdminExportProductsPage)
     },
+    placeholderData: keepPreviousData,
   }
 }
 
-export function packsQueryOptions() {
+/** The first exportable products matching a search, for the eBio pack picker. */
+export function exportableProductsQueryOptions(search: string) {
   return {
-    queryKey: terroirKeys.packs,
+    queryKey: terroirKeys.exportableProducts(search),
     queryFn: async () => {
-      const response = await adminExportControllerListPacks()
+      const response = await adminExportControllerListProducts({
+        query: { status: 'EXPORTABLE', page: 1, ...(search ? { search } : {}) },
+      })
+      if (response.error)
+        fail(response.error, 'Failed to load export products')
+      return toExportProductsPage(response.data as AdminExportProductsPage).data
+    },
+    placeholderData: keepPreviousData,
+  }
+}
+
+export function packsQueryOptions(scope: ExportPackScope, status?: ExportPackStatus) {
+  return {
+    queryKey: terroirKeys.packs(scope, status),
+    queryFn: async () => {
+      const response = await adminExportControllerListPacks({ query: { scope, ...(status ? { status } : {}) } })
       if (response.error)
         fail(response.error, 'Failed to load packs')
       return (response.data as ExportPack[]).map(toPack)
@@ -408,23 +447,36 @@ export function markShipmentLost(id: string, damaged: boolean) {
   return shipmentAction(adminExportControllerLost({ path: { id }, body: { damaged } }))
 }
 
-// ===== REVIEWS AND PACKS =====
+// ===== EXPORT WATCH AND PACKS =====
 
-export async function reviewProduct(
-  productId: string,
-  decision: ExportReviewDecision,
-  checklist: Partial<Record<ExportChecklistKey, boolean>>,
-  reason: string | null,
-): Promise<void> {
-  const response = await adminExportControllerReviewProduct({ path: { id: productId }, body: { decision, checklist, reason } })
+/** Takes a product off the export whatever its criteria; the shop gets the reason. */
+export async function withdrawProduct(productId: string, reason: string): Promise<AdminExportProduct> {
+  const response = await adminExportControllerWithdrawProduct({ path: { productId }, body: { reason } })
   if (response.error)
     fail(response.error)
+  return toExportProduct(response.data as AdminExportProduct)
 }
 
-export async function reviewPack(packId: string, decision: ExportReviewDecision, reason: string | null): Promise<void> {
-  const response = await adminExportControllerReviewPack({ path: { id: packId }, body: { decision, reason } })
+/** Lifts the withdrawal: exportable again at once when every criterion is met. */
+export async function reinstateProduct(productId: string): Promise<AdminExportProduct> {
+  const response = await adminExportControllerReinstateProduct({ path: { productId } })
   if (response.error)
     fail(response.error)
+  return toExportProduct(response.data as AdminExportProduct)
+}
+
+export async function withdrawPack(id: string, reason: string): Promise<ExportPack> {
+  const response = await adminExportControllerWithdrawPack({ path: { id }, body: { reason } })
+  if (response.error)
+    fail(response.error)
+  return toPack(response.data as ExportPack)
+}
+
+export async function reinstatePack(id: string): Promise<ExportPack> {
+  const response = await adminExportControllerReinstatePack({ path: { id } })
+  if (response.error)
+    fail(response.error)
+  return toPack(response.data as ExportPack)
 }
 
 export async function savePack(id: string | null, body: ExportPackInput): Promise<ExportPack> {

@@ -8813,9 +8813,11 @@ export const zProductsControllerFindByIdData = z.object({
   path: z.object({
     id: z.string(),
   }),
-  query: z.object({
-    exportCountry: z.string(),
-  }),
+  query: z.optional(
+    z.object({
+      exportCountry: z.optional(z.string()),
+    }),
+  ),
 });
 
 export const zProductsControllerSoftDeleteData = z.object({

@@ -26,10 +26,10 @@ const SHIPMENT_TONES: Record<ExportShipmentStatus, StatusTone> = {
   CANCELLED: 'idle',
 }
 
-const REVIEW_TONES: Record<ExportPackStatus, StatusTone> = {
-  PENDING: 'action',
-  APPROVED: 'done',
-  REJECTED: 'problem',
+const EXPORT_TONES: Record<ExportPackStatus, StatusTone> = {
+  EXPORTABLE: 'done',
+  INCOMPLETE: 'action',
+  WITHDRAWN: 'problem',
   RETIRED: 'idle',
 }
 
@@ -43,8 +43,8 @@ export function ShipmentStatusBadge({ status }: { status: ExportShipmentStatus }
   return <StatusBadge tone={SHIPMENT_TONES[status]}>{t(`admin.terroir.shipmentStatus.${status}`)}</StatusBadge>
 }
 
-/** Validation state of a product or a pack. */
-export function ReviewStatusBadge({ status }: { status: ExportPackStatus }) {
+/** Export state of a product or a pack, computed from its criteria or set by eBio. */
+export function ExportStatusBadge({ status }: { status: ExportPackStatus }) {
   const { t } = useTranslation()
-  return <StatusBadge tone={REVIEW_TONES[status]}>{t(`admin.terroir.reviewStatus.${status}`)}</StatusBadge>
+  return <StatusBadge tone={EXPORT_TONES[status]}>{t(`admin.terroir.exportStatus.${status}`)}</StatusBadge>
 }

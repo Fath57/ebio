@@ -39,20 +39,26 @@ export const PUBLISHABLE_STEPS: readonly ExportShipmentStatus[] = [
   'OUT_FOR_DELIVERY',
 ]
 
-export type ExportProfileStatus = 'PENDING' | 'APPROVED' | 'REJECTED'
-export type ExportPackStatus = ExportProfileStatus | 'RETIRED'
+/**
+ * Computed from the export criteria on every save, no manual review:
+ * WITHDRAWN is eBio's decision and stands until eBio reinstates.
+ */
+export const EXPORT_PROFILE_STATUSES = ['EXPORTABLE', 'INCOMPLETE', 'WITHDRAWN'] as const
+export type ExportProfileStatus = typeof EXPORT_PROFILE_STATUSES[number]
+/** RETIRED: withdrawn by its own author, kept for the orders that quote it. */
+export const EXPORT_PACK_STATUSES = [...EXPORT_PROFILE_STATUSES, 'RETIRED'] as const
+export type ExportPackStatus = typeof EXPORT_PACK_STATUSES[number]
 export type ExportSupplementStatus = 'NONE' | 'REQUESTED' | 'PAID' | 'WAIVED' | 'ITEM_REMOVED'
+export type ExportStorage = 'AMBIENT' | 'COOL' | 'FROZEN'
 
-/** The export checklist (data-model §7): every key ticked before approval. */
-export const EXPORT_CHECKLIST_KEYS = [
-  'label_french',
-  'allergens_declared',
-  'dates_present',
-  'shelf_life_sufficient',
-  'ingredients_allowed',
-  'label_photo',
-] as const
-export type ExportChecklistKey = typeof EXPORT_CHECKLIST_KEYS[number]
+/** One export criterion, met or not, worded by the API with today's thresholds. */
+export interface ExportCriterion {
+  key: string
+  label: string
+  met: boolean
+  /** What the shop must do to meet it. */
+  hint: string
+}
 
 // ===== DESTINATION COUNTRIES =====
 
@@ -287,7 +293,7 @@ export interface ExportShipmentEventInput {
   pickupPoint?: string | null
 }
 
-// ===== REVIEWS AND PACKS =====
+// ===== EXPORT WATCH AND PACKS =====
 
 export interface ExportOrigin {
   producer: string | null
@@ -297,19 +303,27 @@ export interface ExportOrigin {
   photos: string[]
 }
 
-export interface ExportReviewProduct {
+/** A product offered for export, as eBio watches it (`GET /admin/export/products`). */
+export interface AdminExportProduct {
   productId: string
   status: ExportProfileStatus
-  packedWeightG: number
+  criteria: ExportCriterion[]
+  missingCount: number
+  withdrawnReason: string | null
+  withdrawnAt: string | null
+  packedWeightG: number | null
   lengthCm: number | null
   widthCm: number | null
   heightCm: number | null
-  shelfLifeDays: number
+  shelfLifeDays: number | null
+  storage: ExportStorage | null
+  allergens: string | null
+  noAllergens: boolean
   origin: ExportOrigin
   labelPhoto: string | null
-  checklist: Record<string, boolean>
-  rejectionReason: string | null
-  reviewedAt: string | null
+  declaresFrenchLabel: boolean
+  declaresDatesPrinted: boolean
+  declaresSealedPackaging: boolean
   badge: boolean
   updatedAt: string
   productName: string
@@ -323,6 +337,24 @@ export interface ExportReviewProduct {
     conservation: string | null
   }
 }
+
+export interface AdminExportProductsPage {
+  data: AdminExportProduct[]
+  total: number
+  page: number
+  pageSize: number
+  /** Count by status over the whole catalogue, search ignored. */
+  counts: Record<ExportProfileStatus, number>
+}
+
+export interface AdminExportProductsFilter {
+  status: ExportProfileStatus
+  search: string
+  page: number
+}
+
+/** `ebio`: eBio's own packs; `all`: the shops' packs too. */
+export type ExportPackScope = 'ebio' | 'all'
 
 export interface ExportPackItem {
   productId: string
@@ -345,18 +377,15 @@ export interface ExportPack {
   photos: string[]
   price: number
   status: ExportPackStatus
-  rejectionReason: string | null
-  reviewedAt: string | null
+  criteria: ExportCriterion[]
+  missingCount: number
+  withdrawnReason: string | null
+  withdrawnAt: string | null
   items: ExportPackItem[]
   linesTotal: number
   difference: number
   orderable: boolean
   createdAt: string
-}
-
-export interface ExportReviews {
-  products: ExportReviewProduct[]
-  packs: ExportPack[]
 }
 
 export interface ExportPackInput {
@@ -366,5 +395,3 @@ export interface ExportPackInput {
   price: number
   items: Array<{ productId: string, variantId: string | null, quantity: number }>
 }
-
-export type ExportReviewDecision = 'APPROVE' | 'REJECT'
