@@ -360,7 +360,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
     }
     appAlert(
       'Paiement en cours de confirmation',
-      'Ne payez pas une seconde fois : votre colis apparaîtra dans « Colis terroir » dès que le paiement sera confirmé.',
+      'Ne payez pas une seconde fois : votre colis apparaîtra dans « Mes valises envoyées » dès que le paiement sera confirmé.',
     )
     onBack()
   }, [pendingCheckoutId, pendingShipmentId, verifyCart, finish, onBack])
@@ -404,7 +404,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
           : buildCheckoutHtml({
               publicKey,
               amount: amountDue ?? total,
-              description: 'Colis terroir eBio',
+              description: 'La Valise du pays eBio',
               customer,
               metadata: { payment_id: pendingCheckoutId },
             })}
@@ -661,7 +661,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
           {previewError && <Text style={[styles.optionLine, { color: colors.coral[600] }]}>{previewError}</Text>}
           {preview && preview.unavailable.length > 0 && (
             <Text style={[styles.optionLine, { color: colors.coral[600] }]}>
-              Un article n’est plus disponible à l’export : retirez-le de votre panier terroir.
+              Un article n’est plus disponible à l’export : retirez-le de votre valise.
             </Text>
           )}
           {itemsTotal && <RecapRow label="Produits" primary={itemsTotal.primary} secondary={itemsTotal.secondary} />}

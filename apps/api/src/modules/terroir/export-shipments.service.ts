@@ -371,11 +371,11 @@ ${blocks.join('\n')}
       payment.amount = Math.max(0, cents(Number(payment.amount) - value))
       this.em.remove(item)
       await this.em.flush()
-      await this.refundBuyer(shipment.buyer.id, value, `Remboursement, ${item.product.name}, retiré du colis terroir ${reference}`, payment.id)
+      await this.refundBuyer(shipment.buyer.id, value, `Remboursement, ${item.product.name}, retiré de la valise ${reference}`, payment.id)
     }
     else {
       // Collected, so the shop was paid: the line stays its sale; eBio refunds.
-      await this.refundBuyer(shipment.buyer.id, value, `Remboursement, ${item.product.name}, retiré du colis terroir ${reference}`)
+      await this.refundBuyer(shipment.buyer.id, value, `Remboursement, ${item.product.name}, retiré de la valise ${reference}`)
       await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
         type: WalletTransactionType.EXPORT_LOSS,
         amount: value,
@@ -590,7 +590,7 @@ ${blocks.join('\n')}
     const reference = shipment.id.slice(0, 8)
     const what = damaged ? 'abîmé' : 'perdu'
 
-    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement, colis terroir ${reference} ${what}`)
+    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement, valise ${reference} ${what}`)
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
       type: WalletTransactionType.EXPORT_LOSS,
       amount: refund,
@@ -701,7 +701,7 @@ ${blocks.join('\n')}
   async payShrinkage(shrunk: Shrinkage): Promise<void> {
     const { shipment, shippingRefund, insuranceRefund } = shrunk
     const reference = shipment.id.slice(0, 8)
-    await this.refundBuyer(shipment.buyer.id, cents(shippingRefund + insuranceRefund), `Remboursement, transport du colis terroir ${reference} allégé`)
+    await this.refundBuyer(shipment.buyer.id, cents(shippingRefund + insuranceRefund), `Remboursement, transport de la valise ${reference} allégé`)
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', {
       type: WalletTransactionType.EXPORT_SHIPPING_INCOME,
       amount: shippingRefund,
@@ -736,7 +736,7 @@ ${blocks.join('\n')}
     const residual = Math.max(0, Number(shipment.declaredValue))
     const refund = cents(shipping + insurance + residual)
 
-    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement, colis terroir ${reference} annulé`)
+    await this.refundBuyer(shipment.buyer.id, refund, `Remboursement, valise ${reference} annulée`)
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_SHIPPING_INCOME, amount: shipping, description: `Transport remboursé, colis ${reference} annulé` })
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_INSURANCE_INCOME, amount: insurance, description: `Assurance remboursée, colis ${reference} annulé` })
     await this.wallets.post(PlatformAccount.EXPORT, 'debit', { type: WalletTransactionType.EXPORT_PACK_COMPENSATION, amount: residual, description: `Marge pack eBio remboursée, colis ${reference} annulé` })

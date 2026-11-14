@@ -325,7 +325,7 @@ export class TerroirCheckoutService {
         await this.wallets.debit(wallet.id, {
           type: WalletTransactionType.ORDER_PAYMENT,
           amount: total,
-          description: `Colis terroir, ${created.length > 1 ? `${created.length} boutiques` : `commande ${created[0].orderNumber}`}`,
+          description: `Valise du pays, ${created.length > 1 ? `${created.length} boutiques` : `commande ${created[0].orderNumber}`}`,
           orderId: created[0].id,
         })
         // Each shop is escrowed its own order, never a share of the shipping.

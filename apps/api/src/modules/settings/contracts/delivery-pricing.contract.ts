@@ -171,14 +171,14 @@ export const terroirExportSettingSchema = z.object({
   pickupReminderDays: z.number().int().min(1).max(90),
 }).meta({
   title: 'TerroirExportSetting',
-  description: 'Interrupteur et réglages du terroir vers l\'étranger',
+  description: 'Interrupteur et réglages de la Valise du pays',
 })
 
 export type TerroirExportSetting = z.infer<typeof terroirExportSettingSchema>
 
 export const updateTerroirExportSettingSchema = terroirExportSettingSchema.partial().meta({
   title: 'UpdateTerroirExportSetting',
-  description: 'Réglages du terroir vers l\'étranger à modifier',
+  description: 'Réglages de la Valise du pays à modifier',
 })
 
 export type UpdateTerroirExportSettingInput = z.infer<typeof updateTerroirExportSettingSchema>

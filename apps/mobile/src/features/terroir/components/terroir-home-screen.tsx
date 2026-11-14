@@ -208,7 +208,7 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
       }
       else {
         setCatalog([])
-        setCatalogError(catalogResult.reason instanceof Error ? catalogResult.reason.message : 'Impossible de charger le catalogue terroir.')
+        setCatalogError(catalogResult.reason instanceof Error ? catalogResult.reason.message : 'Impossible de charger la Valise du pays.')
       }
       setDepartures(departuresResult.status === 'fulfilled' ? departuresResult.value : null)
       setCatalogLoading(false)
@@ -276,7 +276,7 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader
-        title="Terroir"
+        title="La Valise du pays"
         subtitle={`Livré en ${countryLabel(country)}`}
         onBack={onBack}
         rightSlot={(
@@ -284,7 +284,7 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
             style={styles.cartButton}
             onPress={onOpenCart}
             accessibilityRole="button"
-            accessibilityLabel={itemCount > 0 ? `Panier terroir, ${itemCount} article${itemCount > 1 ? 's' : ''}` : 'Panier terroir'}
+            accessibilityLabel={itemCount > 0 ? `Ma valise, ${itemCount} article${itemCount > 1 ? 's' : ''}` : 'Ma valise'}
           >
             <ShoppingBasket size={22} color={semantic.textPrimary} strokeWidth={2} />
             {itemCount > 0 && (

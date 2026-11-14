@@ -163,7 +163,7 @@
       "community": "Community",
       "config": "Settings",
       "money": "Money",
-      "terroir": "Terroir"
+      "terroir": "Valise du pays"
     },
     "logout": "Log out",
     "moderation": "Moderation",
@@ -1743,12 +1743,12 @@
         "description": "Automatic updates only carry JavaScript code. A version that needs a native change can only come from the Play Store, and the app cannot guess it on its own."
       },
       "terroirExport": {
-        "title": "Terroir abroad",
+        "title": "La Valise du pays",
         "description": "Lets diaspora buyers order Beninese terroir products, shipped to France and Belgium by partner agencies. Closed, the apps hide the terroir; the back office stays usable to prepare agencies, departures and reviews.",
-        "legalWarning": "Partnerships and legal review pending: do not open terroir abroad before the agency agreements are signed and the terms are approved in writing (duties and taxes, refund without return, insurance).",
-        "toggleLabel": "Open terroir abroad to buyers",
-        "stateOpen": "Open: the apps offer the terroir and accept orders abroad.",
-        "stateClosed": "Closed: the apps hide the terroir and refuse any order abroad.",
+        "legalWarning": "Partnerships and legal review pending: do not open La Valise du pays before the agency agreements are signed and the terms are approved in writing (duties and taxes, refund without return, insurance).",
+        "toggleLabel": "Open La Valise du pays to buyers",
+        "stateOpen": "Open: the apps offer La Valise du pays and accept orders abroad.",
+        "stateClosed": "Closed: the apps hide La Valise du pays and refuse any order abroad.",
         "saved": "Saved. The change applies within a minute.",
         "error": "The change was not saved.",
         "noCategories": "No category.",

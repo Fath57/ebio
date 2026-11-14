@@ -15,7 +15,7 @@ export class TerroirEnabledGuard implements CanActivate {
 
   async canActivate(): Promise<boolean> {
     if (!(await this.platformSettings.getTerroirExportEnabled())) {
-      throw terroirError(HttpStatus.FORBIDDEN, 'TERROIR_DISABLED', 'L\'envoi de produits du terroir à l\'étranger n\'est pas disponible pour le moment.')
+      throw terroirError(HttpStatus.FORBIDDEN, 'TERROIR_DISABLED', 'La Valise du pays n\'est pas encore ouverte.')
     }
     return true
   }

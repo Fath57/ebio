@@ -384,7 +384,7 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
               <View style={[styles.actionIcon, { backgroundColor: colors.earth[50] }]}>
                 <Gift size={18} color={colors.earth[600]} />
               </View>
-              <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Packs terroir</Text>
+              <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Packs du pays</Text>
             </TouchableOpacity>
           </>
         )}

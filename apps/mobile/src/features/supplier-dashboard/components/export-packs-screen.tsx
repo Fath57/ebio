@@ -166,7 +166,7 @@ export function ExportPacksScreen({ onGoBack, onOpenPack }: ExportPacksScreenPro
 
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Packs terroir" onBack={onGoBack} />
+      <ScreenHeader title="Packs du pays" onBack={onGoBack} />
       <ScrollView
         contentContainerStyle={[styles.listContent, { paddingBottom: tabBarHeight + spacing[6] }]}
         showsVerticalScrollIndicator={false}

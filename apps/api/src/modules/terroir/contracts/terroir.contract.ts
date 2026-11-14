@@ -79,7 +79,7 @@ export type ExportChecklist = Partial<Record<ExportChecklistKey, boolean>>
 
 export const exportCountryEnum = z.enum(ExportCountry).meta({
   title: 'ExportCountry',
-  description: 'Pays de destination d\'un colis terroir',
+  description: 'Pays de destination d\'une valise',
 })
 
 export const exportProfileStatusEnum = z.enum(ExportProfileStatus).meta({
@@ -89,7 +89,7 @@ export const exportProfileStatusEnum = z.enum(ExportProfileStatus).meta({
 
 export const exportPackStatusEnum = z.enum(ExportPackStatus).meta({
   title: 'ExportPackStatus',
-  description: 'Validation d\'un pack terroir',
+  description: 'Validation d\'un pack du pays',
 })
 
 export const exportDepartureStatusEnum = z.enum(ExportDepartureStatus).meta({
@@ -99,7 +99,7 @@ export const exportDepartureStatusEnum = z.enum(ExportDepartureStatus).meta({
 
 export const exportShipmentStatusEnum = z.enum(ExportShipmentStatus).meta({
   title: 'ExportShipmentStatus',
-  description: 'Étape d\'un colis terroir',
+  description: 'Étape d\'une valise',
 })
 
 export const exportSupplementStatusEnum = z.enum(ExportSupplementStatus).meta({
@@ -421,7 +421,7 @@ export const exportPackInputSchema = z.object({
   items: z.array(exportPackItemInputSchema).min(1, 'Un pack contient au moins un produit').max(20),
 }).meta({
   title: 'ExportPackInput',
-  description: 'Pack terroir : nom, description, photos, prix, produits',
+  description: 'Pack du pays : nom, description, photos, prix, produits',
 })
 
 export type ExportPackInput = z.infer<typeof exportPackInputSchema>
@@ -465,7 +465,7 @@ export const exportPackResponseSchema = z.object({
   createdAt: z.string().datetime(),
 }).meta({
   title: 'ExportPack',
-  description: 'Pack terroir, boutique ou eBio',
+  description: 'Pack du pays, boutique ou eBio',
 })
 
 export type ExportPackResponse = z.infer<typeof exportPackResponseSchema>
@@ -539,12 +539,12 @@ export const exportReceptionEnum = z.enum(ExportReception).meta({
 
 export const terroirPaymentMethodEnum = z.enum(['FEDAPAY', 'WALLET']).meta({
   title: 'TerroirPaymentMethod',
-  description: 'Paiement d\'un colis terroir : carte (page hébergée) ou portefeuille eBio',
+  description: 'Paiement d\'une valise : carte (page hébergée) ou portefeuille eBio',
 })
 
 export const terroirUnavailableReasonEnum = z.enum(['NOT_FOUND', 'NOT_EXPORTABLE', 'OUT_OF_STOCK', 'PACK_UNAVAILABLE']).meta({
   title: 'TerroirUnavailableReason',
-  description: 'Pourquoi une ligne du panier terroir ne peut pas partir',
+  description: 'Pourquoi une ligne du valise ne peut pas partir',
 })
 
 const displayCurrencyField = z.enum(['XOF', 'EUR', 'USD', 'CAD']).default('EUR')
@@ -557,7 +557,7 @@ export const terroirCatalogQuerySchema = z.object({
   currency: displayCurrencyField,
 }).meta({
   title: 'TerroirCatalogQuery',
-  description: 'Catalogue terroir : pays, catégorie, recherche, page, devise d\'affichage',
+  description: 'Catalogue de la Valise du pays : pays, catégorie, recherche, page, devise d\'affichage',
 })
 
 export type TerroirCatalogQuery = z.infer<typeof terroirCatalogQuerySchema>
@@ -595,7 +595,7 @@ export const terroirCatalogProductSchema = z.object({
   origin: z.object({ producer: z.string().nullable(), place: z.string().nullable() }),
 }).meta({
   title: 'TerroirCatalogProduct',
-  description: 'Produit exportable dans le catalogue terroir',
+  description: 'Produit exportable dans le catalogue de la Valise du pays',
 })
 
 export const terroirCatalogPackSchema = z.object({
@@ -610,7 +610,7 @@ export const terroirCatalogPackSchema = z.object({
   itemCount: z.number(),
 }).meta({
   title: 'TerroirCatalogPack',
-  description: 'Pack terroir commandable',
+  description: 'Pack du pays commandable',
 })
 
 export const terroirCatalogResponseSchema = z.object({
@@ -623,7 +623,7 @@ export const terroirCatalogResponseSchema = z.object({
   hasMore: z.boolean(),
 }).meta({
   title: 'TerroirCatalog',
-  description: 'Catalogue terroir : produits exportables et packs',
+  description: 'Catalogue de la Valise du pays : produits exportables et packs',
 })
 
 export type TerroirCatalogResponse = z.infer<typeof terroirCatalogResponseSchema>
@@ -687,7 +687,7 @@ export const terroirPackDetailSchema = z.object({
   })),
 }).meta({
   title: 'TerroirPackDetail',
-  description: 'Fiche d\'un pack terroir et de ses produits',
+  description: 'Fiche d\'un pack du pays et de ses produits',
 })
 
 export type TerroirPackDetail = z.infer<typeof terroirPackDetailSchema>
@@ -757,7 +757,7 @@ export const terroirCartLineSchema = z.object({
   message: 'Chaque ligne est un produit ou un pack',
 }).meta({
   title: 'TerroirCartLine',
-  description: 'Ligne du panier terroir : un produit (et sa variante) ou un pack',
+  description: 'Ligne du valise : un produit (et sa variante) ou un pack',
 })
 
 export const terroirGiftSchema = z.object({
@@ -775,7 +775,7 @@ export const terroirGiftSchema = z.object({
 export const terroirCheckoutInputSchema = z.object({
   /** The destination, the recipient's country for a gift. */
   country: exportCountryEnum,
-  lines: z.array(terroirCartLineSchema).min(1, 'Votre panier terroir est vide').max(40),
+  lines: z.array(terroirCartLineSchema).min(1, 'Votre valise est vide').max(40),
   /** Preview: the soonest offered departure when absent. */
   departureId: z.string().uuid().nullable().optional(),
   reception: exportReceptionEnum.default(ExportReception.PICKUP),
@@ -788,7 +788,7 @@ export const terroirCheckoutInputSchema = z.object({
   displayCurrency: displayCurrencyField,
 }).meta({
   title: 'TerroirCheckoutInput',
-  description: 'Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement',
+  description: 'Valise : pays, lignes, départ, réception, assurance, cadeau, paiement',
 })
 
 export type TerroirCheckoutInput = z.infer<typeof terroirCheckoutInputSchema>
@@ -850,7 +850,7 @@ export const terroirCheckoutPreviewSchema = z.object({
   })),
 }).meta({
   title: 'TerroirCheckoutPreview',
-  description: 'Aperçu du passage en caisse terroir : poids, départs, transport, options, total',
+  description: 'Aperçu du passage en caisse de la Valise du pays : poids, départs, transport, options, total',
 })
 
 export type TerroirCheckoutPreview = z.infer<typeof terroirCheckoutPreviewSchema>
@@ -866,7 +866,7 @@ export const terroirCheckoutResultSchema = z.object({
   display: z.object({ currency: z.string(), total: z.number() }).nullable(),
 }).meta({
   title: 'TerroirCheckoutResult',
-  description: 'Passage en caisse terroir créé : colis, total, lien de paiement',
+  description: 'Passage en caisse de la Valise du pays créé : colis, total, lien de paiement',
 })
 
 export type TerroirCheckoutResult = z.infer<typeof terroirCheckoutResultSchema>
@@ -909,7 +909,7 @@ export const terroirShipmentSummarySchema = z.object({
   createdAt: z.string().datetime(),
 }).meta({
   title: 'TerroirShipmentSummary',
-  description: 'Colis terroir dans la liste du client',
+  description: 'Valise dans la liste du client',
 })
 
 export const terroirShipmentDetailSchema = z.object({
@@ -947,7 +947,7 @@ export const terroirShipmentDetailSchema = z.object({
   createdAt: z.string().datetime(),
 }).meta({
   title: 'TerroirShipmentDetail',
-  description: 'Colis terroir : étape, départ, retrait, contenu, historique, montants',
+  description: 'Valise : étape, départ, retrait, contenu, historique, montants',
 })
 
 export type TerroirShipmentSummary = z.infer<typeof terroirShipmentSummarySchema>
@@ -1144,7 +1144,7 @@ export const exportAdminShipmentSchema = z.object({
   createdAt: z.string().datetime(),
 }).meta({
   title: 'ExportAdminShipment',
-  description: 'Colis terroir côté back-office : commandes par boutique, poids, complément, historique',
+  description: 'Valise côté back-office : commandes par boutique, poids, complément, historique',
 })
 
 export type ExportAdminShipment = z.infer<typeof exportAdminShipmentSchema>

@@ -91,7 +91,7 @@ function AddBar({ priceLabel, secondary, quantity, onQuantityChange, disabled, o
         disabled={disabled}
         accessibilityRole="button"
         accessibilityState={{ disabled }}
-        accessibilityLabel={`Ajouter au panier terroir, ${priceLabel}`}
+        accessibilityLabel={`Ajouter à ma valise, ${priceLabel}`}
       >
         <ShoppingBasket size={18} color={colors.neutral[0]} strokeWidth={2.2} />
         <View>
@@ -120,7 +120,7 @@ function InfoRow({ label, value }: InfoRowProps) {
 
 function confirmAdded(name: string, onOpenCart: () => void): void {
   void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined)
-  appAlert('Ajouté au panier terroir', name, [
+  appAlert('Ajouté à votre valise', name, [
     { text: 'Continuer', style: 'cancel' },
     { text: 'Voir le panier', onPress: onOpenCart },
   ])
@@ -181,7 +181,7 @@ export function TerroirProductScreen({ productId, onBack, onOpenCart }: TerroirP
   if (!product) {
     return (
       <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Produit terroir" onBack={onBack} />
+        <ScreenHeader title="Produit du pays" onBack={onBack} />
         <View style={terroirStyles.centered}>
           {error
             ? <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>{error}</Text>
@@ -313,7 +313,7 @@ export function TerroirPackScreen({ packId, onBack, onOpenCart }: TerroirPackScr
   if (!pack) {
     return (
       <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Pack terroir" onBack={onBack} />
+        <ScreenHeader title="Pack du pays" onBack={onBack} />
         <View style={terroirStyles.centered}>
           {error
             ? <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>{error}</Text>

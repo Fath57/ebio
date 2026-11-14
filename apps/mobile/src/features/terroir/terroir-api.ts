@@ -30,11 +30,11 @@ export function isTerroirCountry(value: unknown): value is TerroirCountry {
 /** French wording for the refusals the API names by `code` (contract §2). */
 const ERROR_MESSAGES: Record<string, string> = {
   DEPARTURE_UNAVAILABLE: 'Ce départ n’est plus disponible : il est complet, sa date limite est passée ou votre colis dépasse le poids accepté. Choisissez un autre départ.',
-  TERROIR_LINE_UNAVAILABLE: 'Un article de votre panier terroir n’est plus disponible à l’export. Retirez-le pour continuer.',
+  TERROIR_LINE_UNAVAILABLE: 'Un article de votre valise n’est plus disponible à l’export. Retirez-le pour continuer.',
   PICKUP_POINT_REQUIRED: 'Choisissez un point de retrait pour ce départ.',
   HOME_DELIVERY_UNAVAILABLE: 'L’agence de ce départ ne livre pas à domicile. Choisissez le retrait à l’agence.',
-  TERROIR_COUNTRY: 'Les colis terroir partent uniquement vers la France et la Belgique.',
-  TERROIR_DISABLED: 'L’espace Terroir n’est pas encore ouvert. Revenez bientôt.',
+  TERROIR_COUNTRY: 'La Valise du pays ne part pas encore vers ce pays.',
+  TERROIR_DISABLED: 'La Valise du pays n’est pas encore ouverte. Revenez bientôt.',
 }
 
 export class TerroirError extends Error {
@@ -185,7 +185,7 @@ export async function fetchTerroirCatalog(country: TerroirCountry, currency: str
   const query = new URLSearchParams({ country, currency })
   if (search && search.trim().length > 0)
     query.set('search', search.trim())
-  const data = await getJson(`/api/terroir/catalog?${query.toString()}`, 'Impossible de charger le catalogue terroir.')
+  const data = await getJson(`/api/terroir/catalog?${query.toString()}`, 'Impossible de charger la Valise du pays.')
   // Packs first: they are the easiest way into the catalogue.
   const packs = Array.isArray(data) ? [] : list(obj(data).packs).map(entry => readCatalogItem(entry, true))
   const products = Array.isArray(data) ? data.map(entry => readCatalogItem(obj(entry))) : list(obj(data).products).map(entry => readCatalogItem(entry))
@@ -528,7 +528,7 @@ export interface TerroirCheckoutResult {
 }
 
 export async function createTerroirCheckout(input: TerroirCheckoutInput): Promise<TerroirCheckoutResult> {
-  const raw = obj(await sendJson('/api/terroir/checkout', 'POST', checkoutBody(input), 'Impossible de créer votre commande terroir.'))
+  const raw = obj(await sendJson('/api/terroir/checkout', 'POST', checkoutBody(input), 'Impossible d’envoyer votre valise.'))
   return {
     checkoutId: str(raw.checkoutId) ?? '',
     shipmentId: str(raw.shipmentId) ?? '',
@@ -675,7 +675,7 @@ function readSummary(raw: Raw): TerroirShipmentSummary {
 }
 
 export async function fetchTerroirShipments(): Promise<TerroirShipmentSummary[]> {
-  const data = await getJson('/api/terroir/shipments', 'Impossible de charger vos colis terroir.')
+  const data = await getJson('/api/terroir/shipments', 'Impossible de charger vos valises.')
   return list(data).map(readSummary).filter(shipment => shipment.id)
 }
 

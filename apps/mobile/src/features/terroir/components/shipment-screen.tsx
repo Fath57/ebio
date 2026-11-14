@@ -130,7 +130,7 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
   if (!shipment) {
     return (
       <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Colis terroir" onBack={onBack} />
+        <ScreenHeader title="Ma valise envoyée" onBack={onBack} />
         <View style={terroirStyles.centered}>
           {error
             ? <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>{error}</Text>
@@ -143,7 +143,7 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
   const events = [...shipment.events].sort((a, b) => b.at.localeCompare(a.at))
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Colis terroir" subtitle={`Vers la ${countryLabel(shipment.country)}`} onBack={onBack} />
+      <ScreenHeader title="Ma valise envoyée" subtitle={`Vers la ${countryLabel(shipment.country)}`} onBack={onBack} />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={(

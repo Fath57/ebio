@@ -163,7 +163,7 @@
       "community": "Communauté",
       "config": "Configuration",
       "money": "Argent",
-      "terroir": "Terroir"
+      "terroir": "Valise du pays"
     },
     "logout": "Déconnexion",
     "moderation": "Modération",
@@ -1743,12 +1743,12 @@
         "description": "Les mises à jour automatiques ne transportent que le code JavaScript. Une version qui demande un changement natif ne peut venir que du Play Store, et l’application ne peut pas le deviner seule."
       },
       "terroirExport": {
-        "title": "Terroir vers l'étranger",
+        "title": "La Valise du pays",
         "description": "Permet aux clients de la diaspora d'acheter des produits du terroir béninois, envoyés en France et en Belgique par les agences partenaires. Fermé, les applications masquent le terroir ; le back-office reste utilisable pour préparer agences, départs et validations.",
-        "legalWarning": "Partenariats et validation juridique en attente : n'ouvrez pas le terroir vers l'étranger avant la signature des accords avec les agences et l'accord écrit sur les CGU (droits et taxes, remboursement sans retour, assurance).",
-        "toggleLabel": "Ouvrir le terroir vers l'étranger aux clients",
-        "stateOpen": "Ouvert : les applications proposent le terroir et acceptent les commandes vers l'étranger.",
-        "stateClosed": "Fermé : les applications masquent le terroir et refusent toute commande vers l'étranger.",
+        "legalWarning": "Partenariats et validation juridique en attente : n'ouvrez pas la Valise du pays avant la signature des accords avec les agences et l'accord écrit sur les CGU (droits et taxes, remboursement sans retour, assurance).",
+        "toggleLabel": "Ouvrir la Valise du pays aux clients",
+        "stateOpen": "Ouvert : les applications proposent la Valise du pays et acceptent les commandes vers l'étranger.",
+        "stateClosed": "Fermé : les applications masquent la Valise du pays et refusent toute commande vers l'étranger.",
         "saved": "Enregistré. Le changement s'applique dans la minute.",
         "error": "Le changement n'a pas été enregistré.",
         "noCategories": "Aucune catégorie.",

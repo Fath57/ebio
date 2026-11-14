@@ -65,7 +65,7 @@ function useShipments() {
     }
     catch (loadError) {
       if (!isCancelled())
-        setError(loadError instanceof Error ? loadError.message : 'Impossible de charger vos colis terroir.')
+        setError(loadError instanceof Error ? loadError.message : 'Impossible de charger vos valises.')
     }
     finally {
       if (!isCancelled())
@@ -103,10 +103,10 @@ export function TerroirShipmentsEntry({ onPress }: TerroirShipmentsEntryProps) {
       style={[styles.entry, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={active > 0 ? `Colis terroir, ${active} en cours` : 'Colis terroir'}
+      accessibilityLabel={active > 0 ? `Mes valises envoyées, ${active} en route` : 'Mes valises envoyées'}
     >
       <Package size={18} color={colors.earth[600]} strokeWidth={2.2} />
-      <Text style={[styles.entryText, { color: semantic.textPrimary }]}>Colis terroir</Text>
+      <Text style={[styles.entryText, { color: semantic.textPrimary }]}>Mes valises envoyées</Text>
       {active > 0 && <Text style={[styles.entryCount, { color: semantic.textSecondary }]}>{`${active} en cours`}</Text>}
       <ChevronRight size={18} color={semantic.textSecondary} strokeWidth={2.2} />
     </TouchableOpacity>
@@ -132,7 +132,7 @@ export function ShipmentsList({ onBack, onOpenShipment }: ShipmentsListProps) {
 
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Colis terroir" onBack={onBack} />
+      <ScreenHeader title="Mes valises envoyées" onBack={onBack} />
       {loading
         ? <ActivityIndicator style={styles.loader} color={colors.green[400]} />
         : (
@@ -174,7 +174,7 @@ export function ShipmentsList({ onBack, onOpenShipment }: ShipmentsListProps) {
               ListEmptyComponent={(
                 <View style={styles.empty}>
                   <Package size={32} color={colors.earth[400]} />
-                  <Text style={[styles.title, { color: semantic.textPrimary }]}>{error ?? 'Aucun colis terroir'}</Text>
+                  <Text style={[styles.title, { color: semantic.textPrimary }]}>{error ?? 'Aucune valise envoyée'}</Text>
                   {!error && (
                     <Text style={[styles.line, styles.centerText, { color: semantic.textSecondary }]}>
                       Vos envois vers la France et la Belgique apparaîtront ici.

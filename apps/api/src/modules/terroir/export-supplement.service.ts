@@ -138,7 +138,7 @@ export class ExportSupplementService implements OnModuleInit {
       await this.wallets.debit(walletId, {
         type: WalletTransactionType.ORDER_PAYMENT,
         amount,
-        description: `Complément de poids, colis terroir ${reference}`,
+        description: `Complément de poids, valise ${reference}`,
       })
     }
     catch (error) {

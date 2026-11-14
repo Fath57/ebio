@@ -212,15 +212,15 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
   if (lines.length === 0) {
     return (
       <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-        <ScreenHeader title="Panier terroir" onBack={onBack} />
+        <ScreenHeader title="Ma valise" onBack={onBack} />
         <View style={terroirStyles.centered}>
           <ShoppingBasket size={32} color={colors.green[400]} />
-          <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>Votre panier terroir est vide</Text>
+          <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>Votre valise est vide</Text>
           <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>
             Choisissez des produits du pays à recevoir en France ou en Belgique.
           </Text>
           <TouchableOpacity style={terroirStyles.primaryButton} onPress={onBrowse} accessibilityRole="button">
-            <Text style={terroirStyles.primaryButtonText}>Découvrir le terroir</Text>
+            <Text style={terroirStyles.primaryButtonText}>Remplir ma valise</Text>
           </TouchableOpacity>
         </View>
       </View>
@@ -230,7 +230,7 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
   const blocked = unavailableKeys.size > 0
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Panier terroir" subtitle={`Livré en ${countryLabel(country)}`} onBack={onBack} />
+      <ScreenHeader title="Ma valise" subtitle={`Livré en ${countryLabel(country)}`} onBack={onBack} />
       <ScrollView contentContainerStyle={styles.content}>
         <CountryChips value={country} onChange={setCountry} />
         <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>

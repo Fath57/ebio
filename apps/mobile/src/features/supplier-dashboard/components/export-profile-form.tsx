@@ -384,7 +384,7 @@ export function ExportProfileForm({ productId, onGoBack, onDone }: ExportProfile
         {/* Origin */}
         <Text style={[styles.sectionTitle, { color: semantic.textTertiary }]}>ORIGINE</Text>
         <Text style={[styles.helper, styles.sectionLead, { color: semantic.textSecondary }]}>
-          Facultatif, mais c'est ce qui donne le badge « Terroir validé eBio » : renseignez au moins le producteur ou le lieu.
+          Facultatif, mais c'est ce qui donne le badge « Validé Valise du pays » : renseignez au moins le producteur ou le lieu.
         </Text>
         <Text style={[styles.label, { color: semantic.textSecondary }]}>Producteur ou coopérative</Text>
         <TextInput

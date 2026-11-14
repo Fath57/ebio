@@ -122,13 +122,13 @@ export class TerroirNotifierService {
   async departureOpen(input: { userId: string, city: string | null, departsOn: string, orderBefore: Date }): Promise<void> {
     const destination = input.city ? `vers ${input.city}` : 'à l\'étranger'
     const body = `Prochain envoi ${destination} le ${spokenDay(input.departsOn)}, commandez avant le ${spokenDay(input.orderBefore.toISOString().slice(0, 10))}.`
-    await this.push(input.userId, NotificationType.EXPORT_DEPARTURE_OPEN, 'Un départ terroir est ouvert', body, { departsOn: input.departsOn })
+    await this.push(input.userId, NotificationType.EXPORT_DEPARTURE_OPEN, 'Nouveau départ pour la Valise du pays', body, { departsOn: input.departsOn })
   }
 
   /** An unpaid terroir checkout, 48 h before its departure's order deadline (FR-033). */
   async deadlineReminder(input: { userId: string, departureId: string, departsOn: string }): Promise<void> {
-    const body = `Plus que 48 h pour le départ du ${spokenDay(input.departsOn)}. Votre panier terroir vous attend.`
-    await this.push(input.userId, NotificationType.EXPORT_DEADLINE_REMINDER, 'Votre panier terroir', body, { departureId: input.departureId })
+    const body = `Plus que 48 h pour le départ du ${spokenDay(input.departsOn)}. Votre valise vous attend.`
+    await this.push(input.userId, NotificationType.EXPORT_DEADLINE_REMINDER, 'Votre valise', body, { departureId: input.departureId })
   }
 
   /** Still waiting at the pickup point (FR-027): the buyer, and a gift's recipient. */
@@ -170,8 +170,8 @@ export class TerroirNotifierService {
 
   /** The parcel is paid: the buyer learns when it leaves (US1). */
   async shipmentPaid(input: { buyerId: string, shipmentId: string, departsOn: string }): Promise<void> {
-    const body = `Votre colis terroir est payé. Les boutiques préparent vos produits ; il partira le ${spokenDay(input.departsOn)}. Vous serez prévenu à chaque étape.`
-    await this.push(input.buyerId, NotificationType.EXPORT_SHIPMENT_UPDATE, 'Colis terroir confirmé', body, { shipmentId: input.shipmentId })
+    const body = `Votre valise est payée. Les boutiques préparent vos produits ; elle partira le ${spokenDay(input.departsOn)}. Vous serez prévenu à chaque étape.`
+    await this.push(input.buyerId, NotificationType.EXPORT_SHIPMENT_UPDATE, 'Valise confirmée', body, { shipmentId: input.shipmentId })
   }
 
   /** A departure cancelled with no other one yet: the buyer is told it waits. */
@@ -233,7 +233,7 @@ export class TerroirNotifierService {
       case ExportShipmentStatus.HANDED_OVER:
         return {
           title: 'Colis remis',
-          buyer: gift ? `${gift} a reçu le colis que vous avez offert. Merci d'avoir partagé le terroir béninois !${extra}` : `Votre colis vous a été remis. Bonne dégustation !${extra}`,
+          buyer: gift ? `${gift} a reçu le colis que vous avez offert. Merci d'avoir partagé le goût du pays !${extra}` : `Votre colis vous a été remis. Bonne dégustation !${extra}`,
           recipient: null,
         }
       case ExportShipmentStatus.LOST:
@@ -241,7 +241,7 @@ export class TerroirNotifierService {
       case ExportShipmentStatus.DAMAGED:
         return { title: 'Colis abîmé', buyer: `Votre colis a été abîmé pendant le transport. Nous en sommes désolés.${refunded}${extra}`, recipient: null }
       case ExportShipmentStatus.CANCELLED:
-        return { title: 'Colis annulé', buyer: `Votre colis terroir est annulé : aucun produit ne peut partir.${refunded}${extra}`, recipient: null }
+        return { title: 'Colis annulé', buyer: `Votre valise est annulée : aucun produit ne peut partir.${refunded}${extra}`, recipient: null }
       default:
         return { title: 'Nouvelle information sur votre colis', buyer: news.message ?? 'Votre colis a été mis à jour.', recipient: news.message ? `${sender} vous envoie un colis : ${news.message}` : null }
     }

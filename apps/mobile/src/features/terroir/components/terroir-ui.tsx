@@ -10,7 +10,7 @@ import { TERROIR_COUNTRIES } from '../terroir-api'
 
 /** « Terroir validé eBio »: validated for export with its origin filled in. */
 export function TerroirBadge() {
-  return <Badge variant="VALIDATED" label="Terroir validé eBio" />
+  return <Badge variant="VALIDATED" label="Validé Valise du pays" />
 }
 
 interface CountryChipsProps {
