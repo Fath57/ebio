@@ -97,7 +97,7 @@ export default function Cgu({ loaderData }: Route.ComponentProps) {
       </p>
 
       <p>
-        Depuis la France ou la Belgique, vous pouvez commander des produits du
+        Depuis l’un des pays desservis, vous pouvez commander des produits du
         terroir béninois. eBio les collecte auprès des boutiques, les emballe
         et les confie à une agence d’envoi partenaire, pour le départ que vous
         choisissez. Le prix du transport est calculé au poids, droits et taxes

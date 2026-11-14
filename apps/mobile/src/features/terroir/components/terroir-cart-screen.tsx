@@ -15,7 +15,7 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { Thumbnail } from '../../common/components/thumbnail'
 import { useTerroirMoney } from '../hooks/use-terroir-money'
 import { useTerroirPreview } from '../hooks/use-terroir-preview'
-import { countryLabel, formatKg } from '../terroir-api'
+import { formatKg } from '../terroir-api'
 import { useTerroirCart } from '../terroir-cart-context'
 import { CountryChips, terroirStyles } from './terroir-ui'
 
@@ -158,9 +158,9 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   const { formatMoney, formatServer, displayCurrency } = useTerroirMoney()
-  const { lines, country, setCountry, setQuantity, removeLine, addLine, toInput } = useTerroirCart()
+  const { lines, country, countryInfo, countries, setCountry, setQuantity, removeLine, addLine, toInput } = useTerroirCart()
 
-  const previewInput = useMemo<TerroirCheckoutInput | null>(() => lines.length === 0
+  const previewInput = useMemo<TerroirCheckoutInput | null>(() => lines.length === 0 || !country
     ? null
     : {
         country,
@@ -217,7 +217,7 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
           <ShoppingBasket size={32} color={colors.green[400]} />
           <Text style={[terroirStyles.cardTitle, { color: semantic.textPrimary }]}>Votre valise est vide</Text>
           <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>
-            Choisissez des produits du pays à recevoir en France ou en Belgique.
+            Choisissez des produits du pays à recevoir dans l’un des pays desservis.
           </Text>
           <TouchableOpacity style={terroirStyles.primaryButton} onPress={onBrowse} accessibilityRole="button">
             <Text style={terroirStyles.primaryButtonText}>Remplir ma valise</Text>
@@ -227,12 +227,17 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
     )
   }
 
-  const blocked = unavailableKeys.size > 0
+  const blocked = unavailableKeys.size > 0 || !country
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Ma valise" subtitle={`Livré en ${countryLabel(country)}`} onBack={onBack} />
+      <ScreenHeader title="Ma valise" subtitle={countryInfo ? `Livré ${countryInfo.inPhrase}` : undefined} onBack={onBack} />
       <ScrollView contentContainerStyle={styles.content}>
-        <CountryChips value={country} onChange={setCountry} />
+        <CountryChips countries={countries ?? []} value={country} onChange={setCountry} />
+        {countries !== null && countries.length === 0 && (
+          <Text style={[styles.error, { color: semantic.textSecondary }]}>
+            Aucun départ n’est programmé pour l’instant : votre valise vous attend jusqu’au prochain.
+          </Text>
+        )}
         <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
           {lines.map(line => (
             <CartLineRow

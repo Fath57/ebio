@@ -1,5 +1,5 @@
 import { useFocusEffect } from '@react-navigation/native'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { apiFetch } from '../../utils/api-client'
 
 /**
@@ -9,20 +9,8 @@ import { apiFetch } from '../../utils/api-client'
  * FCFA, with a `display` block in the payer's currency next to the amounts.
  */
 
-export type TerroirCountry = 'FR' | 'BE'
-
-export const TERROIR_COUNTRIES: Array<{ code: TerroirCountry, label: string, city: string }> = [
-  { code: 'FR', label: 'France', city: 'Paris' },
-  { code: 'BE', label: 'Belgique', city: 'Bruxelles' },
-]
-
-export function countryLabel(country: TerroirCountry): string {
-  return country === 'BE' ? 'Belgique' : 'France'
-}
-
-export function isTerroirCountry(value: unknown): value is TerroirCountry {
-  return value === 'FR' || value === 'BE'
-}
+/** A destination country code, ISO 3166-1 alpha-2 (« FR », « CA »). The list is data, managed in the back-office. */
+export type TerroirCountry = string
 
 // ---------------------------------------------------------------------------
 // Errors
@@ -33,7 +21,9 @@ const ERROR_MESSAGES: Record<string, string> = {
   TERROIR_LINE_UNAVAILABLE: 'Un article de votre valise n’est plus disponible à l’export. Retirez-le pour continuer.',
   PICKUP_POINT_REQUIRED: 'Choisissez un point de retrait pour ce départ.',
   HOME_DELIVERY_UNAVAILABLE: 'L’agence de ce départ ne livre pas à domicile. Choisissez le retrait à l’agence.',
-  TERROIR_COUNTRY: 'La Valise du pays ne part pas encore vers ce pays.',
+  EXPORT_COUNTRY_UNKNOWN: 'La Valise du pays ne part pas vers ce pays.',
+  EXPORT_COUNTRY_INACTIVE: 'Les envois vers ce pays sont suspendus pour le moment.',
+  EXPORT_COUNTRY_EXISTS: 'Ce pays est déjà proposé.',
   TERROIR_DISABLED: 'La Valise du pays n’est pas encore ouverte. Revenez bientôt.',
 }
 
@@ -121,6 +111,124 @@ function readDisplay(value: unknown): DisplayBlock | null {
       values[key] = amount
   }
   return { currency, values }
+}
+
+// ---------------------------------------------------------------------------
+// Destination countries (§1)
+
+export interface TerroirCountryInfo {
+  code: TerroirCountry
+  /** « France », « Pays-Bas ». */
+  name: string
+  /** « vers la France », « vers le Canada ». */
+  toPhrase: string
+  /** « en France », « au Canada », « aux Pays-Bas ». */
+  inPhrase: string
+  displayCurrency: DisplayBlock['currency']
+  flagEmoji: string | null
+  /** An open departure serves it: a parcel can be ordered now. */
+  hasOpenDeparture: boolean
+}
+
+function readCountry(raw: Raw): TerroirCountryInfo | null {
+  const code = str(raw.code)
+  const name = str(raw.name)
+  if (!code || !name)
+    return null
+  const currency = raw.displayCurrency
+  return {
+    code,
+    name,
+    toPhrase: str(raw.toPhrase) ?? `vers ${name}`,
+    inPhrase: str(raw.inPhrase) ?? `en ${name}`,
+    displayCurrency: currency === 'USD' || currency === 'CAD' ? currency : 'EUR',
+    flagEmoji: str(raw.flagEmoji),
+    hasOpenDeparture: raw.hasOpenDeparture === true,
+  }
+}
+
+/** Last known lists: the offered countries, and every active one (`all=true`). */
+const countriesCache: { offered: TerroirCountryInfo[] | null, all: TerroirCountryInfo[] | null } = { offered: null, all: null }
+
+/**
+ * Destination countries, in the back-office order. By default only those an
+ * open departure serves; `all` lists every active country, for the alert of
+ * the next departure.
+ */
+export async function fetchTerroirCountries(all = false): Promise<TerroirCountryInfo[]> {
+  const data = await getJson(`/api/terroir/countries?all=${all ? 'true' : 'false'}`, 'Impossible de charger les pays desservis.')
+  const countries = list(data).map(readCountry).filter((country): country is TerroirCountryInfo => country !== null)
+  if (all)
+    countriesCache.all = countries
+  else
+    countriesCache.offered = countries
+  return countries
+}
+
+export function cachedTerroirCountries(all = false): TerroirCountryInfo[] | null {
+  return all ? countriesCache.all : countriesCache.offered
+}
+
+/** A country from the last known lists, null when neither has it (an inactive one). */
+export function terroirCountryInfo(code: TerroirCountry): TerroirCountryInfo | null {
+  return countriesCache.offered?.find(country => country.code === code)
+    ?? countriesCache.all?.find(country => country.code === code)
+    ?? null
+}
+
+/** French name of a country the lists do not carry, from the platform when it can. */
+function regionName(code: TerroirCountry): string {
+  try {
+    const names = new Intl.DisplayNames(['fr'], { type: 'region' })
+    return names.of(code) ?? code
+  }
+  catch {
+    return code
+  }
+}
+
+export function countryName(code: TerroirCountry): string {
+  return terroirCountryInfo(code)?.name ?? regionName(code)
+}
+
+/** « vers la France », « vers le Canada ». */
+export function countryToPhrase(code: TerroirCountry): string {
+  return terroirCountryInfo(code)?.toPhrase ?? `vers ${regionName(code)}`
+}
+
+/** « en France », « aux Pays-Bas ». */
+export function countryInPhrase(code: TerroirCountry): string {
+  return terroirCountryInfo(code)?.inPhrase ?? `en ${regionName(code)}`
+}
+
+/** « 🇫🇷 France » */
+export function countryChipLabel(country: TerroirCountryInfo): string {
+  return country.flagEmoji ? `${country.flagEmoji} ${country.name}` : country.name
+}
+
+/**
+ * Loads a countries list once per mount, starting from the last known one, so
+ * the name helpers above read fresh data. Null until a list is known.
+ */
+export function useTerroirCountries(all = false, active = true): TerroirCountryInfo[] | null {
+  const [countries, setCountries] = useState<TerroirCountryInfo[] | null>(() => cachedTerroirCountries(all))
+
+  useEffect(() => {
+    if (!active)
+      return
+    let cancelled = false
+    fetchTerroirCountries(all)
+      .then((result) => {
+        if (!cancelled)
+          setCountries(result)
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [all, active])
+
+  return countries
 }
 
 // ---------------------------------------------------------------------------
@@ -659,7 +767,7 @@ function readSummary(raw: Raw): TerroirShipmentSummary {
   return {
     id: str(raw.id) ?? '',
     status: readStatus(raw.status),
-    country: isTerroirCountry(raw.country) ? raw.country : 'FR',
+    country: str(raw.country) ?? '',
     agency,
     departsOn: str(departure.departsOn),
     arrivalFrom: str(arrival.from),
@@ -751,6 +859,21 @@ export async function removeTerroirSupplementLine(shipmentId: string, lineId: st
 // Switch
 
 let enabledCache: boolean | null = null
+
+/** Reads the switch once, outside navigation (providers). Unreadable means off. */
+export async function fetchTerroirEnabled(): Promise<boolean> {
+  try {
+    const res = await apiFetch('/api/settings/public')
+    if (!res.ok)
+      return enabledCache ?? false
+    const data = await res.json() as Raw
+    enabledCache = data.terroirExportEnabled === true
+    return enabledCache
+  }
+  catch {
+    return enabledCache ?? false
+  }
+}
 
 /**
  * Whether eBio has opened the module (`terroirExportEnabled` in the public

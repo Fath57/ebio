@@ -12,7 +12,13 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { Thumbnail } from '../../common/components/thumbnail'
 import { formatCurrencyAmount, formatXof } from '../../common/hooks/use-money'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
-import { countryLabel, fetchTerroirShipments, formatDay, formatWindow, SHIPMENT_STATUS_LABELS, useTerroirEnabled } from '../terroir-api'
+import { countryName, countryToPhrase, fetchTerroirShipments, formatDay, formatWindow, SHIPMENT_STATUS_LABELS, useTerroirCountries, useTerroirEnabled } from '../terroir-api'
+
+/** « Vers la France » */
+export function shipmentHeading(country: string): string {
+  const phrase = countryToPhrase(country)
+  return `${phrase.charAt(0).toUpperCase()}${phrase.slice(1)}`
+}
 
 /** Status pill colours; the label always goes with them, never colour alone. */
 export function shipmentTone(status: TerroirShipmentStatus): { bg: string, text: string } {
@@ -123,6 +129,8 @@ export function ShipmentsList({ onBack, onOpenShipment }: ShipmentsListProps) {
   const bottomClearance = useTabBarClearance()
   const { items, loading, error, reload } = useShipments()
   const [refreshing, setRefreshing] = useState(false)
+  // Fills the names the country helpers read; inactive countries fall back to the platform's name.
+  useTerroirCountries(true)
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true)
@@ -149,13 +157,13 @@ export function ShipmentsList({ onBack, onOpenShipment }: ShipmentsListProps) {
                   style={[styles.card, { backgroundColor: semantic.bgCard }]}
                   onPress={() => onOpenShipment(item.id)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Colis vers la ${countryLabel(item.country)}, ${SHIPMENT_STATUS_LABELS[item.status]}`}
+                  accessibilityLabel={`Colis ${countryToPhrase(item.country)}, ${SHIPMENT_STATUS_LABELS[item.status]}`}
                 >
                   <Thumbnail uri={item.firstImageUrl} style={styles.image} alt="" />
                   <View style={styles.body}>
                     <StatusPill status={item.status} />
                     <Text style={[styles.title, { color: semantic.textPrimary }]}>
-                      {item.giftName ? `Pour ${item.giftName} · ${countryLabel(item.country)}` : `Vers la ${countryLabel(item.country)}`}
+                      {item.giftName ? `Pour ${item.giftName} · ${countryName(item.country)}` : shipmentHeading(item.country)}
                     </Text>
                     {item.agency && (
                       <Text style={[styles.line, { color: semantic.textSecondary }]}>
@@ -177,7 +185,7 @@ export function ShipmentsList({ onBack, onOpenShipment }: ShipmentsListProps) {
                   <Text style={[styles.title, { color: semantic.textPrimary }]}>{error ?? 'Aucune valise envoyée'}</Text>
                   {!error && (
                     <Text style={[styles.line, styles.centerText, { color: semantic.textSecondary }]}>
-                      Vos envois vers la France et la Belgique apparaîtront ici.
+                      Vos envois vers les pays desservis apparaîtront ici.
                     </Text>
                   )}
                 </View>

@@ -1,6 +1,6 @@
 import type { Route } from './+types/colis'
 import process from 'node:process'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { useRevalidator } from 'react-router'
 import { SiteFooter } from '@/components/site-footer'
 import { SiteHeader } from '@/components/site-header'
@@ -33,7 +33,8 @@ interface ShipmentEvent {
 /** Mirrors `terroirTrackingSchema` (API terroir contract): never any price. */
 interface TerroirTracking {
   status: ShipmentStatus
-  country: 'FR' | 'BE'
+  /** ISO 3166-1 alpha-2 code of the destination country. */
+  country: string
   recipientName: string | null
   senderName: string
   giftMessage: string | null
@@ -50,8 +51,6 @@ type TrackingState
     | { kind: 'not-found' }
     | { kind: 'unavailable' }
 
-/** The recipient lives in France or Belgium: times are read there. */
-const TIME_ZONE = 'Europe/Paris'
 /** Parcels move in days, not minutes. */
 const REFRESH_MS = 60_000
 const STOPPED_STATUSES: ShipmentStatus[] = ['LOST', 'DAMAGED', 'CANCELLED']
@@ -73,9 +72,32 @@ const STEP_LABELS: Record<ShipmentStatus, string> = {
   CANCELLED: 'Envoi annulé',
 }
 
-const COUNTRY_LABELS: Record<TerroirTracking['country'], string> = {
-  FR: 'France',
-  BE: 'Belgique',
+/** French name of the destination country (« France », « Canada »); the code when the runtime cannot name it. */
+function countryName(code: string): string {
+  try {
+    return new Intl.DisplayNames(['fr'], { type: 'region' }).of(code) ?? code
+  }
+  catch {
+    return code
+  }
+}
+
+/**
+ * The reader's own time zone, known only in the browser: the server render
+ * and the first client render use UTC, so hydration matches, then times
+ * switch to the reader's zone.
+ */
+function useBrowserTimeZone(): string | null {
+  const [timeZone, setTimeZone] = useState<string | null>(null)
+  useEffect(() => {
+    try {
+      setTimeZone(Intl.DateTimeFormat().resolvedOptions().timeZone || null)
+    }
+    catch {
+      // stays on UTC
+    }
+  }, [])
+  return timeZone
 }
 
 export async function loader({ params }: Route.LoaderArgs) {
@@ -124,13 +146,13 @@ function stepsFor(reception: TerroirTracking['reception']): ShipmentStatus[] {
 
 /**
  * Calendar days (« AAAA-MM-JJ ») carry no time: format them as-is, in UTC, so
- * no time zone shifts them by a day. Full instants are read in Paris time.
+ * no time zone shifts them by a day. Full instants are read in UTC here.
  */
 function dayLabel(value: string): string {
   const isDay = /^\d{4}-\d{2}-\d{2}$/.test(value)
   const date = new Date(isDay ? `${value}T12:00:00Z` : value)
   return new Intl.DateTimeFormat('fr-FR', {
-    timeZone: isDay ? 'UTC' : TIME_ZONE,
+    timeZone: 'UTC',
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -143,9 +165,9 @@ function arrivalLabel(arrival: { from: string, to: string }): string {
   return from === to ? `le ${from}` : `entre le ${from} et le ${to}`
 }
 
-function eventDateLabel(at: string): string {
+function eventDateLabel(at: string, timeZone: string | null): string {
   return new Intl.DateTimeFormat('fr-FR', {
-    timeZone: TIME_ZONE,
+    timeZone: timeZone ?? 'UTC',
     day: 'numeric',
     month: 'short',
     hour: '2-digit',
@@ -268,14 +290,18 @@ function PickupCard({ pickupPoint }: { pickupPoint: NonNullable<TerroirTracking[
 
 function History({ events }: { events: ShipmentEvent[] }) {
   const sorted = [...events].sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
+  const timeZone = useBrowserTimeZone()
   return (
     <section className="mt-8" aria-labelledby="history-title">
       <h2 id="history-title" className="text-lg font-bold text-ink">Historique</h2>
+      <p className="mt-1 text-sm text-ink-soft">
+        {timeZone ? `Heures affichées dans votre fuseau horaire (${timeZone.replace(/_/g, ' ')}).` : 'Heures affichées en temps universel (UTC).'}
+      </p>
       <ul className="mt-4 divide-y divide-line">
         {sorted.map((event, index) => (
           <li key={`${event.at}-${index}`} className="py-3">
             <p className="text-sm text-ink-soft">
-              <time dateTime={event.at}>{eventDateLabel(event.at)}</time>
+              <time dateTime={event.at}>{eventDateLabel(event.at, timeZone)}</time>
             </p>
             {event.step && <p className="font-semibold text-ink">{STEP_LABELS[event.step]}</p>}
             {event.message && <p className="break-words text-ink">{event.message}</p>}
@@ -316,13 +342,13 @@ function TrackingCard({ tracking }: { tracking: TerroirTracking }) {
           <dt className="text-ink-soft">Départ du Bénin</dt>
           <dd className="font-semibold text-ink">{dayLabel(tracking.departure.departsOn)}</dd>
         </div>
+        <div>
+          <dt className="text-ink-soft">Destination</dt>
+          <dd className="font-semibold text-ink">{countryName(tracking.country)}</dd>
+        </div>
         {!stopped && !delivered && (
-          <div className="sm:col-span-2">
-            <dt className="text-ink-soft">
-              Arrivée prévue en
-              {' '}
-              {COUNTRY_LABELS[tracking.country]}
-            </dt>
+          <div>
+            <dt className="text-ink-soft">Arrivée prévue</dt>
             <dd className="font-semibold text-ink">{arrivalLabel(tracking.departure.arrival)}</dd>
           </div>
         )}

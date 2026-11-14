@@ -3,19 +3,22 @@ import type { DisplayBlock } from '../terroir-api'
 import { useCallback } from 'react'
 import { useCurrency } from '../../common/currency-context'
 import { formatCurrencyAmount, formatMoney, formatXof } from '../../common/hooks/use-money'
+import { useTerroirCart } from '../terroir-cart-context'
 
 /**
- * Terroir prices are read from France or Belgium: they show in euros, with
- * FCFA beside them, whatever the app-wide currency. Without a known euro rate
- * they fall back to FCFA alone.
+ * Terroir prices are read from the destination country: they show in its
+ * currency (euros, dollars…), with FCFA beside them, whatever the app-wide
+ * currency. Without a known rate for it they fall back to FCFA alone.
  */
 export function useTerroirMoney() {
   const { rates } = useCurrency()
-  const hasEuro = Boolean(rates.EUR)
+  const { countryInfo } = useTerroirCart()
+  const preferred = countryInfo?.displayCurrency ?? 'EUR'
+  const currency = rates[preferred] ? preferred : 'XOF'
 
   const format = useCallback(
-    (xof: number): FormattedMoney => formatMoney(xof, hasEuro ? 'EUR' : 'XOF', rates),
-    [hasEuro, rates],
+    (xof: number): FormattedMoney => formatMoney(xof, currency, rates),
+    [currency, rates],
   )
 
   /** A server amount: its frozen conversion when the block carries it, else today's rate. */
@@ -31,5 +34,5 @@ export function useTerroirMoney() {
     [format],
   )
 
-  return { formatMoney: format, formatServer, displayCurrency: hasEuro ? 'EUR' : 'XOF' }
+  return { formatMoney: format, formatServer, displayCurrency: currency }
 }

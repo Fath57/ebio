@@ -1,4 +1,4 @@
-import type { TerroirCountry, TerroirOrigin } from '../terroir-api'
+import type { TerroirCountry, TerroirCountryInfo, TerroirOrigin } from '../terroir-api'
 import Leaf from 'lucide-react-native/dist/esm/icons/leaf'
 import MapPin from 'lucide-react-native/dist/esm/icons/map-pin'
 import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
@@ -6,7 +6,7 @@ import { colors, fonts, radius, spacing, typography } from '../../../theme/theme
 import { useTheme } from '../../../theme/theme-context'
 import { Badge } from '../../common/components/badge'
 import { Thumbnail } from '../../common/components/thumbnail'
-import { TERROIR_COUNTRIES } from '../terroir-api'
+import { countryChipLabel } from '../terroir-api'
 
 /** « Terroir validé eBio »: validated for export with its origin filled in. */
 export function TerroirBadge() {
@@ -14,20 +14,36 @@ export function TerroirBadge() {
 }
 
 interface CountryChipsProps {
-  value: TerroirCountry
+  countries: TerroirCountryInfo[]
+  value: TerroirCountry | null
   onChange: (country: TerroirCountry) => void
   label?: string
 }
 
-/** France / Belgique, as a pair of radio chips. */
-export function CountryChips({ value, onChange, label = 'Livrer en' }: CountryChipsProps) {
+/**
+ * The destination countries as radio chips (flag and name). A single country
+ * shows as plain text: there is nothing to choose.
+ */
+export function CountryChips({ countries, value, onChange, label = 'Pays de livraison' }: CountryChipsProps) {
   const { semantic } = useTheme()
+  if (countries.length === 0)
+    return null
+  const only = countries.length === 1 ? countries[0] : null
+  if (only) {
+    return (
+      <View style={styles.chipsBlock}>
+        <Text style={[styles.chipsLabel, { color: semantic.textSecondary }]}>{label}</Text>
+        <Text style={[styles.singleCountry, { color: semantic.textPrimary }]}>{countryChipLabel(only)}</Text>
+      </View>
+    )
+  }
   return (
     <View style={styles.chipsBlock}>
       <Text style={[styles.chipsLabel, { color: semantic.textSecondary }]}>{label}</Text>
       <View style={styles.chipsRow} accessibilityRole="radiogroup">
-        {TERROIR_COUNTRIES.map((country) => {
+        {countries.map((country) => {
           const selected = country.code === value
+          const chipLabel = countryChipLabel(country)
           return (
             <TouchableOpacity
               key={country.code}
@@ -40,10 +56,10 @@ export function CountryChips({ value, onChange, label = 'Livrer en' }: CountryCh
               onPress={() => onChange(country.code)}
               accessibilityRole="radio"
               accessibilityState={{ selected }}
-              accessibilityLabel={country.label}
+              accessibilityLabel={country.name}
             >
               <Text style={[styles.chipText, { color: selected ? semantic.textPrimaryColor : semantic.textPrimary }, selected && styles.chipTextSelected]}>
-                {selected ? `✓ ${country.label}` : country.label}
+                {selected ? `✓ ${chipLabel}` : chipLabel}
               </Text>
             </TouchableOpacity>
           )
@@ -197,7 +213,12 @@ const styles = StyleSheet.create({
   },
   chipsRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: spacing[2],
+  },
+  singleCountry: {
+    fontFamily: fonts.sansSb,
+    fontSize: 15,
   },
   chip: {
     minHeight: 44,

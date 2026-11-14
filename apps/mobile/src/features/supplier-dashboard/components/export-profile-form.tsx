@@ -313,7 +313,7 @@ export function ExportProfileForm({ productId, onGoBack, onDone }: ExportProfile
           <Text style={[styles.helper, { color: semantic.textSecondary }]}>
             {profile
               ? 'Modifier le poids, la composition ou l\'étiquette renvoie le produit en validation : il n\'est plus proposé à l\'étranger jusqu\'à l\'accord d\'eBio.'
-              : 'Votre produit sera proposé aux clients en France et en Belgique une fois validé par eBio.'}
+              : 'Votre produit sera proposé aux clients des pays desservis une fois validé par eBio.'}
           </Text>
         </View>
 

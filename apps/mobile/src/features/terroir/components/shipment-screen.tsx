@@ -8,8 +8,8 @@ import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { Thumbnail } from '../../common/components/thumbnail'
 import { PaymentWebView } from '../../payments/components/payment-web-view'
-import { countryLabel, fetchTerroirShipment, formatDay, formatWindow, payTerroirSupplement, removeTerroirSupplementLine, SHIPMENT_STATUS_LABELS, verifySupplementPayment } from '../terroir-api'
-import { shipmentTotalLabel, StatusPill } from './shipments-list'
+import { fetchTerroirShipment, formatDay, formatWindow, payTerroirSupplement, removeTerroirSupplementLine, SHIPMENT_STATUS_LABELS, useTerroirCountries, verifySupplementPayment } from '../terroir-api'
+import { shipmentHeading, shipmentTotalLabel, StatusPill } from './shipments-list'
 import { SupplementCard } from './supplement-card'
 import { PickupAddress, terroirStyles } from './terroir-ui'
 
@@ -28,6 +28,8 @@ interface ShipmentScreenProps {
 /** One terroir parcel: where it stands, its dated timeline and where to collect it. */
 export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
   const { semantic } = useTheme()
+  // Fills the names the country helpers read.
+  useTerroirCountries(true)
   const [shipment, setShipment] = useState<TerroirShipment | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [refreshing, setRefreshing] = useState(false)
@@ -143,7 +145,7 @@ export function ShipmentScreen({ shipmentId, onBack }: ShipmentScreenProps) {
   const events = [...shipment.events].sort((a, b) => b.at.localeCompare(a.at))
   return (
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Ma valise envoyée" subtitle={`Vers la ${countryLabel(shipment.country)}`} onBack={onBack} />
+      <ScreenHeader title="Ma valise envoyée" subtitle={shipmentHeading(shipment.country)} onBack={onBack} />
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={(

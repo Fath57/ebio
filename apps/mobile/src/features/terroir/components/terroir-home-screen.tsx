@@ -1,4 +1,4 @@
-import type { TerroirCatalogItem, TerroirDepartures } from '../terroir-api'
+import type { TerroirCatalogItem, TerroirCountry, TerroirDepartures } from '../terroir-api'
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import BellOff from 'lucide-react-native/dist/esm/icons/bell-off'
 import Calendar from 'lucide-react-native/dist/esm/icons/calendar'
@@ -7,7 +7,7 @@ import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
 import Plane from 'lucide-react-native/dist/esm/icons/plane'
 import ShoppingBasket from 'lucide-react-native/dist/esm/icons/shopping-basket'
 import { useCallback, useEffect, useState } from 'react'
-import { ActivityIndicator, FlatList, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
+import { ActivityIndicator, FlatList, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSession } from '../../../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
 import { useTheme } from '../../../theme/theme-context'
@@ -18,17 +18,16 @@ import { Thumbnail } from '../../common/components/thumbnail'
 import { useTabBarClearance } from '../../common/hooks/use-tab-bar-clearance'
 import { useTerroirMoney } from '../hooks/use-terroir-money'
 import {
-  countryLabel,
   fetchTerroirCatalog,
   fetchTerroirDepartures,
   formatDay,
   formatWindow,
   subscribeDepartureAlert,
-  TERROIR_COUNTRIES,
   TerroirError,
   unsubscribeDepartureAlert,
+  useTerroirCountries,
 } from '../terroir-api'
-import { useTerroirCart } from '../terroir-cart-context'
+import { guessTerroirCountry, useTerroirCart } from '../terroir-cart-context'
 import { CountryChips, TerroirBadge, terroirStyles } from './terroir-ui'
 
 interface TerroirHomeScreenProps {
@@ -72,16 +71,50 @@ function CatalogCard({ item, onPress }: CatalogCardProps) {
   )
 }
 
+interface AlertButtonProps {
+  subscribed: boolean
+  busy: boolean
+  onPress: () => void
+}
+
+function AlertButton({ subscribed, busy, onPress }: AlertButtonProps) {
+  const { semantic } = useTheme()
+  return (
+    <>
+      <TouchableOpacity
+        style={[terroirStyles.secondaryButton, { borderColor: colors.green[600] }, busy && terroirStyles.disabled]}
+        onPress={onPress}
+        disabled={busy}
+        accessibilityRole="button"
+        accessibilityState={{ disabled: busy }}
+      >
+        {subscribed
+          ? <BellOff size={16} color={colors.green[600]} strokeWidth={2.2} />
+          : <Bell size={16} color={colors.green[600]} strokeWidth={2.2} />}
+        <Text style={[terroirStyles.secondaryButtonText, { color: colors.green[600] }]}>
+          {subscribed ? 'Ne plus être prévenu' : 'Me prévenir du prochain départ'}
+        </Text>
+      </TouchableOpacity>
+      {subscribed && (
+        <Text style={[styles.hint, { color: semantic.textSecondary }]}>
+          Vous recevrez une notification dès qu’un départ sera ouvert.
+        </Text>
+      )}
+    </>
+  )
+}
+
 interface DeparturesBlockProps {
   departures: TerroirDepartures | null
   loading: boolean
-  countryCity: string
+  /** « vers la France », when the departure names no city. */
+  toPhrase: string
   alertBusy: boolean
   onToggleAlert: () => void
 }
 
 /** The next departure and its order deadline, or the alert when there is none (US7). */
-function DeparturesBlock({ departures, loading, countryCity, alertBusy, onToggleAlert }: DeparturesBlockProps) {
+function DeparturesBlock({ departures, loading, toPhrase, alertBusy, onToggleAlert }: DeparturesBlockProps) {
   const { semantic } = useTheme()
   const { formatMoney } = useTerroirMoney()
   const [expanded, setExpanded] = useState(false)
@@ -98,7 +131,6 @@ function DeparturesBlock({ departures, loading, countryCity, alertBusy, onToggle
   const items = departures?.items.filter(item => !item.full) ?? []
 
   if (!next && items.length === 0) {
-    const subscribed = departures?.alertSubscribed === true
     return (
       <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
         <View style={styles.bannerRow}>
@@ -107,25 +139,7 @@ function DeparturesBlock({ departures, loading, countryCity, alertBusy, onToggle
             Aucun envoi n’est programmé pour l’instant.
           </Text>
         </View>
-        <TouchableOpacity
-          style={[terroirStyles.secondaryButton, { borderColor: colors.green[600] }, alertBusy && terroirStyles.disabled]}
-          onPress={onToggleAlert}
-          disabled={alertBusy}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: alertBusy }}
-        >
-          {subscribed
-            ? <BellOff size={16} color={colors.green[600]} strokeWidth={2.2} />
-            : <Bell size={16} color={colors.green[600]} strokeWidth={2.2} />}
-          <Text style={[terroirStyles.secondaryButtonText, { color: colors.green[600] }]}>
-            {subscribed ? 'Ne plus être prévenu' : 'Me prévenir du prochain départ'}
-          </Text>
-        </TouchableOpacity>
-        {subscribed && (
-          <Text style={[styles.hint, { color: semantic.textSecondary }]}>
-            Vous recevrez une notification dès qu’un départ sera ouvert.
-          </Text>
-        )}
+        <AlertButton subscribed={departures?.alertSubscribed === true} busy={alertBusy} onPress={onToggleAlert} />
       </View>
     )
   }
@@ -137,7 +151,7 @@ function DeparturesBlock({ departures, loading, countryCity, alertBusy, onToggle
         <View style={styles.bannerRow}>
           <Plane size={18} color={colors.blue[800]} strokeWidth={2.2} />
           <Text style={[styles.bannerText, { color: colors.blue[800] }]}>
-            {`Prochain envoi vers ${headline.city ?? countryCity} : ${formatDay(headline.departsOn)}`}
+            {`Prochain envoi ${headline.city ? `vers ${headline.city}` : toPhrase} : ${formatDay(headline.departsOn)}`}
             {headline.orderBefore ? `, commandez avant le ${formatDay(headline.orderBefore)}` : ''}
           </Text>
         </View>
@@ -177,11 +191,106 @@ function DeparturesBlock({ departures, loading, countryCity, alertBusy, onToggle
   )
 }
 
+interface NoDepartureStateProps {
+  currency: string
+  onRequireLogin: () => void
+}
+
+/**
+ * No country is served by an open departure: the buyer can still ask to be
+ * told, for any active country (`all=true`).
+ */
+function NoDepartureState({ currency, onRequireLogin }: NoDepartureStateProps) {
+  const { semantic } = useTheme()
+  const { data: session } = useSession()
+  const allCountries = useTerroirCountries(true)
+  const [picked, setPicked] = useState<TerroirCountry | null>(null)
+  const [subscribed, setSubscribed] = useState<Record<string, boolean>>({})
+  const [busy, setBusy] = useState(false)
+
+  const target = allCountries?.find(entry => entry.code === picked) ?? (allCountries ? guessTerroirCountry(allCountries) : null)
+  const targetCode = target?.code ?? null
+  const loggedIn = Boolean(session?.user)
+
+  // The alert state lives on the departures answer, one country at a time.
+  useEffect(() => {
+    if (!targetCode || !loggedIn)
+      return
+    let cancelled = false
+    fetchTerroirDepartures(targetCode, currency)
+      .then((result) => {
+        if (!cancelled)
+          setSubscribed(current => ({ ...current, [targetCode]: result.alertSubscribed }))
+      })
+      .catch(() => undefined)
+    return () => {
+      cancelled = true
+    }
+  }, [targetCode, currency, loggedIn])
+
+  const isSubscribed = targetCode ? subscribed[targetCode] === true : false
+
+  const handleToggle = useCallback(async () => {
+    if (!loggedIn) {
+      onRequireLogin()
+      return
+    }
+    if (!target)
+      return
+    setBusy(true)
+    try {
+      if (isSubscribed)
+        await unsubscribeDepartureAlert(target.code)
+      else
+        await subscribeDepartureAlert(target.code)
+      setSubscribed(current => ({ ...current, [target.code]: !isSubscribed }))
+      if (!isSubscribed)
+        appAlert('C’est noté', `Nous vous préviendrons dès qu’un départ ${target.toPhrase} sera ouvert.`)
+    }
+    catch (error) {
+      appAlert('Alerte', error instanceof TerroirError ? error.message : 'Vérifiez votre connexion et réessayez.')
+    }
+    finally {
+      setBusy(false)
+    }
+  }, [loggedIn, target, isSubscribed, onRequireLogin])
+
+  return (
+    <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
+      <View style={styles.bannerRow}>
+        <Calendar size={18} color={semantic.textSecondary} strokeWidth={2.2} />
+        <Text style={[styles.bannerText, { color: semantic.textPrimary }]}>
+          Aucun départ n’est programmé pour l’instant
+        </Text>
+      </View>
+      {allCountries === null && <ActivityIndicator color={colors.green[400]} />}
+      {allCountries !== null && allCountries.length > 0 && (
+        <>
+          <Text style={[styles.hint, { color: semantic.textSecondary }]}>
+            Choisissez le pays où vous souhaitez recevoir votre valise : nous vous préviendrons dès qu’un départ sera ouvert.
+          </Text>
+          <CountryChips countries={allCountries} value={targetCode} onChange={setPicked} />
+          <AlertButton
+            subscribed={isSubscribed}
+            busy={busy}
+            onPress={() => {
+              void handleToggle()
+            }}
+          />
+        </>
+      )}
+      {allCountries !== null && allCountries.length === 0 && (
+        <Text style={[styles.hint, { color: semantic.textSecondary }]}>Revenez bientôt : de nouveaux départs seront annoncés ici.</Text>
+      )}
+    </View>
+  )
+}
+
 export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCart, onRequireLogin }: TerroirHomeScreenProps) {
   const { semantic } = useTheme()
   const bottomClearance = useTabBarClearance()
   const { data: session } = useSession()
-  const { country, setCountry, itemCount } = useTerroirCart()
+  const { country, countryInfo, countries, countriesError, reloadCountries, setCountry, itemCount } = useTerroirCart()
   const { displayCurrency } = useTerroirMoney()
   const [catalog, setCatalog] = useState<TerroirCatalogItem[]>([])
   const [catalogLoading, setCatalogLoading] = useState(true)
@@ -192,14 +301,17 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
   const [reloadKey, setReloadKey] = useState(0)
 
   useEffect(() => {
+    if (!country)
+      return
+    const target = country
     let cancelled = false
     async function load(): Promise<void> {
       setCatalogLoading(true)
       setDeparturesLoading(true)
       setCatalogError(null)
       const [catalogResult, departuresResult] = await Promise.allSettled([
-        fetchTerroirCatalog(country, displayCurrency),
-        fetchTerroirDepartures(country, displayCurrency),
+        fetchTerroirCatalog(target, displayCurrency),
+        fetchTerroirDepartures(target, displayCurrency),
       ])
       if (cancelled)
         return
@@ -220,6 +332,18 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
     }
   }, [country, displayCurrency, reloadKey])
 
+  const reloadAll = useCallback(() => {
+    reloadCountries()
+    setReloadKey(key => key + 1)
+  }, [reloadCountries])
+
+  // The module may have opened after the app started: the provider then has
+  // no countries yet, so the space asks for them on arrival.
+  useEffect(() => {
+    if (countries === null)
+      reloadCountries()
+  }, [])
+
   const handleOpen = useCallback((item: TerroirCatalogItem) => {
     if (item.kind === 'PACK')
       onOpenPack(item.id)
@@ -232,16 +356,18 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
       onRequireLogin()
       return
     }
+    if (!countryInfo)
+      return
     const subscribed = departures?.alertSubscribed === true
     setAlertBusy(true)
     try {
       if (subscribed)
-        await unsubscribeDepartureAlert(country)
+        await unsubscribeDepartureAlert(countryInfo.code)
       else
-        await subscribeDepartureAlert(country)
+        await subscribeDepartureAlert(countryInfo.code)
       setDepartures(current => current ? { ...current, alertSubscribed: !subscribed } : { next: null, items: [], alertSubscribed: !subscribed })
       if (!subscribed) {
-        appAlert('C’est noté', `Nous vous préviendrons dès qu’un départ vers la ${countryLabel(country)} sera ouvert.`)
+        appAlert('C’est noté', `Nous vous préviendrons dès qu’un départ ${countryInfo.toPhrase} sera ouvert.`)
       }
     }
     catch (error) {
@@ -250,20 +376,66 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
     finally {
       setAlertBusy(false)
     }
-  }, [session?.user, departures?.alertSubscribed, country, onRequireLogin])
+  }, [session?.user, departures?.alertSubscribed, countryInfo, onRequireLogin])
 
-  const countryCity = TERROIR_COUNTRIES.find(entry => entry.code === country)?.city ?? 'Paris'
+  const cartButton = (
+    <TouchableOpacity
+      style={styles.cartButton}
+      onPress={onOpenCart}
+      accessibilityRole="button"
+      accessibilityLabel={itemCount > 0 ? `Ma valise, ${itemCount} article${itemCount > 1 ? 's' : ''}` : 'Ma valise'}
+    >
+      <ShoppingBasket size={22} color={semantic.textPrimary} strokeWidth={2} />
+      {itemCount > 0 && (
+        <View style={styles.cartCount}>
+          <Text style={styles.cartCountText}>{itemCount > 99 ? '99+' : String(itemCount)}</Text>
+        </View>
+      )}
+    </TouchableOpacity>
+  )
+
+  const intro = (
+    <Text style={[styles.intro, { color: semantic.textSecondary }]}>
+      Des produits validés par eBio pour voyager, envoyés en un seul colis par une agence partenaire.
+    </Text>
+  )
+
+  // No country known yet: still loading, failed, or none served by a departure.
+  if (!countryInfo || !countries) {
+    return (
+      <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
+        <ScreenHeader title="La Valise du pays" onBack={onBack} rightSlot={cartButton} />
+        <ScrollView contentContainerStyle={[styles.listContent, styles.headerBlock, { paddingBottom: bottomClearance + spacing[6] }]}>
+          {intro}
+          {((countries === null && !countriesError) || (countries !== null && countries.length > 0)) && (
+            <ActivityIndicator style={styles.loader} color={colors.green[400]} />
+          )}
+          {countries === null && countriesError && (
+            <View style={terroirStyles.centered}>
+              <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>{countriesError}</Text>
+              <TouchableOpacity
+                style={[terroirStyles.secondaryButton, { borderColor: semantic.borderNormal }]}
+                onPress={reloadAll}
+                accessibilityRole="button"
+              >
+                <Text style={[terroirStyles.secondaryButtonText, { color: semantic.textPrimary }]}>Réessayer</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+          {countries !== null && countries.length === 0 && <NoDepartureState currency={displayCurrency} onRequireLogin={onRequireLogin} />}
+        </ScrollView>
+      </View>
+    )
+  }
 
   const header = (
     <View style={styles.headerBlock}>
-      <Text style={[styles.intro, { color: semantic.textSecondary }]}>
-        Des produits validés par eBio pour voyager, envoyés en un seul colis par une agence partenaire.
-      </Text>
-      <CountryChips value={country} onChange={setCountry} />
+      {intro}
+      <CountryChips countries={countries} value={country} onChange={setCountry} />
       <DeparturesBlock
         departures={departures}
         loading={departuresLoading}
-        countryCity={countryCity}
+        toPhrase={countryInfo.toPhrase}
         alertBusy={alertBusy}
         onToggleAlert={() => {
           void handleToggleAlert()
@@ -277,23 +449,9 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
     <View style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
       <ScreenHeader
         title="La Valise du pays"
-        subtitle={`Livré en ${countryLabel(country)}`}
+        subtitle={`Livré ${countryInfo.inPhrase}`}
         onBack={onBack}
-        rightSlot={(
-          <TouchableOpacity
-            style={styles.cartButton}
-            onPress={onOpenCart}
-            accessibilityRole="button"
-            accessibilityLabel={itemCount > 0 ? `Ma valise, ${itemCount} article${itemCount > 1 ? 's' : ''}` : 'Ma valise'}
-          >
-            <ShoppingBasket size={22} color={semantic.textPrimary} strokeWidth={2} />
-            {itemCount > 0 && (
-              <View style={styles.cartCount}>
-                <Text style={styles.cartCountText}>{itemCount > 99 ? '99+' : String(itemCount)}</Text>
-              </View>
-            )}
-          </TouchableOpacity>
-        )}
+        rightSlot={cartButton}
       />
       <FlatList
         data={catalogLoading ? [] : catalog}
@@ -308,13 +466,13 @@ export function TerroirHomeScreen({ onBack, onOpenProduct, onOpenPack, onOpenCar
           </View>
         )}
         refreshing={false}
-        onRefresh={() => setReloadKey(key => key + 1)}
+        onRefresh={reloadAll}
         ListEmptyComponent={catalogLoading
           ? <ActivityIndicator style={styles.loader} color={colors.green[400]} />
           : (
               <View style={terroirStyles.centered}>
                 <Text style={[terroirStyles.muted, { color: semantic.textSecondary }]}>
-                  {catalogError ?? `Aucun produit n’est encore proposé à l’envoi vers la ${countryLabel(country)}.`}
+                  {catalogError ?? `Aucun produit n’est encore proposé à l’envoi ${countryInfo.toPhrase}.`}
                 </Text>
                 {catalogError && (
                   <TouchableOpacity

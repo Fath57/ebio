@@ -21,7 +21,7 @@ import { awaitSettlement, readVerifyOutcome } from '../../payments/utils/await-s
 import { buildCheckoutHtml, paymentPublicKey } from '../../payments/utils/checkout-widget'
 import { useTerroirMoney } from '../hooks/use-terroir-money'
 import { useTerroirPreview } from '../hooks/use-terroir-preview'
-import { countryLabel, createTerroirCheckout, formatDay, formatKg, formatWindow, TerroirError } from '../terroir-api'
+import { countryToPhrase, createTerroirCheckout, formatDay, formatKg, formatWindow, TerroirError } from '../terroir-api'
 import { useTerroirCart } from '../terroir-cart-context'
 import { CountryChips, PickupAddress, terroirStyles } from './terroir-ui'
 
@@ -41,8 +41,29 @@ interface GiftDraft {
   name: string
   email: string
   phone: string
-  country: TerroirCountry
+  country: TerroirCountry | null
   message: string
+}
+
+/** Dialling codes shown as a hint in the recipient's phone field. */
+const PHONE_PREFIXES: Record<string, string> = {
+  FR: '+33',
+  BE: '+32',
+  NL: '+31',
+  LU: '+352',
+  CH: '+41',
+  DE: '+49',
+  IT: '+39',
+  ES: '+34',
+  PT: '+351',
+  GB: '+44',
+  CA: '+1',
+  US: '+1',
+}
+
+function phonePlaceholder(country: TerroirCountry | null): string {
+  const prefix = country ? PHONE_PREFIXES[country] : undefined
+  return prefix ? `${prefix} …` : '+ indicatif du pays et numéro'
 }
 
 /** The departure offered first: the earliest one still open. */
@@ -67,7 +88,7 @@ function giftProblem(gift: GiftDraft): string | null {
   if (email && !EMAIL_PATTERN.test(email))
     return 'L’adresse e-mail du destinataire n’est pas valide.'
   if (phone && !PHONE_PATTERN.test(phone))
-    return 'Indiquez le téléphone au format international, par exemple +33 6 12 34 56 78.'
+    return 'Indiquez le téléphone au format international : le signe +, l’indicatif du pays puis le numéro.'
   return null
 }
 
@@ -161,7 +182,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
   const { formatMoney, formatServer, displayCurrency } = useTerroirMoney()
-  const { lines, country, toInput, clear } = useTerroirCart()
+  const { lines, country, countries, toInput, clear } = useTerroirCart()
 
   const [giftOn, setGiftOn] = useState(false)
   const [gift, setGift] = useState<GiftDraft>({ name: '', email: '', phone: '', country, message: '' })
@@ -184,8 +205,10 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
   const [amountDue, setAmountDue] = useState<number | null>(null)
   const lastPolledRef = useRef<SettlementStatus>('pending')
 
-  // Departures follow the recipient's country for a gift (US10).
-  const targetCountry: TerroirCountry = giftOn ? gift.country : country
+  // Departures follow the recipient's country for a gift (US10), among the offered ones.
+  const giftCountry = countries?.some(entry => entry.code === gift.country) ? gift.country : country
+  const targetCountry: TerroirCountry | null = giftOn ? giftCountry : country
+  const targetPhrase = targetCountry ? countryToPhrase(targetCountry) : null
 
   useEffect(() => {
     setDepartureId(null)
@@ -215,7 +238,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
   const trimmedAddress = homeAddress.trim()
   const giftPayload = useMemo(() => giftOn && !giftProblem(gift) ? toGiftInput(gift) : null, [giftOn, gift])
 
-  const previewInput = useMemo<TerroirCheckoutInput | null>(() => lines.length === 0
+  const previewInput = useMemo<TerroirCheckoutInput | null>(() => lines.length === 0 || !targetCountry
     ? null
     : {
         country: targetCountry,
@@ -270,7 +293,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
   }, [clear, onComplete])
 
   const handleSubmit = useCallback(async () => {
-    if (!preview || !selected)
+    if (!preview || !selected || !targetCountry)
       return
     if (giftOn) {
       const problem = giftProblem(gift)
@@ -428,7 +451,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
 
   return (
     <KeyboardAwareView style={[styles.screen, { backgroundColor: semantic.bgPage }]}>
-      <ScreenHeader title="Commander" subtitle={`Colis vers la ${countryLabel(targetCountry)}`} onBack={onBack} />
+      <ScreenHeader title="Commander" subtitle={targetPhrase ? `Colis ${targetPhrase}` : undefined} onBack={onBack} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         {/* Gift (US10) */}
         <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
@@ -444,7 +467,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
           </View>
           {giftOn && (
             <View style={styles.form}>
-              <CountryChips value={gift.country} onChange={value => setGift(current => ({ ...current, country: value }))} label="Pays du destinataire" />
+              <CountryChips countries={countries ?? []} value={giftCountry} onChange={value => setGift(current => ({ ...current, country: value }))} label="Pays du destinataire" />
               <Text style={[styles.inputLabel, { color: semantic.textSecondary }]}>Nom du destinataire *</Text>
               <TextInput
                 style={[styles.input, { color: semantic.textPrimary, borderColor: semantic.borderNormal, backgroundColor: semantic.bgSurface }]}
@@ -473,7 +496,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
                 value={gift.phone}
                 onChangeText={value => setGift(current => ({ ...current, phone: value }))}
                 keyboardType="phone-pad"
-                placeholder={gift.country === 'BE' ? '+32 …' : '+33 …'}
+                placeholder={phonePlaceholder(giftCountry)}
                 placeholderTextColor={semantic.textTertiary}
                 accessibilityLabel="Téléphone du destinataire"
               />
@@ -505,7 +528,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
           {previewLoading && !preview && <ActivityIndicator color={colors.green[400]} />}
           {noDeparture && (
             <Text style={[styles.optionLine, { color: semantic.textPrimary }]}>
-              {`Aucun envoi n’est programmé vers la ${countryLabel(targetCountry)} pour l’instant. Revenez bientôt ou activez l’alerte depuis l’espace Terroir.`}
+              {`Aucun envoi n’est programmé ${targetPhrase ?? 'vers ce pays'} pour l’instant. Revenez bientôt ou activez l’alerte depuis La Valise du pays.`}
             </Text>
           )}
           <View style={styles.options} accessibilityRole="radiogroup">

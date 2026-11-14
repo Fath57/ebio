@@ -463,7 +463,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted, on
                   ? <ExportStatusBadge status={exportStatus} />
                   : (
                       <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
-                        Proposer ce produit aux clients en France et en Belgique
+                        Proposer ce produit aux clients à l’étranger
                       </Text>
                     )}
               </View>

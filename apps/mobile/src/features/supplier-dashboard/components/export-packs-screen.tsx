@@ -188,7 +188,7 @@ export function ExportPacksScreen({ onGoBack, onOpenPack }: ExportPacksScreenPro
           <View style={styles.introText}>
             <Text style={[styles.introTitle, { color: semantic.textPrimary }]}>Composez vos coffrets</Text>
             <Text style={[styles.introBody, { color: semantic.textSecondary }]}>
-              Regroupez plusieurs de vos produits validés pour l'export et fixez le prix du pack. eBio le valide avant qu'il soit proposé aux clients en France et en Belgique.
+              Regroupez plusieurs de vos produits validés pour l'export et fixez le prix du pack. eBio le valide avant qu'il soit proposé aux clients dans les pays desservis.
             </Text>
           </View>
         </View>
