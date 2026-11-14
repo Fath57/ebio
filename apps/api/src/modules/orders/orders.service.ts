@@ -408,15 +408,31 @@ export class OrdersService {
 
     // For online payments (FedaPay), notifications are sent after payment confirmation.
     // Cash and wallet orders have no pending payment step: notify at once.
-    if (order.paymentMethod !== PaymentMethod.FEDAPAY) {
+    // Inside a checkout the order is not committed yet — the payment may still
+    // fail and roll it back, and a pack may still adjust its total — so the
+    // checkout announces it after its transaction (notifyOrderPlaced).
+    if (order.paymentMethod !== PaymentMethod.FEDAPAY && !checkoutContext) {
       await this.sendOrderPlacedNotifications(order)
-      // Inside a checkout the order is not committed yet: the e-mail reads it
-      // from a fresh context, so the checkout sends it after its transaction.
-      if (!checkoutContext)
-        void this.orderEmails.sendOrderPlaced(order.id)
+      void this.orderEmails.sendOrderPlaced(order.id)
     }
 
     return order
+  }
+
+  /**
+   * Push + in-app « order placed » to the shop and the buyer, then the e-mail,
+   * for an order created inside a checkout that has now committed. Never
+   * throws: a missed notification must not fail a paid order.
+   */
+  async notifyOrderPlaced(orderId: string): Promise<void> {
+    try {
+      const order = await this.em.fork().findOneOrFail(Order, { id: orderId })
+      await this.sendOrderPlacedNotifications(order)
+    }
+    catch (error) {
+      this.logger.warn(`Order placed notification failed for ${orderId}: ${error instanceof Error ? error.message : String(error)}`)
+    }
+    void this.orderEmails.sendOrderPlaced(orderId)
   }
 
   private async sendOrderPlacedNotifications(order: Order): Promise<void> {

@@ -357,7 +357,7 @@ export class TerroirCheckoutService {
     if (paymentMethod === PaymentMethod.WALLET) {
       const orderIds = (await this.em.find(Order, { checkout: checkout.id })).map(order => order.id)
       for (const orderId of orderIds) {
-        void this.orderEmails.sendOrderPlaced(orderId)
+        await this.orders.notifyOrderPlaced(orderId)
       }
       await this.settlement.postPaid(shipment.id)
     }

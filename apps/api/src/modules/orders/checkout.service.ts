@@ -476,7 +476,7 @@ export class CheckoutService {
     // e-mail now that the orders are committed and readable.
     if (data.paymentMethod !== 'FEDAPAY') {
       for (const order of createdOrders)
-        void this.orderEmails.sendOrderPlaced(order.id)
+        await this.ordersService.notifyOrderPlaced(order.id)
     }
 
     // The payer hears what their relative bought, and of a balance running low.

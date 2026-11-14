@@ -99,7 +99,10 @@ export class TerroirNotifierService {
         return
       }
       const title = 'Complément de poids pour votre colis'
-      const body = `Votre colis pèse ${kilos(input.actualG)} au lieu de ${kilos(input.estimatedG)} : un complément de ${formatFcfa(input.amount)} est demandé. Vous pouvez le payer ou retirer un produit (remboursé) avant le ${spokenInstant(input.deadline)} ; sans réponse, eBio prend l'écart à sa charge et votre colis part quand même.`
+      // Compare with what the buyer paid for — the billed minimum when the
+      // estimate was below it — not with the bare estimate.
+      const paidG = Math.max(input.estimatedG, Number(shipment.minBilledKg) * 1000)
+      const body = `Votre colis pèse ${kilos(input.actualG)}, pour ${kilos(paidG)} payés : un complément de ${formatFcfa(input.amount)} est demandé. Vous pouvez le payer ou retirer un produit (remboursé) avant le ${spokenInstant(input.deadline)} ; sans réponse, eBio prend l'écart à sa charge et votre colis part quand même.`
       await this.push(shipment.buyer.id, NotificationType.EXPORT_WEIGHT_SUPPLEMENT, title, body, { shipmentId: shipment.id })
       await this.mail(shipment.buyer.email, title, {
         heading: title,

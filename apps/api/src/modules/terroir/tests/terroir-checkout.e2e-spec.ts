@@ -4,6 +4,7 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import { initializeTestApp } from '../../../test/helpers/test-app.helper'
 import { AuditModule } from '../../admin/audit.module'
 import { RolesModule } from '../../auth/roles/roles.module'
+import { Notification, NotificationType } from '../../notifications/notification.entity'
 import { Order, PickupMode } from '../../orders/entities/order.entity'
 import { Checkout, CheckoutStatus } from '../../payments/entities/checkout.entity'
 import { Payment } from '../../payments/payment.entity'
@@ -16,7 +17,7 @@ import { ExportCatalogService } from '../export-catalog.service'
 import { ExportLogisticsService } from '../export-logistics.service'
 import { TerroirCheckoutService } from '../terroir-checkout.service'
 import { TerroirModule } from '../terroir.module'
-import { balanceOfShop, balanceOfUser, exportMovements, fakeCardGateway, seedTerroirWorld, terroirCart } from './terroir-checkout.fixture'
+import { balanceOfShop, balanceOfUser, exportMovements, fakeCardGateway, seedTerroirWorld, terroirCart, topUp } from './terroir-checkout.fixture'
 import { refusalOf } from './terroir.fixture'
 
 function fresh(app: INestApplication, em: EntityManager): void {
@@ -106,6 +107,24 @@ describe('terroir — passage en caisse (e2e)', { timeout: 30_000 }, () => {
     await app.get(PaymentsService).releaseEscrow(shopAPayment.id)
     expect(await balanceOfShop(em, world.shopA.supplierId)).toBe(6000 - Number(shopAOrder.commissionAmount))
     expect(await em.count(ExportCheckoutDraft, { user: world.buyerId })).toBe(0)
+  })
+
+  it('portefeuille insuffisant : rien n\'est créé et personne n\'est notifié ; payé : la boutique est notifiée de son vrai montant', async (context) => {
+    const { em, app } = context as { em: EntityManager, app: INestApplication }
+    const world = await seedTerroirWorld(app, em, { balance: 1000 })
+    const cart = terroirCart([{ productId: world.shopA.productIds[0], quantity: 2 }], { departureId: world.departureId })
+
+    await expect(app.get(TerroirCheckoutService).create(world.buyerId, cart)).rejects.toThrow()
+    fresh(app, em)
+    expect(await em.count(Order, {})).toBe(0)
+    expect(await em.count(Notification, { type: NotificationType.ORDER_PLACED })).toBe(0)
+
+    await topUp(app, world.buyerId, 100_000)
+    await app.get(TerroirCheckoutService).create(world.buyerId, cart)
+    fresh(app, em)
+    const placed = await em.find(Notification, { type: NotificationType.ORDER_PLACED })
+    expect(placed).toHaveLength(2)
+    expect(placed.some(notification => notification.body.includes('6000 FCFA'))).toBe(true)
   })
 
   it('le prix du transport reste figé quand le tarif du départ change', async (context) => {
