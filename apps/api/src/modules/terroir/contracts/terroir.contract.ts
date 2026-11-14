@@ -356,6 +356,21 @@ export const exportDepartureResponseSchema = z.object({
 
 export type ExportDepartureResponse = z.infer<typeof exportDepartureResponseSchema>
 
+/** How a shop's order reaches the eBio hub: a courier run (COURIER) or eBio's staff (EBIO). */
+const collectionRunSchema = z.object({
+  mode: z.enum(['COURIER', 'EBIO']),
+  /** For POST /admin/export/collections/:deliveryId/received; null in EBIO mode. */
+  deliveryId: z.string().uuid().nullable(),
+  /** The courier run's status: AWAITING_COURIER, ACCEPTED, PICKED_UP, IN_TRANSIT, DELIVERED, FAILED, CANCELLED. */
+  status: z.string().nullable(),
+  courierName: z.string().nullable(),
+  courierPhone: z.string().nullable(),
+  /** The code the hub staff give the courier once the parcel is in their hands. */
+  hubCode: z.string().nullable(),
+  pickedUpAt: z.string().datetime().nullable(),
+  receivedAt: z.string().datetime().nullable(),
+})
+
 export const exportDepartureDetailSchema = exportDepartureResponseSchema.extend({
   shipments: z.array(z.object({
     id: z.string().uuid(),
@@ -387,19 +402,15 @@ export const exportDepartureDetailSchema = exportDepartureResponseSchema.extend(
      * eBio's staff (EBIO). Null while a courier will be sent once the shop
      * has prepared.
      */
-    collection: z.object({
-      mode: z.enum(['COURIER', 'EBIO']),
-      /** For POST /admin/export/collections/:deliveryId/received; null in EBIO mode. */
-      deliveryId: z.string().uuid().nullable(),
-      /** The courier run's status: AWAITING_COURIER, ACCEPTED, PICKED_UP, IN_TRANSIT, DELIVERED, FAILED, CANCELLED. */
-      status: z.string().nullable(),
-      courierName: z.string().nullable(),
-      courierPhone: z.string().nullable(),
-      /** The code the hub staff give the courier once the parcel is in their hands. */
-      hubCode: z.string().nullable(),
-      pickedUpAt: z.string().datetime().nullable(),
-      receivedAt: z.string().datetime().nullable(),
-    }).nullable(),
+    collection: collectionRunSchema.nullable(),
+    /** The same, order by order: a shop may have several orders on one departure. */
+    orders: z.array(z.object({
+      orderId: z.string().uuid(),
+      orderNumber: z.string(),
+      status: z.string(),
+      collected: z.boolean(),
+      collection: collectionRunSchema.nullable(),
+    })),
   })),
 }).meta({
   title: 'ExportDepartureDetail',

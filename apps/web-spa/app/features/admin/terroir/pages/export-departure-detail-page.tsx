@@ -350,8 +350,10 @@ interface CollectionCardProps {
 
 function CollectionCard({ shop, onCollect, onReceive, onMissing }: CollectionCardProps) {
   const { t } = useTranslation()
+  // Several orders on the departure: each one shows its own way to the hub.
+  const perOrder = (shop.orders ?? []).length > 1
   // The courier run the hub staff may close by hand, when there is one.
-  const receiveId = !shop.collected && canReceiveAtHub(shop.collection) ? shop.collection.deliveryId : null
+  const receiveId = !perOrder && !shop.collected && canReceiveAtHub(shop.collection) ? shop.collection.deliveryId : null
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
@@ -379,7 +381,33 @@ function CollectionCard({ shop, onCollect, onReceive, onMissing }: CollectionCar
         )}
       </CardHeader>
       <CardContent className="space-y-3">
-        <CollectionStatus collection={shop.collection} />
+        {perOrder
+          ? (
+              <ul className="space-y-2">
+                {shop.orders.map((order) => {
+                  const orderReceiveId = !order.collected && canReceiveAtHub(order.collection) ? order.collection.deliveryId : null
+                  return (
+                    <li key={order.orderId} className="rounded-md border p-2">
+                      <div className="flex items-center justify-between gap-2">
+                        <span className="font-mono text-xs">{order.orderNumber}</span>
+                        {orderReceiveId && (
+                          <Can action="manage" subject="Delivery">
+                            <Button size="sm" variant="outline" onClick={() => onReceive(orderReceiveId)}>
+                              <PackageCheck className="mr-1 h-4 w-4" />
+                              {t('admin.terroir.collection.receive')}
+                            </Button>
+                          </Can>
+                        )}
+                      </div>
+                      {order.collected
+                        ? <p className="text-muted-foreground text-sm">{t('admin.terroir.collection.stateCollected')}</p>
+                        : <CollectionStatus collection={order.collection} />}
+                    </li>
+                  )
+                })}
+              </ul>
+            )
+          : <CollectionStatus collection={shop.collection} />}
         <ul className="divide-y text-sm">
           {shop.lines.map(line => (
             <li key={line.orderItemId} className="flex items-center justify-between gap-3 py-2">

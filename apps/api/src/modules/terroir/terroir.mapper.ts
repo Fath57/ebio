@@ -9,7 +9,7 @@ import type { ExportShipment } from './entities/export-shipment.entity'
 import type { AdminExportProductsPage, ClientCatalog, ClientPackView, PackView } from './export-catalog.service'
 import type { AdminCountryView, ClientCountryView } from './export-countries.service'
 import type { ExportThresholds } from './export-criteria'
-import type { DepartureDetailView, DepartureView } from './export-logistics.service'
+import type { CollectionRun, DepartureDetailView, DepartureView } from './export-logistics.service'
 import type { AdminShipmentView, ShipmentView } from './export-shipments.service'
 import type { SupplementOutcome } from './export-supplement.service'
 import type { ProductExportability } from './exportability.service'
@@ -57,6 +57,12 @@ function pickupPointOf(view: ShipmentView) {
 }
 
 /** The supplement as the buyer reads it, its 48 h deadline while it is asked. */
+function collectionRunOf(run: CollectionRun | null) {
+  return run
+    ? { ...run, pickedUpAt: run.pickedUpAt?.toISOString() ?? null, receivedAt: run.receivedAt?.toISOString() ?? null }
+    : null
+}
+
 function supplementOf(shipment: ExportShipment) {
   const requestedAt = shipment.supplementRequestedAt ?? null
   return {
@@ -185,13 +191,8 @@ export const TerroirMapper = {
       })),
       collection: view.collection.map(group => ({
         ...group,
-        collection: group.collection
-          ? {
-              ...group.collection,
-              pickedUpAt: group.collection.pickedUpAt?.toISOString() ?? null,
-              receivedAt: group.collection.receivedAt?.toISOString() ?? null,
-            }
-          : null,
+        collection: collectionRunOf(group.collection),
+        orders: group.orders.map(order => ({ ...order, collection: collectionRunOf(order.collection) })),
       })),
     }
   },

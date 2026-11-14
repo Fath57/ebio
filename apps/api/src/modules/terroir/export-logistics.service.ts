@@ -56,6 +56,8 @@ export interface CollectionGroup {
   collected: boolean
   /** Null while the shop has not prepared and a courier will be sent. */
   collection: CollectionRun | null
+  /** The same, order by order: a shop may have several orders on one departure. */
+  orders: Array<{ orderId: string, orderNumber: string, status: string, collected: boolean, collection: CollectionRun | null }>
 }
 
 interface CollectionRunRow {
@@ -315,6 +317,7 @@ export class ExportLogisticsService {
         lines: [],
         collected: true,
         collection: null,
+        orders: [],
       }
       for (const item of order.items) {
         if (shipment.removedItemIds.includes(item.id)) {
@@ -349,11 +352,10 @@ export class ExportLogisticsService {
       orderIds,
     ) as CollectionRunRow[]
     const mode = (await this.platformSettings.getTerroirExportSettings()).effectiveCollectionMode
-    for (const [supplierId, group] of groups) {
-      const ids = new Set((shopOrders.get(supplierId) ?? []).map(order => order.id))
-      const row = rows.find(candidate => ids.has(candidate.order_id))
+    const runOf = (order: Order): CollectionRun | null => {
+      const row = rows.find(candidate => candidate.order_id === order.id)
       if (row) {
-        group.collection = {
+        return {
           mode: 'COURIER',
           deliveryId: row.id,
           status: row.status,
@@ -363,11 +365,25 @@ export class ExportLogisticsService {
           pickedUpAt: row.picked_up_at ? new Date(row.picked_up_at) : null,
           receivedAt: row.delivered_at ? new Date(row.delivered_at) : null,
         }
-        continue
       }
       // Prepared or collected without a run: eBio collects (or did) itself.
-      const prepared = (shopOrders.get(supplierId) ?? []).some(order => order.status === OrderStatus.READY || order.status === OrderStatus.DELIVERED)
-      group.collection = prepared || mode === 'EBIO' ? { ...NO_COURIER_RUN } : null
+      const prepared = order.status === OrderStatus.READY || order.status === OrderStatus.DELIVERED
+      return prepared || mode === 'EBIO' ? { ...NO_COURIER_RUN } : null
+    }
+    for (const [supplierId, group] of groups) {
+      const orders = shopOrders.get(supplierId) ?? []
+      group.orders = orders.map(order => ({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        status: order.status,
+        collected: order.status === OrderStatus.DELIVERED,
+        collection: runOf(order),
+      }))
+      // The shop's summary follows what is still to collect: an order eBio
+      // already collected must not hide the courier run of a newer one.
+      const pending = group.orders.filter(order => !order.collected)
+      const live = pending.find(order => order.collection?.mode === 'COURIER') ?? pending[0] ?? group.orders.find(order => order.collection?.mode === 'COURIER') ?? group.orders[0]
+      group.collection = live?.collection ?? null
     }
   }
 

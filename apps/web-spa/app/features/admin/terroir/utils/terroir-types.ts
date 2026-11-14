@@ -217,6 +217,16 @@ export interface ExportCollectionShop {
   collected: boolean
   /** Null while a courier will be sent once the shop has prepared. */
   collection: ExportShopCollection | null
+  /** The same, order by order: a shop may have several orders on one departure. */
+  orders: ExportCollectionOrder[]
+}
+
+export interface ExportCollectionOrder {
+  orderId: string
+  orderNumber: string
+  status: string
+  collected: boolean
+  collection: ExportShopCollection | null
 }
 
 export interface ExportDepartureDetail extends ExportDeparture {
