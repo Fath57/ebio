@@ -19,6 +19,7 @@ import { FillGauge } from '../components/fill-gauge'
 import { DepartureStatusBadge, ShipmentStatusBadge } from '../components/terroir-status-badges'
 import { ShipmentEventDialog } from '../forms/shipment-event-dialog'
 import { WeighDialog } from '../forms/weigh-dialog'
+import { useExportCountries } from '../utils/terroir-countries'
 import { formatDateTime, formatDay, formatGrams, formatKg } from '../utils/terroir-format'
 import {
   addDepartureEvent,
@@ -46,6 +47,7 @@ type Pending
  */
 export default function ExportDepartureDetailPage() {
   const { t } = useTranslation()
+  const { labelOf } = useExportCountries()
   const { departureId = '' } = useParams()
   const navigate = useNavigate()
   const queryClient = useQueryClient()
@@ -130,7 +132,7 @@ export default function ExportDepartureDetailPage() {
                   <ul className="pt-1 text-sm">
                     {data.rates.map(rate => (
                       <li key={rate.country}>
-                        <span className="font-medium">{t(`admin.terroir.countries.${rate.country}`)}</span>
+                        <span className="font-medium">{labelOf(rate.country)}</span>
                         {' · '}
                         {t('admin.terroir.departures.ratePerKg', { price: formatAmount(rate.pricePerKg), min: formatKg(rate.minBilledKg) })}
                         {rate.homeDeliveryFee != null && ` · ${t('admin.terroir.departures.homeFee', { fee: formatAmount(rate.homeDeliveryFee) })}`}
@@ -215,7 +217,7 @@ export default function ExportDepartureDetailPage() {
                             {shipment.buyer}
                           </Link>
                         </TableCell>
-                        <TableCell>{t(`admin.terroir.countries.${shipment.country}`)}</TableCell>
+                        <TableCell>{labelOf(shipment.country)}</TableCell>
                         <TableCell><ShipmentStatusBadge status={shipment.status} /></TableCell>
                         <TableCell className="text-right font-mono">{formatGrams(shipment.estimatedWeightG)}</TableCell>
                         <TableCell className="text-right font-mono">

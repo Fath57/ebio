@@ -174,7 +174,7 @@ export type FamilyWalletSetting = {
 /**
  * UpdateTerroirExportSetting
  *
- * Réglages du terroir vers l'étranger à modifier
+ * Réglages de la Valise du pays à modifier
  */
 export type UpdateTerroirExportSetting = {
   enabled?: boolean;
@@ -2028,6 +2028,37 @@ export type SendSalesStatement = {
 };
 
 /**
+ * ExportCountryInput
+ *
+ * Pays de destination : code ISO, nom, tournures « vers » et « en », devise d'affichage
+ */
+export type ExportCountryInput = {
+  code: ExportCountryCode;
+  name: string;
+  toPhrase: string;
+  inPhrase: string;
+  displayCurrency: ForeignCurrency;
+  flagEmoji?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+/**
+ * UpdateExportCountry
+ *
+ * Champs d'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises
+ */
+export type UpdateExportCountry = {
+  name?: string;
+  toPhrase?: string;
+  inPhrase?: string;
+  displayCurrency?: ForeignCurrency;
+  flagEmoji?: string | null;
+  sortOrder?: number;
+  isActive?: boolean;
+};
+
+/**
  * ExportAgencyInput
  *
  * Agence partenaire : nom, contact, notes
@@ -2061,7 +2092,7 @@ export type UpdateExportAgency = {
  * Point de retrait d'une agence : pays, ville, adresse, horaires
  */
 export type ExportPickupPointInput = {
-  country: ExportCountry;
+  country: ExportCountryCode;
   city: string;
   address: string;
   openingHours?: string | null;
@@ -2074,7 +2105,7 @@ export type ExportPickupPointInput = {
  * Champs d'un point de retrait à modifier
  */
 export type UpdateExportPickupPoint = {
-  country?: ExportCountry;
+  country?: ExportCountryCode;
   city?: string;
   address?: string;
   openingHours?: string | null;
@@ -2216,7 +2247,7 @@ export type ReviewExportPack = {
 /**
  * ExportPackInput
  *
- * Pack terroir : nom, description, photos, prix, produits
+ * Pack du pays : nom, description, photos, prix, produits
  */
 export type ExportPackInput = {
   name: string;
@@ -2260,16 +2291,16 @@ export type ExportProfileInput = {
  * « Me prévenir du prochain départ » vers un pays
  */
 export type TerroirDepartureAlertInput = {
-  country: ExportCountry;
+  country: ExportCountryCode;
 };
 
 /**
  * TerroirCheckoutInput
  *
- * Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement
+ * Valise : pays, lignes, départ, réception, assurance, cadeau, paiement
  */
 export type TerroirCheckoutInput = {
-  country: ExportCountry;
+  country: ExportCountryCode;
   lines: Array<TerroirCartLine>;
   departureId?: string | null;
   reception: ExportReception;
@@ -2283,7 +2314,7 @@ export type TerroirCheckoutInput = {
     message?: string | null;
   } | null;
   paymentMethod: TerroirPaymentMethod;
-  displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+  displayCurrency?: "XOF" | "EUR" | "USD" | "CAD";
 };
 
 /**
@@ -3630,18 +3661,30 @@ export const ContactReason = {
 export type ContactReason = (typeof ContactReason)[keyof typeof ContactReason];
 
 /**
- * ExportCountry
+ * ExportCountryCode
  *
- * Pays de destination d'un colis terroir
+ * Code ISO à deux lettres du pays de destination d'une valise
  */
-export const ExportCountry = { FR: "FR", BE: "BE" } as const;
+export type ExportCountryCode = string;
 
 /**
- * ExportCountry
+ * ForeignCurrency
  *
- * Pays de destination d'un colis terroir
+ * Devise étrangère disposant d'un taux de change vers le FCFA
  */
-export type ExportCountry = (typeof ExportCountry)[keyof typeof ExportCountry];
+export const ForeignCurrency = {
+  EUR: "EUR",
+  USD: "USD",
+  CAD: "CAD",
+} as const;
+
+/**
+ * ForeignCurrency
+ *
+ * Devise étrangère disposant d'un taux de change vers le FCFA
+ */
+export type ForeignCurrency =
+  (typeof ForeignCurrency)[keyof typeof ForeignCurrency];
 
 /**
  * ExportDeparturesQuery
@@ -3664,11 +3707,11 @@ export type ExportDeparturesQuery = {
  */
 export type ExportDepartureRateInput = {
   /**
-   * ExportCountry
+   * ExportCountryCode
    *
-   * Pays de destination d'un colis terroir
+   * Code ISO à deux lettres du pays de destination d'une valise
    */
-  country: "FR" | "BE";
+  country: string;
   pricePerKg: number;
   minBilledKg: number;
   maxWeightKg?: number | null;
@@ -3678,7 +3721,7 @@ export type ExportDepartureRateInput = {
 /**
  * ExportShipmentStatus
  *
- * Étape d'un colis terroir
+ * Étape d'une valise
  */
 export const ExportShipmentStatus = {
   PENDING_PAYMENT: "PENDING_PAYMENT",
@@ -3699,7 +3742,7 @@ export const ExportShipmentStatus = {
 /**
  * ExportShipmentStatus
  *
- * Étape d'un colis terroir
+ * Étape d'une valise
  */
 export type ExportShipmentStatus =
   (typeof ExportShipmentStatus)[keyof typeof ExportShipmentStatus];
@@ -3775,21 +3818,30 @@ export type ExportOrigin = {
 };
 
 /**
+ * TerroirCountriesQuery
+ *
+ * Pays proposés : ceux qui ont un départ ouvert, ou tous les pays actifs
+ */
+export type TerroirCountriesQuery = {
+  all: "true" | "false";
+};
+
+/**
  * TerroirCatalogQuery
  *
- * Catalogue terroir : pays, catégorie, recherche, page, devise d'affichage
+ * Catalogue de la Valise du pays : pays, catégorie, recherche, page, devise d'affichage
  */
 export type TerroirCatalogQuery = {
   /**
-   * ExportCountry
+   * ExportCountryCode
    *
-   * Pays de destination d'un colis terroir
+   * Code ISO à deux lettres du pays de destination d'une valise
    */
-  country: "FR" | "BE";
+  country: string;
   category?: string;
   search?: string;
   page: number;
-  currency: "XOF" | "EUR" | "USD" | "CAD";
+  currency?: "XOF" | "EUR" | "USD" | "CAD";
 };
 
 /**
@@ -3808,19 +3860,19 @@ export type TerroirDisplayQuery = {
  */
 export type TerroirDeparturesQuery = {
   /**
-   * ExportCountry
+   * ExportCountryCode
    *
-   * Pays de destination d'un colis terroir
+   * Code ISO à deux lettres du pays de destination d'une valise
    */
-  country: "FR" | "BE";
+  country: string;
   weightG: number;
-  currency: "XOF" | "EUR" | "USD" | "CAD";
+  currency?: "XOF" | "EUR" | "USD" | "CAD";
 };
 
 /**
  * TerroirCartLine
  *
- * Ligne du panier terroir : un produit (et sa variante) ou un pack
+ * Ligne du valise : un produit (et sa variante) ou un pack
  */
 export type TerroirCartLine = {
   productId?: string;
@@ -3847,7 +3899,7 @@ export type ExportReception =
 /**
  * TerroirPaymentMethod
  *
- * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+ * Paiement d'une valise : carte (page hébergée) ou portefeuille eBio
  */
 export const TerroirPaymentMethod = {
   FEDAPAY: "FEDAPAY",
@@ -3857,7 +3909,7 @@ export const TerroirPaymentMethod = {
 /**
  * TerroirPaymentMethod
  *
- * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+ * Paiement d'une valise : carte (page hébergée) ou portefeuille eBio
  */
 export type TerroirPaymentMethod =
   (typeof TerroirPaymentMethod)[keyof typeof TerroirPaymentMethod];
@@ -6067,7 +6119,7 @@ export type AdminTerroirExportSettingControllerUpdateData = {
   /**
    * UpdateTerroirExportSetting
    *
-   * Réglages du terroir vers l'étranger à modifier
+   * Réglages de la Valise du pays à modifier
    */
   body: {
     enabled?: boolean;
@@ -12078,6 +12130,83 @@ export type CommunityControllerGetShareUrlResponses = {
   200: unknown;
 };
 
+export type AdminExportControllerListCountriesData = {
+  body?: never;
+  path?: never;
+  query?: never;
+  url: "/api/admin/export/countries";
+};
+
+export type AdminExportControllerListCountriesResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCreateCountryData = {
+  /**
+   * ExportCountryInput
+   *
+   * Pays de destination : code ISO, nom, tournures « vers » et « en », devise d'affichage
+   */
+  body: {
+    /**
+     * ExportCountryCode
+     *
+     * Code ISO à deux lettres du pays de destination d'une valise
+     */
+    code: string;
+    name: string;
+    toPhrase: string;
+    inPhrase: string;
+    /**
+     * ForeignCurrency
+     *
+     * Devise étrangère disposant d'un taux de change vers le FCFA
+     */
+    displayCurrency: "EUR" | "USD" | "CAD";
+    flagEmoji?: string | null;
+    sortOrder?: number;
+    isActive?: boolean;
+  };
+  path?: never;
+  query?: never;
+  url: "/api/admin/export/countries";
+};
+
+export type AdminExportControllerCreateCountryResponses = {
+  201: unknown;
+};
+
+export type AdminExportControllerUpdateCountryData = {
+  /**
+   * UpdateExportCountry
+   *
+   * Champs d'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises
+   */
+  body: {
+    name?: string;
+    toPhrase?: string;
+    inPhrase?: string;
+    /**
+     * ForeignCurrency
+     *
+     * Devise étrangère disposant d'un taux de change vers le FCFA
+     */
+    displayCurrency?: "EUR" | "USD" | "CAD";
+    flagEmoji?: string | null;
+    sortOrder?: number;
+    isActive?: boolean;
+  };
+  path: {
+    code: string;
+  };
+  query?: never;
+  url: "/api/admin/export/countries/{code}";
+};
+
+export type AdminExportControllerUpdateCountryResponses = {
+  200: unknown;
+};
+
 export type AdminExportControllerListAgenciesData = {
   body?: never;
   path?: never;
@@ -12158,11 +12287,11 @@ export type AdminExportControllerCreatePickupPointData = {
    */
   body: {
     /**
-     * ExportCountry
+     * ExportCountryCode
      *
-     * Pays de destination d'un colis terroir
+     * Code ISO à deux lettres du pays de destination d'une valise
      */
-    country: "FR" | "BE";
+    country: string;
     city: string;
     address: string;
     openingHours?: string | null;
@@ -12187,11 +12316,11 @@ export type AdminExportControllerUpdatePickupPointData = {
    */
   body: {
     /**
-     * ExportCountry
+     * ExportCountryCode
      *
-     * Pays de destination d'un colis terroir
+     * Code ISO à deux lettres du pays de destination d'une valise
      */
-    country?: "FR" | "BE";
+    country?: string;
     city?: string;
     address?: string;
     openingHours?: string | null;
@@ -12242,11 +12371,11 @@ export type AdminExportControllerCreateDepartureData = {
     capacityKg?: number | null;
     rates: Array<{
       /**
-       * ExportCountry
+       * ExportCountryCode
        *
-       * Pays de destination d'un colis terroir
+       * Code ISO à deux lettres du pays de destination d'une valise
        */
-      country: "FR" | "BE";
+      country: string;
       pricePerKg: number;
       minBilledKg: number;
       maxWeightKg?: number | null;
@@ -12290,11 +12419,11 @@ export type AdminExportControllerUpdateDepartureData = {
     capacityKg?: number | null;
     rates?: Array<{
       /**
-       * ExportCountry
+       * ExportCountryCode
        *
-       * Pays de destination d'un colis terroir
+       * Code ISO à deux lettres du pays de destination d'une valise
        */
-      country: "FR" | "BE";
+      country: string;
       pricePerKg: number;
       minBilledKg: number;
       maxWeightKg?: number | null;
@@ -12356,7 +12485,7 @@ export type AdminExportControllerDepartureEventData = {
     /**
      * ExportShipmentStatus
      *
-     * Étape d'un colis terroir
+     * Étape d'une valise
      */
     step:
       | "PENDING_PAYMENT"
@@ -12625,7 +12754,7 @@ export type AdminExportControllerCreatePackData = {
   /**
    * ExportPackInput
    *
-   * Pack terroir : nom, description, photos, prix, produits
+   * Pack du pays : nom, description, photos, prix, produits
    */
   body: {
     name: string;
@@ -12784,7 +12913,7 @@ export type SupplierExportControllerCreatePackData = {
   /**
    * ExportPackInput
    *
-   * Pack terroir : nom, description, photos, prix, produits
+   * Pack du pays : nom, description, photos, prix, produits
    */
   body: {
     name: string;
@@ -12851,20 +12980,33 @@ export type SupplierExportControllerUpdatePackResponses = {
   200: unknown;
 };
 
+export type TerroirClientControllerGetCountriesData = {
+  body?: never;
+  path?: never;
+  query: {
+    all: "true" | "false";
+  };
+  url: "/api/terroir/countries";
+};
+
+export type TerroirClientControllerGetCountriesResponses = {
+  200: unknown;
+};
+
 export type TerroirClientControllerGetCatalogData = {
   body?: never;
   path?: never;
   query: {
     /**
-     * ExportCountry
+     * ExportCountryCode
      *
-     * Pays de destination d'un colis terroir
+     * Code ISO à deux lettres du pays de destination d'une valise
      */
-    country: "FR" | "BE";
+    country: string;
     category?: string;
     search?: string;
     page: number;
-    currency: "XOF" | "EUR" | "USD" | "CAD";
+    currency?: "XOF" | "EUR" | "USD" | "CAD";
   };
   url: "/api/terroir/catalog";
 };
@@ -12908,13 +13050,13 @@ export type TerroirClientControllerGetDeparturesData = {
   path?: never;
   query: {
     /**
-     * ExportCountry
+     * ExportCountryCode
      *
-     * Pays de destination d'un colis terroir
+     * Code ISO à deux lettres du pays de destination d'une valise
      */
-    country: "FR" | "BE";
+    country: string;
     weightG: number;
-    currency: "XOF" | "EUR" | "USD" | "CAD";
+    currency?: "XOF" | "EUR" | "USD" | "CAD";
   };
   url: "/api/terroir/departures";
 };
@@ -12931,11 +13073,11 @@ export type TerroirClientControllerSubscribeAlertData = {
    */
   body: {
     /**
-     * ExportCountry
+     * ExportCountryCode
      *
-     * Pays de destination d'un colis terroir
+     * Code ISO à deux lettres du pays de destination d'une valise
      */
-    country: "FR" | "BE";
+    country: string;
   };
   path?: never;
   query?: never;
@@ -12963,15 +13105,15 @@ export type TerroirClientControllerPreviewData = {
   /**
    * TerroirCheckoutInput
    *
-   * Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement
+   * Valise : pays, lignes, départ, réception, assurance, cadeau, paiement
    */
   body: {
     /**
-     * ExportCountry
+     * ExportCountryCode
      *
-     * Pays de destination d'un colis terroir
+     * Code ISO à deux lettres du pays de destination d'une valise
      */
-    country: "FR" | "BE";
+    country: string;
     lines: Array<{
       productId?: string;
       variantId?: string | null;
@@ -12997,10 +13139,10 @@ export type TerroirClientControllerPreviewData = {
     /**
      * TerroirPaymentMethod
      *
-     * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+     * Paiement d'une valise : carte (page hébergée) ou portefeuille eBio
      */
     paymentMethod: "FEDAPAY" | "WALLET";
-    displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+    displayCurrency?: "XOF" | "EUR" | "USD" | "CAD";
   };
   path?: never;
   query?: never;
@@ -13015,15 +13157,15 @@ export type TerroirClientControllerCreateData = {
   /**
    * TerroirCheckoutInput
    *
-   * Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement
+   * Valise : pays, lignes, départ, réception, assurance, cadeau, paiement
    */
   body: {
     /**
-     * ExportCountry
+     * ExportCountryCode
      *
-     * Pays de destination d'un colis terroir
+     * Code ISO à deux lettres du pays de destination d'une valise
      */
-    country: "FR" | "BE";
+    country: string;
     lines: Array<{
       productId?: string;
       variantId?: string | null;
@@ -13049,10 +13191,10 @@ export type TerroirClientControllerCreateData = {
     /**
      * TerroirPaymentMethod
      *
-     * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+     * Paiement d'une valise : carte (page hébergée) ou portefeuille eBio
      */
     paymentMethod: "FEDAPAY" | "WALLET";
-    displayCurrency: "XOF" | "EUR" | "USD" | "CAD";
+    displayCurrency?: "XOF" | "EUR" | "USD" | "CAD";
   };
   path?: never;
   query?: never;
@@ -13104,7 +13246,7 @@ export type TerroirClientControllerSupplementData = {
     /**
      * TerroirPaymentMethod
      *
-     * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+     * Paiement d'une valise : carte (page hébergée) ou portefeuille eBio
      */
     paymentMethod: "FEDAPAY" | "WALLET";
   };

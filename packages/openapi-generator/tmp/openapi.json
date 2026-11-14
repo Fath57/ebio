@@ -4420,7 +4420,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Réglages du terroir vers l'étranger à modifier",
+          "description": "Réglages de la Valise du pays à modifier",
           "content": {
             "application/json": {
               "schema": {
@@ -4471,7 +4471,7 @@
                 },
                 "additionalProperties": false,
                 "title": "UpdateTerroirExportSetting",
-                "description": "Réglages du terroir vers l'étranger à modifier"
+                "description": "Réglages de la Valise du pays à modifier"
               }
             }
           }
@@ -18325,6 +18325,190 @@
         }
       }
     },
+    "/api/admin/export/countries": {
+      "get": {
+        "operationId": "AdminExportController_listCountries",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      },
+      "post": {
+        "operationId": "AdminExportController_createCountry",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "description": "Pays de destination : code ISO, nom, tournures « vers » et « en », devise d'affichage",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string",
+                    "pattern": "^[A-Z]{2}$",
+                    "title": "ExportCountryCode",
+                    "description": "Code ISO à deux lettres du pays de destination d'une valise"
+                  },
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "toPhrase": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "inPhrase": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "displayCurrency": {
+                    "type": "string",
+                    "enum": [
+                      "EUR",
+                      "USD",
+                      "CAD"
+                    ],
+                    "title": "ForeignCurrency",
+                    "description": "Devise étrangère disposant d'un taux de change vers le FCFA"
+                  },
+                  "flagEmoji": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 16
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sortOrder": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "code",
+                  "name",
+                  "toPhrase",
+                  "inPhrase",
+                  "displayCurrency"
+                ],
+                "additionalProperties": false,
+                "title": "ExportCountryInput",
+                "description": "Pays de destination : code ISO, nom, tournures « vers » et « en », devise d'affichage"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/admin/export/countries/{code}": {
+      "patch": {
+        "operationId": "AdminExportController_updateCountry",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "code",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "description": "Champs d'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 2,
+                    "maxLength": 80
+                  },
+                  "toPhrase": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "inPhrase": {
+                    "type": "string",
+                    "minLength": 3,
+                    "maxLength": 120
+                  },
+                  "displayCurrency": {
+                    "type": "string",
+                    "enum": [
+                      "EUR",
+                      "USD",
+                      "CAD"
+                    ],
+                    "title": "ForeignCurrency",
+                    "description": "Devise étrangère disposant d'un taux de change vers le FCFA"
+                  },
+                  "flagEmoji": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 16
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "sortOrder": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "maximum": 10000
+                  },
+                  "isActive": {
+                    "type": "boolean"
+                  }
+                },
+                "additionalProperties": false,
+                "title": "UpdateExportCountry",
+                "description": "Champs d'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/export/agencies": {
       "get": {
         "operationId": "AdminExportController_listAgencies",
@@ -18564,12 +18748,9 @@
                 "properties": {
                   "country": {
                     "type": "string",
-                    "enum": [
-                      "FR",
-                      "BE"
-                    ],
-                    "title": "ExportCountry",
-                    "description": "Pays de destination d'un colis terroir"
+                    "pattern": "^[A-Z]{2}$",
+                    "title": "ExportCountryCode",
+                    "description": "Code ISO à deux lettres du pays de destination d'une valise"
                   },
                   "city": {
                     "type": "string",
@@ -18649,12 +18830,9 @@
                 "properties": {
                   "country": {
                     "type": "string",
-                    "enum": [
-                      "FR",
-                      "BE"
-                    ],
-                    "title": "ExportCountry",
-                    "description": "Pays de destination d'un colis terroir"
+                    "pattern": "^[A-Z]{2}$",
+                    "title": "ExportCountryCode",
+                    "description": "Code ISO à deux lettres du pays de destination d'une valise"
                   },
                   "city": {
                     "type": "string",
@@ -18784,12 +18962,9 @@
                       "properties": {
                         "country": {
                           "type": "string",
-                          "enum": [
-                            "FR",
-                            "BE"
-                          ],
-                          "title": "ExportCountry",
-                          "description": "Pays de destination d'un colis terroir"
+                          "pattern": "^[A-Z]{2}$",
+                          "title": "ExportCountryCode",
+                          "description": "Code ISO à deux lettres du pays de destination d'une valise"
                         },
                         "pricePerKg": {
                           "type": "number",
@@ -18949,12 +19124,9 @@
                       "properties": {
                         "country": {
                           "type": "string",
-                          "enum": [
-                            "FR",
-                            "BE"
-                          ],
-                          "title": "ExportCountry",
-                          "description": "Pays de destination d'un colis terroir"
+                          "pattern": "^[A-Z]{2}$",
+                          "title": "ExportCountryCode",
+                          "description": "Code ISO à deux lettres du pays de destination d'une valise"
                         },
                         "pricePerKg": {
                           "type": "number",
@@ -19140,7 +19312,7 @@
                       "CANCELLED"
                     ],
                     "title": "ExportShipmentStatus",
-                    "description": "Étape d'un colis terroir"
+                    "description": "Étape d'une valise"
                   },
                   "message": {
                     "anyOf": [
@@ -19380,7 +19552,7 @@
                           "CANCELLED"
                         ],
                         "title": "ExportShipmentStatus",
-                        "description": "Étape d'un colis terroir"
+                        "description": "Étape d'une valise"
                       },
                       {
                         "type": "null"
@@ -19698,7 +19870,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Pack terroir : nom, description, photos, prix, produits",
+          "description": "Pack du pays : nom, description, photos, prix, produits",
           "content": {
             "application/json": {
               "schema": {
@@ -19782,7 +19954,7 @@
                 ],
                 "additionalProperties": false,
                 "title": "ExportPackInput",
-                "description": "Pack terroir : nom, description, photos, prix, produits"
+                "description": "Pack du pays : nom, description, photos, prix, produits"
               }
             }
           }
@@ -20218,7 +20390,7 @@
         ],
         "requestBody": {
           "required": true,
-          "description": "Pack terroir : nom, description, photos, prix, produits",
+          "description": "Pack du pays : nom, description, photos, prix, produits",
           "content": {
             "application/json": {
               "schema": {
@@ -20302,7 +20474,7 @@
                 ],
                 "additionalProperties": false,
                 "title": "ExportPackInput",
-                "description": "Pack terroir : nom, description, photos, prix, produits"
+                "description": "Pack du pays : nom, description, photos, prix, produits"
               }
             }
           }
@@ -20459,6 +20631,34 @@
         }
       }
     },
+    "/api/terroir/countries": {
+      "get": {
+        "operationId": "TerroirClientController_getCountries",
+        "tags": [
+          "TerroirClient"
+        ],
+        "parameters": [
+          {
+            "name": "all",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": "false",
+              "type": "string",
+              "enum": [
+                "true",
+                "false"
+              ]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/terroir/catalog": {
       "get": {
         "operationId": "TerroirClientController_getCatalog",
@@ -20472,12 +20672,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": [
-                "FR",
-                "BE"
-              ],
-              "title": "ExportCountry",
-              "description": "Pays de destination d'un colis terroir"
+              "pattern": "^[A-Z]{2}$",
+              "title": "ExportCountryCode",
+              "description": "Code ISO à deux lettres du pays de destination d'une valise"
             }
           },
           {
@@ -20512,10 +20709,9 @@
           },
           {
             "name": "currency",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
-              "default": "EUR",
               "type": "string",
               "enum": [
                 "XOF",
@@ -20622,12 +20818,9 @@
             "in": "query",
             "schema": {
               "type": "string",
-              "enum": [
-                "FR",
-                "BE"
-              ],
-              "title": "ExportCountry",
-              "description": "Pays de destination d'un colis terroir"
+              "pattern": "^[A-Z]{2}$",
+              "title": "ExportCountryCode",
+              "description": "Code ISO à deux lettres du pays de destination d'une valise"
             }
           },
           {
@@ -20643,10 +20836,9 @@
           },
           {
             "name": "currency",
-            "required": true,
+            "required": false,
             "in": "query",
             "schema": {
-              "default": "EUR",
               "type": "string",
               "enum": [
                 "XOF",
@@ -20681,12 +20873,9 @@
                 "properties": {
                   "country": {
                     "type": "string",
-                    "enum": [
-                      "FR",
-                      "BE"
-                    ],
-                    "title": "ExportCountry",
-                    "description": "Pays de destination d'un colis terroir"
+                    "pattern": "^[A-Z]{2}$",
+                    "title": "ExportCountryCode",
+                    "description": "Code ISO à deux lettres du pays de destination d'une valise"
                   }
                 },
                 "required": [
@@ -20738,7 +20927,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement",
+          "description": "Valise : pays, lignes, départ, réception, assurance, cadeau, paiement",
           "content": {
             "application/json": {
               "schema": {
@@ -20746,12 +20935,9 @@
                 "properties": {
                   "country": {
                     "type": "string",
-                    "enum": [
-                      "FR",
-                      "BE"
-                    ],
-                    "title": "ExportCountry",
-                    "description": "Pays de destination d'un colis terroir"
+                    "pattern": "^[A-Z]{2}$",
+                    "title": "ExportCountryCode",
+                    "description": "Code ISO à deux lettres du pays de destination d'une valise"
                   },
                   "lines": {
                     "minItems": 1,
@@ -20793,7 +20979,7 @@
                       ],
                       "additionalProperties": false,
                       "title": "TerroirCartLine",
-                      "description": "Ligne du panier terroir : un produit (et sa variante) ou un pack"
+                      "description": "Ligne du valise : un produit (et sa variante) ou un pack"
                     }
                   },
                   "departureId": {
@@ -20912,10 +21098,9 @@
                       "WALLET"
                     ],
                     "title": "TerroirPaymentMethod",
-                    "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+                    "description": "Paiement d'une valise : carte (page hébergée) ou portefeuille eBio"
                   },
                   "displayCurrency": {
-                    "default": "EUR",
                     "type": "string",
                     "enum": [
                       "XOF",
@@ -20930,12 +21115,11 @@
                   "lines",
                   "reception",
                   "insured",
-                  "paymentMethod",
-                  "displayCurrency"
+                  "paymentMethod"
                 ],
                 "additionalProperties": false,
                 "title": "TerroirCheckoutInput",
-                "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement"
+                "description": "Valise : pays, lignes, départ, réception, assurance, cadeau, paiement"
               }
             }
           }
@@ -20956,7 +21140,7 @@
         "parameters": [],
         "requestBody": {
           "required": true,
-          "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement",
+          "description": "Valise : pays, lignes, départ, réception, assurance, cadeau, paiement",
           "content": {
             "application/json": {
               "schema": {
@@ -20964,12 +21148,9 @@
                 "properties": {
                   "country": {
                     "type": "string",
-                    "enum": [
-                      "FR",
-                      "BE"
-                    ],
-                    "title": "ExportCountry",
-                    "description": "Pays de destination d'un colis terroir"
+                    "pattern": "^[A-Z]{2}$",
+                    "title": "ExportCountryCode",
+                    "description": "Code ISO à deux lettres du pays de destination d'une valise"
                   },
                   "lines": {
                     "minItems": 1,
@@ -21011,7 +21192,7 @@
                       ],
                       "additionalProperties": false,
                       "title": "TerroirCartLine",
-                      "description": "Ligne du panier terroir : un produit (et sa variante) ou un pack"
+                      "description": "Ligne du valise : un produit (et sa variante) ou un pack"
                     }
                   },
                   "departureId": {
@@ -21130,10 +21311,9 @@
                       "WALLET"
                     ],
                     "title": "TerroirPaymentMethod",
-                    "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+                    "description": "Paiement d'une valise : carte (page hébergée) ou portefeuille eBio"
                   },
                   "displayCurrency": {
-                    "default": "EUR",
                     "type": "string",
                     "enum": [
                       "XOF",
@@ -21148,12 +21328,11 @@
                   "lines",
                   "reception",
                   "insured",
-                  "paymentMethod",
-                  "displayCurrency"
+                  "paymentMethod"
                 ],
                 "additionalProperties": false,
                 "title": "TerroirCheckoutInput",
-                "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement"
+                "description": "Valise : pays, lignes, départ, réception, assurance, cadeau, paiement"
               }
             }
           }
@@ -21255,7 +21434,7 @@
                       "WALLET"
                     ],
                     "title": "TerroirPaymentMethod",
-                    "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+                    "description": "Paiement d'une valise : carte (page hébergée) ou portefeuille eBio"
                   }
                 },
                 "required": [
@@ -24423,7 +24602,7 @@
         },
         "additionalProperties": false,
         "title": "UpdateTerroirExportSetting",
-        "description": "Réglages du terroir vers l'étranger à modifier"
+        "description": "Réglages de la Valise du pays à modifier"
       },
       "CartSync": {
         "type": "object",
@@ -29477,6 +29656,108 @@
           }
         ]
       },
+      "ExportCountryInput": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "$ref": "#/components/schemas/ExportCountryCode"
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "toPhrase": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "inPhrase": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "displayCurrency": {
+            "$ref": "#/components/schemas/ForeignCurrency"
+          },
+          "flagEmoji": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "code",
+          "name",
+          "toPhrase",
+          "inPhrase",
+          "displayCurrency"
+        ],
+        "additionalProperties": false,
+        "title": "ExportCountryInput",
+        "description": "Pays de destination : code ISO, nom, tournures « vers » et « en », devise d'affichage"
+      },
+      "UpdateExportCountry": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 2,
+            "maxLength": 80
+          },
+          "toPhrase": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "inPhrase": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 120
+          },
+          "displayCurrency": {
+            "$ref": "#/components/schemas/ForeignCurrency"
+          },
+          "flagEmoji": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 16
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "sortOrder": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 10000
+          },
+          "isActive": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false,
+        "title": "UpdateExportCountry",
+        "description": "Champs d'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises"
+      },
       "ExportAgencyInput": {
         "type": "object",
         "properties": {
@@ -29608,7 +29889,7 @@
         "type": "object",
         "properties": {
           "country": {
-            "$ref": "#/components/schemas/ExportCountry"
+            "$ref": "#/components/schemas/ExportCountryCode"
           },
           "city": {
             "type": "string",
@@ -29648,7 +29929,7 @@
         "type": "object",
         "properties": {
           "country": {
-            "$ref": "#/components/schemas/ExportCountry"
+            "$ref": "#/components/schemas/ExportCountryCode"
           },
           "city": {
             "type": "string",
@@ -29916,7 +30197,7 @@
                   "CANCELLED"
                 ],
                 "title": "ExportShipmentStatus",
-                "description": "Étape d'un colis terroir"
+                "description": "Étape d'une valise"
               },
               {
                 "type": "null"
@@ -30070,7 +30351,7 @@
         ],
         "additionalProperties": false,
         "title": "ExportPackInput",
-        "description": "Pack terroir : nom, description, photos, prix, produits"
+        "description": "Pack du pays : nom, description, photos, prix, produits"
       },
       "UpdateExportPack": {
         "type": "object",
@@ -30195,7 +30476,7 @@
         "type": "object",
         "properties": {
           "country": {
-            "$ref": "#/components/schemas/ExportCountry"
+            "$ref": "#/components/schemas/ExportCountryCode"
           }
         },
         "required": [
@@ -30209,7 +30490,7 @@
         "type": "object",
         "properties": {
           "country": {
-            "$ref": "#/components/schemas/ExportCountry"
+            "$ref": "#/components/schemas/ExportCountryCode"
           },
           "lines": {
             "minItems": 1,
@@ -30324,7 +30605,6 @@
             "$ref": "#/components/schemas/TerroirPaymentMethod"
           },
           "displayCurrency": {
-            "default": "EUR",
             "type": "string",
             "enum": [
               "XOF",
@@ -30339,12 +30619,11 @@
           "lines",
           "reception",
           "insured",
-          "paymentMethod",
-          "displayCurrency"
+          "paymentMethod"
         ],
         "additionalProperties": false,
         "title": "TerroirCheckoutInput",
-        "description": "Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement"
+        "description": "Valise : pays, lignes, départ, réception, assurance, cadeau, paiement"
       },
       "TerroirSupplementInput": {
         "type": "object",
@@ -33239,14 +33518,21 @@
         "title": "ContactReason",
         "description": "Why the visitor is writing"
       },
-      "ExportCountry": {
+      "ExportCountryCode": {
+        "type": "string",
+        "pattern": "^[A-Z]{2}$",
+        "title": "ExportCountryCode",
+        "description": "Code ISO à deux lettres du pays de destination d'une valise"
+      },
+      "ForeignCurrency": {
         "type": "string",
         "enum": [
-          "FR",
-          "BE"
+          "EUR",
+          "USD",
+          "CAD"
         ],
-        "title": "ExportCountry",
-        "description": "Pays de destination d'un colis terroir"
+        "title": "ForeignCurrency",
+        "description": "Devise étrangère disposant d'un taux de change vers le FCFA"
       },
       "ExportDeparturesQuery": {
         "type": "object",
@@ -33272,12 +33558,9 @@
         "properties": {
           "country": {
             "type": "string",
-            "enum": [
-              "FR",
-              "BE"
-            ],
-            "title": "ExportCountry",
-            "description": "Pays de destination d'un colis terroir"
+            "pattern": "^[A-Z]{2}$",
+            "title": "ExportCountryCode",
+            "description": "Code ISO à deux lettres du pays de destination d'une valise"
           },
           "pricePerKg": {
             "type": "number",
@@ -33341,7 +33624,7 @@
           "CANCELLED"
         ],
         "title": "ExportShipmentStatus",
-        "description": "Étape d'un colis terroir"
+        "description": "Étape d'une valise"
       },
       "ExportReviewsQuery": {
         "type": "object",
@@ -33503,17 +33786,33 @@
         "title": "ExportOrigin",
         "description": "Origine du produit : producteur, lieu, année, mode de fabrication, photos"
       },
+      "TerroirCountriesQuery": {
+        "type": "object",
+        "properties": {
+          "all": {
+            "default": "false",
+            "type": "string",
+            "enum": [
+              "true",
+              "false"
+            ]
+          }
+        },
+        "required": [
+          "all"
+        ],
+        "additionalProperties": false,
+        "title": "TerroirCountriesQuery",
+        "description": "Pays proposés : ceux qui ont un départ ouvert, ou tous les pays actifs"
+      },
       "TerroirCatalogQuery": {
         "type": "object",
         "properties": {
           "country": {
             "type": "string",
-            "enum": [
-              "FR",
-              "BE"
-            ],
-            "title": "ExportCountry",
-            "description": "Pays de destination d'un colis terroir"
+            "pattern": "^[A-Z]{2}$",
+            "title": "ExportCountryCode",
+            "description": "Code ISO à deux lettres du pays de destination d'une valise"
           },
           "category": {
             "type": "string",
@@ -33531,7 +33830,6 @@
             "maximum": 500
           },
           "currency": {
-            "default": "EUR",
             "type": "string",
             "enum": [
               "XOF",
@@ -33543,12 +33841,11 @@
         },
         "required": [
           "country",
-          "page",
-          "currency"
+          "page"
         ],
         "additionalProperties": false,
         "title": "TerroirCatalogQuery",
-        "description": "Catalogue terroir : pays, catégorie, recherche, page, devise d'affichage"
+        "description": "Catalogue de la Valise du pays : pays, catégorie, recherche, page, devise d'affichage"
       },
       "TerroirDisplayQuery": {
         "type": "object",
@@ -33576,12 +33873,9 @@
         "properties": {
           "country": {
             "type": "string",
-            "enum": [
-              "FR",
-              "BE"
-            ],
-            "title": "ExportCountry",
-            "description": "Pays de destination d'un colis terroir"
+            "pattern": "^[A-Z]{2}$",
+            "title": "ExportCountryCode",
+            "description": "Code ISO à deux lettres du pays de destination d'une valise"
           },
           "weightG": {
             "default": 0,
@@ -33590,7 +33884,6 @@
             "maximum": 1000000
           },
           "currency": {
-            "default": "EUR",
             "type": "string",
             "enum": [
               "XOF",
@@ -33602,8 +33895,7 @@
         },
         "required": [
           "country",
-          "weightG",
-          "currency"
+          "weightG"
         ],
         "additionalProperties": false,
         "title": "TerroirDeparturesQuery",
@@ -33645,7 +33937,7 @@
         ],
         "additionalProperties": false,
         "title": "TerroirCartLine",
-        "description": "Ligne du panier terroir : un produit (et sa variante) ou un pack"
+        "description": "Ligne du valise : un produit (et sa variante) ou un pack"
       },
       "ExportReception": {
         "default": "PICKUP",
@@ -33665,7 +33957,7 @@
           "WALLET"
         ],
         "title": "TerroirPaymentMethod",
-        "description": "Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio"
+        "description": "Paiement d'une valise : carte (page hébergée) ou portefeuille eBio"
       },
       "TerroirSupplementChoice": {
         "type": "string",

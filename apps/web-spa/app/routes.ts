@@ -106,6 +106,7 @@ export default [
       // Admin, Terroir vers l'étranger (011)
       route('admin/terroir/validation', 'features/admin/terroir/pages/export-reviews-page.tsx'),
       route('admin/terroir/packs', 'features/admin/terroir/pages/export-packs-page.tsx'),
+      route('admin/terroir/pays', 'features/admin/terroir/pages/export-countries-page.tsx'),
       route('admin/terroir/agences', 'features/admin/terroir/pages/export-agencies-page.tsx'),
       route('admin/terroir/departs', 'features/admin/terroir/pages/export-departures-page.tsx'),
       route('admin/terroir/departs/:departureId', 'features/admin/terroir/pages/export-departure-detail-page.tsx'),

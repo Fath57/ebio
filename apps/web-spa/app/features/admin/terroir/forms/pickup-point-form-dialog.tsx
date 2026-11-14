@@ -1,4 +1,4 @@
-import type { ExportPickupPoint, ExportPickupPointInput } from '../utils/terroir-types'
+import type { ExportCountryAdmin, ExportPickupPoint, ExportPickupPointInput } from '../utils/terroir-types'
 import { Button } from '@boilerstone/ui/components/primitives/button'
 import {
   Dialog,
@@ -17,10 +17,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { z } from 'zod'
-import { EXPORT_COUNTRIES } from '../utils/terroir-types'
 
 const pickupPointSchema = z.object({
-  country: z.enum(EXPORT_COUNTRIES),
+  country: z.string().regex(/^[A-Z]{2}$/, 'admin.terroir.validation.country'),
   city: z.string().trim().min(2, 'admin.terroir.validation.cityMin').max(80),
   address: z.string().trim().min(5, 'admin.terroir.validation.addressMin').max(500),
   openingHours: z.string().trim().max(300),
@@ -31,6 +30,8 @@ type PickupPointFormData = z.infer<typeof pickupPointSchema>
 
 interface PickupPointFormDialogProps {
   agencyName: string
+  /** Every destination country, active or not (`GET /admin/export/countries`). */
+  countries: ExportCountryAdmin[]
   /** Null: a new pickup point. */
   point: ExportPickupPoint | null
   isPending: boolean
@@ -40,18 +41,21 @@ interface PickupPointFormDialogProps {
 }
 
 /** Where buyers collect their parcel abroad: country, city, address and opening hours. */
-export function PickupPointFormDialog({ agencyName, point, isPending, error, onSubmit, onClose }: PickupPointFormDialogProps) {
+export function PickupPointFormDialog({ agencyName, countries, point, isPending, error, onSubmit, onClose }: PickupPointFormDialogProps) {
   const { t } = useTranslation()
   const form = useForm<PickupPointFormData>({
     resolver: zodResolver(pickupPointSchema),
     defaultValues: {
-      country: point?.country ?? 'FR',
+      country: point?.country ?? '',
       city: point?.city ?? '',
       address: point?.address ?? '',
       openingHours: point?.openingHours ?? '',
       active: point?.active ?? true,
     },
   })
+
+  // A point may sit in a country the list no longer knows: keep it selectable under its code.
+  const orphanCode = point && !countries.some(country => country.code === point.country) ? point.country : null
 
   const submit = (values: PickupPointFormData) => {
     onSubmit({
@@ -82,19 +86,23 @@ export function PickupPointFormDialog({ agencyName, point, isPending, error, onS
               <FormField
                 control={form.control}
                 name="country"
-                render={({ field }) => (
+                render={({ field, fieldState }) => (
                   <FormItem>
                     <FormLabel>{t('admin.terroir.pickupPoints.fields.country')}</FormLabel>
                     <Select value={field.value} onValueChange={field.onChange}>
                       <FormControl>
-                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectTrigger><SelectValue placeholder={t('admin.terroir.pickupPoints.fields.countryPlaceholder')} /></SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {EXPORT_COUNTRIES.map(country => (
-                          <SelectItem key={country} value={country}>{t(`admin.terroir.countries.${country}`)}</SelectItem>
+                        {countries.map(country => (
+                          <SelectItem key={country.code} value={country.code}>
+                            {country.isActive ? country.name : t('admin.terroir.countries.inactiveOption', { name: country.name })}
+                          </SelectItem>
                         ))}
+                        {orphanCode && <SelectItem value={orphanCode}>{orphanCode}</SelectItem>}
                       </SelectContent>
                     </Select>
+                    {fieldState.error?.message && <p className="text-destructive text-sm">{t(fieldState.error.message)}</p>}
                   </FormItem>
                 )}
               />

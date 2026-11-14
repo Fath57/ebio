@@ -164,6 +164,8 @@ import type {
   AdminExportControllerCollectResponses,
   AdminExportControllerCreateAgencyData,
   AdminExportControllerCreateAgencyResponses,
+  AdminExportControllerCreateCountryData,
+  AdminExportControllerCreateCountryResponses,
   AdminExportControllerCreateDepartureData,
   AdminExportControllerCreateDepartureResponses,
   AdminExportControllerCreatePackData,
@@ -180,6 +182,8 @@ import type {
   AdminExportControllerHandedOverResponses,
   AdminExportControllerListAgenciesData,
   AdminExportControllerListAgenciesResponses,
+  AdminExportControllerListCountriesData,
+  AdminExportControllerListCountriesResponses,
   AdminExportControllerListDeparturesData,
   AdminExportControllerListDeparturesResponses,
   AdminExportControllerListPacksData,
@@ -206,6 +210,8 @@ import type {
   AdminExportControllerShipmentResponses,
   AdminExportControllerUpdateAgencyData,
   AdminExportControllerUpdateAgencyResponses,
+  AdminExportControllerUpdateCountryData,
+  AdminExportControllerUpdateCountryResponses,
   AdminExportControllerUpdateDepartureData,
   AdminExportControllerUpdateDepartureResponses,
   AdminExportControllerUpdatePackData,
@@ -954,6 +960,8 @@ import type {
   TerroirClientControllerCreateResponses,
   TerroirClientControllerGetCatalogData,
   TerroirClientControllerGetCatalogResponses,
+  TerroirClientControllerGetCountriesData,
+  TerroirClientControllerGetCountriesResponses,
   TerroirClientControllerGetDeparturesData,
   TerroirClientControllerGetDeparturesResponses,
   TerroirClientControllerGetPackData,
@@ -6713,6 +6721,53 @@ export const communityControllerGetShareUrl = <
     ThrowOnError
   >({ url: "/api/groups/publications/{id}/share-url", ...options });
 
+export const adminExportControllerListCountries = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<AdminExportControllerListCountriesData, ThrowOnError>,
+) =>
+  (options?.client ?? client).get<
+    AdminExportControllerListCountriesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/export/countries", ...options });
+
+export const adminExportControllerCreateCountry = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExportControllerCreateCountryData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminExportControllerCreateCountryResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/export/countries",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
+export const adminExportControllerUpdateCountry = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExportControllerUpdateCountryData, ThrowOnError>,
+) =>
+  (options.client ?? client).patch<
+    AdminExportControllerUpdateCountryResponses,
+    unknown,
+    ThrowOnError
+  >({
+    url: "/api/admin/export/countries/{code}",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options.headers,
+    },
+  });
+
 export const adminExportControllerListAgencies = <
   ThrowOnError extends boolean = false,
 >(
@@ -7235,6 +7290,17 @@ export const supplierExportControllerUpdatePack = <
       ...options.headers,
     },
   });
+
+export const terroirClientControllerGetCountries = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<TerroirClientControllerGetCountriesData, ThrowOnError>,
+) =>
+  (options.client ?? client).get<
+    TerroirClientControllerGetCountriesResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/terroir/countries", ...options });
 
 export const terroirClientControllerGetCatalog = <
   ThrowOnError extends boolean = false,

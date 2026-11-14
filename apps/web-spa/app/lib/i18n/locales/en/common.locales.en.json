@@ -197,6 +197,7 @@
     "farProofs": "Far proofs",
     "terroirReviews": "Review",
     "terroirPacks": "eBio packs",
+    "terroirCountries": "Countries",
     "terroirAgencies": "Agencies",
     "terroirDepartures": "Departures"
   },
@@ -1744,7 +1745,7 @@
       },
       "terroirExport": {
         "title": "La Valise du pays",
-        "description": "Lets diaspora buyers order Beninese terroir products, shipped to France and Belgium by partner agencies. Closed, the apps hide the terroir; the back office stays usable to prepare agencies, departures and reviews.",
+        "description": "Lets diaspora buyers order Beninese terroir products, shipped by partner agencies to the countries opened in Valise du pays → Countries. Closed, the apps hide the terroir; the back office stays usable to prepare countries, agencies, departures and reviews.",
         "legalWarning": "Partnerships and legal review pending: do not open La Valise du pays before the agency agreements are signed and the terms are approved in writing (duties and taxes, refund without return, insurance).",
         "toggleLabel": "Open La Valise du pays to buyers",
         "stateOpen": "Open: the apps offer La Valise du pays and accept orders abroad.",
@@ -2928,8 +2929,70 @@
       "enlarge": "Enlarge: {{label}}",
       "enlargedDescription": "Full-size photo",
       "countries": {
-        "FR": "France",
-        "BE": "Belgium"
+        "title": "Destination countries",
+        "description": "The countries a suitcase can travel to, and how the apps talk about them",
+        "create": "New country",
+        "createTitle": "New destination country",
+        "editTitle": "Edit {{name}}",
+        "formDescription": "The ISO code cannot change once the country exists. The two phrases are used to build the sentences of the apps.",
+        "empty": "No destination country yet. Add the first one to create pickup points and departures.",
+        "visibilityHint": "Buyers only see a country when it is active and served by an open departure with a rate for it.",
+        "saved": "{{name}} saved.",
+        "activated": "{{name}} is open to new orders.",
+        "deactivated": "{{name}} no longer accepts new orders.",
+        "activate": "Activate",
+        "deactivate": "Deactivate",
+        "activateTitle": "Activate {{name}}?",
+        "deactivateTitle": "Deactivate {{name}}?",
+        "activateDescription": "Buyers will again be able to order a suitcase {{toPhrase}} as soon as an open departure has a rate for this country.",
+        "deactivateDescription_one": "No new order {{toPhrase}}. Parcels already on their way keep their tracking until handover: {{count}} suitcase in progress.",
+        "deactivateDescription_other": "No new order {{toPhrase}}. Parcels already on their way keep their tracking until handover: {{count}} suitcases in progress.",
+        "activateAria": "Activate {{name}}",
+        "deactivateAria": "Deactivate {{name}}",
+        "editAria": "Edit {{name}}",
+        "inactiveOption": "{{name}} (inactive)",
+        "columns": {
+          "country": "Country",
+          "phrases": "Phrases",
+          "currency": "Currency",
+          "sortOrder": "Order",
+          "activity": "Activity"
+        },
+        "counts": {
+          "pickupPoints_one": "{{count}} pickup point",
+          "pickupPoints_other": "{{count}} pickup points",
+          "openDepartures_one": "{{count}} open departure",
+          "openDepartures_other": "{{count}} open departures",
+          "activeShipments_one": "{{count}} suitcase in progress",
+          "activeShipments_other": "{{count}} suitcases in progress"
+        },
+        "fields": {
+          "code": "ISO code",
+          "codeLocked": "The ISO code cannot be edited: it identifies the country in rates and parcels.",
+          "name": "Name",
+          "namePlaceholder": "France",
+          "toPhrase": "« to » phrase (French)",
+          "toPhrasePlaceholder": "vers la France",
+          "toPhraseHint": "E.g. « vers le Canada », « vers les Pays-Bas »",
+          "inPhrase": "« in » phrase (French)",
+          "inPhrasePlaceholder": "en France",
+          "inPhraseHint": "E.g. « au Canada », « aux Pays-Bas »",
+          "displayCurrency": "Display currency",
+          "flagEmoji": "Flag",
+          "sortOrder": "Display order",
+          "sortOrderHint": "Smallest first",
+          "isActive": "Open to new orders"
+        },
+        "currencies": {
+          "EUR": "EUR (euro)",
+          "USD": "USD (US dollar)",
+          "CAD": "CAD (Canadian dollar)"
+        },
+        "errors": {
+          "EXPORT_COUNTRY_EXISTS": "This destination country already exists.",
+          "EXPORT_COUNTRY_UNKNOWN": "This destination country does not exist.",
+          "EXPORT_COUNTRY_INACTIVE": "This destination country is deactivated: reactivate it in Valise du pays → Countries."
+        }
       },
       "reception": {
         "PICKUP": "Agency pickup",
@@ -2996,11 +3059,15 @@
         "step": "Choose a step.",
         "stepOrMessage": "Choose a step or write a message.",
         "price": "Enter a price in FCFA.",
-        "packItems": "Add at least one product."
+        "packItems": "Add at least one product.",
+        "country": "Choose a country.",
+        "countryCode": "Two letters, the ISO country code (FR, BE, CA…).",
+        "phraseMin": "At least three characters.",
+        "sortOrder": "A whole number, 0 or more."
       },
       "agencies": {
         "title": "Partner agencies",
-        "description": "Agencies that carry parcels to France and Belgium, and their pickup points",
+        "description": "Agencies that carry parcels to the destination countries, and their pickup points",
         "create": "New agency",
         "createTitle": "New agency",
         "editTitle": "Edit agency",
@@ -3027,6 +3094,7 @@
         "editAria": "Edit the {{city}} pickup point",
         "fields": {
           "country": "Country",
+          "countryPlaceholder": "Choose a country",
           "city": "City",
           "address": "Address",
           "openingHours": "Opening hours",
@@ -3088,7 +3156,10 @@
         "cancelConfirm": "Cancel departure",
         "cancelled": "Departure cancelled.",
         "cancelledReassigned_one": "Departure cancelled: {{count}} parcel moved, extra cost for eBio {{surcharge}}.",
-        "cancelledReassigned_other": "Departure cancelled: {{count}} parcels moved, extra cost for eBio {{surcharge}}."
+        "cancelledReassigned_other": "Departure cancelled: {{count}} parcels moved, extra cost for eBio {{surcharge}}.",
+        "noCountries": "No destination country: create one in Valise du pays → Countries.",
+        "rateInactive": "Country deactivated: no new order can travel there.",
+        "rateUnlisted": "Code missing from the country list, kept for this departure."
       },
       "departureDetail": {
         "title": "{{date}} departure",

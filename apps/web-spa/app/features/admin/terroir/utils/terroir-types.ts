@@ -4,8 +4,11 @@
  * contract, and the queries coerce every amount through Number().
  */
 
-export const EXPORT_COUNTRIES = ['FR', 'BE'] as const
-export type ExportCountry = typeof EXPORT_COUNTRIES[number]
+/** ISO 3166-1 alpha-2 code of a destination country; the list lives in the API (`GET /admin/export/countries`). */
+export type ExportCountryCode = string
+
+export const EXPORT_COUNTRY_CURRENCIES = ['EUR', 'USD', 'CAD'] as const
+export type ExportCountryCurrency = typeof EXPORT_COUNTRY_CURRENCIES[number]
 
 export const DEPARTURE_STATUSES = ['OPEN', 'FULL', 'CANCELLED', 'DEPARTED'] as const
 export type ExportDepartureStatus = typeof DEPARTURE_STATUSES[number]
@@ -51,12 +54,52 @@ export const EXPORT_CHECKLIST_KEYS = [
 ] as const
 export type ExportChecklistKey = typeof EXPORT_CHECKLIST_KEYS[number]
 
+// ===== DESTINATION COUNTRIES =====
+
+export interface ExportCountryCounts {
+  pickupPoints: number
+  openDepartures: number
+  activeShipments: number
+}
+
+export interface ExportCountryAdmin {
+  code: ExportCountryCode
+  name: string
+  toPhrase: string
+  inPhrase: string
+  displayCurrency: ExportCountryCurrency
+  flagEmoji: string | null
+  sortOrder: number
+  isActive: boolean
+  counts: ExportCountryCounts
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ExportCountryUpdate {
+  name?: string
+  toPhrase?: string
+  inPhrase?: string
+  displayCurrency?: ExportCountryCurrency
+  flagEmoji?: string | null
+  sortOrder?: number
+  isActive?: boolean
+}
+
+export interface ExportCountryInput extends ExportCountryUpdate {
+  code: ExportCountryCode
+  name: string
+  toPhrase: string
+  inPhrase: string
+  displayCurrency: ExportCountryCurrency
+}
+
 // ===== AGENCIES =====
 
 export interface ExportPickupPoint {
   id: string
   agencyId: string
-  country: ExportCountry
+  country: ExportCountryCode
   city: string
   address: string
   openingHours: string | null
@@ -85,7 +128,7 @@ export interface ExportAgencyInput {
 }
 
 export interface ExportPickupPointInput {
-  country: ExportCountry
+  country: ExportCountryCode
   city: string
   address: string
   openingHours: string | null
@@ -95,7 +138,7 @@ export interface ExportPickupPointInput {
 // ===== DEPARTURES =====
 
 export interface ExportDepartureRate {
-  country: ExportCountry
+  country: ExportCountryCode
   pricePerKg: number
   minBilledKg: number
   maxWeightKg: number | null
@@ -127,7 +170,7 @@ export interface ExportDeparture {
 export interface ExportDepartureShipmentRow {
   id: string
   buyer: string
-  country: ExportCountry
+  country: ExportCountryCode
   status: ExportShipmentStatus
   estimatedWeightG: number
   actualWeightG: number | null
@@ -212,7 +255,7 @@ export interface ExportContact {
 export interface ExportAdminShipment {
   id: string
   status: ExportShipmentStatus
-  country: ExportCountry
+  country: ExportCountryCode
   buyer: ExportContact & { id: string }
   gift: (ExportContact & { message: string | null }) | null
   departure: { id: string, agency: string, departsOn: string, status: ExportDepartureStatus, depositDeadline: string }

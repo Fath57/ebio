@@ -16,6 +16,7 @@ import {
   ClipboardCheck,
   ClipboardList,
   CreditCard,
+  Earth,
   Filter,
   FolderTree,
   Gift,
@@ -190,6 +191,7 @@ export default function AppLayout() {
       items: [
         { to: '/admin/terroir/validation', label: t('nav.terroirReviews'), icon: <ClipboardCheck className="h-4 w-4" />, permission: { action: 'read', subject: 'Product' } },
         { to: '/admin/terroir/packs', label: t('nav.terroirPacks'), icon: <Gift className="h-4 w-4" />, permission: { action: 'read', subject: 'Product' } },
+        { to: '/admin/terroir/pays', label: t('nav.terroirCountries'), icon: <Earth className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
         { to: '/admin/terroir/agences', label: t('nav.terroirAgencies'), icon: <Building2 className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
         { to: '/admin/terroir/departs', label: t('nav.terroirDepartures'), icon: <Plane className="h-4 w-4" />, permission: { action: 'read', subject: 'Delivery' } },
       ],

@@ -4,6 +4,9 @@ import type {
   ExportAgency,
   ExportAgencyInput,
   ExportChecklistKey,
+  ExportCountryAdmin,
+  ExportCountryInput,
+  ExportCountryUpdate,
   ExportDeparture,
   ExportDepartureDetail,
   ExportDepartureInput,
@@ -24,6 +27,7 @@ import {
   adminExportControllerCancelDeparture,
   adminExportControllerCollect,
   adminExportControllerCreateAgency,
+  adminExportControllerCreateCountry,
   adminExportControllerCreateDeparture,
   adminExportControllerCreatePack,
   adminExportControllerCreatePickupPoint,
@@ -31,6 +35,7 @@ import {
   adminExportControllerDepartureEvent,
   adminExportControllerHandedOver,
   adminExportControllerListAgencies,
+  adminExportControllerListCountries,
   adminExportControllerListDepartures,
   adminExportControllerListPacks,
   adminExportControllerLost,
@@ -43,6 +48,7 @@ import {
   adminExportControllerShipment,
   adminExportControllerShipmentEvent,
   adminExportControllerUpdateAgency,
+  adminExportControllerUpdateCountry,
   adminExportControllerUpdateDeparture,
   adminExportControllerUpdatePack,
   adminExportControllerUpdatePickupPoint,
@@ -52,6 +58,7 @@ import {
 export const TERROIR_KEY = ['admin', 'terroir'] as const
 
 export const terroirKeys = {
+  countries: [...TERROIR_KEY, 'countries'] as const,
   agencies: [...TERROIR_KEY, 'agencies'] as const,
   departures: (status?: ExportDepartureStatus) => [...TERROIR_KEY, 'departures', status ?? 'all'] as const,
   departuresRoot: [...TERROIR_KEY, 'departures'] as const,
@@ -62,10 +69,19 @@ export const terroirKeys = {
   packs: [...TERROIR_KEY, 'packs'] as const,
 }
 
+/** A refusal of the API, with its machine code (`EXPORT_COUNTRY_EXISTS`…) when it sent one. */
+export class TerroirApiError extends Error {
+  constructor(message: string, readonly code: string | null) {
+    super(message)
+    this.name = 'TerroirApiError'
+  }
+}
+
 /** The API explains a refusal in French (`{ code, message }`); that sentence is what the staff reads. */
 function fail(error: unknown, fallback = ''): never {
-  const message = (error as { message?: unknown } | undefined)?.message
-  throw new Error(typeof message === 'string' ? message : fallback)
+  const body = error as { message?: unknown, code?: unknown } | undefined
+  const message = typeof body?.message === 'string' ? body.message : fallback
+  throw new TerroirApiError(message, typeof body?.code === 'string' ? body.code : null)
 }
 
 function toNullableNumber(value: unknown): number | null {
@@ -73,6 +89,18 @@ function toNullableNumber(value: unknown): number | null {
 }
 
 // ===== NORMALISERS (numeric strings → numbers) =====
+
+function toCountry(raw: ExportCountryAdmin): ExportCountryAdmin {
+  return {
+    ...raw,
+    sortOrder: Number(raw.sortOrder),
+    counts: {
+      pickupPoints: Number(raw.counts?.pickupPoints ?? 0),
+      openDepartures: Number(raw.counts?.openDepartures ?? 0),
+      activeShipments: Number(raw.counts?.activeShipments ?? 0),
+    },
+  }
+}
 
 function toPickupPoint(raw: ExportPickupPoint): ExportPickupPoint {
   return { ...raw }
@@ -170,6 +198,21 @@ function toReviews(raw: ExportReviews): ExportReviews {
 
 // ===== QUERIES =====
 
+/** Every destination country, active or not, in the order the apps show them. */
+export function countriesQueryOptions() {
+  return {
+    queryKey: terroirKeys.countries,
+    queryFn: async () => {
+      const response = await adminExportControllerListCountries()
+      if (response.error)
+        fail(response.error, 'Failed to load countries')
+      return (response.data as ExportCountryAdmin[])
+        .map(toCountry)
+        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'fr'))
+    },
+  }
+}
+
 export function agenciesQueryOptions() {
   return {
     queryKey: terroirKeys.agencies,
@@ -242,6 +285,22 @@ export function packsQueryOptions() {
       return (response.data as ExportPack[]).map(toPack)
     },
   }
+}
+
+// ===== DESTINATION COUNTRIES =====
+
+export async function createCountry(body: ExportCountryInput): Promise<ExportCountryAdmin> {
+  const response = await adminExportControllerCreateCountry({ body })
+  if (response.error)
+    fail(response.error)
+  return toCountry(response.data as ExportCountryAdmin)
+}
+
+export async function updateCountry(code: string, body: ExportCountryUpdate): Promise<ExportCountryAdmin> {
+  const response = await adminExportControllerUpdateCountry({ path: { code }, body })
+  if (response.error)
+    fail(response.error)
+  return toCountry(response.data as ExportCountryAdmin)
 }
 
 // ===== AGENCIES AND PICKUP POINTS =====

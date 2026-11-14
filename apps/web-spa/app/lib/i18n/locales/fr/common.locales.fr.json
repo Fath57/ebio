@@ -197,6 +197,7 @@
     "farProofs": "Preuves éloignées",
     "terroirReviews": "Validation",
     "terroirPacks": "Packs eBio",
+    "terroirCountries": "Pays",
     "terroirAgencies": "Agences",
     "terroirDepartures": "Départs"
   },
@@ -1744,7 +1745,7 @@
       },
       "terroirExport": {
         "title": "La Valise du pays",
-        "description": "Permet aux clients de la diaspora d'acheter des produits du terroir béninois, envoyés en France et en Belgique par les agences partenaires. Fermé, les applications masquent le terroir ; le back-office reste utilisable pour préparer agences, départs et validations.",
+        "description": "Permet aux clients de la diaspora d'acheter des produits du terroir béninois, envoyés par les agences partenaires vers les pays ouverts dans Valise du pays → Pays. Fermé, les applications masquent le terroir ; le back-office reste utilisable pour préparer pays, agences, départs et validations.",
         "legalWarning": "Partenariats et validation juridique en attente : n'ouvrez pas la Valise du pays avant la signature des accords avec les agences et l'accord écrit sur les CGU (droits et taxes, remboursement sans retour, assurance).",
         "toggleLabel": "Ouvrir la Valise du pays aux clients",
         "stateOpen": "Ouvert : les applications proposent la Valise du pays et acceptent les commandes vers l'étranger.",
@@ -2928,8 +2929,70 @@
       "enlarge": "Agrandir : {{label}}",
       "enlargedDescription": "Photo en grand format",
       "countries": {
-        "FR": "France",
-        "BE": "Belgique"
+        "title": "Pays de destination",
+        "description": "Les pays vers lesquels une valise peut partir, et comment les applications en parlent",
+        "create": "Nouveau pays",
+        "createTitle": "Nouveau pays de destination",
+        "editTitle": "Modifier {{name}}",
+        "formDescription": "Le code ISO ne change plus une fois le pays créé. Les deux tournures servent à composer les phrases des applications.",
+        "empty": "Aucun pays de destination pour le moment. Ajoutez le premier pour pouvoir créer des points de retrait et des départs.",
+        "visibilityHint": "Un pays n'est proposé aux clients que s'il est actif et desservi par un départ ouvert qui a un tarif vers ce pays.",
+        "saved": "{{name}} enregistré.",
+        "activated": "{{name}} est ouvert aux nouvelles commandes.",
+        "deactivated": "{{name}} n'accepte plus de nouvelles commandes.",
+        "activate": "Activer",
+        "deactivate": "Désactiver",
+        "activateTitle": "Activer {{name}} ?",
+        "deactivateTitle": "Désactiver {{name}} ?",
+        "activateDescription": "Les clients pourront de nouveau commander une valise {{toPhrase}}, dès qu'un départ ouvert a un tarif vers ce pays.",
+        "deactivateDescription_one": "Plus aucune nouvelle commande {{toPhrase}}. Les colis déjà en route gardent leur suivi jusqu'à la remise : {{count}} valise en cours.",
+        "deactivateDescription_other": "Plus aucune nouvelle commande {{toPhrase}}. Les colis déjà en route gardent leur suivi jusqu'à la remise : {{count}} valises en cours.",
+        "activateAria": "Activer {{name}}",
+        "deactivateAria": "Désactiver {{name}}",
+        "editAria": "Modifier {{name}}",
+        "inactiveOption": "{{name}} (inactif)",
+        "columns": {
+          "country": "Pays",
+          "phrases": "Tournures",
+          "currency": "Devise",
+          "sortOrder": "Ordre",
+          "activity": "Activité"
+        },
+        "counts": {
+          "pickupPoints_one": "{{count}} point de retrait",
+          "pickupPoints_other": "{{count}} points de retrait",
+          "openDepartures_one": "{{count}} départ ouvert",
+          "openDepartures_other": "{{count}} départs ouverts",
+          "activeShipments_one": "{{count}} valise en cours",
+          "activeShipments_other": "{{count}} valises en cours"
+        },
+        "fields": {
+          "code": "Code ISO",
+          "codeLocked": "Le code ISO ne se modifie pas : il identifie le pays dans les tarifs et les colis.",
+          "name": "Nom",
+          "namePlaceholder": "France",
+          "toPhrase": "Tournure « vers »",
+          "toPhrasePlaceholder": "vers la France",
+          "toPhraseHint": "Ex. « vers le Canada », « vers les Pays-Bas »",
+          "inPhrase": "Tournure « en »",
+          "inPhrasePlaceholder": "en France",
+          "inPhraseHint": "Ex. « au Canada », « aux Pays-Bas »",
+          "displayCurrency": "Devise d'affichage",
+          "flagEmoji": "Drapeau",
+          "sortOrder": "Ordre d'affichage",
+          "sortOrderHint": "Le plus petit en premier",
+          "isActive": "Ouvert aux nouvelles commandes"
+        },
+        "currencies": {
+          "EUR": "EUR (euro)",
+          "USD": "USD (dollar américain)",
+          "CAD": "CAD (dollar canadien)"
+        },
+        "errors": {
+          "EXPORT_COUNTRY_EXISTS": "Ce pays de destination existe déjà.",
+          "EXPORT_COUNTRY_UNKNOWN": "Ce pays de destination n'existe pas.",
+          "EXPORT_COUNTRY_INACTIVE": "Ce pays de destination est désactivé : réactivez-le dans Valise du pays → Pays."
+        }
       },
       "reception": {
         "PICKUP": "Retrait en agence",
@@ -2996,11 +3059,15 @@
         "step": "Choisissez une étape.",
         "stepOrMessage": "Choisissez une étape ou écrivez un message.",
         "price": "Indiquez un prix en FCFA.",
-        "packItems": "Ajoutez au moins un produit."
+        "packItems": "Ajoutez au moins un produit.",
+        "country": "Choisissez un pays.",
+        "countryCode": "Deux lettres, code ISO du pays (FR, BE, CA…).",
+        "phraseMin": "Trois caractères au moins.",
+        "sortOrder": "Un nombre entier, 0 ou plus."
       },
       "agencies": {
         "title": "Agences partenaires",
-        "description": "Les agences qui acheminent les colis vers la France et la Belgique, et leurs points de retrait",
+        "description": "Les agences qui acheminent les colis vers les pays de destination, et leurs points de retrait",
         "create": "Nouvelle agence",
         "createTitle": "Nouvelle agence",
         "editTitle": "Modifier l'agence",
@@ -3027,6 +3094,7 @@
         "editAria": "Modifier le point de retrait de {{city}}",
         "fields": {
           "country": "Pays",
+          "countryPlaceholder": "Choisissez un pays",
           "city": "Ville",
           "address": "Adresse",
           "openingHours": "Horaires",
@@ -3088,7 +3156,10 @@
         "cancelConfirm": "Annuler le départ",
         "cancelled": "Départ annulé.",
         "cancelledReassigned_one": "Départ annulé : {{count}} colis réaffecté, surcoût pour eBio {{surcharge}}.",
-        "cancelledReassigned_other": "Départ annulé : {{count}} colis réaffectés, surcoût pour eBio {{surcharge}}."
+        "cancelledReassigned_other": "Départ annulé : {{count}} colis réaffectés, surcoût pour eBio {{surcharge}}.",
+        "noCountries": "Aucun pays de destination : créez-en un dans Valise du pays → Pays.",
+        "rateInactive": "Pays désactivé : aucune nouvelle commande ne peut y partir.",
+        "rateUnlisted": "Code absent de la liste des pays, conservé pour ce départ."
       },
       "departureDetail": {
         "title": "Départ du {{date}}",

@@ -14,6 +14,7 @@ import { CancelDepartureDialog } from '../components/cancel-departure-dialog'
 import { FillGauge } from '../components/fill-gauge'
 import { DepartureStatusBadge } from '../components/terroir-status-badges'
 import { DepartureFormDialog } from '../forms/departure-form-dialog'
+import { terroirErrorMessage, useExportCountries } from '../utils/terroir-countries'
 import { formatDateTime, formatDay, formatDayShort, formatKg } from '../utils/terroir-format'
 import { agenciesQueryOptions, cancelDeparture, departuresQueryOptions, saveDeparture, TERROIR_KEY } from '../utils/terroir-queries'
 import { DEPARTURE_STATUSES } from '../utils/terroir-types'
@@ -45,6 +46,8 @@ export default function ExportDeparturesPage() {
   const departures = useQuery(departuresQueryOptions(status))
   const openDepartures = useQuery(departuresQueryOptions('OPEN'))
   const agencies = useQuery(agenciesQueryOptions())
+  const countries = useExportCountries()
+  const countryLabelOf = countries.labelOf
 
   const close = () => {
     setEditing(null)
@@ -62,7 +65,7 @@ export default function ExportDeparturesPage() {
       toast.success(t('admin.terroir.departures.saved'))
       close()
     },
-    onError: (failure: Error) => setError(failure.message || t('admin.terroir.genericError')),
+    onError: (failure: Error) => setError(terroirErrorMessage(failure, t)),
   })
 
   const cancelMutation = useMutation({
@@ -75,7 +78,7 @@ export default function ExportDeparturesPage() {
         : t('admin.terroir.departures.cancelled'))
       close()
     },
-    onError: (failure: Error) => setError(failure.message || t('admin.terroir.genericError')),
+    onError: (failure: Error) => setError(terroirErrorMessage(failure, t)),
   })
 
   const columns = useMemo<Array<ColumnDef<ExportDeparture, unknown>>>(() => [
@@ -114,7 +117,7 @@ export default function ExportDeparturesPage() {
         <div className="space-y-0.5 text-xs">
           {row.original.rates.map(rate => (
             <p key={rate.country} className="whitespace-nowrap">
-              <span className="font-medium">{rate.country}</span>
+              <span className="font-medium">{countryLabelOf(rate.country)}</span>
               {' '}
               {t('admin.terroir.departures.ratePerKg', { price: formatAmount(rate.pricePerKg), min: formatKg(rate.minBilledKg) })}
             </p>
@@ -173,7 +176,7 @@ export default function ExportDeparturesPage() {
         )
       },
     },
-  ], [t])
+  ], [t, countryLabelOf])
 
   const rows = departures.data ?? []
 
@@ -217,6 +220,7 @@ export default function ExportDeparturesPage() {
         <DepartureFormDialog
           departure={editing.departure}
           agencies={agencies.data ?? []}
+          countries={countries.isError ? [] : countries.data}
           isPending={saveMutation.isPending}
           error={error}
           onClose={close}

@@ -47,6 +47,7 @@ const ROUTE_PERMISSIONS: RoutePermission[] = [
   { prefix: '/admin/parametres', action: 'read', subject: 'Settings' },
   { prefix: '/admin/terroir/validation', action: 'read', subject: 'Product' },
   { prefix: '/admin/terroir/packs', action: 'read', subject: 'Product' },
+  { prefix: '/admin/terroir/pays', action: 'read', subject: 'Delivery' },
   { prefix: '/admin/terroir/agences', action: 'read', subject: 'Delivery' },
   { prefix: '/admin/terroir/departs', action: 'read', subject: 'Delivery' },
   { prefix: '/admin/terroir/colis', action: 'read', subject: 'Delivery' },

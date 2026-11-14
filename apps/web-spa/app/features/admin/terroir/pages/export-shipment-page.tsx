@@ -17,6 +17,7 @@ import { Can } from '@/lib/casl/can'
 import { DepartureStatusBadge, ShipmentStatusBadge } from '../components/terroir-status-badges'
 import { ShipmentEventDialog } from '../forms/shipment-event-dialog'
 import { WeighDialog } from '../forms/weigh-dialog'
+import { useExportCountries } from '../utils/terroir-countries'
 import { formatDateTime, formatDay, formatGrams } from '../utils/terroir-format'
 import {
   addShipmentEvent,
@@ -50,6 +51,7 @@ const SETTLED = new Set(['HANDED_OVER', 'LOST', 'DAMAGED', 'CANCELLED'])
  */
 export default function ExportShipmentPage() {
   const { t } = useTranslation()
+  const { labelOf } = useExportCountries()
   const { shipmentId = '' } = useParams()
   const queryClient = useQueryClient()
   const [pending, setPending] = useState<Pending | null>(null)
@@ -124,7 +126,7 @@ export default function ExportShipmentPage() {
             <p className="text-muted-foreground text-sm">
               {t('admin.terroir.shipment.createdAt', { date: formatDateTime(data.createdAt) })}
               {' · '}
-              {t(`admin.terroir.countries.${data.country}`)}
+              {labelOf(data.country)}
             </p>
           </div>
           {!settled && (

@@ -12,6 +12,7 @@ import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { Can } from '@/lib/casl/can'
 import { AgencyFormDialog } from '../forms/agency-form-dialog'
 import { PickupPointFormDialog } from '../forms/pickup-point-form-dialog'
+import { terroirErrorMessage, useExportCountries } from '../utils/terroir-countries'
 import { agenciesQueryOptions, saveAgency, savePickupPoint, terroirKeys } from '../utils/terroir-queries'
 
 type Editing
@@ -23,8 +24,8 @@ type SaveInput
     | { kind: 'point', agencyId: string, id: string | null, body: ExportPickupPointInput }
 
 /**
- * The partner agencies that carry parcels to France and Belgium, and the
- * points where buyers collect them. Inactive ones stay listed for the
+ * The partner agencies that carry parcels abroad, and the points where
+ * buyers collect them. Inactive ones stay listed for the
  * departures that quote them.
  */
 export default function ExportAgenciesPage() {
@@ -33,6 +34,7 @@ export default function ExportAgenciesPage() {
   const [editing, setEditing] = useState<Editing | null>(null)
   const [error, setError] = useState<string | null>(null)
   const { data, isLoading, isError, refetch } = useQuery(agenciesQueryOptions())
+  const { countries, labelOf } = useExportCountries()
 
   const mutation = useMutation({
     mutationFn: async (input: SaveInput) => {
@@ -43,10 +45,12 @@ export default function ExportAgenciesPage() {
     onMutate: () => setError(null),
     onSuccess: (_saved, input) => {
       queryClient.invalidateQueries({ queryKey: terroirKeys.agencies })
+      // A pickup point changes the country's counts.
+      queryClient.invalidateQueries({ queryKey: terroirKeys.countries })
       toast.success(input.kind === 'agency' ? t('admin.terroir.agencies.saved') : t('admin.terroir.pickupPoints.saved'))
       setEditing(null)
     },
-    onError: (failure: Error) => setError(failure.message || t('admin.terroir.genericError')),
+    onError: (failure: Error) => setError(terroirErrorMessage(failure, t)),
   })
 
   const close = () => {
@@ -88,6 +92,7 @@ export default function ExportAgenciesPage() {
         <AgencyCard
           key={agency.id}
           agency={agency}
+          countryLabel={labelOf}
           onEdit={() => setEditing({ kind: 'agency', agency })}
           onAddPoint={() => setEditing({ kind: 'point', agency, point: null })}
           onEditPoint={point => setEditing({ kind: 'point', agency, point })}
@@ -106,6 +111,7 @@ export default function ExportAgenciesPage() {
       {editing?.kind === 'point' && (
         <PickupPointFormDialog
           agencyName={editing.agency.name}
+          countries={countries}
           point={editing.point}
           isPending={mutation.isPending}
           error={error}
@@ -119,12 +125,13 @@ export default function ExportAgenciesPage() {
 
 interface AgencyCardProps {
   agency: ExportAgency
+  countryLabel: (code: string) => string
   onEdit: () => void
   onAddPoint: () => void
   onEditPoint: (point: ExportPickupPoint) => void
 }
 
-function AgencyCard({ agency, onEdit, onAddPoint, onEditPoint }: AgencyCardProps) {
+function AgencyCard({ agency, countryLabel, onEdit, onAddPoint, onEditPoint }: AgencyCardProps) {
   const { t } = useTranslation()
   const contact = [agency.contactName, agency.contactPhone, agency.contactEmail].filter(Boolean).join(' · ')
 
@@ -173,7 +180,7 @@ function AgencyCard({ agency, onEdit, onAddPoint, onEditPoint }: AgencyCardProps
                   <TableBody>
                     {agency.pickupPoints.map(point => (
                       <TableRow key={point.id}>
-                        <TableCell>{t(`admin.terroir.countries.${point.country}`)}</TableCell>
+                        <TableCell>{countryLabel(point.country)}</TableCell>
                         <TableCell className="font-medium">{point.city}</TableCell>
                         <TableCell className="max-w-xs whitespace-pre-line">{point.address}</TableCell>
                         <TableCell className="text-muted-foreground">{point.openingHours ?? '-'}</TableCell>

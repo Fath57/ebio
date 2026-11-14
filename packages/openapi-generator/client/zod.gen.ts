@@ -137,7 +137,7 @@ export const zFamilyWalletSetting = z.object({
 /**
  * UpdateTerroirExportSetting
  *
- * Réglages du terroir vers l'étranger à modifier
+ * Réglages de la Valise du pays à modifier
  */
 export const zUpdateTerroirExportSetting = z.object({
   enabled: z.optional(z.boolean()),
@@ -4048,11 +4048,11 @@ export const zContactMessage = z.object({
 });
 
 /**
- * ExportCountry
+ * ExportCountryCode
  *
- * Pays de destination d'un colis terroir
+ * Code ISO à deux lettres du pays de destination d'une valise
  */
-export const zExportCountry = z.enum(["FR", "BE"]);
+export const zExportCountryCode = z.string().regex(/^[A-Z]{2}$/);
 
 /**
  * ExportPickupPointInput
@@ -4060,7 +4060,7 @@ export const zExportCountry = z.enum(["FR", "BE"]);
  * Point de retrait d'une agence : pays, ville, adresse, horaires
  */
 export const zExportPickupPointInput = z.object({
-  country: zExportCountry,
+  country: zExportCountryCode,
   city: z.string().min(2).max(80),
   address: z.string().min(5).max(500),
   openingHours: z.optional(z.union([z.string().max(300), z.null()])),
@@ -4073,7 +4073,7 @@ export const zExportPickupPointInput = z.object({
  * Champs d'un point de retrait à modifier
  */
 export const zUpdateExportPickupPoint = z.object({
-  country: z.optional(zExportCountry),
+  country: z.optional(zExportCountryCode),
   city: z.optional(z.string().min(2).max(80)),
   address: z.optional(z.string().min(5).max(500)),
   openingHours: z.optional(z.union([z.string().max(300), z.null()])),
@@ -4086,7 +4086,45 @@ export const zUpdateExportPickupPoint = z.object({
  * « Me prévenir du prochain départ » vers un pays
  */
 export const zTerroirDepartureAlertInput = z.object({
-  country: zExportCountry,
+  country: zExportCountryCode,
+});
+
+/**
+ * ForeignCurrency
+ *
+ * Devise étrangère disposant d'un taux de change vers le FCFA
+ */
+export const zForeignCurrency = z.enum(["EUR", "USD", "CAD"]);
+
+/**
+ * ExportCountryInput
+ *
+ * Pays de destination : code ISO, nom, tournures « vers » et « en », devise d'affichage
+ */
+export const zExportCountryInput = z.object({
+  code: zExportCountryCode,
+  name: z.string().min(2).max(80),
+  toPhrase: z.string().min(3).max(120),
+  inPhrase: z.string().min(3).max(120),
+  displayCurrency: zForeignCurrency,
+  flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+  sortOrder: z.optional(z.int().gte(0).lte(10000)),
+  isActive: z.optional(z.boolean()),
+});
+
+/**
+ * UpdateExportCountry
+ *
+ * Champs d'un pays de destination à modifier ; isActive: false le ferme aux nouvelles valises
+ */
+export const zUpdateExportCountry = z.object({
+  name: z.optional(z.string().min(2).max(80)),
+  toPhrase: z.optional(z.string().min(3).max(120)),
+  inPhrase: z.optional(z.string().min(3).max(120)),
+  displayCurrency: z.optional(zForeignCurrency),
+  flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+  sortOrder: z.optional(z.int().gte(0).lte(10000)),
+  isActive: z.optional(z.boolean()),
 });
 
 /**
@@ -4104,7 +4142,7 @@ export const zExportDeparturesQuery = z.object({
  * Tarif d'un départ pour un pays
  */
 export const zExportDepartureRateInput = z.object({
-  country: z.enum(["FR", "BE"]),
+  country: z.string().regex(/^[A-Z]{2}$/),
   pricePerKg: z.number().gt(0).lte(10000000),
   minBilledKg: z.number().gte(0).lte(1000),
   maxWeightKg: z.optional(z.union([z.number().gt(0).lte(1000), z.null()])),
@@ -4167,7 +4205,7 @@ export const zUpdateExportDeparture = z.object({
 /**
  * ExportShipmentStatus
  *
- * Étape d'un colis terroir
+ * Étape d'une valise
  */
 export const zExportShipmentStatus = z.enum([
   "PENDING_PAYMENT",
@@ -4275,7 +4313,7 @@ export const zExportPackItemInput = z.object({
 /**
  * ExportPackInput
  *
- * Pack terroir : nom, description, photos, prix, produits
+ * Pack du pays : nom, description, photos, prix, produits
  */
 export const zExportPackInput = z.object({
   name: z.string().min(2).max(120),
@@ -4329,12 +4367,21 @@ export const zExportProfileInput = z.object({
 });
 
 /**
+ * TerroirCountriesQuery
+ *
+ * Pays proposés : ceux qui ont un départ ouvert, ou tous les pays actifs
+ */
+export const zTerroirCountriesQuery = z.object({
+  all: z.enum(["true", "false"]),
+});
+
+/**
  * TerroirCatalogQuery
  *
- * Catalogue terroir : pays, catégorie, recherche, page, devise d'affichage
+ * Catalogue de la Valise du pays : pays, catégorie, recherche, page, devise d'affichage
  */
 export const zTerroirCatalogQuery = z.object({
-  country: z.enum(["FR", "BE"]),
+  country: z.string().regex(/^[A-Z]{2}$/),
   category: z.optional(
     z
       .uuid()
@@ -4344,7 +4391,7 @@ export const zTerroirCatalogQuery = z.object({
   ),
   search: z.optional(z.string().max(100)),
   page: z.int().gte(1).lte(500).default(1),
-  currency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+  currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
 });
 
 /**
@@ -4362,15 +4409,15 @@ export const zTerroirDisplayQuery = z.object({
  * Départs proposables vers un pays, pour un poids de colis
  */
 export const zTerroirDeparturesQuery = z.object({
-  country: z.enum(["FR", "BE"]),
+  country: z.string().regex(/^[A-Z]{2}$/),
   weightG: z.int().gte(0).lte(1000000).default(0),
-  currency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+  currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
 });
 
 /**
  * TerroirCartLine
  *
- * Ligne du panier terroir : un produit (et sa variante) ou un pack
+ * Ligne du valise : un produit (et sa variante) ou un pack
  */
 export const zTerroirCartLine = z.object({
   productId: z.optional(
@@ -4410,17 +4457,17 @@ export const zExportReception = z.enum(["PICKUP", "HOME"]);
 /**
  * TerroirPaymentMethod
  *
- * Paiement d'un colis terroir : carte (page hébergée) ou portefeuille eBio
+ * Paiement d'une valise : carte (page hébergée) ou portefeuille eBio
  */
 export const zTerroirPaymentMethod = z.enum(["FEDAPAY", "WALLET"]);
 
 /**
  * TerroirCheckoutInput
  *
- * Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement
+ * Valise : pays, lignes, départ, réception, assurance, cadeau, paiement
  */
 export const zTerroirCheckoutInput = z.object({
-  country: zExportCountry,
+  country: zExportCountryCode,
   lines: z.array(zTerroirCartLine).min(1).max(40),
   departureId: z.optional(
     z.union([
@@ -4469,7 +4516,7 @@ export const zTerroirCheckoutInput = z.object({
     ]),
   ),
   paymentMethod: zTerroirPaymentMethod,
-  displayCurrency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+  displayCurrency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
 });
 
 /**
@@ -10243,6 +10290,43 @@ export const zCommunityControllerGetShareUrlData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zAdminExportControllerListCountriesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCreateCountryData = z.object({
+  body: z.object({
+    code: z.string().regex(/^[A-Z]{2}$/),
+    name: z.string().min(2).max(80),
+    toPhrase: z.string().min(3).max(120),
+    inPhrase: z.string().min(3).max(120),
+    displayCurrency: z.enum(["EUR", "USD", "CAD"]),
+    flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+    sortOrder: z.optional(z.int().gte(0).lte(10000)),
+    isActive: z.optional(z.boolean()),
+  }),
+  path: z.optional(z.never()),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerUpdateCountryData = z.object({
+  body: z.object({
+    name: z.optional(z.string().min(2).max(80)),
+    toPhrase: z.optional(z.string().min(3).max(120)),
+    inPhrase: z.optional(z.string().min(3).max(120)),
+    displayCurrency: z.optional(z.enum(["EUR", "USD", "CAD"])),
+    flagEmoji: z.optional(z.union([z.string().min(1).max(16), z.null()])),
+    sortOrder: z.optional(z.int().gte(0).lte(10000)),
+    isActive: z.optional(z.boolean()),
+  }),
+  path: z.object({
+    code: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
 export const zAdminExportControllerListAgenciesData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
@@ -10307,7 +10391,7 @@ export const zAdminExportControllerListPickupPointsData = z.object({
 
 export const zAdminExportControllerCreatePickupPointData = z.object({
   body: z.object({
-    country: z.enum(["FR", "BE"]),
+    country: z.string().regex(/^[A-Z]{2}$/),
     city: z.string().min(2).max(80),
     address: z.string().min(5).max(500),
     openingHours: z.optional(z.union([z.string().max(300), z.null()])),
@@ -10321,7 +10405,7 @@ export const zAdminExportControllerCreatePickupPointData = z.object({
 
 export const zAdminExportControllerUpdatePickupPointData = z.object({
   body: z.object({
-    country: z.optional(z.enum(["FR", "BE"])),
+    country: z.optional(z.string().regex(/^[A-Z]{2}$/)),
     city: z.optional(z.string().min(2).max(80)),
     address: z.optional(z.string().min(5).max(500)),
     openingHours: z.optional(z.union([z.string().max(300), z.null()])),
@@ -10363,7 +10447,7 @@ export const zAdminExportControllerCreateDepartureData = z.object({
     rates: z
       .array(
         z.object({
-          country: z.enum(["FR", "BE"]),
+          country: z.string().regex(/^[A-Z]{2}$/),
           pricePerKg: z.number().gt(0).lte(10000000),
           minBilledKg: z.number().gte(0).lte(1000),
           maxWeightKg: z.optional(
@@ -10413,7 +10497,7 @@ export const zAdminExportControllerUpdateDepartureData = z.object({
       z
         .array(
           z.object({
-            country: z.enum(["FR", "BE"]),
+            country: z.string().regex(/^[A-Z]{2}$/),
             pricePerKg: z.number().gt(0).lte(10000000),
             minBilledKg: z.number().gte(0).lte(1000),
             maxWeightKg: z.optional(
@@ -10851,11 +10935,19 @@ export const zSupplierExportControllerUpdatePackData = z.object({
   query: z.optional(z.never()),
 });
 
+export const zTerroirClientControllerGetCountriesData = z.object({
+  body: z.optional(z.never()),
+  path: z.optional(z.never()),
+  query: z.object({
+    all: z.enum(["true", "false"]),
+  }),
+});
+
 export const zTerroirClientControllerGetCatalogData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
-    country: z.enum(["FR", "BE"]),
+    country: z.string().regex(/^[A-Z]{2}$/),
     category: z.optional(
       z
         .uuid()
@@ -10865,7 +10957,7 @@ export const zTerroirClientControllerGetCatalogData = z.object({
     ),
     search: z.optional(z.string().max(100)),
     page: z.int().gte(1).lte(500).default(1),
-    currency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+    currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
   }),
 });
 
@@ -10893,15 +10985,15 @@ export const zTerroirClientControllerGetDeparturesData = z.object({
   body: z.optional(z.never()),
   path: z.optional(z.never()),
   query: z.object({
-    country: z.enum(["FR", "BE"]),
+    country: z.string().regex(/^[A-Z]{2}$/),
     weightG: z.int().gte(0).lte(1000000).default(0),
-    currency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+    currency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
   }),
 });
 
 export const zTerroirClientControllerSubscribeAlertData = z.object({
   body: z.object({
-    country: z.enum(["FR", "BE"]),
+    country: z.string().regex(/^[A-Z]{2}$/),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -10917,7 +11009,7 @@ export const zTerroirClientControllerUnsubscribeAlertData = z.object({
 
 export const zTerroirClientControllerPreviewData = z.object({
   body: z.object({
-    country: z.enum(["FR", "BE"]),
+    country: z.string().regex(/^[A-Z]{2}$/),
     lines: z
       .array(
         z.object({
@@ -10997,7 +11089,7 @@ export const zTerroirClientControllerPreviewData = z.object({
       ]),
     ),
     paymentMethod: z.enum(["FEDAPAY", "WALLET"]),
-    displayCurrency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+    displayCurrency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -11005,7 +11097,7 @@ export const zTerroirClientControllerPreviewData = z.object({
 
 export const zTerroirClientControllerCreateData = z.object({
   body: z.object({
-    country: z.enum(["FR", "BE"]),
+    country: z.string().regex(/^[A-Z]{2}$/),
     lines: z
       .array(
         z.object({
@@ -11085,7 +11177,7 @@ export const zTerroirClientControllerCreateData = z.object({
       ]),
     ),
     paymentMethod: z.enum(["FEDAPAY", "WALLET"]),
-    displayCurrency: z.enum(["XOF", "EUR", "USD", "CAD"]),
+    displayCurrency: z.optional(z.enum(["XOF", "EUR", "USD", "CAD"])),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
