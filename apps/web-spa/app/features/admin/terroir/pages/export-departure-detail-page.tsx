@@ -5,7 +5,7 @@ import { Skeleton } from '@boilerstone/ui/components/primitives/skeleton'
 import { toast } from '@boilerstone/ui/components/primitives/sonner'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@boilerstone/ui/components/primitives/table'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { CheckCircle2, FileText, Flag, PackageX, Scale, ShieldCheck } from 'lucide-react'
+import { CheckCircle2, FileText, Flag, PackageCheck, PackageX, Scale, ShieldCheck } from 'lucide-react'
 import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { Link, useNavigate, useParams } from 'react-router'
@@ -15,6 +15,7 @@ import { ProductThumb } from '@/features/admin/common/components/product-thumb'
 import { StatusBadge } from '@/features/admin/common/components/status-badge'
 import { formatAmount } from '@/features/admin/wallets/utils/format-amount'
 import { Can } from '@/lib/casl/can'
+import { canReceiveAtHub, CollectionStatus } from '../components/collection-status'
 import { FillGauge } from '../components/fill-gauge'
 import { DepartureStatusBadge, ShipmentStatusBadge } from '../components/terroir-status-badges'
 import { ShipmentEventDialog } from '../forms/shipment-event-dialog'
@@ -27,7 +28,9 @@ import {
   departureDetailQueryOptions,
   markLineMissing,
   openManifest,
+  receiveCollection,
   TERROIR_KEY,
+  TerroirApiError,
   weighShipment,
 } from '../utils/terroir-queries'
 
@@ -37,12 +40,14 @@ const WEIGHABLE_STATUSES = new Set<string>(['PAID', 'COLLECTING', 'PACKED'])
 type Pending
   = | { kind: 'event' }
     | { kind: 'collect', shop: ExportCollectionShop }
+    | { kind: 'receive', shop: ExportCollectionShop, deliveryId: string }
     | { kind: 'missing', line: ExportCollectionLine, shopName: string }
     | { kind: 'weigh', shipment: ExportDepartureShipmentRow }
 
 /**
  * One departure as the logistics team works it: how full it is, what to fetch
- * from each shop (« Collecté » releases the shop's money at once), the parcels
+ * from each shop (« Collecté » releases the shop's money at once; a courier run
+ * ends with the hub code or « Reçu au point de regroupement »), the parcels
  * to weigh, one step for every parcel, and the printable list for the agency.
  */
 export default function ExportDepartureDetailPage() {
@@ -71,6 +76,10 @@ export default function ExportDepartureDetailPage() {
           await collectShipment(shipmentId, action.shop.supplierId)
         return t('admin.terroir.collection.collected', { shop: action.shop.shopName })
       }
+      if (action.kind === 'receive') {
+        await receiveCollection(action.deliveryId)
+        return t('admin.terroir.collection.received', { shop: action.shop.shopName })
+      }
       if (action.kind === 'missing') {
         await markLineMissing(action.line.shipmentId, action.line.orderItemId)
         return t('admin.terroir.collection.missingDone', { name: action.line.name })
@@ -90,7 +99,10 @@ export default function ExportDepartureDetailPage() {
     },
     onError: (failure: Error) => {
       refresh()
-      setError(failure.message || t('admin.terroir.genericError'))
+      if (failure instanceof TerroirApiError && failure.code === 'EXPORT_COLLECTION_NO_COURIER')
+        setError(t('admin.terroir.collection.noCourier'))
+      else
+        setError(failure.message || t('admin.terroir.genericError'))
     },
   })
 
@@ -177,6 +189,7 @@ export default function ExportDepartureDetailPage() {
               key={shop.supplierId}
               shop={shop}
               onCollect={() => setPending({ kind: 'collect', shop })}
+              onReceive={deliveryId => setPending({ kind: 'receive', shop, deliveryId })}
               onMissing={line => setPending({ kind: 'missing', line, shopName: shop.shopName })}
             />
           ))}
@@ -293,6 +306,21 @@ export default function ExportDepartureDetailPage() {
           onConfirm={() => mutation.mutate(pending)}
         />
       )}
+      {pending?.kind === 'receive' && (
+        <ConfirmDialog
+          open
+          onOpenChange={(open) => {
+            if (!open)
+              close()
+          }}
+          title={t('admin.terroir.collection.receiveTitle', { shop: pending.shop.shopName })}
+          description={t('admin.terroir.collection.receiveDescription')}
+          confirmLabel={t('admin.terroir.collection.receive')}
+          isPending={mutation.isPending}
+          error={error}
+          onConfirm={() => mutation.mutate(pending)}
+        />
+      )}
       {pending?.kind === 'missing' && (
         <ConfirmDialog
           open
@@ -316,11 +344,14 @@ export default function ExportDepartureDetailPage() {
 interface CollectionCardProps {
   shop: ExportCollectionShop
   onCollect: () => void
+  onReceive: (deliveryId: string) => void
   onMissing: (line: ExportCollectionLine) => void
 }
 
-function CollectionCard({ shop, onCollect, onMissing }: CollectionCardProps) {
+function CollectionCard({ shop, onCollect, onReceive, onMissing }: CollectionCardProps) {
   const { t } = useTranslation()
+  // The courier run the hub staff may close by hand, when there is one.
+  const receiveId = !shop.collected && canReceiveAtHub(shop.collection) ? shop.collection.deliveryId : null
   return (
     <Card>
       <CardHeader className="flex flex-row items-start justify-between gap-3 space-y-0 pb-3">
@@ -332,14 +363,23 @@ function CollectionCard({ shop, onCollect, onMissing }: CollectionCardProps) {
         </div>
         {!shop.collected && (
           <Can action="manage" subject="Delivery">
-            <Button size="sm" onClick={onCollect}>
-              <CheckCircle2 className="mr-1 h-4 w-4" />
-              {t('admin.terroir.collection.collect')}
-            </Button>
+            <div className="flex shrink-0 flex-col items-end gap-2">
+              {receiveId && (
+                <Button size="sm" onClick={() => onReceive(receiveId)}>
+                  <PackageCheck className="mr-1 h-4 w-4" />
+                  {t('admin.terroir.collection.receive')}
+                </Button>
+              )}
+              <Button size="sm" variant={receiveId ? 'outline' : 'default'} onClick={onCollect}>
+                <CheckCircle2 className="mr-1 h-4 w-4" />
+                {t('admin.terroir.collection.collect')}
+              </Button>
+            </div>
           </Can>
         )}
       </CardHeader>
-      <CardContent>
+      <CardContent className="space-y-3">
+        <CollectionStatus collection={shop.collection} />
         <ul className="divide-y text-sm">
           {shop.lines.map(line => (
             <li key={line.orderItemId} className="flex items-center justify-between gap-3 py-2">

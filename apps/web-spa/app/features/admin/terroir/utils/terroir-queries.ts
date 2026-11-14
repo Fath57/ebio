@@ -27,6 +27,7 @@ import type {
 import {
   adminExportControllerCancelDeparture,
   adminExportControllerCollect,
+  adminExportControllerCollectionReceived,
   adminExportControllerCreateAgency,
   adminExportControllerCreateCountry,
   adminExportControllerCreateDeparture,
@@ -425,6 +426,11 @@ async function shipmentAction(call: Promise<{ data?: unknown, error?: unknown }>
 
 export function collectShipment(id: string, supplierId: string) {
   return shipmentAction(adminExportControllerCollect({ path: { id }, body: { supplierId } }))
+}
+
+/** The hub staff confirm a courier's drop-off without the code (409 EXPORT_COLLECTION_NO_COURIER). */
+export function receiveCollection(deliveryId: string) {
+  return shipmentAction(adminExportControllerCollectionReceived({ path: { deliveryId } }))
 }
 
 export function markLineMissing(id: string, orderItemId: string) {

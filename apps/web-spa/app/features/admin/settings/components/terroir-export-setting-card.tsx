@@ -1,4 +1,4 @@
-import type { TerroirTuningFormData } from '../forms/terroir-export-form'
+import type { CollectionMode, TerroirTuningFormData } from '../forms/terroir-export-form'
 import {
   adminTerroirExportSettingControllerGet,
   adminTerroirExportSettingControllerUpdate,
@@ -27,9 +27,32 @@ interface TerroirExportSettingData {
   minShelfLifeDays: number
   /** Export criteria: heaviest packed unit allowed, in grams. */
   maxUnitWeightG: number
+  /** Who brings each shop's order to the eBio hub. */
+  collectionMode: CollectionMode
+  hubName: string | null
+  hubAddress: string | null
+  hubLatitude: number | null
+  hubLongitude: number | null
+  hubPhone: string | null
+  hubHours: string | null
+  /** Read-only: COURIER without the hub coordinates runs as EBIO. */
+  effectiveCollectionMode: CollectionMode
 }
 
-type TerroirExportUpdate = Partial<TerroirExportSettingData>
+type TerroirExportUpdate = Partial<Omit<TerroirExportSettingData, 'effectiveCollectionMode'>>
+
+function toNullableNumber(value: unknown): number | null {
+  if (value == null || value === '')
+    return null
+  const number = Number(value)
+  return Number.isFinite(number) ? number : null
+}
+
+/** Empty text means « not set » for the API. */
+function blankToNull(value: string): string | null {
+  const trimmed = value.trim()
+  return trimmed === '' ? null : trimmed
+}
 
 const QUERY_KEY = ['admin', 'terroir-export-setting']
 
@@ -45,6 +68,14 @@ function toSetting(raw: TerroirExportSettingData): TerroirExportSettingData {
     pickupReminderDays: Number(raw.pickupReminderDays),
     minShelfLifeDays: Number(raw.minShelfLifeDays ?? 90),
     maxUnitWeightG: Number(raw.maxUnitWeightG ?? 5000),
+    collectionMode: raw.collectionMode ?? 'COURIER',
+    hubName: raw.hubName ?? null,
+    hubAddress: raw.hubAddress ?? null,
+    hubLatitude: toNullableNumber(raw.hubLatitude),
+    hubLongitude: toNullableNumber(raw.hubLongitude),
+    hubPhone: raw.hubPhone ?? null,
+    hubHours: raw.hubHours ?? null,
+    effectiveCollectionMode: raw.effectiveCollectionMode ?? 'EBIO',
   }
 }
 
@@ -115,6 +146,13 @@ export function TerroirExportSetting() {
         pickupReminderDays: data.pickupReminderDays,
         minShelfLifeDays: data.minShelfLifeDays,
         maxUnitWeightG: data.maxUnitWeightG,
+        collectionMode: data.collectionMode,
+        hubName: data.hubName ?? '',
+        hubAddress: data.hubAddress ?? '',
+        hubPhone: data.hubPhone ?? '',
+        hubHours: data.hubHours ?? '',
+        hubLatitude: data.hubLatitude == null ? '' : String(data.hubLatitude),
+        hubLongitude: data.hubLongitude == null ? '' : String(data.hubLongitude),
       }
     : null, [data])
 
@@ -124,8 +162,17 @@ export function TerroirExportSetting() {
   )
 
   const saveTuning = (values: TerroirTuningFormData) => {
-    const { insuranceRatePct, ...rest } = values
-    mutate({ ...rest, insuranceRateBps: Math.round(insuranceRatePct * 100) })
+    const { insuranceRatePct, hubName, hubAddress, hubPhone, hubHours, hubLatitude, hubLongitude, ...rest } = values
+    mutate({
+      ...rest,
+      insuranceRateBps: Math.round(insuranceRatePct * 100),
+      hubName: blankToNull(hubName),
+      hubAddress: blankToNull(hubAddress),
+      hubPhone: blankToNull(hubPhone),
+      hubHours: blankToNull(hubHours),
+      hubLatitude: toNullableNumber(hubLatitude.trim()),
+      hubLongitude: toNullableNumber(hubLongitude.trim()),
+    })
   }
 
   return (
@@ -159,7 +206,13 @@ export function TerroirExportSetting() {
                   onCheckedChange={enabled => mutate({ enabled })}
                 />
               </div>
-              <TerroirExportForm values={tuning} categories={categoryOptions} onSubmit={saveTuning} isPending={isPending} />
+              <TerroirExportForm
+                values={tuning}
+                categories={categoryOptions}
+                onSubmit={saveTuning}
+                isPending={isPending}
+                effectiveCollectionMode={data.effectiveCollectionMode}
+              />
             </>
           )}
       {feedback === 'saved' && (

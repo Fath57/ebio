@@ -193,11 +193,30 @@ export interface ExportCollectionLine {
   imageUrl: string | null
 }
 
+export type ExportCollectionMode = 'COURIER' | 'EBIO'
+
+/** How a shop's orders reach the eBio hub: a courier run or eBio's own staff. */
+export interface ExportShopCollection {
+  mode: ExportCollectionMode
+  /** The courier run, for the « received at the hub » action; null in EBIO mode. */
+  deliveryId: string | null
+  /** AWAITING_COURIER, ACCEPTED, PICKED_UP, IN_TRANSIT, DELIVERED, FAILED, CANCELLED. */
+  status: string | null
+  courierName: string | null
+  courierPhone: string | null
+  /** The code the hub staff give the courier once the parcel is in their hands. */
+  hubCode: string | null
+  pickedUpAt: string | null
+  receivedAt: string | null
+}
+
 export interface ExportCollectionShop {
   supplierId: string
   shopName: string
   lines: ExportCollectionLine[]
   collected: boolean
+  /** Null while a courier will be sent once the shop has prepared. */
+  collection: ExportShopCollection | null
 }
 
 export interface ExportDepartureDetail extends ExportDeparture {

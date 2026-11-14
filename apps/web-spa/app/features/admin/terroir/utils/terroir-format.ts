@@ -42,6 +42,18 @@ export function formatDateTime(iso: string | null | undefined): string {
   return Number.isNaN(date.getTime()) ? iso : FR_DATE_TIME.format(date)
 }
 
+const FR_TIME = new Intl.DateTimeFormat('fr-FR', { hour: '2-digit', minute: '2-digit' })
+
+/** The hour alone for today (« 10:30 »), the full date and hour otherwise. */
+export function formatMoment(iso: string | null | undefined): string {
+  if (!iso)
+    return '-'
+  const date = new Date(iso)
+  if (Number.isNaN(date.getTime()))
+    return iso
+  return date.toDateString() === new Date().toDateString() ? FR_TIME.format(date) : FR_DATE_TIME.format(date)
+}
+
 /** A percentage from a ratio (0.824 → « 82 % »). */
 export function formatRatio(ratio: number): string {
   return `${Math.round(ratio * 100).toLocaleString('fr-FR')}\u00A0%`

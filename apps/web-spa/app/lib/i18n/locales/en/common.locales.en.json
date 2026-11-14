@@ -1774,7 +1774,35 @@
           "maxUnitWeightGHint": "Weight of one unit with its packaging."
         },
         "criteriaTitle": "Export criteria",
-        "criteriaHint": "A product is exportable as soon as it meets every criterion. Changing a threshold re-evaluates every product and every pack at once."
+        "criteriaHint": "A product is exportable as soon as it meets every criterion. Changing a threshold re-evaluates every product and every pack at once.",
+        "collection": {
+          "title": "Collection from shops",
+          "hint": "Who brings each shop's order to the eBio consolidation point, before the agency drop-off.",
+          "mode": "Collection mode",
+          "modeCOURIER": "By eBio couriers",
+          "modeCOURIERHint": "A courier leaves as soon as the shop has prepared and drops the order at the consolidation point. eBio pays for the run.",
+          "modeEBIO": "By the eBio team",
+          "modeEBIOHint": "The eBio team picks the orders up and marks them « Collected » on the departure page.",
+          "effectiveWarning": "Without the consolidation point position, collection is done by the eBio team.",
+          "hubTitle": "Consolidation point",
+          "hubHint": "Where couriers drop the shops' orders.",
+          "hubName": "Name",
+          "hubNamePlaceholder": "eBio Cotonou warehouse",
+          "hubAddress": "Address",
+          "hubAddressPlaceholder": "District, street, landmark",
+          "hubPhone": "Phone",
+          "hubPhoneHint": "The courier calls this number if they can't find the point.",
+          "hubHours": "Opening hours",
+          "hubHoursPlaceholder": "Monday to Saturday, 8 am to 6 pm",
+          "latitude": "Latitude",
+          "longitude": "Longitude",
+          "positionHint": "Couriers are guided there. Copy the coordinates from Google Maps (right-click on the spot).",
+          "viewOnMap": "View on the map",
+          "noPosition": "No position saved.",
+          "positionPair": "Fill in both latitude and longitude, or neither.",
+          "invalidNumber": "Invalid number.",
+          "invalidPhone": "Invalid phone number."
+        }
       }
     },
     "site": {
@@ -2346,7 +2374,8 @@
         "EXPORT_SHIPPING_INCOME": "Export shipping",
         "EXPORT_INSURANCE_INCOME": "Export insurance",
         "EXPORT_LOSS": "Export loss",
-        "EXPORT_PACK_COMPENSATION": "Pack compensation"
+        "EXPORT_PACK_COMPENSATION": "Pack compensation",
+        "EXPORT_COLLECTION_COST": "Collection run (courier)"
       },
       "columns": {
         "date": "Date",
@@ -2786,7 +2815,8 @@
         "EXPORT_SHIPPING_INCOME": "Export shipping",
         "EXPORT_INSURANCE_INCOME": "Export insurance",
         "EXPORT_LOSS": "Export loss",
-        "EXPORT_PACK_COMPENSATION": "Pack compensation"
+        "EXPORT_PACK_COMPENSATION": "Pack compensation",
+        "EXPORT_COLLECTION_COST": "Collection run (courier)"
       },
       "debit": {
         "action": "Debit",
@@ -3172,13 +3202,32 @@
         "stateCollected": "Collected",
         "stateToCollect": "To collect",
         "confirmTitle": "Confirm collection at {{shop}}?",
-        "confirmDescription": "Every product of the shop was handed to eBio. Its order becomes delivered and its share is paid immediately.",
+        "confirmDescription": "Every product of the shop was handed to eBio. Its order becomes delivered and its share is paid immediately. Any collection run in progress is closed.",
         "collected": "Collection recorded for {{shop}}.",
         "missing": "Missing",
         "missingTitle": "Mark “{{name}}” as missing?",
         "missingDescription": "The {{shop}} product is removed from the parcel and the buyer is refunded for it and its share of shipping.",
         "missingConfirm": "Remove and refund",
-        "missingDone": "“{{name}}” removed, buyer refunded."
+        "missingDone": "“{{name}}” removed, buyer refunded.",
+        "statusNone": "Courier sent once the shop has prepared",
+        "statusAwaiting": "Waiting for a courier",
+        "statusAccepted": "Courier on the way: {{courier}}",
+        "statusPickedUp": "Picked up by {{courier}} at {{time}}",
+        "statusReceived": "Received at the eBio point at {{time}}",
+        "statusFailed": "Collection run failed",
+        "statusCancelled": "Collection run cancelled",
+        "statusEbio": "Collected by the eBio team",
+        "courierUnknown": "a courier",
+        "hubCode": "Hand-over code",
+        "hubCodeHint": "Give it to the courier on arrival",
+        "copyCode": "Copy the code",
+        "codeCopied": "Code copied.",
+        "copyFailed": "Could not copy.",
+        "receive": "Received at the consolidation point",
+        "receiveTitle": "{{shop}}'s order received at the consolidation point?",
+        "receiveDescription": "Use it when the courier dropped the order without entering the code. The run is closed, the shop's order becomes delivered and its share is paid at once.",
+        "received": "Reception recorded for {{shop}}.",
+        "noCourier": "This shop has no collection run in progress: use « Collected »."
       },
       "events": {
         "departureTitle": "Step for the whole departure",
