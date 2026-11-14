@@ -2,10 +2,7 @@ import type { TerroirCatalogItem, TerroirCountry, TerroirDepartures } from '../t
 import Bell from 'lucide-react-native/dist/esm/icons/bell'
 import BellOff from 'lucide-react-native/dist/esm/icons/bell-off'
 import Calendar from 'lucide-react-native/dist/esm/icons/calendar'
-import ChevronDown from 'lucide-react-native/dist/esm/icons/chevron-down'
-import ChevronUp from 'lucide-react-native/dist/esm/icons/chevron-up'
 import Package from 'lucide-react-native/dist/esm/icons/package'
-import PlaneTakeoff from 'lucide-react-native/dist/esm/icons/plane-takeoff'
 import { useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSession } from '../../../lib/auth-client'
@@ -18,8 +15,6 @@ import { useTerroirMoney } from '../hooks/use-terroir-money'
 import {
   fetchTerroirCatalog,
   fetchTerroirDepartures,
-  formatDay,
-  formatWindow,
   subscribeDepartureAlert,
   TerroirError,
   unsubscribeDepartureAlert,
@@ -28,8 +23,7 @@ import {
 import { guessTerroirCountry } from '../terroir-cart-context'
 import { useValiseMode } from '../valise-mode-context'
 import { CountryChips, TerroirBadge, terroirStyles } from './terroir-ui'
-import { AirmailBand, DottedLine, VALISE_IMAGES, WAITING_RATIO } from './valise/valise-art'
-import { useValisePalette } from './valise/valise-palette'
+import { VALISE_IMAGES, WAITING_RATIO } from './valise/valise-art'
 import { primeValiseDepartures } from './valise/valise-stores'
 
 interface AlertButtonProps {
@@ -68,90 +62,30 @@ function AlertButton({ subscribed, busy, onPress }: AlertButtonProps) {
 interface DeparturesBlockProps {
   departures: TerroirDepartures | null
   loading: boolean
-  /** « vers la France », when the departure names no city. */
-  toPhrase: string
   alertBusy: boolean
   onToggleAlert: () => void
 }
 
-/** The next departure and its order deadline, or the alert when there is none (US7). */
-function DeparturesBlock({ departures, loading, toPhrase, alertBusy, onToggleAlert }: DeparturesBlockProps) {
+/**
+ * The alert of the next departure, only when none is open (US7). An open
+ * departure is told by the mode banner, which unfolds its details.
+ */
+function DeparturesBlock({ departures, loading, alertBusy, onToggleAlert }: DeparturesBlockProps) {
   const { semantic } = useTheme()
-  const palette = useValisePalette()
-  const { formatMoney } = useTerroirMoney()
-  const [expanded, setExpanded] = useState(false)
-
-  if (loading && !departures) {
-    return (
-      <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
-        <ActivityIndicator color={colors.green[400]} />
-      </View>
-    )
-  }
-
-  const next = departures?.next ?? null
-  const items = departures?.items.filter(item => !item.full) ?? []
-
-  if (!next && items.length === 0) {
-    return (
-      <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
-        <Image source={VALISE_IMAGES.waiting} style={styles.waitingSmall} resizeMode="contain" accessibilityIgnoresInvertColors />
-        <View style={styles.bannerRow}>
-          <Calendar size={18} color={semantic.textSecondary} strokeWidth={2.2} />
-          <Text style={[styles.bannerText, { color: semantic.textPrimary }]}>
-            Aucun envoi n’est programmé pour l’instant.
-          </Text>
-        </View>
-        <AlertButton subscribed={departures?.alertSubscribed === true} busy={alertBusy} onPress={onToggleAlert} />
-      </View>
-    )
-  }
-
-  const headline = next ?? (items[0] ? { city: null, departsOn: items[0].departsOn, orderBefore: items[0].orderBefore } : null)
+  if (loading || !departures)
+    return null
+  if (departures.next || departures.items.some(item => !item.full))
+    return null
   return (
-    <View style={[styles.departureBanner, { borderColor: palette.paperEdge, backgroundColor: palette.skyPaper }]}>
-      <AirmailBand height={5} colorA={palette.stripeA} colorB={palette.stripeB} />
-      {headline && (
-        <View style={[styles.bannerRow, styles.departureInset]}>
-          <PlaneTakeoff size={18} color={palette.skyInk} strokeWidth={2.2} />
-          <Text style={[styles.bannerText, { color: palette.skyInk }]}>
-            {`Prochain envoi ${headline.city ? `vers ${headline.city}` : toPhrase} : ${formatDay(headline.departsOn)}`}
-            {headline.orderBefore ? `, commandez avant le ${formatDay(headline.orderBefore)}` : ''}
-          </Text>
-        </View>
-      )}
-      {items.length > 0 && (
-        <TouchableOpacity
-          style={[styles.expandButton, styles.departureInset]}
-          onPress={() => setExpanded(value => !value)}
-          accessibilityRole="button"
-          accessibilityState={{ expanded }}
-        >
-          <Text style={[styles.expandText, { color: palette.skyInk }]}>
-            {expanded ? 'Masquer les départs' : `Voir les prochains départs (${items.length})`}
-          </Text>
-          {expanded
-            ? <ChevronUp size={16} color={palette.skyInk} strokeWidth={2.4} />
-            : <ChevronDown size={16} color={palette.skyInk} strokeWidth={2.4} />}
-        </TouchableOpacity>
-      )}
-      {expanded && items.map(item => (
-        <View key={item.departureId} style={[styles.departureRow, { backgroundColor: semantic.bgCard }]}>
-          <DottedLine color={palette.paperEdge} variant="dashes" style={styles.departureTear} />
-          <Text style={[styles.departureAgency, { color: semantic.textPrimary }]}>{item.agency}</Text>
-          <Text style={[styles.departureLine, { color: semantic.textSecondary }]}>
-            {`Départ le ${formatDay(item.departsOn)}${item.orderBefore ? ` · commandez avant le ${formatDay(item.orderBefore)}` : ''}`}
-          </Text>
-          {(item.arrivalFrom || item.arrivalTo) && (
-            <Text style={[styles.departureLine, { color: semantic.textSecondary }]}>
-              {`Arrivée estimée : ${formatWindow(item.arrivalFrom, item.arrivalTo)}`}
-            </Text>
-          )}
-          <Text style={[terroirStyles.priceSecondary, { color: semantic.textPrimary }]}>
-            {`${formatMoney(item.pricePerKg).primary} / kg${item.minBilledKg > 0 ? ` · ${item.minBilledKg} kg minimum` : ''}`}
-          </Text>
-        </View>
-      ))}
+    <View style={[terroirStyles.card, { backgroundColor: semantic.bgCard }]}>
+      <Image source={VALISE_IMAGES.waiting} style={styles.waitingSmall} resizeMode="contain" accessibilityIgnoresInvertColors />
+      <View style={styles.bannerRow}>
+        <Calendar size={18} color={semantic.textSecondary} strokeWidth={2.2} />
+        <Text style={[styles.bannerText, { color: semantic.textPrimary }]}>
+          Aucun envoi n’est programmé pour l’instant.
+        </Text>
+      </View>
+      <AlertButton subscribed={departures.alertSubscribed === true} busy={alertBusy} onPress={onToggleAlert} />
     </View>
   )
 }
@@ -354,19 +288,25 @@ export function ValiseHomeSection({ onOpenPack, onRequireLogin }: ValiseHomeSect
   if (!active || !countryInfo)
     return null
 
+  // An open departure is told by the banner; this section keeps the alert for when there is none.
+  const noOpenDeparture = !departuresLoading && departures !== null && !departures.next && !departures.items.some(item => !item.full)
+  if (!noOpenDeparture && packs.length === 0)
+    return null
+
   return (
     <View style={styles.section}>
-      <View style={styles.padded}>
-        <DeparturesBlock
-          departures={departures}
-          loading={departuresLoading}
-          toPhrase={countryInfo.toPhrase}
-          alertBusy={alertBusy}
-          onToggleAlert={() => {
-            void handleToggleAlert()
-          }}
-        />
-      </View>
+      {noOpenDeparture && (
+        <View style={styles.padded}>
+          <DeparturesBlock
+            departures={departures}
+            loading={departuresLoading}
+            alertBusy={alertBusy}
+            onToggleAlert={() => {
+              void handleToggleAlert()
+            }}
+          />
+        </View>
+      )}
       {packs.length > 0 && (
         <View style={styles.packsBlock}>
           <View style={styles.packsHeader}>
