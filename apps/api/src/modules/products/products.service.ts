@@ -307,6 +307,20 @@ export class ProductsService {
     return product
   }
 
+  /** The product's export request (011), for its owner's dashboard; null when never asked. */
+  async exportProfileOf(productId: string): Promise<ExportProfile | null> {
+    return this.em.findOne(ExportProfile, { product: productId })
+  }
+
+  /** Export status of each product that asked for it, by product id. */
+  async exportStatusesOf(productIds: string[]): Promise<Map<string, ExportProfileStatus>> {
+    if (productIds.length === 0) {
+      return new Map()
+    }
+    const profiles = await this.em.find(ExportProfile, { product: { $in: productIds } })
+    return new Map(profiles.map(profile => [profile.product.id, profile.status]))
+  }
+
   async clearPromotion(productId: string, supplierId: string): Promise<Product> {
     const product = await this.findByIdAndVerifyOwnership(productId, supplierId)
     product.promotionalPrice = undefined

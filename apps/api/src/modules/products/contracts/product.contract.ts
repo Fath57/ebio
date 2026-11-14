@@ -4,8 +4,33 @@ import {
   paginatedSchema,
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
+import { exportProfileStatusEnum } from '../../terroir/contracts/terroir.contract'
 import { ALLERGEN_CODES } from '../composition.constants'
 import { certificationCodeSchema } from './certification.contract'
+
+/** The owner's view of a product's export request (011); absent for anyone else. */
+export const productExportProfileSchema = z.object({
+  status: exportProfileStatusEnum,
+  rejectionReason: z.string().nullable(),
+  packedWeightG: z.number(),
+  lengthCm: z.number().nullable(),
+  widthCm: z.number().nullable(),
+  heightCm: z.number().nullable(),
+  shelfLifeDays: z.number(),
+  origin: z.object({
+    producer: z.string().nullable(),
+    place: z.string().nullable(),
+    year: z.number().nullable(),
+    method: z.string().nullable(),
+    photos: z.array(z.string()),
+  }),
+  labelPhoto: z.string().nullable(),
+}).meta({
+  title: 'ProductExportProfile',
+  description: 'Demande d\'export du produit, vue par sa boutique',
+})
+
+export type ProductExportProfile = z.infer<typeof productExportProfileSchema>
 
 /**
  * Free-form code rather than an enum: the list of units is managed from the
@@ -216,6 +241,8 @@ export const productResponseSchema = z.object({
   conservation: z.string().nullable(),
   nutritionalValues: nutritionalValuesSchema.nullable(),
   variants: z.array(variantResponseSchema),
+  /** Owner only: the export request, null when never asked. */
+  exportProfile: productExportProfileSchema.nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 }).meta({
@@ -241,6 +268,8 @@ export const productSummarySchema = z.object({
   promotionalPrice: z.number().nullable(),
   /** Live promotion types, for badges (e.g. ['BOGO', 'FREE_DELIVERY']). */
   promotionTypes: z.array(promotionTypeEnum),
+  /** Owner's list only: export status, null when never asked (011). */
+  exportStatus: exportProfileStatusEnum.nullable().optional(),
 }).meta({
   title: 'ProductSummary',
   description: 'Minimal product info for lists',

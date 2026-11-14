@@ -518,3 +518,438 @@ export const exportReviewsResponseSchema = z.object({
 })
 
 export type ExportReviewsResponse = z.infer<typeof exportReviewsResponseSchema>
+
+// ===== §1 CLIENT — CATALOGUE AND DEPARTURES =====
+
+export const exportReceptionEnum = z.enum(ExportReception).meta({
+  title: 'ExportReception',
+  description: 'Réception du colis : retrait en agence ou livraison à domicile',
+})
+
+export const terroirPaymentMethodEnum = z.enum(['FEDAPAY', 'WALLET']).meta({
+  title: 'TerroirPaymentMethod',
+  description: 'Paiement d\'un colis terroir : carte (page hébergée) ou portefeuille eBio',
+})
+
+export const terroirUnavailableReasonEnum = z.enum(['NOT_FOUND', 'NOT_EXPORTABLE', 'OUT_OF_STOCK', 'PACK_UNAVAILABLE']).meta({
+  title: 'TerroirUnavailableReason',
+  description: 'Pourquoi une ligne du panier terroir ne peut pas partir',
+})
+
+const displayCurrencyField = z.enum(['XOF', 'EUR', 'USD', 'CAD']).default('EUR')
+
+export const terroirCatalogQuerySchema = z.object({
+  country: exportCountryEnum,
+  category: z.string().uuid().optional(),
+  search: z.string().trim().max(100).optional(),
+  page: z.coerce.number().int().min(1).max(500).default(1),
+  currency: displayCurrencyField,
+}).meta({
+  title: 'TerroirCatalogQuery',
+  description: 'Catalogue terroir : pays, catégorie, recherche, page, devise d\'affichage',
+})
+
+export type TerroirCatalogQuery = z.infer<typeof terroirCatalogQuerySchema>
+
+export const terroirDisplayQuerySchema = z.object({
+  currency: displayCurrencyField,
+}).meta({
+  title: 'TerroirDisplayQuery',
+  description: 'Devise d\'affichage des prix',
+})
+
+export type TerroirDisplayQuery = z.infer<typeof terroirDisplayQuerySchema>
+
+const terroirOriginSchema = z.object({
+  producer: z.string().nullable(),
+  place: z.string().nullable(),
+  year: z.number().nullable(),
+  method: z.string().nullable(),
+  photos: z.array(z.string()),
+})
+
+export const terroirCatalogProductSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  imageUrl: z.string().nullable(),
+  /** FCFA; `displayPrice` in the requested currency, null without a rate. */
+  price: z.number(),
+  displayPrice: z.number().nullable(),
+  weightG: z.number(),
+  supplierId: z.string().uuid(),
+  shopName: z.string(),
+  categoryName: z.string(),
+  /** « Terroir validé eBio ». */
+  badge: z.boolean(),
+  origin: z.object({ producer: z.string().nullable(), place: z.string().nullable() }),
+}).meta({
+  title: 'TerroirCatalogProduct',
+  description: 'Produit exportable dans le catalogue terroir',
+})
+
+export const terroirCatalogPackSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  imageUrl: z.string().nullable(),
+  price: z.number(),
+  displayPrice: z.number().nullable(),
+  weightG: z.number(),
+  /** Null: composed by eBio. */
+  shopName: z.string().nullable(),
+  itemCount: z.number(),
+}).meta({
+  title: 'TerroirCatalogPack',
+  description: 'Pack terroir commandable',
+})
+
+export const terroirCatalogResponseSchema = z.object({
+  country: exportCountryEnum,
+  currency: z.string(),
+  products: z.array(terroirCatalogProductSchema),
+  /** Every orderable pack matching the search, on the first page only. */
+  packs: z.array(terroirCatalogPackSchema),
+  page: z.number(),
+  hasMore: z.boolean(),
+}).meta({
+  title: 'TerroirCatalog',
+  description: 'Catalogue terroir : produits exportables et packs',
+})
+
+export type TerroirCatalogResponse = z.infer<typeof terroirCatalogResponseSchema>
+
+export const terroirProductDetailSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  photos: z.array(z.string()),
+  price: z.number(),
+  displayPrice: z.number().nullable(),
+  currency: z.string(),
+  weightG: z.number(),
+  dimensionsCm: z.object({ length: z.number().nullable(), width: z.number().nullable(), height: z.number().nullable() }),
+  shelfLifeDays: z.number(),
+  composition: z.object({
+    ingredients: z.string().nullable(),
+    allergens: z.array(z.string()),
+    conservation: z.string().nullable(),
+  }),
+  origin: terroirOriginSchema,
+  badge: z.boolean(),
+  supplierId: z.string().uuid(),
+  shopName: z.string(),
+  inStock: z.boolean(),
+  variants: z.array(z.object({
+    id: z.string().uuid(),
+    label: z.string(),
+    price: z.number(),
+    displayPrice: z.number().nullable(),
+    weightG: z.number(),
+    inStock: z.boolean(),
+  })),
+}).meta({
+  title: 'TerroirProductDetail',
+  description: 'Fiche d\'un produit exportable : prix, poids, composition, origine',
+})
+
+export type TerroirProductDetail = z.infer<typeof terroirProductDetailSchema>
+
+export const terroirPackDetailSchema = z.object({
+  id: z.string().uuid(),
+  name: z.string(),
+  description: z.string().nullable(),
+  photos: z.array(z.string()),
+  price: z.number(),
+  displayPrice: z.number().nullable(),
+  currency: z.string(),
+  weightG: z.number(),
+  shopName: z.string().nullable(),
+  orderable: z.boolean(),
+  items: z.array(z.object({
+    productId: z.string().uuid(),
+    variantId: z.string().uuid().nullable(),
+    name: z.string(),
+    quantity: z.number(),
+    imageUrl: z.string().nullable(),
+    shopName: z.string(),
+    badge: z.boolean(),
+    origin: z.object({ producer: z.string().nullable(), place: z.string().nullable() }),
+  })),
+}).meta({
+  title: 'TerroirPackDetail',
+  description: 'Fiche d\'un pack terroir et de ses produits',
+})
+
+export type TerroirPackDetail = z.infer<typeof terroirPackDetailSchema>
+
+export const terroirDeparturesQuerySchema = z.object({
+  country: exportCountryEnum,
+  weightG: z.coerce.number().int().min(0).max(1_000_000).default(0),
+  currency: displayCurrencyField,
+}).meta({
+  title: 'TerroirDeparturesQuery',
+  description: 'Départs proposables vers un pays, pour un poids de colis',
+})
+
+export type TerroirDeparturesQuery = z.infer<typeof terroirDeparturesQuerySchema>
+
+export const terroirDepartureOfferSchema = z.object({
+  departureId: z.string().uuid(),
+  agency: z.string(),
+  departsOn: z.string(),
+  arrival: z.object({ from: z.string(), to: z.string() }),
+  pricePerKg: z.number(),
+  minBilledKg: z.number(),
+  maxWeightKg: z.number().nullable(),
+  /** Null: no door delivery towards this country on this departure. */
+  homeDeliveryFee: z.number().nullable(),
+  shippingPrice: z.number(),
+  display: z.object({ currency: z.string(), shippingPrice: z.number(), homeDeliveryFee: z.number().nullable() }).nullable(),
+  /** Last moment to order. */
+  orderBefore: z.string().datetime(),
+  /** When eBio must have collected the products from the shops: the agency's deposit deadline. */
+  collectBefore: z.string().datetime(),
+  /** Duties and taxes are included in the price per kilo (FR-014). */
+  dutiesIncluded: z.boolean(),
+  pickupPoints: z.array(z.object({ id: z.string().uuid(), city: z.string(), address: z.string(), openingHours: z.string().nullable() })),
+}).meta({
+  title: 'TerroirDepartureOffer',
+  description: 'Départ proposable : agence, dates, arrivée estimée, prix du transport',
+})
+
+export const terroirDeparturesResponseSchema = z.object({
+  next: z.object({
+    departureId: z.string().uuid(),
+    agency: z.string(),
+    city: z.string().nullable(),
+    departsOn: z.string(),
+    orderBefore: z.string().datetime(),
+  }).nullable(),
+  items: z.array(terroirDepartureOfferSchema),
+  /** Signed in: a pending « me prévenir » alert exists for this country; false when signed out. */
+  alertSubscribed: z.boolean(),
+}).meta({
+  title: 'TerroirDepartures',
+  description: 'Prochain départ et liste des départs proposables',
+})
+
+export type TerroirDeparturesResponse = z.infer<typeof terroirDeparturesResponseSchema>
+export type TerroirDepartureOffer = z.infer<typeof terroirDepartureOfferSchema>
+
+// ===== §2 CLIENT — CHECKOUT =====
+
+export const terroirCartLineSchema = z.object({
+  productId: z.string().uuid().optional(),
+  variantId: z.string().uuid().nullable().optional(),
+  packId: z.string().uuid().optional(),
+  quantity: z.number().int().positive().max(50),
+}).refine(line => Boolean(line.productId) !== Boolean(line.packId), {
+  message: 'Chaque ligne est un produit ou un pack',
+}).meta({
+  title: 'TerroirCartLine',
+  description: 'Ligne du panier terroir : un produit (et sa variante) ou un pack',
+})
+
+export const terroirGiftSchema = z.object({
+  name: z.string().trim().min(2).max(120),
+  email: z.string().trim().email().max(200).nullable().optional(),
+  phone: z.string().trim().regex(/^\+\d{8,15}$/, 'Numéro au format international (+33…)').nullable().optional(),
+  message: z.string().trim().max(300).nullable().optional(),
+}).refine(gift => Boolean(gift.email || gift.phone), {
+  message: 'Indiquez l\'e-mail ou le téléphone du destinataire',
+}).meta({
+  title: 'TerroirGift',
+  description: 'Destinataire d\'un colis offert : nom, e-mail, téléphone, message',
+})
+
+export const terroirCheckoutInputSchema = z.object({
+  /** The destination — the recipient's country for a gift. */
+  country: exportCountryEnum,
+  lines: z.array(terroirCartLineSchema).min(1, 'Votre panier terroir est vide').max(40),
+  /** Preview: the soonest offered departure when absent. */
+  departureId: z.string().uuid().nullable().optional(),
+  reception: exportReceptionEnum.default(ExportReception.PICKUP),
+  /** PICKUP: the agency's first point in the country when absent. */
+  pickupPointId: z.string().uuid().nullable().optional(),
+  homeAddress: z.string().trim().min(10).max(500).nullable().optional(),
+  insured: z.boolean().default(false),
+  gift: terroirGiftSchema.nullable().optional(),
+  paymentMethod: terroirPaymentMethodEnum.default('FEDAPAY'),
+  displayCurrency: displayCurrencyField,
+}).meta({
+  title: 'TerroirCheckoutInput',
+  description: 'Panier terroir : pays, lignes, départ, réception, assurance, cadeau, paiement',
+})
+
+export type TerroirCheckoutInput = z.infer<typeof terroirCheckoutInputSchema>
+
+const amountsDisplaySchema = z.object({
+  currency: z.string(),
+  total: z.number(),
+  itemsTotal: z.number(),
+  shippingPrice: z.number(),
+  homeDeliveryFee: z.number(),
+  insurancePrice: z.number(),
+}).nullable()
+
+export const terroirCheckoutPreviewSchema = z.object({
+  country: exportCountryEnum,
+  lines: z.array(z.object({
+    productId: z.string().uuid().nullable(),
+    variantId: z.string().uuid().nullable(),
+    packId: z.string().uuid().nullable(),
+    name: z.string(),
+    imageUrl: z.string().nullable(),
+    quantity: z.number(),
+    unitPrice: z.number(),
+    total: z.number(),
+    weightG: z.number(),
+    shopName: z.string().nullable(),
+  })),
+  estimatedWeightG: z.number(),
+  /** Kilos billed on the selected departure; null without one. */
+  billedKg: z.number().nullable(),
+  /** Kilos that still fit under the minimum billed at no extra cost (US8). */
+  marginKg: z.number(),
+  suggestions: z.array(z.object({
+    productId: z.string().uuid(),
+    name: z.string(),
+    weightG: z.number(),
+    price: z.number(),
+    imageUrl: z.string().nullable(),
+    shopName: z.string(),
+  })),
+  /** The departure the amounts are for: the one asked if still offered, else the soonest. */
+  departureId: z.string().uuid().nullable(),
+  itemsTotal: z.number(),
+  shippingPrice: z.number(),
+  homeDeliveryFee: z.number(),
+  insurancePrice: z.number(),
+  total: z.number(),
+  /** What the options would cost: null home fee = no door delivery on this departure. */
+  options: z.object({
+    homeDeliveryFee: z.number().nullable(),
+    insurancePrice: z.number(),
+  }),
+  display: amountsDisplaySchema,
+  departures: z.array(terroirDepartureOfferSchema),
+  unavailable: z.array(z.object({
+    productId: z.string().uuid().nullable(),
+    packId: z.string().uuid().nullable(),
+    reason: terroirUnavailableReasonEnum,
+  })),
+}).meta({
+  title: 'TerroirCheckoutPreview',
+  description: 'Aperçu du passage en caisse terroir : poids, départs, transport, options, total',
+})
+
+export type TerroirCheckoutPreview = z.infer<typeof terroirCheckoutPreviewSchema>
+
+export const terroirCheckoutResultSchema = z.object({
+  checkoutId: z.string().uuid(),
+  shipmentId: z.string().uuid(),
+  total: z.number(),
+  /** PAID right away from the wallet; PENDING_PAYMENT until the card payment is confirmed. */
+  status: exportShipmentStatusEnum,
+  /** Always null: a card checkout is opened by POST /payments/cart/initiate { checkoutId }, then verified by /payments/cart/verify. */
+  paymentUrl: z.string().nullable(),
+  display: z.object({ currency: z.string(), total: z.number() }).nullable(),
+}).meta({
+  title: 'TerroirCheckoutResult',
+  description: 'Passage en caisse terroir créé : colis, total, lien de paiement',
+})
+
+export type TerroirCheckoutResult = z.infer<typeof terroirCheckoutResultSchema>
+
+// ===== §3 CLIENT — PARCELS =====
+
+const shipmentDepartureSchema = z.object({
+  agency: z.string(),
+  departsOn: z.string(),
+  arrival: z.object({ from: z.string(), to: z.string() }),
+})
+
+const shipmentEventSchema = z.object({
+  step: exportShipmentStatusEnum.nullable(),
+  message: z.string().nullable(),
+  /** Address and hours as shown when the step was published. */
+  pickupPoint: z.string().nullable(),
+  at: z.string().datetime(),
+})
+
+const shipmentLineSchema = z.object({
+  name: z.string(),
+  quantity: z.number(),
+  imageUrl: z.string().nullable(),
+  shopName: z.string(),
+})
+
+export const terroirShipmentSummarySchema = z.object({
+  id: z.string().uuid(),
+  status: exportShipmentStatusEnum,
+  country: exportCountryEnum,
+  departure: shipmentDepartureSchema,
+  reception: exportReceptionEnum,
+  itemCount: z.number(),
+  imageUrl: z.string().nullable(),
+  total: z.number(),
+  gift: z.object({ name: z.string() }).nullable(),
+  createdAt: z.string().datetime(),
+}).meta({
+  title: 'TerroirShipmentSummary',
+  description: 'Colis terroir dans la liste du client',
+})
+
+export const terroirShipmentDetailSchema = z.object({
+  id: z.string().uuid(),
+  status: exportShipmentStatusEnum,
+  country: exportCountryEnum,
+  departure: shipmentDepartureSchema.extend({ collectBefore: z.string().datetime() }),
+  reception: exportReceptionEnum,
+  pickupPoint: z.object({ city: z.string(), address: z.string(), openingHours: z.string().nullable() }).nullable(),
+  homeAddress: z.string().nullable(),
+  lines: z.array(shipmentLineSchema),
+  events: z.array(shipmentEventSchema),
+  /** A weight supplement asked of the buyer (next wave); null otherwise. */
+  supplement: z.object({ amount: z.number(), status: z.string(), requestedAt: z.string().datetime().nullable() }).nullable(),
+  estimatedWeightG: z.number(),
+  actualWeightG: z.number().nullable(),
+  itemsTotal: z.number(),
+  shippingPrice: z.number(),
+  homeDeliveryFee: z.number(),
+  insurancePrice: z.number(),
+  total: z.number(),
+  /** Frozen at checkout. */
+  display: z.object({ currency: z.string(), total: z.number() }).nullable(),
+  insured: z.boolean(),
+  gift: z.object({ name: z.string(), email: z.string().nullable(), phone: z.string().nullable(), message: z.string().nullable() }).nullable(),
+  /** Public page of a gifted parcel, without prices. */
+  trackingToken: z.string(),
+  checkoutId: z.string().uuid(),
+  createdAt: z.string().datetime(),
+}).meta({
+  title: 'TerroirShipmentDetail',
+  description: 'Colis terroir : étape, départ, retrait, contenu, historique, montants',
+})
+
+export type TerroirShipmentSummary = z.infer<typeof terroirShipmentSummarySchema>
+export type TerroirShipmentDetail = z.infer<typeof terroirShipmentDetailSchema>
+
+/** Public tracking of a gifted parcel (US10): never a price nor an amount. */
+export const terroirTrackingSchema = z.object({
+  status: exportShipmentStatusEnum,
+  country: exportCountryEnum,
+  recipientName: z.string().nullable(),
+  senderName: z.string(),
+  giftMessage: z.string().nullable(),
+  departure: shipmentDepartureSchema,
+  reception: exportReceptionEnum,
+  pickupPoint: z.object({ city: z.string(), address: z.string(), openingHours: z.string().nullable() }).nullable(),
+  lines: z.array(z.object({ name: z.string(), quantity: z.number(), imageUrl: z.string().nullable() })),
+  events: z.array(shipmentEventSchema),
+  updatedAt: z.string().datetime(),
+}).meta({
+  title: 'TerroirTracking',
+  description: 'Suivi public d\'un colis offert, sans aucun prix',
+})
+
+export type TerroirTracking = z.infer<typeof terroirTrackingSchema>

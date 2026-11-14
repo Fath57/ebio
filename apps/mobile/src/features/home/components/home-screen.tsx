@@ -25,6 +25,7 @@ import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { useLocation } from '../../common/location-context'
 import { SearchResultCard } from '../../search/components/search-result-card'
 import { useCategories } from '../../search/hooks/use-search'
+import { TerroirHomeEntry } from '../../terroir/components/terroir-home-entry'
 import { useHomeBanners } from '../hooks/use-home-banners'
 import { useHomeSections } from '../hooks/use-home-sections'
 import { CategoryRail } from './category-rail'
@@ -63,6 +64,8 @@ interface HomeScreenProps {
   onOpenNotifications: () => void
   onOpenWallet: () => void
   onOpenAssistant: () => void
+  /** Opens the Terroir space; its card hides while the module is off. */
+  onOpenTerroir?: () => void
 }
 
 export function HomeScreen({
@@ -76,6 +79,7 @@ export function HomeScreen({
   onOpenNotifications,
   onOpenWallet,
   onOpenAssistant,
+  onOpenTerroir,
 }: HomeScreenProps) {
   const { semantic } = useTheme()
   // The tab bar floats over the content: without its height the last
@@ -139,6 +143,8 @@ export function HomeScreen({
             onOpenProduct={onNavigateToProduct}
           />
         </View>
+
+        {onOpenTerroir && <TerroirHomeEntry onPress={onOpenTerroir} />}
 
         {/* Catégories */}
         <View style={styles.categoriesBlock}>

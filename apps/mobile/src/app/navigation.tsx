@@ -72,6 +72,12 @@ import { RelativeFormScreen } from '../features/relatives/components/relative-fo
 import { RelativesScreen } from '../features/relatives/components/relatives-screen'
 import { SearchScreen } from '../features/search/components/search-screen'
 import { SupplierProfileScreen } from '../features/supplier-profile/components/supplier-profile-screen'
+import { ShipmentScreen } from '../features/terroir/components/shipment-screen'
+import { ShipmentsList } from '../features/terroir/components/shipments-list'
+import { TerroirCartScreen } from '../features/terroir/components/terroir-cart-screen'
+import { TerroirCheckoutScreen } from '../features/terroir/components/terroir-checkout-screen'
+import { TerroirHomeScreen } from '../features/terroir/components/terroir-home-screen'
+import { TerroirPackScreen, TerroirProductScreen } from '../features/terroir/components/terroir-product-screen'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
 import { useSession } from '../lib/auth-client'
 import { colors, fonts } from '../theme/theme'
@@ -129,6 +135,12 @@ function SearchStackScreen() {
       <SearchStack.Screen name="Notifications" component={NotificationsWrapper} />
       <SearchStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <SearchStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
+      {/* Terroir vers l'étranger (011): a space of its own, on the home stack. */}
+      <SearchStack.Screen name="Terroir" component={TerroirHomeWrapper} />
+      <SearchStack.Screen name="TerroirProduct" component={TerroirProductWrapper} />
+      <SearchStack.Screen name="TerroirPack" component={TerroirPackWrapper} />
+      <SearchStack.Screen name="TerroirCart" component={TerroirCartWrapper} />
+      <SearchStack.Screen name="TerroirCheckout" component={TerroirCheckoutWrapper} />
       {/* Writing to a shop needs an account: a visitor signs in here and
         * comes straight back to the shop rather than to another tab. */}
       <SearchStack.Screen name="Login" component={LoginWrapper} />
@@ -151,6 +163,7 @@ function SearchHomeWrapper({ navigation }: any) {
         onNavigateToProduct={(id: string) => navigation.navigate('ProductDetail', { productId: id })}
         onOpenNotifications={() => navigation.navigate('Notifications')}
         onOpenWallet={() => navigation.navigate('BuyerWallet')}
+        onOpenTerroir={() => navigation.navigate('Terroir')}
         onOpenAssistant={() => {
           track('assistant_ouvert')
           navigation.navigate('Assistant')
@@ -176,6 +189,83 @@ function SearchHomeWrapper({ navigation }: any) {
         }}
       />
     </View>
+  )
+}
+
+function TerroirHomeWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <TerroirHomeScreen
+        onBack={() => navigation.goBack()}
+        onOpenProduct={(productId: string) => navigation.navigate('TerroirProduct', { productId })}
+        onOpenPack={(packId: string) => navigation.navigate('TerroirPack', { packId })}
+        onOpenCart={() => navigation.navigate('TerroirCart')}
+        onRequireLogin={() => navigation.navigate('Login')}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirProductWrapper({ route, navigation }: any) {
+  return (
+    <SafeScreen>
+      <TerroirProductScreen
+        productId={route.params.productId}
+        onBack={() => navigation.goBack()}
+        onOpenCart={() => navigation.navigate('TerroirCart')}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirPackWrapper({ route, navigation }: any) {
+  return (
+    <SafeScreen>
+      <TerroirPackScreen
+        packId={route.params.packId}
+        onBack={() => navigation.goBack()}
+        onOpenCart={() => navigation.navigate('TerroirCart')}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirCartWrapper({ navigation }: any) {
+  const { data: session } = useSession()
+  return (
+    <SafeScreen>
+      <TerroirCartScreen
+        onBack={() => navigation.goBack()}
+        onCheckout={() => navigation.navigate(session?.user ? 'TerroirCheckout' : 'Login')}
+        onOpenProduct={(productId: string) => navigation.navigate('TerroirProduct', { productId })}
+        onBrowse={() => navigation.navigate('Terroir')}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirCheckoutWrapper({ navigation }: any) {
+  const { data: session } = useSession()
+  const customer = {
+    name: session?.user?.name ?? '',
+    email: session?.user?.email ?? null,
+    phone: session?.user?.phone ?? null,
+  }
+  return (
+    <SafeScreen>
+      <TerroirCheckoutScreen
+        customer={customer}
+        onBack={() => navigation.goBack()}
+        onComplete={(shipmentId: string) => {
+          navigation.popToTop()
+          navigation.navigate('Commandes', {
+            screen: 'TerroirShipment',
+            initial: false,
+            params: { shipmentId },
+          })
+        }}
+      />
+    </SafeScreen>
   )
 }
 
@@ -735,6 +825,8 @@ function OrdersStackScreen() {
       <OrdersStack.Screen name="RateProducts" component={RateProductsWrapper} />
       <OrdersStack.Screen name="BuyerWallet" component={BuyerWalletWrapper} />
       <OrdersStack.Screen name="FamilyPurchases" component={FamilyPurchasesWrapper} />
+      <OrdersStack.Screen name="TerroirShipments" component={TerroirShipmentsWrapper} />
+      <OrdersStack.Screen name="TerroirShipment" component={TerroirShipmentWrapper} />
     </OrdersStack.Navigator>
   )
 }
@@ -996,7 +1088,27 @@ function MyOrdersWrapper({ navigation }: any) {
         onRateReceivedProducts={orderId => navigation.navigate('RateProducts', { orderId })}
         // A received basket names no shop: the flow starts at the courier.
         onRateReceivedCourier={(orderId, supplierId) => navigation.navigate('RateOrder', { orderId, supplierId: supplierId ?? '', hasReview: supplierId === null })}
+        onOpenTerroirShipments={() => navigation.navigate('TerroirShipments')}
       />
+    </SafeScreen>
+  )
+}
+
+function TerroirShipmentsWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <ShipmentsList
+        onBack={() => navigation.goBack()}
+        onOpenShipment={(shipmentId: string) => navigation.navigate('TerroirShipment', { shipmentId })}
+      />
+    </SafeScreen>
+  )
+}
+
+function TerroirShipmentWrapper({ route, navigation }: any) {
+  return (
+    <SafeScreen>
+      <ShipmentScreen shipmentId={route.params.shipmentId} onBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }

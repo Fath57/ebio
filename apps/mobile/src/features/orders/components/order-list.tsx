@@ -29,6 +29,7 @@ import { ScreenHeader } from '../../common/components/screen-header'
 import { ProductCardSkeletonList } from '../../common/components/skeleton'
 import { formatFrozenMoney, parseFrozenDisplay } from '../../common/hooks/use-money'
 import { hasMoreAfter, PAGE_SIZE, usePaginatedList } from '../../common/hooks/use-paginated-list'
+import { TerroirShipmentsEntry } from '../../terroir/components/shipments-list'
 import { useReorder } from '../hooks/use-reorder'
 import { ReceivedOrders, useReceivedOrders } from './received-orders'
 
@@ -130,6 +131,8 @@ interface OrderListProps {
   /** Rating of a basket received from a relative: its products, then its courier. */
   onRateReceivedProducts?: (orderId: string) => void
   onRateReceivedCourier?: (orderId: string, supplierId: string | null) => void
+  /** Opens the terroir parcels; the entry hides when there is nothing to show. */
+  onOpenTerroirShipments?: () => void
 }
 
 type Segment = 'MINE' | 'RECEIVED'
@@ -229,7 +232,7 @@ function getFirstPhoto(items: OrderItem[]): string | null {
   return items.find(i => i.productPhoto)?.productPhoto ?? null
 }
 
-export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onRateReceivedCourier }: OrderListProps) {
+export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onRateReceivedCourier, onOpenTerroirShipments }: OrderListProps) {
   const tabBarHeight = useBottomTabBarHeight()
   const [activeFilter, setActiveFilter] = useState<FilterTab>('ALL')
   const [segment, setSegment] = useState<Segment>('MINE')
@@ -475,6 +478,8 @@ export function OrderList({ onOpenOrder, onGoToCart, onRateReceivedProducts, onR
           ? `${orderCount} commande${orderCount > 1 ? 's' : ''}`
           : undefined}
       />
+
+      {onOpenTerroirShipments && <TerroirShipmentsEntry onPress={onOpenTerroirShipments} />}
 
       {hasReceived && (
         <View style={styles.segmentRow} accessibilityRole="tablist">

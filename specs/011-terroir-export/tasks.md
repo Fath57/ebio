@@ -81,21 +81,21 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 ### API
 
-- [ ] T024 [US1] `export-catalog.service.ts` `catalog(country, filters)` et fiches produit / pack pour le client (prix en devise, origine, badge) ; `GET /terroir/departures` (prochain départ + liste)
-- [ ] T025 [US1] `terroir-checkout.service.ts` `preview(buyer, input)` : déplier les packs (`packSplit`), poids, départs proposables, prix figés, assurance, domicile, devise, suggestions de marge, lignes indisponibles ; enregistrer `export_checkout_drafts`
-- [ ] T026 [US1] `terroir-checkout.service.ts` `create(buyer, input)` : dans une transaction — verrou `FOR UPDATE` du départ, recontrôle capacité et échéance (`DEPARTURE_UNAVAILABLE`), une commande `EXPORT` par boutique (`OrdersService.create` avec `checkoutContext`, `deliveryFee: 0`, compensation de pack eBio), checkout (total = produits + transport + domicile + assurance), colis `export_shipments` (prix figés, jeton de suivi), événement `PAID` après confirmation ; paiement portefeuille immédiat ou page INTRAM via le circuit existant
-- [ ] T027 [US1] À la confirmation de paiement d'un checkout terroir (`payments.service.ts` `confirmCheckout` et débit portefeuille) : créditer le compte `EXPORT` (transport, domicile, assurance, marge de pack) ; colis `PAID` ; notification
-- [ ] T028 [US1] `terroir-client.controller.ts` : catalogue, fiches, départs, aperçu, création, `GET /terroir/shipments`, `GET /terroir/shipments/:id` — garde `TerroirEnabledGuard` (sauf le suivi des colis déjà payés)
-- [ ] T029 [P] [US1] Test e2e `terroir/tests/terroir-checkout.e2e-spec.ts` : multi-boutiques → un colis, commandes `EXPORT` à frais de livraison nuls, total exact, prix figé malgré un changement de tarif, **la part boutique n'inclut jamais le transport**, compte `EXPORT` crédité
-- [ ] T030 [P] [US1] Test e2e `terroir/tests/departure-capacity.e2e-spec.ts` : deux paiements simultanés qui dépasseraient la capacité → un seul passe
+- [X] T024 [US1] `export-catalog.service.ts` `catalog(country, filters)` et fiches produit / pack pour le client (prix en devise, origine, badge) ; `GET /terroir/departures` (prochain départ + liste)
+- [X] T025 [US1] `terroir-checkout.service.ts` `preview(buyer, input)` : déplier les packs (`packSplit`), poids, départs proposables, prix figés, assurance, domicile, devise, suggestions de marge, lignes indisponibles ; enregistrer `export_checkout_drafts`
+- [X] T026 [US1] `terroir-checkout.service.ts` `create(buyer, input)` : dans une transaction — verrou `FOR UPDATE` du départ, recontrôle capacité et échéance (`DEPARTURE_UNAVAILABLE`), une commande `EXPORT` par boutique (`OrdersService.create` avec `checkoutContext`, `deliveryFee: 0`, compensation de pack eBio), checkout (total = produits + transport + domicile + assurance), colis `export_shipments` (prix figés, jeton de suivi), événement `PAID` après confirmation ; paiement portefeuille immédiat ou page INTRAM via le circuit existant
+- [X] T027 [US1] À la confirmation de paiement d'un checkout terroir (`payments.service.ts` `confirmCheckout` et débit portefeuille) : créditer le compte `EXPORT` (transport, domicile, assurance, marge de pack) ; colis `PAID` ; notification
+- [X] T028 [US1] `terroir-client.controller.ts` : catalogue, fiches, départs, aperçu, création, `GET /terroir/shipments`, `GET /terroir/shipments/:id` — garde `TerroirEnabledGuard` (sauf le suivi des colis déjà payés)
+- [X] T029 [P] [US1] Test e2e `terroir/tests/terroir-checkout.e2e-spec.ts` : multi-boutiques → un colis, commandes `EXPORT` à frais de livraison nuls, total exact, prix figé malgré un changement de tarif, **la part boutique n'inclut jamais le transport**, compte `EXPORT` crédité
+- [X] T030 [P] [US1] Test e2e `terroir/tests/departure-capacity.e2e-spec.ts` : deux paiements simultanés qui dépasseraient la capacité → un seul passe
 
 ### Mobile (app Client)
 
-- [ ] T031 [US1] `apps/mobile/src/features/terroir/terroir-api.ts` et `terroir-cart-context.tsx` (`ebio_terroir_cart`, lignes produit ou pack, pays FR/BE pré-rempli d'après le fuseau)
-- [ ] T032 [US1] `components/terroir-home-screen.tsx` : choix du pays, catalogue (produits et packs, badge), entrée depuis l'accueil (bannière) ; masqué si l'interrupteur est faux
-- [ ] T033 [US1] `components/terroir-product-screen.tsx` (photos, prix en euros, composition, conservation, origine) et ajout au panier terroir
-- [ ] T034 [US1] `components/terroir-checkout-screen.tsx` : départs (le plus proche présélectionné, date, fenêtre d'arrivée, prix, « droits et taxes inclus »), point de retrait, paiement carte (page hébergée, `PaymentWebView`) ou portefeuille, récapitulatif en euros et FCFA
-- [ ] T035 [US1] `components/shipments-list.tsx` et `shipment-screen.tsx` : étape courante, historique daté, adresse et horaires de retrait ; entrée depuis l'onglet Commandes
+- [X] T031 [US1] `apps/mobile/src/features/terroir/terroir-api.ts` et `terroir-cart-context.tsx` (`ebio_terroir_cart`, lignes produit ou pack, pays FR/BE pré-rempli d'après le fuseau)
+- [X] T032 [US1] `components/terroir-home-screen.tsx` : choix du pays, catalogue (produits et packs, badge), entrée depuis l'accueil (bannière) ; masqué si l'interrupteur est faux
+- [X] T033 [US1] `components/terroir-product-screen.tsx` (photos, prix en euros, composition, conservation, origine) et ajout au panier terroir
+- [X] T034 [US1] `components/terroir-checkout-screen.tsx` : départs (le plus proche présélectionné, date, fenêtre d'arrivée, prix, « droits et taxes inclus »), point de retrait, paiement carte (page hébergée, `PaymentWebView`) ou portefeuille, récapitulatif en euros et FCFA
+- [X] T035 [US1] `components/shipments-list.tsx` et `shipment-screen.tsx` : étape courante, historique daté, adresse et horaires de retrait ; entrée depuis l'onglet Commandes
 
 ---
 
@@ -119,20 +119,20 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 ## Phase 7 — US7 à US10 : calendrier, poids, origine, cadeau (P2)
 
 - [ ] T046 [US7] Alertes de départ : `POST/DELETE /terroir/departure-alerts` ; à l'ouverture d'un départ, envoi une fois aux inscrits du pays ; `terroir.scheduler.ts` : rappel 48 h avant l'échéance pour les aperçus non payés (`export_checkout_drafts`)
-- [ ] T047 [US7] App Client : bandeau du prochain départ et liste des départs dans `terroir-home-screen.tsx` ; « Me prévenir du prochain départ » quand il n'y en a pas
-- [ ] T048 [US8] App Client `components/terroir-cart-screen.tsx` : poids, minimum facturé, marge sans surcoût et suggestions (données de l'aperçu) ; prix du kilo supplémentaire au-delà
-- [ ] T049 [US9] Origine et badge : déjà portés par T017/T024 ; affichage complet dans `terroir-product-screen.tsx` et origine de chaque produit d'un pack
-- [ ] T050 [US10] Colis offert : champs `gift` du passage en caisse, départs vers le pays du destinataire, `GET /terroir/tracking/:token` public sans prix (`@Public`, limite de débit élevée — la landing appelle depuis son serveur), payeur prévenu à la remise
+- [X] T047 [US7] App Client : bandeau du prochain départ et liste des départs dans `terroir-home-screen.tsx` ; « Me prévenir du prochain départ » quand il n'y en a pas
+- [X] T048 [US8] App Client `components/terroir-cart-screen.tsx` : poids, minimum facturé, marge sans surcoût et suggestions (données de l'aperçu) ; prix du kilo supplémentaire au-delà
+- [X] T049 [US9] Origine et badge : déjà portés par T017/T024 ; affichage complet dans `terroir-product-screen.tsx` et origine de chaque produit d'un pack
+- [X] T050 [US10] Colis offert : champs `gift` du passage en caisse, départs vers le pays du destinataire, `GET /terroir/tracking/:token` public sans prix (`@Public`, limite de débit élevée — la landing appelle depuis son serveur), payeur prévenu à la remise
 - [ ] T051 [US10] Landing `apps/landing/app/routes/colis.tsx` : suivi public du colis offert (étapes, adresse de retrait, message du payeur, jamais de prix) ; route `colis/:token`
-- [ ] T052 [P] [US10] Test e2e `terroir/tests/gift-tracking.e2e-spec.ts` : la réponse publique ne contient aucune clé de prix ni de montant
-- [ ] T053 [US10] App Client : « Offrir à quelqu'un » dans `terroir-checkout-screen.tsx` (nom, e-mail, téléphone, pays, message)
+- [X] T052 [P] [US10] Test e2e `terroir/tests/gift-tracking.e2e-spec.ts` : la réponse publique ne contient aucune clé de prix ni de montant
+- [X] T053 [US10] App Client : « Offrir à quelqu'un » dans `terroir-checkout-screen.tsx` (nom, e-mail, téléphone, pays, message)
 
 ---
 
 ## Phase 8 — US6 + options : domicile, assurance (P3)
 
-- [ ] T054 [US6] Livraison à domicile : proposée seulement si le tarif du départ a un supplément pour le pays ; adresse saisie ; étape `OUT_FOR_DELIVERY`
-- [ ] T055 [US6] Assurance : case au passage en caisse avec son prix ; colis assuré perdu → remboursement intégral ; montants assurés et pertes suivis à part (vue back-office)
+- [X] T054 [US6] Livraison à domicile : proposée seulement si le tarif du départ a un supplément pour le pays ; adresse saisie ; étape `OUT_FOR_DELIVERY`
+- [X] T055 [US6] Assurance : case au passage en caisse avec son prix ; colis assuré perdu → remboursement intégral ; montants assurés et pertes suivis à part (vue back-office)
 - [ ] T056 [P] Test e2e `terroir/tests/insurance-home.e2e-spec.ts` : domicile indisponible refusé (`HOME_DELIVERY_UNAVAILABLE`), prix de l'assurance avec minimum, remboursement d'un colis assuré
 
 ---

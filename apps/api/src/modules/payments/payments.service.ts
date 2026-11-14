@@ -25,7 +25,7 @@ import { WalletTransactionType } from '../wallet/entities/wallet-transaction.ent
 import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { CommissionService } from './commission.service'
-import { Checkout, CheckoutStatus } from './entities/checkout.entity'
+import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from './entities/checkout.entity'
 import { PaymentMethod } from './entities/payment-method.entity'
 import { PaymentGatewayFactory } from './gateways/payment-gateway.factory'
 import { Payment, PaymentProvider, PaymentStatus } from './payment.entity'
@@ -35,6 +35,13 @@ import { supplierShare } from './supplier-share'
 @Injectable()
 export class PaymentsService {
   private readonly logger = new Logger(PaymentsService.name)
+
+  /**
+   * Told of every checkout confirmed by the provider. A registry rather than
+   * a dependency: the terroir module settles its parcels here without the
+   * payments module importing it (it imports payments).
+   */
+  private readonly checkoutPaidHooks: Array<(checkoutId: string) => Promise<void>> = []
 
   constructor(
     private readonly em: EntityManager,
@@ -47,6 +54,11 @@ export class PaymentsService {
     @Inject(forwardRef(() => GiftNotifierService))
     private readonly giftNotifier: GiftNotifierService,
   ) {}
+
+  /** Registers what must happen once a checkout is confirmed paid. */
+  onCheckoutPaid(hook: (checkoutId: string) => Promise<void>): void {
+    this.checkoutPaidHooks.push(hook)
+  }
 
   /**
    * Returns payment info needed by the frontend to display the payment screen.
@@ -456,14 +468,23 @@ export class PaymentsService {
     checkout.providerTransactionId = reference
     checkout.status = CheckoutStatus.PAID
 
-    const payments = splitCheckoutAmount(checkout.totalAmount, orders).map(({ order, amount }) =>
+    // A terroir checkout also carries the shipping, home delivery and
+    // insurance: they go to eBio's EXPORT account, never to a shop. Each order
+    // is escrowed exactly its own total.
+    const ordersShare = checkout.deliveryMode === CheckoutDeliveryMode.EXPORT
+      ? orders.reduce((total, order) => total + Number(order.totalAmount), 0)
+      : checkout.totalAmount
+    // (provider, provider_transaction_id) is unique: with several orders (a
+    // terroir parcel), only the first payment carries the transaction; the
+    // checkout keeps it for all of them.
+    const payments = splitCheckoutAmount(ordersShare, orders).map(({ order, amount }, index) =>
       this.em.create(Payment, {
         checkout,
         order,
         amount,
         provider,
         paymentMethod: `${provider}_checkout`,
-        providerTransactionId: reference,
+        providerTransactionId: index === 0 ? reference : undefined,
         providerReference: checkResult.reference,
         providerPaymentMethodId: checkResult.providerPaymentMethodId,
         status: PaymentStatus.CAPTURED,
@@ -478,6 +499,15 @@ export class PaymentsService {
     }
 
     await this.em.flush()
+
+    for (const hook of this.checkoutPaidHooks) {
+      try {
+        await hook(checkout.id)
+      }
+      catch (error) {
+        this.logger.error(`Suite du paiement du panier ${checkout.id} en échec`, error instanceof Error ? error.stack : String(error))
+      }
+    }
 
     await this.notificationsService.send({
       user: checkout.buyer,

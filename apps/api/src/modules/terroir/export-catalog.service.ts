@@ -6,7 +6,7 @@ import { User } from '../auth/auth.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
 import { Product, ProductModeration, ProductStatus } from '../products/entities/product.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
-import { Supplier } from '../suppliers/supplier.entity'
+import { Supplier, SupplierMode, ValidationStatus } from '../suppliers/supplier.entity'
 import { EXPORT_CHECKLIST_KEYS, ExportPackStatus, ExportProfileStatus } from './contracts/terroir.contract'
 import { ExportPackItem } from './entities/export-pack-item.entity'
 import { ExportPack } from './entities/export-pack.entity'
@@ -21,6 +21,40 @@ export interface PackView {
   profiles: Map<string, ExportProfileStatus>
   linesTotal: number
   orderable: boolean
+}
+
+/** One page of the buyers' terroir catalogue. */
+export interface ClientCatalog {
+  /** Approved profiles, product, shop and category populated. */
+  profiles: ExportProfile[]
+  /** Orderable packs, on the first page only. */
+  packs: PackView[]
+  /** Packed weight of each pack, by pack id. */
+  packWeights: Map<string, number>
+  hasMore: boolean
+}
+
+export interface ClientPackView extends PackView {
+  weightG: number
+  /** Approved profiles of the pack's products, by product id. */
+  details: Map<string, ExportProfile>
+}
+
+export const CATALOG_PAGE_SIZE = 20
+
+/** Grams a line weighs: a « pack de N » variant weighs N units. */
+export function lineWeight(profile: Pick<ExportProfile, 'packedWeightG'>, variant: Pick<ProductVariant, 'packSize'> | null | undefined, quantity: number): number {
+  return profile.packedWeightG * (variant?.packSize && variant.packSize > 1 ? variant.packSize : 1) * quantity
+}
+
+/** What buyers abroad may see of a product: approved for export, on sale, from a live shop. */
+function sellableProductFilter() {
+  return {
+    status: ProductStatus.ACTIVE,
+    moderationStatus: ProductModeration.APPROVED,
+    stock: { $gt: 0 },
+    supplier: { validationStatus: ValidationStatus.VALIDATED, mode: SupplierMode.ORDER },
+  }
 }
 
 export interface ReviewQueue {
@@ -317,6 +351,120 @@ export class ExportCatalogService {
         && product.moderationStatus === ProductModeration.APPROVED
         && stock >= (item.variant && !item.variant.packSize ? item.quantity : unitsDrawn(item))
     })
+  }
+
+  // ===== BUYERS ABROAD (US1) =====
+
+  /**
+   * The terroir catalogue (FR-007): approved products on sale, then the
+   * orderable packs. Country-blind in v1 — both countries get the same
+   * catalogue; the country only decides the departures.
+   */
+  async clientCatalog(filters: { category?: string, search?: string, page: number }): Promise<ClientCatalog> {
+    const product: Record<string, unknown> = { ...sellableProductFilter() }
+    if (filters.category) {
+      product.category = filters.category
+    }
+    if (filters.search) {
+      product.name = { $ilike: `%${filters.search.replace(/[%_\\]/g, '')}%` }
+    }
+    const profiles = await this.em.find(
+      ExportProfile,
+      { status: ExportProfileStatus.APPROVED, product },
+      {
+        populate: ['product', 'product.supplier', 'product.category'],
+        orderBy: { product: { name: 'ASC' } },
+        limit: CATALOG_PAGE_SIZE + 1,
+        offset: (filters.page - 1) * CATALOG_PAGE_SIZE,
+      },
+    )
+    const hasMore = profiles.length > CATALOG_PAGE_SIZE
+
+    let packs: PackView[] = []
+    const packWeights = new Map<string, number>()
+    if (filters.page === 1) {
+      const where: Record<string, unknown> = { status: ExportPackStatus.APPROVED }
+      if (filters.search) {
+        where.name = { $ilike: `%${filters.search.replace(/[%_\\]/g, '')}%` }
+      }
+      const candidates = await this.em.find(ExportPack, where, { orderBy: { name: 'ASC' } })
+      packs = (await this.packViews(candidates)).filter(view => view.orderable)
+      const weights = await this.packWeightsOf(packs.map(view => view.pack))
+      for (const [id, weight] of weights) {
+        packWeights.set(id, weight)
+      }
+    }
+    return { profiles: profiles.slice(0, CATALOG_PAGE_SIZE), packs, packWeights, hasMore }
+  }
+
+  /** A product's terroir page; 404 unless approved and on sale. */
+  async clientProduct(productId: string): Promise<{ profile: ExportProfile, variants: ProductVariant[] }> {
+    const profile = await this.em.findOne(
+      ExportProfile,
+      { product: { id: productId, ...sellableProductFilter(), stock: { $gte: 0 } }, status: ExportProfileStatus.APPROVED },
+      { populate: ['product', 'product.supplier', 'product.category'] },
+    )
+    if (!profile) {
+      throw terroirError(HttpStatus.NOT_FOUND, 'TERROIR_PRODUCT_NOT_FOUND', 'Ce produit n\'est pas proposé à l\'étranger.')
+    }
+    const variants = await this.em.find(ProductVariant, { product: productId }, { orderBy: { pricePerUnit: 'ASC' } })
+    return { profile, variants }
+  }
+
+  /** A pack's terroir page; 404 unless approved. Orderable or not, it says which. */
+  async clientPack(packId: string): Promise<ClientPackView> {
+    const pack = await this.loadPack(packId)
+    if (pack.status !== ExportPackStatus.APPROVED) {
+      throw packNotFound()
+    }
+    const view = await this.packView(pack)
+    const productIds = pack.items.getItems().map(item => item.product.id)
+    const profiles = await this.em.find(ExportProfile, { product: { $in: productIds } })
+    const weights = await this.packWeightsOf([pack])
+    return {
+      ...view,
+      weightG: weights.get(pack.id) ?? 0,
+      details: new Map(profiles.map(profile => [profile.product.id, profile])),
+    }
+  }
+
+  /**
+   * Approved exportable products that fit in `marginG` at no extra shipping
+   * cost (US8), the heaviest that fits first, minus what the cart already holds.
+   */
+  async suggestionsWithin(marginG: number, excludeProductIds: string[], limit = 6): Promise<ExportProfile[]> {
+    if (marginG <= 0) {
+      return []
+    }
+    const product: Record<string, unknown> = { ...sellableProductFilter() }
+    if (excludeProductIds.length > 0) {
+      product.id = { $nin: excludeProductIds }
+    }
+    return this.em.find(
+      ExportProfile,
+      { status: ExportProfileStatus.APPROVED, packedWeightG: { $lte: marginG }, product },
+      { populate: ['product', 'product.supplier'], orderBy: { packedWeightG: 'DESC' }, limit },
+    )
+  }
+
+  /** Packed weight of one of each pack, from its products' export profiles. */
+  async packWeightsOf(packs: ExportPack[]): Promise<Map<string, number>> {
+    const productIds = [...new Set(packs.flatMap(pack => pack.items.getItems().map(item => item.product.id)))]
+    const profiles = productIds.length === 0 ? [] : await this.em.find(ExportProfile, { product: { $in: productIds } })
+    const byProduct = new Map(profiles.map(profile => [profile.product.id, profile]))
+    return new Map(packs.map(pack => [pack.id, pack.items.getItems().reduce((total, item) => {
+      const profile = byProduct.get(item.product.id)
+      return total + (profile ? lineWeight(profile, item.variant, item.quantity) : 0)
+    }, 0)]))
+  }
+
+  /** Packs with their items, for the terroir checkout. */
+  async packsForCheckout(packIds: string[]): Promise<PackView[]> {
+    if (packIds.length === 0) {
+      return []
+    }
+    const packs = await this.em.find(ExportPack, { id: { $in: packIds } })
+    return this.packViews(packs)
   }
 
   // ===== INTERNALS =====

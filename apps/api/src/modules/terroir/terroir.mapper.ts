@@ -1,15 +1,57 @@
-import type { ExportAgencyResponse, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse } from './contracts/terroir.contract'
+import type { Order } from '../orders/entities/order.entity'
+import type { ProductVariant } from '../products/entities/product-variant.entity'
+import type { ExportAgencyResponse, ExportCountry, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirTracking } from './contracts/terroir.contract'
 import type { ExportAgency } from './entities/export-agency.entity'
+import type { ExportDeparture } from './entities/export-departure.entity'
 import type { ExportPickupPoint } from './entities/export-pickup-point.entity'
 import type { ExportProfile } from './entities/export-profile.entity'
-import type { PackView, ReviewQueue } from './export-catalog.service'
+import type { ClientCatalog, ClientPackView, PackView, ReviewQueue } from './export-catalog.service'
 import type { DepartureDetailView, DepartureView } from './export-logistics.service'
-import { packLinePrice } from './export-catalog.service'
+import type { ShipmentView } from './export-shipments.service'
+import type { TerroirCheckoutCreated, TerroirQuote } from './terroir-checkout.service'
+import type { OfferedDeparture } from './terroir-math'
+import { toDisplayAmount } from '../currency/fx-math'
+import { lineWeight, packLinePrice } from './export-catalog.service'
 import { fillRatio, orderDeadline } from './terroir-math'
 import { addDays, shortName } from './terroir-texts'
 
 function nullableNumber(value: string | null | undefined): number | null {
   return value == null ? null : Number(value)
+}
+
+/** An FCFA amount in the display currency; null without a rate (FCFA shown). */
+function display(amount: number, rate: number | null): number | null {
+  return rate === null ? null : toDisplayAmount(amount, rate)
+}
+
+function arrivalOf(departure: Pick<ExportDeparture, 'departsOn' | 'transitMinDays' | 'transitMaxDays'>) {
+  return {
+    from: addDays(departure.departsOn, departure.transitMinDays),
+    to: addDays(departure.departsOn, departure.transitMaxDays),
+  }
+}
+
+function shipmentLines(orders: Order[]) {
+  return orders.flatMap(order => order.items.getItems().map(item => ({
+    name: item.variant ? `${item.product.name} — ${(item.variant as ProductVariant).label}` : item.product.name,
+    quantity: item.quantity,
+    imageUrl: item.product.photos?.[0] ?? null,
+    shopName: order.supplier.shopName,
+  })))
+}
+
+function pickupPointOf(view: ShipmentView) {
+  const point = view.shipment.pickupPoint
+  return point ? { city: point.city, address: point.address, openingHours: point.openingHours ?? null } : null
+}
+
+function eventsOf(view: ShipmentView) {
+  return view.events.map(event => ({
+    step: event.step ?? null,
+    message: event.message ?? null,
+    pickupPoint: event.pickupPointSnapshot ?? null,
+    at: event.createdAt.toISOString(),
+  }))
 }
 
 /** Entities → contracts, field by field: getters and populated relations are not serialised. */
@@ -164,6 +206,276 @@ export const TerroirMapper = {
         },
       })),
       packs: queue.packs.map(TerroirMapper.toPack),
+    }
+  },
+
+  // ===== BUYERS ABROAD =====
+
+  toCatalog(catalog: ClientCatalog, country: ExportCountry, page: number, currency: string, rate: number | null): TerroirCatalogResponse {
+    return {
+      country,
+      currency: rate === null ? 'XOF' : currency,
+      products: catalog.profiles.map((profile) => {
+        const product = profile.product
+        const price = Number(product.pricePerUnit)
+        return {
+          id: product.id,
+          name: product.name,
+          imageUrl: product.photos?.[0] ?? null,
+          price,
+          displayPrice: display(price, rate),
+          weightG: profile.packedWeightG,
+          supplierId: product.supplier.id,
+          shopName: product.supplier.shopName,
+          categoryName: product.category.name,
+          badge: profile.hasBadge,
+          origin: { producer: profile.originProducer ?? null, place: profile.originPlace ?? null },
+        }
+      }),
+      packs: catalog.packs.map(({ pack }) => ({
+        id: pack.id,
+        name: pack.name,
+        imageUrl: pack.photos?.[0] ?? pack.items.getItems()[0]?.product.photos?.[0] ?? null,
+        price: Number(pack.price),
+        displayPrice: display(Number(pack.price), rate),
+        weightG: catalog.packWeights.get(pack.id) ?? 0,
+        shopName: pack.supplier?.shopName ?? null,
+        itemCount: pack.items.getItems().reduce((total, item) => total + item.quantity, 0),
+      })),
+      page,
+      hasMore: catalog.hasMore,
+    }
+  },
+
+  toClientProduct(view: { profile: ExportProfile, variants: ProductVariant[] }, currency: string, rate: number | null): TerroirProductDetail {
+    const { profile, variants } = view
+    const product = profile.product
+    const price = Number(product.pricePerUnit)
+    return {
+      id: product.id,
+      name: product.name,
+      description: product.description ?? null,
+      photos: product.photos ?? [],
+      price,
+      displayPrice: display(price, rate),
+      currency: rate === null ? 'XOF' : currency,
+      weightG: profile.packedWeightG,
+      dimensionsCm: { length: profile.lengthCm ?? null, width: profile.widthCm ?? null, height: profile.heightCm ?? null },
+      shelfLifeDays: profile.shelfLifeDays,
+      composition: {
+        ingredients: product.ingredients ?? null,
+        allergens: product.allergens ?? [],
+        conservation: product.conservation ?? null,
+      },
+      origin: {
+        producer: profile.originProducer ?? null,
+        place: profile.originPlace ?? null,
+        year: profile.originYear ?? null,
+        method: profile.originMethod ?? null,
+        photos: profile.originPhotos ?? [],
+      },
+      badge: profile.hasBadge,
+      supplierId: product.supplier.id,
+      shopName: product.supplier.shopName,
+      inStock: product.stock > 0,
+      variants: variants.map(variant => ({
+        id: variant.id,
+        label: variant.label,
+        price: Number(variant.pricePerUnit),
+        displayPrice: display(Number(variant.pricePerUnit), rate),
+        weightG: lineWeight(profile, variant, 1),
+        inStock: variant.packSize && variant.packSize > 1 ? product.stock >= variant.packSize : variant.stock > 0,
+      })),
+    }
+  },
+
+  toClientPack(view: ClientPackView, currency: string, rate: number | null): TerroirPackDetail {
+    const { pack } = view
+    return {
+      id: pack.id,
+      name: pack.name,
+      description: pack.description ?? null,
+      photos: pack.photos ?? [],
+      price: Number(pack.price),
+      displayPrice: display(Number(pack.price), rate),
+      currency: rate === null ? 'XOF' : currency,
+      weightG: view.weightG,
+      shopName: pack.supplier?.shopName ?? null,
+      orderable: view.orderable,
+      items: pack.items.getItems().map((item) => {
+        const profile = view.details.get(item.product.id)
+        return {
+          productId: item.product.id,
+          variantId: item.variant?.id ?? null,
+          name: item.variant ? `${item.product.name} — ${item.variant.label}` : item.product.name,
+          quantity: item.quantity,
+          imageUrl: item.product.photos?.[0] ?? null,
+          shopName: item.product.supplier.shopName,
+          badge: profile?.hasBadge ?? false,
+          origin: { producer: profile?.originProducer ?? null, place: profile?.originPlace ?? null },
+        }
+      }),
+    }
+  },
+
+  toDepartureOffer(offer: OfferedDeparture, departure: ExportDeparture, points: ExportPickupPoint[], rate: number | null, currency: string): TerroirDepartureOffer {
+    const homeFee = offer.rate.homeDeliveryFee ?? null
+    return {
+      departureId: departure.id,
+      agency: departure.agency.name,
+      departsOn: departure.departsOn,
+      arrival: arrivalOf(departure),
+      pricePerKg: offer.rate.pricePerKg,
+      minBilledKg: offer.rate.minBilledKg,
+      maxWeightKg: offer.rate.maxWeightKg ?? null,
+      homeDeliveryFee: homeFee,
+      shippingPrice: offer.shippingPrice,
+      display: rate === null
+        ? null
+        : { currency, shippingPrice: toDisplayAmount(offer.shippingPrice, rate), homeDeliveryFee: homeFee === null ? null : toDisplayAmount(homeFee, rate) },
+      orderBefore: offer.orderBefore.toISOString(),
+      collectBefore: departure.depositDeadline.toISOString(),
+      dutiesIncluded: true,
+      pickupPoints: points
+        .filter(point => point.agency.id === departure.agency.id && point.country === offer.rate.country)
+        .map(point => ({ id: point.id, city: point.city, address: point.address, openingHours: point.openingHours ?? null })),
+    }
+  },
+
+  toDepartures(offers: OfferedDeparture[], departures: Map<string, ExportDeparture>, points: ExportPickupPoint[], rate: number | null, currency: string, alertSubscribed: boolean): TerroirDeparturesResponse {
+    const items = offers.map(offer => TerroirMapper.toDepartureOffer(offer, departures.get(offer.departure.id)!, points, rate, currency))
+    const first = items[0]
+    return {
+      next: first
+        ? { departureId: first.departureId, agency: first.agency, city: first.pickupPoints[0]?.city ?? null, departsOn: first.departsOn, orderBefore: first.orderBefore }
+        : null,
+      items,
+      alertSubscribed,
+    }
+  },
+
+  toPreview(quote: TerroirQuote): TerroirCheckoutPreview {
+    const { rate } = quote
+    return {
+      country: quote.country,
+      lines: quote.lines,
+      estimatedWeightG: quote.estimatedWeightG,
+      billedKg: quote.billedKg,
+      marginKg: quote.marginKg,
+      suggestions: quote.suggestions.map(profile => ({
+        productId: profile.product.id,
+        name: profile.product.name,
+        weightG: profile.packedWeightG,
+        price: Number(profile.product.pricePerUnit),
+        imageUrl: profile.product.photos?.[0] ?? null,
+        shopName: profile.product.supplier.shopName,
+      })),
+      departureId: quote.selected?.departure.id ?? null,
+      itemsTotal: quote.itemsTotal,
+      shippingPrice: quote.shippingPrice,
+      homeDeliveryFee: quote.homeDeliveryFee,
+      insurancePrice: quote.insurancePrice,
+      total: quote.total,
+      options: { homeDeliveryFee: quote.homeDeliveryQuote, insurancePrice: quote.insuranceQuote },
+      display: rate === null
+        ? null
+        : {
+            currency: quote.currency,
+            total: toDisplayAmount(quote.total, rate),
+            itemsTotal: toDisplayAmount(quote.itemsTotal, rate),
+            shippingPrice: toDisplayAmount(quote.shippingPrice, rate),
+            homeDeliveryFee: toDisplayAmount(quote.homeDeliveryFee, rate),
+            insurancePrice: toDisplayAmount(quote.insurancePrice, rate),
+          },
+      departures: quote.offers.map(offer => TerroirMapper.toDepartureOffer(offer, quote.departures.get(offer.departure.id)!, quote.pickupPoints, rate, quote.currency)),
+      unavailable: quote.unavailable,
+    }
+  },
+
+  toCheckoutResult(created: TerroirCheckoutCreated): TerroirCheckoutResult {
+    const { checkout, shipment } = created
+    return {
+      checkoutId: checkout.id,
+      shipmentId: shipment.id,
+      total: Number(checkout.totalAmount),
+      status: shipment.status,
+      paymentUrl: created.paymentUrl,
+      display: created.displayTotal === null ? null : { currency: checkout.displayCurrency, total: created.displayTotal },
+    }
+  },
+
+  toShipmentSummary(view: ShipmentView): TerroirShipmentSummary {
+    const { shipment } = view
+    const lines = shipmentLines(view.orders)
+    return {
+      id: shipment.id,
+      status: shipment.status,
+      country: shipment.country,
+      departure: { agency: shipment.departure.agency.name, departsOn: shipment.departure.departsOn, arrival: arrivalOf(shipment.departure) },
+      reception: shipment.reception,
+      itemCount: lines.reduce((total, line) => total + line.quantity, 0),
+      imageUrl: lines[0]?.imageUrl ?? null,
+      total: Number(shipment.checkout.totalAmount),
+      gift: shipment.giftRecipientName ? { name: shipment.giftRecipientName } : null,
+      createdAt: shipment.createdAt.toISOString(),
+    }
+  },
+
+  toShipmentDetail(view: ShipmentView): TerroirShipmentDetail {
+    const { shipment } = view
+    const checkout = shipment.checkout
+    const displayTotal = checkout.displayTotal == null ? null : Number(checkout.displayTotal)
+    return {
+      id: shipment.id,
+      status: shipment.status,
+      country: shipment.country,
+      departure: {
+        agency: shipment.departure.agency.name,
+        departsOn: shipment.departure.departsOn,
+        arrival: arrivalOf(shipment.departure),
+        collectBefore: shipment.departure.depositDeadline.toISOString(),
+      },
+      reception: shipment.reception,
+      pickupPoint: pickupPointOf(view),
+      homeAddress: shipment.homeAddress ?? null,
+      lines: shipmentLines(view.orders),
+      events: eventsOf(view),
+      supplement: shipment.supplementAmount == null
+        ? null
+        : { amount: Number(shipment.supplementAmount), status: shipment.supplementStatus, requestedAt: shipment.supplementRequestedAt?.toISOString() ?? null },
+      estimatedWeightG: shipment.estimatedWeightG,
+      actualWeightG: shipment.actualWeightG ?? null,
+      itemsTotal: Number(checkout.itemsTotal),
+      shippingPrice: Number(shipment.shippingPrice),
+      homeDeliveryFee: Number(shipment.homeDeliveryFee),
+      insurancePrice: Number(shipment.insurancePrice),
+      total: Number(checkout.totalAmount),
+      display: displayTotal === null ? null : { currency: checkout.displayCurrency, total: displayTotal },
+      insured: shipment.insured,
+      gift: shipment.giftRecipientName
+        ? { name: shipment.giftRecipientName, email: shipment.giftRecipientEmail ?? null, phone: shipment.giftRecipientPhone ?? null, message: shipment.giftMessage ?? null }
+        : null,
+      trackingToken: shipment.trackingToken,
+      checkoutId: checkout.id,
+      createdAt: shipment.createdAt.toISOString(),
+    }
+  },
+
+  /** Public, for a gift's recipient: built field by field so no price can slip in. */
+  toTracking(view: ShipmentView): TerroirTracking {
+    const { shipment } = view
+    return {
+      status: shipment.status,
+      country: shipment.country,
+      recipientName: shipment.giftRecipientName ?? null,
+      senderName: shortName(shipment.buyer.name),
+      giftMessage: shipment.giftMessage ?? null,
+      departure: { agency: shipment.departure.agency.name, departsOn: shipment.departure.departsOn, arrival: arrivalOf(shipment.departure) },
+      reception: shipment.reception,
+      pickupPoint: pickupPointOf(view),
+      lines: shipmentLines(view.orders).map(line => ({ name: line.name, quantity: line.quantity, imageUrl: line.imageUrl })),
+      events: eventsOf(view),
+      updatedAt: shipment.updatedAt.toISOString(),
     }
   },
 }

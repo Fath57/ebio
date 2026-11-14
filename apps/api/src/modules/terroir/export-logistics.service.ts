@@ -11,6 +11,7 @@ import { PlatformAccount } from '../wallet/entities/wallet.entity'
 import { WalletService } from '../wallet/wallet.service'
 import { ExportDepartureStatus, ExportReception, ExportShipmentStatus } from './contracts/terroir.contract'
 import { ExportAgency } from './entities/export-agency.entity'
+import { ExportDepartureAlert } from './entities/export-departure-alert.entity'
 import { ExportDepartureRate } from './entities/export-departure-rate.entity'
 import { ExportDeparture } from './entities/export-departure.entity'
 import { ExportPickupPoint } from './entities/export-pickup-point.entity'
@@ -392,6 +393,27 @@ export class ExportLogisticsService {
       })),
     })), country, weightG, now, collectionDays)
     return { offers, departures: new Map(departures.map(departure => [departure.id, departure])) }
+  }
+
+  /** Whether the buyer waits for a « next departure » alert towards `country`. */
+  async hasPendingAlert(userId: string | null | undefined, country: string): Promise<boolean> {
+    if (!userId) {
+      return false
+    }
+    return (await this.em.count(ExportDepartureAlert, { user: userId, country: country as ExportDepartureAlert['country'], sentAt: null })) > 0
+  }
+
+  /** Active pickup points of the agencies behind `offers`, in one country. */
+  async pickupPointsFor(offers: OfferedDeparture[], departures: Map<string, ExportDeparture>, country: string): Promise<ExportPickupPoint[]> {
+    const agencyIds = [...new Set(offers.map(offer => departures.get(offer.departure.id)?.agency.id).filter((id): id is string => Boolean(id)))]
+    if (agencyIds.length === 0) {
+      return []
+    }
+    return this.em.find(
+      ExportPickupPoint,
+      { agency: { $in: agencyIds }, country: country as ExportPickupPoint['country'], active: true },
+      { orderBy: { city: 'ASC', createdAt: 'ASC' } },
+    )
   }
 
   // ===== FILL =====

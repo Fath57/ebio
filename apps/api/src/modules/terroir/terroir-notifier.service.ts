@@ -37,6 +37,12 @@ export class TerroirNotifierService {
     await this.push(input.buyerId, NotificationType.EXPORT_SHIPMENT_UPDATE, 'Nouveau départ pour votre colis', body, { shipmentId: input.shipmentId })
   }
 
+  /** The parcel is paid: the buyer learns when it leaves (US1). */
+  async shipmentPaid(input: { buyerId: string, shipmentId: string, departsOn: string }): Promise<void> {
+    const body = `Votre colis terroir est payé. Les boutiques préparent vos produits ; il partira le ${spokenDay(input.departsOn)}. Vous serez prévenu à chaque étape.`
+    await this.push(input.buyerId, NotificationType.EXPORT_SHIPMENT_UPDATE, 'Colis terroir confirmé', body, { shipmentId: input.shipmentId })
+  }
+
   /** A departure cancelled with no other one yet: the buyer is told it waits. */
   async shipmentOnHold(input: { buyerId: string, shipmentId: string, departsOn: string }): Promise<void> {
     const body = `Le départ du ${spokenDay(input.departsOn)} est annulé. Nous vous proposons un nouveau départ très vite ; sans solution sous 30 jours, vous pourrez être remboursé.`

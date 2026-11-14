@@ -100,8 +100,10 @@ export class ProductsController {
     )
 
     const promotions = await this.promotionsService.liveByProduct(result.products.map(p => p.id))
+    // The shop (or eBio in its catalogue) sees where each product stands for export.
+    const exportStatuses = isOwner ? await this.productsService.exportStatusesOf(result.products.map(p => p.id)) : undefined
     return {
-      data: result.products.map(p => ProductMapper.toSummary(p, promotions.get(p.id) ?? [])),
+      data: result.products.map(p => ProductMapper.toSummary(p, promotions.get(p.id) ?? [], exportStatuses)),
       meta: {
         itemCount: result.total,
         pageSize: pagination.pageSize,
@@ -137,7 +139,13 @@ export class ProductsController {
       this.productsService.getProductStats(product.id),
       this.promotionsService.listForProduct(product.id),
     ])
-    return { ...ProductMapper.toResponse(product, variants, promotions), stats }
+    // Its export request only for the owning shop (011): buyers never see it.
+    const exportProfile = isOwner ? ProductMapper.toExportProfile(await this.productsService.exportProfileOf(product.id)) : undefined
+    return {
+      ...ProductMapper.toResponse(product, variants, promotions),
+      ...(isOwner ? { exportProfile } : {}),
+      stats,
+    }
   }
 
   /**

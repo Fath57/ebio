@@ -1,4 +1,6 @@
-import type { ProductResponse } from './contracts/product.contract'
+import type { ExportProfileStatus } from '../terroir/contracts/terroir.contract'
+import type { ExportProfile } from '../terroir/entities/export-profile.entity'
+import type { ProductExportProfile, ProductResponse } from './contracts/product.contract'
 import type { ProductPromotion } from './entities/product-promotion.entity'
 import type { ProductVariant } from './entities/product-variant.entity'
 import type { Product } from './entities/product.entity'
@@ -71,7 +73,32 @@ export class ProductMapper {
     }
   }
 
-  static toSummary(product: Product, promotions: ProductPromotion[] = []) {
+  /** What the owning shop reads of its export request. */
+  static toExportProfile(profile: ExportProfile | null): ProductExportProfile | null {
+    if (!profile) {
+      return null
+    }
+    return {
+      status: profile.status,
+      rejectionReason: profile.rejectionReason ?? null,
+      packedWeightG: profile.packedWeightG,
+      lengthCm: profile.lengthCm ?? null,
+      widthCm: profile.widthCm ?? null,
+      heightCm: profile.heightCm ?? null,
+      shelfLifeDays: profile.shelfLifeDays,
+      origin: {
+        producer: profile.originProducer ?? null,
+        place: profile.originPlace ?? null,
+        year: profile.originYear ?? null,
+        method: profile.originMethod ?? null,
+        photos: profile.originPhotos ?? [],
+      },
+      labelPhoto: profile.labelPhoto ?? null,
+    }
+  }
+
+  /** `exportStatuses` given (owner's list): each summary carries its export status. */
+  static toSummary(product: Product, promotions: ProductPromotion[] = [], exportStatuses?: Map<string, ExportProfileStatus>) {
     return {
       id: product.id,
       name: product.name,
@@ -88,6 +115,7 @@ export class ProductMapper {
       ratingCount: product.ratingCount,
       promotionalPrice: livePromotionalPrice(product),
       promotionTypes: promotions.filter(p => p.isLive()).map(p => p.type),
+      ...(exportStatuses ? { exportStatus: exportStatuses.get(product.id) ?? null } : {}),
       createdAt: product.createdAt.toISOString(),
     }
   }
