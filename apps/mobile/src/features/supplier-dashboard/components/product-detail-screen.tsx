@@ -25,6 +25,7 @@ import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { parseModerationReason, parseModerationStatus } from '../utils/product-moderation'
+import { missingLabel, parseProfileStatus } from '../utils/terroir-export'
 import { ExportStatusBadge } from './export-status-badge'
 import { ModerationNotice } from './moderation-notice'
 
@@ -71,7 +72,7 @@ interface ProductDetail {
   moderationStatus?: string
   moderationReason?: string | null
   /** Terroir export profile; absent from older APIs, null when never requested. */
-  exportProfile?: { status?: string } | null
+  exportProfile?: { status?: string, missingCount?: number } | null
   createdAt: string
   updatedAt: string
 }
@@ -191,10 +192,8 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted, on
   const unitLabel = shortLabel(product.unit)
   const statusInfo = STATUS_LABELS[product.status] ?? STATUS_LABELS.ACTIVE
   const moderationStatus = parseModerationStatus(product.moderationStatus)
-  const rawExportStatus = product.exportProfile?.status
-  const exportStatus = rawExportStatus === 'PENDING' || rawExportStatus === 'APPROVED' || rawExportStatus === 'REJECTED'
-    ? rawExportStatus
-    : null
+  const exportStatus = parseProfileStatus(product.exportProfile?.status)
+  const exportMissing = product.exportProfile?.missingCount ?? 0
 
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
@@ -460,7 +459,14 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted, on
               <View style={styles.exportText}>
                 <Text style={[styles.exportLabel, { color: semantic.textPrimary }]}>Vendre à l'étranger</Text>
                 {exportStatus
-                  ? <ExportStatusBadge status={exportStatus} />
+                  ? (
+                      <View style={styles.exportStatusRow}>
+                        <ExportStatusBadge status={exportStatus} />
+                        {exportStatus === 'INCOMPLETE' && exportMissing > 0
+                          ? <Text style={[styles.metaText, { color: semantic.textSecondary }]}>{`Il manque ${missingLabel(exportMissing)}`}</Text>
+                          : null}
+                      </View>
+                    )
                   : (
                       <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
                         Proposer ce produit aux clients à l’étranger
@@ -654,6 +660,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.green[50],
   },
   exportText: { flex: 1, gap: spacing[1] },
+  exportStatusRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: spacing[2] },
   exportLabel: { ...typography.bodyL, fontFamily: fonts.sansSb },
 
   editButton: {

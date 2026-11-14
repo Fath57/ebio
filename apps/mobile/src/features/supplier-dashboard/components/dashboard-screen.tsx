@@ -1,5 +1,6 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
+import BookOpen from 'lucide-react-native/dist/esm/icons/book-open'
 import FileSpreadsheet from 'lucide-react-native/dist/esm/icons/file-spreadsheet'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
@@ -56,9 +57,11 @@ interface DashboardScreenProps {
   onNavigateToNotifications?: () => void
   /** « Packs terroir »; omitted while the terroir export module is off. */
   onNavigateToExportPacks?: () => void
+  /** « Vendre à l’étranger : le guide »; absent while the export is switched off. */
+  onNavigateToExportGuide?: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToSalesStatement, onNavigateToMessages, onNavigateToNotifications, onNavigateToExportPacks }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToSalesStatement, onNavigateToMessages, onNavigateToNotifications, onNavigateToExportPacks, onNavigateToExportGuide }: DashboardScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
@@ -385,6 +388,19 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
                 <Gift size={18} color={colors.earth[600]} />
               </View>
               <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Packs du pays</Text>
+            </TouchableOpacity>
+          </>
+        )}
+
+        {onNavigateToExportGuide && (
+          <>
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity style={styles.actionItem} onPress={onNavigateToExportGuide} activeOpacity={0.6}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.blue[50] }]}>
+                <BookOpen size={18} color={colors.blue[600]} />
+              </View>
+              <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Vendre à l’étranger : le guide</Text>
             </TouchableOpacity>
           </>
         )}

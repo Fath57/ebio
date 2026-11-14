@@ -1,16 +1,16 @@
 import type { ExportPackStatus } from '../utils/terroir-export'
 import Archive from 'lucide-react-native/dist/esm/icons/archive'
 import BadgeCheck from 'lucide-react-native/dist/esm/icons/badge-check'
+import CircleDashed from 'lucide-react-native/dist/esm/icons/circle-dashed'
 import CircleX from 'lucide-react-native/dist/esm/icons/circle-x'
-import Clock from 'lucide-react-native/dist/esm/icons/clock'
 import { StyleSheet, Text, View } from 'react-native'
 import { fonts, radius, spacing, typography } from '../../../theme/theme'
 import { describeExportStatus } from '../utils/terroir-export'
 
 const ICONS = {
-  pending: Clock,
-  approved: BadgeCheck,
-  rejected: CircleX,
+  exportable: BadgeCheck,
+  incomplete: CircleDashed,
+  withdrawn: CircleX,
   retired: Archive,
 } as const
 
@@ -18,7 +18,7 @@ interface ExportStatusBadgeProps {
   status: ExportPackStatus
 }
 
-/** eBio's export verdict as an icon and a word: the colour only repeats it. */
+/** Where a product or a pack stands for export, as an icon and a word: the colour only repeats it. */
 export function ExportStatusBadge({ status }: ExportStatusBadgeProps) {
   const display = describeExportStatus(status)
   const Icon = ICONS[display.kind]

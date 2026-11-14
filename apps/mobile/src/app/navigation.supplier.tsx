@@ -34,6 +34,7 @@ import { EditProfileScreen } from '../features/profile/components/edit-profile-s
 import { BannerRequestForm } from '../features/supplier-dashboard/components/banner-request-form'
 import { BannerRequestsScreen } from '../features/supplier-dashboard/components/banner-requests-screen'
 import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
+import { ExportGuideScreen } from '../features/supplier-dashboard/components/export-guide-screen'
 import { ExportPackForm, ExportPacksScreen } from '../features/supplier-dashboard/components/export-packs-screen'
 import { ExportProfileForm } from '../features/supplier-dashboard/components/export-profile-form'
 import { OpeningHoursEditor } from '../features/supplier-dashboard/components/opening-hours-editor'
@@ -257,6 +258,7 @@ function DashboardWrapper({ navigation }: any) {
         onNavigateToMessages={() => navigation.navigate('Chat')}
         onNavigateToNotifications={() => navigation.navigate('Profil', { screen: 'SupplierNotifications', initial: false })}
         onNavigateToExportPacks={terroirExportEnabled ? () => navigation.navigate('SupplierExportPacks') : undefined}
+        onNavigateToExportGuide={terroirExportEnabled ? () => navigation.navigate('SupplierExportGuide') : undefined}
       />
     </SafeScreen>
   )
@@ -487,6 +489,8 @@ function SupplierExportProfileWrapper({ route, navigation }: any) {
         productId={route.params.productId}
         onGoBack={() => navigation.goBack()}
         onDone={() => navigation.goBack()}
+        onOpenGuide={() => navigation.navigate('SupplierExportGuide')}
+        onEditProduct={() => navigation.navigate('SupplierProductForm', { productId: route.params.productId })}
       />
     </SafeScreen>
   )
@@ -498,6 +502,7 @@ function SupplierExportPacksWrapper({ navigation }: any) {
       <ExportPacksScreen
         onGoBack={() => navigation.goBack()}
         onOpenPack={pack => navigation.navigate('SupplierExportPackForm', { pack })}
+        onOpenGuide={() => navigation.navigate('SupplierExportGuide')}
       />
     </SafeScreen>
   )
@@ -511,6 +516,14 @@ function SupplierExportPackFormWrapper({ route, navigation }: any) {
         onGoBack={() => navigation.goBack()}
         onDone={() => navigation.goBack()}
       />
+    </SafeScreen>
+  )
+}
+
+function SupplierExportGuideWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <ExportGuideScreen onGoBack={() => navigation.goBack()} />
     </SafeScreen>
   )
 }
@@ -536,6 +549,7 @@ function HomeStackScreen() {
       <HomeStack.Screen name="SupplierExportProfile" component={SupplierExportProfileWrapper} />
       <HomeStack.Screen name="SupplierExportPacks" component={SupplierExportPacksWrapper} />
       <HomeStack.Screen name="SupplierExportPackForm" component={SupplierExportPackFormWrapper} />
+      <HomeStack.Screen name="SupplierExportGuide" component={SupplierExportGuideWrapper} />
     </HomeStack.Navigator>
   )
 }
