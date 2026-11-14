@@ -1,11 +1,12 @@
 import type { TerroirCheckoutInput, TerroirPreview, TerroirSuggestion } from '../terroir-api'
 import type { TerroirCartLine } from '../terroir-cart-context'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import Scale from 'lucide-react-native/dist/esm/icons/scale'
 import ShoppingBasket from 'lucide-react-native/dist/esm/icons/shopping-basket'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { useMemo } from 'react'
+import { use, useMemo } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
@@ -67,7 +68,7 @@ function CartLineRow({ line, unavailable, onQuantity, onRemove }: CartLineRowPro
         style={styles.removeButton}
         onPress={() => onRemove(line)}
         accessibilityRole="button"
-        accessibilityLabel={`Retirer ${line.name} du panier`}
+        accessibilityLabel={`Retirer ${line.name} de ma valise`}
       >
         <Trash2 size={18} color={semantic.textSecondary} />
       </TouchableOpacity>
@@ -133,7 +134,7 @@ function WeightCard({ preview, onAddSuggestion, onOpenProduct }: WeightCardProps
                   style={[styles.suggestionAdd, { borderColor: colors.green[600] }]}
                   onPress={() => onAddSuggestion(suggestion)}
                   accessibilityRole="button"
-                  accessibilityLabel={`Ajouter ${suggestion.name} au panier`}
+                  accessibilityLabel={`Ajouter ${suggestion.name} à ma valise`}
                 >
                   <Plus size={16} color={colors.green[600]} strokeWidth={2.4} />
                   <Text style={[styles.suggestionAddText, { color: colors.green[600] }]}>Ajouter</Text>
@@ -157,6 +158,8 @@ interface TerroirCartScreenProps {
 export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse }: TerroirCartScreenProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
+  // The floating tab bar covers the bottom of the screen: the footer sits above it.
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const { formatMoney, formatServer, displayCurrency } = useTerroirMoney()
   const { lines, country, countryInfo, countries, setCountry, setQuantity, removeLine, addLine, toInput } = useTerroirCart()
 
@@ -253,7 +256,7 @@ export function TerroirCartScreen({ onBack, onCheckout, onOpenProduct, onBrowse 
         {error && <Text style={[styles.error, { color: colors.coral[600] }]}>{error}</Text>}
         {preview && <WeightCard preview={preview} onAddSuggestion={handleAddSuggestion} onOpenProduct={onOpenProduct} />}
       </ScrollView>
-      <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: insets.bottom + spacing[3] }]}>
+      <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: (tabBarHeight || insets.bottom) + spacing[3] }]}>
         <View style={styles.footerTotal}>
           <Text style={[styles.footerLabel, { color: semantic.textSecondary }]}>Produits</Text>
           <Text style={[terroirStyles.price, { color: semantic.textPrimary }]}>{itemsTotal.primary}</Text>

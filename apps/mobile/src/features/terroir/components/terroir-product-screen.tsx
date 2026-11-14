@@ -1,9 +1,10 @@
 import type { TerroirPack, TerroirProduct } from '../terroir-api'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import * as Haptics from 'expo-haptics'
 import Minus from 'lucide-react-native/dist/esm/icons/minus'
 import Plus from 'lucide-react-native/dist/esm/icons/plus'
 import ShoppingBasket from 'lucide-react-native/dist/esm/icons/shopping-basket'
-import { useCallback, useEffect, useState } from 'react'
+import { use, useCallback, useEffect, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Text, TouchableOpacity, useWindowDimensions, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
@@ -82,8 +83,10 @@ interface AddBarProps {
 function AddBar({ priceLabel, secondary, quantity, onQuantityChange, disabled, onAdd }: AddBarProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
+  // The floating tab bar covers the bottom of the screen: the footer sits above it.
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   return (
-    <View style={[styles.addBar, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: insets.bottom + spacing[3] }]}>
+    <View style={[styles.addBar, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: (tabBarHeight || insets.bottom) + spacing[3] }]}>
       <QuantityStepper value={quantity} onChange={onQuantityChange} />
       <TouchableOpacity
         style={[terroirStyles.primaryButton, styles.addButton, disabled && terroirStyles.disabled]}
@@ -95,7 +98,7 @@ function AddBar({ priceLabel, secondary, quantity, onQuantityChange, disabled, o
       >
         <ShoppingBasket size={18} color={colors.neutral[0]} strokeWidth={2.2} />
         <View>
-          <Text style={terroirStyles.primaryButtonText}>Ajouter au panier</Text>
+          <Text style={terroirStyles.primaryButtonText}>Ajouter à ma valise</Text>
           <Text style={styles.addPrice}>{secondary ? `${priceLabel} · ${secondary}` : priceLabel}</Text>
         </View>
       </TouchableOpacity>
@@ -122,7 +125,7 @@ function confirmAdded(name: string, onOpenCart: () => void): void {
   void Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success).catch(() => undefined)
   appAlert('Ajouté à votre valise', name, [
     { text: 'Continuer', style: 'cancel' },
-    { text: 'Voir le panier', onPress: onOpenCart },
+    { text: 'Voir ma valise', onPress: onOpenCart },
   ])
 }
 

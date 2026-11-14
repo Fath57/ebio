@@ -1,12 +1,13 @@
 import type { SettlementStatus } from '../../payments/utils/await-settlement'
 import type { TerroirCheckoutInput, TerroirCountry, TerroirDeparture, TerroirGiftInput } from '../terroir-api'
+import { BottomTabBarHeightContext } from '@react-navigation/bottom-tabs'
 import CircleCheck from 'lucide-react-native/dist/esm/icons/circle-check'
 import CreditCard from 'lucide-react-native/dist/esm/icons/credit-card'
 import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import Plane from 'lucide-react-native/dist/esm/icons/plane'
 import ShieldCheck from 'lucide-react-native/dist/esm/icons/shield-check'
 import Wallet from 'lucide-react-native/dist/esm/icons/wallet'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { use, useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { ActivityIndicator, ScrollView, StyleSheet, Switch, Text, TextInput, TouchableOpacity, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { colors, fonts, radius, spacing, typography } from '../../../theme/theme'
@@ -181,6 +182,8 @@ interface TerroirCheckoutScreenProps {
 export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirCheckoutScreenProps) {
   const { semantic } = useTheme()
   const insets = useSafeAreaInsets()
+  // The floating tab bar covers the bottom of the screen: the footer sits above it.
+  const tabBarHeight = use(BottomTabBarHeightContext) ?? 0
   const { formatMoney, formatServer, displayCurrency } = useTerroirMoney()
   const { lines, country, countries, toInput, clear } = useTerroirCart()
 
@@ -705,7 +708,7 @@ export function TerroirCheckoutScreen({ customer, onBack, onComplete }: TerroirC
         </View>
       </ScrollView>
 
-      <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: insets.bottom + spacing[3] }]}>
+      <View style={[styles.footer, { backgroundColor: semantic.bgCard, borderTopColor: semantic.borderLight, paddingBottom: (tabBarHeight || insets.bottom) + spacing[3] }]}>
         <TouchableOpacity
           style={[terroirStyles.primaryButton, !canSubmit && terroirStyles.disabled]}
           onPress={() => {
