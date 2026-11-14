@@ -4477,6 +4477,83 @@
                     "type": "integer",
                     "minimum": 100,
                     "maximum": 50000
+                  },
+                  "collectionMode": {
+                    "type": "string",
+                    "enum": [
+                      "COURIER",
+                      "EBIO"
+                    ],
+                    "title": "ExportCollectionMode",
+                    "description": "COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte"
+                  },
+                  "hubName": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 120
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "hubAddress": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 255
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "hubLatitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -90,
+                        "maximum": 90
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "hubLongitude": {
+                    "anyOf": [
+                      {
+                        "type": "number",
+                        "minimum": -180,
+                        "maximum": 180
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "hubPhone": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^\\+?[\\d .-]{6,30}$"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "hubHours": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "maxLength": 200
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
                   }
                 },
                 "additionalProperties": false,
@@ -11816,7 +11893,7 @@
                       },
                       "code": {
                         "type": "string",
-                        "pattern": "^\\d{4}$"
+                        "pattern": "^\\d{4}(?:\\d{2})?$"
                       },
                       "occurredAt": {
                         "type": "string",
@@ -12176,7 +12253,7 @@
                       },
                       "code": {
                         "type": "string",
-                        "pattern": "^\\d{4}$"
+                        "pattern": "^\\d{4}(?:\\d{2})?$"
                       },
                       "occurredAt": {
                         "type": "string",
@@ -19432,6 +19509,29 @@
         }
       }
     },
+    "/api/admin/export/collections/{deliveryId}/received": {
+      "post": {
+        "operationId": "AdminExportController_collectionReceived",
+        "tags": [
+          "AdminExport"
+        ],
+        "parameters": [
+          {
+            "name": "deliveryId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
     "/api/admin/export/shipments/{id}/missing": {
       "post": {
         "operationId": "AdminExportController_missing",
@@ -24772,6 +24872,77 @@
             "type": "integer",
             "minimum": 100,
             "maximum": 50000
+          },
+          "collectionMode": {
+            "$ref": "#/components/schemas/ExportCollectionMode"
+          },
+          "hubName": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hubAddress": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hubLatitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -90,
+                "maximum": 90
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hubLongitude": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": -180,
+                "maximum": 180
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hubPhone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^\\+?[\\d .-]{6,30}$"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "hubHours": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 200
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "additionalProperties": false,
@@ -25917,7 +26088,7 @@
               },
               "code": {
                 "type": "string",
-                "pattern": "^\\d{4}$"
+                "pattern": "^\\d{4}(?:\\d{2})?$"
               },
               "occurredAt": {
                 "type": "string",
@@ -32506,6 +32677,15 @@
         ],
         "title": "DeliveryPricingMode",
         "description": "How the platform prices a delivery: one fee, base + per-km, or distance rings"
+      },
+      "ExportCollectionMode": {
+        "type": "string",
+        "enum": [
+          "COURIER",
+          "EBIO"
+        ],
+        "title": "ExportCollectionMode",
+        "description": "COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte"
       },
       "DisplayCurrency": {
         "default": "XOF",

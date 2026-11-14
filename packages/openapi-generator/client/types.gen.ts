@@ -187,6 +187,13 @@ export type UpdateTerroirExportSetting = {
   pickupReminderDays?: number;
   minShelfLifeDays?: number;
   maxUnitWeightG?: number;
+  collectionMode?: ExportCollectionMode;
+  hubName?: string | null;
+  hubAddress?: string | null;
+  hubLatitude?: number | null;
+  hubLongitude?: number | null;
+  hubPhone?: string | null;
+  hubHours?: string | null;
 };
 
 /**
@@ -2951,6 +2958,24 @@ export const DeliveryPricingMode = {
  */
 export type DeliveryPricingMode =
   (typeof DeliveryPricingMode)[keyof typeof DeliveryPricingMode];
+
+/**
+ * ExportCollectionMode
+ *
+ * COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte
+ */
+export const ExportCollectionMode = {
+  COURIER: "COURIER",
+  EBIO: "EBIO",
+} as const;
+
+/**
+ * ExportCollectionMode
+ *
+ * COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte
+ */
+export type ExportCollectionMode =
+  (typeof ExportCollectionMode)[keyof typeof ExportCollectionMode];
 
 /**
  * DisplayCurrency
@@ -6128,6 +6153,18 @@ export type AdminTerroirExportSettingControllerUpdateData = {
     pickupReminderDays?: number;
     minShelfLifeDays?: number;
     maxUnitWeightG?: number;
+    /**
+     * ExportCollectionMode
+     *
+     * COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte
+     */
+    collectionMode?: "COURIER" | "EBIO";
+    hubName?: string | null;
+    hubAddress?: string | null;
+    hubLatitude?: number | null;
+    hubLongitude?: number | null;
+    hubPhone?: string | null;
+    hubHours?: string | null;
   };
   path?: never;
   query?: never;
@@ -12544,6 +12581,19 @@ export type AdminExportControllerCollectData = {
 };
 
 export type AdminExportControllerCollectResponses = {
+  200: unknown;
+};
+
+export type AdminExportControllerCollectionReceivedData = {
+  body?: never;
+  path: {
+    deliveryId: string;
+  };
+  query?: never;
+  url: "/api/admin/export/collections/{deliveryId}/received";
+};
+
+export type AdminExportControllerCollectionReceivedResponses = {
   200: unknown;
 };
 

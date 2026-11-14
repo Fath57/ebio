@@ -135,34 +135,6 @@ export const zFamilyWalletSetting = z.object({
 });
 
 /**
- * UpdateTerroirExportSetting
- *
- * Réglages de la Valise du pays à modifier
- */
-export const zUpdateTerroirExportSetting = z.object({
-  enabled: z.optional(z.boolean()),
-  packagingWeightG: z.optional(z.int().gte(0).lte(5000)),
-  collectionDays: z.optional(z.int().gte(0).lte(30)),
-  weightTolerancePct: z.optional(z.int().gte(0).lte(100)),
-  insuranceRateBps: z.optional(z.int().gte(0).lte(5000)),
-  insuranceMin: z.optional(z.int().gte(0).lte(1000000)),
-  bannedCategoryIds: z.optional(
-    z
-      .array(
-        z
-          .uuid()
-          .regex(
-            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
-          ),
-      )
-      .max(200),
-  ),
-  pickupReminderDays: z.optional(z.int().gte(1).lte(90)),
-  minShelfLifeDays: z.optional(z.int().gte(1).lte(3650)),
-  maxUnitWeightG: z.optional(z.int().gte(100).lte(50000)),
-});
-
-/**
  * CartSync
  *
  * Le panier tel que l'application le détient
@@ -540,7 +512,7 @@ export const zDeliveryTransition = z.object({
 export const zCompleteDelivery = z.union([
   z.object({
     proofType: z.literal("CODE"),
-    code: z.string().regex(/^\d{4}$/),
+    code: z.string().regex(/^\d{4}(?:\d{2})?$/),
     occurredAt: z.optional(
       z.iso
         .datetime()
@@ -2680,6 +2652,50 @@ export const zDeliveryPricingConfig = z.object({
       maxPickupSpreadKm: z.number().gte(0.1).lte(500),
     })
     .default({ maxShops: 2, maxPickupSpreadKm: 3 }),
+});
+
+/**
+ * ExportCollectionMode
+ *
+ * COURIER : un livreur eBio apporte la commande au point de regroupement ; EBIO : eBio la collecte
+ */
+export const zExportCollectionMode = z.enum(["COURIER", "EBIO"]);
+
+/**
+ * UpdateTerroirExportSetting
+ *
+ * Réglages de la Valise du pays à modifier
+ */
+export const zUpdateTerroirExportSetting = z.object({
+  enabled: z.optional(z.boolean()),
+  packagingWeightG: z.optional(z.int().gte(0).lte(5000)),
+  collectionDays: z.optional(z.int().gte(0).lte(30)),
+  weightTolerancePct: z.optional(z.int().gte(0).lte(100)),
+  insuranceRateBps: z.optional(z.int().gte(0).lte(5000)),
+  insuranceMin: z.optional(z.int().gte(0).lte(1000000)),
+  bannedCategoryIds: z.optional(
+    z
+      .array(
+        z
+          .uuid()
+          .regex(
+            /^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$/,
+          ),
+      )
+      .max(200),
+  ),
+  pickupReminderDays: z.optional(z.int().gte(1).lte(90)),
+  minShelfLifeDays: z.optional(z.int().gte(1).lte(3650)),
+  maxUnitWeightG: z.optional(z.int().gte(100).lte(50000)),
+  collectionMode: z.optional(zExportCollectionMode),
+  hubName: z.optional(z.union([z.string().max(120), z.null()])),
+  hubAddress: z.optional(z.union([z.string().max(255), z.null()])),
+  hubLatitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+  hubLongitude: z.optional(z.union([z.number().gte(-180).lte(180), z.null()])),
+  hubPhone: z.optional(
+    z.union([z.string().regex(/^\+?[\d .-]{6,30}$/), z.null()]),
+  ),
+  hubHours: z.optional(z.union([z.string().max(200), z.null()])),
 });
 
 /**
@@ -5988,6 +6004,17 @@ export const zAdminTerroirExportSettingControllerUpdateData = z.object({
     pickupReminderDays: z.optional(z.int().gte(1).lte(90)),
     minShelfLifeDays: z.optional(z.int().gte(1).lte(3650)),
     maxUnitWeightG: z.optional(z.int().gte(100).lte(50000)),
+    collectionMode: z.optional(z.enum(["COURIER", "EBIO"])),
+    hubName: z.optional(z.union([z.string().max(120), z.null()])),
+    hubAddress: z.optional(z.union([z.string().max(255), z.null()])),
+    hubLatitude: z.optional(z.union([z.number().gte(-90).lte(90), z.null()])),
+    hubLongitude: z.optional(
+      z.union([z.number().gte(-180).lte(180), z.null()]),
+    ),
+    hubPhone: z.optional(
+      z.union([z.string().regex(/^\+?[\d .-]{6,30}$/), z.null()]),
+    ),
+    hubHours: z.optional(z.union([z.string().max(200), z.null()])),
   }),
   path: z.optional(z.never()),
   query: z.optional(z.never()),
@@ -8201,7 +8228,7 @@ export const zDeliveriesControllerCompleteData = z.object({
   body: z.union([
     z.object({
       proofType: z.literal("CODE"),
-      code: z.string().regex(/^\d{4}$/),
+      code: z.string().regex(/^\d{4}(?:\d{2})?$/),
       occurredAt: z.optional(
         z.iso
           .datetime()
@@ -8322,7 +8349,7 @@ export const zRunsControllerDeliverData = z.object({
   body: z.union([
     z.object({
       proofType: z.literal("CODE"),
-      code: z.string().regex(/^\d{4}$/),
+      code: z.string().regex(/^\d{4}(?:\d{2})?$/),
       occurredAt: z.optional(
         z.iso
           .datetime()
@@ -10598,6 +10625,14 @@ export const zAdminExportControllerCollectData = z.object({
   }),
   path: z.object({
     id: z.string(),
+  }),
+  query: z.optional(z.never()),
+});
+
+export const zAdminExportControllerCollectionReceivedData = z.object({
+  body: z.optional(z.never()),
+  path: z.object({
+    deliveryId: z.string(),
   }),
   query: z.optional(z.never()),
 });

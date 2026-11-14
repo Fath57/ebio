@@ -161,6 +161,8 @@ import type {
   AdminExportControllerCancelDepartureData,
   AdminExportControllerCancelDepartureResponses,
   AdminExportControllerCollectData,
+  AdminExportControllerCollectionReceivedData,
+  AdminExportControllerCollectionReceivedResponses,
   AdminExportControllerCollectResponses,
   AdminExportControllerCreateAgencyData,
   AdminExportControllerCreateAgencyResponses,
@@ -7003,6 +7005,17 @@ export const adminExportControllerCollect = <
       ...options.headers,
     },
   });
+
+export const adminExportControllerCollectionReceived = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<AdminExportControllerCollectionReceivedData, ThrowOnError>,
+) =>
+  (options.client ?? client).post<
+    AdminExportControllerCollectionReceivedResponses,
+    unknown,
+    ThrowOnError
+  >({ url: "/api/admin/export/collections/{deliveryId}/received", ...options });
 
 export const adminExportControllerMissing = <
   ThrowOnError extends boolean = false,
