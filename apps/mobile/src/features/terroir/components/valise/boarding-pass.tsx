@@ -125,29 +125,32 @@ export function BoardingPass({ places, onPress }: BoardingPassProps) {
       <AirmailBand height={6} colorA={palette.stripeA} colorB={palette.stripeB} />
 
       <View style={styles.ticket}>
-        <PressableCard
-          style={styles.main}
-          onPress={onPress}
-          accessibilityRole="button"
-          accessibilityLabel={summary}
-          accessibilityHint="Passe l’application en mode Valise du pays"
-        >
-          <Image source={VALISE_IMAGES.open} style={styles.thumb} resizeMode="contain" accessibilityIgnoresInvertColors />
-          <View style={styles.mainText}>
-            <Text style={[styles.title, { color: palette.ink }]} numberOfLines={1}>La Valise du pays</Text>
-            <Text style={[styles.routeLine, { color: palette.ink }]} numberOfLines={1}>{route ?? lede}</Text>
-            <View style={styles.actionRow}>
-              {headline && (
-                <Text style={[styles.departLine, { color: palette.inkSoft }]} numberOfLines={1}>
-                  {`Départ ${formatShortDay(headline.departsOn)}`}
-                </Text>
-              )}
-              <View style={styles.cta}>
-                <Text style={styles.ctaText} numberOfLines={1}>Faire ma valise</Text>
+        {/* PressableCard styles its inner view: the row needs a flexible wrapper. */}
+        <View style={styles.mainWrap}>
+          <PressableCard
+            style={styles.main}
+            onPress={onPress}
+            accessibilityRole="button"
+            accessibilityLabel={summary}
+            accessibilityHint="Passe l’application en mode Valise du pays"
+          >
+            <Image source={VALISE_IMAGES.open} style={styles.thumb} resizeMode="contain" accessibilityIgnoresInvertColors />
+            <View style={styles.mainText}>
+              <Text style={[styles.title, { color: palette.ink }]} numberOfLines={1}>La Valise du pays</Text>
+              <Text style={[styles.routeLine, { color: palette.ink }]} numberOfLines={1}>{route ?? lede}</Text>
+              <View style={styles.actionRow}>
+                {headline && (
+                  <Text style={[styles.departLine, { color: palette.inkSoft }]} numberOfLines={1}>
+                    {`Départ ${formatShortDay(headline.departsOn)}`}
+                  </Text>
+                )}
+                <View style={styles.cta}>
+                  <Text style={styles.ctaText} numberOfLines={1}>Faire ma valise</Text>
+                </View>
               </View>
             </View>
-          </View>
-        </PressableCard>
+          </PressableCard>
+        </View>
         <Pressable
           onPress={toggle}
           style={({ pressed }) => [styles.chevron, pressed && styles.pressed]}
@@ -243,6 +246,9 @@ const styles = StyleSheet.create({
   ticket: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  mainWrap: {
+    flex: 1,
   },
   main: {
     flex: 1,
