@@ -196,7 +196,7 @@ export class SalesStatementsService {
         orderNumber: order.orderNumber,
         buyerName: order.buyer?.name ?? '',
         status: STATUS_LABELS[order.status] ?? order.status,
-        pickupMode: order.pickupMode === PickupMode.DELIVERY ? 'Livraison' : 'Retrait',
+        pickupMode: order.pickupMode === PickupMode.DELIVERY ? 'Livraison' : order.pickupMode === PickupMode.EXPORT ? 'Export (terroir)' : 'Retrait',
         paymentMethod: PAYMENT_LABELS[order.paymentMethod] ?? order.paymentMethod,
         itemCount: items.reduce((sum, item) => sum + item.quantity, 0),
         itemsAmount: round(items.reduce((sum, item) => sum + Number(item.totalPrice), 0)),

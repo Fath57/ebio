@@ -5,7 +5,7 @@ import { Cron, CronExpression } from '@nestjs/schedule'
 import { SingleInstance } from '../db/cron-lock'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
-import { Order, OrderStatus } from '../orders/entities/order.entity'
+import { Order, OrderStatus, PickupMode } from '../orders/entities/order.entity'
 import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { escrowReleaseAt } from './escrow-release-policy'
 import { Payment, PaymentStatus } from './payment.entity'
@@ -52,6 +52,7 @@ export class EscrowSchedulerService {
         deliveredAt: order.deliveredAt ?? null,
         bothConfirmed: order.deliveryConfirmedByBuyer && order.deliveryConfirmedBySupplier,
         supplierHours: order.supplier.escrowReleaseHours,
+        exportOrder: order.pickupMode === PickupMode.EXPORT,
       }, now)
       if (due > now) {
         continue
@@ -83,6 +84,7 @@ export class EscrowSchedulerService {
         deliveredAt: order.deliveredAt ?? null,
         bothConfirmed: order.deliveryConfirmedByBuyer && order.deliveryConfirmedBySupplier,
         supplierHours: order.supplier.escrowReleaseHours,
+        exportOrder: order.pickupMode === PickupMode.EXPORT,
       })
       if (due.getTime() <= Date.now()) {
         await this.release(payment)

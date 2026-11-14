@@ -21,6 +21,11 @@ export enum OrderStatus {
 export enum PickupMode {
   ON_SITE = 'ON_SITE',
   DELIVERY = 'DELIVERY',
+  /**
+   * Terroir sent abroad (011): eBio collects from the shop and ships a parcel.
+   * Never dispatched to a local courier, never carries a delivery fee.
+   */
+  EXPORT = 'EXPORT',
 }
 
 export enum PaymentMethod {
@@ -162,6 +167,13 @@ export class Order {
 
   @Property({ fieldName: 'review_invite_last_sent_at', nullable: true })
   reviewInviteLastSentAt?: Date | null
+
+  /**
+   * The terroir pack these lines came from (011), for display only. Plain
+   * uuid rather than a relation: the orders module never imports terroir.
+   */
+  @Property({ fieldName: 'export_pack_id', type: 'uuid', nullable: true })
+  exportPackId?: string | null
 
   @OneToMany(() => OrderItem, item => item.order)
   items = new Collection<OrderItem>(this)

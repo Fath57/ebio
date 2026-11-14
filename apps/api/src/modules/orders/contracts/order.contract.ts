@@ -30,7 +30,7 @@ export const orderStatusEnum = z.enum([
   description: 'Current status of an order',
 })
 
-export const pickupModeEnum = z.enum(['ON_SITE', 'DELIVERY']).meta({
+export const pickupModeEnum = z.enum(['ON_SITE', 'DELIVERY', 'EXPORT']).meta({
   title: 'PickupMode',
   description: 'How the buyer will receive the order',
 })

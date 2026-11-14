@@ -30,22 +30,22 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 ## Phase 1 — Mise en place
 
-- [ ] T001 Migration `apps/api/src/modules/db/migrations/Migration20261117090000.ts` : les 11 tables de `data-model.md` §1–§3 avec leurs contraintes ; `PickupMode` `EXPORT` (CHECK `orders.pickup_mode`, `checkouts.delivery_mode`) ; `orders.export_pack_id` ; `PlatformAccount` `EXPORT` (CHECK `wallets.platform_account`) et ligne de portefeuille plateforme `EXPORT` (solde 0) ; types de mouvements (4) et de notifications (6) — CHECK régénérés depuis la liste complète, tout en `IF NOT EXISTS` / `DROP CONSTRAINT IF EXISTS`
-- [ ] T002 Script prod idempotent `apps/api/scripts/2026-11-17-terroir-export.sql`, rejoué deux fois sur une base jetable
-- [ ] T003 Appliquer en local (`../../node_modules/.bin/mikro-orm migration:up --only Migration20261117090000`)
-- [ ] T004 Réglages plateforme (`settings/platform-settings.service.ts`) : les 8 clés de data-model §5 avec validation ; `terroirExportEnabled` dans `GET /settings/public` ; garde `TerroirEnabledGuard` (403 `TERROIR_DISABLED`)
+- [X] T001 Migration `apps/api/src/modules/db/migrations/Migration20261117090000.ts` : les 11 tables de `data-model.md` §1–§3 avec leurs contraintes ; `PickupMode` `EXPORT` (CHECK `orders.pickup_mode`, `checkouts.delivery_mode`) ; `orders.export_pack_id` ; `PlatformAccount` `EXPORT` (CHECK `wallets.platform_account`) et ligne de portefeuille plateforme `EXPORT` (solde 0) ; types de mouvements (4) et de notifications (6) — CHECK régénérés depuis la liste complète, tout en `IF NOT EXISTS` / `DROP CONSTRAINT IF EXISTS`
+- [X] T002 Script prod idempotent `apps/api/scripts/2026-11-17-terroir-export.sql`, rejoué deux fois sur une base jetable
+- [X] T003 Appliquer en local (`../../node_modules/.bin/mikro-orm migration:up --only Migration20261117090000`)
+- [X] T004 Réglages plateforme (`settings/platform-settings.service.ts`) : les 8 clés de data-model §5 avec validation ; `terroirExportEnabled` dans `GET /settings/public` ; garde `TerroirEnabledGuard` (403 `TERROIR_DISABLED`)
 
 ---
 
 ## Phase 2 — Socle
 
-- [ ] T005 [P] Entités `apps/api/src/modules/terroir/entities/*.entity.ts` (11), enums dans `contracts/terroir.contract.ts`
-- [ ] T006 [P] `PickupMode.EXPORT` (`orders/entities/order.entity.ts`, contrats) ; `PlatformAccount.EXPORT` et types de mouvements (`wallet/entities/*`, zod) ; types de notification + audiences (`notifications/*`)
-- [ ] T007 `apps/api/src/modules/terroir/terroir-math.ts` : `estimateWeight`, `shippingPrice`, `marginKg`, `insurancePrice`, `availableDepartures`, `fillRatio`, `supplementFor`, `packSplit` (data-model §8)
-- [ ] T008 [P] Test `terroir-math.spec.ts` : minimum facturé, arrondi, marge, assurance avec minimum, départ échu / plein / trop lourd exclu, seuil de complément à 10 %, pack eBio moins cher (compensation) et plus cher (marge)
-- [ ] T009 `terroir.module.ts` importé dans `app.module.ts` ; contrats Zod de `contracts/terroir-export.md`
-- [ ] T010 `payments/escrow-release-policy.ts` : délai 0 pour une commande `EXPORT` ; `orders.service.ts` `confirmDelivery` refuse `EXPORT` (400 `EXPORT_ORDER`) ; garde que les crochets de livraison locale ignorent bien `EXPORT` (test)
-- [ ] T011 [P] Test `orders/tests/export-pickup-mode.e2e-spec.ts` : une commande `EXPORT` passant PREPARING puis READY ne crée aucune livraison locale ; `confirm-delivery` refusé
+- [X] T005 [P] Entités `apps/api/src/modules/terroir/entities/*.entity.ts` (11), enums dans `contracts/terroir.contract.ts`
+- [X] T006 [P] `PickupMode.EXPORT` (`orders/entities/order.entity.ts`, contrats) ; `PlatformAccount.EXPORT` et types de mouvements (`wallet/entities/*`, zod) ; types de notification + audiences (`notifications/*`)
+- [X] T007 `apps/api/src/modules/terroir/terroir-math.ts` : `estimateWeight`, `shippingPrice`, `marginKg`, `insurancePrice`, `availableDepartures`, `fillRatio`, `supplementFor`, `packSplit` (data-model §8)
+- [X] T008 [P] Test `terroir-math.spec.ts` : minimum facturé, arrondi, marge, assurance avec minimum, départ échu / plein / trop lourd exclu, seuil de complément à 10 %, pack eBio moins cher (compensation) et plus cher (marge)
+- [X] T009 `terroir.module.ts` importé dans `app.module.ts` ; contrats Zod de `contracts/terroir-export.md`
+- [X] T010 `payments/escrow-release-policy.ts` : délai 0 pour une commande `EXPORT` ; `orders.service.ts` `confirmDelivery` refuse `EXPORT` (400 `EXPORT_ORDER`) ; garde que les crochets de livraison locale ignorent bien `EXPORT` (test)
+- [X] T011 [P] Test `orders/tests/export-pickup-mode.e2e-spec.ts` : une commande `EXPORT` passant PREPARING puis READY ne crée aucune livraison locale ; `confirm-delivery` refusé
 
 ---
 
@@ -53,10 +53,10 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 **Test indépendant** : quickstart §1 ; seuls les départs ouverts, non échus et non pleins sont proposés.
 
-- [ ] T012 [US2] `export-logistics.service.ts` : CRUD agences, points de retrait, départs avec leurs tarifs par pays ; `cancel(departureId, reassignTo?)` (réaffectation, surcoût débité du compte `EXPORT`, client prévenu)
-- [ ] T013 [US2] `export-logistics.service.ts` : `reservedKg(departureId)`, remplissage, alerte 80 % une fois (`fill_alerted_at`), passage `FULL` à 100 %
-- [ ] T014 [US2] `admin-export.controller.ts` : routes agences, points de retrait, départs, annulation, détail d'un départ (remplissage, colis, liste de collecte) — `@Roles('ADMIN')`, `@CanManage`, audit des créations et annulations
-- [ ] T015 [P] [US2] Test e2e `terroir/tests/departures.e2e-spec.ts` : création avec tarifs FR/BE, départ échu exclu, plein exclu, annulation avec réaffectation et surcoût porté par `EXPORT`
+- [X] T012 [US2] `export-logistics.service.ts` : CRUD agences, points de retrait, départs avec leurs tarifs par pays ; `cancel(departureId, reassignTo?)` (réaffectation, surcoût débité du compte `EXPORT`, client prévenu)
+- [X] T013 [US2] `export-logistics.service.ts` : `reservedKg(departureId)`, remplissage, alerte 80 % une fois (`fill_alerted_at`), passage `FULL` à 100 %
+- [X] T014 [US2] `admin-export.controller.ts` : routes agences, points de retrait, départs, annulation, détail d'un départ (remplissage, colis, liste de collecte) — `@Roles('ADMIN')`, `@CanManage`, audit des créations et annulations
+- [X] T015 [P] [US2] Test e2e `terroir/tests/departures.e2e-spec.ts` : création avec tarifs FR/BE, départ échu exclu, plein exclu, annulation avec réaffectation et surcoût porté par `EXPORT`
 - [ ] T016 [US2] Back-office `apps/web-spa/app/features/admin/terroir/pages/export-agencies-page.tsx` (agences + points de retrait) et `export-departures-page.tsx` (liste, création, tarifs par pays, jauge de remplissage en barre + texte) ; routes et menu « Terroir » ; i18n fr/en
 
 ---
@@ -65,12 +65,12 @@ toute table neuve a son entité. Avant un `git push`, arrêter Metro/back-office
 
 **Test indépendant** : quickstart §2.
 
-- [ ] T017 [US3] `export-catalog.service.ts` : `upsertProfile(supplierId, productId, input)` (refus `EXPORT_CATEGORY_BANNED`, statut `PENDING`), `removeProfile` ; crochet dans `ProductsService.update` : poids / composition / étiquette modifiés → `PENDING`
-- [ ] T018 [US3] `export-catalog.service.ts` : `review(productId, decision, checklist, reason, agentId)` — `APPROVE` exige toutes les clés de la liste (data-model §7) et la photo d'étiquette ; conserve agent et date ; notification `EXPORT_PRODUCT_REVIEWED`
-- [ ] T019 [US3] Packs : `createPack` / `updatePack` / `retirePack` (boutique : ses produits seulement, `EXPORT_PACK_FOREIGN_PRODUCT` ; eBio : multi-boutiques) ; validation des packs ; `isPackOrderable`
-- [ ] T020 [US3] `supplier-export.controller.ts` (routes boutique) et routes back-office de validation et de packs eBio dans `admin-export.controller.ts`
-- [ ] T021 [P] [US3] Test e2e `terroir/tests/export-catalog.e2e-spec.ts` : catégorie interdite, validation refusée sans liste complète, modification qui renvoie en validation, pack boutique avec un produit étranger refusé, pack non commandable si un produit n'est plus validé
-- [ ] T022 [US3] App Fournisseur : `apps/mobile/src/features/supplier-dashboard/components/export-profile-form.tsx` (« Vendre à l'étranger » depuis la fiche produit : poids, dimensions, conservation, origine, photos d'origine, photo d'étiquette, statut et motif) et `export-packs-screen.tsx` ; routes dans `navigation.supplier.tsx`
+- [X] T017 [US3] `export-catalog.service.ts` : `upsertProfile(supplierId, productId, input)` (refus `EXPORT_CATEGORY_BANNED`, statut `PENDING`), `removeProfile` ; crochet dans `ProductsService.update` : poids / composition / étiquette modifiés → `PENDING`
+- [X] T018 [US3] `export-catalog.service.ts` : `review(productId, decision, checklist, reason, agentId)` — `APPROVE` exige toutes les clés de la liste (data-model §7) et la photo d'étiquette ; conserve agent et date ; notification `EXPORT_PRODUCT_REVIEWED`
+- [X] T019 [US3] Packs : `createPack` / `updatePack` / `retirePack` (boutique : ses produits seulement, `EXPORT_PACK_FOREIGN_PRODUCT` ; eBio : multi-boutiques) ; validation des packs ; `isPackOrderable`
+- [X] T020 [US3] `supplier-export.controller.ts` (routes boutique) et routes back-office de validation et de packs eBio dans `admin-export.controller.ts`
+- [X] T021 [P] [US3] Test e2e `terroir/tests/export-catalog.e2e-spec.ts` : catégorie interdite, validation refusée sans liste complète, modification qui renvoie en validation, pack boutique avec un produit étranger refusé, pack non commandable si un produit n'est plus validé
+- [X] T022 [US3] App Fournisseur : `apps/mobile/src/features/supplier-dashboard/components/export-profile-form.tsx` (« Vendre à l'étranger » depuis la fiche produit : poids, dimensions, conservation, origine, photos d'origine, photo d'étiquette, statut et motif) et `export-packs-screen.tsx` ; routes dans `navigation.supplier.tsx`
 - [ ] T023 [US3] Back-office `export-reviews-page.tsx` (file de validation produits et packs, liste de contrôle à cocher, photo d'étiquette, motif de refus) et `export-packs-page.tsx` (packs eBio : composition multi-boutiques, prix, écart avec la somme affiché)
 
 ---

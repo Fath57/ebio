@@ -27,6 +27,8 @@ export enum CheckoutStatus {
 export enum CheckoutDeliveryMode {
   DELIVERY = 'DELIVERY',
   ON_SITE = 'ON_SITE',
+  /** A terroir parcel (011): the orders of several shops, shipped abroad. */
+  EXPORT = 'EXPORT',
 }
 
 @Entity({ tableName: 'checkouts' })

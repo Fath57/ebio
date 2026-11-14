@@ -10,6 +10,8 @@ import { Media, MediaStatus } from '../media/media.entity'
 import { NotificationChannel, NotificationType } from '../notifications/notification.entity'
 import { NotificationsService } from '../notifications/notifications.service'
 import { Supplier } from '../suppliers/supplier.entity'
+import { ExportProfileStatus } from '../terroir/contracts/terroir.contract'
+import { ExportProfile } from '../terroir/entities/export-profile.entity'
 import { CertificationsService } from './certifications.service'
 import { Category } from './entities/category.entity'
 import { ProductVariant } from './entities/product-variant.entity'
@@ -174,6 +176,9 @@ export class ProductsService {
 
   async update(productId: string, supplierId: string, data: UpdateProduct): Promise<Product> {
     const product = await this.findByIdAndVerifyOwnership(productId, supplierId)
+    // What an export approval vouched for (011, FR-002): the composition as
+    // printed on the label. A real change sends the export back to eBio.
+    const compositionBefore = JSON.stringify([product.ingredients ?? null, product.allergens, product.labels, product.conservation ?? null])
 
     if (data.name !== undefined)
       product.name = data.name
@@ -290,6 +295,15 @@ export class ProductsService {
     this.moderation.resubmitIfRejected(product)
 
     await this.em.flush()
+
+    const compositionAfter = JSON.stringify([product.ingredients ?? null, product.allergens, product.labels, product.conservation ?? null])
+    if (compositionAfter !== compositionBefore) {
+      await this.em.nativeUpdate(
+        ExportProfile,
+        { product: product.id, status: { $ne: ExportProfileStatus.PENDING } },
+        { status: ExportProfileStatus.PENDING, rejectionReason: null },
+      )
+    }
     return product
   }
 

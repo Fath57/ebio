@@ -27,6 +27,12 @@ export enum PlatformAccount {
   BANNERS = 'BANNERS',
   /** Cost centre: promotions and deliveries eBio offers. */
   MARKETING = 'MARKETING',
+  /**
+   * Terroir export (011): shipping, home delivery, insurance and pack margins
+   * collected; losses, absorbed weight gaps and reassignment surcharges paid.
+   * eBio settles the agencies outside the app.
+   */
+  EXPORT = 'EXPORT',
 }
 
 @Entity({ tableName: 'wallets' })

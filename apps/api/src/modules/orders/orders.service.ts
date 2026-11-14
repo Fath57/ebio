@@ -67,6 +67,15 @@ const VALID_TRANSITIONS: Record<string, OrderStatus[]> = {
   [OrderStatus.IN_DELIVERY]: [OrderStatus.DELIVERED],
 }
 
+/** Refusal for a shop or buyer action that does not apply to a terroir order. */
+function exportOrderRefusal(): BadRequestException {
+  return new BadRequestException({
+    statusCode: 400,
+    code: 'EXPORT_ORDER',
+    message: 'Cette commande part à l\'étranger : eBio la collecte et le client suit son colis.',
+  })
+}
+
 const TWO_MINUTES_MS = 2 * 60 * 1000
 const TWENTY_FOUR_HOURS_MS = 24 * 60 * 60 * 1000
 const _FORTY_EIGHT_HOURS_MS = 48 * 60 * 60 * 1000
@@ -632,6 +641,12 @@ export class OrdersService {
       )
     }
 
+    // A terroir order stops at READY (« Prête pour la collecte ») on the
+    // shop's side: only eBio's collection moves it on (011).
+    if (order.pickupMode === PickupMode.EXPORT && newStatus !== OrderStatus.PREPARING && newStatus !== OrderStatus.READY) {
+      throw exportOrderRefusal()
+    }
+
     // Manual READY → IN_DELIVERY while a courier delivery exists means the
     // supplier self-delivers: an unclaimed delivery is withdrawn, a claimed
     // one blocks the move (a courier is already on it).
@@ -1035,6 +1050,12 @@ export class OrdersService {
 
   async confirmDelivery(orderId: string, userId: string): Promise<Order> {
     const order = await this.findById(orderId)
+
+    // A terroir order is delivered when eBio collects it, and the buyer
+    // follows the parcel instead (011).
+    if (order.pickupMode === PickupMode.EXPORT) {
+      throw exportOrderRefusal()
+    }
 
     const isBuyer = order.buyer.id === userId
     const isSupplier = order.supplier.user?.id === userId

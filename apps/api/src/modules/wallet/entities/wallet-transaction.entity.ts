@@ -48,6 +48,14 @@ export enum WalletTransactionType {
   FAMILY_CLOSURE_OUT = 'FAMILY_CLOSURE_OUT',
   /** …and lands on the payer's personal wallet. */
   FAMILY_CLOSURE_IN = 'FAMILY_CLOSURE_IN',
+  /** eBio books (EXPORT): shipping and home delivery of a terroir parcel. */
+  EXPORT_SHIPPING_INCOME = 'EXPORT_SHIPPING_INCOME',
+  /** eBio books (EXPORT): insurance of a terroir parcel, tracked apart. */
+  EXPORT_INSURANCE_INCOME = 'EXPORT_INSURANCE_INCOME',
+  /** eBio books (EXPORT): a parcel lost, a weight gap absorbed, a reassignment surcharge. */
+  EXPORT_LOSS = 'EXPORT_LOSS',
+  /** eBio books (EXPORT): an eBio pack sold below the sum of its lines, or its margin above. */
+  EXPORT_PACK_COMPENSATION = 'EXPORT_PACK_COMPENSATION',
 }
 
 /**

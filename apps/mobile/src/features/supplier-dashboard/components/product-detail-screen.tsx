@@ -1,9 +1,12 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
+import { useFocusEffect } from '@react-navigation/native'
 import Box from 'lucide-react-native/dist/esm/icons/box'
+import ChevronRight from 'lucide-react-native/dist/esm/icons/chevron-right'
+import Globe from 'lucide-react-native/dist/esm/icons/globe'
 import Edit from 'lucide-react-native/dist/esm/icons/pencil'
 import Tag from 'lucide-react-native/dist/esm/icons/tag'
 import Trash2 from 'lucide-react-native/dist/esm/icons/trash-2'
-import { useEffect, useState } from 'react'
+import { useCallback, useState } from 'react'
 import {
   ActivityIndicator,
   Image,
@@ -22,6 +25,7 @@ import { useProductUnits } from '../../catalog/hooks/use-product-units'
 import { appAlert } from '../../common/components/app-alert'
 import { ScreenHeader } from '../../common/components/screen-header'
 import { parseModerationReason, parseModerationStatus } from '../utils/product-moderation'
+import { ExportStatusBadge } from './export-status-badge'
 import { ModerationNotice } from './moderation-notice'
 
 interface Variant {
@@ -66,6 +70,8 @@ interface ProductDetail {
   /** eBio's verdict; missing from older APIs, read as APPROVED */
   moderationStatus?: string
   moderationReason?: string | null
+  /** Terroir export profile; absent from older APIs, null when never requested. */
+  exportProfile?: { status?: string } | null
   createdAt: string
   updatedAt: string
 }
@@ -98,9 +104,11 @@ interface ProductDetailScreenProps {
   onGoBack: () => void
   onEdit: (productId: string) => void
   onDeleted?: () => void
+  /** « Vendre à l'étranger »; omitted while the terroir module is off. */
+  onSellAbroad?: (productId: string) => void
 }
 
-export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: ProductDetailScreenProps) {
+export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted, onSellAbroad }: ProductDetailScreenProps) {
   const { semantic } = useTheme()
   const { shortLabel } = useProductUnits()
   const tabBarHeight = useBottomTabBarHeight()
@@ -136,7 +144,9 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
     }
   }
 
-  useEffect(() => {
+  // On focus, not only on mount: coming back from the export form must show
+  // the new export status.
+  useFocusEffect(useCallback(() => {
     async function load() {
       try {
         const res = await apiFetch(`/api/products/${productId}`)
@@ -152,7 +162,7 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
       }
     }
     load()
-  }, [productId])
+  }, [productId]))
 
   if (loading) {
     return (
@@ -181,6 +191,10 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
   const unitLabel = shortLabel(product.unit)
   const statusInfo = STATUS_LABELS[product.status] ?? STATUS_LABELS.ACTIVE
   const moderationStatus = parseModerationStatus(product.moderationStatus)
+  const rawExportStatus = product.exportProfile?.status
+  const exportStatus = rawExportStatus === 'PENDING' || rawExportStatus === 'APPROVED' || rawExportStatus === 'REJECTED'
+    ? rawExportStatus
+    : null
 
   return (
     <View style={[styles.container, { backgroundColor: semantic.bgPage }]}>
@@ -433,6 +447,31 @@ export function ProductDetailScreen({ productId, onGoBack, onEdit, onDeleted }: 
             </Text>
           </View>
 
+          {/* Terroir export entry */}
+          {onSellAbroad && (
+            <TouchableOpacity
+              style={[styles.exportRow, { backgroundColor: semantic.bgCard, borderColor: semantic.borderLight }]}
+              onPress={() => onSellAbroad(product.id)}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+            >
+              <View style={styles.exportIcon}>
+                <Globe size={18} color={colors.green[600]} />
+              </View>
+              <View style={styles.exportText}>
+                <Text style={[styles.exportLabel, { color: semantic.textPrimary }]}>Vendre à l'étranger</Text>
+                {exportStatus
+                  ? <ExportStatusBadge status={exportStatus} />
+                  : (
+                      <Text style={[styles.metaText, { color: semantic.textTertiary }]}>
+                        Proposer ce produit aux clients en France et en Belgique
+                      </Text>
+                    )}
+              </View>
+              <ChevronRight size={18} color={semantic.textTertiary} />
+            </TouchableOpacity>
+          )}
+
           {/* Edit button */}
           <TouchableOpacity
             style={styles.editButton}
@@ -596,6 +635,27 @@ const styles = StyleSheet.create({
     borderTopColor: colors.neutral[100],
   },
   metaText: { ...typography.caption },
+
+  exportRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing[3],
+    marginTop: spacing[6],
+    minHeight: 64,
+    padding: spacing[3],
+    borderRadius: radius.lg,
+    borderWidth: 1,
+  },
+  exportIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.green[50],
+  },
+  exportText: { flex: 1, gap: spacing[1] },
+  exportLabel: { ...typography.bodyL, fontFamily: fonts.sansSb },
 
   editButton: {
     flexDirection: 'row',

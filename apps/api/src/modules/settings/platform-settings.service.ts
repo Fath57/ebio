@@ -38,6 +38,14 @@ export const NEW_PRODUCT_ALERT_EMAILS_KEY = 'new_product_alert_emails'
 export const EXCHANGE_RATES_KEY = 'exchange_rates'
 export const FX_MARGIN_BPS_KEY = 'fx_margin_bps'
 export const FAMILY_WALLET_ENABLED_KEY = 'family_wallet_enabled'
+export const TERROIR_EXPORT_ENABLED_KEY = 'terroir_export_enabled'
+export const EXPORT_PACKAGING_WEIGHT_G_KEY = 'export_packaging_weight_g'
+export const EXPORT_COLLECTION_DAYS_KEY = 'export_collection_days'
+export const EXPORT_WEIGHT_TOLERANCE_PCT_KEY = 'export_weight_tolerance_pct'
+export const EXPORT_INSURANCE_RATE_BPS_KEY = 'export_insurance_rate_bps'
+export const EXPORT_INSURANCE_MIN_KEY = 'export_insurance_min'
+export const EXPORT_BANNED_CATEGORY_IDS_KEY = 'export_banned_category_ids'
+export const EXPORT_PICKUP_REMINDER_DAYS_KEY = 'export_pickup_reminder_days'
 
 /** Exchange rates as read: EUR always present, USD and CAD once downloaded or entered. */
 export type ResolvedExchangeRates = ExchangeRates & { EUR: ExchangeRate }
@@ -206,6 +214,51 @@ export const DEFAULT_ANNOUNCEMENT_OFFERS: BannerOffersInput = {
  * dark makes the opening a decision rather than a deploy.
  */
 export const DEFAULT_FAMILY_WALLET_ENABLED = false
+
+/**
+ * Terroir export (011) settings. The switch stays off until the agency
+ * agreements are signed; the rest has workable defaults (data-model §5).
+ */
+export interface TerroirExportSettings {
+  enabled: boolean
+  /** Flat packaging weight added to every parcel estimate, in grams. */
+  packagingWeightG: number
+  /** Days eBio needs to collect from the shops before the deposit deadline. */
+  collectionDays: number
+  /** Weight gap above the estimate eBio absorbs, in percent. */
+  weightTolerancePct: number
+  /** Insurance price, in basis points of the declared value (300 = 3 %). */
+  insuranceRateBps: number
+  /** Insurance floor, FCFA. */
+  insuranceMin: number
+  /** Categories never exportable (fresh food, meat, milk, live plants…). */
+  bannedCategoryIds: string[]
+  /** Days a parcel waits at the pickup point before the buyer is reminded. */
+  pickupReminderDays: number
+}
+
+export const DEFAULT_TERROIR_EXPORT_SETTINGS: TerroirExportSettings = {
+  enabled: false,
+  packagingWeightG: 300,
+  collectionDays: 3,
+  weightTolerancePct: 10,
+  insuranceRateBps: 300,
+  insuranceMin: 1000,
+  bannedCategoryIds: [],
+  pickupReminderDays: 14,
+}
+
+/** Bounds of each numeric terroir setting: [min, max]. */
+export const TERROIR_EXPORT_BOUNDS = {
+  packagingWeightG: [0, 5_000],
+  collectionDays: [0, 30],
+  weightTolerancePct: [0, 100],
+  insuranceRateBps: [0, 5_000],
+  insuranceMin: [0, 1_000_000],
+  pickupReminderDays: [1, 90],
+} as const
+
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** Same short cache as CommissionService: settings change rarely, deliveries are created often. */
 const CACHE_TTL_MS = 60_000
@@ -529,6 +582,82 @@ export class PlatformSettingsService {
 
   async setFamilyWalletEnabled(enabled: boolean): Promise<void> {
     await this.set(FAMILY_WALLET_ENABLED_KEY, enabled ? 'true' : 'false')
+  }
+
+  /** Is the terroir space open to buyers abroad? */
+  async getTerroirExportEnabled(): Promise<boolean> {
+    const raw = await this.get(TERROIR_EXPORT_ENABLED_KEY)
+    if (raw === null) {
+      return DEFAULT_TERROIR_EXPORT_SETTINGS.enabled
+    }
+    return raw === 'true'
+  }
+
+  /** Every terroir setting, each falling back to its default when missing or unreadable. */
+  async getTerroirExportSettings(): Promise<TerroirExportSettings> {
+    const defaults = DEFAULT_TERROIR_EXPORT_SETTINGS
+    const bounds = TERROIR_EXPORT_BOUNDS
+    return {
+      enabled: await this.getTerroirExportEnabled(),
+      packagingWeightG: await this.readInteger(EXPORT_PACKAGING_WEIGHT_G_KEY, defaults.packagingWeightG, ...bounds.packagingWeightG),
+      collectionDays: await this.readInteger(EXPORT_COLLECTION_DAYS_KEY, defaults.collectionDays, ...bounds.collectionDays),
+      weightTolerancePct: await this.readInteger(EXPORT_WEIGHT_TOLERANCE_PCT_KEY, defaults.weightTolerancePct, ...bounds.weightTolerancePct),
+      insuranceRateBps: await this.readInteger(EXPORT_INSURANCE_RATE_BPS_KEY, defaults.insuranceRateBps, ...bounds.insuranceRateBps),
+      insuranceMin: await this.readInteger(EXPORT_INSURANCE_MIN_KEY, defaults.insuranceMin, ...bounds.insuranceMin),
+      bannedCategoryIds: await this.readBannedCategoryIds(),
+      pickupReminderDays: await this.readInteger(EXPORT_PICKUP_REMINDER_DAYS_KEY, defaults.pickupReminderDays, ...bounds.pickupReminderDays),
+    }
+  }
+
+  /** Writes only the settings sent; each one is checked before anything is written. */
+  async setTerroirExportSettings(input: Partial<TerroirExportSettings>): Promise<TerroirExportSettings> {
+    const bounds = TERROIR_EXPORT_BOUNDS
+    const integers: Array<[keyof typeof bounds, string, string]> = [
+      ['packagingWeightG', EXPORT_PACKAGING_WEIGHT_G_KEY, 'Le poids d\'emballage doit être compris entre 0 et 5 000 g'],
+      ['collectionDays', EXPORT_COLLECTION_DAYS_KEY, 'Le délai de collecte doit être compris entre 0 et 30 jours'],
+      ['weightTolerancePct', EXPORT_WEIGHT_TOLERANCE_PCT_KEY, 'Le seuil d\'écart de poids doit être compris entre 0 et 100 %'],
+      ['insuranceRateBps', EXPORT_INSURANCE_RATE_BPS_KEY, 'Le taux d\'assurance doit être compris entre 0 et 50 %'],
+      ['insuranceMin', EXPORT_INSURANCE_MIN_KEY, 'Le minimum d\'assurance doit être compris entre 0 et 1 000 000 FCFA'],
+      ['pickupReminderDays', EXPORT_PICKUP_REMINDER_DAYS_KEY, 'Le rappel de retrait doit tomber entre 1 et 90 jours'],
+    ]
+    for (const [field, , message] of integers) {
+      const value = input[field]
+      if (value !== undefined) {
+        this.assertInteger(value, bounds[field][0], bounds[field][1], message)
+      }
+    }
+    const banned = input.bannedCategoryIds
+    if (banned !== undefined && (banned.length > 200 || banned.some(id => !UUID_PATTERN.test(id)))) {
+      throw new BadRequestException('Liste de catégories interdites invalide')
+    }
+
+    if (input.enabled !== undefined) {
+      await this.set(TERROIR_EXPORT_ENABLED_KEY, input.enabled ? 'true' : 'false')
+    }
+    for (const [field, key] of integers) {
+      const value = input[field]
+      if (value !== undefined) {
+        await this.set(key, String(value))
+      }
+    }
+    if (banned !== undefined) {
+      await this.set(EXPORT_BANNED_CATEGORY_IDS_KEY, JSON.stringify([...new Set(banned)]))
+    }
+    return this.getTerroirExportSettings()
+  }
+
+  private async readBannedCategoryIds(): Promise<string[]> {
+    const raw = await this.get(EXPORT_BANNED_CATEGORY_IDS_KEY)
+    if (raw === null) {
+      return [...DEFAULT_TERROIR_EXPORT_SETTINGS.bannedCategoryIds]
+    }
+    try {
+      const parsed = JSON.parse(raw) as unknown
+      return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : []
+    }
+    catch {
+      return []
+    }
   }
 
   /**

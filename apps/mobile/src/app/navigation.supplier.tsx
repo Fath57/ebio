@@ -34,6 +34,8 @@ import { EditProfileScreen } from '../features/profile/components/edit-profile-s
 import { BannerRequestForm } from '../features/supplier-dashboard/components/banner-request-form'
 import { BannerRequestsScreen } from '../features/supplier-dashboard/components/banner-requests-screen'
 import { DashboardScreen } from '../features/supplier-dashboard/components/dashboard-screen'
+import { ExportPackForm, ExportPacksScreen } from '../features/supplier-dashboard/components/export-packs-screen'
+import { ExportProfileForm } from '../features/supplier-dashboard/components/export-profile-form'
 import { OpeningHoursEditor } from '../features/supplier-dashboard/components/opening-hours-editor'
 import { OrderDetailScreen } from '../features/supplier-dashboard/components/order-detail-screen'
 import { OrderManagement } from '../features/supplier-dashboard/components/order-management'
@@ -49,6 +51,7 @@ import { SupplierReviewsScreen } from '../features/supplier-dashboard/components
 import { SupplierSettingsScreen } from '../features/supplier-dashboard/components/supplier-settings-screen'
 import { SupplierWalletScreen } from '../features/supplier-dashboard/components/supplier-wallet-screen'
 import { usePendingOrdersCount } from '../features/supplier-dashboard/hooks/use-pending-orders-count'
+import { useTerroirExportEnabled } from '../features/supplier-dashboard/hooks/use-terroir-export-enabled'
 import { signOut, useSession } from '../lib/auth-client'
 import { colors, fonts, radius, spacing, typography } from '../theme/theme'
 import { useTheme } from '../theme/theme-context'
@@ -239,6 +242,7 @@ function SupplierGate() {
 const HomeStack = createNativeStackNavigator()
 
 function DashboardWrapper({ navigation }: any) {
+  const terroirExportEnabled = useTerroirExportEnabled()
   return (
     <SafeScreen>
       <DashboardScreen
@@ -252,6 +256,7 @@ function DashboardWrapper({ navigation }: any) {
         onNavigateToSalesStatement={() => navigation.navigate('SupplierSalesStatement')}
         onNavigateToMessages={() => navigation.navigate('Chat')}
         onNavigateToNotifications={() => navigation.navigate('Profil', { screen: 'SupplierNotifications', initial: false })}
+        onNavigateToExportPacks={terroirExportEnabled ? () => navigation.navigate('SupplierExportPacks') : undefined}
       />
     </SafeScreen>
   )
@@ -281,6 +286,7 @@ function SupplierProductsWrapper({ navigation }: any) {
 
 function SupplierProductDetailWrapper({ route, navigation }: any) {
   const { productId } = route.params
+  const terroirExportEnabled = useTerroirExportEnabled()
   return (
     <SafeScreen>
       <SupplierProductDetail
@@ -288,6 +294,7 @@ function SupplierProductDetailWrapper({ route, navigation }: any) {
         onGoBack={() => navigation.goBack()}
         onEdit={id => navigation.navigate('SupplierProductForm', { productId: id })}
         onDeleted={() => navigation.navigate('SupplierProducts')}
+        onSellAbroad={terroirExportEnabled ? id => navigation.navigate('SupplierExportProfile', { productId: id }) : undefined}
       />
     </SafeScreen>
   )
@@ -473,6 +480,41 @@ function SupplierBannerRequestFormWrapper({ navigation }: any) {
   )
 }
 
+function SupplierExportProfileWrapper({ route, navigation }: any) {
+  return (
+    <SafeScreen>
+      <ExportProfileForm
+        productId={route.params.productId}
+        onGoBack={() => navigation.goBack()}
+        onDone={() => navigation.goBack()}
+      />
+    </SafeScreen>
+  )
+}
+
+function SupplierExportPacksWrapper({ navigation }: any) {
+  return (
+    <SafeScreen>
+      <ExportPacksScreen
+        onGoBack={() => navigation.goBack()}
+        onOpenPack={pack => navigation.navigate('SupplierExportPackForm', { pack })}
+      />
+    </SafeScreen>
+  )
+}
+
+function SupplierExportPackFormWrapper({ route, navigation }: any) {
+  return (
+    <SafeScreen>
+      <ExportPackForm
+        pack={route.params?.pack ?? null}
+        onGoBack={() => navigation.goBack()}
+        onDone={() => navigation.goBack()}
+      />
+    </SafeScreen>
+  )
+}
+
 function HomeStackScreen() {
   return (
     <HomeStack.Navigator screenOptions={{ headerShown: false, animation: 'slide_from_right', freezeOnBlur: true }}>
@@ -491,6 +533,9 @@ function HomeStackScreen() {
       <HomeStack.Screen name="SupplierBannerRequests" component={SupplierBannerRequestsWrapper} />
       <HomeStack.Screen name="SupplierBannerRequestForm" component={SupplierBannerRequestFormWrapper} />
       <HomeStack.Screen name="SupplierAnnouncementRequestForm" component={SupplierAnnouncementRequestFormWrapper} />
+      <HomeStack.Screen name="SupplierExportProfile" component={SupplierExportProfileWrapper} />
+      <HomeStack.Screen name="SupplierExportPacks" component={SupplierExportPacksWrapper} />
+      <HomeStack.Screen name="SupplierExportPackForm" component={SupplierExportPackFormWrapper} />
     </HomeStack.Navigator>
   )
 }

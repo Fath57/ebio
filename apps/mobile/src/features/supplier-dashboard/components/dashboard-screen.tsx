@@ -1,6 +1,7 @@
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs'
 import { useFocusEffect } from '@react-navigation/native'
 import FileSpreadsheet from 'lucide-react-native/dist/esm/icons/file-spreadsheet'
+import Gift from 'lucide-react-native/dist/esm/icons/gift'
 import MapPinOff from 'lucide-react-native/dist/esm/icons/map-pin-off'
 import MessageCircle from 'lucide-react-native/dist/esm/icons/message-circle'
 import Package from 'lucide-react-native/dist/esm/icons/package'
@@ -53,9 +54,11 @@ interface DashboardScreenProps {
   onNavigateToSalesStatement: () => void
   onNavigateToMessages: () => void
   onNavigateToNotifications?: () => void
+  /** « Packs terroir »; omitted while the terroir export module is off. */
+  onNavigateToExportPacks?: () => void
 }
 
-export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToSalesStatement, onNavigateToMessages, onNavigateToNotifications }: DashboardScreenProps) {
+export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOrders, onNavigateToSettings, onNavigateToReviews, onNavigateToWallet, onNavigateToSalesStatement, onNavigateToMessages, onNavigateToNotifications, onNavigateToExportPacks }: DashboardScreenProps) {
   const { semantic } = useTheme()
   const tabBarHeight = useBottomTabBarHeight()
   const [data, setData] = useState<DashboardData | null>(null)
@@ -372,6 +375,19 @@ export function DashboardScreen({ onGoBack, onNavigateToProducts, onNavigateToOr
           </View>
           <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Relevé des ventes</Text>
         </TouchableOpacity>
+
+        {onNavigateToExportPacks && (
+          <>
+            <View style={styles.actionDivider} />
+
+            <TouchableOpacity style={styles.actionItem} onPress={onNavigateToExportPacks} activeOpacity={0.6}>
+              <View style={[styles.actionIcon, { backgroundColor: colors.earth[50] }]}>
+                <Gift size={18} color={colors.earth[600]} />
+              </View>
+              <Text style={[styles.actionLabel, { color: semantic.textPrimary }]}>Packs terroir</Text>
+            </TouchableOpacity>
+          </>
+        )}
 
         <View style={styles.actionDivider} />
 

@@ -159,6 +159,30 @@ export const familyWalletSettingSchema = z.object({
 
 export type FamilyWalletSettingInput = z.infer<typeof familyWalletSettingSchema>
 
+/** Terroir export (011): the switch and its tuning, every field optional on write. */
+export const terroirExportSettingSchema = z.object({
+  enabled: z.boolean(),
+  packagingWeightG: z.number().int().min(0).max(5_000),
+  collectionDays: z.number().int().min(0).max(30),
+  weightTolerancePct: z.number().int().min(0).max(100),
+  insuranceRateBps: z.number().int().min(0).max(5_000),
+  insuranceMin: z.number().int().min(0).max(1_000_000),
+  bannedCategoryIds: z.array(z.string().uuid()).max(200),
+  pickupReminderDays: z.number().int().min(1).max(90),
+}).meta({
+  title: 'TerroirExportSetting',
+  description: 'Interrupteur et réglages du terroir vers l\'étranger',
+})
+
+export type TerroirExportSetting = z.infer<typeof terroirExportSettingSchema>
+
+export const updateTerroirExportSettingSchema = terroirExportSettingSchema.partial().meta({
+  title: 'UpdateTerroirExportSetting',
+  description: 'Réglages du terroir vers l\'étranger à modifier',
+})
+
+export type UpdateTerroirExportSettingInput = z.infer<typeof updateTerroirExportSettingSchema>
+
 /** The name and face the apps show, resolved. */
 export const assistantIdentitySchema = z.object({
   name: z.string(),

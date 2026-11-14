@@ -54,6 +54,10 @@ const AUDIENCE_TYPES: Record<NotificationAudience, NotificationType[]> = {
     NotificationType.FAMILY_WALLET_MEMBER_JOINED,
     NotificationType.FAMILY_WALLET_MEMBER_PENDING,
     NotificationType.FAMILY_WALLET_STATUS,
+    NotificationType.EXPORT_SHIPMENT_UPDATE,
+    NotificationType.EXPORT_DEPARTURE_OPEN,
+    NotificationType.EXPORT_DEADLINE_REMINDER,
+    NotificationType.EXPORT_WEIGHT_SUPPLEMENT,
   ],
   supplier: [
     ...SHARED_TYPES,
@@ -73,6 +77,7 @@ const AUDIENCE_TYPES: Record<NotificationAudience, NotificationType[]> = {
     NotificationType.DELIVERY_ASSIGNED,
     NotificationType.DELIVERY_FAILED,
     NotificationType.DELIVERY_WINDOW_CHANGED,
+    NotificationType.EXPORT_PRODUCT_REVIEWED,
   ],
   courier: [
     ...SHARED_TYPES,
