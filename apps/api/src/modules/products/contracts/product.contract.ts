@@ -4,30 +4,17 @@ import {
   paginatedSchema,
 } from '@lonestone/nzoth/server'
 import { z } from 'zod'
-import { exportProfileStatusEnum, terroirExportabilitySchema } from '../../terroir/contracts/terroir.contract'
+import { exportProfileResponseSchema, exportProfileStatusEnum, terroirExportabilitySchema } from '../../terroir/contracts/terroir.contract'
 import { ALLERGEN_CODES } from '../composition.constants'
 import { certificationCodeSchema } from './certification.contract'
 
-/** The owner's view of a product's export request (011); absent for anyone else. */
-export const productExportProfileSchema = z.object({
-  status: exportProfileStatusEnum,
-  rejectionReason: z.string().nullable(),
-  packedWeightG: z.number(),
-  lengthCm: z.number().nullable(),
-  widthCm: z.number().nullable(),
-  heightCm: z.number().nullable(),
-  shelfLifeDays: z.number(),
-  origin: z.object({
-    producer: z.string().nullable(),
-    place: z.string().nullable(),
-    year: z.number().nullable(),
-    method: z.string().nullable(),
-    photos: z.array(z.string()),
-  }),
-  labelPhoto: z.string().nullable(),
-}).meta({
+/**
+ * The owner's view of a product's export profile (011): status computed from
+ * the export criteria, each criterion met or not; absent for anyone else.
+ */
+export const productExportProfileSchema = exportProfileResponseSchema.meta({
   title: 'ProductExportProfile',
-  description: 'Demande d\'export du produit, vue par sa boutique',
+  description: 'Profil d\'export du produit, vu par sa boutique : statut, critères, motif de retrait',
 })
 
 export type ProductExportProfile = z.infer<typeof productExportProfileSchema>
@@ -270,7 +257,7 @@ export const productSummarySchema = z.object({
   promotionalPrice: z.number().nullable(),
   /** Live promotion types, for badges (e.g. ['BOGO', 'FREE_DELIVERY']). */
   promotionTypes: z.array(promotionTypeEnum),
-  /** Owner's list only: export status, null when never asked (011). */
+  /** Owner's list only: export status (EXPORTABLE, INCOMPLETE, WITHDRAWN), null without a profile (011). */
   exportStatus: exportProfileStatusEnum.nullable().optional(),
 }).meta({
   title: 'ProductSummary',

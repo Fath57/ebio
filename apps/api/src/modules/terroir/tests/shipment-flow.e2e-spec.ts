@@ -149,7 +149,7 @@ describe('terroir, colis : collecte, pesée, suivi, pertes (e2e)', { timeout: 60
     const ctx = context as unknown as Context
     const world = await seedTerroirWorld(ctx.app, ctx.em, { balance: 200_000 })
     const catalog = ctx.app.get(ExportCatalogService)
-    const { pack } = await catalog.createPack(null, { name: 'Pack découverte', photos: [], price: 5000, items: [{ productId: world.shopA.productIds[0], quantity: 2 }] }, world.agentId)
+    const { pack } = await catalog.createPack(null, { name: 'Pack découverte', photos: ['https://media.ebio.app/products/pack.jpg'], price: 5000, items: [{ productId: world.shopA.productIds[0], quantity: 2 }] }, world.agentId)
     fresh(ctx)
     const { shipmentId, orders } = await buy(ctx, world, [
       { packId: pack.id, quantity: 1 },
@@ -165,14 +165,14 @@ describe('terroir, colis : collecte, pesée, suivi, pertes (e2e)', { timeout: 60
     const detail = TerroirMapper.toShipmentDetail(await ctx.app.get(ExportShipmentsService).detailForBuyer(world.buyerId, shipmentId))
     expect(detail.lines.map(line => line.name)).not.toContain(expect.stringContaining('Gari fin'))
     expect(detail.reorderLines).toEqual([
-      { productId: null, variantId: null, packId: pack.id, quantity: 1, name: 'Pack découverte', imageUrl: null, shopName: null, available: true },
+      { productId: null, variantId: null, packId: pack.id, quantity: 1, name: 'Pack découverte', imageUrl: 'https://media.ebio.app/products/pack.jpg', shopName: null, available: true },
       expect.objectContaining({ productId: world.shopA.productIds[2], packId: null, quantity: 3, shopName: 'Karité Fatou', available: true }),
       expect.objectContaining({ productId: world.shopB.productIds[1], quantity: 2, shopName: 'Moringa Bio', available: true }),
     ])
 
-    // eBio refuses a product since: offered still, but no longer available; the pack's product too.
-    await catalog.review(world.shopB.productIds[1], { decision: 'REJECT', checklist: {}, reason: 'Étiquette illisible' }, world.agentId)
-    await catalog.review(world.shopA.productIds[0], { decision: 'REJECT', checklist: {}, reason: 'Étiquette illisible' }, world.agentId)
+    // eBio withdraws a product since: offered still, but no longer available; the pack's product too.
+    await catalog.withdraw(world.shopB.productIds[1], 'Étiquette illisible', world.agentId)
+    await catalog.withdraw(world.shopA.productIds[0], 'Étiquette illisible', world.agentId)
     fresh(ctx)
     const after = TerroirMapper.toShipmentDetail(await ctx.app.get(ExportShipmentsService).detailForBuyer(world.buyerId, shipmentId))
     expect(after.reorderLines.map(line => [line.packId ?? line.productId, line.available])).toEqual([

@@ -615,7 +615,7 @@ export class TerroirCheckoutService {
 
   private exportable(product: Product, profile: ExportProfile | undefined): boolean {
     const supplier = product.supplier as Supplier
-    return profile?.status === ExportProfileStatus.APPROVED
+    return profile?.status === ExportProfileStatus.EXPORTABLE
       && product.status === ProductStatus.ACTIVE
       && product.moderationStatus === ProductModeration.APPROVED
       && supplier.validationStatus === ValidationStatus.VALIDATED

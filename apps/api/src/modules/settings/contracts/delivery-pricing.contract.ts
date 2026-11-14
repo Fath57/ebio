@@ -169,6 +169,10 @@ export const terroirExportSettingSchema = z.object({
   insuranceMin: z.number().int().min(0).max(1_000_000),
   bannedCategoryIds: z.array(z.string().uuid()).max(200),
   pickupReminderDays: z.number().int().min(1).max(90),
+  /** Export criterion: minimum shelf life of a product, in days. */
+  minShelfLifeDays: z.number().int().min(1).max(3_650),
+  /** Export criterion: maximum packed weight of one unit, in grams. */
+  maxUnitWeightG: z.number().int().min(100).max(50_000),
 }).meta({
   title: 'TerroirExportSetting',
   description: 'Interrupteur et réglages de la Valise du pays',

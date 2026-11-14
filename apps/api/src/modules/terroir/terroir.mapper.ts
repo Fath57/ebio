@@ -1,13 +1,14 @@
 import type { Order } from '../orders/entities/order.entity'
 import type { ProductVariant } from '../products/entities/product-variant.entity'
-import type { ExportAdminShipment, ExportAgencyResponse, ExportCountryAdmin, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, ExportReviewsResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirCountry, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirExportability, TerroirExportabilityResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirSupplementResult, TerroirTracking } from './contracts/terroir.contract'
+import type { AdminExportProduct, AdminExportProductsResponse, ExportAdminShipment, ExportAgencyResponse, ExportCountryAdmin, ExportCriteriaGuide, ExportDepartureDetail, ExportDepartureResponse, ExportPackResponse, ExportPickupPointResponse, ExportProfileResponse, TerroirCatalogResponse, TerroirCheckoutPreview, TerroirCheckoutResult, TerroirCountry, TerroirDepartureOffer, TerroirDeparturesResponse, TerroirExportability, TerroirExportabilityResponse, TerroirPackDetail, TerroirProductDetail, TerroirShipmentDetail, TerroirShipmentSummary, TerroirSupplementResult, TerroirTracking } from './contracts/terroir.contract'
 import type { ExportAgency } from './entities/export-agency.entity'
 import type { ExportDeparture } from './entities/export-departure.entity'
 import type { ExportPickupPoint } from './entities/export-pickup-point.entity'
 import type { ExportProfile } from './entities/export-profile.entity'
 import type { ExportShipment } from './entities/export-shipment.entity'
-import type { ClientCatalog, ClientPackView, PackView, ReviewQueue } from './export-catalog.service'
+import type { AdminExportProductsPage, ClientCatalog, ClientPackView, PackView } from './export-catalog.service'
 import type { AdminCountryView, ClientCountryView } from './export-countries.service'
+import type { ExportThresholds } from './export-criteria'
 import type { DepartureDetailView, DepartureView } from './export-logistics.service'
 import type { AdminShipmentView, ShipmentView } from './export-shipments.service'
 import type { SupplementOutcome } from './export-supplement.service'
@@ -15,8 +16,10 @@ import type { ProductExportability } from './exportability.service'
 import type { TerroirCheckoutCreated, TerroirQuote } from './terroir-checkout.service'
 import type { OfferedDeparture } from './terroir-math'
 import { toDisplayAmount } from '../currency/fx-math'
-import { ExportSupplementStatus } from './contracts/terroir.contract'
-import { lineWeight, packLinePrice } from './export-catalog.service'
+import { EXPORT_CRITERION_KEYS, ExportPackStatus, ExportSupplementStatus } from './contracts/terroir.contract'
+import { ADMIN_EXPORT_PAGE_SIZE, lineWeight, packLinePrice } from './export-catalog.service'
+import { packCriteria, profileCriterionTexts } from './export-criteria'
+import { toExportProfileResponse } from './export-profile.mapper'
 import { SUPPLEMENT_WINDOW_HOURS } from './export-shipments.service'
 import { fillRatio, orderDeadline } from './terroir-math'
 import { addDays, shortName } from './terroir-texts'
@@ -184,34 +187,27 @@ export const TerroirMapper = {
     }
   },
 
-  toProfile(profile: ExportProfile): ExportProfileResponse {
+  /** `thresholds`: today's criteria settings, for the wording of the criteria. */
+  toProfile(profile: ExportProfile, thresholds: ExportThresholds): ExportProfileResponse {
+    return toExportProfileResponse(profile, thresholds)
+  },
+
+  /** The supplier guide: today's thresholds, banned categories and every criterion. */
+  toCriteriaGuide(settings: ExportThresholds, bannedCategories: Array<{ slug: string, name: string }>): ExportCriteriaGuide {
+    const texts = profileCriterionTexts(settings)
     return {
-      productId: profile.product.id,
-      status: profile.status,
-      packedWeightG: profile.packedWeightG,
-      lengthCm: profile.lengthCm ?? null,
-      widthCm: profile.widthCm ?? null,
-      heightCm: profile.heightCm ?? null,
-      shelfLifeDays: profile.shelfLifeDays,
-      origin: {
-        producer: profile.originProducer ?? null,
-        place: profile.originPlace ?? null,
-        year: profile.originYear ?? null,
-        method: profile.originMethod ?? null,
-        photos: profile.originPhotos ?? [],
-      },
-      labelPhoto: profile.labelPhoto ?? null,
-      checklist: Object.fromEntries(Object.entries(profile.checklist ?? {}).map(([key, ticked]) => [key, ticked === true])),
-      rejectionReason: profile.rejectionReason ?? null,
-      reviewedAt: profile.reviewedAt?.toISOString() ?? null,
-      badge: profile.hasBadge,
-      updatedAt: profile.updatedAt.toISOString(),
+      minShelfLifeDays: settings.minShelfLifeDays,
+      maxUnitWeightG: settings.maxUnitWeightG,
+      bannedCategories,
+      criteria: EXPORT_CRITERION_KEYS.map(key => ({ key, ...texts[key] })),
     }
   },
 
   toPack(view: PackView): ExportPackResponse {
     const { pack } = view
     const price = Number(pack.price)
+    const missing = pack.missingCriteria ?? []
+    const withdrawn = pack.status === ExportPackStatus.WITHDRAWN
     return {
       id: pack.id,
       supplierId: pack.supplier?.id ?? null,
@@ -221,8 +217,10 @@ export const TerroirMapper = {
       photos: pack.photos ?? [],
       price,
       status: pack.status,
-      rejectionReason: pack.rejectionReason ?? null,
-      reviewedAt: pack.reviewedAt?.toISOString() ?? null,
+      criteria: packCriteria(missing),
+      missingCount: missing.length,
+      withdrawnReason: withdrawn ? pack.withdrawnReason ?? null : null,
+      withdrawnAt: withdrawn ? pack.withdrawnAt?.toISOString() ?? null : null,
       items: pack.items.getItems().map(item => ({
         productId: item.product.id,
         variantId: item.variant?.id ?? null,
@@ -241,22 +239,29 @@ export const TerroirMapper = {
     }
   },
 
-  toReviews(queue: ReviewQueue): ExportReviewsResponse {
+  toAdminExportProduct(profile: ExportProfile, thresholds: ExportThresholds): AdminExportProduct {
     return {
-      products: queue.profiles.map(profile => ({
-        ...TerroirMapper.toProfile(profile),
-        productName: profile.product.name,
-        imageUrl: profile.product.photos?.[0] ?? null,
-        supplierId: profile.product.supplier.id,
-        shopName: profile.product.supplier.shopName,
-        categoryName: profile.product.category.name,
-        composition: {
-          ingredients: profile.product.ingredients ?? null,
-          allergens: profile.product.allergens ?? [],
-          conservation: profile.product.conservation ?? null,
-        },
-      })),
-      packs: queue.packs.map(TerroirMapper.toPack),
+      ...TerroirMapper.toProfile(profile, thresholds),
+      productName: profile.product.name,
+      imageUrl: profile.product.photos?.[0] ?? null,
+      supplierId: profile.product.supplier.id,
+      shopName: profile.product.supplier.shopName,
+      categoryName: profile.product.category.name,
+      composition: {
+        ingredients: profile.product.ingredients ?? null,
+        allergens: profile.product.allergens ?? [],
+        conservation: profile.product.conservation ?? null,
+      },
+    }
+  },
+
+  toAdminExportProducts(page: AdminExportProductsPage, thresholds: ExportThresholds): AdminExportProductsResponse {
+    return {
+      data: page.profiles.map(profile => TerroirMapper.toAdminExportProduct(profile, thresholds)),
+      total: page.total,
+      page: page.page,
+      pageSize: ADMIN_EXPORT_PAGE_SIZE,
+      counts: page.counts,
     }
   },
 
@@ -275,7 +280,8 @@ export const TerroirMapper = {
           imageUrl: product.photos?.[0] ?? null,
           price,
           displayPrice: display(price, rate),
-          weightG: profile.packedWeightG,
+          // Exportable profiles only: the weight is a criterion, always set.
+          weightG: profile.packedWeightG ?? 0,
           supplierId: product.supplier.id,
           shopName: product.supplier.shopName,
           categoryName: product.category.name,
@@ -310,9 +316,9 @@ export const TerroirMapper = {
       price,
       displayPrice: display(price, rate),
       currency: rate === null ? 'XOF' : currency,
-      weightG: profile.packedWeightG,
+      weightG: profile.packedWeightG ?? 0,
       dimensionsCm: { length: profile.lengthCm ?? null, width: profile.widthCm ?? null, height: profile.heightCm ?? null },
-      shelfLifeDays: profile.shelfLifeDays,
+      shelfLifeDays: profile.shelfLifeDays ?? 0,
       composition: {
         ingredients: product.ingredients ?? null,
         allergens: product.allergens ?? [],
@@ -427,7 +433,7 @@ export const TerroirMapper = {
       suggestions: quote.suggestions.map(profile => ({
         productId: profile.product.id,
         name: profile.product.name,
-        weightG: profile.packedWeightG,
+        weightG: profile.packedWeightG ?? 0,
         price: Number(profile.product.pricePerUnit),
         imageUrl: profile.product.photos?.[0] ?? null,
         shopName: profile.product.supplier.shopName,

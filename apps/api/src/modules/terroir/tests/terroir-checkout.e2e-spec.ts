@@ -63,7 +63,7 @@ describe('terroir, passage en caisse (e2e)', { timeout: 30_000 }, () => {
     expect(quote.insuranceQuote).toBe(1000)
     expect(quote.unavailable).toEqual([{ productId: unknown, packId: null, reason: 'NOT_FOUND' }])
     expect(quote.suggestions.length).toBeGreaterThan(0)
-    expect(quote.suggestions.every(profile => profile.packedWeightG <= 4020)).toBe(true)
+    expect(quote.suggestions.every(profile => (profile.packedWeightG ?? 0) <= 4020)).toBe(true)
     // Every product line and suggestion names its shop (a suggestion added to the cart keeps it).
     const response = TerroirMapper.toPreview(quote)
     expect(response.lines.map(line => line.shopName)).toEqual(['Karité Fatou', 'Moringa Bio'])
@@ -191,7 +191,7 @@ describe('terroir, passage en caisse (e2e)', { timeout: 30_000 }, () => {
     const world = await seedTerroirWorld(app, em, { balance: 100_000 })
     const pack = await app.get(ExportCatalogService).createPack(null, {
       name: 'Pack découverte',
-      photos: [],
+      photos: ['https://media.ebio.app/products/pack.jpg'],
       price: 5000,
       items: [
         { productId: world.shopA.productIds[0], quantity: 1 },

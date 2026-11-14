@@ -6,9 +6,9 @@
 -- Une fois ce fichier joué, enregistrer le nom avec
 -- `migration:up --only Migration20261117090000` (les ordres sont idempotents).
 -- Contient aussi Migration20261118090000, Migration20261119090000 (table
--- `export_countries` : les CHECK (FR, BE) deviennent des clés étrangères) et
--- Migration20261120090000 (panier d'origine du colis), à enregistrer de la
--- même façon.
+-- `export_countries` : les CHECK (FR, BE) deviennent des clés étrangères),
+-- Migration20261120090000 (panier d'origine du colis) et Migration20261121090000
+-- (validation d'export automatique), à enregistrer de la même façon.
 --
 -- Purement additif : onze tables (catalogue d'export, agences, départs,
 -- colis), une colonne `orders.export_pack_id`, un troisième mode de retrait
@@ -46,7 +46,9 @@ CREATE TABLE IF NOT EXISTS "export_profiles" (
 );
 CREATE INDEX IF NOT EXISTS "export_profiles_status_idx" ON "export_profiles" ("status");
 ALTER TABLE "export_profiles" DROP CONSTRAINT IF EXISTS "export_profiles_status_check";
-ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_status_check" CHECK ("status" IN ('PENDING', 'APPROVED', 'REJECTED'));
+-- Anciens et nouveaux statuts admis ici pour que le fichier se rejoue après Migration20261121090000,
+-- qui resserre la liste plus bas.
+ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_status_check" CHECK ("status" IN ('PENDING', 'APPROVED', 'REJECTED', 'EXPORTABLE', 'INCOMPLETE', 'WITHDRAWN'));
 ALTER TABLE "export_profiles" DROP CONSTRAINT IF EXISTS "export_profiles_sizes_check";
 ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_sizes_check" CHECK (
   "packed_weight_g" > 0
@@ -74,7 +76,7 @@ CREATE TABLE IF NOT EXISTS "export_packs" (
 );
 CREATE INDEX IF NOT EXISTS "export_packs_supplier_idx" ON "export_packs" ("supplier_id");
 ALTER TABLE "export_packs" DROP CONSTRAINT IF EXISTS "export_packs_status_check";
-ALTER TABLE "export_packs" ADD CONSTRAINT "export_packs_status_check" CHECK ("status" IN ('PENDING', 'APPROVED', 'REJECTED', 'RETIRED'));
+ALTER TABLE "export_packs" ADD CONSTRAINT "export_packs_status_check" CHECK ("status" IN ('PENDING', 'APPROVED', 'REJECTED', 'RETIRED', 'EXPORTABLE', 'INCOMPLETE', 'WITHDRAWN'));
 ALTER TABLE "export_packs" DROP CONSTRAINT IF EXISTS "export_packs_price_check";
 ALTER TABLE "export_packs" ADD CONSTRAINT "export_packs_price_check" CHECK ("price" > 0);
 CREATE TABLE IF NOT EXISTS "export_pack_items" (
@@ -311,5 +313,86 @@ ALTER TABLE "export_shipments" ADD CONSTRAINT "export_shipments_country_foreign"
 
 -- Migration20261120090000 : panier d'origine du colis (packs entiers), pour « Refaire cette valise ».
 ALTER TABLE "export_shipments" ADD COLUMN IF NOT EXISTS "cart_lines" jsonb NOT NULL DEFAULT '[]';
+
+-- Migration20261121090000 : validation d'export automatique. Statuts EXPORTABLE / INCOMPLETE / WITHDRAWN
+-- (APPROVED et PENDING deviennent INCOMPLETE, recalculés par l'API au démarrage ; REJECTED devient
+-- WITHDRAWN avec son motif), colonnes de retrait, critères manquants, conservation, allergènes,
+-- trois déclarations de la boutique.
+ALTER TABLE "export_profiles" DROP CONSTRAINT IF EXISTS "export_profiles_status_check";
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_profiles' AND column_name = 'rejection_reason')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_profiles' AND column_name = 'withdrawn_reason') THEN
+    ALTER TABLE "export_profiles" RENAME COLUMN "rejection_reason" TO "withdrawn_reason";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_profiles' AND column_name = 'reviewed_by')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_profiles' AND column_name = 'withdrawn_by') THEN
+    ALTER TABLE "export_profiles" RENAME COLUMN "reviewed_by" TO "withdrawn_by";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_profiles' AND column_name = 'reviewed_at')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_profiles' AND column_name = 'withdrawn_at') THEN
+    ALTER TABLE "export_profiles" RENAME COLUMN "reviewed_at" TO "withdrawn_at";
+  END IF;
+END $$;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "missing_criteria" jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE "export_profiles" ALTER COLUMN "status" SET DEFAULT 'INCOMPLETE';
+ALTER TABLE "export_packs" DROP CONSTRAINT IF EXISTS "export_packs_status_check";
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_packs' AND column_name = 'rejection_reason')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_packs' AND column_name = 'withdrawn_reason') THEN
+    ALTER TABLE "export_packs" RENAME COLUMN "rejection_reason" TO "withdrawn_reason";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_packs' AND column_name = 'reviewed_by')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_packs' AND column_name = 'withdrawn_by') THEN
+    ALTER TABLE "export_packs" RENAME COLUMN "reviewed_by" TO "withdrawn_by";
+  END IF;
+END $$;
+DO $$ BEGIN
+  IF EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_packs' AND column_name = 'reviewed_at')
+     AND NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_schema = current_schema() AND table_name = 'export_packs' AND column_name = 'withdrawn_at') THEN
+    ALTER TABLE "export_packs" RENAME COLUMN "reviewed_at" TO "withdrawn_at";
+  END IF;
+END $$;
+ALTER TABLE "export_packs" ADD COLUMN IF NOT EXISTS "missing_criteria" jsonb NOT NULL DEFAULT '[]';
+ALTER TABLE "export_packs" ALTER COLUMN "status" SET DEFAULT 'INCOMPLETE';
+ALTER TABLE "export_profiles" DROP CONSTRAINT IF EXISTS "export_profiles_label_check";
+ALTER TABLE "export_profiles" DROP CONSTRAINT IF EXISTS "export_profiles_sizes_check";
+ALTER TABLE "export_profiles" ALTER COLUMN "packed_weight_g" DROP NOT NULL;
+ALTER TABLE "export_profiles" ALTER COLUMN "shelf_life_days" DROP NOT NULL;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "storage" varchar(10) NULL;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "allergens" varchar(500) NULL;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "no_allergens" boolean NOT NULL DEFAULT false;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "declares_french_label" boolean NOT NULL DEFAULT false;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "declares_dates_printed" boolean NOT NULL DEFAULT false;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "declares_sealed_packaging" boolean NOT NULL DEFAULT false;
+ALTER TABLE "export_profiles" ADD COLUMN IF NOT EXISTS "exportable_since" timestamptz NULL;
+UPDATE "export_profiles" SET
+      "declares_french_label" = COALESCE(("checklist" ->> 'label_french')::boolean, false),
+      "declares_dates_printed" = COALESCE(("checklist" ->> 'dates_present')::boolean, false),
+      "exportable_since" = COALESCE("exportable_since", "withdrawn_at", "updated_at")
+      WHERE "status" = 'APPROVED';
+UPDATE "export_profiles" SET "withdrawn_by" = NULL, "withdrawn_at" = NULL, "withdrawn_reason" = NULL WHERE "status" IN ('APPROVED', 'PENDING');
+UPDATE "export_profiles" SET "status" = 'INCOMPLETE' WHERE "status" IN ('APPROVED', 'PENDING');
+UPDATE "export_profiles" SET "status" = 'WITHDRAWN', "withdrawn_at" = COALESCE("withdrawn_at", "updated_at") WHERE "status" = 'REJECTED';
+UPDATE "export_packs" SET "withdrawn_by" = NULL, "withdrawn_at" = NULL, "withdrawn_reason" = NULL WHERE "status" IN ('APPROVED', 'PENDING');
+UPDATE "export_packs" SET "status" = 'INCOMPLETE' WHERE "status" IN ('APPROVED', 'PENDING');
+UPDATE "export_packs" SET "status" = 'WITHDRAWN', "withdrawn_at" = COALESCE("withdrawn_at", "updated_at") WHERE "status" = 'REJECTED';
+ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_status_check" CHECK ("status" IN ('EXPORTABLE', 'INCOMPLETE', 'WITHDRAWN'));
+ALTER TABLE "export_packs" ADD CONSTRAINT "export_packs_status_check" CHECK ("status" IN ('EXPORTABLE', 'INCOMPLETE', 'WITHDRAWN', 'RETIRED'));
+ALTER TABLE "export_profiles" DROP CONSTRAINT IF EXISTS "export_profiles_storage_check";
+ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_storage_check" CHECK ("storage" IS NULL OR "storage" IN ('AMBIENT', 'COOL', 'FROZEN'));
+ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_label_check" CHECK ("status" <> 'EXPORTABLE' OR "label_photo" IS NOT NULL);
+ALTER TABLE "export_profiles" ADD CONSTRAINT "export_profiles_sizes_check" CHECK (
+      ("packed_weight_g" IS NULL OR "packed_weight_g" > 0)
+      AND ("shelf_life_days" IS NULL OR "shelf_life_days" > 0)
+      AND ("length_cm" IS NULL OR "length_cm" > 0)
+      AND ("width_cm" IS NULL OR "width_cm" > 0)
+      AND ("height_cm" IS NULL OR "height_cm" > 0)
+      AND jsonb_array_length("origin_photos") <= 3);
 
 COMMIT;

@@ -1,17 +1,16 @@
-import type { ExportChecklist, ExportPackInput, ExportProfileInput, ReviewExportPack, ReviewExportProduct, UpdateExportPack } from './contracts/terroir.contract'
+import type { AdminExportPacksQuery, AdminExportProductsQuery, ExportPackInput, ExportProfileInput, UpdateExportPack } from './contracts/terroir.contract'
 import { EntityManager } from '@mikro-orm/postgresql'
 import { HttpStatus, Injectable } from '@nestjs/common'
 import { AuditService } from '../admin/audit.service'
 import { User } from '../auth/auth.entity'
 import { ProductVariant } from '../products/entities/product-variant.entity'
 import { Product, ProductModeration, ProductStatus } from '../products/entities/product.entity'
-import { PlatformSettingsService } from '../settings/platform-settings.service'
 import { Supplier, SupplierMode, ValidationStatus } from '../suppliers/supplier.entity'
-import { EXPORT_CHECKLIST_KEYS, ExportPackStatus, ExportProfileStatus } from './contracts/terroir.contract'
+import { ExportPackStatus, ExportProfileStatus } from './contracts/terroir.contract'
 import { ExportPackItem } from './entities/export-pack-item.entity'
 import { ExportPack } from './entities/export-pack.entity'
 import { ExportProfile } from './entities/export-profile.entity'
-import { TerroirNotifierService } from './terroir-notifier.service'
+import { ExportCriteriaService } from './export-criteria.service'
 import { terroirError } from './terroir-texts'
 
 /** A pack with what its lines are worth today and whether it can be ordered. */
@@ -44,7 +43,8 @@ export const CATALOG_PAGE_SIZE = 20
 
 /** Grams a line weighs: a « pack de N » variant weighs N units. */
 export function lineWeight(profile: Pick<ExportProfile, 'packedWeightG'>, variant: Pick<ProductVariant, 'packSize'> | null | undefined, quantity: number): number {
-  return profile.packedWeightG * (variant?.packSize && variant.packSize > 1 ? variant.packSize : 1) * quantity
+  // An exportable profile always has its weight (export criterion).
+  return (profile.packedWeightG ?? 0) * (variant?.packSize && variant.packSize > 1 ? variant.packSize : 1) * quantity
 }
 
 /** What buyers abroad may see of a product: approved for export, on sale, from a live shop. */
@@ -57,10 +57,16 @@ function sellableProductFilter() {
   }
 }
 
-export interface ReviewQueue {
+/** One page of the back office's export watch. */
+export interface AdminExportProductsPage {
+  /** Product, shop and category populated. */
   profiles: ExportProfile[]
-  packs: PackView[]
+  total: number
+  page: number
+  counts: Record<ExportProfileStatus, number>
 }
+
+export const ADMIN_EXPORT_PAGE_SIZE = 20
 
 /** The unit price of a pack line: its variant's when it has one. */
 export function packLinePrice(item: ExportPackItem): number {
@@ -80,16 +86,15 @@ function packNotFound() {
 }
 
 /**
- * Exportable products and terroir packs (011, US3): the shop's request, the
- * banned categories, eBio's checklist, and the packs built from approved
- * products only.
+ * Exportable products and terroir packs (011, US3). A product (or pack) is
+ * exportable as soon as it meets every criterion (ExportCriteriaService):
+ * eBio no longer reviews, it may only withdraw and reinstate.
  */
 @Injectable()
 export class ExportCatalogService {
   constructor(
     private readonly em: EntityManager,
-    private readonly platformSettings: PlatformSettingsService,
-    private readonly notifier: TerroirNotifierService,
+    private readonly criteria: ExportCriteriaService,
     private readonly audit: AuditService,
   ) {}
 
@@ -101,150 +106,149 @@ export class ExportCatalogService {
   }
 
   /**
-   * Asks for (or updates) a product's export. Refused at once in a banned
-   * category (FR-003). Any change sends it back to eBio (FR-002); saving the
-   * same values again leaves an approval in place.
+   * Saves a product's export profile. Nothing is refused for being
+   * incomplete: the status is recomputed at once (EXPORTABLE when every
+   * criterion is met, INCOMPLETE otherwise, WITHDRAWN stays) and the
+   * response lists what is missing.
    */
   async upsertProfile(supplierId: string, productId: string, input: ExportProfileInput): Promise<ExportProfile> {
     const product = await this.ownProduct(supplierId, productId)
-    const { bannedCategoryIds } = await this.platformSettings.getTerroirExportSettings()
-    if (bannedCategoryIds.includes(product.category.id)) {
-      throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_CATEGORY_BANNED', `Les produits de la catégorie « ${product.category.name} » ne peuvent pas être envoyés à l'étranger.`)
-    }
-
     const values = {
-      packedWeightG: input.packedWeightG,
+      packedWeightG: input.packedWeightG ?? null,
       lengthCm: input.lengthCm ?? null,
       widthCm: input.widthCm ?? null,
       heightCm: input.heightCm ?? null,
-      shelfLifeDays: input.shelfLifeDays,
+      shelfLifeDays: input.shelfLifeDays ?? null,
+      storage: input.storage ?? null,
+      allergens: input.allergens ?? null,
+      noAllergens: input.noAllergens ?? false,
       originProducer: input.origin.producer ?? null,
       originPlace: input.origin.place ?? null,
       originYear: input.origin.year ?? null,
       originMethod: input.origin.method ?? null,
       originPhotos: input.origin.photos,
       labelPhoto: input.labelPhoto ?? null,
+      declaresFrenchLabel: input.declaresFrenchLabel ?? false,
+      declaresDatesPrinted: input.declaresDatesPrinted ?? false,
+      declaresSealedPackaging: input.declaresSealedPackaging ?? false,
     }
     let profile = await this.em.findOne(ExportProfile, { product: productId })
     if (!profile) {
       profile = this.em.create(ExportProfile, { product, ...values })
     }
-    else if (this.differs(profile, values)) {
-      this.em.assign(profile, { ...values, status: ExportProfileStatus.PENDING, rejectionReason: null })
+    else {
+      this.em.assign(profile, values)
     }
     await this.em.flush()
+    await this.criteria.refreshProducts([productId])
     return profile
   }
 
-  /** Takes the product off the export catalogue; packs holding it stop being orderable. */
+  /** Takes the product off the export catalogue; packs holding it stop being exportable. */
   async removeProfile(supplierId: string, productId: string): Promise<void> {
     await this.ownProduct(supplierId, productId)
     await this.em.nativeDelete(ExportProfile, { product: productId })
+    await this.criteria.refreshPacksOf([productId])
   }
 
-  // ===== REVIEW =====
+  // ===== EBIO'S WATCH: WITHDRAW, REINSTATE =====
 
-  async reviewQueue(status: ExportProfileStatus): Promise<ReviewQueue> {
-    const profiles = await this.em.find(
-      ExportProfile,
-      { status },
-      { populate: ['product', 'product.supplier', 'product.category'], orderBy: { updatedAt: 'ASC' } },
-    )
-    const packs = await this.em.find(
-      ExportPack,
-      { status: status as unknown as ExportPackStatus },
-      { orderBy: { updatedAt: 'ASC' } },
-    )
-    return { profiles, packs: await this.packViews(packs) }
-  }
-
-  /**
-   * eBio's decision on a product (FR-002): approving takes every checklist
-   * key ticked and the label photo; refusing takes a reason. The ticked list,
-   * the agent and the date stay with the product.
-   */
-  async review(productId: string, input: ReviewExportProduct, agentId: string): Promise<ExportProfile> {
-    const profile = await this.em.findOne(ExportProfile, { product: productId }, { populate: ['product', 'product.supplier', 'product.supplier.user', 'product.category'] })
-    if (!profile) {
-      throw terroirError(HttpStatus.NOT_FOUND, 'EXPORT_PROFILE_NOT_FOUND', 'Ce produit n\'a pas de demande d\'export.')
+  /** Every product offered for export, by status and name or shop, newest change first. */
+  async listForAdmin(query: AdminExportProductsQuery): Promise<AdminExportProductsPage> {
+    const where: Record<string, unknown> = {}
+    if (query.status) {
+      where.status = query.status
     }
-    const checklist: ExportChecklist = Object.fromEntries(EXPORT_CHECKLIST_KEYS.map(key => [key, input.checklist[key] === true]))
-    const approve = input.decision === 'APPROVE'
-    if (approve) {
-      if (!profile.labelPhoto) {
-        throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_LABEL_PHOTO_REQUIRED', 'La photo de l\'étiquette est obligatoire pour valider ce produit.')
-      }
-      if (EXPORT_CHECKLIST_KEYS.some(key => !checklist[key])) {
-        throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_CHECKLIST_INCOMPLETE', 'Cochez toute la liste de contrôle avant de valider.')
-      }
-      const { bannedCategoryIds } = await this.platformSettings.getTerroirExportSettings()
-      if (bannedCategoryIds.includes(profile.product.category.id)) {
-        throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_CATEGORY_BANNED', 'Cette catégorie est interdite à l\'export.')
-      }
+    if (query.search) {
+      const pattern = `%${query.search.replace(/[%_\\]/g, '')}%`
+      where.$or = [
+        { product: { name: { $ilike: pattern } } },
+        { product: { supplier: { shopName: { $ilike: pattern } } } },
+      ]
     }
-    else if (!input.reason) {
-      throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_REASON_REQUIRED', 'Indiquez le motif du refus.')
-    }
-
-    profile.status = approve ? ExportProfileStatus.APPROVED : ExportProfileStatus.REJECTED
-    profile.checklist = checklist
-    profile.reviewedBy = this.em.getReference(User, agentId)
-    profile.reviewedAt = new Date()
-    profile.rejectionReason = approve ? null : input.reason ?? null
-    await this.em.flush()
-
-    await this.audit.record({
-      actorUserId: agentId,
-      action: approve ? 'EXPORT_PRODUCT_APPROVED' : 'EXPORT_PRODUCT_REJECTED',
-      targetType: 'product',
-      targetId: productId,
-      reason: input.reason ?? undefined,
-      payload: { checklist },
+    const [profiles, total] = await this.em.findAndCount(ExportProfile, where, {
+      populate: ['product', 'product.supplier', 'product.category'],
+      orderBy: { updatedAt: 'DESC' },
+      limit: ADMIN_EXPORT_PAGE_SIZE,
+      offset: (query.page - 1) * ADMIN_EXPORT_PAGE_SIZE,
     })
-    const owner = profile.product.supplier.user
-    if (owner) {
-      await this.notifier.exportReviewed({
-        userId: owner.id,
-        subject: profile.product.name,
-        approved: approve,
-        reason: profile.rejectionReason,
-        data: { productId },
-      })
+    const rows = await this.em.getConnection().execute<Array<{ status: ExportProfileStatus, count: number }>>(
+      `SELECT status, COUNT(*)::int AS count FROM export_profiles GROUP BY status`,
+    )
+    const counts = { [ExportProfileStatus.EXPORTABLE]: 0, [ExportProfileStatus.INCOMPLETE]: 0, [ExportProfileStatus.WITHDRAWN]: 0 }
+    for (const row of rows) {
+      if (row.status in counts) {
+        counts[row.status] = row.count
+      }
     }
+    return { profiles, total, page: query.page, counts }
+  }
+
+  /** eBio takes a product off the export, whatever its criteria; the shop gets the reason. */
+  async withdraw(productId: string, reason: string, agentId: string): Promise<ExportProfile> {
+    const profile = await this.adminProfile(productId)
+    if (profile.status === ExportProfileStatus.WITHDRAWN) {
+      throw terroirError(HttpStatus.CONFLICT, 'EXPORT_ALREADY_WITHDRAWN', 'Ce produit est déjà retiré de l’export.')
+    }
+    profile.status = ExportProfileStatus.WITHDRAWN
+    profile.withdrawnReason = reason
+    profile.withdrawnBy = this.em.getReference(User, agentId)
+    profile.withdrawnAt = new Date()
+    await this.em.flush()
+    await this.criteria.refreshPacksOf([productId])
+
+    await this.audit.record({ actorUserId: agentId, action: 'EXPORT_PRODUCT_WITHDRAWN', targetType: 'product', targetId: productId, reason })
+    await this.tellShop(profile.product.supplier.id, `« ${profile.product.name} »`, 'WITHDRAWN', reason, { productId })
     return profile
   }
 
-  async reviewPack(packId: string, input: ReviewExportPack, agentId: string): Promise<PackView> {
+  /** Lifts a withdrawal: the status is computed again from the criteria. */
+  async reinstate(productId: string, agentId: string): Promise<ExportProfile> {
+    const profile = await this.adminProfile(productId)
+    if (profile.status !== ExportProfileStatus.WITHDRAWN) {
+      throw terroirError(HttpStatus.CONFLICT, 'EXPORT_NOT_WITHDRAWN', 'Ce produit n’est pas retiré de l’export.')
+    }
+    profile.status = ExportProfileStatus.INCOMPLETE
+    await this.em.flush()
+    await this.criteria.refreshProducts([productId])
+
+    await this.audit.record({ actorUserId: agentId, action: 'EXPORT_PRODUCT_REINSTATED', targetType: 'product', targetId: productId })
+    await this.tellShop(profile.product.supplier.id, `« ${profile.product.name} »`, 'REINSTATED', null, { productId })
+    return profile
+  }
+
+  async withdrawPack(packId: string, reason: string, agentId: string): Promise<PackView> {
     const pack = await this.loadPack(packId)
     if (pack.status === ExportPackStatus.RETIRED) {
       throw terroirError(HttpStatus.CONFLICT, 'EXPORT_PACK_RETIRED', 'Ce pack a été retiré.')
     }
-    const approve = input.decision === 'APPROVE'
-    if (!approve && !input.reason) {
-      throw terroirError(HttpStatus.BAD_REQUEST, 'EXPORT_REASON_REQUIRED', 'Indiquez le motif du refus.')
+    if (pack.status === ExportPackStatus.WITHDRAWN) {
+      throw terroirError(HttpStatus.CONFLICT, 'EXPORT_ALREADY_WITHDRAWN', 'Ce pack est déjà retiré de l’export.')
     }
-    pack.status = approve ? ExportPackStatus.APPROVED : ExportPackStatus.REJECTED
-    pack.rejectionReason = approve ? null : input.reason ?? null
-    pack.reviewedBy = this.em.getReference(User, agentId)
-    pack.reviewedAt = new Date()
+    pack.status = ExportPackStatus.WITHDRAWN
+    pack.withdrawnReason = reason
+    pack.withdrawnBy = this.em.getReference(User, agentId)
+    pack.withdrawnAt = new Date()
     await this.em.flush()
 
-    await this.audit.record({
-      actorUserId: agentId,
-      action: approve ? 'EXPORT_PACK_APPROVED' : 'EXPORT_PACK_REJECTED',
-      targetType: 'export_pack',
-      targetId: pack.id,
-      reason: input.reason ?? undefined,
-    })
-    const owner = pack.supplier ? await this.em.findOne(Supplier, { id: pack.supplier.id }, { populate: ['user'] }) : null
-    if (owner?.user) {
-      await this.notifier.exportReviewed({
-        userId: owner.user.id,
-        subject: `Le pack « ${pack.name} »`,
-        approved: approve,
-        reason: pack.rejectionReason,
-        data: { packId: pack.id },
-      })
+    await this.audit.record({ actorUserId: agentId, action: 'EXPORT_PACK_WITHDRAWN', targetType: 'export_pack', targetId: pack.id, reason })
+    if (pack.supplier) {
+      await this.tellShop(pack.supplier.id, `le pack « ${pack.name} »`, 'WITHDRAWN', reason, { packId: pack.id })
+    }
+    return this.packView(pack)
+  }
+
+  async reinstatePack(packId: string, agentId: string): Promise<PackView> {
+    const pack = await this.loadPack(packId)
+    if (pack.status !== ExportPackStatus.WITHDRAWN) {
+      throw terroirError(HttpStatus.CONFLICT, 'EXPORT_NOT_WITHDRAWN', 'Ce pack n’est pas retiré de l’export.')
+    }
+    pack.status = ExportPackStatus.INCOMPLETE
+    await this.criteria.refreshPacks([pack])
+
+    await this.audit.record({ actorUserId: agentId, action: 'EXPORT_PACK_REINSTATED', targetType: 'export_pack', targetId: pack.id })
+    if (pack.supplier) {
+      await this.tellShop(pack.supplier.id, `le pack « ${pack.name} »`, 'REINSTATED', null, { packId: pack.id })
     }
     return this.packView(pack)
   }
@@ -257,10 +261,24 @@ export class ExportCatalogService {
     return this.packViews(packs)
   }
 
+  /** The back office's packs: eBio's own, or every pack, newest first. */
+  async listPacksForAdmin(query: AdminExportPacksQuery): Promise<PackView[]> {
+    const where: Record<string, unknown> = {}
+    if (query.scope === 'ebio') {
+      where.supplier = null
+    }
+    if (query.status) {
+      where.status = query.status
+    }
+    const packs = await this.em.find(ExportPack, where, { orderBy: { createdAt: 'DESC' } })
+    return this.packViews(packs)
+  }
+
   /**
-   * A shop composes from its own products only (EXPORT_PACK_FOREIGN_PRODUCT)
-   * and waits for eBio; eBio composes across shops and its pack is live at
-   * once. Every product must have asked for export.
+   * A shop composes from its own products only (EXPORT_PACK_FOREIGN_PRODUCT);
+   * eBio composes across shops. Every product must have an export profile
+   * not withdrawn; the pack is exportable at once when every product is and
+   * it has a name, a price and a photo.
    */
   async createPack(supplierId: string | null, input: ExportPackInput, actorUserId: string): Promise<PackView> {
     const pack = this.em.create(ExportPack, {
@@ -269,19 +287,17 @@ export class ExportCatalogService {
       description: input.description ?? null,
       photos: input.photos,
       price: String(input.price),
-      status: supplierId ? ExportPackStatus.PENDING : ExportPackStatus.APPROVED,
-      reviewedBy: supplierId ? null : this.em.getReference(User, actorUserId),
-      reviewedAt: supplierId ? null : new Date(),
     })
     await this.setItems(pack, supplierId, input.items)
     await this.em.flush()
+    await this.criteria.refreshPacks([pack])
     if (!supplierId) {
       await this.audit.record({ actorUserId, action: 'EXPORT_PACK_CREATED', targetType: 'export_pack', targetId: pack.id, payload: { name: pack.name, price: input.price } })
     }
     return this.packView(await this.loadPack(pack.id))
   }
 
-  /** A shop's change goes back to eBio; eBio's own pack stays live. */
+  /** Any change recomputes the pack's status; a withdrawal stays. */
   async updatePack(supplierId: string | null, packId: string, input: UpdateExportPack, actorUserId: string): Promise<PackView> {
     const pack = await this.loadPack(packId)
     if ((pack.supplier?.id ?? null) !== supplierId) {
@@ -305,11 +321,8 @@ export class ExportCatalogService {
     if (input.items !== undefined) {
       await this.setItems(pack, supplierId, input.items)
     }
-    if (supplierId) {
-      pack.status = ExportPackStatus.PENDING
-      pack.rejectionReason = null
-    }
     await this.em.flush()
+    await this.criteria.refreshPacks([pack])
     if (!supplierId) {
       await this.audit.record({ actorUserId, action: 'EXPORT_PACK_UPDATED', targetType: 'export_pack', targetId: pack.id, payload: { ...input } })
     }
@@ -335,18 +348,18 @@ export class ExportCatalogService {
   }
 
   /**
-   * A pack can be ordered while it is approved and every product is approved
-   * for export, on sale, approved by moderation and in stock for the pack
+   * A pack can be ordered while it is exportable and every product is
+   * exportable, on sale, approved by moderation and in stock for the pack
    * (FR-006).
    */
   isPackOrderable(pack: ExportPack, profiles: Map<string, ExportProfileStatus>): boolean {
-    if (pack.status !== ExportPackStatus.APPROVED || pack.items.length === 0) {
+    if (pack.status !== ExportPackStatus.EXPORTABLE || pack.items.length === 0) {
       return false
     }
     return pack.items.getItems().every((item) => {
       const product = item.product
       const stock = item.variant && !item.variant.packSize ? item.variant.stock : product.stock
-      return profiles.get(product.id) === ExportProfileStatus.APPROVED
+      return profiles.get(product.id) === ExportProfileStatus.EXPORTABLE
         && product.status === ProductStatus.ACTIVE
         && product.moderationStatus === ProductModeration.APPROVED
         && stock >= (item.variant && !item.variant.packSize ? item.quantity : unitsDrawn(item))
@@ -370,7 +383,7 @@ export class ExportCatalogService {
     }
     const profiles = await this.em.find(
       ExportProfile,
-      { status: ExportProfileStatus.APPROVED, product },
+      { status: ExportProfileStatus.EXPORTABLE, product },
       {
         populate: ['product', 'product.supplier', 'product.category'],
         orderBy: { product: { name: 'ASC' } },
@@ -383,7 +396,7 @@ export class ExportCatalogService {
     let packs: PackView[] = []
     const packWeights = new Map<string, number>()
     if (filters.page === 1) {
-      const where: Record<string, unknown> = { status: ExportPackStatus.APPROVED }
+      const where: Record<string, unknown> = { status: ExportPackStatus.EXPORTABLE }
       if (filters.search) {
         where.name = { $ilike: `%${filters.search.replace(/[%_\\]/g, '')}%` }
       }
@@ -401,7 +414,7 @@ export class ExportCatalogService {
   async clientProduct(productId: string): Promise<{ profile: ExportProfile, variants: ProductVariant[] }> {
     const profile = await this.em.findOne(
       ExportProfile,
-      { product: { id: productId, ...sellableProductFilter(), stock: { $gte: 0 } }, status: ExportProfileStatus.APPROVED },
+      { product: { id: productId, ...sellableProductFilter(), stock: { $gte: 0 } }, status: ExportProfileStatus.EXPORTABLE },
       { populate: ['product', 'product.supplier', 'product.category'] },
     )
     if (!profile) {
@@ -411,10 +424,10 @@ export class ExportCatalogService {
     return { profile, variants }
   }
 
-  /** A pack's terroir page; 404 unless approved. Orderable or not, it says which. */
+  /** A pack's terroir page; 404 unless exportable. Orderable or not, it says which. */
   async clientPack(packId: string): Promise<ClientPackView> {
     const pack = await this.loadPack(packId)
-    if (pack.status !== ExportPackStatus.APPROVED) {
+    if (pack.status !== ExportPackStatus.EXPORTABLE) {
       throw packNotFound()
     }
     const view = await this.packView(pack)
@@ -442,7 +455,7 @@ export class ExportCatalogService {
     }
     return this.em.find(
       ExportProfile,
-      { status: ExportProfileStatus.APPROVED, packedWeightG: { $lte: marginG }, product },
+      { status: ExportProfileStatus.EXPORTABLE, packedWeightG: { $lte: marginG }, product },
       { populate: ['product', 'product.supplier'], orderBy: { packedWeightG: 'DESC' }, limit },
     )
   }
@@ -497,7 +510,7 @@ export class ExportCatalogService {
     const products = await this.em.find(Product, { id: { $in: productIds } }, { populate: ['supplier'] })
     const byId = new Map(products.map(product => [product.id, product]))
     const profiles = await this.em.find(ExportProfile, { product: { $in: productIds } })
-    const asked = new Set(profiles.filter(profile => profile.status !== ExportProfileStatus.REJECTED).map(profile => profile.product.id))
+    const asked = new Set(profiles.filter(profile => profile.status !== ExportProfileStatus.WITHDRAWN).map(profile => profile.product.id))
 
     const seen = new Set<string>()
     for (const item of items) {
@@ -558,11 +571,18 @@ export class ExportCatalogService {
     }))
   }
 
-  private differs(profile: ExportProfile, values: Partial<ExportProfile>): boolean {
-    return (Object.keys(values) as Array<keyof ExportProfile>).some((key) => {
-      const before = profile[key]
-      const after = values[key]
-      return JSON.stringify(before ?? null) !== JSON.stringify(after ?? null)
-    })
+  private async adminProfile(productId: string): Promise<ExportProfile> {
+    const profile = await this.em.findOne(ExportProfile, { product: productId }, { populate: ['product', 'product.supplier', 'product.category'] })
+    if (!profile) {
+      throw terroirError(HttpStatus.NOT_FOUND, 'EXPORT_PROFILE_NOT_FOUND', 'Ce produit n’a pas de profil d’export.')
+    }
+    return profile
+  }
+
+  private async tellShop(supplierId: string, subject: string, news: 'WITHDRAWN' | 'REINSTATED', reason: string | null, data: Record<string, unknown>): Promise<void> {
+    const shop = await this.em.findOne(Supplier, { id: supplierId }, { populate: ['user'] })
+    if (shop?.user) {
+      await this.criteria.notify({ userId: shop.user.id, subject, news, reason, data })
+    }
   }
 }

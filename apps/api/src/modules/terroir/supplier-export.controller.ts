@@ -1,6 +1,7 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
-import type { ExportPackInput, ExportPackResponse, ExportProfileInput, ExportProfileResponse, UpdateExportPack } from './contracts/terroir.contract'
+import type { ExportCriteriaGuide, ExportPackInput, ExportPackResponse, ExportProfileInput, ExportProfileResponse, UpdateExportPack } from './contracts/terroir.contract'
 import { TypedBody } from '@lonestone/nzoth/server'
+import { EntityManager } from '@mikro-orm/postgresql'
 import { Controller, Delete, ForbiddenException, Get, Param, ParseUUIDPipe, Patch, Post, Put, UseGuards } from '@nestjs/common'
 import { CanUpdate } from '../../common/decorators/check-permissions.decorator'
 import { ActiveSupplierGuard } from '../../common/guards/active-supplier.guard'
@@ -10,9 +11,11 @@ import { AuditService } from '../admin/audit.service'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
+import { Category } from '../products/entities/category.entity'
 import { SuppliersService } from '../suppliers/suppliers.service'
 import { exportPackInputSchema, exportProfileInputSchema, updateExportPackSchema } from './contracts/terroir.contract'
 import { ExportCatalogService } from './export-catalog.service'
+import { ExportCriteriaService } from './export-criteria.service'
 import { TerroirMapper } from './terroir.mapper'
 
 /**
@@ -30,9 +33,22 @@ export class SupplierExportController {
     private readonly suppliers: SuppliersService,
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly audit: AuditService,
+    private readonly criteria: ExportCriteriaService,
+    private readonly em: EntityManager,
   ) {}
 
-  /** The current export request of a product; null when none was made. */
+  /** The supplier guide: today's thresholds, the banned categories, every criterion with its hint. */
+  @CanUpdate('Product')
+  @Get('export-criteria')
+  async exportCriteria(): Promise<ExportCriteriaGuide> {
+    const settings = await this.criteria.settings()
+    const banned = settings.bannedCategoryIds.length === 0
+      ? []
+      : await this.em.find(Category, { id: { $in: settings.bannedCategoryIds } }, { orderBy: { name: 'ASC' } })
+    return TerroirMapper.toCriteriaGuide(settings, banned.map(category => ({ slug: category.slug, name: category.name })))
+  }
+
+  /** A product's export profile, its status and criteria; null when none was made. */
   @CanUpdate('Product')
   @Get('products/:id/export')
   async getProfile(
@@ -42,9 +58,10 @@ export class SupplierExportController {
   ): Promise<ExportProfileResponse | null> {
     const shop = await this.resolveShop(session, supplierId)
     const profile = await this.catalog.getProfile(shop.id, id)
-    return profile ? TerroirMapper.toProfile(profile) : null
+    return profile ? TerroirMapper.toProfile(profile, await this.criteria.settings()) : null
   }
 
+  /** Saves the profile; the status is recomputed at once (no review), the response says what is missing. */
   @CanUpdate('Product')
   @Put('products/:id/export')
   async upsertProfile(
@@ -56,7 +73,7 @@ export class SupplierExportController {
     const shop = await this.resolveShop(session, supplierId)
     const profile = await this.catalog.upsertProfile(shop.id, id, body)
     this.noteOnBehalf(session, shop, 'EXPORT_PROFILE_SET_ON_BEHALF', 'product', id)
-    return TerroirMapper.toProfile(profile)
+    return TerroirMapper.toProfile(profile, await this.criteria.settings())
   }
 
   @CanUpdate('Product')

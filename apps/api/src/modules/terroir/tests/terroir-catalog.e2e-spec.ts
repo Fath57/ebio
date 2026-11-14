@@ -27,8 +27,8 @@ describe('terroir, catalogue et départs côté client (e2e)', { timeout: 30_000
     const { em, app } = context as { em: EntityManager, app: INestApplication }
     const world = await seedTerroirWorld(app, em)
     const catalog = app.get(ExportCatalogService)
-    const pack = await catalog.createPack(null, { name: 'Pack découverte', photos: [], price: 5000, items: [{ productId: world.shopA.productIds[0], quantity: 2 }] }, world.agentId)
-    await catalog.createPack(null, { name: 'Pack moringa', photos: [], price: 2000, items: [{ productId: world.shopB.productIds[1], quantity: 1 }] }, world.agentId)
+    const pack = await catalog.createPack(null, { name: 'Pack découverte', photos: ['https://media.ebio.app/products/pack.jpg'], price: 5000, items: [{ productId: world.shopA.productIds[0], quantity: 2 }] }, world.agentId)
+    await catalog.createPack(null, { name: 'Pack moringa', photos: ['https://media.ebio.app/products/pack.jpg'], price: 2000, items: [{ productId: world.shopB.productIds[1], quantity: 1 }] }, world.agentId)
     await catalog.removeProfile(world.shopB.supplierId, world.shopB.productIds[1])
     em.clear()
     app.get(EntityManager).clear()
@@ -68,11 +68,11 @@ describe('terroir, catalogue et départs côté client (e2e)', { timeout: 30_000
     const controller = app.get(ProductsController)
 
     const asOwner = await controller.findById({ user: { id: row.user_id } } as never, world.shopA.productIds[0]) as Record<string, unknown>
-    expect(asOwner.exportProfile).toMatchObject({ status: 'APPROVED', packedWeightG: 280, rejectionReason: null })
+    expect(asOwner.exportProfile).toMatchObject({ status: 'EXPORTABLE', packedWeightG: 280, missingCount: 0, withdrawnReason: null })
     const asBuyer = await controller.findById({ user: { id: world.buyerId } } as never, world.shopA.productIds[0]) as Record<string, unknown>
     expect(asBuyer).not.toHaveProperty('exportProfile')
 
     const statuses = await app.get(ProductsService).exportStatusesOf(world.shopA.productIds)
-    expect([...statuses.values()]).toEqual(['APPROVED', 'APPROVED', 'APPROVED'])
+    expect([...statuses.values()]).toEqual(['EXPORTABLE', 'EXPORTABLE', 'EXPORTABLE'])
   })
 })

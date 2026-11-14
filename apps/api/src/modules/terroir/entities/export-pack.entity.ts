@@ -13,7 +13,7 @@ import { ExportPackItem } from './export-pack-item.entity'
 @Entity({ tableName: 'export_packs' })
 @Index({ name: 'export_packs_supplier_idx', properties: ['supplier'] })
 export class ExportPack {
-  [OptionalProps]?: 'id' | 'status' | 'photos' | 'createdAt' | 'updatedAt'
+  [OptionalProps]?: 'id' | 'status' | 'missingCriteria' | 'photos' | 'createdAt' | 'updatedAt'
 
   @PrimaryKey({ type: 'uuid', defaultRaw: 'gen_random_uuid()' })
   id!: string
@@ -35,17 +35,23 @@ export class ExportPack {
   @Property({ columnType: 'numeric(12,2)' })
   price!: string
 
-  @Enum({ items: () => ExportPackStatus, columnType: 'varchar(10)', default: ExportPackStatus.PENDING })
-  status: ExportPackStatus = ExportPackStatus.PENDING
+  /** Computed from its criteria (every product exportable, name, price, photo); WITHDRAWN and RETIRED stick. */
+  @Enum({ items: () => ExportPackStatus, columnType: 'varchar(10)', default: ExportPackStatus.INCOMPLETE })
+  status: ExportPackStatus = ExportPackStatus.INCOMPLETE
 
-  @Property({ fieldName: 'rejection_reason', type: 'string', length: 500, nullable: true })
-  rejectionReason?: string | null
+  /** Keys of the pack criteria not met at the last computation. */
+  @Property({ fieldName: 'missing_criteria', type: 'json', columnType: 'jsonb', default: '[]' })
+  missingCriteria: string[] = []
 
-  @ManyToOne(() => User, { fieldName: 'reviewed_by', nullable: true })
-  reviewedBy?: Rel<User> | null
+  /** eBio's reason, sent to the shop; kept after a reinstatement for the record. */
+  @Property({ fieldName: 'withdrawn_reason', type: 'string', length: 500, nullable: true })
+  withdrawnReason?: string | null
 
-  @Property({ fieldName: 'reviewed_at', type: 'Date', nullable: true })
-  reviewedAt?: Date | null
+  @ManyToOne(() => User, { fieldName: 'withdrawn_by', nullable: true })
+  withdrawnBy?: Rel<User> | null
+
+  @Property({ fieldName: 'withdrawn_at', type: 'Date', nullable: true })
+  withdrawnAt?: Date | null
 
   @OneToMany(() => ExportPackItem, item => item.pack, { orphanRemoval: true })
   items = new Collection<ExportPackItem>(this)

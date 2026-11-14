@@ -1,5 +1,6 @@
 import type { EntityManager } from '@mikro-orm/postgresql'
 import type { INestApplication } from '@nestjs/common'
+import type { ExportProfileInput } from '../contracts/terroir.contract'
 import { randomBytes } from 'node:crypto'
 import { vi } from 'vitest'
 import { SmsService } from '../../../common/sms.service'
@@ -7,7 +8,7 @@ import { createUserData } from '../../../factories/user.factory'
 import { User } from '../../auth/auth.entity'
 import { EmailService } from '../../email/email.service'
 import { Checkout, CheckoutDeliveryMode, CheckoutStatus } from '../../payments/entities/checkout.entity'
-import { ExportReception, ExportShipmentStatus } from '../contracts/terroir.contract'
+import { ExportReception, ExportShipmentStatus, ExportStorage } from '../contracts/terroir.contract'
 import { ExportDeparture } from '../entities/export-departure.entity'
 import { ExportPickupPoint } from '../entities/export-pickup-point.entity'
 import { ExportShipment } from '../entities/export-shipment.entity'
@@ -65,7 +66,30 @@ export interface ShopFixture {
   productIds: string[]
 }
 
-/** A validated shop with products priced 3 000, 2 500 and 1 500 FCFA. */
+/**
+ * An export profile meeting every criterion (with the seeded products'
+ * ingredients and the default settings): exportable as soon as it is saved.
+ */
+export function completeExportProfile(overrides: Partial<ExportProfileInput> = {}): ExportProfileInput {
+  return {
+    packedWeightG: 280,
+    lengthCm: 10,
+    widthCm: 8,
+    heightCm: 6,
+    shelfLifeDays: 365,
+    storage: ExportStorage.AMBIENT,
+    allergens: null,
+    noAllergens: true,
+    origin: { producer: 'Coopérative des femmes de Savè', place: 'Savè, Collines', year: 2026, method: 'Barattage à la main', photos: [] },
+    labelPhoto: 'https://media.ebio.app/products/etiquette.jpg',
+    declaresFrenchLabel: true,
+    declaresDatesPrinted: true,
+    declaresSealedPackaging: true,
+    ...overrides,
+  }
+}
+
+/** A validated shop with products priced 3 000, 2 500 and 1 500 FCFA, ingredients filled. */
 export async function seedShop(em: EntityManager, shopName = 'Karité Fatou'): Promise<ShopFixture> {
   const db = em.getConnection()
   const userId = (await createUserData(em, { name: shopName })).id
@@ -83,9 +107,9 @@ export async function seedShop(em: EntityManager, shopName = 'Karité Fatou'): P
   const productIds: string[] = []
   for (const [name, price] of [['Beurre de karité', 3000], ['Moringa 100 g', 2500], ['Gari fin', 1500]] as const) {
     const [product] = await db.execute(
-      `INSERT INTO products (supplier_id, category_id, name, price_per_unit, unit, stock, status, "createdAt", "updatedAt")
-       VALUES (?, ?, ?, ?, 'PIECE', 50, 'ACTIVE', NOW(), NOW()) RETURNING id`,
-      [shop.id, category.id, `${name}, ${shopName}`, price],
+      `INSERT INTO products (supplier_id, category_id, name, price_per_unit, unit, stock, status, ingredients, "createdAt", "updatedAt")
+       VALUES (?, ?, ?, ?, 'PIECE', 50, 'ACTIVE', ?, NOW(), NOW()) RETURNING id`,
+      [shop.id, category.id, `${name}, ${shopName}`, price, name],
     ) as Array<{ id: string }>
     productIds.push(product.id)
   }

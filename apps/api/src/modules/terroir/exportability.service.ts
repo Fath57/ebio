@@ -43,19 +43,21 @@ const TEXTS: Record<ExportabilityStatus, { label: string, reason: string | null 
   [ExportabilityStatus.UNAVAILABLE]: { label: 'Indisponible', reason: 'Ce produit n’est plus disponible pour le moment.' },
 }
 
-/** Banned category first, then the shop's request and eBio's answer, then today's availability. */
+/**
+ * Banned category first, then the export profile, then today's availability.
+ * An incomplete profile reads as never offered (the buyer has nothing to wait
+ * for); eBio's withdrawal keeps the buyer-facing REJECTED. PENDING is no
+ * longer produced since the validation became automatic.
+ */
 function statusOf(row: ExportabilityRow, banned: Set<string>): ExportabilityStatus {
   if (banned.has(row.category_id)) {
     return ExportabilityStatus.BANNED_CATEGORY
   }
-  if (!row.profile_status) {
-    return ExportabilityStatus.NOT_REQUESTED
-  }
-  if (row.profile_status === ExportProfileStatus.PENDING) {
-    return ExportabilityStatus.PENDING
-  }
-  if (row.profile_status === ExportProfileStatus.REJECTED) {
+  if (row.profile_status === ExportProfileStatus.WITHDRAWN) {
     return ExportabilityStatus.REJECTED
+  }
+  if (row.profile_status !== ExportProfileStatus.EXPORTABLE) {
+    return ExportabilityStatus.NOT_REQUESTED
   }
   // Same rule as the terroir catalogue: on sale, in stock, from a live shop.
   const onSale = row.status === ProductStatus.ACTIVE

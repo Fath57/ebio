@@ -158,14 +158,6 @@ export class TerroirNotifierService {
     }
   }
 
-  /** The shop learns eBio's answer on a product or a pack it submitted. */
-  async exportReviewed(input: { userId: string, subject: string, approved: boolean, reason?: string | null, data: Record<string, unknown> }): Promise<void> {
-    const body = input.approved
-      ? `${input.subject} est validé pour l'export : il est visible par les clients à l'étranger.`
-      : `${input.subject} n'est pas validé pour l'export${input.reason ? ` : ${input.reason}` : '.'}`
-    await this.push(input.userId, NotificationType.EXPORT_PRODUCT_REVIEWED, input.approved ? 'Export validé' : 'Export refusé', body, input.data)
-  }
-
   /** A parcel moved to another departure after a cancellation (FR-023). */
   async shipmentReassigned(input: { buyerId: string, shipmentId: string, departsOn: string, arrivalFrom: string, arrivalTo: string }): Promise<void> {
     const body = `Le départ de votre colis a changé : il partira le ${spokenDay(input.departsOn)}, arrivée estimée entre le ${spokenDay(input.arrivalFrom)} et le ${spokenDay(input.arrivalTo)}. Aucun supplément ne vous est demandé.`

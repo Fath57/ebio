@@ -9,12 +9,10 @@ import { PlatformSettingsService } from '../../settings/platform-settings.servic
 import { WalletTransactionType } from '../../wallet/entities/wallet-transaction.entity'
 import { PlatformAccount } from '../../wallet/entities/wallet.entity'
 import { WalletService } from '../../wallet/wallet.service'
-import { EXPORT_CHECKLIST_KEYS, ExportReception } from '../contracts/terroir.contract'
+import { ExportReception } from '../contracts/terroir.contract'
 import { ExportCatalogService } from '../export-catalog.service'
 import { ExportLogisticsService } from '../export-logistics.service'
-import { dayFromNow, instantFromNow, muteOutbound, seedExportCountries, seedShop } from './terroir.fixture'
-
-const FULL_CHECKLIST = Object.fromEntries(EXPORT_CHECKLIST_KEYS.map(key => [key, true]))
+import { completeExportProfile, dayFromNow, instantFromNow, muteOutbound, seedExportCountries, seedShop } from './terroir.fixture'
 
 export interface TerroirWorld {
   agentId: string
@@ -29,16 +27,15 @@ export interface TerroirWorld {
   departureId: string
 }
 
-/** Approves a product for export at `weightG` per unit, with an origin (badge). */
-export async function approveForExport(app: INestApplication, supplierId: string, productId: string, agentId: string, weightG: number): Promise<void> {
-  const catalog = app.get(ExportCatalogService)
-  await catalog.upsertProfile(supplierId, productId, {
+/**
+ * Makes a product exportable at `weightG` per unit, with an origin (badge):
+ * a profile meeting every criterion, exportable at once (no review).
+ */
+export async function approveForExport(app: INestApplication, supplierId: string, productId: string, _agentId: string, weightG: number): Promise<void> {
+  await app.get(ExportCatalogService).upsertProfile(supplierId, productId, completeExportProfile({
     packedWeightG: weightG,
-    shelfLifeDays: 365,
     origin: { producer: 'Coopérative de Savè', place: 'Savè', photos: [] },
-    labelPhoto: 'https://media.ebio.app/products/etiquette.jpg',
-  })
-  await catalog.review(productId, { decision: 'APPROVE', checklist: FULL_CHECKLIST }, agentId)
+  }))
 }
 
 export async function seedDeparture(app: INestApplication, agentId: string, agencyId: string, overrides: { capacityKg?: number | null, beHomeFee?: number | null } = {}): Promise<string> {

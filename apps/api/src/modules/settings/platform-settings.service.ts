@@ -46,6 +46,8 @@ export const EXPORT_INSURANCE_RATE_BPS_KEY = 'export_insurance_rate_bps'
 export const EXPORT_INSURANCE_MIN_KEY = 'export_insurance_min'
 export const EXPORT_BANNED_CATEGORY_IDS_KEY = 'export_banned_category_ids'
 export const EXPORT_PICKUP_REMINDER_DAYS_KEY = 'export_pickup_reminder_days'
+export const EXPORT_MIN_SHELF_LIFE_DAYS_KEY = 'export_min_shelf_life_days'
+export const EXPORT_MAX_UNIT_WEIGHT_G_KEY = 'export_max_unit_weight_g'
 
 /** Exchange rates as read: EUR always present, USD and CAD once downloaded or entered. */
 export type ResolvedExchangeRates = ExchangeRates & { EUR: ExchangeRate }
@@ -235,6 +237,10 @@ export interface TerroirExportSettings {
   bannedCategoryIds: string[]
   /** Days a parcel waits at the pickup point before the buyer is reminded. */
   pickupReminderDays: number
+  /** Export criterion: a product keeps at least this many days. */
+  minShelfLifeDays: number
+  /** Export criterion: one packed unit weighs at most this, in grams. */
+  maxUnitWeightG: number
 }
 
 export const DEFAULT_TERROIR_EXPORT_SETTINGS: TerroirExportSettings = {
@@ -246,6 +252,8 @@ export const DEFAULT_TERROIR_EXPORT_SETTINGS: TerroirExportSettings = {
   insuranceMin: 1000,
   bannedCategoryIds: [],
   pickupReminderDays: 14,
+  minShelfLifeDays: 90,
+  maxUnitWeightG: 5_000,
 }
 
 /** Bounds of each numeric terroir setting: [min, max]. */
@@ -256,7 +264,12 @@ export const TERROIR_EXPORT_BOUNDS = {
   insuranceRateBps: [0, 5_000],
   insuranceMin: [0, 1_000_000],
   pickupReminderDays: [1, 90],
+  minShelfLifeDays: [1, 3_650],
+  maxUnitWeightG: [100, 50_000],
 } as const
+
+/** Called once terroir settings were written, e.g. to recompute the export statuses. */
+export type TerroirExportSettingsListener = (settings: TerroirExportSettings) => Promise<void>
 
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -266,6 +279,7 @@ const CACHE_TTL_MS = 60_000
 @Injectable()
 export class PlatformSettingsService {
   private cache = new Map<string, { value: string | null, expiresAt: number }>()
+  private readonly terroirListeners: TerroirExportSettingsListener[] = []
 
   constructor(private readonly em: EntityManager) {}
 
@@ -606,7 +620,17 @@ export class PlatformSettingsService {
       insuranceMin: await this.readInteger(EXPORT_INSURANCE_MIN_KEY, defaults.insuranceMin, ...bounds.insuranceMin),
       bannedCategoryIds: await this.readBannedCategoryIds(),
       pickupReminderDays: await this.readInteger(EXPORT_PICKUP_REMINDER_DAYS_KEY, defaults.pickupReminderDays, ...bounds.pickupReminderDays),
+      minShelfLifeDays: await this.readInteger(EXPORT_MIN_SHELF_LIFE_DAYS_KEY, defaults.minShelfLifeDays, ...bounds.minShelfLifeDays),
+      maxUnitWeightG: await this.readInteger(EXPORT_MAX_UNIT_WEIGHT_G_KEY, defaults.maxUnitWeightG, ...bounds.maxUnitWeightG),
     }
+  }
+
+  /**
+   * The terroir module registers here the export statuses' recomputation: the
+   * settings module cannot depend on it (terroir depends on settings).
+   */
+  onTerroirExportSettingsChanged(listener: TerroirExportSettingsListener): void {
+    this.terroirListeners.push(listener)
   }
 
   /** Writes only the settings sent; each one is checked before anything is written. */
@@ -619,6 +643,8 @@ export class PlatformSettingsService {
       ['insuranceRateBps', EXPORT_INSURANCE_RATE_BPS_KEY, 'Le taux d\'assurance doit être compris entre 0 et 50 %'],
       ['insuranceMin', EXPORT_INSURANCE_MIN_KEY, 'Le minimum d\'assurance doit être compris entre 0 et 1 000 000 FCFA'],
       ['pickupReminderDays', EXPORT_PICKUP_REMINDER_DAYS_KEY, 'Le rappel de retrait doit tomber entre 1 et 90 jours'],
+      ['minShelfLifeDays', EXPORT_MIN_SHELF_LIFE_DAYS_KEY, 'La conservation minimale doit être comprise entre 1 et 3 650 jours'],
+      ['maxUnitWeightG', EXPORT_MAX_UNIT_WEIGHT_G_KEY, 'Le poids maximal d\'une unité doit être compris entre 100 et 50 000 g'],
     ]
     for (const [field, message] of integers) {
       const value = input[field]
@@ -643,7 +669,14 @@ export class PlatformSettingsService {
     if (banned !== undefined) {
       await this.set(EXPORT_BANNED_CATEGORY_IDS_KEY, JSON.stringify([...new Set(banned)]))
     }
-    return this.getTerroirExportSettings()
+    const settings = await this.getTerroirExportSettings()
+    const criteriaChanged = banned !== undefined || input.minShelfLifeDays !== undefined || input.maxUnitWeightG !== undefined
+    if (criteriaChanged) {
+      for (const listener of this.terroirListeners) {
+        await listener(settings)
+      }
+    }
+    return settings
   }
 
   private async readBannedCategoryIds(): Promise<string[]> {

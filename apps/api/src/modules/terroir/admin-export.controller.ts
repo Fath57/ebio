@@ -1,5 +1,9 @@
 import type { LoggedInBetterAuthSession } from '../../config/better-auth.config'
 import type {
+  AdminExportPacksQuery,
+  AdminExportProduct,
+  AdminExportProductsQuery,
+  AdminExportProductsResponse,
   CancelExportDeparture,
   CancelExportDepartureResult,
   CollectExportShipment,
@@ -18,14 +22,10 @@ import type {
   ExportPackResponse,
   ExportPickupPointInput,
   ExportPickupPointResponse,
-  ExportProfileResponse,
-  ExportReviewsQuery,
-  ExportReviewsResponse,
   ExportShipmentEventInput,
+  ExportWithdraw,
   LostExportShipment,
   MissingExportItem,
-  ReviewExportPack,
-  ReviewExportProduct,
   UpdateExportAgency,
   UpdateExportCountry,
   UpdateExportDeparture,
@@ -42,6 +42,8 @@ import { RolesGuard } from '../../common/guards/roles.guard'
 import { Session } from '../auth/auth.decorator'
 import { AuthGuard } from '../auth/auth.guard'
 import {
+  adminExportPacksQuerySchema,
+  adminExportProductsQuerySchema,
   cancelExportDepartureSchema,
   collectExportShipmentSchema,
   createExportDepartureSchema,
@@ -51,12 +53,10 @@ import {
   exportDeparturesQuerySchema,
   exportPackInputSchema,
   exportPickupPointInputSchema,
-  exportReviewsQuerySchema,
   exportShipmentEventInputSchema,
+  exportWithdrawSchema,
   lostExportShipmentSchema,
   missingExportItemSchema,
-  reviewExportPackSchema,
-  reviewExportProductSchema,
   updateExportAgencySchema,
   updateExportCountrySchema,
   updateExportDepartureSchema,
@@ -66,13 +66,15 @@ import {
 } from './contracts/terroir.contract'
 import { ExportCatalogService } from './export-catalog.service'
 import { ExportCountriesService } from './export-countries.service'
+import { ExportCriteriaService } from './export-criteria.service'
 import { ExportLogisticsService } from './export-logistics.service'
 import { ExportShipmentsService } from './export-shipments.service'
 import { TerroirMapper } from './terroir.mapper'
 
 /**
  * Terroir export in the back office (011, contracts §5): agencies, pickup
- * points, departures, product and pack reviews, eBio's own packs. Not behind
+ * points, departures, the watch over exportable products and packs
+ * (withdraw, reinstate: validation itself is automatic), eBio's own packs. Not behind
  * the platform switch: eBio prepares the opening with the module closed.
  */
 @Controller('admin/export')
@@ -84,6 +86,7 @@ export class AdminExportController {
     private readonly catalog: ExportCatalogService,
     private readonly shipments: ExportShipmentsService,
     private readonly countries: ExportCountriesService,
+    private readonly criteria: ExportCriteriaService,
   ) {}
 
   // ===== DESTINATION COUNTRIES =====
@@ -306,40 +309,69 @@ export class AdminExportController {
     return TerroirMapper.toAdminShipment(await this.shipments.lost(id, body.damaged, session.user.id))
   }
 
-  // ===== REVIEWS =====
+  // ===== EXPORT WATCH =====
 
+  /** Products offered for export, every status, with what each one misses. */
   @CanRead('Product')
-  @Get('reviews')
-  async reviews(@TypedQueryObject(exportReviewsQuerySchema) query: ExportReviewsQuery): Promise<ExportReviewsResponse> {
-    return TerroirMapper.toReviews(await this.catalog.reviewQueue(query.status))
+  @Get('products')
+  async listProducts(@TypedQueryObject(adminExportProductsQuerySchema) query: AdminExportProductsQuery): Promise<AdminExportProductsResponse> {
+    const [page, thresholds] = await Promise.all([this.catalog.listForAdmin(query), this.criteria.settings()])
+    return TerroirMapper.toAdminExportProducts(page, thresholds)
   }
 
+  /** Takes a product off the export whatever its criteria; the shop gets the reason. */
   @CanManage('Product')
-  @Post('products/:id/review')
-  async reviewProduct(
-    @Param('id', ParseUUIDPipe) id: string,
-    @TypedBody(reviewExportProductSchema) body: ReviewExportProduct,
+  @Post('products/:productId/withdraw')
+  @HttpCode(HttpStatus.OK)
+  async withdrawProduct(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @TypedBody(exportWithdrawSchema) body: ExportWithdraw,
     @Session() session: LoggedInBetterAuthSession,
-  ): Promise<ExportProfileResponse> {
-    return TerroirMapper.toProfile(await this.catalog.review(id, body, session.user.id))
+  ): Promise<AdminExportProduct> {
+    const profile = await this.catalog.withdraw(productId, body.reason, session.user.id)
+    return TerroirMapper.toAdminExportProduct(profile, await this.criteria.settings())
+  }
+
+  /** Lifts the withdrawal: exportable again at once if every criterion is met. */
+  @CanManage('Product')
+  @Post('products/:productId/reinstate')
+  @HttpCode(HttpStatus.OK)
+  async reinstateProduct(
+    @Param('productId', ParseUUIDPipe) productId: string,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<AdminExportProduct> {
+    const profile = await this.catalog.reinstate(productId, session.user.id)
+    return TerroirMapper.toAdminExportProduct(profile, await this.criteria.settings())
   }
 
   @CanManage('Product')
-  @Post('packs/:id/review')
-  async reviewPack(
+  @Post('packs/:id/withdraw')
+  @HttpCode(HttpStatus.OK)
+  async withdrawPack(
     @Param('id', ParseUUIDPipe) id: string,
-    @TypedBody(reviewExportPackSchema) body: ReviewExportPack,
+    @TypedBody(exportWithdrawSchema) body: ExportWithdraw,
     @Session() session: LoggedInBetterAuthSession,
   ): Promise<ExportPackResponse> {
-    return TerroirMapper.toPack(await this.catalog.reviewPack(id, body, session.user.id))
+    return TerroirMapper.toPack(await this.catalog.withdrawPack(id, body.reason, session.user.id))
+  }
+
+  @CanManage('Product')
+  @Post('packs/:id/reinstate')
+  @HttpCode(HttpStatus.OK)
+  async reinstatePack(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Session() session: LoggedInBetterAuthSession,
+  ): Promise<ExportPackResponse> {
+    return TerroirMapper.toPack(await this.catalog.reinstatePack(id, session.user.id))
   }
 
   // ===== EBIO PACKS =====
 
+  /** eBio's own packs; `?scope=all` adds the shops' packs (export watch), `?status=` filters. */
   @CanRead('Product')
   @Get('packs')
-  async listPacks(): Promise<ExportPackResponse[]> {
-    return (await this.catalog.listPacks(null)).map(TerroirMapper.toPack)
+  async listPacks(@TypedQueryObject(adminExportPacksQuerySchema) query: AdminExportPacksQuery): Promise<ExportPackResponse[]> {
+    return (await this.catalog.listPacksForAdmin(query)).map(TerroirMapper.toPack)
   }
 
   @CanRead('Product')

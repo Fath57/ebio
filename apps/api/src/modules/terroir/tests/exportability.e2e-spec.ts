@@ -11,7 +11,7 @@ import { ExportCatalogService } from '../export-catalog.service'
 import { TerroirClientController } from '../terroir-client.controller'
 import { TerroirModule } from '../terroir.module'
 import { approveForExport, seedTerroirWorld } from './terroir-checkout.fixture'
-import { refusalOf, seedShop } from './terroir.fixture'
+import { completeExportProfile, refusalOf, seedShop } from './terroir.fixture'
 
 interface Context { em: EntityManager, app: INestApplication }
 
@@ -39,12 +39,12 @@ describe('terroir, exportabilité des produits du catalogue (e2e)', { timeout: 6
     const world = await seedTerroirWorld(ctx.app, ctx.em)
     const catalog = ctx.app.get(ExportCatalogService)
     const [exportable, unavailable, ofSuspendedShop] = world.shopA.productIds
-    const [pending, notRequested, rejected] = world.shopB.productIds
+    const [incomplete, notRequested, rejected] = world.shopB.productIds
 
-    // PENDING: a new weight sends the approval back to eBio.
-    await catalog.upsertProfile(world.shopB.supplierId, pending, { packedWeightG: 300, shelfLifeDays: 365, origin: { photos: [] }, labelPhoto: null })
+    // INCOMPLETE: the label photo is gone, the buyer reads it as not offered.
+    await catalog.upsertProfile(world.shopB.supplierId, incomplete, completeExportProfile({ packedWeightG: 300, labelPhoto: null }))
     await catalog.removeProfile(world.shopB.supplierId, notRequested)
-    await catalog.review(rejected, { decision: 'REJECT', checklist: {}, reason: 'Note interne : étiquette illisible' }, world.agentId)
+    await catalog.withdraw(rejected, 'Note interne : étiquette illisible', world.agentId)
     await ctx.em.getConnection().execute(`UPDATE products SET stock = 0 WHERE id = ?`, [unavailable])
 
     // BANNED_CATEGORY wins over an approved profile.
@@ -55,7 +55,7 @@ describe('terroir, exportabilité des produits du catalogue (e2e)', { timeout: 6
 
     const controller = ctx.app.get(TerroirClientController)
     const unknown = randomUUID()
-    const ids = [exportable, unavailable, pending, notRequested, rejected, tea.productIds[0], unknown, tea.productIds[1]]
+    const ids = [exportable, unavailable, incomplete, notRequested, rejected, tea.productIds[0], unknown, tea.productIds[1]]
     const response = await controller.getExportability({ country: 'fr', productIds: ids.join(',') })
 
     expect(response.country).toBe('FR')
@@ -63,7 +63,7 @@ describe('terroir, exportabilité des produits du catalogue (e2e)', { timeout: 6
     const byId = new Map(response.items.map(item => [item.productId, item]))
     expect(byId.get(exportable)).toEqual({ productId: exportable, status: 'EXPORTABLE', label: 'Exportable', reason: null, packedWeightG: 280 })
     expect(byId.get(unavailable)).toEqual({ productId: unavailable, status: 'UNAVAILABLE', label: 'Indisponible', reason: 'Ce produit n’est plus disponible pour le moment.', packedWeightG: null })
-    expect(byId.get(pending)).toMatchObject({ status: 'PENDING', label: 'Bientôt exportable', reason: 'eBio vérifie ce produit pour l’export.', packedWeightG: null })
+    expect(byId.get(incomplete)).toMatchObject({ status: 'NOT_REQUESTED', label: 'Non exportable', reason: 'Cette boutique ne propose pas encore ce produit à l’export.', packedWeightG: null })
     expect(byId.get(notRequested)).toMatchObject({ status: 'NOT_REQUESTED', label: 'Non exportable', reason: 'Cette boutique ne propose pas encore ce produit à l’export.' })
     expect(byId.get(rejected)).toMatchObject({ status: 'REJECTED', label: 'Non exportable', reason: 'Ce produit ne peut pas voyager (contrôle eBio).' })
     expect(JSON.stringify(response)).not.toContain('Note interne')

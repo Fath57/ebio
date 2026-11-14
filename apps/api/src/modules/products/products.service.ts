@@ -12,6 +12,7 @@ import { NotificationsService } from '../notifications/notifications.service'
 import { Supplier } from '../suppliers/supplier.entity'
 import { ExportProfileStatus } from '../terroir/contracts/terroir.contract'
 import { ExportProfile } from '../terroir/entities/export-profile.entity'
+import { ExportCriteriaService } from '../terroir/export-criteria.service'
 import { CertificationsService } from './certifications.service'
 import { Category } from './entities/category.entity'
 import { ProductVariant } from './entities/product-variant.entity'
@@ -27,6 +28,7 @@ export class ProductsService {
     private readonly productUnitsService: ProductUnitsService,
     private readonly certificationsService: CertificationsService,
     private readonly moderation: ProductModerationService,
+    private readonly exportCriteria: ExportCriteriaService,
   ) {}
 
   async create(supplierId: string, data: CreateProduct): Promise<Product> {
@@ -176,9 +178,9 @@ export class ProductsService {
 
   async update(productId: string, supplierId: string, data: UpdateProduct): Promise<Product> {
     const product = await this.findByIdAndVerifyOwnership(productId, supplierId)
-    // What an export approval vouched for (011, FR-002): the composition as
-    // printed on the label. A real change sends the export back to eBio.
-    const compositionBefore = JSON.stringify([product.ingredients ?? null, product.allergens, product.labels, product.conservation ?? null])
+    // What the export criteria read of the sheet (011): the composition and
+    // the category. A change recomputes the export status at once.
+    const exportInputsBefore = JSON.stringify([product.ingredients ?? null, product.allergens, product.category.id])
 
     if (data.name !== undefined)
       product.name = data.name
@@ -296,23 +298,19 @@ export class ProductsService {
 
     await this.em.flush()
 
-    const compositionAfter = JSON.stringify([product.ingredients ?? null, product.allergens, product.labels, product.conservation ?? null])
-    if (compositionAfter !== compositionBefore) {
-      await this.em.nativeUpdate(
-        ExportProfile,
-        { product: product.id, status: { $ne: ExportProfileStatus.PENDING } },
-        { status: ExportProfileStatus.PENDING, rejectionReason: null },
-      )
+    const exportInputsAfter = JSON.stringify([product.ingredients ?? null, product.allergens, product.category.id])
+    if (exportInputsAfter !== exportInputsBefore) {
+      await this.exportCriteria.refreshProducts([product.id])
     }
     return product
   }
 
-  /** The product's export request (011), for its owner's dashboard; null when never asked. */
+  /** The product's export profile (011), for its owner's dashboard; null when never made. */
   async exportProfileOf(productId: string): Promise<ExportProfile | null> {
     return this.em.findOne(ExportProfile, { product: productId })
   }
 
-  /** Export status of each product that asked for it, by product id. */
+  /** Export status of each product that has an export profile, by product id. */
   async exportStatusesOf(productIds: string[]): Promise<Map<string, ExportProfileStatus>> {
     if (productIds.length === 0) {
       return new Map()

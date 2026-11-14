@@ -3,19 +3,31 @@ import { foreignCurrencyEnum } from '../../currency/contracts/currency.contract'
 
 // ===== ENUMS =====
 
-/** eBio's answer on a product a shop asked to export. */
+/**
+ * Where a product a shop offers for export stands, computed from the export
+ * criteria on every save (no manual review). WITHDRAWN is eBio's decision and
+ * stays until eBio reinstates the product.
+ */
 export enum ExportProfileStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
+  EXPORTABLE = 'EXPORTABLE',
+  INCOMPLETE = 'INCOMPLETE',
+  WITHDRAWN = 'WITHDRAWN',
 }
 
 export enum ExportPackStatus {
-  PENDING = 'PENDING',
-  APPROVED = 'APPROVED',
-  REJECTED = 'REJECTED',
+  EXPORTABLE = 'EXPORTABLE',
+  INCOMPLETE = 'INCOMPLETE',
+  /** Taken off the export by eBio, with a reason. */
+  WITHDRAWN = 'WITHDRAWN',
   /** Withdrawn by its author; kept for the orders that quote it. */
   RETIRED = 'RETIRED',
+}
+
+/** How a product keeps: only AMBIENT can travel in the suitcase. */
+export enum ExportStorage {
+  AMBIENT = 'AMBIENT',
+  COOL = 'COOL',
+  FROZEN = 'FROZEN',
 }
 
 export enum ExportDepartureStatus {
@@ -61,8 +73,10 @@ export enum ExportSupplementStatus {
 
 /**
  * Whether a product of the whole catalogue can go in the suitcase (« mode
- * Valise »). BANNED_CATEGORY wins over the profile; UNAVAILABLE is approved
- * but not on sale right now.
+ * Valise »). BANNED_CATEGORY wins over the profile; NOT_REQUESTED covers no
+ * profile and an incomplete one; REJECTED is eBio's withdrawal; UNAVAILABLE is
+ * exportable but not on sale right now. PENDING is no longer produced (export
+ * validation is automatic) and stays for the apps that still know it.
  */
 export enum ExportabilityStatus {
   EXPORTABLE = 'EXPORTABLE',
@@ -73,18 +87,32 @@ export enum ExportabilityStatus {
   UNAVAILABLE = 'UNAVAILABLE',
 }
 
-/** The export checklist (data-model §7): every key must be ticked to approve. */
-export const EXPORT_CHECKLIST_KEYS = [
-  'label_french',
-  'allergens_declared',
-  'dates_present',
-  'shelf_life_sufficient',
-  'ingredients_allowed',
+/** Every criterion a product must meet to be exportable, in the order shown to the shop. */
+export const EXPORT_CRITERION_KEYS = [
+  'category_allowed',
+  'shelf_life',
+  'storage_ambient',
+  'packed_weight',
+  'ingredients',
+  'allergens',
+  'origin',
   'label_photo',
+  'french_label',
+  'dates_printed',
+  'sealed_packaging',
 ] as const
 
-export type ExportChecklistKey = typeof EXPORT_CHECKLIST_KEYS[number]
-export type ExportChecklist = Partial<Record<ExportChecklistKey, boolean>>
+export type ExportCriterionKey = typeof EXPORT_CRITERION_KEYS[number]
+
+/** What a pack needs to be exportable. */
+export const EXPORT_PACK_CRITERION_KEYS = [
+  'products_exportable',
+  'name',
+  'price',
+  'photo',
+] as const
+
+export type ExportPackCriterionKey = typeof EXPORT_PACK_CRITERION_KEYS[number]
 
 /**
  * A destination country, ISO 3166-1 alpha-2. The list is data
@@ -98,13 +126,30 @@ export const exportCountryCodeSchema = z.string().trim().toUpperCase().regex(/^[
 
 export const exportProfileStatusEnum = z.enum(ExportProfileStatus).meta({
   title: 'ExportProfileStatus',
-  description: 'Validation d\'un produit pour l\'export : en attente, validé, refusé',
+  description: 'Export d\'un produit : exportable, incomplet (critères manquants), retiré par eBio',
 })
 
 export const exportPackStatusEnum = z.enum(ExportPackStatus).meta({
   title: 'ExportPackStatus',
-  description: 'Validation d\'un pack du pays',
+  description: 'Export d\'un pack du pays : exportable, incomplet, retiré par eBio, retiré par son auteur',
 })
+
+export const exportStorageEnum = z.enum(ExportStorage).meta({
+  title: 'ExportStorage',
+  description: 'Conservation du produit : ambiante, au frais, surgelé',
+})
+
+export const exportCriterionSchema = z.object({
+  key: z.string(),
+  label: z.string(),
+  met: z.boolean(),
+  hint: z.string(),
+}).meta({
+  title: 'ExportCriterion',
+  description: 'Un critère d\'export, rempli ou non, et ce qu\'il faut faire pour le remplir',
+})
+
+export type ExportCriterion = z.infer<typeof exportCriterionSchema>
 
 export const exportDepartureStatusEnum = z.enum(ExportDepartureStatus).meta({
   title: 'ExportDepartureStatus',
@@ -124,11 +169,6 @@ export const exportSupplementStatusEnum = z.enum(ExportSupplementStatus).meta({
 export const exportabilityStatusEnum = z.enum(ExportabilityStatus).meta({
   title: 'ExportabilityStatus',
   description: 'Un produit peut-il partir dans la valise',
-})
-
-export const exportReviewDecisionEnum = z.enum(['APPROVE', 'REJECT']).meta({
-  title: 'ExportReviewDecision',
-  description: 'Décision d\'eBio sur un produit ou un pack',
 })
 
 const amount = z.number().positive().max(10_000_000)
@@ -377,29 +417,50 @@ export const exportOriginSchema = z.object({
 })
 
 export const exportProfileInputSchema = z.object({
-  packedWeightG: z.number().int().positive().max(50_000),
+  /** Missing values are allowed: the profile stays INCOMPLETE and says what is missing. */
+  packedWeightG: z.number().int().positive().max(50_000).nullable().optional(),
   lengthCm: z.number().int().positive().max(300).nullable().optional(),
   widthCm: z.number().int().positive().max(300).nullable().optional(),
   heightCm: z.number().int().positive().max(300).nullable().optional(),
-  shelfLifeDays: z.number().int().positive().max(3_650),
+  shelfLifeDays: z.number().int().positive().max(3_650).nullable().optional(),
+  storage: exportStorageEnum.nullable().optional(),
+  /** Allergens as printed on the label, when the product sheet has none ticked. */
+  allergens: optionalText(500),
+  /** The shop declares the product holds no allergen. */
+  noAllergens: z.boolean().default(false),
   origin: exportOriginSchema.default({ photos: [] }),
-  /** Required before eBio can approve (FR-002). */
   labelPhoto: z.string().url().nullable().optional(),
+  declaresFrenchLabel: z.boolean().default(false),
+  declaresDatesPrinted: z.boolean().default(false),
+  declaresSealedPackaging: z.boolean().default(false),
 }).meta({
   title: 'ExportProfileInput',
-  description: 'Demande d\'export d\'un produit : poids, dimensions, conservation, origine, étiquette',
+  description: 'Profil d\'export d\'un produit : poids, dimensions, conservation, allergènes, origine, étiquette, déclarations de la boutique',
 })
 
 export type ExportProfileInput = z.infer<typeof exportProfileInputSchema>
 
+/** Fields every export profile response carries about its criteria. */
+const exportCriteriaFields = {
+  criteria: z.array(exportCriterionSchema),
+  /** Criteria not met yet; 0 when exportable (or withdrawn with every criterion met). */
+  missingCount: z.number().int(),
+  /** eBio's reason, while the product (or pack) is withdrawn. */
+  withdrawnReason: z.string().nullable(),
+}
+
 export const exportProfileResponseSchema = z.object({
   productId: z.string().uuid(),
   status: exportProfileStatusEnum,
-  packedWeightG: z.number(),
+  ...exportCriteriaFields,
+  packedWeightG: z.number().nullable(),
   lengthCm: z.number().nullable(),
   widthCm: z.number().nullable(),
   heightCm: z.number().nullable(),
-  shelfLifeDays: z.number(),
+  shelfLifeDays: z.number().nullable(),
+  storage: exportStorageEnum.nullable(),
+  allergens: z.string().nullable(),
+  noAllergens: z.boolean(),
   origin: z.object({
     producer: z.string().nullable(),
     place: z.string().nullable(),
@@ -408,16 +469,29 @@ export const exportProfileResponseSchema = z.object({
     photos: z.array(z.string()),
   }),
   labelPhoto: z.string().nullable(),
-  checklist: z.record(z.string(), z.boolean()),
-  rejectionReason: z.string().nullable(),
-  reviewedAt: z.string().datetime().nullable(),
-  /** « Terroir validé eBio »: approved with an origin. */
+  declaresFrenchLabel: z.boolean(),
+  declaresDatesPrinted: z.boolean(),
+  declaresSealedPackaging: z.boolean(),
+  withdrawnAt: z.string().datetime().nullable(),
+  /** « Terroir validé eBio »: exportable with an origin. */
   badge: z.boolean(),
   updatedAt: z.string().datetime(),
 }).meta({
   title: 'ExportProfile',
-  description: 'Profil d\'export d\'un produit et sa validation',
+  description: 'Profil d\'export d\'un produit, son statut et ses critères',
 })
+
+export const exportCriteriaGuideSchema = z.object({
+  minShelfLifeDays: z.number().int(),
+  maxUnitWeightG: z.number().int(),
+  bannedCategories: z.array(z.object({ slug: z.string(), name: z.string() })),
+  criteria: z.array(exportCriterionSchema.omit({ met: true })),
+}).meta({
+  title: 'ExportCriteriaGuide',
+  description: 'Critères d\'export et réglages en vigueur, pour le guide de la boutique',
+})
+
+export type ExportCriteriaGuide = z.infer<typeof exportCriteriaGuideSchema>
 
 export type ExportProfileResponse = z.infer<typeof exportProfileResponseSchema>
 
@@ -462,8 +536,8 @@ export const exportPackResponseSchema = z.object({
   photos: z.array(z.string()),
   price: z.number(),
   status: exportPackStatusEnum,
-  rejectionReason: z.string().nullable(),
-  reviewedAt: z.string().datetime().nullable(),
+  ...exportCriteriaFields,
+  withdrawnAt: z.string().datetime().nullable(),
   items: z.array(z.object({
     productId: z.string().uuid(),
     variantId: z.string().uuid().nullable(),
@@ -479,7 +553,7 @@ export const exportPackResponseSchema = z.object({
   linesTotal: z.number(),
   /** Pack price minus the lines: eBio's margin when positive, its compensation when negative. */
   difference: z.number(),
-  /** Every product approved, on sale and in stock (FR-006). */
+  /** Pack exportable, every product exportable, on sale and in stock (FR-006). */
   orderable: z.boolean(),
   createdAt: z.string().datetime(),
 }).meta({
@@ -489,65 +563,74 @@ export const exportPackResponseSchema = z.object({
 
 export type ExportPackResponse = z.infer<typeof exportPackResponseSchema>
 
-// ===== §5 BACK-OFFICE, REVIEWS =====
+// ===== §5 BACK-OFFICE, EXPORT WATCH =====
 
-export const exportChecklistSchema = z.object(
-  Object.fromEntries(EXPORT_CHECKLIST_KEYS.map(key => [key, z.boolean().optional()])) as Record<ExportChecklistKey, z.ZodOptional<z.ZodBoolean>>,
-).meta({
-  title: 'ExportChecklist',
-  description: 'Liste de contrôle d\'export : chaque clé cochée',
-})
-
-export const reviewExportProductSchema = z.object({
-  decision: exportReviewDecisionEnum,
-  checklist: exportChecklistSchema.default({}),
-  reason: z.string().trim().max(500).nullable().optional(),
+export const exportWithdrawSchema = z.object({
+  reason: z.string().trim().min(3, 'Indiquez le motif du retrait').max(500),
 }).meta({
-  title: 'ReviewExportProduct',
-  description: 'Validation d\'un produit pour l\'export, liste de contrôle cochée, ou refus motivé',
+  title: 'ExportWithdraw',
+  description: 'Retrait d\'un produit ou d\'un pack de l\'export, motif envoyé à la boutique',
 })
 
-export type ReviewExportProduct = z.infer<typeof reviewExportProductSchema>
+export type ExportWithdraw = z.infer<typeof exportWithdrawSchema>
 
-export const reviewExportPackSchema = z.object({
-  decision: exportReviewDecisionEnum,
-  reason: z.string().trim().max(500).nullable().optional(),
+export const adminExportProductsQuerySchema = z.object({
+  status: exportProfileStatusEnum.optional(),
+  search: z.string().trim().max(120).optional(),
+  page: z.coerce.number().int().min(1).default(1),
 }).meta({
-  title: 'ReviewExportPack',
-  description: 'Validation d\'un pack, ou refus motivé',
+  title: 'AdminExportProductsQuery',
+  description: 'Filtre des produits proposés à l\'export : statut, recherche, page',
 })
 
-export type ReviewExportPack = z.infer<typeof reviewExportPackSchema>
+export type AdminExportProductsQuery = z.infer<typeof adminExportProductsQuerySchema>
 
-export const exportReviewsQuerySchema = z.object({
-  status: exportProfileStatusEnum.default(ExportProfileStatus.PENDING),
+export const adminExportPacksQuerySchema = z.object({
+  /** `ebio`: eBio's own packs (default); `all`: the shops' packs too. */
+  scope: z.enum(['ebio', 'all']).default('ebio'),
+  status: exportPackStatusEnum.optional(),
 }).meta({
-  title: 'ExportReviewsQuery',
-  description: 'Filtre de la file de validation',
+  title: 'AdminExportPacksQuery',
+  description: 'Filtre des packs du pays : ceux d\'eBio ou tous, par statut',
 })
 
-export type ExportReviewsQuery = z.infer<typeof exportReviewsQuerySchema>
+export type AdminExportPacksQuery = z.infer<typeof adminExportPacksQuerySchema>
 
-export const exportReviewsResponseSchema = z.object({
-  products: z.array(exportProfileResponseSchema.extend({
-    productName: z.string(),
-    imageUrl: z.string().nullable(),
-    supplierId: z.string().uuid(),
-    shopName: z.string(),
-    categoryName: z.string(),
-    composition: z.object({
-      ingredients: z.string().nullable(),
-      allergens: z.array(z.string()),
-      conservation: z.string().nullable(),
-    }),
-  })),
-  packs: z.array(exportPackResponseSchema),
+export const adminExportProductSchema = exportProfileResponseSchema.extend({
+  productName: z.string(),
+  imageUrl: z.string().nullable(),
+  supplierId: z.string().uuid(),
+  shopName: z.string(),
+  categoryName: z.string(),
+  composition: z.object({
+    ingredients: z.string().nullable(),
+    allergens: z.array(z.string()),
+    conservation: z.string().nullable(),
+  }),
 }).meta({
-  title: 'ExportReviews',
-  description: 'Produits et packs à valider pour l\'export',
+  title: 'AdminExportProduct',
+  description: 'Produit proposé à l\'export, vu par eBio',
 })
 
-export type ExportReviewsResponse = z.infer<typeof exportReviewsResponseSchema>
+export type AdminExportProduct = z.infer<typeof adminExportProductSchema>
+
+export const adminExportProductsResponseSchema = z.object({
+  data: z.array(adminExportProductSchema),
+  total: z.number().int(),
+  page: z.number().int(),
+  pageSize: z.number().int(),
+  /** Count by status over the whole catalogue, search ignored, for the tabs. */
+  counts: z.object({
+    EXPORTABLE: z.number().int(),
+    INCOMPLETE: z.number().int(),
+    WITHDRAWN: z.number().int(),
+  }),
+}).meta({
+  title: 'AdminExportProducts',
+  description: 'Produits proposés à l\'export, page par page',
+})
+
+export type AdminExportProductsResponse = z.infer<typeof adminExportProductsResponseSchema>
 
 // ===== §1 CLIENT, CATALOGUE AND DEPARTURES =====
 

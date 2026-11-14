@@ -26,6 +26,7 @@ import { CaslAbilityFactory } from '../auth/casl/casl-ability.factory'
 import { ValidationStatus } from '../suppliers/supplier.entity'
 import { SuppliersService } from '../suppliers/suppliers.service'
 import { exportCountryCodeSchema } from '../terroir/contracts/terroir.contract'
+import { ExportCriteriaService } from '../terroir/export-criteria.service'
 import { ExportabilityService } from '../terroir/exportability.service'
 import {
   createProductSchema,
@@ -52,6 +53,7 @@ export class ProductsController {
     private readonly caslAbilityFactory: CaslAbilityFactory,
     private readonly audit: AuditService,
     private readonly exportability: ExportabilityService,
+    private readonly exportCriteria: ExportCriteriaService,
   ) {}
 
   @Get('suppliers/:supplierId/products')
@@ -144,7 +146,7 @@ export class ProductsController {
       this.promotionsService.listForProduct(product.id),
     ])
     // Its export request only for the owning shop (011): buyers never see it.
-    const exportProfile = isOwner ? ProductMapper.toExportProfile(await this.productsService.exportProfileOf(product.id)) : undefined
+    const exportProfile = isOwner ? ProductMapper.toExportProfile(await this.productsService.exportProfileOf(product.id), await this.exportCriteria.settings()) : undefined
     // « Mode Valise » (011): can it go in the suitcase towards `exportCountry`; null without it.
     const country = exportCountry ? exportCountryCodeSchema.safeParse(exportCountry) : null
     const exportability = country?.success ? await this.exportability.forProduct(country.data, product.id) : null
