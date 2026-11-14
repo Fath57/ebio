@@ -98,6 +98,9 @@ export function LiveOrderProvider({ children }: { children: ReactNode }) {
       const raw = await res.json() as RawOrder[] | { orders?: RawOrder[], data?: RawOrder[] }
       const list = Array.isArray(raw) ? raw : raw.orders ?? raw.data ?? []
       const moving = list
+        // An EXPORT order is one shop's share of a valise: the valise has its
+        // own track, local steps would mean nothing for a parcel abroad.
+        .filter(item => item.pickupMode !== 'EXPORT')
         .filter(item => MOVING.has(item.status) && Date.now() - lastActivity(item) < STALE_AFTER_MS)
         .sort((a, b) => (RANK[b.status] ?? 0) - (RANK[a.status] ?? 0))
       const first = moving[0]

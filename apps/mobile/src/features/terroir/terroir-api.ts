@@ -696,6 +696,8 @@ export interface TerroirShipmentSummary {
   status: TerroirShipmentStatus
   country: TerroirCountry
   agency: string | null
+  /** Collected at the agency, or carried home by it. */
+  reception: 'PICKUP' | 'HOME'
   departsOn: string | null
   arrivalFrom: string | null
   arrivalTo: string | null
@@ -738,7 +740,8 @@ export interface TerroirShipmentEvent {
 }
 
 export interface TerroirShipment extends TerroirShipmentSummary {
-  reception: 'PICKUP' | 'HOME'
+  /** The checkout that paid it: its shop orders carry the same id. */
+  checkoutId: string | null
   pickupPoint: TerroirPickupPoint | null
   homeAddress: string | null
   lines: TerroirShipmentLine[]
@@ -802,6 +805,7 @@ function readSummary(raw: Raw): TerroirShipmentSummary {
     status: readStatus(raw.status),
     country: str(raw.country) ?? '',
     agency,
+    reception: raw.reception === 'HOME' ? 'HOME' : 'PICKUP',
     departsOn: str(departure.departsOn),
     arrivalFrom: str(arrival.from),
     arrivalTo: str(arrival.to),
@@ -824,7 +828,7 @@ export async function fetchTerroirShipment(id: string): Promise<TerroirShipment>
   const raw = obj(await getJson(`/api/terroir/shipments/${id}`, 'Impossible de charger ce colis.'))
   return {
     ...readSummary(raw),
-    reception: raw.reception === 'HOME' ? 'HOME' : 'PICKUP',
+    checkoutId: str(raw.checkoutId),
     pickupPoint: readPickupPoint(raw.pickupPoint),
     homeAddress: str(raw.homeAddress),
     lines: list(raw.lines).map(line => ({
@@ -858,6 +862,27 @@ export async function fetchTerroirShipment(id: string): Promise<TerroirShipment>
         available: line.available === true,
       }))
       .filter(line => line.productId !== null || line.packId !== null),
+  }
+}
+
+/**
+ * The valise a shop order belongs to (an EXPORT order is one shop's share of
+ * it), found through the checkout both carry. Newest first, so the usual case
+ * costs one detail request. Null when none matches or the list cannot be read.
+ */
+export async function findShipmentIdForCheckout(checkoutId: string): Promise<string | null> {
+  try {
+    const shipments = await fetchTerroirShipments()
+    const newestFirst = [...shipments].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+    for (const shipment of newestFirst) {
+      const detail = obj(await getJson(`/api/terroir/shipments/${shipment.id}`, 'Impossible de charger ce colis.'))
+      if (str(detail.checkoutId) === checkoutId)
+        return shipment.id
+    }
+    return null
+  }
+  catch {
+    return null
   }
 }
 

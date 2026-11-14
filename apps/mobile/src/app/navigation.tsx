@@ -80,6 +80,7 @@ import { TerroirCheckoutScreen } from '../features/terroir/components/terroir-ch
 import { TerroirPackScreen } from '../features/terroir/components/terroir-product-screen'
 import { ValiseModeBanner } from '../features/terroir/components/valise-ui'
 import { ValiseWaitlistScreen } from '../features/terroir/components/valise-waitlist-screen'
+import { LiveValiseProvider, useLiveValise } from '../features/terroir/live-valise-context'
 import { useTerroirCart } from '../features/terroir/terroir-cart-context'
 import { useValiseMode } from '../features/terroir/valise-mode-context'
 import { WalletScreen } from '../features/wallet/components/wallet-screen'
@@ -1107,7 +1108,7 @@ function MyOrdersWrapper({ navigation }: any) {
         onRateReceivedProducts={orderId => navigation.navigate('RateProducts', { orderId })}
         // A received basket names no shop: the flow starts at the courier.
         onRateReceivedCourier={(orderId, supplierId) => navigation.navigate('RateOrder', { orderId, supplierId: supplierId ?? '', hasReview: supplierId === null })}
-        onOpenTerroirShipments={() => navigation.navigate('TerroirShipments')}
+        onOpenShipment={(shipmentId: string) => navigation.navigate('TerroirShipment', { shipmentId })}
       />
     </SafeScreen>
   )
@@ -1150,6 +1151,8 @@ function OrderTrackingWrapper({ route, navigation }: any) {
         onOpenCourierChat={(deliveryId, courierName) => openChatWithCourier(navigation, deliveryId, courierName, orderId)}
         onRate={(supplierId, hasReview) => navigation.navigate('RateOrder', { supplierId, orderId, hasReview })}
         onTipCourier={supplierId => navigation.navigate('RateOrder', { supplierId, orderId, hasReview: true, tipOnly: true })}
+        // An EXPORT order (old notification): its valise is what to follow.
+        onOpenShipment={(shipmentId: string) => navigation.replace('TerroirShipment', { shipmentId })}
         onBack={() => navigation.goBack()}
       />
     </SafeScreen>
@@ -1328,7 +1331,8 @@ function LiveOrderFabHost() {
         || (!valise && hasBasket && CART_BAR_ROUTES.has(place.screen))}
       // Same figure as the tab bar's own height below.
       bottomOffset={64 + insets.bottom}
-      onOpen={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
+      onOpenOrder={orderId => navigationRef.navigate('Commandes', { screen: 'OrderTracking', initial: false, params: { orderId } })}
+      onOpenValise={shipmentId => navigationRef.navigate('Commandes', { screen: 'TerroirShipment', initial: false, params: { shipmentId } })}
     />
   )
 }
@@ -1353,7 +1357,9 @@ const HIDE_TAB_BAR_ROUTES = new Set([
 export function AppNavigation() {
   return (
     <LiveOrderProvider>
-      <BuyerTabs />
+      <LiveValiseProvider>
+        <BuyerTabs />
+      </LiveValiseProvider>
     </LiveOrderProvider>
   )
 }
@@ -1373,7 +1379,9 @@ function BuyerTabs() {
   const { count: chatUnread } = useChatUnreadCount()
   // An order that is moving: the notice says it on arrival, the tab's dot
   // reminds afterwards without taking any room.
-  const { order: liveOrder } = useLiveOrder()
+  const { order: liveOrderInProgress } = useLiveOrder()
+  const { valises: liveValises } = useLiveValise()
+  const liveOrder = liveOrderInProgress ?? liveValises[0] ?? null
   // Where the buyer is, read on every state change: the notice is mounted
   // outside the navigator, so it cannot read the route through a hook. Kept in
   // a store rather than in this component's state: a state here re-rendered
